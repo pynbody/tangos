@@ -5,7 +5,7 @@ import sys
 import time
 import fnmatch
 
-
+from localset import *
 
 
 def can_load(f):

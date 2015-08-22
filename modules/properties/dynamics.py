@@ -2,8 +2,10 @@ from . import HaloProperties
 import numpy as np
 import math
 import pynbody
-import dyn_profile as dp
-
+try:
+    import dyn_profile as dp
+except ImportError:
+    dp = None
 
 class AngMom(HaloProperties):
 
