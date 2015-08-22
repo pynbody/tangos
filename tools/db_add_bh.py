@@ -14,7 +14,7 @@ if __name__=="__main__":
         db.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
         order_by(db.TimeStep.time_gyr).all()
 
-    import magic_amiga
+    import sim_output_finder
 
     files = parallel_tasks.distributed(files)
     parallel_tasks.mpi_sync_db(session)

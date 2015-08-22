@@ -5,7 +5,6 @@ import halo_db as db
 import sqlalchemy
 import time
 import pynbody
-import magic_amiga
 
 import terminalcontroller
 from terminalcontroller import term

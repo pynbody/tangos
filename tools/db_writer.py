@@ -6,7 +6,7 @@ from halo_db import parallel_tasks
 import pynbody
 import numpy as np
 import properties
-import magic_amiga
+import sim_output_finder
 import terminalcontroller
 from terminalcontroller import heading, term
 import sys
