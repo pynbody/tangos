@@ -162,7 +162,7 @@ class Simulation(Base):
             return self.timesteps[i]
         else:
             session = Session.object_session(self)
-            did = get_dict_id(i)
+            did = get_dict_id(i, session=session)
             try:
                 return session.query(SimulationProperty).filter_by(name_id=did,
                                                                    simulation_id=self.id).first().data
@@ -719,7 +719,7 @@ class Halo(Base):
         # executed, the properties are sitting waiting for us. If not, they are going
         # to be lazy loaded and we want to filter that lazy load.
         session = Session.object_session(self)
-        key_id = get_dict_id(key)
+        key_id = get_dict_id(key, session=session)
         if 'all_properties' not in sqlalchemy.inspect(self).unloaded:
             # we've already got it from the DB, find it locally
             for x in self.all_properties:
@@ -745,7 +745,8 @@ class Halo(Base):
         raise KeyError(key)
 
     def get_property(self, key, default=None):
-        key_id = get_dict_id(key)
+        session = Session.object_session(self)
+        key_id = get_dict_id(key, session=session)
         prop= self.properties.filter_by(name_id=key_id,deprecated=False).first()
         if prop is None:
             return default
@@ -753,8 +754,8 @@ class Halo(Base):
             return prop.data
 
     def get_linked_halo(self, key, default=None):
-        key_id = get_dict_id(key)
         session = Session.object_session(self)
+        key_id = get_dict_id(key, session=session)
         prop= session.query(HaloLink).filter_by(halo_from_id=self.id,
                                relation_id=key_id).first()
         if prop is None:
@@ -763,8 +764,8 @@ class Halo(Base):
             return prop.halo_to
 
     def get_reverse_linked_halo(self, key, default=None):
-        key_id = get_dict_id(key)
         session = Session.object_session(self)
+        key_id = get_dict_id(key, session=session)
         prop= session.query(HaloLink).filter_by(halo_to_id=self.id,
                                relation_id=key_id).first()
         if prop is None:
@@ -946,7 +947,7 @@ class Halo(Base):
             # linkobj =  session.query(HaloLink).filter(and_(HaloLink.relationship=="time", HaloLink.halo_from_id==self.id, HaloLink.halo_to_id.in_(allowed_targets))).first()
 
             linkobj = session.query(HaloLink).filter(and_(HaloLink.relation_id == get_dict_id(
-                "time"), HaloLink.halo_from_id == self.id)).first()
+                "time",session=session), HaloLink.halo_from_id == self.id)).first()
 
             if linkobj is not None:
                 self._next = linkobj.halo_to
@@ -973,7 +974,7 @@ class Halo(Base):
                     halo_type=1, halo_number=self.halo_number).first()
         else:
             linkobj = session.query(HaloLink).filter(and_(
-                HaloLink.relation_id == get_dict_id("time"), HaloLink.halo_to_id == self.id)).first()
+                HaloLink.relation_id == get_dict_id("time", session=session), HaloLink.halo_to_id == self.id)).first()
 
             if linkobj is not None:
                 self._previous = linkobj.halo_from

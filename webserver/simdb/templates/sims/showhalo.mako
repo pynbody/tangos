@@ -14,24 +14,44 @@ serialize = function(obj) {
   return str.join("&");
 }
 
+var objImg;
+
 function gograph(base_id)
 {
 	var query = $('#myform').serialize();
-	objImg = new Image();
-	objImg.src = base_id+"?"+query;
-	objImg.onload = function() {
-		$('#imgbox').empty()
-		$('#imgbox').append(objImg);
-		$('#imgbox').css('width',objImg.width);
-		// $('liveplot').src = objImg.src;
-	}
-	objImg.onerror = function() {
-		errorlink = '<a href="'+objImg.src+'" target="_blank">';
-	        $('#imgbox').empty().html("<h2>Sorry, there was an error generating your plot.</h2><p>Click "+errorlink+"here</a> for more information (opens in a new window)");
-	}
-
+    loadImage(base_id+"?"+query);
 	$('#imgbox').empty().html("<img src='/spinner.gif' />&nbsp;Generating plot...");
 	return true;
+}
+
+function loadImage(url) {
+    objImg = new Image();
+	objImg.src = url;
+    objImg.onload = placeImage;
+    objImg.onerror = placeImageError;
+}
+
+function placeImageError() {
+    errorlink = '<a href="'+objImg.src+'" target="_blank">';
+    $('#imgbox').empty().html("<h2>Sorry, there was an error generating your plot.</h2><p>Click "+errorlink+"here</a> for more information (opens in a new window)");
+
+}
+
+function placeImage() {
+    $('#imgbox').empty()
+    $('#imgbox').append(objImg);
+    $('#imgbox').css('width',objImg.width);
+}
+
+function timenav(rel) {
+
+    $('body').load(rel, function() {
+        var newHalo = document.forms['myform']['halo_id'].value;
+        placeImage();
+        $('#imgbox').append("<img src='/spinner.gif' />&nbsp;Updating plot...");
+        loadImage(objImg.src.replace(/(halo_id=)[^\&]+/, '$1'+(newHalo)));
+    });
+    return false;
 }
 
 var interpret_name = "";
@@ -97,12 +117,14 @@ $('.collapsibletable').click(function(){
 <p>At z=${"%.2f"%c.timestep_z}, t=${c.timestep_t}; show this halo in another step (if available):
 % for rel in ["earliest","-10","earlier","later","+10","latest"] :
 %if rel=="-10" :
-${h.link_to(rel,url(controller='sims', action='showhalo',id=c.this_id,rel="earlier",num=10))}
+    <% linkurl = url(controller='sims', action='showhalo',id=c.this_id,rel="earlier",num=10)%>
 %elif rel=="+10" :
-${h.link_to(rel,url(controller='sims', action='showhalo',id=c.this_id,rel="later",num=10))}
+    <% linkurl = url(controller='sims', action='showhalo',id=c.this_id,rel="later",num=10)%>
 %else :
-${h.link_to(rel,url(controller='sims', action='showhalo',id=c.this_id,rel=rel))}
+    <% linkurl = url(controller='sims', action='showhalo',id=c.this_id,rel=rel)%>
 %endif
+${h.link_to(rel,linkurl,onclick="timenav('"+linkurl+"'); return false;")}
+
 
 %endfor
 
