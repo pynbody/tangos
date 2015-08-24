@@ -203,7 +203,7 @@ class PlotController(BaseController):
         prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
         name_id = prop.name_id
         prop = Session.query(meta.HaloProperty).filter_by(name_id=name_id,halo_id=halo_id).first()
-        
+
         if len(prop.data.shape)==1 :
             return self.array_img(id,prop=prop)
         with imageThreadLock :
