@@ -8,5 +8,5 @@ If running on a remote server, you will need to forward the appropriate port usi
 1. Clone the repository
 2. Make sure you have an up-to-date version of python, then type `pip install pylons formalchemy` to install the required web frameworks
 3. Put your database file in the halo_database folder, named `data.db` - or edit the `environment.sh` to specify a different location
-4. Type `./webserver` to run the web server
-5. Browse to http://localhost:5000
+4. Type `./webserver.sh` to run the web server
+5. Browse to <http://localhost:5000>
