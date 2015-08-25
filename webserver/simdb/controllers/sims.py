@@ -167,10 +167,10 @@ class SimsController(BaseController):
 
                     rt+=h.HTML.td(h.HTML.input(type="radio",name="x",value=k.name.text,
                                                id="RIx_"+k.name.text,
-                        onclick="ar_interp('"+k.name.text+"','x')"))
+                                               class_="radio_array"))
                     rt+=h.HTML.td(h.HTML.input(type="radio",name="y",value=k.name.text,
                                                id="RIy_"+k.name.text,
-                        onclick="ar_interp('"+k.name.text+"','y')"))
+                                               class_="radio_array"))
 
 
 
@@ -185,11 +185,11 @@ class SimsController(BaseController):
 
             else :
                 if links :
-                    rt+=h.HTML.td(h.HTML.input(type="radio",name="x",value=k.name.text))
+                    rt+=h.HTML.td(h.HTML.input(type="radio",name="x",value=k.name.text,class_="radio_scalar"))
                     if k.name.text=="Mvir" :
-                        rt+=h.HTML.td(h.HTML.input(type="radio",name="y",value=k.name.text,checked=True))
+                        rt+=h.HTML.td(h.HTML.input(type="radio",name="y",value=k.name.text,checked=True,class_="radio_scalar"))
                     else :
-                        rt+=h.HTML.td(h.HTML.input(type="radio",name="y",value=k.name.text))
+                        rt+=h.HTML.td(h.HTML.input(type="radio",name="y",value=k.name.text,class_="radio_scalar"))
                     rt+=h.HTML.td("")
 
                 if isinstance(k.data, int) :

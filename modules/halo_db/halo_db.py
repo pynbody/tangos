@@ -634,7 +634,6 @@ class TimeStep(Base):
         out = [[] for i in xrange(len(plist))]
 
         for h in self.halos.options(
-                    sqlalchemy.orm.joinedload(Halo.links),
                     sqlalchemy.orm.joinedload(Halo.all_properties)
                   ).all():
             try:

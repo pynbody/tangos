@@ -248,10 +248,19 @@ class PlotController(BaseController):
         form = id
         did1 = str(request.params['x'])
         did2 = str(request.params['y'])
+        if request.params['x_array_element']!="":
+            did1+="//"+request.params['x_array_element']
+
+        if request.params['y_array_element']!="":
+            did2+="//"+request.params['y_array_element']
+
         nosubs = request.params.get('nosubs')=='on'
 
-        timestep_id = int(request.params['timestep_id'])
         halo_id = int(request.params['halo_id'])
+
+        h = Session.query(meta.Halo).filter_by(id=halo_id).first()
+        ts = h.timestep
+
         xlog = (request.params.get('xlog'))=='on'
         ylog = request.params.get('ylog')=='on'
         print>>sys.stderr, "Making plot..."
@@ -263,14 +272,12 @@ class PlotController(BaseController):
 
             if request.params['type']!='thistimestep' :
                 # gather for this halo at all timesteps
-                h = Session.query(meta.Halo).filter_by(id=halo_id).first()
                 h = h.earliest
                 x_vals, y_vals = h.property_cascade(did1,did2)
                 if form=="img" :
                     p.plot(x_vals, y_vals)
 
             else :
-                ts = Session.query(meta.TimeStep).filter_by(id=timestep_id).first()
                 if nosubs :
                     x_vals, y_vals = ts.gather_property(did1,did2,filt=True)
                 else :
