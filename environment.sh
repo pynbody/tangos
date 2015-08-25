@@ -3,3 +3,8 @@ export PYTHONPATH=$DIR/modules/:$PYTHONPATH
 export PATH=$DIR/tools/:$PATH
 export HALODB_ROOT=$DIR/../db_galaxies/
 export HALODB_DEFAULT_DB=$DIR/data.db
+
+if [[ -e enivornment_local.sh ]]
+then
+    source environment_local.sh
+fi
