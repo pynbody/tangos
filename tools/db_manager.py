@@ -173,7 +173,7 @@ def strip_slashes(name):
 
 def add_simulation_timesteps(options):
     reassess=False
-    basename = options.sim
+    basename = strip_slashes(options.sim)
 
     if len(glob.glob(localset.base + basename + "/output_00*")) > 0:
         add_simulation_timesteps_ramses(basename, reassess)
