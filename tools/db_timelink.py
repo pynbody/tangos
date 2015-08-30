@@ -5,25 +5,44 @@ import time
 import pynbody
 import sys
 import halo_db as db
+import argparse
 from halo_db import parallel_tasks
 from terminalcontroller import term
 
-session = db.Session()
+session = db.internal_session
 
-max_gp = 200 # default
 
-if "max_gp" in sys.argv:
-    max_gp = int(sys.argv[sys.argv.index("max_gp") + 1])
+
+parser = argparse.ArgumentParser()
+db.supplement_argparser(parser)
+parser.add_argument("--verbose", action="store_true",
+                    help="Print extra information")
+parser.add_argument("--force", action="store_true",
+                    help="Generate links even if they already exist for those timesteps")
+parser.add_argument("--hmax", action="store",type=int,default=200,
+                    help="Specify the maximum number of halos per snapshot")
+parser.add_argument('--sims','--for', action='store', nargs='*',
+                            metavar='simulation_name',
+                            help='Specify a simulation (or multiple simulations) to run on')
+parser.add_argument('--part', action='store', nargs=2, type=int,
+                            metavar=('N','M'),
+                            help="Emulate MPI by handling slice N out of the total workload of M items. If absent, use real MPI.")
+
+
+args = parser.parse_args()
+
+db.process_options(args)
+
+
+max_gp = args.hmax
+force = args.force
 
 print "Max groups per snapshot =",max_gp
-
-force = ("force" in sys.argv)
-
 if force:
     print "Forcing is ON"
 
 try:
-    base_sim = db.sim_query_from_args(sys.argv, session).all()
+    base_sim = db.sim_query_from_name_list(args.sims)
     if base_sim != None:
         print "Running on: ", base_sim
         pairs = []
@@ -41,7 +60,7 @@ assert len(pairs) != 0
 
 g_x = None
 
-pair_list = parallel_tasks.distributed(pairs)
+pair_list = parallel_tasks.distributed(pairs,args.part[0], args.part[1])
 
 parallel_tasks.mpi_sync_db(session)
 
