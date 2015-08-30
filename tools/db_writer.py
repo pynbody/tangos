@@ -336,25 +336,26 @@ class DbWriter(object):
             self._loaded_halo  = db_halo.load(partial=self.options.partial_load)
             self._loaded_halo.physical_units()
 
-        if self._should_load_halo_sphere_particles():
-            if self.options.partial_load:
-                self._loaded_halo_spherical = self._loaded_halo
-            else:
-                self._loaded_halo_spherical = self._loaded_halo.ancestor[pynbody.filt.Sphere(
-                                                                         db_halo['Rvir'], db_halo['SSC'])]
-
         if self.options.partial_load:
             self._run_preloop(self._loaded_halo, db_halo.timestep.filename,
                              self._property_calculator_instances, self._existing_properties_all_halos)
 
 
+    def _get_current_halo_spherical_region_particles(self, db_halo):
+        if self._loaded_halo_spherical is None:
+            if self.options.partial_load:
+                self._loaded_halo_spherical = self._loaded_halo
+            else:
+                self._loaded_halo_spherical = self._loaded_halo.ancestor[pynbody.filt.Sphere(
+                                                                         db_halo['Rvir'], db_halo['SSC'])]
+        return self._loaded_halo_spherical
 
     def _get_halo_snapshot_data_if_appropriate(self, db_halo, property_calculator):
 
         self._set_current_halo(db_halo)
 
         if property_calculator.spherical_region():
-            return self._loaded_halo_spherical
+            return self._get_current_halo_spherical_region_particles(db_halo)
         else:
             return self._loaded_halo
 
