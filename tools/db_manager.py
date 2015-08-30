@@ -338,18 +338,18 @@ def add_simulation_timesteps(options):
 
 def db_import(remote_db, *sims):
 
-    global _current_creator, internal_session
+    global current_creator, internal_session
     engine2 = create_engine('sqlite:///' + remote_db, echo=False)
     ext_session = sessionmaker(bind=engine2)()
 
-    _current_creator = internal_session.merge(_current_creator)
+    current_creator = internal_session.merge(current_creator)
 
     _db_import_export(internal_session, ext_session, *sims)
 
 
 def db_export(remote_db, *sims):
 
-    global _current_creator, internal_session
+    global current_creator, internal_session
     engine2 = create_engine('sqlite:///' + remote_db, echo=False)
 
     int_session = internal_session
@@ -358,14 +358,14 @@ def db_export(remote_db, *sims):
 
     Base.metadata.create_all(engine2)
 
-    _x_current_creator = _current_creator
+    _xcurrent_creator = current_creator
 
     internal_session = ext_session
-    _current_creator = ext_session.merge(Creator())
+    current_creator = ext_session.merge(Creator())
 
     _db_import_export(ext_session, int_session, *sims)
 
-    _current_creator = _x_current_creator
+    current_creator = _xcurrent_creator
     internal_session = int_session
 
 

@@ -24,16 +24,19 @@ import random
 
 @contextlib.contextmanager
 def check_deleted(a):
-    a_s = weakref.ref(a)
-    sys.exc_clear()
-    del a
-    yield
-    gc.collect()
-    if a_s() is not None:
-        print "check_deleted failed"
-        print "gc reports hanging references: ", gc.get_referrers(a_s())
-        #print "and on second level: ", map(gc.get_referrers, gc.get_referrers(a_s()))
-    #assert a_s() is None
+    if a is None:
+        yield
+        return
+    else:
+        a_s = weakref.ref(a)
+        sys.exc_clear()
+        del a
+        yield
+        gc.collect()
+        if a_s() is not None:
+            print "check_deleted failed"
+            print "gc reports hanging references: ", gc.get_referrers(a_s())
+
 
 np.seterr(all='ignore')
 
@@ -92,7 +95,7 @@ def insert_list(property_list, retry=10):
         for (prop,pl) in zip(property_object_list, property_list):
             prop_merged = session.merge(prop)
             # don't understand why this should be necessary
-            prop_merged.creator = db._current_creator
+            prop_merged.creator = db.current_creator
 
         session.commit()
 
@@ -121,7 +124,7 @@ class DbWriter(object):
         self.redirect = terminalcontroller.redirect
         self._writer_timeout = 60
         self._writer_minimum = 60  # don't commit at end of halo if < 1 minute past
-        self._loaded_timestep_id = None
+        self._current_timestep_id = None
         self._loaded_timestep = None
         self._loaded_halo_id = None
         self._loaded_halo_spherical = None
@@ -288,59 +291,67 @@ class DbWriter(object):
                 else:
                     self._pending_properties.append((db_halo, n, r))
 
-    def _load_snapshot_data_if_appropriate(self, db_timestep):
-        if self._loaded_timestep_id == db_timestep.id:
-            return
-        if self.options.partial_load:
+    def _should_load_halo_particles(self):
+        return any([x.requires_simdata() for x in self._property_calculator_instances])
+
+    def _should_load_halo_sphere_particles(self):
+        return any([(x.requires_simdata() and x.spherical_region()) for x in self._property_calculator_instances])
+
+    def _should_load_timestep_particles(self):
+        return self._should_load_halo_particles() and not self.options.partial_load
+
+    def _set_current_timestep(self, db_timestep):
+        if self._current_timestep_id == db_timestep.id:
             return
 
         self._loaded_halo_id=None
+        self._loaded_halo=None
+        self._loaded_halo_spherical=None
 
-        if self._loaded_halo is not None:
-            self._loaded_halo=None
-
-        if self._loaded_halo_spherical is not None:
-            self._loaded_halo_spherical=None
-
-        if self._loaded_timestep_id is not None:
+        if self._current_timestep_id is not None:
             with check_deleted(self._loaded_timestep):
-                del self._loaded_timestep
+                self._loaded_timestep=None
 
+        if self._should_load_timestep_particles():
+            self._loaded_timestep = db_timestep.load()
+            self._loaded_timestep.physical_units()
 
-        self._loaded_timestep = db_timestep.load()
-        self._loaded_timestep.physical_units()
-        self._loaded_timestep_id = db_timestep.id
+        self._current_timestep_id = db_timestep.id
 
         self._run_preloop(self._loaded_timestep, db_timestep.filename,
                           self._property_calculator_instances, self._existing_properties_all_halos)
 
 
-    def _load_halo_snapshot_data_if_appropriate(self, db_halo, property_calculator, existing_properties):
-        self._load_snapshot_data_if_appropriate(db_halo.timestep)
+    def _set_current_halo(self, db_halo):
+        self._set_current_timestep(db_halo.timestep)
 
-        if self._loaded_halo_id!=db_halo.id:
-            self._loaded_halo_id=db_halo.id
+        if self._loaded_halo_id==db_halo.id:
+            return
 
+        self._loaded_halo_id=db_halo.id
+        self._loaded_halo = None
+        self._loaded_halo_spherical = None
+
+        if self._should_load_halo_particles():
             self._loaded_halo  = db_halo.load(partial=self.options.partial_load)
             self._loaded_halo.physical_units()
-            self._loaded_halo_spherical = None
 
-            if self.options.partial_load:
-                self._run_preloop(self._loaded_halo, db_halo.timestep.filename,
-                                 self._property_calculator_instances, self._existing_properties_all_halos)
-
-        if property_calculator.spherical_region() and self._loaded_halo_spherical is None:
+        if self._should_load_halo_sphere_particles():
             if self.options.partial_load:
                 self._loaded_halo_spherical = self._loaded_halo
             else:
                 self._loaded_halo_spherical = self._loaded_halo.ancestor[pynbody.filt.Sphere(
-                                                                         existing_properties["Rvir"], existing_properties["SSC"])]
+                                                                         db_halo['Rvir'], db_halo['SSC'])]
 
-    def _get_halo_snapshot_data_if_appropriate(self, db_halo, property_calculator, existing_properties):
-        if not property_calculator.requires_simdata():
-            return None
+        if self.options.partial_load:
+            self._run_preloop(self._loaded_halo, db_halo.timestep.filename,
+                             self._property_calculator_instances, self._existing_properties_all_halos)
 
-        self._load_halo_snapshot_data_if_appropriate(db_halo, property_calculator, existing_properties)
+
+
+    def _get_halo_snapshot_data_if_appropriate(self, db_halo, property_calculator):
+
+        self._set_current_halo(db_halo)
 
         if property_calculator.spherical_region():
             return self._loaded_halo_spherical
@@ -360,7 +371,7 @@ class DbWriter(object):
         else:
             db_data = existing_properties
 
-        snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, property_calculator, existing_properties)
+        snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, property_calculator)
 
         property_calculator.start_timer()
 

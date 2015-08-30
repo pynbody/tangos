@@ -22,6 +22,9 @@ _loaded_halocats = {}
 _dict_id = {}
 _dict_obj = {}
 _verbose = False
+current_creator=None
+internal_session=None
+engine=None
 
 
 
@@ -146,7 +149,7 @@ class Simulation(Base):
 
     def __init__(self, basename):
         self.basename = basename
-        self.creator = _current_creator
+        self.creator = current_creator
 
     def __repr__(self):
         return "<Simulation(\"" + self.basename + "\")>"
@@ -207,7 +210,7 @@ class SimulationProperty(Base):
         self.simulation = sim
         self.name = name
         self.data = data
-        self.creator = _current_creator
+        self.creator = current_creator
 
     def data_repr(self):
         f = self.data
@@ -295,7 +298,7 @@ class TrackData(Base):
 
     def __init__(self, sim, halo_num=None):
         self.simulation = sim
-        self.creator = _current_creator
+        self.creator = current_creator
         if halo_num is None:
             hs = []
             for h in sim.trackers.all():
@@ -507,7 +510,7 @@ class TimeStep(Base):
         else:
             self.available = False
 
-        self.creator = _current_creator
+        self.creator = current_creator
 
     def __repr__(self):
         extra = ""
@@ -696,7 +699,7 @@ class Halo(Base):
         self.NGas = NGas
         self.halo_type = halo_type
         self.init_on_load()
-        self.creator = _current_creator
+        self.creator = current_creator
 
     @orm.reconstructor
     def init_on_load(self):
@@ -794,7 +797,7 @@ class Halo(Base):
                 X = internal_session.merge(HaloLink(self, obj, key))
             else:
                 X.halo_to = obj
-            X.creator = _current_creator
+            X.creator = current_creator
 
         else:
             X = self.properties.filter_by(name_id=key.id).first()
@@ -803,7 +806,7 @@ class Halo(Base):
                 X.data = obj
             else:
                 X = internal_session.merge(HaloProperty(self, key.id, obj))
-            X.creator = _current_creator
+            X.creator = current_creator
 
     def keys(self):
         names = []
@@ -1015,7 +1018,7 @@ class HaloProperty(Base):
 
         self.name = name
         self.data = data
-        self.creator = _current_creator
+        self.creator = current_creator
 
     def __repr__(self):
         if self.deprecated:
@@ -1142,7 +1145,7 @@ class HaloLink(Base):
 
         self.relation = relationship
 
-        self.creator = _current_creator
+        self.creator = current_creator
 
     def __repr__(self):
         return "<HaloLink " + str(self.relation.text) + " " + str(self.halo_from) + " " + str(self.halo_to) + ">"
@@ -1490,10 +1493,10 @@ def process_options(argparser_options):
     _verbose = argparser_options.db_verbose
 
 def init_db():
-    global _verbose, _current_creator, internal_session, Session, engine
+    global _verbose, current_creator, internal_session, engine
     engine = create_engine('sqlite:///' + localset.db, echo=_verbose,
                            isolation_level='READ UNCOMMITTED',  connect_args={'timeout': 150})
-    _current_creator = Creator()
+    current_creator = Creator()
     Session = sessionmaker(bind=engine)
     internal_session=Session()
     Base.metadata.create_all(engine)
