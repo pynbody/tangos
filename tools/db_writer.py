@@ -3,6 +3,7 @@
 
 import halo_db as db
 from halo_db import parallel_tasks
+import warnings
 import pynbody
 import numpy as np
 import properties
@@ -346,8 +347,14 @@ class DbWriter(object):
             if self.options.partial_load:
                 self._loaded_halo_spherical = self._loaded_halo
             else:
-                self._loaded_halo_spherical = self._loaded_halo.ancestor[pynbody.filt.Sphere(
-                                                                         db_halo['Rvir'], db_halo['SSC'])]
+                if 'Rvir' in db_halo and 'SSC' in db_halo:
+                    self._loaded_halo_spherical = self._loaded_halo.ancestor[pynbody.filt.Sphere(
+                                                                             db_halo['Rvir'], db_halo['SSC'])]
+                else:
+                    warnings.warn("Using halo particles in place of requested spherical cut-out, "
+                                  "since required halo properties are unavailable", RuntimeWarning)
+                    return self._loaded_halo
+
         return self._loaded_halo_spherical
 
     def _get_halo_snapshot_data_if_appropriate(self, db_halo, property_calculator):
