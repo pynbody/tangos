@@ -5,6 +5,7 @@ import time
 import datetime
 
 import numpy as np
+from . import data_attribute_mapper
 import localset
 import pynbody
 import sqlalchemy
@@ -85,6 +86,7 @@ class DictionaryItem(Base):
 
     def plot_clabel(self):
         return self._x_fn("plot_clabel")
+
 
 
 class Creator(Base):
@@ -185,6 +187,7 @@ class Simulation(Base):
         session.commit()
 
 
+
 class SimulationProperty(Base):
     __tablename__ = 'simulationproperties'
 
@@ -238,46 +241,11 @@ class SimulationProperty(Base):
 
     @property
     def data(self):
-        return self.data_int or self.data_float or self.data_time or self.data_string or (pickle.loads(self.data_array) if self.data_array else None)
+        return data_attribute_mapper.get_data_of_unknown_type(self)
 
     @data.setter
     def data(self, data):
-        try:
-            data = float(data)
-        except:
-            pass
-        if isinstance(data, np.ndarray):
-            self.data_time = None
-            self.data_string = None
-            self.data_float = None
-            self.data_int = None
-            self.data_array = pickle.dumps(data)
-        elif type(data) is time.struct_time or type(data) is datetime.datetime:
-            if type(data) is time.struct_time:
-                data = datetime.datetime(*data[:6])
-            self.data_time = data
-            self.data_string = None
-            self.data_float = None
-            self.data_int = None
-            self.data_array = None
-        elif type(data) is str or type(data) is unicode:
-            self.data_string = data
-            self.data_time = None
-            self.data_float = None
-            self.data_int = None
-            self.data_array = None
-        elif type(data) is int:
-            self.data_int = data
-            self.data_float = None
-            self.data_time = None
-            self.data_string = None
-            self.data_array = None
-        else:
-            self.data_float = data
-            self.data_int = None
-            self.data_string = None
-            self.data_time = None
-            self.data_array = None
+        data_attribute_mapper.set_data_of_unknown_type(self, data)
 
 
 class TrackData(Base):
@@ -1040,56 +1008,11 @@ class HaloProperty(Base):
 
     @property
     def data(self):
-        if self.data_float is not None:
-            return self.data_float
-        elif self.data_array is not None:
-            if len(self.data_array) > 0:
-                if self.data_array[:2] == "ZX":
-                    return pickle.loads(zlib.decompress(self.data_array[2:]))
-                elif self.data_array[:2] == "PX":
-                    try:
-                        x = pickle.loads(self.data_array[2:])
-                    except KeyError:
-                        x = np.frombuffer(self.data_array)
-                else:
-                    # old style stored array
-                    x = np.frombuffer(self.data_array)
-                try:
-                    return float(x)
-                except:
-                    return x
-        elif self.data_int is not None:
-            return self.data_int
+        return data_attribute_mapper.get_data_of_unknown_type(self)
 
     @data.setter
     def data(self, data):
-        try:
-            data = float(data)
-        except:
-            pass
-
-        if type(data) is np.ndarray or type(data) is pynbody.array.SimArray:
-            dumped_st = pickle.dumps(data)
-            if len(dumped_st) > 1000:
-                self.data_array = "ZX" + zlib.compress(dumped_st)
-            else:
-                self.data_array = "PX" + dumped_st
-            self.data_float = None
-            self.data_int = None
-        elif type(data) is list:
-            self.data_array = str(np.array(data, dtype=float).data)
-            self.data_float = None
-            self.data_int = None
-        elif type(data) is float or type(data) is np.float64:
-            self.data_float = data
-            self.data_array = None
-            self.data_int = None
-        elif type(data) is int:
-            self.data_float = None
-            self.data_array = None
-            self.data_int = data
-        else:
-            raise TypeError("Not sure how to store type " + str(type(data)))
+        data_attribute_mapper.set_data_of_unknown_type(self, data)
 
 
 Halo.properties = relationship(HaloProperty, cascade='all', lazy='dynamic',
