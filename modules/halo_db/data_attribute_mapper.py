@@ -73,7 +73,12 @@ class DataAttributeMapper(object):
 
 class TimeAttributeMapper(DataAttributeMapper):
     _attribute_name = "data_time"
-    _handled_types = [datetime.datetime]
+    _handled_types = [datetime.datetime, time.struct_time]
+
+    def pack(self, data):
+        if isinstance(data, time.struct_time):
+            data = datetime.datetime(*data[:6])
+        return data
 
 class StringAttributeMapper(DataAttributeMapper):
     _attribute_name = "data_string"

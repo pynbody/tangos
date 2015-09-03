@@ -17,7 +17,7 @@ import glob
 
 def add_simulation_timesteps_gadget(basename, reassess=False):
 
-    steps = set(glob.glob(basename+"/snapshot_???"))
+    steps = set(glob.glob(localset.base+"/"+basename+"/snapshot_???"))
     print steps
     sim = internal_session.query(Simulation).filter_by(
         basename=basename).first()
@@ -50,7 +50,7 @@ def add_simulation_timesteps_gadget(basename, reassess=False):
 def add_simulation_timesteps_ramses(basename, reassess=False):
     from terminalcontroller import term
 
-    outputs = glob.glob(basename + "/output_00*")
+    outputs = glob.glob(localset.base+"/"+basename + "/output_00*")
     sim = internal_session.query(Simulation).filter_by(
         basename=basename).first()
     if sim is None:
@@ -194,18 +194,17 @@ def add_simulation_timesteps(options):
     # ["HI","amiga.grp","HeI","HeII","coolontime","iord"]
     check_extensions = []
 
-    if basename[-1] == "/":
-        basename = basename[:-1]
+    steps = magic_amiga.find(None, basename=localset.base+"/"+basename + "/", ignore=[])
+    if len(steps)==0:
+        raise IOError, "Can't find any simulation timesteps"
 
-    steps = magic_amiga.find(None, basename=basename + "/", ignore=[])
-    print steps
     # check whether simulation exists
     sim = internal_session.query(Simulation).filter_by(
         basename=basename).first()
     heading(basename)
 
     try:
-        pfile = magic_amiga.get_param_file(basename + "/")
+        pfile = magic_amiga.get_param_file(localset.base+"/"+basename + "/")
         print "Param file = ", pfile
         pfile_dict = magic_amiga.param_file_to_dict(pfile)
         prop_dict = {}
@@ -215,7 +214,7 @@ def add_simulation_timesteps(options):
         log_path = "/".join(log_path)
         print "Log file = ", log_path
     except RuntimeError:
-        print term.BLUE, "! No param file found !", term.NORMAL
+        print term.RED, "! No param file found !", term.NORMAL
         pfile_dict = {}
         prop_dict = {}
         log_path = "None"
@@ -643,7 +642,7 @@ if __name__ == "__main__":
 
     """
 
-   
+
     if "verbose" in sys.argv:
         del sys.argv[sys.argv.index("verbose")]
     if "db-verbose" in sys.argv:
@@ -721,4 +720,3 @@ list-simulations - list all known simulations
         copy_property(*sys.argv[2:])
 
     """
-

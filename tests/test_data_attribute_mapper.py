@@ -4,6 +4,7 @@ import datetime
 import pickle
 import zlib
 import pynbody
+import time
 from nose.tools import assert_raises
 
 class TestTarget(object):
@@ -93,7 +94,12 @@ def test_simarray():
     assert_data_value(target.data,[1,2,3])
     assert target.data.units=="kpc"
 
-
+def test_struct_time():
+    target = TestTarget()
+    test_time = time.localtime()
+    target.data=test_time
+    target.assert_datatype("time")
+    assert_data_value(target.data,  datetime.datetime(*test_time[:6]))
 
 def test_array_pack_format():
     target = TestTarget()
