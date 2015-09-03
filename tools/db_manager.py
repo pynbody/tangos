@@ -109,7 +109,6 @@ def add_simulation_timesteps_ramses(basename, reassess=False):
         if x is not None:
             print term.GREEN, "Simulation property exists: ", x, term.NORMAL
         else:
-            print dict_k, prop_dict[k]
             x = SimulationProperty(sim, dict_k, prop_dict[k])
             print term.RED, "Create simulation property: ", x, term.NORMAL
             internal_session.add(x)
@@ -203,8 +202,10 @@ def add_simulation_timesteps(options):
         basename=basename).first()
     heading(basename)
 
+    full_basename = localset.base+"/"+basename
+
     try:
-        pfile = magic_amiga.get_param_file(localset.base+"/"+basename + "/")
+        pfile = magic_amiga.get_param_file(full_basename + "/")
         print "Param file = ", pfile
         pfile_dict = magic_amiga.param_file_to_dict(pfile)
         prop_dict = {}
@@ -228,7 +229,7 @@ def add_simulation_timesteps(options):
         else:
             print term.GREEN + "Simulation exists: ", sim, term.NORMAL
 
-        steps_existing = set([ttt.relative_filename for ttt in sim.timesteps])
+        steps_existing = set([ttt.filename for ttt in sim.timesteps])
 
         for f in flags_include:
             if pfile_dict.has_key(f):
@@ -263,7 +264,7 @@ def add_simulation_timesteps(options):
         for s in steps.union(steps_existing):
             problem = False
             ex = internal_session.query(TimeStep).filter_by(
-                simulation=sim, extension=strip_slashes(s[len(basename):])).first()
+                simulation=sim, extension=strip_slashes(s[len(full_basename):])).first()
             if ex != None:
                 print term.GREEN, "Timestep exists: ", ex, term.NORMAL
                 if reassess:
@@ -305,7 +306,7 @@ def add_simulation_timesteps(options):
             else:
                 ex = None
                 try:
-                    ex = TimeStep(sim, strip_slashes(s[len(basename):]))
+                    ex = TimeStep(sim, strip_slashes(s[len(full_basename):]))
                     print term.RED, "Add timestep: ", ex, term.NORMAL
 
                     internal_session.add(ex)
