@@ -84,10 +84,10 @@ source ~/halo_database/environment.sh
 
 SIMS="romulus8.256gst3.bwBH"
 
-mpirun ~/sim_analysis/chain/db_writer.py Mvir Vvir dm_density_profile dm_alpha_500pc Sub --for $SIMS --partial-load
+mpirun db_writer.py Mvir Vvir dm_density_profile dm_alpha_500pc Sub --for $SIMS --partial-load
 mpirun db_writer.py stellar_image_faceon --hmax 100 --backwards --for $SIMS --partial-load
-mpirun ~/sim_analysis/chain/db_timelink.py for $SIMS
-mpirun ~/sim_analysis/chain/add_bh.py for $SIMS
-mpirun ~/sim_analysis/chain/db_writer.py BH_mass --for $SIMS --htype 1 --partial-load
+mpirun db_timelink.py for $SIMS
+mpirun add_bh.py for $SIMS
+mpirun db_writer.py BH_mass --for $SIMS --htype 1 --partial-load
 # htype 1 in the line above means "do this for the black hole pseudo halos, not the regular halos". 
 ```
