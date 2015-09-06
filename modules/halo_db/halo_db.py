@@ -13,7 +13,7 @@ from sqlalchemy.orm.session import Session
 
 from . import data_attribute_mapper
 from .identifiers import get_halo_property_with_magic_strings
-import localset
+from halo_db import config
 import properties
 
 _loaded_timesteps = {}
@@ -391,7 +391,7 @@ class TimeStep(Base):
 
     @property
     def filename(self):
-        return str(localset.base + self.simulation.basename + "/" + self.extension)
+        return str(config.base + self.simulation.basename + "/" + self.extension)
 
     @property
     def relative_filename(self):
@@ -1377,12 +1377,12 @@ def supplement_argparser(argparser):
 def process_options(argparser_options):
     global _verbose
     if argparser_options.db_filename is not None:
-        localset.db = argparser_options.db_filename
+        config.db = argparser_options.db_filename
     _verbose = argparser_options.db_verbose
 
 def init_db():
     global _verbose, current_creator, internal_session, engine
-    engine = create_engine('sqlite:///' + localset.db, echo=_verbose,
+    engine = create_engine('sqlite:///' + config.db, echo=_verbose,
                            isolation_level='READ UNCOMMITTED',  connect_args={'timeout': 150})
     current_creator = Creator()
     Session = sessionmaker(bind=engine)

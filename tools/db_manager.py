@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 
-import localset
+import sys
+import glob
+
 import numpy as np
 import pynbody
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from halo_db import internal_session, Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, \
-    Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo
-import halo_db as db
-import sys
-import terminalcontroller
-from terminalcontroller import term
-import glob
 
+from halo_db import internal_session, Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, \
+    Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo, config
+import halo_db as db
+from terminalcontroller import term
 
 
 def add_simulation_timesteps_gadget(basename, reassess=False):
 
-    steps = set(glob.glob(localset.base+"/"+basename+"/snapshot_???"))
+    steps = set(glob.glob(config.base+"/"+basename+"/snapshot_???"))
     print steps
     sim = internal_session.query(Simulation).filter_by(
         basename=basename).first()
@@ -50,7 +49,7 @@ def add_simulation_timesteps_gadget(basename, reassess=False):
 def add_simulation_timesteps_ramses(basename, reassess=False):
     from terminalcontroller import term
 
-    outputs = glob.glob(localset.base+"/"+basename + "/output_00*")
+    outputs = glob.glob(config.base+"/"+basename + "/output_00*")
     sim = internal_session.query(Simulation).filter_by(
         basename=basename).first()
     if sim is None:
@@ -82,7 +81,7 @@ def add_simulation_timesteps_ramses(basename, reassess=False):
 
     prop_dict = {}
 
-    nmls = glob.glob(localset.base + basename + "/*.nml")
+    nmls = glob.glob(config.base + basename + "/*.nml")
     if len(nmls) > 1:
         print "Too many nmls - ignoring"
     elif len(nmls) == 0:
@@ -174,11 +173,11 @@ def add_simulation_timesteps(options):
     reassess=False
     basename = strip_slashes(options.sim)
 
-    if len(glob.glob(localset.base + basename + "/output_00*")) > 0:
+    if len(glob.glob(config.base + basename + "/output_00*")) > 0:
         add_simulation_timesteps_ramses(basename, reassess)
         return
 
-    if len(glob.glob(localset.base + basename + "/snapshot_???"))>0:
+    if len(glob.glob(config.base + basename + "/snapshot_???"))>0:
         add_simulation_timesteps_gadget(basename, reassess)
         return
 
@@ -193,7 +192,7 @@ def add_simulation_timesteps(options):
     # ["HI","amiga.grp","HeI","HeII","coolontime","iord"]
     check_extensions = []
 
-    steps = magic_amiga.find(None, basename=localset.base+"/"+basename + "/", ignore=[])
+    steps = magic_amiga.find(None, basename=config.base+"/"+basename + "/", ignore=[])
     if len(steps)==0:
         raise IOError, "Can't find any simulation timesteps"
 
@@ -202,7 +201,7 @@ def add_simulation_timesteps(options):
         basename=basename).first()
     heading(basename)
 
-    full_basename = localset.base+"/"+basename
+    full_basename = config.base+"/"+basename
 
     try:
         pfile = magic_amiga.get_param_file(full_basename + "/")

@@ -1,11 +1,8 @@
 import glob
-import os
 import math
-import sys
-import time
 import fnmatch
 
-from localset import *
+from halo_db.config import *
 
 
 def can_load(f):

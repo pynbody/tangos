@@ -1,3 +1,9 @@
+"""Configuration module for halo_db
+
+Rather than change anything directly in this file, you can create a config_local.py with the variable you
+want to override and it will automatically take precedence.
+"""
+
 import os
 import sys
 
@@ -108,3 +114,9 @@ max_traverse_depth = 3
 # Set to true to only run Alyson's script.
 # Rather than change this, you probably want to have 'idl' as an argument on the command line
 only_idl = False
+
+
+try:
+    from .config_local import *
+except:
+    pass
