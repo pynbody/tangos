@@ -48,7 +48,16 @@ db_writer.py SSC dm_density_profile --for <simulation_path> --part 1 1
 ```
 Hopefully that's fairly self-explanatory except maybe the `--part` bit, which is inherited because the DB writer wants to be running in parallel. The `--part` directive just says "you are node 1 of 1". It's necessary to say this unless you are running on MPI.
 
-The database checkpoints as it goes along (every few minutes or so). You can interrupt it when you feel like it and it'll automatically resume from where it got to.
+The database checkpoints as it goes along (every few minutes or so). You can interrupt it when you feel like it and it'll automatically resume from where it got to. Once again, you can get a summary of progress with `db_manager.py recent-runs 1`, which will spit out something like this:
+
+```
+Run ID =  141
+Command line =  /Users/app/Science/halo_database/tools//db_writer.py SSC dm_density_profile --for h516.cosmo25cmb.3072g1MbwK1C52 --part 1 1
+Host =  Rhododendron.local
+Username =  app
+Time =  03/09/15 18:56
+>>>    169 halo properties
+```
 
 Note that `db_writer.py` has a lot of options to customize what it calculates and for which halos. Type `db_writer.py -h` for information.
 
@@ -75,9 +84,10 @@ source ~/halo_database/environment.sh
 
 SIMS="romulus8.256gst3.bwBH"
 
-mpirun ~/sim_analysis/chain/db_writer.py Mvir Vvir dm_density_profile dm_alpha_500pc Sub --for $SIMS --partial-load
+mpirun db_writer.py Mvir Vvir dm_density_profile dm_alpha_500pc Sub --for $SIMS --partial-load
 mpirun db_writer.py stellar_image_faceon --hmax 100 --backwards --for $SIMS --partial-load
-mpirun ~/sim_analysis/chain/db_timelink.py for $SIMS
-mpirun ~/sim_analysis/chain/add_bh.py for $SIMS
-mpirun ~/sim_analysis/chain/db_writer.py BH_mass for $SIMS htype 1 --partial-load
+mpirun db_timelink.py for $SIMS
+mpirun add_bh.py for $SIMS
+mpirun db_writer.py BH_mass --for $SIMS --htype 1 --partial-load
+# htype 1 in the line above means "do this for the black hole pseudo halos, not the regular halos". 
 ```
