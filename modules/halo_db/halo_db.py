@@ -1,21 +1,19 @@
 import weakref
-import zlib
-import pickle
 import time
 import datetime
 
 import numpy as np
-from . import data_attribute_mapper
-import localset
-import pynbody
 import sqlalchemy
 import sqlalchemy.orm.session
 from sqlalchemy import Index, Column, Integer, String, Float, ForeignKey, DateTime, Boolean, LargeBinary, create_engine, orm
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, sessionmaker, clear_mappers, deferred
-from sqlalchemy import and_, or_, not_
+from sqlalchemy import and_
 from sqlalchemy.orm.session import Session
 
+from . import data_attribute_mapper
+from .identifiers import get_halo_property_with_magic_strings
+import localset
 import properties
 
 _loaded_timesteps = {}
@@ -372,56 +370,6 @@ def safe_asarray(x):
 def default_filter(halo):
     return halo.get("Sub") is None and halo.NDM > 15000
 
-def get_halo_property_with_magic_strings(halo, pname):
-    if pname == "z":
-        return halo.timestep.redshift
-    elif pname == "t":
-        return halo.timestep.time_gyr
-    elif pname == "N":
-        return halo.halo_number
-    elif pname == "dbid":
-        return halo.id
-    elif pname == "uid":
-        return str(halo.timestep.simulation.basename).replace('/', '%') + "/" + str(halo.timestep.extension).replace('/', '%') + "/" + str(halo.halo_number)
-    elif pname == "NDM":
-        return halo.NDM
-    elif pname == "self":
-        return halo
-
-    z = pname.split("//")
-    pname = z[0]
-
-    if pname[0] == ":":
-        # live calculate
-        pname = pname[1:]
-        import properties
-        c = properties.providing_classes([pname])[0]()
-        assert not c.requires_simdata()
-        X = c.calculate(None, halo)
-
-        if isinstance(c.name(), str):
-            prop = X
-        else:
-            prop = X[c.name().index(pname)]
-    else:
-        prop = halo[pname]
-
-    if len(z) == 1:
-        return prop
-    else:
-        try:
-            return prop[int(z[1])]
-        except:
-            if z[1] == "+":
-                return np.max(prop)
-            elif z[1] == "-":
-                return np.min(prop)
-            elif z[1].upper() == "RMS":
-                return np.sqrt((prop ** 2).sum())
-            raise
-
-
-
 
 class TimeStep(Base):
     __tablename__ = 'timesteps'
@@ -751,6 +699,31 @@ class Halo(Base):
             ret = default
         return ret
 
+    def get_linked_halos_from_target(self, targ):
+        session = Session.object_session(self)
+        if isinstance(targ, str):
+            targ = get_item(targ)
+        if isinstance(targ, TimeStep):
+            links_from = session.query(Halo).join("halo_to","timestep")\
+                .filter(HaloLink.halo_from_id==self.id, TimeStep.id==targ.id).all()
+            links_to = session.query(Halo).join("halo_from","timestep")\
+                .filter(HaloLink.halo_to_id==self.id, TimeStep.id==targ.id).all()
+
+            links = [x.halo_to for x in links_from]+[x.halo_from for x in links_to]
+            return links
+        elif isinstance(targ, Simulation):
+            links_from = session.query(HaloLink).join("halo_to","timestep","simulation")\
+                .filter(HaloLink.halo_from_id==self.id, Simulation.id==targ.id).all()
+
+            links_to = session.query(HaloLink).join("halo_from","timestep","simulation")\
+                .filter(HaloLink.halo_to_id==self.id, Simulation.id==targ.id).all()
+
+            links = [x.halo_to for x in links_from]+[x.halo_from for x in links_to]
+
+            return links
+        else:
+            raise ValueError, "Don't know how to find a link to this target"
+
     def get(self, key, default=None):
         try:
             return self[key]
@@ -804,51 +777,43 @@ class Halo(Base):
         else:
             return self
 
-    def _property_cascade(self, *keys):
 
-        def key_to_property(k):
-            if k == "z":
-                return self.timestep.redshift
-            elif k == "t":
-                return self.timestep.time_gyr
-            else:
-                return get_halo_property_with_magic_strings(self, k)
-
-        if len(keys) == 1:
-            key = keys[0]
+    def _raw_list_property_cascade(self, *keys, **kwargs):
+        on_missing = kwargs.get('on_missing','skip')
+        output = []
+        for key in keys:
             try:
-                return [key_to_property(key)] + self.next._property_cascade(key)
-            except AttributeError:
-                return [key_to_property(key)]
-            except KeyError:
-                return []
-        else:
-            rt = []
-            try:
-                x = self.next._property_cascade(*keys)
-            except AttributeError:
-                x = [[] for key in keys]
+                output.append([get_halo_property_with_magic_strings(self,key)])
+            except Exception, e:
+                if on_missing=="skip":
+                    output = [[] for k in keys]
+                    break
+                elif on_missing=="none":
+                    output.append([np.NaN])
+                else:
+                    raise
 
-            try:
-                for key, casc in zip(keys, x):
-                    rt.append([key_to_property(key)] + casc)
-                return rt
+        next = self.next
+        if next:
+            remainder = next._raw_list_property_cascade(*keys, on_missing=on_missing)
+            output = [o+r for o,r in zip(output,remainder)]
 
-            except KeyError:
-                return x
+        return output
 
-    def property_cascade(self, *keys):
-        x = self._property_cascade(*keys)
+
+    def property_cascade(self, *keys, **kwargs):
+        on_missing = kwargs.get('on_missing','skip')
+        x = self._raw_list_property_cascade(*keys,on_missing=on_missing)
         if len(keys) == 1:
             try:
-                return np.array(x)
+                return np.asarray(x)
             except:
                 return x
         else:
             y = []
             for z in x:
                 try:
-                    y.append(np.array(z))
+                    y.append(np.asarray(z))
                 except:
                     y.append(z)
 
