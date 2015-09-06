@@ -46,7 +46,7 @@ def load_environment(global_conf, app_conf):
 
     # Setup the SQLAlchemy database engine
     import halo_db as db
-    engine = db.engine #engine_from_config(config, 'sqlalchemy.')
+    engine = db.core.engine #engine_from_config(config, 'sqlalchemy.')
     init_model(engine)
 
     # CONFIGURATION OPTIONS HERE (note: all config options will override

@@ -8,9 +8,10 @@ import pynbody
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from halo_db import internal_session, Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, \
+from halo_db import Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, \
     Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo, config
 import halo_db as db
+from halo_db import core
 from terminalcontroller import term
 
 
@@ -18,20 +19,20 @@ def add_simulation_timesteps_gadget(basename, reassess=False):
 
     steps = set(glob.glob(config.base+"/"+basename+"/snapshot_???"))
     print steps
-    sim = internal_session.query(Simulation).filter_by(
+    sim = core.internal_session.query(Simulation).filter_by(
         basename=basename).first()
     if sim is None:
         sim = Simulation(basename)
-        internal_session.add(sim)
+        core.internal_session.add(sim)
         print term.RED + "Add gadget simulation:", sim, term.NORMAL
     else:
         print term.GREEN + "Simulation exists:", sim, term.NORMAL
-    internal_session.commit()
+    core.internal_session.commit()
     steps_existing = set([ttt.relative_filename for ttt in sim.timesteps])
     add_ts = []
 
     for s in steps.union(steps_existing):
-        ex = internal_session.query(TimeStep).filter_by(
+        ex = core.internal_session.query(TimeStep).filter_by(
             simulation=sim, extension=strip_slashes(s[len(basename):])).first()
         if ex != None:
             print term.GREEN, "Timestep exists: ", ex, term.NORMAL
@@ -40,26 +41,26 @@ def add_simulation_timesteps_gadget(basename, reassess=False):
             print term.RED, "Add timestep:", ex, term.NORMAL
             add_ts.append(ex)
 
-    internal_session.add_all(add_ts)
+    core.internal_session.add_all(add_ts)
     for ts in add_ts:
         add_halos(ts)
-    internal_session.commit()
+    core.internal_session.commit()
 
 
 def add_simulation_timesteps_ramses(basename, reassess=False):
     from terminalcontroller import term
 
     outputs = glob.glob(config.base+"/"+basename + "/output_00*")
-    sim = internal_session.query(Simulation).filter_by(
+    sim = core.internal_session.query(Simulation).filter_by(
         basename=basename).first()
     if sim is None:
         sim = Simulation(basename)
-        internal_session.add(sim)
+        core.internal_session.add(sim)
         print term.RED + "Add ramses simulation:", sim, term.NORMAL
     else:
         print term.GREEN + "Simulation exists:", sim, term.NORMAL
 
-    internal_session.commit()
+    core.internal_session.commit()
 
     steps = set(glob.glob(basename + "/output_00???"))
     steps_existing = set([ttt.relative_filename for ttt in sim.timesteps])
@@ -67,7 +68,7 @@ def add_simulation_timesteps_ramses(basename, reassess=False):
     add_ts = []
 
     for s in steps.union(steps_existing):
-        ex = internal_session.query(TimeStep).filter_by(
+        ex = core.internal_session.query(TimeStep).filter_by(
             simulation=sim, extension=strip_slashes(s[len(basename):])).first()
         if ex != None:
             print term.GREEN, "Timestep exists: ", ex, term.NORMAL
@@ -76,8 +77,8 @@ def add_simulation_timesteps_ramses(basename, reassess=False):
             print term.RED, "Add timestep:", ex, term.NORMAL
             add_ts.append(ex)
 
-    internal_session.add_all(add_ts)
-    internal_session.commit()
+    core.internal_session.add_all(add_ts)
+    core.internal_session.commit()
 
     prop_dict = {}
 
@@ -102,7 +103,7 @@ def add_simulation_timesteps_ramses(basename, reassess=False):
 
     for k in prop_dict:
 
-        dict_k = get_or_create_dictionary_item(internal_session, k)
+        dict_k = get_or_create_dictionary_item(core.internal_session, k)
 
         x = sim.properties.filter_by(name=dict_k).first()
         if x is not None:
@@ -110,9 +111,9 @@ def add_simulation_timesteps_ramses(basename, reassess=False):
         else:
             x = SimulationProperty(sim, dict_k, prop_dict[k])
             print term.RED, "Create simulation property: ", x, term.NORMAL
-            internal_session.add(x)
+            core.internal_session.add(x)
 
-    internal_session.commit()
+    core.internal_session.commit()
 
 
 def add_halos(ts,max_gp=1000):
@@ -133,7 +134,7 @@ def add_halos(ts,max_gp=1000):
                 hi = h[i]
                 if (not ts.halos.filter_by(halo_type=0, halo_number=i).count()>0) and len(hi.dm) > 1000:
                     hobj = Halo(ts, i, len(hi.dm), len(hi.star), len(hi.gas))
-                    internal_session.add(hobj)
+                    core.internal_session.add(hobj)
             except (ValueError, KeyError) as e:
                 pass
 
@@ -156,7 +157,7 @@ def add_halos_from_stat(ts):
         if int(s[NDM_id]) > 1000:
             h = Halo(ts, int(s[gid_id]), int(s[NDM_id]), int(
                 s[NStar_id]), int(s[NGas_id]))
-            internal_session.add(h)
+            core.internal_session.add(h)
     return True
 
 
@@ -197,7 +198,7 @@ def add_simulation_timesteps(options):
         raise IOError, "Can't find any simulation timesteps"
 
     # check whether simulation exists
-    sim = internal_session.query(Simulation).filter_by(
+    sim = core.internal_session.query(Simulation).filter_by(
         basename=basename).first()
     heading(basename)
 
@@ -223,7 +224,7 @@ def add_simulation_timesteps(options):
         if sim == None:
             sim = Simulation(basename)
 
-            internal_session.add(sim)
+            core.internal_session.add(sim)
             print term.RED + "Add simulation: ", sim, term.NORMAL
         else:
             print term.GREEN + "Simulation exists: ", sim, term.NORMAL
@@ -249,7 +250,7 @@ def add_simulation_timesteps(options):
 
         for k in prop_dict:
 
-            dict_k = get_or_create_dictionary_item(internal_session, k)
+            dict_k = get_or_create_dictionary_item(core.internal_session, k)
 
             x = sim.properties.filter_by(name=dict_k).first()
             if x is not None:
@@ -258,11 +259,11 @@ def add_simulation_timesteps(options):
                 print dict_k, prop_dict[k]
                 x = SimulationProperty(sim, dict_k, prop_dict[k])
                 print term.RED, "Create simulation property: ", x, term.NORMAL
-                internal_session.add(x)
+                core.internal_session.add(x)
 
         for s in steps.union(steps_existing):
             problem = False
-            ex = internal_session.query(TimeStep).filter_by(
+            ex = core.internal_session.query(TimeStep).filter_by(
                 simulation=sim, extension=strip_slashes(s[len(full_basename):])).first()
             if ex != None:
                 print term.GREEN, "Timestep exists: ", ex, term.NORMAL
@@ -308,17 +309,17 @@ def add_simulation_timesteps(options):
                     ex = TimeStep(sim, strip_slashes(s[len(full_basename):]))
                     print term.RED, "Add timestep: ", ex, term.NORMAL
 
-                    internal_session.add(ex)
+                    core.internal_session.add(ex)
                     print ex
                     try:
                         add_halos(ex)
-                        internal_session.commit()
+                        core.internal_session.commit()
                     except Exception, e:
                         print term.RED, "ERROR", term.NORMAL, "while trying to add halos"
                         exc_type, exc_value, exc_traceback = sys.exc_info()
                         print e
                         traceback.print_tb(exc_traceback)
-                        internal_session.rollback()
+                        core.internal_session.rollback()
 
 
 
@@ -326,13 +327,13 @@ def add_simulation_timesteps(options):
                     print e
                     print term.BLUE, "Couldn't load timestep requested for adding", s, term.NORMAL
                     if ex != None:
-                        internal_session.delete(ex)
+                        core.internal_session.delete(ex)
 
     except:
-        internal_session.rollback()
+        core.internal_session.rollback()
         raise
 
-    internal_session.commit()
+    core.internal_session.commit()
 
 
 def db_import(remote_db, *sims):
@@ -341,9 +342,9 @@ def db_import(remote_db, *sims):
     engine2 = create_engine('sqlite:///' + remote_db, echo=False)
     ext_session = sessionmaker(bind=engine2)()
 
-    current_creator = internal_session.merge(current_creator)
+    core.current_creator = core.internal_session.merge(core.current_creator)
 
-    _db_import_export(internal_session, ext_session, *sims)
+    _db_import_export(core.internal_session, ext_session, *sims)
 
 
 def db_export(remote_db, *sims):
@@ -351,21 +352,21 @@ def db_export(remote_db, *sims):
     global current_creator, internal_session
     engine2 = create_engine('sqlite:///' + remote_db, echo=False)
 
-    int_session = internal_session
+    int_session = core.internal_session
     ext_session = sessionmaker(bind=engine2)()
     external_to_internal_halo_id = {}
 
     Base.metadata.create_all(engine2)
 
-    _xcurrent_creator = current_creator
+    _xcurrent_creator = core.current_creator
 
-    internal_session = ext_session
-    current_creator = ext_session.merge(Creator())
+    core.internal_session = ext_session
+    core.current_creator = ext_session.merge(Creator())
 
     _db_import_export(ext_session, int_session, *sims)
 
-    current_creator = _xcurrent_creator
-    internal_session = int_session
+    core.current_creator = _xcurrent_creator
+    core.internal_session = int_session
 
 
 def _db_import_export(target_session, from_session, *sims):
@@ -453,7 +454,7 @@ def _translate_halolinks(target_session, halolinks, external_to_internal_halo_id
 
 def update_deprecation(opts):
 
-    session = db.internal_session
+    session = db.core.internal_session
 
     print "unmark all:",session.execute("update haloproperties set deprecated=0").rowcount
     print "      mark:",session.execute("update haloproperties set deprecated=1 where id in (SELECT min(id) FROM haloproperties GROUP BY halo_id, name_id HAVING COUNT(*)>1 ORDER BY halo_id, name_id)").rowcount
@@ -469,14 +470,14 @@ def rem_simulation_timesteps(options):
     basename = options.sims
     from terminalcontroller import term
 
-    sim = internal_session.query(Simulation).filter_by(
+    sim = core.internal_session.query(Simulation).filter_by(
         basename=basename).first()
 
     if sim == None:
         print term.GREEN + "Simulation does not exist", term.NORMAL
     else:
         print term.RED + "Delete simulation", sim, term.NORMAL
-        internal_session.delete(sim)
+        core.internal_session.delete(sim)
 
 
 def add_tracker(halo, size=None):
@@ -541,7 +542,7 @@ def add_tracker(halo, size=None):
         tx.use_iord = False
         ts_trigger = None
 
-    internal_session.add(tx)
+    core.internal_session.add(tx)
     tx.create_halos(ts_trigger)
     if halo is not None:
         targ = halo.timestep.halos.filter_by(
@@ -558,11 +559,11 @@ def add_tracker(halo, size=None):
             halo = halo.next
             targ = targ.next
         print "done"
-    internal_session.commit()
+    core.internal_session.commit()
 
 
 def grep_run(st):
-    run = internal_session.query(Creator).filter(
+    run = core.internal_session.query(Creator).filter(
         Creator.command_line.like("%" + st + "%")).all()
     for r in run:
         print r.id,
@@ -570,14 +571,14 @@ def grep_run(st):
 
 def list_recent_runs(opts):
     n = opts.num
-    run = internal_session.query(Creator).order_by(
+    run = core.internal_session.query(Creator).order_by(
         Creator.id.desc()).limit(n).all()
     for r in run:
         r.print_info()
 
 
 def rem_run(id, confirm=True):
-    run = internal_session.query(Creator).filter_by(id=id).first()
+    run = core.internal_session.query(Creator).filter_by(id=id).first()
     print "You want to delete everything created by the following run:"
     run.print_info()
 
@@ -586,10 +587,10 @@ def rem_run(id, confirm=True):
 
     if (not confirm) or raw_input(":").lower() == "yes":
         for y in run.halolinks:
-            internal_session.delete(y)
-        internal_session.commit()
-        internal_session.delete(run)
-        internal_session.commit()
+            core.internal_session.delete(y)
+        core.internal_session.commit()
+        core.internal_session.delete(run)
+        core.internal_session.commit()
         print "OK"
     else:
         print "aborted"
@@ -600,7 +601,7 @@ def rollback(options):
 
 if __name__ == "__main__":
 
-    db.internal_session = db.BlockingSession(bind = db.engine)
+    db.core.internal_session = db.BlockingSession(bind = db.core.engine)
     import argparse
 
     parser = argparse.ArgumentParser()

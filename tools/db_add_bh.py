@@ -5,12 +5,12 @@ import halo_db.parallel_tasks as parallel_tasks
 import sys
 import numpy as np
 
-session = db.internal_session
+session = db.core.internal_session
 
 if __name__=="__main__":
     query = db.sim_query_from_args(sys.argv, session)
 
-    files = db.internal_session.query(db.TimeStep).filter(
+    files = db.core.internal_session.query(db.TimeStep).filter(
         db.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
         order_by(db.TimeStep.time_gyr).all()
 

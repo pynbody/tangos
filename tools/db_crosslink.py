@@ -74,7 +74,7 @@ if __name__ == "__main__":
     import sys
     import glob
     import halo_db as db
-    session = db.internal_session
+    session = db.core.internal_session
 
     ts1 = db.get_item(sys.argv[1])
     ts2 = db.get_item(sys.argv[2])

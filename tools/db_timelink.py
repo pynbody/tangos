@@ -9,7 +9,7 @@ import argparse
 from halo_db import parallel_tasks
 from terminalcontroller import term
 
-session = db.internal_session
+session = db.core.internal_session
 
 
 
@@ -48,7 +48,7 @@ try:
         pairs = []
 
         for x in base_sim:
-            ts = db.internal_session.query(db.TimeStep).filter_by(
+            ts = db.core.internal_session.query(db.TimeStep).filter_by(
                 simulation_id=x.id, available=True).order_by(db.TimeStep.redshift.desc()).all()
             for a, b in zip(ts[:-1], ts[1:]):
                 pairs.append((a, b))

@@ -59,19 +59,19 @@ def mpi_sync_db(session):
         import halo_db as db
 
         if pypar.rank() == 0:
-            x = session.merge(db.current_creator)
+            x = session.merge(db.core.current_creator)
             session.commit()
             time.sleep(0.5)
             for i in xrange(1, pypar.size()):
                 pypar.send(x.id, tag=3, destination=i)
 
-            db.current_creator = x
+            db.core.current_creator = x
 
         else:
             ID = pypar.receive(source=0, tag=3)
-            db.current_creator = session.query(
+            db.core.current_creator = session.query(
                 db.Creator).filter_by(id=ID).first()
-            print db.current_creator
+            print db.core.current_creator
 
     else:
         pass

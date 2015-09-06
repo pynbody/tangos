@@ -96,7 +96,7 @@ def insert_list(property_list, retry=10):
         for (prop,pl) in zip(property_object_list, property_list):
             prop_merged = session.merge(prop)
             # don't understand why this should be necessary
-            prop_merged.creator = db.current_creator
+            prop_merged.creator = db.core.current_creator
 
         session.commit()
 
@@ -110,9 +110,9 @@ def insert_list(property_list, retry=10):
             raise
 
 
-db.internal_session.commit()
-session = db.BlockingSession(bind=db.engine)
-db.internal_session = session
+db.core.internal_session.commit()
+session = db.BlockingSession(bind=db.core.engine)
+db.core.internal_session = session
 
 
 
@@ -178,7 +178,7 @@ class DbWriter(object):
                 except IndexError:
                     pass
         else:
-            files = db.internal_session.query(db.TimeStep).filter(
+            files = db.core.internal_session.query(db.TimeStep).filter(
                 db.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
                 order_by(db.TimeStep.time_gyr).all()
 
