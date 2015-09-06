@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 
-import localset
+import sys
+import glob
+
 import numpy as np
 import pynbody
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from halo_db import internal_session, Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, \
-    Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo
-import halo_db as db
-import sys
-import terminalcontroller
-from terminalcontroller import term
-import glob
 
+from halo_db import internal_session, Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, \
+    Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo, config
+import halo_db as db
+from terminalcontroller import term
 
 
 def add_simulation_timesteps_gadget(basename, reassess=False):
 
-    steps = set(glob.glob(basename+"/snapshot_???"))
+    steps = set(glob.glob(config.base+"/"+basename+"/snapshot_???"))
     print steps
     sim = internal_session.query(Simulation).filter_by(
         basename=basename).first()
@@ -50,7 +49,7 @@ def add_simulation_timesteps_gadget(basename, reassess=False):
 def add_simulation_timesteps_ramses(basename, reassess=False):
     from terminalcontroller import term
 
-    outputs = glob.glob(basename + "/output_00*")
+    outputs = glob.glob(config.base+"/"+basename + "/output_00*")
     sim = internal_session.query(Simulation).filter_by(
         basename=basename).first()
     if sim is None:
@@ -82,7 +81,7 @@ def add_simulation_timesteps_ramses(basename, reassess=False):
 
     prop_dict = {}
 
-    nmls = glob.glob(localset.base + basename + "/*.nml")
+    nmls = glob.glob(config.base + basename + "/*.nml")
     if len(nmls) > 1:
         print "Too many nmls - ignoring"
     elif len(nmls) == 0:
@@ -109,7 +108,6 @@ def add_simulation_timesteps_ramses(basename, reassess=False):
         if x is not None:
             print term.GREEN, "Simulation property exists: ", x, term.NORMAL
         else:
-            print dict_k, prop_dict[k]
             x = SimulationProperty(sim, dict_k, prop_dict[k])
             print term.RED, "Create simulation property: ", x, term.NORMAL
             internal_session.add(x)
@@ -175,11 +173,11 @@ def add_simulation_timesteps(options):
     reassess=False
     basename = strip_slashes(options.sim)
 
-    if len(glob.glob(localset.base + basename + "/output_00*")) > 0:
+    if len(glob.glob(config.base + basename + "/output_00*")) > 0:
         add_simulation_timesteps_ramses(basename, reassess)
         return
 
-    if len(glob.glob(localset.base + basename + "/snapshot_???"))>0:
+    if len(glob.glob(config.base + basename + "/snapshot_???"))>0:
         add_simulation_timesteps_gadget(basename, reassess)
         return
 
@@ -194,18 +192,19 @@ def add_simulation_timesteps(options):
     # ["HI","amiga.grp","HeI","HeII","coolontime","iord"]
     check_extensions = []
 
-    if basename[-1] == "/":
-        basename = basename[:-1]
+    steps = magic_amiga.find(None, basename=config.base+"/"+basename + "/", ignore=[])
+    if len(steps)==0:
+        raise IOError, "Can't find any simulation timesteps"
 
-    steps = magic_amiga.find(None, basename=basename + "/", ignore=[])
-    print steps
     # check whether simulation exists
     sim = internal_session.query(Simulation).filter_by(
         basename=basename).first()
     heading(basename)
 
+    full_basename = config.base+"/"+basename
+
     try:
-        pfile = magic_amiga.get_param_file(basename + "/")
+        pfile = magic_amiga.get_param_file(full_basename + "/")
         print "Param file = ", pfile
         pfile_dict = magic_amiga.param_file_to_dict(pfile)
         prop_dict = {}
@@ -215,7 +214,7 @@ def add_simulation_timesteps(options):
         log_path = "/".join(log_path)
         print "Log file = ", log_path
     except RuntimeError:
-        print term.BLUE, "! No param file found !", term.NORMAL
+        print term.RED, "! No param file found !", term.NORMAL
         pfile_dict = {}
         prop_dict = {}
         log_path = "None"
@@ -229,7 +228,7 @@ def add_simulation_timesteps(options):
         else:
             print term.GREEN + "Simulation exists: ", sim, term.NORMAL
 
-        steps_existing = set([ttt.relative_filename for ttt in sim.timesteps])
+        steps_existing = set([ttt.filename for ttt in sim.timesteps])
 
         for f in flags_include:
             if pfile_dict.has_key(f):
@@ -264,7 +263,7 @@ def add_simulation_timesteps(options):
         for s in steps.union(steps_existing):
             problem = False
             ex = internal_session.query(TimeStep).filter_by(
-                simulation=sim, extension=strip_slashes(s[len(basename):])).first()
+                simulation=sim, extension=strip_slashes(s[len(full_basename):])).first()
             if ex != None:
                 print term.GREEN, "Timestep exists: ", ex, term.NORMAL
                 if reassess:
@@ -306,7 +305,7 @@ def add_simulation_timesteps(options):
             else:
                 ex = None
                 try:
-                    ex = TimeStep(sim, strip_slashes(s[len(basename):]))
+                    ex = TimeStep(sim, strip_slashes(s[len(full_basename):]))
                     print term.RED, "Add timestep: ", ex, term.NORMAL
 
                     internal_session.add(ex)
@@ -643,7 +642,7 @@ if __name__ == "__main__":
 
     """
 
-   
+
     if "verbose" in sys.argv:
         del sys.argv[sys.argv.index("verbose")]
     if "db-verbose" in sys.argv:
@@ -721,4 +720,3 @@ list-simulations - list all known simulations
         copy_property(*sys.argv[2:])
 
     """
-

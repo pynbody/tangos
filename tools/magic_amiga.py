@@ -10,8 +10,6 @@ which contains the command line instructions to AMIGA etc."""
 
 import re
 
-from localset import ignore_error, ignore_idl_error, file_ignore_pattern, idl_preamble, idl_proc_name, idl_pass_z, idl_command, amiga_command, amiga_params, max_traverse_depth, only_idl, newstyle_amiga
-
 
 
 
@@ -28,10 +26,6 @@ import os
 import math
 import sys
 import time
-import fnmatch
-
-
-
 
 if __name__ == "__main__":
     print "Scanning..."
