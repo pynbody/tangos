@@ -347,10 +347,10 @@ class DbWriter(object):
             if self.options.partial_load:
                 self._loaded_halo_spherical = self._loaded_halo
             else:
-                if 'Rvir' in db_halo and 'SSC' in db_halo:
+                try:
                     self._loaded_halo_spherical = self._loaded_halo.ancestor[pynbody.filt.Sphere(
                                                                              db_halo['Rvir'], db_halo['SSC'])]
-                else:
+                except KeyError:
                     warnings.warn("Using halo particles in place of requested spherical cut-out, "
                                   "since required halo properties are unavailable", RuntimeWarning)
                     return self._loaded_halo

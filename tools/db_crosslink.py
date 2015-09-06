@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import parallel_tasks
+from halo_db import parallel_tasks
 
 import halo_db as db
 import sqlalchemy
@@ -10,16 +10,36 @@ import terminalcontroller
 from terminalcontroller import term
 
 
+def need_crosslink_ts(ts1,ts2):
+    same_d_id = db.get_or_create_dictionary_item(session, "same_as").id
+    sources = [h.id for h in ts1.halos.all()]
+    targets = [h.id for h in ts2.halos.all()]
+    if len(targets)==0 or len(sources)==0:
+        print "--> no halos"
+        return False
+
+    exists = session.query(db.HaloLink).filter(db.and_(db.HaloLink.halo_from_id.in_(sources), db.HaloLink.relation_id == same_d_id, db.HaloLink.halo_to_id.in_(targets))).count() > 0
+    if exists:
+        print "--> existing objects"
+    return not exists
+
 def crosslink_ts(ts1, ts2):
     snap1 = ts1.load()
     snap2 = ts2.load()
 
-    cat = pynbody.bridge.Bridge(snap1, snap2).match_catalog(0, 1000)
-    back_cat = pynbody.bridge.Bridge(snap2, snap1).match_catalog(0,1000)
+    try:
+        cat = snap1.bridge(snap2).match_catalog(0, 1000)
+        back_cat = snap2.bridge(snap1).match_catalog(0,1000)
+    except:
+        print "ERROR"
+        return
 
-    same_d_id = db.get_or_create_dictionary_item(session, "sameas")
+    same_d_id = db.get_or_create_dictionary_item(session, "same_as")
+    contained_d_id = db.get_or_create_dictionary_item(session, "contained_in")
 
     for i, cat_i in enumerate(cat):
+        if cat_i<0:
+            continue
         if back_cat[cat[i]]!=i:
             print "Skip halo",i,"because the backwards-matching doesn't give the same result as the forwards matching"
             continue
@@ -47,7 +67,8 @@ def crosslink_sim(sim1, sim2):
         ts2 = min(ts2s, key=lambda ts2: abs(ts2.time_gyr - ts1.time_gyr))
         terminalcontroller.heading(
             "%.2e Gyr -> %.2e Gyr" % (ts1.time_gyr, ts2.time_gyr))
-        crosslink_ts(ts1, ts2)
+        if need_crosslink_ts(ts1,ts2):
+            crosslink_ts(ts1, ts2)
 
 if __name__ == "__main__":
     import sys
