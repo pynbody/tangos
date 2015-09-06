@@ -1383,7 +1383,7 @@ def process_options(argparser_options):
 def init_db():
     global _verbose, current_creator, internal_session, engine
     engine = create_engine('sqlite:///' + config.db, echo=_verbose,
-                           isolation_level='READ UNCOMMITTED',  connect_args={'timeout': 150})
+                           isolation_level='READ UNCOMMITTED',  connect_args={'timeout': 1})
     current_creator = Creator()
     Session = sessionmaker(bind=engine)
     internal_session=Session()
