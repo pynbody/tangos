@@ -22,7 +22,7 @@ def set_data_of_unknown_type(obj, data):
 class DataAttributeMapper(object):
     def __new__(cls, db_object=None, data=None):
         if db_object is None and data is None:
-            raise ValueError, "Either db_object or data must be specified"
+            subclass=NullAttributeMapper
         if data is None:
             subclass=cls._subclass_from_db_object(db_object)
         else:
@@ -46,6 +46,8 @@ class DataAttributeMapper(object):
 
     @classmethod
     def _handles_db_object(cls, db_object):
+        if cls._attribute_name is None:
+            return True
         return getattr(db_object, cls._attribute_name, None) is not None
 
     @classmethod
@@ -58,15 +60,18 @@ class DataAttributeMapper(object):
     def unpack(self,data):
         return data
 
+    def _clear_other_attributes(self, db_object):
+        for cls in DataAttributeMapper.__subclasses__():
+            if not isinstance(self, cls) and cls._attribute_name is not None:
+                setattr(db_object, cls._attribute_name, None)
+
     def set(self, db_object, data):
         if hasattr(db_object,self._attribute_name):
             setattr(db_object, self._attribute_name, self.pack(data))
         else:
             raise TypeError("%r object does not have a slot for %r"%(type(db_object),self._attribute_name))
 
-        for cls in DataAttributeMapper.__subclasses__():
-            if not isinstance(self, cls):
-                setattr(db_object, cls._attribute_name, None)
+        self._clear_other_attributes(db_object)
 
     def get(self, db_object):
         return self.unpack(getattr(db_object, self._attribute_name))
@@ -129,5 +134,17 @@ class ArrayAttributeMapper(DataAttributeMapper):
             dumped_st = "PX" + dumped_st
         return dumped_st
 
+
+# Following must be defined last to act as a fall-through:
+class NullAttributeMapper(DataAttributeMapper):
+    _handled_types = [type(None)]
+    _attribute_name = None
+
+    def set(self, db_object, data):
+        assert data is None
+        self._clear_other_attributes(db_object)
+
+    def get(self, db_object):
+        return None
 
 __all__ = ['get_data_of_unknown_type', 'set_data_of_unknown_type']

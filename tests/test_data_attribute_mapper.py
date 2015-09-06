@@ -112,3 +112,11 @@ def test_array_pack_format():
     target.data=test_data
     assert target.data_array.startswith("ZX")
     assert target.data_array.endswith(zlib.compress(pickle.dumps(test_data)))
+
+def test_none():
+    target = TestTarget()
+    assert target.data is None
+    target.data=23
+    assert target.data==23
+    target.data=None
+    assert target.data is None
