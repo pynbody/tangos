@@ -13,7 +13,7 @@ from sqlalchemy.orm.session import Session
 
 from . import data_attribute_mapper
 from .identifiers import get_halo_property_with_magic_strings
-from halo_db import config
+from . import config
 import properties
 
 _loaded_timesteps = {}
