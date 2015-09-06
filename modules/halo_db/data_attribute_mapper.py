@@ -31,15 +31,27 @@ class DataAttributeMapper(object):
         return object.__new__(subclass)
 
     @classmethod
+    def __all_subclasses(cls):
+        for X in cls.__subclasses__():
+            yield X
+            for Y in X.__all_subclasses():
+                yield Y
+
+    @classmethod
+    def __all_nonabstract_subclasses(cls):
+        X= [sub for sub in cls.__all_subclasses() if hasattr(sub,"_attribute_name")]
+        return X
+
+    @classmethod
     def _subclass_from_db_object(cls, db_object):
-        for subclass in cls.__subclasses__():
+        for subclass in cls.__all_nonabstract_subclasses():
             if subclass._handles_db_object(db_object):
                 return subclass
         raise TypeError, "No data found in object %r"%db_object
 
     @classmethod
     def _subclass_from_data(cls, data):
-        for subclass in cls.__subclasses__():
+        for subclass in cls.__all_nonabstract_subclasses():
             if subclass._handles_data(data):
                 return subclass
         raise TypeError, "Don't know how to store data of type %r"%type(data)
@@ -61,7 +73,7 @@ class DataAttributeMapper(object):
         return data
 
     def _clear_other_attributes(self, db_object):
-        for cls in DataAttributeMapper.__subclasses__():
+        for cls in DataAttributeMapper.__all_nonabstract_subclasses():
             if not isinstance(self, cls) and cls._attribute_name is not None:
                 setattr(db_object, cls._attribute_name, None)
 
@@ -89,19 +101,32 @@ class StringAttributeMapper(DataAttributeMapper):
     _attribute_name = "data_string"
     _handled_types = [str, unicode]
 
-class FloatAttributeMapper(DataAttributeMapper):
+class ArrayDowncastingAttributeMapper(DataAttributeMapper):
+    @classmethod
+    def _handles_data(cls, data):
+        if any([isinstance(data, t) for t in cls._handled_types]):
+            return True
+        if isinstance(data, list) and len(data)==1 and cls._handles_data(data[0]):
+            return True
+        if isinstance(data, np.ndarray) and len(data.shape)==0 and \
+            any([data.dtype == t for t in cls._handled_types]):
+            return True
+
+    def pack(self, data):
+        if isinstance(data,list):
+            return data[0]
+        else:
+            return self._handled_types[0](data)
+
+class FloatAttributeMapper(ArrayDowncastingAttributeMapper):
     _attribute_name = "data_float"
     _handled_types = [float, np.float32, np.float64, np.float128]
 
-    def pack(self, data):
-        return float(data)
 
-class IntAttributeMapper(DataAttributeMapper):
+class IntAttributeMapper(ArrayDowncastingAttributeMapper):
     _attribute_name = "data_int"
     _handled_types = [int, np.int32, np.int64]
 
-    def pack(self, data):
-        return int(data)
 
 class ArrayAttributeMapper(DataAttributeMapper):
     _attribute_name = "data_array"

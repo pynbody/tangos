@@ -120,3 +120,33 @@ def test_none():
     assert target.data==23
     target.data=None
     assert target.data is None
+
+
+def test_float_downcast_from_ndarray():
+    data = np.array(3.0)
+    target = TestTarget()
+    target.data = data
+    assert target.data==3.0
+    target.assert_datatype("float")
+
+def test_float_downcast_from_list():
+    data = [3.0]
+    target = TestTarget()
+    target.data = data
+    assert target.data==3.0
+    target.assert_datatype("float")
+
+
+def test_int_downcast_from_ndarray():
+    data = np.array(3)
+    target = TestTarget()
+    target.data = data
+    assert target.data==3
+    target.assert_datatype("int")
+
+def test_int_downcast_from_list():
+    data = [3]
+    target = TestTarget()
+    target.data = data
+    assert target.data==3
+    target.assert_datatype("int")
