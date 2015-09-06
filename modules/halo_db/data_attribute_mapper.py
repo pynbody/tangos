@@ -111,6 +111,7 @@ class ArrayDowncastingAttributeMapper(DataAttributeMapper):
         if isinstance(data, np.ndarray) and len(data.shape)==0 and \
             any([data.dtype == t for t in cls._handled_types]):
             return True
+        return False
 
     def pack(self, data):
         if isinstance(data,list):
