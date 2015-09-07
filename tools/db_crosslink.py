@@ -61,9 +61,10 @@ def crosslink_sim(sim1, sim2):
     terminalcontroller.heading("ALL: %s -> %s" % (sim1, sim2))
     ts1s = sim1.timesteps
     ts2s = sim2.timesteps
+    tasks = parallel_tasks.distributed(ts1s)
     parallel_tasks.mpi_sync_db(session)
 
-    for ts1 in parallel_tasks.distributed(ts1s):
+    for ts1 in tasks:
         ts2 = min(ts2s, key=lambda ts2: abs(ts2.time_gyr - ts1.time_gyr))
         terminalcontroller.heading(
             "%.2e Gyr -> %.2e Gyr" % (ts1.time_gyr, ts2.time_gyr))
@@ -74,6 +75,8 @@ if __name__ == "__main__":
     import sys
     import glob
     import halo_db as db
+
+    db.use_blocking_session()
     session = db.core.internal_session
 
     ts1 = db.get_item(sys.argv[1])

@@ -9,6 +9,7 @@ import argparse
 from halo_db import parallel_tasks
 from terminalcontroller import term
 
+db.use_blocking_session()
 session = db.core.internal_session
 
 
@@ -60,7 +61,10 @@ assert len(pairs) != 0
 
 g_x = None
 
-pair_list = parallel_tasks.distributed(pairs,args.part[0], args.part[1])
+if args.part:
+    pair_list = parallel_tasks.distributed(pairs,args.part[0], args.part[1])
+else:
+    pair_list = parallel_tasks.distributed(pairs)
 
 parallel_tasks.mpi_sync_db(session)
 

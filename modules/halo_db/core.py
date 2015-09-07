@@ -1383,17 +1383,21 @@ def process_options(argparser_options):
 def init_db():
     global _verbose, current_creator, internal_session, engine
     engine = create_engine('sqlite:///' + config.db, echo=_verbose,
-                           isolation_level='READ UNCOMMITTED',  connect_args={'timeout': 1})
+                           isolation_level='READ UNCOMMITTED',  connect_args={'timeout': 10})
     current_creator = Creator()
     Session = sessionmaker(bind=engine)
     internal_session=Session()
     Base.metadata.create_all(engine)
 
+def use_blocking_session():
+    global internal_session, engine
+    internal_session.commit()
+    internal_session = BlockingSession(bind=engine)
 
 init_db()
 
 __all__ = ['DictionaryItem','Creator','Simulation','SimulationProperty','TrackData',
-           'update_tracker_halos','safe_asarray','default_filter',
+           'update_tracker_halos','safe_asarray','default_filter','use_blocking_session',
            'TimeStep','Halo','HaloProperty','HaloLink','ArrayPlotOptions',
            'all_simulations','all_creators','cache_dict','get_dict_id',
            'sim_query_from_name_list','sim_query_from_args','get_or_create_dictionary_item',

@@ -86,7 +86,7 @@ def create_property(halo, name, prop, session):
 
 def insert_list(property_list, retry=10):
 
-    global session
+    session = db.core.internal_session
 
     try:
         property_object_list = [create_property(
@@ -108,12 +108,6 @@ def insert_list(property_list, retry=10):
             insert_list(property_list, retry=retry - 1)
         else:
             raise
-
-
-db.core.internal_session.commit()
-session = db.BlockingSession(bind=db.core.engine)
-db.core.internal_session = session
-
 
 
 
@@ -196,7 +190,7 @@ class DbWriter(object):
             ma_files = parallel_tasks.distributed(self.files, proc=self.options.part[0], of=self.options.part[1])
         else:
             ma_files = parallel_tasks.distributed(self.files)
-        parallel_tasks.mpi_sync_db(session)
+        parallel_tasks.mpi_sync_db(db.core.internal_session)
         return ma_files
 
     def parse_command_line(self, argv=None):
@@ -220,7 +214,7 @@ class DbWriter(object):
         if self.options.htype is not None:
             query = db.and_(query, db.Halo.halo_type == self.options.htype)
 
-        halos = session.query(db.Halo).filter(query).all()
+        halos = db.core.internal_session.query(db.Halo).filter(query).all()
 
         halos = halos[self.options.hmin:]
 
@@ -283,7 +277,7 @@ class DbWriter(object):
         for n, r in zip(names, results):
             if isinstance(r, properties.ProxyHalo):
                 # resolve halo
-                r = session.query(db.Halo).filter_by(
+                r = db.core.internal_session.query(db.Halo).filter_by(
                     halo_number=int(r), timestep=db_halo.timestep).first()
             if self.options.force or (n not in existing_properties_data.keys()):
                 existing_properties_data[n] = r
@@ -492,6 +486,7 @@ class DbWriter(object):
 
 
 if __name__ == "__main__":
+    db.use_blocking_session()
 
     writer = DbWriter()
     writer.parse_command_line(sys.argv)
