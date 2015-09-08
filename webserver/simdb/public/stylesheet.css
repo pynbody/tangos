@@ -91,11 +91,19 @@ span.step_unavailable a {
     position: absolute;
     right: 0px;
     top: 200px;
+    padding: 10px;
 }
 
 #imgspace {
   
 	
+}
+
+#navigation {
+    width: 100%;
+    background-color: rgba(223, 223, 223, 0.8);
+    border-bottom: 1px solid gray;
+    padding-left: 10px;
 }
 
 code  {

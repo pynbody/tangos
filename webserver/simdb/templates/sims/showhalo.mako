@@ -7,14 +7,7 @@ ${h.link_to('simdb',url(controller='sims',action='index'))} | ${h.link_to('simul
 </%def>
 
 <script type="text/javascript">
-    /*
-serialize = function(obj) {
-  var str = [];
-  for(var p in obj)
-     str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-  return str.join("&");
-}
-*/
+
 
 // solution to easily serialize/*de*serialize form data from
 // http://stackoverflow.com/questions/1489486/jquery-plugin-to-serialize-a-form-and-also-restore-populate-the-form
@@ -47,8 +40,7 @@ $.fn.values = function(data) {
     }
 };
 
-var storedState;
-
+var storedState = {};
 var objImg;
 var storedBase;
 
@@ -92,18 +84,38 @@ function restoreFormState() {
 }
 
 function refreshImage() {
-    placeImage();
-    $('#imgbox').append("<img src='/spinner.gif' />&nbsp;Updating plot...");
-    $("#myform").values(storedState);
-    loadImage(storedBase+"?"+$("#myform").serialize());
+    // placeImage();
+    if(objImg!=null) {
+        $('#imgbox').append("<img src='/spinner.gif' />&nbsp;Updating plot...");
+
+        loadImage(storedBase + "?" + $("#myform").serialize());
+    }
 }
 
+function updateElementsFromResponse(data) {
+    // $('#myform').replaceWith($(data).find('#myform'));
+    // $("#myform").values(storedState);
+    $("#navigation").replaceWith($(data).find("#navigation"));
+    $("#myform").replaceWith($(data).find("#myform"));
+    restoreFormState();
+    refreshImage();
+    updatePositionsAfterScroll();
+}
 function timeNav(rel) {
 
-    $('body').load(rel, function() {
+    /* $('body').load(rel, function() {
         restoreFormState();
         refreshImage();
-    });
+    }); */
+
+    $.ajax({
+           type: "GET",
+           url: rel,
+           beforeSend: function(){ },
+           dataType: "html",
+           success: updateElementsFromResponse
+       });
+
     return false;
 }
 
@@ -130,37 +142,62 @@ function finishArrayInterpretationQuery()
 
 }
 
-    function clearArrayInterpretation(axis)
-    {
-        $("#myform input[name="+interpret_axis+"_array_element]").val("");
-    }
-
-function moveScroller() {
-    var move = function() {
-        var st = $(window).scrollTop();
-        var s = $("#imgbox");
-        if(st > 200) {
-            s.css({
-                position: "fixed",
-                top: "0px",
-		right: "0px"
-            });
-        } else {
-            s.css({
-		  position: "absolute",
-                  top: "200px",
-		  right: "0px",
-		  z_index: "-1"
-            });
-        }
-    };
-    $(window).scroll(move);
-    move();
+function clearArrayInterpretation(axis) {
+    $("#myform input[name=" + interpret_axis + "_array_element]").val("");
 }
 
 
+var scrollTop = {};
+
+function initScrollOffsetData() {
+    console.info("initScrollOffsetData");
+    $(".keeponscreen").each(function() {
+        if($(this).css('position')!='absolute') {
+            // generate clone that keeps the space for this element
+            var clone = $(this).clone();
+            clone.removeClass("keeponscreen");
+            clone.attr('id', clone.attr('id') + "-placeholder");
+            clone.css('visibility', 'hidden');
+            $(this).after(clone);
+        }
+        scrollTop[this.id]=this.getBoundingClientRect().top;
+
+    });
+}
+
+function updatePositionsAfterScroll() {
+    var windowTop = $(window).scrollTop();
+
+    $(".keeponscreen").each(function() {
+        if(windowTop<scrollTop[this.id]) {
+            $(this).css({position:"absolute",
+                         top: scrollTop[this.id]});
+        } else {
+            $(this).css({position:"fixed",
+                         top: "0px"});
+        }
+
+        clone = $("#"+this.id+"-placeholder");
+        if (clone!=null)
+            clone.css({height: this.getBoundingClientRect().height+10});
+    });
+
+}
+
+function setupScrollAdjustment() {
+    initScrollOffsetData();
+    $(window).scroll(updatePositionsAfterScroll);
+    updatePositionsAfterScroll();
+
+}
+
+var hasInitialized = false;
+
     $(function() {
-        moveScroller();
+        if(hasInitialized) return;
+        hasInitialized=true;
+
+        setupScrollAdjustment();
 
         $('.collapsibletable').click(function(){
             $(this).nextUntil('tr.header').slideToggle(1000);
@@ -180,13 +217,13 @@ function moveScroller() {
 </script>
 
 
+
+
+<div class="keeponscreen" id="navigation">
 % for f in c.flash :
 <p style="color:#f00;">${f}</p>
 %endfor
 
-<h2>Time sequence</h2>
-
-<p>NEW: ${h.link_to('merger tree', url(controller='sims', action='mergertree', id=c.this_id))}</p>
 <p>At z=${"%.2f"%c.timestep_z}, t=${c.timestep_t}; show this halo in another step (if available):
 % for rel in ["earliest","-10","earlier","later","+10","latest"] :
 %if rel=="-10" :
@@ -197,9 +234,10 @@ function moveScroller() {
     <% linkurl = url(controller='sims', action='showhalo',id=c.this_id,rel=rel)%>
 %endif
 ${h.link_to(rel,linkurl,onclick="timeNav('"+linkurl+"'); return false;")}
-
-
 %endfor
+    | ${h.link_to('merger tree', url(controller='sims', action='mergertree', id=c.this_id))}
+</p>
+</div>
 
 ${c.bh}
 
@@ -215,9 +253,14 @@ You can also type + to extract the maximum, or - to extact the minimum.</p>
 </form>
 </div>
 
+
+<div id="imgbox" class="keeponscreen"></div>
+
+
 <h2>Properties</h2>
 
 <p>
+
 <form id="myform" action="${url(controller='plot', action='xy_img', id='txt')}" target="_blank">
 <input type="hidden" name="timestep_id" value="${c.timestep_id}">
 <input type="hidden" name="halo_id" value="${c.this_id}" >
@@ -231,9 +274,7 @@ You can also type + to extract the maximum, or - to extact the minimum.</p>
 ${c.props}
 </table>
 <div>
-<div id="imgspace">
 
-<p id="imgbox">Plots will appear here</p>
 
 <h2>x vs y plot</h2>
 <div>First select what your x and y variables are above, then choose:<br/>
