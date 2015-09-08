@@ -22,12 +22,12 @@
 
   <body>
     <div class="content">
-      <div id="breadcrumbs-top">${c.breadcrumbs}</div>
-      <h1 class="main">${self.header()}</h1>
+      <div id="breadcrumbs-top" class="dynamic-update">${c.breadcrumbs}</div>
+      <h1 class="main dynamic-update" id="header">${self.header()}</h1>
       ${next.body()}
-      <div id="breadcrumbs-bottom">${c.breadcrumbs}</div>
+      <div id="breadcrumbs-bottom" class="dynamic-update">${c.breadcrumbs}</div>
     </div>
-    <div><small>simdb is written by <a href="mailto:andrew.pontzen@astro.ox.ac.uk">Andrew Pontzen</a></small></div>
+    <div><small>halodb by <a href="mailto:a.pontzen@ucl.ac.uk">Andrew Pontzen</a></small></div>
   </body>
 </html>
 

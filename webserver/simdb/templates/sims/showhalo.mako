@@ -77,10 +77,9 @@ function placeImage() {
 function restoreFormState() {
     var newHalo = document.forms['myform']['halo_id'].value;
     var newTimestep = document.forms['myform']['timestep_id'].value;
-
     storedState['halo_id']=newHalo;
     storedState['timestep_id']=newTimestep;
-
+    $("#myform").values(storedState);
 }
 
 function refreshImage() {
@@ -92,21 +91,28 @@ function refreshImage() {
     }
 }
 
+var playdata;
+
 function updateElementsFromResponse(data) {
     // $('#myform').replaceWith($(data).find('#myform'));
-    // $("#myform").values(storedState);
-    $("#navigation").replaceWith($(data).find("#navigation"));
-    $("#myform").replaceWith($(data).find("#myform"));
+
+    playdata = data;
+    $(".dynamic-update").each(function() {
+        var elementId = '#'+this.id;
+        var newData = $(data).find(elementId);
+        console.info(elementId,newData);
+        if(newData.size()>0) $(this).replaceWith(newData);
+        else console.info("(no action: was null)");
+    })
+
     restoreFormState();
+
     refreshImage();
     updatePositionsAfterScroll();
 }
 function timeNav(rel) {
 
-    /* $('body').load(rel, function() {
-        restoreFormState();
-        refreshImage();
-    }); */
+    $("#navigation").html("<h2>Loading...</h2>");
 
     $.ajax({
            type: "GET",
@@ -167,19 +173,21 @@ function initScrollOffsetData() {
 
 function updatePositionsAfterScroll() {
     var windowTop = $(window).scrollTop();
-
+    var current=0;
     $(".keeponscreen").each(function() {
-        if(windowTop<scrollTop[this.id]) {
+        if(windowTop<scrollTop[this.id]-current) {
             $(this).css({position:"absolute",
                          top: scrollTop[this.id]});
         } else {
             $(this).css({position:"fixed",
-                         top: "0px"});
+                         top: current});
         }
 
         clone = $("#"+this.id+"-placeholder");
         if (clone!=null)
             clone.css({height: this.getBoundingClientRect().height+10});
+
+        current = this.getBoundingClientRect().bottom
     });
 
 }
@@ -189,6 +197,10 @@ function setupScrollAdjustment() {
     $(window).scroll(updatePositionsAfterScroll);
     updatePositionsAfterScroll();
 
+}
+
+function findInOtherSimulation() {
+    timeNav(document.forms['select-othersimulation']['target_sim_id'].value);
 }
 
 var hasInitialized = false;
@@ -219,7 +231,7 @@ var hasInitialized = false;
 
 
 
-<div class="keeponscreen" id="navigation">
+<div class="keeponscreen dynamic-update" id="navigation">
 % for f in c.flash :
 <p style="color:#f00;">${f}</p>
 %endfor
@@ -233,13 +245,25 @@ var hasInitialized = false;
 %else :
     <% linkurl = url(controller='sims', action='showhalo',id=c.this_id,rel=rel)%>
 %endif
-${h.link_to(rel,linkurl,onclick="timeNav('"+linkurl+"'); return false;")}
+${h.link_to(rel,linkurl,onclick="return timeNav('"+linkurl+"');")}
 %endfor
     | ${h.link_to('merger tree', url(controller='sims', action='mergertree', id=c.this_id))}
-</p>
+    </p>
+    <form id="select-othersimulation">
+        <label for="target_sim_id">Find the same halo in another simulation:</label>
+<select name="target_sim_id" onchange="findInOtherSimulation();">
+    %for sim_name, sim_id, ticked in c.sims:
+    <option value="${url(controller='sims', action='showhalo', id=c.this_id, rel='insim',num=sim_id)}" ${'selected' if ticked else ''}>${sim_name}</option>
+    %endfor
+
+</select>
+</form>
+
 </div>
 
+<div id="blackholes" class="dynamic-update">
 ${c.bh}
+</div>
 
 <p>
 
@@ -261,7 +285,7 @@ You can also type + to extract the maximum, or - to extact the minimum.</p>
 
 <p>
 
-<form id="myform" action="${url(controller='plot', action='xy_img', id='txt')}" target="_blank">
+<form id="myform" class="dynamic-update" action="${url(controller='plot', action='xy_img', id='txt')}" target="_blank">
 <input type="hidden" name="timestep_id" value="${c.timestep_id}">
 <input type="hidden" name="halo_id" value="${c.this_id}" >
     <input type="hidden" name="x_array_element" value="">
@@ -294,9 +318,7 @@ ${c.props}
 </form>
 
 
-<!--<p>Plot <a href="#" onclick="gograph('${url(controller='plot', action='xy_img', id=c.timestep_id)}'); return false;">x vs y</a> for this timestep</p>
-<p>Plot <a href="${url(controller='plot', action='xy_img', id="h"+str(c.this_id))}" target="blank">x vs y</a> for this halo at all timesteps</p>
--->
+<div id="endlinks" class="dynamic-update">
 % if len(c.dep_props)>0 :
 <h2> Deprecated Properties</h2>
 <table>
@@ -305,3 +327,4 @@ ${c.dep_props}
 % endif
 <h2>Links</h2>
 ${c.links}
+</div>

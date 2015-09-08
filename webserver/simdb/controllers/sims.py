@@ -277,30 +277,57 @@ class SimsController(BaseController):
             if rel=="earlier" :
                 nhalo = halo
                 for i in xrange(num) :
-                    nhalo = nhalo.previous
+                    if nhalo.previous is not None:
+                        nhalo = nhalo.previous
+                if nhalo is not None and nhalo.id==halo.id:
+                    c.flash = ["You're already looking at the earliest snapshot for this halo"]
             elif rel=="earliest" :
                 nhalo = halo.earliest
+                if nhalo is not None and nhalo.id==halo.id:
+                    c.flash = ["You're already looking at the earliest snapshot for this halo"]
             elif rel=="later" :
                 nhalo = halo
                 for i in xrange(num) :
-                    nhalo = nhalo.next
+                    if nhalo.next is not None:
+                        nhalo = nhalo.next
+                if nhalo is not None and nhalo.id==halo.id:
+                    c.flash = ["You're already looking at the latest snapshot for this halo"]
             elif rel=="latest" :
                 nhalo = halo.latest
-            else :
-                return "?"
+                if nhalo is not None and nhalo.id==halo.id:
+                    c.flash = ["You're already looking at the latest snapshot for this halo"]
+            elif rel=="insim":
+                nhalo = halo.get_linked_halos_from_target(Session.query(meta.Simulation).filter_by(id=num).first())
+                print nhalo
+                if len(nhalo)==0:
+                    nhalo = None
+                else:
+                    nhalo = nhalo[0]
 
-            if nhalo is not None :
+                if nhalo is not None and nhalo.id==halo.id:
+                    c.flash = ["You're already looking at this simulation"]
+            else :
+                c.flash = ["I have never heard of the relationship %r, so can't find the halo for you"%rel]
+
+            if nhalo is None and c.flash==[]:
+                c.flash = ["Can't find the halo you are looking for"]
+
+            if len(c.flash)==0:
                 redirect(url(controller='sims',action='showhalo',id=nhalo.id))
                 return
-                # return self.showhalo(nhalo.id)
-            else :
-                c.flash = ["Requested halo (or time sequence information linking it) not available"]
+
+
         c.name = "Halo "+str(halo.halo_number)+" of "+halo.timestep.extension
 
         c.props = self._render_properties(halo.properties, parents=True)
         c.dep_props = self._render_properties(halo.deprecated_properties, links=False, parents=True)
         c.bh = self._render_bh(halo.links, halo.reverse_links)
         c.links = self._render_links(halo.links, halo.reverse_links)
+
+        all_sims = db.all_simulations(Session)
+
+        c.sims = [(sim.basename, sim.id, sim.id==halo.timestep.simulation_id) for sim in all_sims]
+
 
 
         c.ndm = halo.NDM
