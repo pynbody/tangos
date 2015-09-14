@@ -20,24 +20,24 @@ class CoreSize(HaloProperties):
 
 
 class VcircSpherical(HaloProperties):
-    @staticmethod
-    def plot_x0():
+    @classmethod
+    def plot_x0(cls):
         return 0.05
 
-    @staticmethod
-    def plot_ylog():
+    @classmethod
+    def plot_ylog(cls):
         return False
 
-    @staticmethod
-    def plot_xdelta():
+    @classmethod
+    def plot_xdelta(cls):
         return 0.1
 
-    @staticmethod
-    def plot_xlabel():
+    @classmethod
+    def plot_xlabel(cls):
         return "r/kpc"
 
-    @staticmethod
-    def plot_ylabel():
+    @classmethod
+    def plot_ylabel(cls):
         return r"$\sqrt{GM/r}$"
 
     def name(self):
@@ -124,16 +124,16 @@ class HaloDensityProfile(HaloProperties):
     def spherical_region(self):
         return True
 
-    @staticmethod
-    def plot_x0():
+    @classmethod
+    def plot_x0(cls):
         return 0.05
 
-    @staticmethod
-    def plot_xdelta():
+    @classmethod
+    def plot_xdelta(cls):
         return 0.1
 
-    @staticmethod
-    def plot_xlabel():
+    @classmethod
+    def plot_xlabel(cls):
         return "r/kpc"
 
     @staticmethod

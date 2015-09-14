@@ -110,40 +110,40 @@ class HaloProperties(object):
         self.start_timer()
         return self.calculate(gp_sp, db)
 
-    @staticmethod
-    def plot_x_extent():
+    @classmethod
+    def plot_x_extent(cls):
         return None
 
-    @staticmethod
-    def plot_x0():
+    @classmethod
+    def plot_x0(cls):
         return 0
 
-    @staticmethod
-    def plot_xdelta():
+    @classmethod
+    def plot_xdelta(cls):
         return 1.0
 
-    @staticmethod
-    def plot_xlabel():
+    @classmethod
+    def plot_xlabel(cls):
         return None
 
-    @staticmethod
-    def plot_ylabel():
+    @classmethod
+    def plot_ylabel(cls):
         return None
 
-    @staticmethod
-    def plot_yrange():
+    @classmethod
+    def plot_yrange(cls):
         return None
 
-    @staticmethod
-    def plot_xlog():
+    @classmethod
+    def plot_xlog(cls):
         return True
 
-    @staticmethod
-    def plot_ylog():
+    @classmethod
+    def plot_ylog(cls):
         return True
 
-    @staticmethod
-    def plot_clabel():
+    @classmethod
+    def plot_clabel(cls):
         return None
 
 

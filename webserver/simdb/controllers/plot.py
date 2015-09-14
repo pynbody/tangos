@@ -199,10 +199,12 @@ class PlotController(BaseController):
 
     def image_img(self, id) :
         halo_id = request.params.get('halo_id')
-        print ">>>>>>>>>",halo_id
+
         prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
         name_id = prop.name_id
-        prop = Session.query(meta.HaloProperty).filter_by(name_id=name_id,halo_id=halo_id).first()
+
+        if halo_id!=prop.halo_id:
+            prop = Session.query(meta.HaloProperty).filter_by(name_id=name_id,halo_id=halo_id).first()
 
         if len(prop.data.shape)==1 :
             return self.array_img(id,prop=prop)
@@ -327,14 +329,15 @@ class PlotController(BaseController):
             ts = "# Array "+prop.name.text+" for "+h.timestep.relative_filename+" halo "+str(h.halo_number)+"\n"
             #assert(type(prop.data) is np.ndarray)
             name = prop.name
+            data = prop.reassembled_data
 
-            xdat = np.arange(name.plot_x0(),  name.plot_x0()+name.plot_xdelta()*(len(prop.data)-0.5), name.plot_xdelta())
+            xdat = np.arange(name.plot_x0(),  name.plot_x0()+name.plot_xdelta()*(len(data)-0.5), name.plot_xdelta())
 
             if text :
-                for x,y in zip(xdat,prop.data) :
+                for x,y in zip(xdat,data) :
                     ts+="%.5g %.5g\n"%(x,y)
             else :
-                p.plot(xdat,prop.data)
+                p.plot(xdat,data)
                 if name.plot_xlog() and name.plot_ylog() :
                     p.loglog()
                 elif name.plot_xlog() :

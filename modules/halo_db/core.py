@@ -780,6 +780,8 @@ class Halo(Base):
 
     def _raw_list_property_cascade(self, *keys, **kwargs):
         on_missing = kwargs.get('on_missing','skip')
+        find_next  = kwargs.get('find_next','next')
+        print "**** find_next=",find_next
         output = []
         for key in keys:
             try:
@@ -793,17 +795,18 @@ class Halo(Base):
                 else:
                     raise
 
-        next = self.next
+        next = getattr(self, find_next)
+        print find_next, next
         if next:
-            remainder = next._raw_list_property_cascade(*keys, on_missing=on_missing)
+            remainder = next._raw_list_property_cascade(*keys, **kwargs)
             output = [o+r for o,r in zip(output,remainder)]
 
         return output
 
 
     def property_cascade(self, *keys, **kwargs):
-        on_missing = kwargs.get('on_missing','skip')
-        x = self._raw_list_property_cascade(*keys,on_missing=on_missing)
+
+        x = self._raw_list_property_cascade(*keys,**kwargs)
         if len(keys) == 1:
             try:
                 return np.asarray(x)
@@ -819,27 +822,10 @@ class Halo(Base):
 
             return y
 
-    def reverse_property_cascade(self, *keys):
+    def reverse_property_cascade(self, *keys, **kwargs):
+        kwargs['find_next']='previous'
+        return self.property_cascade(*keys,**kwargs)
 
-        if len(keys) == 1:
-            key = keys[0]
-            try:
-                return [self[key]] + self.previous.reverse_property_cascade(key)
-            except AttributeError:
-                return [self[key]]
-            except KeyError:
-                return []
-        else:
-            rt = []
-            try:
-                x = self.previous.reverse_property_cascade(*keys)
-                for key, casc in zip(keys, x):
-                    rt.append([self[key]] + casc)
-                return rt
-            except AttributeError:
-                return [[self[key]] for key in keys]
-            except KeyError:
-                return [[] for key in keys]
 
     @property
     def number_cascade(self):
@@ -974,6 +960,16 @@ class HaloProperty(Base):
     @property
     def data(self):
         return data_attribute_mapper.get_data_of_unknown_type(self)
+
+    @property
+    def reassembled_data(self):
+        cls = self.name.providing_class()
+        print "REASSSEMBLE REASSEMBLE REASSEMBLE"
+        print cls, hasattr(cls,'reassemble')
+        if hasattr(cls, 'reassemble'):
+            return cls.reassemble(self)
+        else:
+            return self.data
 
     @data.setter
     def data(self, data):

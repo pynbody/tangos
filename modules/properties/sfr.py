@@ -67,22 +67,45 @@ class TimeChunkedProperty(HaloProperties):
     def delta_t(self):
         return self.tmax_Gyr/self.nbins
 
+    @classmethod
     def bin_index(self, time):
         return int(self.nbins*time/self.tmax_Gyr)
 
+    @classmethod
     def store_slice(self, time):
         return slice(self.bin_index(time-self.minimum_store_Gyr, time))
 
-    def reassemble(self, halo):
-        t, stack = halo.earliest.property_cascade("t",self.name())
+    @classmethod
+    def reassemble(cls, halo):
+        halo = halo.halo
+        t, stack = halo.reverse_property_cascade("t",cls().name())
 
-        final = np.zeros(self.bin_index(t[-1]))
+        t = t[::-1]
+        stack = stack[::-1]
+
+        print t
+        print [s.shape for s in stack]
+
+        final = np.zeros(cls.bin_index(t[-1]))
         for t_i, hist_i in zip(t,stack):
-            end = self.bin_index(t_i)
+            end = cls.bin_index(t_i)
             start = end - len(hist_i)
             final[start:end] = hist_i
 
         return final
+
+    @classmethod
+    def plot_xdelta(cls):
+        return cls.tmax_Gyr/cls.nbins
+
+    @classmethod
+    def plot_xlog(cls):
+        return False
+
+    @classmethod
+    def plot_ylog(cls):
+        return False
+
 
 
 
@@ -97,3 +120,4 @@ class StarFormHistogram(TimeChunkedProperty):
         M = M[self.store_slice(t_now)]
 
         return M
+

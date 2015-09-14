@@ -10,20 +10,20 @@ class Images(HaloProperties):
     def name(self):
         return "gas_image_sideon", "stellar_image_sideon", "gas_image_faceon", "stellar_image_faceon", "gas_image_original", "stellar_image_original"
 
-    @staticmethod
-    def plot_extent():
+    @classmethod
+    def plot_extent(cls):
         return 20.0
 
-    @staticmethod
-    def plot_xlabel():
+    @classmethod
+    def plot_xlabel(cls):
         return "x/kpc"
 
-    @staticmethod
-    def plot_ylabel():
+    @classmethod
+    def plot_ylabel(cls):
         return "y/kpc"
 
-    @staticmethod
-    def plot_clabel():
+    @classmethod
+    def plot_clabel(cls):
         return r"M$_{\odot}$ kpc$^{-2}$"
 
     def render_gas(self, f, size):
