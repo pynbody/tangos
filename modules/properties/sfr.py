@@ -71,7 +71,7 @@ class TimeChunkedProperty(HaloProperties):
         return int(self.nbins*time/self.tmax_Gyr)
 
     def store_slice(self, time):
-        return slice(self.bin_index(time-self.minimum_store_Gyr, time))
+        return slice(self.bin_index(time-self.minimum_store_Gyr), self.bin_index(time))
 
     def reassemble(self, halo):
         t, stack = halo.earliest.property_cascade("t",self.name())
