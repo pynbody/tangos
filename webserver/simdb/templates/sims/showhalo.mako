@@ -114,6 +114,8 @@ function timeNav(rel) {
 
     $("#navigation").html("<h2>Loading...</h2>");
 
+    $("#navigation").html("<h2>Loading...</h2>");
+
     $.ajax({
            type: "GET",
            url: rel,
@@ -255,7 +257,6 @@ ${h.link_to(rel,linkurl,onclick="return timeNav('"+linkurl+"');")}
     %for sim_name, sim_id, ticked in c.sims:
     <option value="${url(controller='sims', action='showhalo', id=c.this_id, rel='insim',num=sim_id)}" ${'selected' if ticked else ''}>${sim_name}</option>
     %endfor
-
 </select>
 </form>
 

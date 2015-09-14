@@ -140,60 +140,6 @@ class Softening(HaloProperties):
         return halo.mean_by_mass("eps"), halo["eps"].min(), halo["eps"].max()
 
 
-class StarForm(HaloProperties):
-
-    """Properties relating to star formation"""
-
-    # include
-
-    def name(self):
-        return "SFR", "SFR_1kpc", "SFR_250Myr", "SFR_25Myr"
-
-    def calcForHalo(self, halo, period=2.5e7, hard_period=False):
-        sts = halo.star
-        if len(sts) == 0:
-            return 0.
-
-        try:
-            tunit = sts['tform'].units
-        except KeyError:
-            tunit = sts['age'].units
-
-        conv = tunit.ratio("yr")
-        # getUnits().convertTo(siman.Unit("Msol"))
-        convmass = sts["mass"].units.ratio("Msol")
-        now = halo.properties['time'].in_units(tunit)
-
-        if len(sts) > 2:
-            mass = sts["mass"]
-
-            def get_period():
-                try:
-                    tf = sts["tform"]
-                    index_period = np.nonzero(tf > now - period / conv)[0]
-                except KeyError:
-                    tf = sts['age']
-                    index_period = np.nonzero(tf < period / conv)[0]
-                return index_period
-
-            index_period = get_period()
-
-            while len(index_period) < 2 and period < 1.e9 and not hard_period:
-                period *= 2.
-                index_period = get_period()
-
-            mass_formed = mass[index_period].sum() * convmass
-            return mass_formed / period
-        else:
-            return 0.
-
-    def calculate(self, halo, existing_properties):
-        return self.calcForHalo(halo), self.calcForHalo(halo[pynbody.filt.Sphere("1 kpc", existing_properties["SSC"])]), \
-            self.calcForHalo(halo, 2.5e8),\
-            self.calcForHalo(halo, hard_period=True)
-
-    def spherical_region(self):
-        return True
 
 
 class Metallicity(HaloProperties):

@@ -158,7 +158,7 @@ class ProxyHalo(object):
         return int(self.value)
 
 
-from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH
+from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr
 
 
 ##############################################################################
