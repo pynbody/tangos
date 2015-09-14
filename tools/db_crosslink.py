@@ -54,7 +54,7 @@ def crosslink_ts(ts1, ts2):
     session.commit()
 
 
-def crosslink_sim(sim1, sim2):
+def crosslink_sim(sim1, sim2, force=False):
     global session
 
     assert sim1 != sim2, "Can't link simulation to itself"
@@ -68,7 +68,7 @@ def crosslink_sim(sim1, sim2):
         ts2 = min(ts2s, key=lambda ts2: abs(ts2.time_gyr - ts1.time_gyr))
         terminalcontroller.heading(
             "%.2e Gyr -> %.2e Gyr" % (ts1.time_gyr, ts2.time_gyr))
-        if need_crosslink_ts(ts1,ts2):
+        if need_crosslink_ts(ts1,ts2) or force:
             crosslink_ts(ts1, ts2)
 
 if __name__ == "__main__":

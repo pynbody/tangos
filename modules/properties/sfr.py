@@ -73,7 +73,7 @@ class TimeChunkedProperty(HaloProperties):
 
     @classmethod
     def store_slice(self, time):
-        return slice(self.bin_index(time-self.minimum_store_Gyr, time))
+        return slice(self.bin_index(time-self.minimum_store_Gyr), self.bin_index(time))
 
     @classmethod
     def reassemble(cls, halo):
@@ -120,4 +120,3 @@ class StarFormHistogram(TimeChunkedProperty):
         M = M[self.store_slice(t_now)]
 
         return M
-

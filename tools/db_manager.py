@@ -2,7 +2,7 @@
 
 import sys
 import glob
-
+import traceback
 import numpy as np
 import pynbody
 from sqlalchemy import create_engine
