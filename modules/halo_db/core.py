@@ -288,7 +288,7 @@ class TrackData(Base):
     def particles(self, to):
         self.particle_array = str(np.asarray(to, dtype=int).data)
 
-    def extract(self, f):
+    def get_indices_for_snapshot(self, f):
         pt = self.particles
         if self.use_iord is True:
 
@@ -311,9 +311,16 @@ class TrackData(Base):
                                star_part.get_index_list(f),
                                gas_part.get_index_list(f)))
             ilist = np.sort(ilist)
-            return f[ilist]
+            return ilist
         else:
-            return f[pt]
+            return pt
+
+    def extract(self, f):
+        return f[self.get_indices_for_snapshot(f)]
+
+    def extract_as_copy(self, f):
+        indices = self.get_indices_for_snapshot(f)
+        return pynbody.load(f.filename, take=indices)
 
     def select(self, f, use_iord=True):
         self.use_iord = use_iord
@@ -1231,6 +1238,20 @@ def get_simulation(id, session=None):
         return session.query(Simulation).filter_by(id=id).first()
 
 
+class TrackerHaloCatalogue(object):
+    def __init__(self, f, trackers):
+        self._sim = weakref.ref(f)
+        self._trackers = trackers
+
+    def __getitem__(self, item):
+        tracker = self._trackers.filter_by(halo_number=item)
+        return tracker.extract(self._sim())
+
+    def load_copy(self, item):
+        tracker = self._trackers.filter_by(halo_number=item)
+        return tracker.extract_as_copy(self._sim())
+
+
 def construct_halo_cat(timestep_db, type_id):
     f = timestep_db.load()
     if type_id == 0 or type_id is None:
@@ -1241,12 +1262,7 @@ def construct_halo_cat(timestep_db, type_id):
             _loaded_halocats[f] = weakref.ref(h)
         return h  # pynbody.halo.AmigaGrpCatalogue(f)
     elif type_id == 1:
-        # tracker halo... load up tracking data
-        trackers = timestep_db.simulation.trackers.all()
-        d = {}
-        for x in trackers:
-            d[x.halo_number] = x.extract(f)
-        return d
+        return TrackerHaloCatalogue(f,timestep_db.simulation.trackers)
 
 
 def get_timestep(id):
