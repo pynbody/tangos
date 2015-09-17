@@ -319,6 +319,7 @@ class TrackData(Base):
         return f[self.get_indices_for_snapshot(f)]
 
     def extract_as_copy(self, f):
+        import pynbody
         indices = self.get_indices_for_snapshot(f)
         return pynbody.load(f.filename, take=indices)
 
@@ -1244,11 +1245,11 @@ class TrackerHaloCatalogue(object):
         self._trackers = trackers
 
     def __getitem__(self, item):
-        tracker = self._trackers.filter_by(halo_number=item)
+        tracker = self._trackers.filter_by(halo_number=item).first()
         return tracker.extract(self._sim())
 
     def load_copy(self, item):
-        tracker = self._trackers.filter_by(halo_number=item)
+        tracker = self._trackers.filter_by(halo_number=item).first()
         return tracker.extract_as_copy(self._sim())
 
 
