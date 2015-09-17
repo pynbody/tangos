@@ -310,11 +310,10 @@ class DbWriter(object):
         if self._should_load_timestep_particles():
             self._loaded_timestep = db_timestep.load()
             self._loaded_timestep.physical_units()
+            self._run_preloop(self._loaded_timestep, db_timestep.filename,
+                              self._property_calculator_instances, self._existing_properties_all_halos)
 
         self._current_timestep_id = db_timestep.id
-
-        self._run_preloop(self._loaded_timestep, db_timestep.filename,
-                          self._property_calculator_instances, self._existing_properties_all_halos)
 
 
     def _set_current_halo(self, db_halo):
