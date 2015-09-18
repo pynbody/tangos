@@ -46,7 +46,10 @@ if __name__=="__main__":
                 print " ->",tx
             else:
                 tx = sim.trackers.filter_by(halo_number=bhi).first()
-            tx.create_halos()
+
+            if f.halos.filter_by(halo_number=tx.halo_number, htype = 1).count()==0:
+                session.merge(db.Halo(f, tx.halo_number, 0, 0, 0, 1))
+
 
         session.commit()
 
