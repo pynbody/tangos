@@ -222,6 +222,7 @@ def providing_classes(property_name_list, silent_fail=False):
     return classes
 
 def instantiate_classes(property_name_list, silent_fail=False):
+    instances = []
     classes = []
     for property_name in property_name_list:
         cl = providing_class(property_name, silent_fail)
@@ -234,9 +235,10 @@ def instantiate_classes(property_name_list, silent_fail=False):
             else:
                 vals = []
 
-            classes.append(cl(*vals))
+            instances.append(cl(*vals))
+            classes.append(cl)
 
-    return classes
+    return instances
 
 
 def get_dependent_classes(for_class):
