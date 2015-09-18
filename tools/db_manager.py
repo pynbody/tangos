@@ -586,8 +586,11 @@ def rem_run(id, confirm=True):
         print """>>> type "yes" to continue"""
 
     if (not confirm) or raw_input(":").lower() == "yes":
-        for y in run.halolinks:
-            core.internal_session.delete(y)
+        #for y in run.halolinks:
+        #    core.internal_session.delete(y)
+        run.halolinks.delete()
+        run.properties.delete()
+        run.halos.delete()
         core.internal_session.commit()
         core.internal_session.delete(run)
         core.internal_session.commit()
@@ -639,6 +642,8 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
+    db.process_options(args)
+    db.init_db()
     args.func(args)
 
     """
