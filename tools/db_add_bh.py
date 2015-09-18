@@ -4,8 +4,11 @@ import halo_db as db
 import halo_db.parallel_tasks as parallel_tasks
 import sys
 import numpy as np
+import gc
+
 
 session = db.core.internal_session
+
 
 if __name__=="__main__":
     query = db.sim_query_from_args(sys.argv, session)
@@ -77,3 +80,7 @@ if __name__=="__main__":
             halo_ids[haloi]+=1
 
         session.commit()
+
+
+        del f_pb
+        gc.collect()
