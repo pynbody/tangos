@@ -741,12 +741,13 @@ class Halo(Base):
     def __setitem__(self, key, obj):
         key = get_or_create_dictionary_item(internal_session, key)
         if isinstance(obj, Halo):
-            X = self.reverse_links.filter_by(halo_from_id=obj.id,relation_id=key.id).first()
+            X = self.links.filter_by(halo_from_id=self.id,relation_id=key.id).first()
             if X is None:
                 X = internal_session.merge(HaloLink(self, obj, key))
+                X.creator = current_creator
             else:
                 X.halo_to = obj
-            X.creator = current_creator
+            
 
         else:
             X = self.properties.filter_by(name_id=key.id).first()
