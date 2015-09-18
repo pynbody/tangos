@@ -47,7 +47,7 @@ if __name__=="__main__":
             else:
                 tx = sim.trackers.filter_by(halo_number=bhi).first()
 
-            if f.halos.filter_by(halo_number=tx.halo_number, htype = 1).count()==0:
+            if f.halos.filter_by(halo_number=tx.halo_number, halo_type = 1).count()==0:
                 session.merge(db.Halo(f, tx.halo_number, 0, 0, 0, 1))
 
 
