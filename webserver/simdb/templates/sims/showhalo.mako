@@ -109,6 +109,7 @@ function updateElementsFromResponse(data) {
 
     refreshImage();
     updatePositionsAfterScroll();
+    bindArrayInterpretationActions();
 }
 function timeNav(rel) {
 
@@ -205,6 +206,16 @@ function findInOtherSimulation() {
     timeNav(document.forms['select-othersimulation']['target_sim_id'].value);
 }
 
+function bindArrayInterpretationActions() {
+    $(".radio_scalar").click(function(){
+            clearArrayInterpretation($(this)[0].name);
+    });
+
+    $(".radio_array").click(function(){
+        console.info($(this));
+        popupArrayInterpretationQuery($(this)[0].value, $(this)[0].name);
+    });
+}
 var hasInitialized = false;
 
     $(function() {
@@ -213,18 +224,13 @@ var hasInitialized = false;
 
         setupScrollAdjustment();
 
+        bindArrayInterpretationActions();
+
         $('.collapsibletable').click(function(){
             $(this).nextUntil('tr.header').slideToggle(1000);
         });
 
-        $(".radio_scalar").click(function(){
-            clearArrayInterpretation($(this)[0].name);
-        });
 
-        $(".radio_array").click(function(){
-            console.info($(this));
-            popupArrayInterpretationQuery($(this)[0].value, $(this)[0].name);
-        });
 
      });
 
@@ -238,7 +244,7 @@ var hasInitialized = false;
 <p style="color:#f00;">${f}</p>
 %endfor
 
-<p>At z=${"%.2f"%c.timestep_z}, t=${c.timestep_t}; show this halo in another step (if available):
+<p>At z=${"%.2f"%c.timestep_z}, t=${c.timestep_t}, dbid=${c.this_id}; show this halo in another step (if available):
 % for rel in ["earliest","-10","earlier","later","+10","latest"] :
 %if rel=="-10" :
     <% linkurl = url(controller='sims', action='showhalo',id=c.this_id,rel="earlier",num=10)%>
