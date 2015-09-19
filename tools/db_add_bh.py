@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 import halo_db as db
 import halo_db.parallel_tasks as parallel_tasks
