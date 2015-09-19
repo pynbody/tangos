@@ -307,8 +307,11 @@ class DbWriter(object):
             with check_deleted(self._loaded_timestep):
                 self._loaded_timestep=None
 
+        # Keep a pynbody snapshot alive for this timestep, even if should_load_timestep_particles is False,
+        # because it might be needed for the iord's if we are in partial-load mode.
+        self._loaded_timestep = db_timestep.load()
+
         if self._should_load_timestep_particles():
-            self._loaded_timestep = db_timestep.load()
             self._loaded_timestep.physical_units()
             self._run_preloop(self._loaded_timestep, db_timestep.filename,
                               self._property_calculator_instances, self._existing_properties_all_halos)
