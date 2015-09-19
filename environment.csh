@@ -34,5 +34,5 @@ if(! $?HALODB_ROOT) then
 endif
 
 if (-e environment_local.csh) then
-    source environment_local.sh
+    source environment_local.csh
 endif
