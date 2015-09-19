@@ -762,6 +762,8 @@ class Halo(Base):
         names = []
         for p in self.properties:
             names.append(p.name.text)
+        for p in self.links:
+            names.append(p.relation.text)
 
         return names
 
