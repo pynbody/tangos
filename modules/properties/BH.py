@@ -7,7 +7,7 @@ import re
 class BH(HaloProperties):
 
     def name(self):
-        return "BH_accrate", "BH_central_offset", "BH_central_distance", "BH_mass"
+        return "BH_mdot", "BH_mdot_ave", "BH_mdot_std", "BH_central_offset", "BH_central_distance", "BH_mass"
 
     def requires_property(self):
         return []
@@ -19,12 +19,12 @@ class BH(HaloProperties):
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
         stepnum = float(stepnum)
 
-        ars = [[] for i in range(16)]
+        ars = [[] for i in range(14)]
         print name, stepnum
-        for line in open(name+".orbit"):
+        for line in open(name+".shortened.orbit"):
             line_split = line.split()
             stepnum_line = float(line_split[2])
-            if stepnum_line>stepnum-1 and stepnum_line<stepnum+1:
+            if stepnum_line == stepnum:
                 ars[0].append(int(line_split[0]))
                 for i in range(1,len(line_split)):
                     ars[i].append(float(line_split[i]))
@@ -33,24 +33,25 @@ class BH(HaloProperties):
         wrapped_ars = [pynbody.array.SimArray(x) for x in ars]
         for w in wrapped_ars:
             w.sim = f
-        bhid, time, step, mass, x, y, z, vx, vy, vz, pot, mdot, deltaM, E, dtEff, scalefac = wrapped_ars
+        #bhid, time, step, mass, x, y, z, vx, vy, vz, pot, mdot, deltaM, E, dtEff, scalefac = wrapped_ars
+	bhid, time, step, mass, x, y, z, vx, vy, vz, mdot, mdotmean, mdotsig, scalefac = wrapped_ars
         bhid = np.array(bhid,dtype=int)
         print len(time),"entries"
 
         munits = f.infer_original_units("Msol")
         posunits = f.infer_original_units("kpc")
         velunits = f.infer_original_units("km s^-1")
-        potunits = velunits**2
+        #potunits = velunits**2
         tunits = posunits/velunits
-        Eunits = munits*potunits
+        #Eunits = munits*potunits
         # decorate with units
 
         mass.units = munits
         x.units = y.units = z.units = posunits
         vx.units = vy.units = vz.units = velunits
-        pot.units = potunits
+        #pot.units = potunits
         mdot.units = munits/tunits
-        E.units = Eunits
+        #E.units = Eunits
 
 
         x.convert_units('kpc')
@@ -61,11 +62,11 @@ class BH(HaloProperties):
         vz.convert_units('km s^-1')
         mdot.convert_units('Msol yr^-1')
         mass.convert_units("Msol")
-        E.convert_units('erg')
+        #E.convert_units('erg')
 
 
         self.vars = {'bhid':bhid, 'step':step, 'x':x, 'y':y, 'z':z,
-                    'vx':vx, 'vy':vy, 'vz': vz, 'mdot': mdot, 'E': E , 'mass': mass}
+                    'vx':vx, 'vy':vy, 'vz': vz, 'mdot': mdot, 'mdotmean':mdotmean,'mdotsig':mdotsig, 'mass': mass}
 
         self.stepnum = stepnum
 
@@ -97,14 +98,14 @@ class BH(HaloProperties):
 
         main_halo_ssc = main_halo['SSC']
 
-        entry = np.where(fl)[0][np.argmin(abs(self.stepnum-self.vars['step'][fl]))]
+        entry = np.where(fl)[0]#[np.argmin(abs(self.stepnum-self.vars['step'][fl]))]
 
         print "target entry is",entry
         final = {}
-        for t in 'x','y','z','vx','vy','vz','mdot','E', 'mass':
-            final[t] = self.vars[t][entry]
+        for t in 'x','y','z','vx','vy','vz','mdot', 'mass', 'mdotmean','mdotsig':
+            final[t] = float(self.vars[t][entry])
             print t,final[t]
 
         offset = np.array((final['x'],final['y'],final['z']))-main_halo_ssc
 
-        return final['mdot'], offset, np.linalg.norm(offset), final['mass']
+        return final['mdot'], final['mdotmean'], final['mdotsig'], offset, np.linalg.norm(offset), final['mass']
