@@ -6,14 +6,21 @@ import re
 import scipy, scipy.interpolate
 import weakref
 
-class BHShortenedLog(self):
+class BHShortenedLog(object):
     _cache = {}
-    def __new__(self, f, filename):
-        obj = _cache.get(filename, lambda: None)()
+    
+        
+    @classmethod
+    def get_existing_or_new(cls, f,filename):
+        name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
+        obj = cls._cache.get(name, None)
         if obj is not None:
             return obj
-        obj = object.__new__(BHShortenedLog, f, filename)
-        _cache[filename] = weakref.ref(obj)
+        
+        obj = cls(f,filename)
+        cls._cache[name] = obj
+        return obj
+
 
     def __init__(self, f, filename):
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
@@ -74,7 +81,7 @@ class BHShortenedLog(self):
     def get_for_named_snapshot(self, filename):
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
         stepnum = int(stepnum)
-        return get_at_stepnum(self, stepnum)
+        return self.get_at_stepnum(stepnum)
 
 
 class BH(HaloProperties):
@@ -89,9 +96,9 @@ class BH(HaloProperties):
         return True
 
     def preloop(self, f, filename, pa):
-        self.log = BHShortenedLog(f,filename)
+        self.log = BHShortenedLog.get_existing_or_new(f,filename)
         self.filename = filename
-
+        print self.log
 
     def calculate(self, halo, properties):
         import halo_db as db
@@ -138,8 +145,12 @@ class BHAccHistogram(TimeChunkedProperty):
     def name(self):
         return "BH_mdot_histogram"
 
+    def requires_property(self):
+        return []
+
+
     def preloop(self, f, filename, pa):
-        self.log = BHShortenedLog(f,filename)
+        self.log = BHShortenedLog.get_existing_or_new(f,filename)
 
     def no_proxies(self):
         return True
@@ -157,9 +168,17 @@ class BHAccHistogram(TimeChunkedProperty):
             raise RuntimeError("Can't find BH in .orbit file")
 
         t_orbit = self.log.vars['time']
-        Mdot_orbit = self.log.vars['Mdot']
+        Mdot_orbit = self.log.vars['mdot']
+        order = np.argsort(t_orbit)
 
         t_max = properties.timestep.time_gyr
-        t_grid = np.arange(0, self.tmax_Gyr, self.nbins)
-        Mdot_grid = scipy.interpolate.interp1d(t_orbit, Mdot_orbit)(t_grid)
+        t_grid = np.linspace(0, self.tmax_Gyr, self.nbins)
+        
+
+        Mdot_grid = scipy.interpolate.interp1d(t_orbit[order], Mdot_orbit[order], bounds_error=False)(t_grid)
+        
+
+        #print t_max
+        #print Mdot_grid
+        
         return Mdot_grid[self.store_slice(t_max)]
