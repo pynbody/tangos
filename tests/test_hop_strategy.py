@@ -90,6 +90,17 @@ def test_get_halo():
     assert isinstance(db.get_item("sim/ts1/1"), db.Halo)
     assert db.get_item("sim/ts1/1").NDM==1000
 
+def test_ts_next():
+    assert db.get_item("sim/ts1").next == db.get_item("sim/ts2")
+    assert db.get_item("sim/ts1").next.next == db.get_item("sim/ts3")
+    assert db.get_item("sim/ts1").next.next.next is None
+
+def test_ts_previous():
+    assert db.get_item("sim/ts3").previous == db.get_item("sim/ts2")
+    assert db.get_item("sim/ts3").previous.previous == db.get_item("sim/ts1")
+    assert db.get_item("sim/ts3").previous.previous.previous is None
+
+
 def test_next():
     assert db.get_item("sim/ts1/1").next == db.get_item("sim/ts2/2")
     assert db.get_item("sim/ts1/1").next.next == db.get_item("sim/ts3/1")

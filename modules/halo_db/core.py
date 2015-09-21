@@ -1398,9 +1398,11 @@ def process_options(argparser_options):
         config.db = argparser_options.db_filename
     _verbose = argparser_options.db_verbose
 
-def init_db():
+def init_db(db_uri=None):
     global _verbose, current_creator, internal_session, engine
-    engine = create_engine('sqlite:///' + config.db, echo=_verbose,
+    if db_uri is None:
+        db_uri = 'sqlite:///' + config.db
+    engine = create_engine(db_uri, echo=_verbose,
                            isolation_level='READ UNCOMMITTED',  connect_args={'timeout': 10})
     current_creator = Creator()
     Session = sessionmaker(bind=engine)
