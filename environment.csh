@@ -18,21 +18,22 @@ endif
 
 
 if(! $?PYTHONPATH) then
-  setenv PYTHONPATH $DIR/modules/
+  setenv PYTHONPATH "$DIR/modules/"
 else
-  setenv PYTHONPATH $DIR/modules/:${PYTHONPATH}
+  setenv PYTHONPATH "$DIR/modules/:$PYTHONPATH"
 endif
 
 setenv PATH $DIR/tools/:$PATH
 
 if(! $?HALODB_ROOT) then
-  setenv HALODB_ROOT /nobackupp8/mtremmel/Romulus
+  setenv HALODB_ROOT $DIR/../db_galaxies/
 endif
 
 if(! $?HALODB_DEFAULT_DB) then
-    setenv HALODB_DEFAULT_DB /nobackupp8/mtremmel/DataBaseFiles/data_romulus8.db
+    setenv HALODB_DEFAULT_DB $DIR/data.db
 endif
 
 if (-e environment_local.csh) then
     source environment_local.csh
 endif
+
