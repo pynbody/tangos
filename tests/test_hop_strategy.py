@@ -1,0 +1,101 @@
+__author__ = 'app'
+
+import halo_db as db
+import os
+import sqlalchemy, sqlalchemy.orm
+
+def setup():
+    db.init_db("sqlite://")
+
+    session = db.core.internal_session
+
+    sim = db.Simulation("sim")
+
+    session.add(sim)
+
+    ts1 = db.TimeStep(sim,"ts1",False)
+    ts2 = db.TimeStep(sim,"ts2",False)
+    ts3 = db.TimeStep(sim,"ts3",False)
+
+    session.add_all([ts1,ts2,ts3])
+
+
+    ts1.time_gyr = 1
+    ts2.time_gyr = 2
+    ts3.time_gyr = 3
+
+    ts1.redshift = 10
+    ts2.redshift = 5
+    ts3.redshift = 0
+
+    ts1_h1 = db.Halo(ts1,1,1000,0,0,0)
+    ts1_h2 = db.Halo(ts1,2,900,0,0,0)
+    ts1_h3 = db.Halo(ts1,3,800,0,0,0)
+    ts1_h4 = db.Halo(ts1,4,300,0,0,0)
+
+    session.add_all([ts1_h1,ts1_h2,ts1_h3,ts1_h4])
+
+    ts2_h1 = db.Halo(ts2,1,950,0,0,0)
+    ts2_h2 = db.Halo(ts2,2,940,0,0,0)
+    ts2_h3 = db.Halo(ts2,3,800,0,0,0)
+    ts2_h4 = db.Halo(ts2,4,300,0,0,0)
+
+    session.add_all([ts2_h1,ts2_h2,ts2_h3,ts2_h4])
+
+    ts3_h1 = db.Halo(ts3,1,2000,0,0,0)
+    ts3_h2 = db.Halo(ts3,2,800,0,0,0)
+    ts3_h3 = db.Halo(ts3,3,300,0,0,0)
+
+    session.add_all([ts3_h1,ts3_h2,ts3_h3])
+
+    rel = db.get_or_create_dictionary_item(session, "ptcls_in_common")
+
+    # ts1_h1 becomes ts2_h2 but loses 10% of its mass to ts2_h1
+    # ts1_h2 becomes ts2_h1
+    # ts1_h3 becomes ts2_h3
+    # ts1_h4 becomes ts2_h4 but loses 1% of its mass to ts2_h3
+    session.add_all([db.HaloLink(ts1_h1,ts2_h2,rel,0.90),
+                     db.HaloLink(ts1_h1,ts2_h1,rel,0.10),
+                     db.HaloLink(ts1_h2,ts2_h1,rel,1.00),
+                     db.HaloLink(ts1_h3,ts2_h3,rel,1.00),
+                     db.HaloLink(ts1_h4,ts2_h4,rel,0.99),
+                     db.HaloLink(ts1_h4,ts2_h3,rel,0.01)])
+
+    session.add_all([db.HaloLink(ts2_h2,ts1_h1,rel,1.00),
+                     db.HaloLink(ts2_h1,ts1_h1,rel,0.10),
+                     db.HaloLink(ts2_h1,ts1_h2,rel,0.90),
+                     db.HaloLink(ts2_h3,ts1_h3,rel,0.99),
+                     db.HaloLink(ts2_h4,ts1_h4,rel,1.00),
+                     db.HaloLink(ts2_h3,ts1_h4,rel,0.01)])
+
+    # ts2_h1 and ts2_h2 merge to ts3_h1
+    # ts2_h3 becomes ts2_h2
+    # ts2_h4 becomes ts2_h3 but loses 5% of its mass to ts2_h2
+
+    session.add_all([db.HaloLink(ts2_h1,ts3_h1,rel,1.00),
+                     db.HaloLink(ts2_h2,ts3_h1,rel,1.00),
+                     db.HaloLink(ts2_h3,ts3_h2,rel,1.00),
+                     db.HaloLink(ts2_h4,ts3_h3,rel,0.9),
+                     db.HaloLink(ts2_h4,ts3_h2,rel,0.1)])
+
+    session.add_all([db.HaloLink(ts3_h1,ts2_h1,rel,950./(950+940)),
+                     db.HaloLink(ts3_h1,ts2_h2,rel,940./(950+940)),
+                     db.HaloLink(ts3_h2,ts2_h3,rel,0.95),
+                     db.HaloLink(ts3_h3,ts2_h4,rel,1.00),
+                     db.HaloLink(ts3_h2,ts2_h4,rel,0.05)])
+
+
+
+def test_get_halo():
+    assert isinstance(db.get_item("sim/ts1/1"), db.Halo)
+    assert db.get_item("sim/ts1/1").NDM==1000
+
+def test_next():
+    assert db.get_item("sim/ts1/1").next == db.get_item("sim/ts2/2")
+    assert db.get_item("sim/ts1/1").next.next == db.get_item("sim/ts3/1")
+    assert db.get_item("sim/ts1/1").next.next.next is None
+
+def test_previous():
+    assert db.get_item("sim/ts3/3").previous == db.get_item("sim/ts2/3")
+    assert db.get_item("sim/ts3/3").previous.previous == db.get_item("sim/ts1/3")
+    assert db.get_item("sim/ts3/3").previous.previous.previous is None
