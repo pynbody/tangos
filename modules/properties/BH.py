@@ -1,40 +1,42 @@
-from . import HaloProperties
+from . import HaloProperties, TimeChunkedProperty
 import numpy as np
 import math
 import pynbody
 import re
+import scipy, scipy.interpolate
+import weakref
 
-class BH(HaloProperties):
-
-    def name(self):
-        return "BH_mdot", "BH_mdot_ave", "BH_mdot_std", "BH_central_offset", "BH_central_distance", "BH_mass"
-
-    def requires_property(self):
-        return []
-
-    def no_proxies(self):
-        return True
-
-    def preloop(self, f, filename, pa):
+class BHShortenedLog(object):
+    _cache = {}
+    
+        
+    @classmethod
+    def get_existing_or_new(cls, f,filename):
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
-        stepnum = float(stepnum)
+        obj = cls._cache.get(name, None)
+        if obj is not None:
+            return obj
+        
+        obj = cls(f,filename)
+        cls._cache[name] = obj
+        return obj
 
+
+    def __init__(self, f, filename):
+        name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
         ars = [[] for i in range(14)]
-        print name, stepnum
         for line in open(name+".shortened.orbit"):
             line_split = line.split()
-            stepnum_line = float(line_split[2])
-            if stepnum_line == stepnum:
-                ars[0].append(int(line_split[0]))
-                for i in range(1,len(line_split)):
-                    ars[i].append(float(line_split[i]))
+            ars[0].append(int(line_split[0]))
+            for i in range(1,len(line_split)):
+                ars[i].append(float(line_split[i]))
 
 
         wrapped_ars = [pynbody.array.SimArray(x) for x in ars]
         for w in wrapped_ars:
             w.sim = f
         #bhid, time, step, mass, x, y, z, vx, vy, vz, pot, mdot, deltaM, E, dtEff, scalefac = wrapped_ars
-	bhid, time, step, mass, x, y, z, vx, vy, vz, mdot, mdotmean, mdotsig, scalefac = wrapped_ars
+        bhid, time, step, mass, x, y, z, vx, vy, vz, mdot, mdotmean, mdotsig, scalefac = wrapped_ars
         bhid = np.array(bhid,dtype=int)
         print len(time),"entries"
 
@@ -50,6 +52,7 @@ class BH(HaloProperties):
         x.units = y.units = z.units = posunits
         vx.units = vy.units = vz.units = velunits
         #pot.units = potunits
+	time.units = tunits
         mdot.units = munits/tunits
 	mdotsig.units = munits/tunits
 	mdotmean.units = munits/tunits
@@ -66,14 +69,40 @@ class BH(HaloProperties):
 	mdotmean.convert_units('Msol yr^-1')
 	mdotsig.convert_units('Msol yr^-1')
         mass.convert_units("Msol")
+        time.convert_units("Gyr")
         #E.convert_units('erg')
 
 
         self.vars = {'bhid':bhid, 'step':step, 'x':x, 'y':y, 'z':z,
-                    'vx':vx, 'vy':vy, 'vz': vz, 'mdot': mdot, 'mdotmean':mdotmean,'mdotsig':mdotsig, 'mass': mass}
+                    'vx':vx, 'vy':vy, 'vz': vz, 'mdot': mdot, 'mdotmean':mdotmean,'mdotsig':mdotsig, 'mass': mass,
+                     'time': time}
 
-        self.stepnum = stepnum
 
+    def get_at_stepnum(self, stepnum):
+        mask = self.vars['step']==stepnum
+        return dict((k,v[mask]) for k,v in self.vars.iteritems())
+
+    def get_for_named_snapshot(self, filename):
+        name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
+        stepnum = int(stepnum)
+        return self.get_at_stepnum(stepnum)
+
+
+class BH(HaloProperties):
+
+    def name(self):
+        return "BH_mdot", "BH_mdot_ave", "BH_mdot_std", "BH_central_offset", "BH_central_distance", "BH_mass"
+
+    def requires_property(self):
+        return []
+
+    def no_proxies(self):
+        return True
+
+    def preloop(self, f, filename, pa):
+        self.log = BHShortenedLog.get_existing_or_new(f,filename)
+        self.filename = filename
+        print self.log
 
     def calculate(self, halo, properties):
         import halo_db as db
@@ -86,8 +115,10 @@ class BH(HaloProperties):
         if halo['tform'][0]>0:
             raise RuntimeError("Not a BH!")
 
-        fl = self.vars['bhid']==halo['iord']
-        if(fl.sum()==0):
+        vars = self.log.get_for_named_snapshot(self.filename)
+
+        mask = vars['bhid']==halo['iord']
+        if(mask.sum()==0):
             raise RuntimeError("Can't find BH in .orbit file")
 
         # work out who's the main halo
@@ -102,14 +133,56 @@ class BH(HaloProperties):
 
         main_halo_ssc = main_halo['SSC']
 
-        entry = np.where(fl)[0]#[np.argmin(abs(self.stepnum-self.vars['step'][fl]))]
+        entry = np.where(mask)[0]
 
         print "target entry is",entry
         final = {}
         for t in 'x','y','z','vx','vy','vz','mdot', 'mass', 'mdotmean','mdotsig':
-            final[t] = float(self.vars[t][entry])
-            print t,final[t]
+            final[t] = float(vars[t][entry])
 
         offset = np.array((final['x'],final['y'],final['z']))-main_halo_ssc
 
         return final['mdot'], final['mdotmean'], final['mdotsig'], offset, np.linalg.norm(offset), final['mass']
+
+
+class BHAccHistogram(TimeChunkedProperty):
+    def name(self):
+        return "BH_mdot_histogram"
+
+    def requires_property(self):
+        return []
+
+
+    def preloop(self, f, filename, pa):
+        self.log = BHShortenedLog.get_existing_or_new(f,filename)
+
+    def no_proxies(self):
+        return True
+
+    def calculate(self, halo, properties):
+
+        if len(halo)!=1:
+            raise RuntimeError("Not a BH!")
+
+        if halo['tform'][0]>0:
+            raise RuntimeError("Not a BH!")
+
+        mask = self.log.vars['bhid']==halo['iord']
+        if(mask.sum()==0):
+            raise RuntimeError("Can't find BH in .orbit file")
+
+        t_orbit = self.log.vars['time']
+        Mdot_orbit = self.log.vars['mdotmean']
+        order = np.argsort(t_orbit)
+
+        t_max = properties.timestep.time_gyr
+        t_grid = np.linspace(0, self.tmax_Gyr, self.nbins)
+        
+
+        Mdot_grid = scipy.interpolate.interp1d(t_orbit[order], Mdot_orbit[order], bounds_error=False)(t_grid)
+        
+
+        #print t_max
+        #print Mdot_grid
+        
+        return Mdot_grid[self.store_slice(t_max)]

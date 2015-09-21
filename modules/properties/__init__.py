@@ -147,6 +147,58 @@ class HaloProperties(object):
         return None
 
 
+class TimeChunkedProperty(HaloProperties):
+    nbins = 1000
+    tmax_Gyr = 20.0
+    minimum_store_Gyr = 1.0
+
+    @property
+    def delta_t(self):
+        return self.tmax_Gyr/self.nbins
+
+    @classmethod
+    def bin_index(self, time):
+        index = int(self.nbins*time/self.tmax_Gyr)
+        if index<0:
+            index = 0
+        return index
+
+    @classmethod
+    def store_slice(self, time):
+        return slice(self.bin_index(time-self.minimum_store_Gyr), self.bin_index(time))
+
+    @classmethod
+    def reassemble(cls, halo):
+        halo = halo.halo
+        t, stack = halo.reverse_property_cascade("t",cls().name())
+
+        t = t[::-1]
+        stack = stack[::-1]
+
+        print t
+        print [s.shape for s in stack]
+
+        final = np.zeros(cls.bin_index(t[-1]))
+        for t_i, hist_i in zip(t,stack):
+            end = cls.bin_index(t_i)
+            start = end - len(hist_i)
+            final[start:end] = hist_i
+
+        return final
+
+    @classmethod
+    def plot_xdelta(cls):
+        return cls.tmax_Gyr/cls.nbins
+
+    @classmethod
+    def plot_xlog(cls):
+        return False
+
+    @classmethod
+    def plot_ylog(cls):
+        return False
+
+
 class ProxyHalo(object):
 
     """Used to return pointers to halos within this snapshot to the database"""
@@ -156,6 +208,7 @@ class ProxyHalo(object):
 
     def __int__(self):
         return int(self.value)
+
 
 
 from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr
