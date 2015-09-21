@@ -1034,12 +1034,13 @@ class HaloLink(Base):
 
     weight = Column(Float)
 
-    def __init__(self,  halo_from, halo_to, relationship):
+    def __init__(self,  halo_from, halo_to, relationship, weight=None):
 
         self.halo_from = halo_from
         self.halo_to = halo_to
 
         self.relation = relationship
+        self.weight = weight
 
         self.creator = current_creator
 

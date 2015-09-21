@@ -100,7 +100,9 @@ class SimsController(BaseController):
     def _relative_description(self, this_halo, other_halo) :
         if other_halo is None :
             return "null"
-        if this_halo.timestep_id == other_halo.timestep_id :
+        elif this_halo.id==other_halo.id:
+            return "this"
+        elif this_halo.timestep_id == other_halo.timestep_id :
             return "halo %d"%(other_halo.halo_number)
         elif this_halo.timestep.simulation_id == other_halo.timestep.simulation_id :
             return "halo %d at t=%.2e Gyr"%(other_halo.halo_number, other_halo.timestep.time_gyr)
@@ -142,17 +144,24 @@ class SimsController(BaseController):
 
     def _render_links(self, links, reverse_links) :
         rt =""
-        rt = h.literal("<table><tr><th>Source</th><th>Relationship</th><th>Target</th>")
+        rt = h.literal("<table><tr><th>Source</th><th>Relationship</th><th>Target</th><th>Weight</th></tr>")
         for hl in links :
-            rt+=h.literal("<tr><td>this</td>")
-            rt+=h.literal("<td>"+hl.relation.text+"</td>")
-            rt+=h.literal("<td>")+self._relative_link(hl.halo_from,hl.halo_to)+h.literal("</td></tr>")
+            rt += self._render_link(hl.halo_from,hl)
         for hl in reverse_links :
-            rt+=h.literal("<tr><td>")+self._relative_link(hl.halo_to,hl.halo_from)+h.literal("</td>")
-            rt+=h.literal("<td>"+hl.relation.text+"</td>")
-            rt+=h.literal("<td>this</td></tr>")
+            rt += self._render_link(hl.halo_to,hl)
         rt+=h.literal("</table>")
         return rt
+
+    def _render_link(self, relative_to, link):
+        text = h.literal("<tr><td>") + self._relative_link(relative_to, link.halo_from)+ h.literal("</td>")
+        text += h.literal("<td>" + link.relation.text + "</td>")
+        text += h.literal("<td>") + self._relative_link(relative_to, link.halo_to) + h.literal("</td>")
+        if link.weight is not None:
+            text += h.literal("<td>%.1f%%</td>" % (link.weight*100))
+        else:
+            text += h.literal("<td>-</td>")
+        text+=h.literal("</tr>")
+        return text
 
     def _render_properties(self, properties, links=True, parents=False) :
         rt = ""
