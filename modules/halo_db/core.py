@@ -975,7 +975,6 @@ class HaloProperty(Base):
     @property
     def reassembled_data(self):
         cls = self.name.providing_class()
-        print "REASSSEMBLE REASSEMBLE REASSEMBLE"
         print cls, hasattr(cls,'reassemble')
         if hasattr(cls, 'reassemble'):
             return cls.reassemble(self)
@@ -1032,6 +1031,8 @@ class HaloLink(Base):
     relation_id = Column(Integer, ForeignKey('dictionary.id'))
     relation = relationship(DictionaryItem, primaryjoin=(
         relation_id == DictionaryItem.id), cascade='save-update,merge')
+
+    weight = Column(Float)
 
     def __init__(self,  halo_from, halo_to, relationship):
 
