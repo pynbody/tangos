@@ -11,11 +11,11 @@ export PYTHONPATH=$DIR/modules/:$PYTHONPATH
 export PATH=$DIR/tools/:$PATH
 
 if [ -z "$HALODB_ROOT" ]; then
-  export HALODB_ROOT=/nobackupp8/mtremmel/Romulus/
+  export HALODB_ROOT=$DIR/../db_galaxies/
 fi
 
 if [ -z "$HALODB_DEFAULT_DB" ]; then
-    export HALODB_DEFAULT_DB=/nobackupp8/mtremmel/DataBaseFiles/data_romulus8.db
+    export HALODB_DEFAULT_DB=$DIR/data.db
 fi
 
 if [[ -e enivronment_local.sh ]]
