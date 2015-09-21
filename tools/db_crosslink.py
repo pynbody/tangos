@@ -15,7 +15,7 @@ def get_halo_entry(ts, halo_number):
     return h
 
 def need_crosslink_ts(ts1,ts2):
-    same_d_id = db.get_or_create_dictionary_item(session, "same_as").id
+    same_d_id = db.get_or_create_dictionary_item(session, "ptcls_in_common").id
     sources = [h.id for h in ts1.halos.all()]
     targets = [h.id for h in ts2.halos.all()]
     if len(targets)==0 or len(sources)==0:
@@ -28,7 +28,7 @@ def need_crosslink_ts(ts1,ts2):
     return not exists
 
 def create_db_objects_from_catalog(cat, ts1, ts2):
-    same_d_id = db.get_or_create_dictionary_item(session, "identified_as")
+    same_d_id = db.get_or_create_dictionary_item(session, "ptcls_in_common")
 
     for i, possibilities in enumerate(cat):
         h1 = get_halo_entry(ts1,i)
