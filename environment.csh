@@ -26,11 +26,11 @@ endif
 setenv PATH $DIR/tools/:$PATH
 
 if(! $?HALODB_ROOT) then
-  setenv HALODB_ROOT $DIR/../db_galaxies/
+  setenv HALODB_ROOT /nobackupp8/mtremmel/Romulus
 endif
 
-if(! $?HALODB_ROOT) then
-    setenv HALODB_DEFAULT_DB $DIR/data.db
+if(! $?HALODB_DEFAULT_DB) then
+    setenv HALODB_DEFAULT_DB /nobackupp8/mtremmel/DataBaseFiles/data_romulus8.db
 endif
 
 if (-e environment_local.csh) then

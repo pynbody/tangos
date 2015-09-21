@@ -51,6 +51,8 @@ class BH(HaloProperties):
         vx.units = vy.units = vz.units = velunits
         #pot.units = potunits
         mdot.units = munits/tunits
+	mdotsig.units = munits/tunits
+	mdotmean.units = munits/tunits
         #E.units = Eunits
 
 
@@ -61,6 +63,8 @@ class BH(HaloProperties):
         vy.convert_units('km s^-1')
         vz.convert_units('km s^-1')
         mdot.convert_units('Msol yr^-1')
+	mdotmean.convert_units('Msol yr^-1')
+	mdotsig.convert_units('Msol yr^-1')
         mass.convert_units("Msol")
         #E.convert_units('erg')
 
