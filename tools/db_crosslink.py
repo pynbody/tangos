@@ -10,6 +10,10 @@ import terminalcontroller
 from terminalcontroller import term
 
 
+def get_halo_entry(ts, halo_number):
+    h = ts.halos.filter_by(halo_number=halo_number).first()
+    return h
+
 def need_crosslink_ts(ts1,ts2):
     same_d_id = db.get_or_create_dictionary_item(session, "same_as").id
     sources = [h.id for h in ts1.halos.all()]
@@ -23,35 +27,34 @@ def need_crosslink_ts(ts1,ts2):
         print "--> existing objects"
     return not exists
 
+def create_db_objects_from_catalog(cat, ts1, ts2):
+    same_d_id = db.get_or_create_dictionary_item(session, "identified_as")
+
+    for i, possibilities in enumerate(cat):
+        h1 = get_halo_entry(ts1,i)
+        for cat_i, weight in possibilities:
+            h2 = get_halo_entry(ts2,cat_i)
+
+            if h1 is not None and h2 is not None:
+                print i,cat_i,h1,h2,weight
+                cx = db.HaloLink(h1, h2, same_d_id, weight)
+                session.merge(cx)
+    session.commit()
+
+
 def crosslink_ts(ts1, ts2):
     snap1 = ts1.load()
     snap2 = ts2.load()
 
     try:
-        cat = snap1.bridge(snap2).match_catalog(0, 1000)
-        back_cat = snap2.bridge(snap1).match_catalog(0,1000)
+        cat = snap1.bridge(snap2).fuzzy_match_catalog(0, 15, threshold=0.05)
+        back_cat = snap2.bridge(snap1).fuzzy_match_catalog(0,15, threshold=0.05)
     except:
         print "ERROR"
         return
 
-    same_d_id = db.get_or_create_dictionary_item(session, "same_as")
-    contained_d_id = db.get_or_create_dictionary_item(session, "contained_in")
-
-    for i, cat_i in enumerate(cat):
-        if cat_i<0:
-            continue
-        if back_cat[cat[i]]!=i:
-            print "Skip halo",i,"because the backwards-matching doesn't give the same result as the forwards matching"
-            continue
-        h1 = ts1.halos.filter_by(halo_number=i).first()
-        h2 = ts2.halos.filter_by(halo_number=cat_i).first()
-        if h1 != None and h2 != None:
-            cx = db.HaloLink(h1, h2, same_d_id)
-            session.merge(cx)
-            print "Create:", cx
-        else:
-            print "No halo DB entry for link ", i, "->", cat_i
-    session.commit()
+    create_db_objects_from_catalog(cat, ts1, ts2)
+    create_db_objects_from_catalog(back_cat, ts2, ts1)
 
 
 def crosslink_sim(sim1, sim2, force=False):
