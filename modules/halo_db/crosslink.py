@@ -1,13 +1,14 @@
-from db_crosslink import session
 import halo_db as db
 import traceback
+import sys
 
 def get_halo_entry(ts, halo_number):
     h = ts.halos.filter_by(halo_number=halo_number).first()
     return h
 
 
-def need_crosslink_ts(ts1,ts2):
+def need_crosslink_ts(ts1,ts2,session=None):
+    session = session or db.core.internal_session
     same_d_id = db.get_or_create_dictionary_item(session, "ptcls_in_common").id
     sources = [h.id for h in ts1.halos.all()]
     targets = [h.id for h in ts2.halos.all()]
@@ -21,7 +22,8 @@ def need_crosslink_ts(ts1,ts2):
     return not exists
 
 
-def create_db_objects_from_catalog(cat, ts1, ts2):
+def create_db_objects_from_catalog(cat, ts1, ts2, session=None):
+    session = session or db.core.internal_session
     same_d_id = db.get_or_create_dictionary_item(session, "ptcls_in_common")
 
     for i, possibilities in enumerate(cat):
@@ -36,7 +38,7 @@ def create_db_objects_from_catalog(cat, ts1, ts2):
     session.commit()
 
 
-def crosslink_ts(ts1, ts2, halo_min=0, halo_max=100):
+def crosslink_ts(ts1, ts2, halo_min=0, halo_max=100, session=None):
     snap1 = ts1.load()
     snap2 = ts2.load()
 
@@ -48,5 +50,5 @@ def crosslink_ts(ts1, ts2, halo_min=0, halo_max=100):
         traceback.print_exc(file=sys.stderr)
         return
 
-    create_db_objects_from_catalog(cat, ts1, ts2)
-    create_db_objects_from_catalog(back_cat, ts2, ts1)
+    create_db_objects_from_catalog(cat, ts1, ts2,session)
+    create_db_objects_from_catalog(back_cat, ts2, ts1,session)
