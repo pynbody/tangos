@@ -14,6 +14,7 @@ from sqlalchemy.orm.session import Session
 from . import data_attribute_mapper
 from .identifiers import get_halo_property_with_magic_strings
 from . import config
+
 import properties
 
 _loaded_timesteps = {}
@@ -440,11 +441,11 @@ class TimeStep(Base):
         extra = ""
         if not self.available:
             extra += " unavailable"
-
+        path = self.simulation.basename+"/"+self.extension
         if self.redshift is None:
-            return "<TimeStep(" + str(self.simulation) + ",\"" + self.extension + "\") no time" + extra + ">"
+            return "<TimeStep %r%s>"%(path,extra)
         else:
-            return "<TimeStep(" + str(self.simulation) + ",\"" + self.extension + "\") z=%.2f t=%.2f Gyr%s>" % (self.redshift, self.time_gyr, extra)
+            return "<TimeStep %r z=%.2f t=%.2f Gyr%s>" % (path, self.redshift, self.time_gyr, extra)
 
     def short(self):
         return "<TimeStep(... z=%.2f ...)>" % self.redshift
@@ -631,7 +632,12 @@ class Halo(Base):
         self._d = {}
 
     def __repr__(self):
-        return "<Halo " + str(self.halo_number) + " of " + self.timestep.short() + " | NDM=%d NStar=%d NGas=%d >" % (self.NDM, self.NStar, self.NGas)
+        if self.halo_type==0:
+            name = str(self.halo_number)
+        else:
+            name = str(self.halo_type)+str(self.halo_number)
+        name = self.timestep.simulation.basename+"/"+self.timestep.extension+"/"+name
+        return "<Halo %r | NDM=%d Nstar=%d Ngas=%d>"%(name, self.NDM, self. NStar, self.NGas)
 
     def load(self, partial=False):
         h = construct_halo_cat(self.timestep, self.halo_type)
@@ -854,64 +860,19 @@ class Halo(Base):
 
     @property
     def next(self):
-        try:
-            return self._next
-        except:
-            pass
-
-        session = Session.object_session(self)
-
-        if self.halo_type == 1:
-            next_ts = self.timestep.next
-            if next_ts is None:
-                self._next = None
-            else:
-                self._next = next_ts.halos.filter_by(
-                    halo_type=1, halo_number=self.halo_number).first()
-        else:
-
-            # The following would allow for multiple time evolution targets (e.g. step-skipping) but for now I'll avoid doing this
-            # (it's also slower)
-            # next_ts = self.timestep.next
-            # if next_ts==None :
-            #    return None
-            # allowed_targets = [q.id for q in next_ts.halos]
-            # linkobj =  session.query(HaloLink).filter(and_(HaloLink.relationship=="time", HaloLink.halo_from_id==self.id, HaloLink.halo_to_id.in_(allowed_targets))).first()
-
-            linkobj = session.query(HaloLink).filter(and_(HaloLink.relation_id == get_dict_id(
-                "time",session=session), HaloLink.halo_from_id == self.id)).first()
-
-            if linkobj is not None:
-                self._next = linkobj.halo_to
-            else:
-                self._next = None
+        if not hasattr(self, '_next'):
+            from . import hopper
+            strategy = hopper.HopMajorDescendantStrategy(self)
+            self._next=strategy.first()
 
         return self._next
 
     @property
     def previous(self):
-        try:
-            return self._previous
-        except:
-            pass
-
-        session = Session.object_session(self)
-
-        if self.halo_type == 1:
-            prev_ts = self.timestep.previous
-            if prev_ts is None:
-                self._previous = None
-            else:
-                self._previous = prev_ts.halos.filter_by(
-                    halo_type=1, halo_number=self.halo_number).first()
-        else:
-            linkobj = session.query(HaloLink).filter(and_(
-                HaloLink.relation_id == get_dict_id("time", session=session), HaloLink.halo_to_id == self.id)).first()
-
-            if linkobj is not None:
-                self._previous = linkobj.halo_from
-            else:
-                self._previous = None
+        if not hasattr(self, '_previous'):
+            from . import hopper
+            strategy = hopper.HopMajorProgenitorStrategy(self)
+            self._previous=strategy.first()
 
         return self._previous
 
@@ -1022,7 +983,7 @@ class HaloLink(Base):
                                            primaryjoin=halo_to_id == Halo.id),
                            cascade='')
 
-
+    weight = Column(Float)
 
     creator_id = Column(Integer, ForeignKey('creators.id'))
     creator = relationship(Creator, backref=backref(
@@ -1032,7 +993,7 @@ class HaloLink(Base):
     relation = relationship(DictionaryItem, primaryjoin=(
         relation_id == DictionaryItem.id), cascade='save-update,merge')
 
-    weight = Column(Float)
+
 
     def __init__(self,  halo_from, halo_to, relationship, weight=None):
 

@@ -1,6 +1,7 @@
 __author__ = 'app'
 
 import halo_db as db
+import halo_db.hopper as hopper
 import os
 import sqlalchemy, sqlalchemy.orm
 
@@ -69,8 +70,8 @@ def setup():
                      db.HaloLink(ts2_h3,ts1_h4,rel,0.01)])
 
     # ts2_h1 and ts2_h2 merge to ts3_h1
-    # ts2_h3 becomes ts2_h2
-    # ts2_h4 becomes ts2_h3 but loses 5% of its mass to ts2_h2
+    # ts2_h3 becomes ts3_h2
+    # ts2_h4 becomes ts3_h3 but loses 5% of its mass to ts2_h2
 
     session.add_all([db.HaloLink(ts2_h1,ts3_h1,rel,1.00),
                      db.HaloLink(ts2_h2,ts3_h1,rel,1.00),
@@ -80,9 +81,9 @@ def setup():
 
     session.add_all([db.HaloLink(ts3_h1,ts2_h1,rel,950./(950+940)),
                      db.HaloLink(ts3_h1,ts2_h2,rel,940./(950+940)),
-                     db.HaloLink(ts3_h2,ts2_h3,rel,0.95),
                      db.HaloLink(ts3_h3,ts2_h4,rel,1.00),
-                     db.HaloLink(ts3_h2,ts2_h4,rel,0.05)])
+                     db.HaloLink(ts3_h2,ts2_h4,rel,0.05),
+                     db.HaloLink(ts3_h2,ts2_h3,rel,0.95)])
 
 
 
@@ -107,6 +108,15 @@ def test_next():
     assert db.get_item("sim/ts1/1").next.next.next is None
 
 def test_previous():
-    assert db.get_item("sim/ts3/3").previous == db.get_item("sim/ts2/3")
-    assert db.get_item("sim/ts3/3").previous.previous == db.get_item("sim/ts1/3")
+    assert db.get_item("sim/ts3/3").previous == db.get_item("sim/ts2/4")
+    assert db.get_item("sim/ts3/3").previous.previous == db.get_item("sim/ts1/4")
     assert db.get_item("sim/ts3/3").previous.previous.previous is None
+
+def test_previous_finds_major_progenitor():
+    assert db.get_item("sim/ts3/2").previous == db.get_item("sim/ts2/3")
+
+
+def test_twostep_hop():
+    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts3/3"),2)
+    strategy.target_timestep(db.get_item("sim/ts1"))
+    assert strategy.count()==2
