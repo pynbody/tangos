@@ -1,6 +1,8 @@
 import numpy as np
 import re
-import halo_db
+
+import core
+import hopper
 
 def get_halo_property_if_special_name(halo,pname):
     if pname == "z":
@@ -38,12 +40,15 @@ def get_property_with_live_calculation(halo,pname):
 
     return prop
 
-def find_relation(relation_name, halo):
-    relation = halo_db.get_item(relation_name)
-    other_halos = halo.get_linked_halos_from_target(relation)
-    if len(other_halos)==1:
-        return other_halos[0]
-    elif len(other_halos)==0:
+def find_relation(relation_name, halo, maxhops=2):
+    relation = core.get_item(relation_name)
+    strategy = hopper.MultiHopStrategy(self, maxhops, "across")
+    strategy.target(relation)
+    count = strategy.count()
+
+    if count==1:
+        return strategy.first()
+    elif count==0:
         raise ValueError, "match(%s) found no linked halo"%relation_name
     else:
         raise ValueError, "match(%s) found more than one linked halo"%relation_name

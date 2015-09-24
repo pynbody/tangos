@@ -11,9 +11,9 @@ from sqlalchemy.orm import relationship, backref, sessionmaker, clear_mappers, d
 from sqlalchemy import and_
 from sqlalchemy.orm.session import Session
 
-from . import data_attribute_mapper
-from .identifiers import get_halo_property_with_magic_strings
-from . import config
+import data_attribute_mapper
+import identifiers
+import config
 
 import properties
 
@@ -185,6 +185,9 @@ class Simulation(Base):
         propobj.data = data
         session.commit()
 
+    @property
+    def path(self):
+        return self.basename
 
 
 class SimulationProperty(Base):
@@ -441,7 +444,7 @@ class TimeStep(Base):
         extra = ""
         if not self.available:
             extra += " unavailable"
-        path = self.simulation.basename+"/"+self.extension
+        path = self.path
         if self.redshift is None:
             return "<TimeStep %r%s>"%(path,extra)
         else:
@@ -452,6 +455,11 @@ class TimeStep(Base):
 
     def __getitem__(self, i):
         return self.halos[i]
+
+
+    @property
+    def path(self):
+        return self.simulation.path+"/"+self.extension
 
     @property
     def redshift_cascade(self):
@@ -524,7 +532,8 @@ class TimeStep(Base):
         for h1, h2 in linked_halos:
             if filt(h1) and filt(h2):
                 try:
-                    res = [(get_halo_property_with_magic_strings(h1, p), get_halo_property_with_magic_strings(h2, p)) for p in plist]
+                    res = [(identifiers.get_halo_property_with_magic_strings(h1, p),
+                            identifiers.get_halo_property_with_magic_strings(h2, p)) for p in plist]
 
                     for a, p in zip(out, res):
                         a.append(p)
@@ -566,7 +575,7 @@ class TimeStep(Base):
                   ).all():
             try:
                 if filt(h):
-                    res = [get_halo_property_with_magic_strings(h, p) for p in plist]
+                    res = [identifiers.get_halo_property_with_magic_strings(h, p) for p in plist]
                     if verbose:
                         print h, res
                     if (not any([r is None for r in res])) or allow_none:
@@ -632,12 +641,18 @@ class Halo(Base):
         self._d = {}
 
     def __repr__(self):
+
+        return "<Halo %r | NDM=%d Nstar=%d Ngas=%d>"%(self.path, self.NDM, self. NStar, self.NGas)
+
+
+    @property
+    def path(self):
         if self.halo_type==0:
             name = str(self.halo_number)
         else:
             name = str(self.halo_type)+str(self.halo_number)
-        name = self.timestep.simulation.basename+"/"+self.timestep.extension+"/"+name
-        return "<Halo %r | NDM=%d Nstar=%d Ngas=%d>"%(name, self.NDM, self. NStar, self.NGas)
+        return self.timestep.path+"/"+name
+
 
     def load(self, partial=False):
         h = construct_halo_cat(self.timestep, self.halo_type)
@@ -713,30 +728,7 @@ class Halo(Base):
             ret = default
         return ret
 
-    def get_linked_halos_from_target(self, targ):
-        session = Session.object_session(self)
-        if isinstance(targ, str):
-            targ = get_item(targ)
-        if isinstance(targ, TimeStep):
-            links_from = session.query(Halo).join("halo_to","timestep")\
-                .filter(HaloLink.halo_from_id==self.id, TimeStep.id==targ.id).all()
-            links_to = session.query(Halo).join("halo_from","timestep")\
-                .filter(HaloLink.halo_to_id==self.id, TimeStep.id==targ.id).all()
 
-            links = [x.halo_to for x in links_from]+[x.halo_from for x in links_to]
-            return links
-        elif isinstance(targ, Simulation):
-            links_from = session.query(HaloLink).join("halo_to","timestep","simulation")\
-                .filter(HaloLink.halo_from_id==self.id, Simulation.id==targ.id).all()
-
-            links_to = session.query(HaloLink).join("halo_from","timestep","simulation")\
-                .filter(HaloLink.halo_to_id==self.id, Simulation.id==targ.id).all()
-
-            links = [x.halo_to for x in links_from]+[x.halo_from for x in links_to]
-
-            return links
-        else:
-            raise ValueError, "Don't know how to find a link to this target"
 
     def get(self, key, default=None):
         try:
@@ -802,7 +794,7 @@ class Halo(Base):
         output = []
         for key in keys:
             try:
-                output.append([get_halo_property_with_magic_strings(self,key)])
+                output.append([identifiers.get_halo_property_with_magic_strings(self,key)])
             except Exception, e:
                 if on_missing=="skip":
                     output = [[] for k in keys]

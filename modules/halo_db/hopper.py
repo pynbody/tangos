@@ -1,118 +1,239 @@
-from . import core
+import core
 import sqlalchemy, sqlalchemy.orm, sqlalchemy.orm.dynamic, sqlalchemy.orm.query
 from sqlalchemy.orm import Session, relationship
 from sqlalchemy import and_
 
+def _recursive_map_ids_to_objects(x, db_class, session):
+    if hasattr(x,'__len__'):
+        return [_recursive_map_ids_to_objects(x_i,db_class, session) for x_i in x]
+    else:
+        return session.query(db_class).filter_by(id=x).first()
 
 class HopStrategy(object):
+    """HopStrategy and its descendants define methods helpful for finding related halos, e.g. progenitors/descendants,
+    or corresponding halos in other simulation runs"""
+
     def __init__(self, halo_from):
+        """Construct a HopStrategy starting from the specified halo"""
         query = halo_from.links
         assert isinstance(halo_from, core.Halo)
         assert isinstance(query, sqlalchemy.orm.query.Query)
-        self.query = query.order_by(core.HaloLink.weight.desc())
         self.halo_from = halo_from
+        self._order_by_names = ['weight']
+        self.query = query
+        self._link_orm_class = core.HaloLink
 
-
-    def target_timestep(self,ts):
+    def target_timestep(self, ts):
+        """Only return those hops which reach the specified timestep"""
         if ts is None:
             self.query = self.query.filter(0==1)
         else:
-            self.query = self.query.join("halo_to",aliased=True).filter(core.Halo.timestep_id==ts.id)
+            self.query = self.query.join("halo_to").filter(core.Halo.timestep_id==ts.id)
 
     def target_simulation(self, sim):
-        self.query = self.query.join("halo_to","timestep",aliased=True).filter(core.TimeStep.simulation_id==sim.id)
+        """Only return those hops which reach the specified simulation"""
+        self.query = self.query.join("halo_to","timestep").filter(core.TimeStep.simulation_id==sim.id)
+
+    def target(self, db_obj):
+        """Only return those hops which reach the specifid simulation or timestep"""
+        if isinstance(db_obj, core.TimeStep):
+            self.target_timestep(db_obj)
+        elif isinstance(db_obj, core.Simulation):
+            self.target_simulation(db_obj)
+        else:
+            raise ValueError("Unknown target type")
+
+    def order_by(self, *names):
+        """Specify an ordering for the output hop suggestions.
+
+        Accepted names are:
+
+         - 'weight' - the weight of the link, ascending (default). In the case of MultiHopStrategy, this is the
+                      product of the weights along the path found.
+         - 'time_asc' - the time of the snapshot, ascending order
+         - 'time_desc' - the time of the snapshot, descending order
+         - 'nhops' - the number of hops taken to reach the halo (MultiHopStrategy only)
+
+        Multiple names can be given to order by more than one property.
+        """
+        self._order_by_names = [x.lower() for x in names]
 
     def count(self):
+        """Return the number of hops matching the conditions"""
         return self.query.count()
 
     def all(self):
-        return [x.halo_to for x in self.query.all()]
+        """Return all possible hops matching the conditions"""
+        return [x.halo_to for x in self._query_ordered.all()]
 
     def weights(self):
-        return [x.weight for x in self.query.all()]
+        """Return the weights for the possible hops"""
+        return [x.weight for x in self._query_ordered.all()]
+
+    def all_and_weights(self):
+        """Return all possible hops matching the conditions, along with
+        the weights"""
+        all = self._query_ordered.all()
+        weights = [x.weight for x in all]
+        halos = [x.halo_to for x in all]
+        return halos, weights
 
     def first(self):
-        link_first = self.query.first()
+        """Return the suggested hop."""
+        link_first = self._query_ordered.first()
         if link_first is None:
             return None
         else:
             return link_first.halo_to
 
+    @property
+    def _order_by(self):
+        return [self._generate_order_arg_from_name(name) for name in self._order_by_names]
+
+    def _generate_order_arg_from_name(self, name):
+        if name=='weight':
+            return self._link_orm_class.weight.desc()
+        elif name=='time_asc':
+            return core.TimeStep.time_gyr
+        elif name=='time_desc':
+            return core.TimeStep.time_gyr.desc()
+        else:
+            raise ValueError, "Unknown ordering method %r"%name
+
+    @property
+    def _query_ordered(self):
+        query = self.query
+        assert isinstance(query, sqlalchemy.orm.query.Query)
+        if 'time_asc' in self._order_by_names or 'time_desc' in self._order_by_names:
+            query = query.join(core.Halo, self._link_orm_class.halo_to).join(core.TimeStep)
+
+        query= query.order_by(*self._order_by)
+        return query
+
 
 class HopMajorDescendantStrategy(HopStrategy):
+    """A hop strategy that suggests the major descendant for a halo"""
     def __init__(self, halo_from):
         super(HopMajorDescendantStrategy,self).__init__(halo_from)
         self.target_timestep(halo_from.timestep.next)
 
 class HopMajorProgenitorStrategy(HopStrategy):
+    """A hop strategy that suggests the major progenitor for a halo"""
     def __init__(self, halo_from):
         super(HopMajorProgenitorStrategy,self).__init__(halo_from)
         self.target_timestep(halo_from.timestep.previous)
 
-
-
-
-
 class MultiHopStrategy(HopStrategy):
+    """An extension of the HopStrategy class that takes multiple hops across
+    HaloLinks, up to a specified maximum, before finding the target halo."""
+
     def __init__(self, halo_from, nhops_max, directed=None):
         super(MultiHopStrategy,self).__init__(halo_from)
         self.nhops_max = nhops_max
-        session =  Session.object_session(halo_from)
-        halolink_recurse = session.query(core.HaloLink.id,
+        self.session =  Session.object_session(halo_from)
+
+        self._generate_halolink_recurse_cte()
+        self._generate_recursion_subquery()
+        self._apply_recursion_subquery_filter(directed,  nhops_max)
+        self._generate_query()
+
+    def link_ids(self):
+        """Return the links for the possible hops, in the form of a list of HaloLink IDs for
+        each path"""
+        return [[int(y) for y in x.links.split(",")] for x in self._query_ordered.all()]
+
+    def node_ids(self):
+        """Return the nodes, i.e. halo IDs visited, for each path"""
+        return [[int(y) for y in x.nodes.split(",")] for x in self._query_ordered.all()]
+
+    def nodes(self):
+        return _recursive_map_ids_to_objects(self.node_ids(),core.Halo,self.session)
+
+    def links(self):
+        return _recursive_map_ids_to_objects(self.link_ids(),core.HaloLink,self.session)
+
+    def _generate_recursion_subquery(self):
+        links = self.halolink_recurse_alias.c.links +\
+                                  sqlalchemy.literal(",") +\
+                                  sqlalchemy.cast(core.HaloLink.id,sqlalchemy.String)
+
+        nodes = self.halolink_recurse_alias.c.nodes +\
+                                  sqlalchemy.literal(",") +\
+                                  sqlalchemy.cast(core.HaloLink.halo_to_id,sqlalchemy.String)
+
+        self.recursion_query = \
+            self.session.query(core.HaloLink.id,
+                               core.HaloLink.halo_from_id,
+                               core.HaloLink.halo_to_id,
+                               (self.halolink_recurse_alias.c.weight * core.HaloLink.weight).label("weight"),
+                               (self.halolink_recurse_alias.c.nhops + 1).label("nhops"),
+                               links, nodes)
+
+
+    def _generate_halolink_recurse_cte(self):
+        links = sqlalchemy.cast(core.HaloLink.id,sqlalchemy.String).label("links")
+        nodes = (sqlalchemy.cast(core.HaloLink.halo_from_id, sqlalchemy.String) + \
+                sqlalchemy.literal(",") + \
+                sqlalchemy.cast(core.HaloLink.halo_to_id, sqlalchemy.String)).label("nodes")
+
+        halolink_recurse = self.session.query(core.HaloLink.id,
                                          core.HaloLink.halo_from_id,
                                          core.HaloLink.halo_to_id,
                                          core.HaloLink.weight,
-                                         sqlalchemy.literal(0).label("nhops")).\
-            filter(core.HaloLink.halo_from_id==halo_from.id).\
+                                         sqlalchemy.literal(0).label("nhops"),
+                                         links, nodes).\
+            filter(core.HaloLink.halo_from_id == self.halo_from.id). \
             cte(name="halolink_recurse", recursive=True)
+        halolink_recurse_alias = sqlalchemy.orm.aliased(halolink_recurse,name="halolink_recurse_old")
+        self.halolink_recurse = halolink_recurse
+        self.halolink_recurse_alias = halolink_recurse_alias
 
-        halolink_recurse_alias = sqlalchemy.orm.aliased(halolink_recurse)
+    def _apply_recursion_subquery_filter(self, directed, nhops_max):
 
-        halo_old = sqlalchemy.orm.aliased(core.Halo)
-        halo_new = sqlalchemy.orm.aliased(core.Halo)
-        timestep_old = sqlalchemy.orm.aliased(core.TimeStep)
-        timestep_new = sqlalchemy.orm.aliased(core.TimeStep)
-
-        recursion_query = session.query(core.HaloLink.id,
-                core.HaloLink.halo_from_id,
-                core.HaloLink.halo_to_id,
-                (halolink_recurse_alias.c.weight*core.HaloLink.weight).label("weight"),
-                (halolink_recurse_alias.c.nhops+1).label("nhops")
-            )
-
-        recursion_filter = and_(core.HaloLink.halo_from_id==halolink_recurse_alias.c.halo_to_id,
-                                     halolink_recurse_alias.c.nhops<nhops_max)
+        recursion_filter = and_(core.HaloLink.halo_from_id == self.halolink_recurse_alias.c.halo_to_id,
+                                self.halolink_recurse_alias.c.nhops < nhops_max)
 
         if directed is not None:
-            recursion_query = recursion_query.\
-                join(halo_old,core.HaloLink.halo_from).\
-                join(halo_new,core.HaloLink.halo_to).\
-                join(timestep_old,halo_old.timestep).\
-                join(timestep_new,halo_new.timestep)
+            halo_old = sqlalchemy.orm.aliased(core.Halo,name="halo_old")
+            halo_new = sqlalchemy.orm.aliased(core.Halo,name="halo_new")
+            timestep_old = sqlalchemy.orm.aliased(core.TimeStep,name="timestep_old")
+            timestep_new = sqlalchemy.orm.aliased(core.TimeStep,name="timestep_new")
 
-            if directed.lower()=='backwards':
-                recursion_filter = and_(recursion_filter, timestep_new.time_gyr<timestep_old.time_gyr)
-            elif directed.lower()=='forwards':
-                recursion_filter = and_(recursion_filter, timestep_new.time_gyr>timestep_old.time_gyr)
-            elif directed.lower()=='across':
-                recursion_filter = and_(recursion_filter, timestep_new.time_gyr==timestep_old.time_gyr)
+            self.recursion_query = self.recursion_query. \
+                join(halo_old, core.HaloLink.halo_from). \
+                join(halo_new, core.HaloLink.halo_to). \
+                join(timestep_old, halo_old.timestep). \
+                join(timestep_new, halo_new.timestep)
 
+            if directed.lower() == 'backwards':
+                recursion_filter = and_(recursion_filter, timestep_new.time_gyr < timestep_old.time_gyr)
+            elif directed.lower() == 'forwards':
+                recursion_filter = and_(recursion_filter, timestep_new.time_gyr > timestep_old.time_gyr)
+            elif directed.lower() == 'across':
+                recursion_filter = and_(recursion_filter, sqlalchemy.func.abs(timestep_new.time_gyr-timestep_old.time_gyr)<1e-4)
+            else:
+                raise ValueError, "Unknown direction %r"%directed
+        print "RF-->",directed,recursion_filter
 
-        halolink_recurse = halolink_recurse.union(recursion_query.filter(recursion_filter))
+        self.recursion_query = self.recursion_query.filter(recursion_filter)
+
+    def _generate_query(self):
+        halolink_recurse = self.halolink_recurse.union(self.recursion_query)
 
         class MultiHopHaloLink(core.Base):
             __table__ = halolink_recurse
             halo_from = relationship(core.Halo, primaryjoin=halolink_recurse.c.halo_from_id == core.Halo.id)
             halo_to = relationship(core.Halo, primaryjoin=(halolink_recurse.c.halo_to_id == core.Halo.id))
 
-        self.query = session.query(MultiHopHaloLink).order_by(MultiHopHaloLink.weight.desc())
+        self._link_orm_class = MultiHopHaloLink
+
+        self.query = self.session.query(MultiHopHaloLink)
+
+    def _generate_order_arg_from_name(self, name):
+        if name=='nhops':
+            return self._link_orm_class.c.nhops
+        else:
+            return super(MultiHopStrategy,self)._generate_order_arg_from_name(name)
 
 
 
-
-"""with recursive halolink_recurse(halo_from_id,halo_to_id,nhops) as (
- values(340,110,0)
- union all
- select halolink.halo_from_id, halolink.halo_to_id, halolink_recurse.nhops+1 from halolink, halolink_recurse
- where halolink_recurse.halo_to_id = halolink.halo_from_id and halolink_recurse.nhops<10
-) select * from halolink_recurse;"""

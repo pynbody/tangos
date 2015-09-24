@@ -16,6 +16,8 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
+MAXHOPS_FIND_HALO = 3
+
 def creator_link(creator) :
     return h.link_to(repr(creator), url(controller="creator", action="more", id=creator.id))
 
@@ -279,7 +281,8 @@ class SimsController(BaseController):
     def showhalo(self, id, rel=None,num=1) :
 
         halo = Session.query(meta.Halo).filter_by(id=id).first()
-        c.flash = []
+        if not hasattr(c,'flash'):
+            c.flash = []
 
         if rel is not None :
             num = int(num)
@@ -306,24 +309,29 @@ class SimsController(BaseController):
                 if nhalo is not None and nhalo.id==halo.id:
                     c.flash = ["You're already looking at the latest snapshot for this halo"]
             elif rel=="insim":
-                nhalo = halo.get_linked_halos_from_target(Session.query(meta.Simulation).filter_by(id=num).first())
-                print nhalo
-                if len(nhalo)==0:
+                targ = Session.query(meta.Simulation).filter_by(id=num).first()
+                strategy = db.hopper.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across')
+                strategy.target(targ)
+
+                targets, weights = strategy.all_and_weights()
+
+                if len(targets)==0:
                     nhalo = None
                 else:
-                    nhalo = nhalo[0]
+                    nhalo = targets[0]
+                    message = "Confidence %.1f%%"%(100*weights[0])
+                    if len(targets)>1:
+                        message+="; the next candidate %r has confidence %.1f%%"%(targets[1],100*weights[1])
+                    c.flash = [message]
 
-                if nhalo is not None and nhalo.id==halo.id:
-                    c.flash = ["You're already looking at this simulation"]
             else :
                 c.flash = ["I have never heard of the relationship %r, so can't find the halo for you"%rel]
 
             if nhalo is None and c.flash==[]:
                 c.flash = ["Can't find the halo you are looking for"]
 
-            if len(c.flash)==0:
-                redirect(url(controller='sims',action='showhalo',id=nhalo.id))
-                return
+            if nhalo is not None:
+                return self.showhalo(nhalo.id, None, None)
 
 
         c.name = "Halo "+str(halo.halo_number)+" of "+halo.timestep.extension

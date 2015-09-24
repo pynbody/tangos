@@ -36,8 +36,8 @@ def setup():
 
     session.add_all([ts1_h1,ts1_h2,ts1_h3,ts1_h4])
 
-    ts2_h1 = db.Halo(ts2,1,950,0,0,0)
-    ts2_h2 = db.Halo(ts2,2,940,0,0,0)
+    ts2_h1 = db.Halo(ts2,1,1000,0,0,0)
+    ts2_h2 = db.Halo(ts2,2,900,0,0,0)
     ts2_h3 = db.Halo(ts2,3,800,0,0,0)
     ts2_h4 = db.Halo(ts2,4,300,0,0,0)
 
@@ -116,7 +116,50 @@ def test_previous_finds_major_progenitor():
     assert db.get_item("sim/ts3/2").previous == db.get_item("sim/ts2/3")
 
 
-def test_twostep_hop():
-    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts3/3"),2)
-    strategy.target_timestep(db.get_item("sim/ts1"))
+def test_simple_twostep_hop():
+    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts3/3"),2,'backwards')
     assert strategy.count()==2
+    all, weights = strategy.all_and_weights()
+
+    assert db.get_item("sim/ts1/4") in all
+    assert db.get_item("sim/ts2/4") in all
+    assert weights[0]==1.0
+    assert weights[1]==1.0
+
+def test_twostep_ordering():
+    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts3/3"),2,'backwards')
+    strategy.order_by("time_asc")
+    all = strategy.all()
+    assert db.get_item("sim/ts1/4")==all[0]
+    assert db.get_item("sim/ts2/4")==all[1]
+
+    strategy.order_by("time_desc")
+    all = strategy.all()
+    assert db.get_item("sim/ts2/4")==all[0]
+    assert db.get_item("sim/ts1/4")==all[1]
+
+    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts3/1"),2,'backwards')
+    strategy.order_by("time_asc","weight")
+    all, weights = strategy.all_and_weights()
+
+    I = db.get_item
+
+    assert all==[I("sim/ts1/1"),
+                 I("sim/ts1/2"),
+                 I("sim/ts1/1"), # route 2
+                 I("sim/ts2/1"),
+                 I("sim/ts2/2")]
+
+    assert strategy.link_ids()==[[19,7], [18,9], [18,8],[18],[19]]
+
+    assert strategy.node_ids()==[[9, 6, 1], [9, 5, 2], [9, 5, 1], [9, 5], [9, 6]]
+
+def test_twostep_direction():
+    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts2/1"),2,'backwards')
+    timesteps = set([x.timestep for x in strategy.all()])
+    print strategy._query_ordered
+    print
+    print strategy.nodes()
+    assert db.get_item("sim/ts1") in timesteps
+    assert db.get_item("sim/ts2") in timesteps
+    assert db.get_item("sim/ts3") not in timesteps
