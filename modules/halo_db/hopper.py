@@ -1,5 +1,5 @@
 import core
-import sqlalchemy, sqlalchemy.orm, sqlalchemy.orm.dynamic, sqlalchemy.orm.query
+import sqlalchemy, sqlalchemy.orm, sqlalchemy.orm.dynamic, sqlalchemy.orm.query, sqlalchemy.exc
 from sqlalchemy.orm import Session, relationship
 from sqlalchemy import and_
 
@@ -62,18 +62,35 @@ class HopStrategy(object):
         """Return the number of hops matching the conditions"""
         return self.query.count()
 
+    def _get_query_all(self):
+        try:
+            results = self._query_ordered.all()
+        except sqlalchemy.exc.ResourceClosedError:
+            results = []
+
+        return self._remove_duplicate_targets(results)
+
+    def _remove_duplicate_targets(self, paths):
+        weeded_paths = []
+        existing_targets = set()
+        for path in paths:
+            if path.halo_to_id not in existing_targets:
+                existing_targets.add(path.halo_to_id)
+                weeded_paths.append(path)
+        return weeded_paths
+
     def all(self):
         """Return all possible hops matching the conditions"""
-        return [x.halo_to for x in self._query_ordered.all()]
+        return [x.halo_to for x in self._get_query_all()]
 
     def weights(self):
         """Return the weights for the possible hops"""
-        return [x.weight for x in self._query_ordered.all()]
+        return [x.weight for x in self._get_query_all()]
 
     def all_and_weights(self):
         """Return all possible hops matching the conditions, along with
         the weights"""
-        all = self._query_ordered.all()
+        all = self._get_query_all()
         weights = [x.weight for x in all]
         halos = [x.halo_to for x in all]
         return halos, weights
@@ -130,11 +147,12 @@ class MultiHopStrategy(HopStrategy):
     def __init__(self, halo_from, nhops_max, directed=None):
         super(MultiHopStrategy,self).__init__(halo_from)
         self.nhops_max = nhops_max
+        self.directed = directed
         self.session =  Session.object_session(halo_from)
 
         self._generate_halolink_recurse_cte()
         self._generate_recursion_subquery()
-        self._apply_recursion_subquery_filter(directed,  nhops_max)
+        self._apply_recursion_subquery_filter()
         self._generate_query()
 
     def link_ids(self):
@@ -176,46 +194,72 @@ class MultiHopStrategy(HopStrategy):
                 sqlalchemy.literal(",") + \
                 sqlalchemy.cast(core.HaloLink.halo_to_id, sqlalchemy.String)).label("nodes")
 
-        halolink_recurse = self.session.query(core.HaloLink.id,
+        startpoint_filter = core.HaloLink.halo_from_id == self.halo_from.id
+
+        startpoint_query = self.session.query(
+                                         core.HaloLink.id,
                                          core.HaloLink.halo_from_id,
                                          core.HaloLink.halo_to_id,
                                          core.HaloLink.weight,
                                          sqlalchemy.literal(0).label("nhops"),
-                                         links, nodes).\
-            filter(core.HaloLink.halo_from_id == self.halo_from.id). \
-            cte(name="halolink_recurse", recursive=True)
+                                         links, nodes).filter(startpoint_filter)
+
+        startpoint_query = self._supplement_halolink_query_with_filter(startpoint_query)
+
+        halolink_recurse = startpoint_query.cte(name="halolink_recurse", recursive=True)
         halolink_recurse_alias = sqlalchemy.orm.aliased(halolink_recurse,name="halolink_recurse_old")
         self.halolink_recurse = halolink_recurse
         self.halolink_recurse_alias = halolink_recurse_alias
 
-    def _apply_recursion_subquery_filter(self, directed, nhops_max):
+
+
+    def _apply_recursion_subquery_filter(self):
 
         recursion_filter = and_(core.HaloLink.halo_from_id == self.halolink_recurse_alias.c.halo_to_id,
-                                self.halolink_recurse_alias.c.nhops < nhops_max)
+                                self.halolink_recurse_alias.c.nhops < self.nhops_max)
 
-        if directed is not None:
+        self.recursion_query = self._supplement_halolink_query_with_filter(self.recursion_query).filter(recursion_filter)
+
+
+    def _supplement_halolink_query_with_filter(self, query):
+        if self._needs_link_filter():
             halo_old = sqlalchemy.orm.aliased(core.Halo,name="halo_old")
             halo_new = sqlalchemy.orm.aliased(core.Halo,name="halo_new")
             timestep_old = sqlalchemy.orm.aliased(core.TimeStep,name="timestep_old")
             timestep_new = sqlalchemy.orm.aliased(core.TimeStep,name="timestep_new")
 
-            self.recursion_query = self.recursion_query. \
+            filter = self._generate_link_filter(timestep_old, timestep_new)
+
+            query = query. \
                 join(halo_old, core.HaloLink.halo_from). \
                 join(halo_new, core.HaloLink.halo_to). \
                 join(timestep_old, halo_old.timestep). \
-                join(timestep_new, halo_new.timestep)
+                join(timestep_new, halo_new.timestep). \
+                filter(filter)
 
-            if directed.lower() == 'backwards':
-                recursion_filter = and_(recursion_filter, timestep_new.time_gyr < timestep_old.time_gyr)
-            elif directed.lower() == 'forwards':
-                recursion_filter = and_(recursion_filter, timestep_new.time_gyr > timestep_old.time_gyr)
-            elif directed.lower() == 'across':
-                recursion_filter = and_(recursion_filter, sqlalchemy.func.abs(timestep_new.time_gyr-timestep_old.time_gyr)<1e-4)
-            else:
-                raise ValueError, "Unknown direction %r"%directed
-        print "RF-->",directed,recursion_filter
 
-        self.recursion_query = self.recursion_query.filter(recursion_filter)
+        return query
+
+    def _needs_link_filter(self):
+        return self.directed is not None
+
+    def _generate_link_filter(self, timestep_old, timestep_new):
+        if self.directed is None:
+            return None
+
+        directed = self.directed.lower()
+        if directed == 'backwards':
+            recursion_filter = timestep_new.time_gyr < timestep_old.time_gyr
+        elif directed == 'forwards':
+            recursion_filter = timestep_new.time_gyr > timestep_old.time_gyr
+        elif directed == 'across':
+            recursion_filter = sqlalchemy.func.abs(timestep_new.time_gyr-timestep_old.time_gyr)<1e-4
+        else:
+            raise ValueError, "Unknown direction %r"%directed
+
+        return recursion_filter
+
+
 
     def _generate_query(self):
         halolink_recurse = self.halolink_recurse.union(self.recursion_query)
