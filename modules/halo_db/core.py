@@ -1215,10 +1215,10 @@ def construct_halo_cat(timestep_db, type_id):
     f = timestep_db.load()
     if type_id == 0 or type_id is None:
         # amiga grp halo
-        h = _loaded_halocats.get(f, lambda: None)()
+        h = _loaded_halocats.get(id(f), lambda: None)()
         if h is None:
             h = f.halos()
-            _loaded_halocats[f] = weakref.ref(h)
+            _loaded_halocats[id(f)] = weakref.ref(h)
         return h  # pynbody.halo.AmigaGrpCatalogue(f)
     elif type_id == 1:
         return TrackerHaloCatalogue(f,timestep_db.simulation.trackers)
