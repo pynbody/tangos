@@ -16,6 +16,8 @@ import numpy as np
 
 log = logging.getLogger(__name__)
 
+MAXHOPS_FIND_HALO = 3
+
 def creator_link(creator) :
     return h.link_to(repr(creator), url(controller="creator", action="more", id=creator.id))
 
@@ -275,55 +277,23 @@ class SimsController(BaseController):
         c.breadcrumbs = h.breadcrumbs(halo)
         return render('/sims/mergertree.mako')
 
-
     def showhalo(self, id, rel=None,num=1) :
 
         halo = Session.query(meta.Halo).filter_by(id=id).first()
-        c.flash = []
+        if not hasattr(c,'flash'):
+            c.flash = []
 
         if rel is not None :
             num = int(num)
-            if rel=="earlier" :
-                nhalo = halo
-                for i in xrange(num) :
-                    if nhalo.previous is not None:
-                        nhalo = nhalo.previous
-                if nhalo is not None and nhalo.id==halo.id:
-                    c.flash = ["You're already looking at the earliest snapshot for this halo"]
-            elif rel=="earliest" :
-                nhalo = halo.earliest
-                if nhalo is not None and nhalo.id==halo.id:
-                    c.flash = ["You're already looking at the earliest snapshot for this halo"]
-            elif rel=="later" :
-                nhalo = halo
-                for i in xrange(num) :
-                    if nhalo.next is not None:
-                        nhalo = nhalo.next
-                if nhalo is not None and nhalo.id==halo.id:
-                    c.flash = ["You're already looking at the latest snapshot for this halo"]
-            elif rel=="latest" :
-                nhalo = halo.latest
-                if nhalo is not None and nhalo.id==halo.id:
-                    c.flash = ["You're already looking at the latest snapshot for this halo"]
-            elif rel=="insim":
-                nhalo = halo.get_linked_halos_from_target(Session.query(meta.Simulation).filter_by(id=num).first())
-                print nhalo
-                if len(nhalo)==0:
-                    nhalo = None
-                else:
-                    nhalo = nhalo[0]
 
-                if nhalo is not None and nhalo.id==halo.id:
-                    c.flash = ["You're already looking at this simulation"]
-            else :
-                c.flash = ["I have never heard of the relationship %r, so can't find the halo for you"%rel]
+            new_halo = self._find_halo_relation(halo, num, rel)
 
-            if nhalo is None and c.flash==[]:
-                c.flash = ["Can't find the halo you are looking for"]
+            if new_halo is None and c.flash==[]:
+                c.flash = [h.literal("Unable to find a suitable halo &ndash; either it doesn't exist, or the linking information is missing.")]
 
-            if len(c.flash)==0:
-                redirect(url(controller='sims',action='showhalo',id=nhalo.id))
-                return
+            if new_halo is not None:
+                halo = new_halo
+                id = new_halo.id
 
 
         c.name = "Halo "+str(halo.halo_number)+" of "+halo.timestep.extension
@@ -358,3 +328,46 @@ class SimsController(BaseController):
 
 
         return render('/sims/showhalo.mako')
+
+    def _find_halo_relation(self, halo, num, rel):
+        if rel == "earlier":
+            new_halo = halo
+            for i in xrange(num):
+                if new_halo.previous is not None:
+                    new_halo = new_halo.previous
+            if new_halo is not None and new_halo.id == halo.id:
+                c.flash = ["You're already looking at the earliest snapshot for this halo"]
+        elif rel == "earliest":
+            new_halo = halo.earliest
+            if new_halo is not None and new_halo.id == halo.id:
+                c.flash = ["You're already looking at the earliest snapshot for this halo"]
+        elif rel == "later":
+            new_halo = halo
+            for i in xrange(num):
+                if new_halo.next is not None:
+                    new_halo = new_halo.next
+            if new_halo is not None and new_halo.id == halo.id:
+                c.flash = ["You're already looking at the latest snapshot for this halo"]
+        elif rel == "latest":
+            new_halo = halo.latest
+            if new_halo is not None and new_halo.id == halo.id:
+                c.flash = ["You're already looking at the latest snapshot for this halo"]
+        elif rel == "insim":
+            targ = Session.query(meta.Simulation).filter_by(id=num).first()
+            strategy = db.hopper.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across')
+            strategy.target(targ)
+
+            targets, weights = strategy.all_and_weights()
+
+            if len(targets) == 0:
+                new_halo = None
+            else:
+                new_halo = targets[0]
+                message = "Confidence %.1f%%" % (100 * weights[0])
+                if len(targets) > 1 and weights[1] is not None:
+                    message += "; the next candidate %r has confidence %.1f%%" % (targets[1], 100 * weights[1])
+                c.flash = [message]
+
+        else:
+            c.flash = ["I have never heard of the relationship %r, so can't find the halo for you" % rel]
+        return new_halo

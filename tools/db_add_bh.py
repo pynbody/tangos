@@ -60,24 +60,26 @@ if __name__=="__main__":
 
         bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
         bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
+        
         print "Associated halos: ",bh_halos
-
-        halo_ids = dict([(int(haloi), 1) for haloi in bh_halos])
-
+        bh_dict_id = db.core.get_or_create_dictionary_item(session, "BH")
+        
         for bhi, haloi in zip(bh_iord, bh_halos):
             haloi = int(haloi)
             bhi = int(bhi)
             halo = f.halos.filter_by(halo_type=0, halo_number=haloi).first()
+            bh_obj = f.halos.filter_by(halo_type=1, halo_number=bhi).first()
             if halo is None:
                 print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
                 continue
-            obj = f.halos.filter_by(halo_type=1, halo_number=bhi).first()
 
+            existing = halo.links.filter_by(relation_id=bh_dict_id.id,halo_to_id=bh_obj.id).count()
 
-            bhname = 'BH'+str(halo_ids[haloi])
-            print halo,bhname,"->",obj
-            halo[bhname] = obj
-            halo_ids[haloi]+=1
+            if existing==0:
+                
+                session.merge(db.core.HaloLink(halo,bh_obj,bh_dict_id))
+            else:
+                print "NOTE: skipping BH in halo",haloi,"as link already exists"
 
         session.commit()
 

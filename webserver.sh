@@ -2,4 +2,4 @@
 
 source environment.sh
 cd webserver
-paster serve development.ini
+paster serve development.ini $@
