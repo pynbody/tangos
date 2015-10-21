@@ -14,7 +14,6 @@ from sqlalchemy.orm.session import Session
 import data_attribute_mapper
 import identifiers
 import config
-
 import properties
 
 _loaded_timesteps = {}

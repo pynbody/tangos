@@ -2,6 +2,7 @@
 
 import halo_db as db
 import halo_db.parallel_tasks as parallel_tasks
+import halo_db.tracker
 import sys
 import numpy as np
 import gc
@@ -86,3 +87,6 @@ if __name__=="__main__":
 
         del f_pb
         gc.collect()
+
+    for sim in query.all():
+        db.tracker.generate_tracker_halo_links(sim)
