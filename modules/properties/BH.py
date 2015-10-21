@@ -28,7 +28,7 @@ class BHShortenedLog(object):
         for line in open(name+".shortened.orbit"):
             line_split = line.split()
             ars[0].append(int(line_split[0]))
-            for i in range(1,len(line_split)):
+            for i in range(1,14):
                 ars[i].append(float(line_split[i]))
 
 
