@@ -62,8 +62,8 @@ if __name__=="__main__":
         bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
         print "Associated halos: ",bh_halos
 
-        halo_ids = dict([(int(haloi), 1) for haloi in bh_halos])
-
+        bh_dict_id = db.core.get_or_create_dictionary_item(session, "BH")
+        
         for bhi, haloi in zip(bh_iord, bh_halos):
             haloi = int(haloi)
             bhi = int(bhi)
@@ -73,11 +73,8 @@ if __name__=="__main__":
                 continue
             obj = f.halos.filter_by(halo_type=1, halo_number=bhi).first()
 
+            session.merge(db.core.HaloLink(halo,obj,bh_dict_id))
 
-            bhname = 'BH'+str(halo_ids[haloi])
-            print halo,bhname,"->",obj
-            halo[bhname] = obj
-            halo_ids[haloi]+=1
 
         session.commit()
 
