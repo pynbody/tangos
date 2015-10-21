@@ -668,28 +668,39 @@ class Halo(Base):
         session = Session.object_session(self)
         key_id = get_dict_id(key, session=session)
         if 'all_properties' not in sqlalchemy.inspect(self).unloaded:
-            # we've already got it from the DB, find it locally
-            for x in self.all_properties:
-                if x.name_id==key_id:
-                    return x.data
-            for x in self.links:
-                if x.relation_id==key_id:
-                    return x.halo_to
+            return_vals = self._get_item_cached(key_id)
         else:
-            # nothing has been loaded from the DB, so look for just this property
+            return_vals = self._get_item_from_session(key_id, session)
+
+        if len(return_vals) ==0:
+            raise KeyError, "No such property %r"%key
+
+        if len(return_vals) == 1:
+            return_vals = return_vals[0]
+
+        return return_vals
 
 
-            try:
-                return session.query(HaloProperty).filter_by(name_id=key_id, halo_id=self.id, deprecated=False).order_by(HaloProperty.id.desc()).first().data
-            except AttributeError:
-                pass
-            try:
-                return session.query(HaloLink).filter_by(relation_id=key_id, halo_from_id=self.id).first().halo_to
-            except AttributeError:
-                pass
+    def _get_item_from_session(self, key_id, session):
+        query_properties = session.query(HaloProperty).filter_by(name_id=key_id, halo_id=self.id,
+                                                                 deprecated=False).order_by(HaloProperty.id.desc())
+        ret_values = [x.data for x in query_properties.all()]
+        query_links = session.query(HaloLink).filter_by(relation_id=key_id, halo_from_id=self.id)
+        for link in query_links.all():
+            ret_values.append(link.halo_to)
+        return ret_values
 
+    def _get_item_cached(self, key_id):
+        return_vals = []
+        # we've already got it from the DB, find it locally
+        for x in self.all_properties:
+            if x.name_id == key_id:
+                return_vals.append(x.data)
+        for x in self.links:
+            if x.relation_id == key_id:
+                return_vals.append(x.halo_to)
 
-        raise KeyError(key)
+        return return_vals
 
     def get_property(self, key, default=None):
         session = Session.object_session(self)
