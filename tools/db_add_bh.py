@@ -11,6 +11,16 @@ import glob
 
 session = db.core.internal_session
 
+def resolve_multiple_mergers(bh_map):
+    for k,v in bh_map.iteritems():
+        if v[0] in bh_map:
+            old_target = v[0]
+            old_weight = v[1]
+            bh_map[k] = bh_map[old_target][0],v[1]*bh_map[old_target][1]
+            print "Reassignment:",k,old_target,bh_map[k]
+            resolve_multiple_mergers(bh_map)
+            return
+
 def generate_halolinks(sim):
     db.tracker.generate_tracker_halo_links(sim)
     fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
@@ -26,36 +36,32 @@ def generate_halolinks(sim):
     timestep_numbers = np.array([int(ts.extension[-6:]) for ts in sim.timesteps])
     dict_obj = db.core.get_or_create_dictionary_item(session, "BH_merger")
 
-    for l in open(fname[0]):
-        l_split = l.split()
-        ts = float(l_split[1])
+    for ts1, ts2 in zip(sim.timesteps[:-1],sim.timesteps[1:]):
+        ts1_step = int(ts1.extension[-6:])
+        ts2_step = int(ts2.extension[-6:])
 
-        try:
-            snap_after_merger = list(timestep_numbers>ts).index(True)
-        except ValueError:
-            continue
+        bh_map = {}
+        print ts1, ts2
+        for l in open(fname[0]):
+            l_split = l.split()
+            ts = float(l_split[1])
+            bh_dest_id = int(l_split[2])
+            bh_src_id = int(l_split[3])
+            ratio = float(l_split[4])
 
-        if snap_after_merger==0:
-            continue
+            if ts>ts1_step and ts<=ts2_step:
+                bh_map[bh_src_id] = (bh_dest_id, ratio)
 
-        snap_before_merger = snap_after_merger-1
-        assert snap_before_merger>=0
+        resolve_multiple_mergers(bh_map)
 
-        snap_before_merger = sim.timesteps[snap_before_merger]
-        snap_after_merger  = sim.timesteps[snap_after_merger]
+        for src,(dest,ratio) in bh_map.iteritems():
+            bh_src_before = ts1.halos.filter_by(halo_type=1,halo_number=src).first()
+            bh_dest_after = ts2.halos.filter_by(halo_type=1,halo_number=dest).first()
 
-        bh_dest_id = int(l_split[2])
-        bh_src_id = int(l_split[3])
+            if bh_src_before is not None and bh_dest_after is not None:
+                db.tracker.generate_tracker_halo_link_if_not_present(bh_src_before,bh_dest_after,dict_obj,1.0)
+                db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj,ratio)
 
-        ratio = float(l_split[4])
-
-
-        bh_src_before = snap_before_merger.halos.filter_by(halo_type=1,halo_number=bh_src_id).first()
-        bh_dest_after = snap_after_merger.halos.filter_by(halo_type=1,halo_number=bh_dest_id).first()
-
-        if bh_src_before is not None and bh_dest_after is not None:
-            db.tracker.generate_tracker_halo_link_if_not_present(bh_src_before,bh_dest_after,dict_obj,1.0)
-            db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj,ratio)
 
 
 if __name__=="__main__":
@@ -66,11 +72,10 @@ if __name__=="__main__":
         order_by(db.TimeStep.time_gyr).all()
 
 
-    #files = parallel_tasks.distributed(files)
-    #parallel_tasks.mpi_sync_db(session)
+    files = parallel_tasks.distributed(files)
+    parallel_tasks.mpi_sync_db(session)
 
     for f in files:
-        continue
         print f
         sim = f.simulation
 
