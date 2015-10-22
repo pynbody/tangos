@@ -6,9 +6,56 @@ import halo_db.tracker
 import sys
 import numpy as np
 import gc
+import glob
 
 
 session = db.core.internal_session
+
+def generate_halolinks(sim):
+    db.tracker.generate_tracker_halo_links(sim)
+    fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
+    if len(fname)==0:
+        print "No merger file for "+sim.basename
+        return
+    elif len(fname)>1:
+        print "Can't work out which is the merger file for "+sim.basename
+        print "Found: ",fname
+        return
+
+
+    timestep_numbers = np.array([int(ts.extension[-6:]) for ts in sim.timesteps])
+    dict_obj = db.core.get_or_create_dictionary_item(session, "BH_merger")
+
+    for l in open(fname[0]):
+        l_split = l.split()
+        ts = float(l_split[1])
+
+        try:
+            snap_after_merger = list(timestep_numbers>ts).index(True)
+        except ValueError:
+            continue
+
+        if snap_after_merger==0:
+            continue
+
+        snap_before_merger = snap_after_merger-1
+        assert snap_before_merger>=0
+
+        snap_before_merger = sim.timesteps[snap_before_merger]
+        snap_after_merger  = sim.timesteps[snap_after_merger]
+
+        bh_dest_id = int(l_split[2])
+        bh_src_id = int(l_split[3])
+
+        ratio = float(l_split[4])
+
+
+        bh_src_before = snap_before_merger.halos.filter_by(halo_type=1,halo_number=bh_src_id).first()
+        bh_dest_after = snap_after_merger.halos.filter_by(halo_type=1,halo_number=bh_dest_id).first()
+
+        if bh_src_before is not None and bh_dest_after is not None:
+            db.tracker.generate_tracker_halo_link_if_not_present(bh_src_before,bh_dest_after,dict_obj,1.0)
+            db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj,ratio)
 
 
 if __name__=="__main__":
@@ -18,12 +65,12 @@ if __name__=="__main__":
         db.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
         order_by(db.TimeStep.time_gyr).all()
 
-    import sim_output_finder
 
-    files = parallel_tasks.distributed(files)
-    parallel_tasks.mpi_sync_db(session)
+    #files = parallel_tasks.distributed(files)
+    #parallel_tasks.mpi_sync_db(session)
 
     for f in files:
+        continue
         print f
         sim = f.simulation
 
@@ -88,5 +135,14 @@ if __name__=="__main__":
         del f_pb
         gc.collect()
 
+    print "Generate merger trees...."
     for sim in query.all():
-        db.tracker.generate_tracker_halo_links(sim)
+        generate_halolinks(sim)
+
+    session.commit()
+
+
+
+
+
+
