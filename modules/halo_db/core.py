@@ -611,6 +611,8 @@ class TimeStep(Base):
 class Halo(Base):
     __tablename__ = 'halos'
 
+
+
     id = Column(Integer, primary_key=True)
     halo_number = Column(Integer)
     timestep_id = Column(Integer, ForeignKey('timesteps.id'))
@@ -623,6 +625,11 @@ class Halo(Base):
         'halos', cascade='all', lazy='dynamic'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
     halo_type = Column(Integer, nullable=False)
+
+    __mapper_args__ = {
+        'polymorphic_identity':0,
+        'polymorphic_on':halo_type
+    }
 
     def __init__(self, timestep, halo_number, NDM, NStar, NGas, halo_type=0):
         self.timestep = timestep
@@ -641,7 +648,7 @@ class Halo(Base):
 
     def __repr__(self):
 
-        return "<Halo %r | NDM=%d Nstar=%d Ngas=%d>"%(self.path, self.NDM, self. NStar, self.NGas)
+        return "<%s %r | NDM=%d Nstar=%d Ngas=%d>"%(self.__class__.__name__, self.path, self.NDM, self. NStar, self.NGas)
 
 
     @property
@@ -747,24 +754,41 @@ class Halo(Base):
             return default
 
     def __setitem__(self, key, obj):
-        key = get_or_create_dictionary_item(internal_session, key)
+
         if isinstance(obj, Halo):
-            X = self.links.filter_by(halo_from_id=self.id,relation_id=key.id).first()
-            if X is None:
-                X = internal_session.merge(HaloLink(self, obj, key))
-                X.creator = current_creator
-            else:
-                X.halo_to = obj
-            
-
+            self._setitem_one_halo(key, obj)
+        elif hasattr(obj, '__len__') and all([isinstance(x,Halo) for x in obj]):
+            self._setitem_multiple_halos(key, obj)
         else:
-            X = self.properties.filter_by(name_id=key.id).first()
+            self._setitem_property(key, obj)
 
-            if X is not None:
-                X.data = obj
-            else:
-                X = internal_session.merge(HaloProperty(self, key.id, obj))
+    def _setitem_property(self, key, obj):
+        session = Session.object_session(self)
+        key = get_or_create_dictionary_item(internal_session, key)
+        X = self.properties.filter_by(name_id=key.id).first()
+        if X is not None:
+            X.data = obj
+        else:
+            X = session.merge(HaloProperty(self, key.id, obj))
+        X.creator = current_creator
+
+    def _setitem_one_halo(self, key, obj):
+        session = Session.object_session(self)
+        key = get_or_create_dictionary_item(session, key)
+        X = self.links.filter_by(halo_from_id=self.id, relation_id=key.id).first()
+        if X is None:
+            X = session.merge(HaloLink(self, obj, key))
             X.creator = current_creator
+        else:
+            X.halo_to = obj
+
+    def _setitem_multiple_halos(self, key, obj):
+        session = Session.object_session(self)
+        key = get_or_create_dictionary_item(session, key)
+        self.links.filter_by(halo_from_id=self.id, relation_id=key.id).delete()
+        links = [HaloLink(self, halo_to, key) for halo_to in obj]
+        session.add_all(links)
+
 
     def keys(self):
         names = []
@@ -881,6 +905,18 @@ class Halo(Base):
     def short(self):
         return "<Halo " + str(self.halo_number) + " of ...>"
 
+
+class BH(Halo):
+    __mapper_args__ = {
+        'polymorphic_identity':1
+    }
+
+    def __init__(self, timestep, halo_number):
+        super(BH, self).__init__(timestep, halo_number, 0,0,0,1)
+
+    @property
+    def host_halo(self):
+        return self.reverse_links.filter_by(relation_id=get_dict_id('BH')).first().halo_from
 
 class HaloProperty(Base):
     __tablename__ = 'haloproperties'
