@@ -656,7 +656,7 @@ class Halo(Base):
         if self.halo_type==0:
             name = str(self.halo_number)
         else:
-            name = str(self.halo_type)+str(self.halo_number)
+            name = str(self.halo_type)+"."+str(self.halo_number)
         return self.timestep.path+"/"+name
 
 
