@@ -81,6 +81,8 @@ def create_property(halo, name, prop, session):
         px = db.HaloLink(halo, prop, name)
     else:
         px = db.HaloProperty(halo, name, prop)
+
+    px.creator = db.core.current_creator
     return px
 
 
@@ -91,12 +93,8 @@ def insert_list(property_list, retry=10):
     try:
         property_object_list = [create_property(
             p[0], p[1], p[2], session) for p in property_list if p[2] is not None]
-        prop_new = []
 
-        for (prop,pl) in zip(property_object_list, property_list):
-            prop_merged = session.merge(prop)
-            # don't understand why this should be necessary
-            prop_merged.creator = db.core.current_creator
+        session.add_all(property_object_list)
 
         session.commit()
 
@@ -307,14 +305,22 @@ class DbWriter(object):
             with check_deleted(self._loaded_timestep):
                 self._loaded_timestep=None
 
-        # Keep a pynbody snapshot alive for this timestep, even if should_load_timestep_particles is False,
-        # because it might be needed for the iord's if we are in partial-load mode.
-        self._loaded_timestep = db_timestep.load()
+
+
 
         if self._should_load_timestep_particles():
+            self._loaded_timestep = db_timestep.load()
             self._loaded_timestep.physical_units()
             self._run_preloop(self._loaded_timestep, db_timestep.filename,
                               self._property_calculator_instances, self._existing_properties_all_halos)
+
+        else:
+            # Keep a pynbody snapshot alive for this timestep, even if should_load_timestep_particles is False,
+            # because it might be needed for the iord's if we are in partial-load mode.
+            try:
+                self._loaded_timestep = db_timestep.load()
+            except IOError:
+                pass
 
         self._current_timestep_id = db_timestep.id
 
