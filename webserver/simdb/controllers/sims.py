@@ -233,7 +233,8 @@ class SimsController(BaseController):
         self.creator_cache = {}
         return tx
 
-    def _constr_mergertree(self, halo, base_halo):
+    @classmethod
+    def _construct_preliminary_mergertree(self, halo, base_halo):
         rl = halo.reverse_links.filter_by(relation_id=db.get_dict_id('time')).all()
 
         timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr"%(halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
@@ -262,18 +263,34 @@ class SimsController(BaseController):
         maxdepth = 0
 
         for rli in rl:
-            nx = self._constr_mergertree(rli.halo_from, base_halo)
+            nx = self._construct_preliminary_mergertree(rli.halo_from, base_halo)
             output['contents'].append(nx)
             if nx['maxdepth']>maxdepth: maxdepth = nx['maxdepth']
 
         output['maxdepth'] = maxdepth+1
         return output
 
+    @classmethod
+    def _visit_tree(self, tree):
+        yield tree
+        for subtree in tree['contents']:
+            _visit_tree(subtree)
+
+    @classmethod
+    def _postprocess_mergertree(self, tree):
+        pass
+
+
+    @classmethod
+    def _construct_mergertree(self, halo):
+        tree = self._construct_preliminary_mergertree(halo, halo)
+        self._postprocess_mergertree(tree)
+        return tree
 
     def mergertree(self, id):
         layers = []
         halo = Session.query(meta.Halo).filter_by(id=id).first()
-        c.tree = self._constr_mergertree(halo,halo)
+        c.tree = self._construct_mergertree(halo)
         c.breadcrumbs = h.breadcrumbs(halo)
         return render('/sims/mergertree.mako')
 
