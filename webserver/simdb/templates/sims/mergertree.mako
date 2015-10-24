@@ -57,7 +57,7 @@ function buildTree(containerName, customOptions)
     console.log(minX,maxX);
 
     // size of the diagram. 50 px per timestep here.
-    var size = { width: treeData['maxdepth']*50+50, height: maxX-minX+50};
+    var size = { width: treeData['maxdepth']*50+50, height: maxX-minX+100};
 
     var tree = d3.layout.tree()
         .sort(null)
@@ -176,7 +176,9 @@ function buildTree(containerName, customOptions)
         {
           return d.nodeclass;
         })
-        .attr("r", options.nodeRadius);
+        .attr("r", function(d) {
+                return d.size;
+            });
 
     nodeGroup.append("svg:a")
         .attr("xlink:href", function(d)

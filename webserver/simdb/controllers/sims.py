@@ -11,7 +11,7 @@ import simdb.model.meta as meta
 from simdb.model.meta import *
 
 import halo_db as db
-
+import math
 import numpy as np
 
 log = logging.getLogger(__name__)
@@ -235,35 +235,53 @@ class SimsController(BaseController):
 
     @classmethod
     def _construct_preliminary_mergertree(self, halo, base_halo):
-        rl = halo.reverse_links.filter_by(relation_id=db.get_dict_id('time')).all()
+        from halo_db import hopper
+        rl = hopper.HopStrategy(halo)
+        rl.target_timestep(halo.timestep.previous)
+        rl = rl.all()
 
         timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr"%(halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
 
-        if halo.NDM>1e4:
-            moreinfo = "Halo %d, NDM=%.2e"%(halo.halo_number, halo.NDM)
+        if isinstance(halo, db.core.BH):
+            mass_name = "BH_mass"
+            moreinfo = "BH %d"%halo.halo_number
         else:
-            moreinfo = "Halo %d, NDM=%d"%(halo.halo_number, halo.NDM)
+            mass_name = "Mvir"
 
-        Mvir = halo.properties.filter_by(name_id=db.get_dict_id('Mvir')).first()
+            if halo.NDM>1e4:
+                moreinfo = "%s %d, NDM=%.2e"%(halo.__class__.__name__,halo.halo_number, halo.NDM)
+            else:
+                moreinfo = "%s %d, NDM=%d"%(halo.__class__.__name__,halo.halo_number, halo.NDM)
+
+        Mvir = halo.properties.filter_by(name_id=db.get_dict_id(mass_name, session=Session.object_session(halo))).first()
         if Mvir is not None:
-            moreinfo+=", Mvir=%.2e"%Mvir.data
+            moreinfo+=", %s=%.2e"%(mass_name,Mvir.data)
+            unscaled_size = math.log10(Mvir.data)
+        else:
+            unscaled_size = 1.0
         nodeclass = 'node-dot-standard'
 
         if halo.links.filter_by(relation_id=db.get_dict_id('Sub')).count()>0:
             nodeclass = 'node-dot-sub'
 
-        output = {'name': str(halo.halo_number),
+        name = str(halo.halo_number)
+
+        if len(name)>4:
+            name = ""
+
+        output = {'name': name ,
                   'url': url(controller="sims", action="showhalo", id=halo.id),
                   'nodeclass': nodeclass,
                   'moreinfo': moreinfo,
                   'timeinfo': timeinfo,
                   '_x': halo.halo_number*10,
+                  'unscaled_size': unscaled_size ,
                   'contents': [] }
 
         maxdepth = 0
 
         for rli in rl:
-            nx = self._construct_preliminary_mergertree(rli.halo_from, base_halo)
+            nx = self._construct_preliminary_mergertree(rli, base_halo)
             output['contents'].append(nx)
             if nx['maxdepth']>maxdepth: maxdepth = nx['maxdepth']
 
@@ -274,11 +292,29 @@ class SimsController(BaseController):
     def _visit_tree(self, tree):
         yield tree
         for subtree in tree['contents']:
-            _visit_tree(subtree)
+            for item in self._visit_tree(subtree) : yield item
 
     @classmethod
     def _postprocess_mergertree(self, tree):
-        pass
+        x_vals = set()
+        max_size = -100
+        for node in self._visit_tree(tree):
+            x_vals.add(node['_x'])
+            if node['unscaled_size']>max_size:
+                max_size = node['unscaled_size']
+
+        x_map = {}
+        new_x=0
+        for xv in sorted(x_vals):
+            x_map[xv] = new_x
+            new_x+=20
+
+        for node in self._visit_tree(tree):
+            node['_x']=x_map[node['_x']]
+            size = 10+3*(node['unscaled_size']-max_size)
+            if size<3:
+                size = 3
+            node['size'] = size
 
 
     @classmethod
