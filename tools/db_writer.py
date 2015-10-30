@@ -467,7 +467,7 @@ class DbWriter(object):
                 except sqlalchemy.exc.OperationalError:
                     if nloops > 10:
                         raise
-                    sleep(1)
+                    time.sleep(1)
                     busy = True
 
         self._commit_results_if_needed()
