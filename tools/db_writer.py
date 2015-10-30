@@ -454,8 +454,8 @@ class DbWriter(object):
         self._queue_results_for_later_commit(db_halo, names, results, existing_properties)
 
     def run_halo_calculation(self, db_halo, existing_properties):
-        print >>sys.stderr, term.RED + "H%d"%db_halo.halo_number + term.NORMAL,
-        sys.stderr.flush()
+        #print >>sys.stderr, term.RED + "H%d"%db_halo.halo_number + term.NORMAL,
+        #sys.stderr.flush()
         for calculator in self._property_calculator_instances:
             busy = True
             nloops = 0
