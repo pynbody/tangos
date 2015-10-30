@@ -456,9 +456,9 @@ class DbWriter(object):
     def run_halo_calculation(self, db_halo, existing_properties):
         print >>sys.stderr, term.RED + "H%d"%db_halo.halo_number + term.NORMAL,
         sys.stderr.flush()
-        nloops = 0
         for calculator in self._property_calculator_instances:
             busy = True
+            nloops = 0
             while busy is True:
                 busy = False
                 try:
