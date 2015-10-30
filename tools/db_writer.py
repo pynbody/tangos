@@ -456,9 +456,19 @@ class DbWriter(object):
     def run_halo_calculation(self, db_halo, existing_properties):
         print >>sys.stderr, term.RED + "H%d"%db_halo.halo_number + term.NORMAL,
         sys.stderr.flush()
-
+        busy = True
+        nloops = 0
         for calculator in self._property_calculator_instances:
-            self.run_property_calculation(db_halo, calculator, existing_properties)
+            while busy is True:
+                busy = False
+                try:
+                    self.run_property_calculation(db_halo, calculator, existing_properties)
+                    nloops += 1
+                except sqlalchemy.exc.OperationalError:
+                    if nloops > 10:
+                        raise
+                    sleep(1)
+                    busy = True
 
         self._commit_results_if_needed()
 
