@@ -462,8 +462,8 @@ class DbWriter(object):
             while busy is True:
                 busy = False
                 try:
-                    self.run_property_calculation(db_halo, calculator, existing_properties)
                     nloops += 1
+                    self.run_property_calculation(db_halo, calculator, existing_properties)
                 except sqlalchemy.exc.OperationalError:
                     if nloops > 10:
                         raise
