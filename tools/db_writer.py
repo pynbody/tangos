@@ -454,11 +454,21 @@ class DbWriter(object):
         self._queue_results_for_later_commit(db_halo, names, results, existing_properties)
 
     def run_halo_calculation(self, db_halo, existing_properties):
-        print >>sys.stderr, term.RED + "H%d"%db_halo.halo_number + term.NORMAL,
-        sys.stderr.flush()
-
+        #print >>sys.stderr, term.RED + "H%d"%db_halo.halo_number + term.NORMAL,
+        #sys.stderr.flush()
         for calculator in self._property_calculator_instances:
-            self.run_property_calculation(db_halo, calculator, existing_properties)
+            busy = True
+            nloops = 0
+            while busy is True:
+                busy = False
+                try:
+                    nloops += 1
+                    self.run_property_calculation(db_halo, calculator, existing_properties)
+                except sqlalchemy.exc.OperationalError:
+                    if nloops > 10:
+                        raise
+                    time.sleep(1)
+                    busy = True
 
         self._commit_results_if_needed()
 
