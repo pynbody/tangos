@@ -1,6 +1,7 @@
-import halo_db as db
+from . import core
 import traceback
 import sys
+import sqlalchemy
 
 def get_halo_entry(ts, halo_number):
     h = ts.halos.filter_by(halo_number=halo_number).first()
@@ -8,23 +9,29 @@ def get_halo_entry(ts, halo_number):
 
 
 def need_crosslink_ts(ts1,ts2,session=None):
-    session = session or db.core.internal_session
-    same_d_id = db.get_or_create_dictionary_item(session, "ptcls_in_common").id
+    session = session or core.internal_session
+    same_d_id = core.get_or_create_dictionary_item(session, "ptcls_in_common").id
     sources = [h.id for h in ts1.halos.all()]
     targets = [h.id for h in ts2.halos.all()]
     if len(targets)==0 or len(sources)==0:
         print "--> no halos"
         return False
 
-    exists = session.query(db.HaloLink).filter(db.and_(db.HaloLink.halo_from_id.in_(sources), db.HaloLink.relation_id == same_d_id, db.HaloLink.halo_to_id.in_(targets))).count() > 0
+    halo_source = sqlalchemy.orm.aliased(core.Halo,name="halo_source")
+    halo_target = sqlalchemy.orm.aliased(core.Halo,name="halo_target")
+    exists = session.query(core.HaloLink).join(halo_source,core.HaloLink.halo_from).\
+                                        join(halo_target,core.HaloLink.halo_to).\
+                                        filter(halo_source.timestep_id==ts1.id, halo_target.timestep_id==ts2.id,
+                                               core.HaloLink.relation_id == same_d_id).count() > 0
+
     if exists:
         print "--> existing objects"
     return not exists
 
 
 def create_db_objects_from_catalog(cat, ts1, ts2, session=None):
-    session = session or db.core.internal_session
-    same_d_id = db.get_or_create_dictionary_item(session, "ptcls_in_common")
+    session = session or core.internal_session
+    same_d_id = core.get_or_create_dictionary_item(session, "ptcls_in_common")
 
     for i, possibilities in enumerate(cat):
         h1 = get_halo_entry(ts1,i)
@@ -33,7 +40,7 @@ def create_db_objects_from_catalog(cat, ts1, ts2, session=None):
 
             if h1 is not None and h2 is not None:
                 print i,cat_i,h1,h2,weight
-                cx = db.HaloLink(h1, h2, same_d_id, weight)
+                cx = core.HaloLink(h1, h2, same_d_id, weight)
                 session.merge(cx)
     session.commit()
 
