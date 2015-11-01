@@ -1,5 +1,4 @@
 import weakref
-import time
 import datetime
 
 import numpy as np
@@ -1362,28 +1361,6 @@ def getdb(cl) :
     return getdb_inner
 
 
-class BlockingSession(Session):
-    # def __init__(self,*params) :
-    #    super(BlockingSession,self).__init__(*params)
-
-    def execute(self, *params, **kwparams):
-        retries = 20
-        while retries > 0:
-            try:
-                return super(BlockingSession, self).execute(*params, **kwparams)
-            except sqlalchemy.exc.OperationalError:
-                super(BlockingSession,self).rollback()
-                retries -= 1
-                if retries > 0:
-                    print "DB is locked (%d attempts remain)..." % retries
-                    time.sleep(1)
-                else:
-                    raise
-            except sqlalchemy.exc.IntegrityError, ex:
-                import pdb
-                pdb.set_trace()
-
-
 def supplement_argparser(argparser):
     argparser.add_argument("--db-filename", help="Specify path to a database file to be used",
                            action='store', type=str, metavar="database_file.sqlite3")
@@ -1397,21 +1374,25 @@ def process_options(argparser_options):
         config.db = argparser_options.db_filename
     _verbose = argparser_options.db_verbose
 
-def init_db(db_uri=None):
+def init_db(db_uri=None, timeout=10, verbose=None):
     global _verbose, current_creator, internal_session, engine
     if db_uri is None:
         db_uri = 'sqlite:///' + config.db
-    engine = create_engine(db_uri, echo=_verbose,
-                           isolation_level='READ UNCOMMITTED',  connect_args={'timeout': 10})
+    engine = create_engine(db_uri, echo=verbose or _verbose,
+                           isolation_level='READ UNCOMMITTED',  connect_args={'timeout': timeout})
     current_creator = Creator()
     Session = sessionmaker(bind=engine)
     internal_session=Session()
     Base.metadata.create_all(engine)
 
 def use_blocking_session():
-    global internal_session, engine
+    global internal_session, engine, current_creator
+    from . import blocking_session
     internal_session.commit()
-    internal_session = BlockingSession(bind=engine)
+
+    internal_session = blocking_session.BlockingSession(bind=engine)
+    if current_creator.id is not None:
+        current_creator = internal_session.query(Creator).filter_by(id=current_creator.id).first()
 
 init_db()
 
@@ -1421,5 +1402,5 @@ __all__ = ['DictionaryItem','Creator','Simulation','SimulationProperty','TrackDa
            'all_simulations','all_creators','cache_dict','get_dict_id',
            'sim_query_from_name_list','sim_query_from_args','get_or_create_dictionary_item',
            'get_simulation','construct_halo_cat','get_timestep','get_halo','get_item',
-           'get_haloproperty','copy_property','getdb','BlockingSession','supplement_argparser',
+           'get_haloproperty','copy_property','getdb', 'supplement_argparser',
            'process_options','init_db','Base']

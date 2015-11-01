@@ -65,6 +65,7 @@ def generate_halolinks(sim):
 
 
 if __name__=="__main__":
+    db.use_blocking_session()
     query = db.sim_query_from_args(sys.argv, session)
 
     files = db.core.internal_session.query(db.TimeStep).filter(

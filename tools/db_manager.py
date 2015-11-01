@@ -12,6 +12,7 @@ from halo_db import Simulation, TimeStep, get_or_create_dictionary_item, Simulat
     Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo, config
 import halo_db as db
 from halo_db import core
+import halo_db.blocking_session
 from terminalcontroller import term
 
 
@@ -604,7 +605,7 @@ def rollback(options):
 
 if __name__ == "__main__":
 
-    db.core.internal_session = db.BlockingSession(bind = db.core.engine)
+    db.core.internal_session = halo_db.blocking_session.BlockingSession(bind = db.core.engine)
     import argparse
 
     parser = argparse.ArgumentParser()
