@@ -7,7 +7,10 @@ import sys
 import sqlalchemy.exc
 
 def setup():
-    os.remove("test.db")
+    try:
+        os.remove("test.db")
+    except OSError:
+        pass
     db.init_db("sqlite:///test.db", timeout=0.1)
 
     session = db.core.internal_session
@@ -22,6 +25,12 @@ def setup():
     session.add_all([halo_1])
 
     session.commit()
+
+def teardown():
+    try:
+        os.remove("test.db")
+    except OSError:
+        pass
 
 
 def _multiprocess_block(ready_condition):

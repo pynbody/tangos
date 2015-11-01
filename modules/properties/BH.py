@@ -109,6 +109,8 @@ class BH(HaloProperties):
         if not isinstance(properties, db.Halo):
             raise RuntimeError("No proxies, please")
 
+        halo = halo.s
+
         if len(halo)!=1:
             raise RuntimeError("Not a BH!")
 
@@ -160,6 +162,8 @@ class BHAccHistogram(TimeChunkedProperty):
         return True
 
     def calculate(self, halo, properties):
+
+        halo = halo.s
 
         if len(halo)!=1:
             raise RuntimeError("Not a BH!")
