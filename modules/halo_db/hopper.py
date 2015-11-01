@@ -21,6 +21,7 @@ class HopStrategy(object):
         self.halo_from = halo_from
         self._order_by_names = ['weight']
         self.query = query
+        self.keep_redundant_routes = False
         self._link_orm_class = core.HaloLink
 
     def target_timestep(self, ts):
@@ -68,9 +69,12 @@ class HopStrategy(object):
         except sqlalchemy.exc.ResourceClosedError:
             results = []
 
-        return self._remove_duplicate_targets(results)
+        if self.keep_redundant_routes:
+            return results
+        else:
+            return self._remove_redundant_routes(results)
 
-    def _remove_duplicate_targets(self, paths):
+    def _remove_redundant_routes(self, paths):
         weeded_paths = []
         existing_targets = set()
         for path in paths:
@@ -158,11 +162,11 @@ class MultiHopStrategy(HopStrategy):
     def link_ids(self):
         """Return the links for the possible hops, in the form of a list of HaloLink IDs for
         each path"""
-        return [[int(y) for y in x.links.split(",")] for x in self._query_ordered.all()]
+        return [[int(y) for y in x.links.split(",")] for x in self._get_query_all()]
 
     def node_ids(self):
         """Return the nodes, i.e. halo IDs visited, for each path"""
-        return [[int(y) for y in x.nodes.split(",")] for x in self._query_ordered.all()]
+        return [[int(y) for y in x.nodes.split(",")] for x in self._get_query_all()]
 
     def nodes(self):
         return _recursive_map_ids_to_objects(self.node_ids(),core.Halo,self.session)

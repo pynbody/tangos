@@ -146,20 +146,36 @@ def test_twostep_ordering():
 
     assert all==[I("sim/ts1/1"),
                  I("sim/ts1/2"),
+                 # I("sim/ts1/1"), weaker route should NOT be returned by default
+                 I("sim/ts2/1"),
+                 I("sim/ts2/2")]
+
+    assert strategy.link_ids()==[[19,7], [18,9], [18],[19]]
+
+    assert strategy.node_ids()==[[9, 6, 1], [9, 5, 2], [9, 5], [9, 6]]
+
+
+def test_twostep_multiroute():
+    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts3/1"),2,'backwards')
+    strategy.order_by("time_asc","weight")
+    strategy.keep_redundant_routes=True
+    all, weights = strategy.all_and_weights()
+
+    I = db.get_item
+
+    assert all==[I("sim/ts1/1"),
+                 I("sim/ts1/2"),
                  I("sim/ts1/1"), # route 2
                  I("sim/ts2/1"),
                  I("sim/ts2/2")]
 
-    assert strategy.link_ids()==[[19,7], [18,9], [18,8],[18],[19]]
+    assert strategy.link_ids()==[[19,7], [18,9], [18,8], [18],[19]]
 
     assert strategy.node_ids()==[[9, 6, 1], [9, 5, 2], [9, 5, 1], [9, 5], [9, 6]]
 
 def test_twostep_direction():
     strategy = hopper.MultiHopStrategy(db.get_item("sim/ts2/1"),2,'backwards')
     timesteps = set([x.timestep for x in strategy.all()])
-    print strategy._query_ordered
-    print
-    print strategy.nodes()
     assert db.get_item("sim/ts1") in timesteps
-    assert db.get_item("sim/ts2") in timesteps
+    assert db.get_item("sim/ts2") not in timesteps
     assert db.get_item("sim/ts3") not in timesteps
