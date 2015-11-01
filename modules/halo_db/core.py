@@ -1108,20 +1108,28 @@ def all_creators():
 
 
 
+def _get_dict_cache_for_session(session):
+    session_dict = _dict_id.get(session, {})
+    _dict_id[session] = session_dict
+    return session_dict
+
 def cache_dict():
-    global _dict_id
+    
+    session_dict = _get_dict_cache_for_session(internal_session)
 
     for x in internal_session.query(DictionaryItem).all():
-        _dict_id[x.text] = x.id
+        session_dict[x.text] = x.id
 
 
 def get_dict_id(text, default=None, session=None):
     """Get a DictionaryItem id for text (possibly cached). Raises KeyError if
     no dictionary object exists for the specified text"""
-    global _dict_id
+    
 
     if session is None:
         session = internal_session
+
+    _dict_id = _get_dict_cache_for_session(session)
 
     try:
         return _dict_id[text]
@@ -1393,6 +1401,7 @@ def use_blocking_session():
     internal_session = blocking_session.BlockingSession(bind=engine)
     if current_creator.id is not None:
         current_creator = internal_session.query(Creator).filter_by(id=current_creator.id).first()
+    
 
 init_db()
 

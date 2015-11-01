@@ -9,8 +9,6 @@ import gc
 import glob
 
 
-session = db.core.internal_session
-
 def resolve_multiple_mergers(bh_map):
     for k,v in bh_map.iteritems():
         if v[0] in bh_map:
@@ -66,6 +64,7 @@ def generate_halolinks(sim):
 
 if __name__=="__main__":
     db.use_blocking_session()
+    session = db.core.internal_session
     query = db.sim_query_from_args(sys.argv, session)
 
     files = db.core.internal_session.query(db.TimeStep).filter(
