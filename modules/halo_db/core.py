@@ -939,7 +939,7 @@ class HaloProperty(Base):
     creator_id = Column(Integer, ForeignKey('creators.id'))
 
     def __init__(self, halo, name, data):
-        if type(halo) is Halo:
+        if isinstance(halo, Halo):
             self.halo = halo
         else:
             self.halo_id = halo
