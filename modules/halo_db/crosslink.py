@@ -50,8 +50,8 @@ def crosslink_ts(ts1, ts2, halo_min=0, halo_max=100, session=None):
     snap2 = ts2.load()
 
     try:
-        cat = snap1.bridge(snap2).fuzzy_match_catalog(halo_min, halo_max, threshold=0.05)
-        back_cat = snap2.bridge(snap1).fuzzy_match_catalog(halo_min,halo_max, threshold=0.05)
+        cat = snap1.bridge(snap2).fuzzy_match_catalog(halo_min, halo_max, threshold=0.005)
+        back_cat = snap2.bridge(snap1).fuzzy_match_catalog(halo_min,halo_max, threshold=0.005)
     except:
         print "ERROR"
         traceback.print_exc(file=sys.stderr)

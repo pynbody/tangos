@@ -2,7 +2,7 @@
 import simplejson as json
 %>
 
-<%inherit file="/base.mako"/> \
+<%inherit file="showhalo_base.mako"/> \
 
 <%def name="header()">Merger Tree</%def>
 
@@ -11,7 +11,6 @@ import simplejson as json
 <script type="text/javascript">
 
 
-var treeData = ${ json.dumps( c.tree ) | n };
 
 // tree render code stolen, er, borrowed, from http://blog.pixelingene.com/demos/d3_tree/
 
@@ -37,7 +36,7 @@ function buildTree(containerName, customOptions)
         nodeRadius: 5, fontSize: 12
     }, customOptions);
 
-
+    var treeData = $.parseJSON($("#tree-json").html())
     // Calculate total nodes, max label length
     var totalNodes = 0;
     var maxLabelLength = 0;
@@ -226,6 +225,12 @@ function buildTree(containerName, customOptions)
         stroke-width: 1px;
     }
 
+    circle.node-dot-selected {
+        fill: yellow;
+        stroke:black;
+        stroke-width: 3px;
+    }
+
     path.link {
         fill: none;
         stroke: gray;
@@ -243,12 +248,26 @@ function buildTree(containerName, customOptions)
     }
 </style>
 
-<div id="tree-container"></div>
+<script type="text/javascript">
 
+function rebuildTree() {
+    $("#tree-container").html("");
+    buildTree("#tree-container");
+}
 
-
-<script>
-    $(function () {
-        buildTree("#tree-container");
-    });
+$(function () {
+    rebuildTree();
+    addNavigationCallback(rebuildTree);
+});
 </script>
+
+
+<div id="tree-container" >
+</div>
+
+<div class="dynamic-update" id="tree-json">
+    ${ json.dumps( c.tree ) | n }
+</div>
+
+
+

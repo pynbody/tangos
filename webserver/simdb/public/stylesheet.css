@@ -65,6 +65,10 @@ th {
     font-size: 12px;
 }
 
+#tree-json {
+    display: none;
+}
+
 img.plotimg {
     float: right;
 }
@@ -106,6 +110,9 @@ span.step_unavailable a {
     padding-left: 10px;
 }
 
+#flash-message{
+    color: #500;
+}
 code  {
 	font-size: 10px;
 }
