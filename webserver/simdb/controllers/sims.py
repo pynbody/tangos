@@ -236,11 +236,18 @@ class SimsController(BaseController):
         return tx
 
     @classmethod
-    def _construct_preliminary_mergertree(self, halo, base_halo):
+    def _construct_preliminary_mergertree(self, halo, base_halo, visited=None):
+        if visited is None:
+            visited = []
+        recurse = halo.id not in visited
+        visited.append(halo.id)
+
         from halo_db import hopper
         rl = hopper.HopStrategy(halo)
         rl.target_timestep(halo.timestep.previous)
-        rl = rl.all()
+        rl, weights = rl.all_and_weights()
+        if len(rl)>0:
+            rl = [rli for rli,wi in zip(rl,weights) if wi>weights[0]*0.05]
 
         timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr"%(halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
 
@@ -285,10 +292,11 @@ class SimsController(BaseController):
 
         maxdepth = 0
 
-        for rli in rl:
-            nx = self._construct_preliminary_mergertree(rli, base_halo)
-            output['contents'].append(nx)
-            if nx['maxdepth']>maxdepth: maxdepth = nx['maxdepth']
+        if recurse:
+            for rli in rl:
+                nx = self._construct_preliminary_mergertree(rli, base_halo,visited)
+                output['contents'].append(nx)
+                if nx['maxdepth']>maxdepth: maxdepth = nx['maxdepth']
 
         output['maxdepth'] = maxdepth+1
         return output
