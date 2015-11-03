@@ -59,12 +59,20 @@ class DmImages(Images):
     def plot_extent(cls):
         return 1000.0
 
+    @classmethod
+    def plot_xlabel(cls):
+        return "x/kpc comoving"
+
+    @classmethod
+    def plot_ylabel(cls):
+        return "y/kpc comoving"
+
     def calculate(self, halo, properties):
         f = halo.ancestor
         f['pos'] -= properties['SSC']
-        im_z = self.render_projected(f.dm, self.plot_extent())
+        im_z = self.render_projected(f.dm, self.plot_extent()*f.properties['a'])
         tx = f.rotate_y(90)
-        im_x = self.render_projected(f.dm, self.plot_extent())
+        im_x = self.render_projected(f.dm, self.plot_extent()*f.properties['a'])
         tx.revert()
         return im_z, im_x
 

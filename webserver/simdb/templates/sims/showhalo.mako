@@ -133,8 +133,8 @@ $(function() {
         $(this).nextUntil('tr.header').slideToggle(1000);
     });
 
-    addNavigationCallback(refreshImage);
     addNavigationCallback(restoreFormState);
+    addNavigationCallback(refreshImage);
     addNavigationCallback(bindArrayInterpretationActions);
 
  });
