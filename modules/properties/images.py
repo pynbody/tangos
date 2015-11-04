@@ -12,7 +12,7 @@ class Images(HaloProperties):
 
     @classmethod
     def plot_extent(cls):
-        return 20.0
+        return 15.0
 
     @classmethod
     def plot_xlabel(cls):
@@ -26,10 +26,13 @@ class Images(HaloProperties):
     def plot_clabel(cls):
         return r"M$_{\odot}$ kpc$^{-2}$"
 
-    def render_gas(self, f, size):
-        im = pynbody.plot.sph.image(f.gas[pynbody.filt.BandPass(
+    def render_projected(self, f, size):
+        im = pynbody.plot.sph.image(f[pynbody.filt.BandPass(
             'z', -size / 2, size / 2)], 'rho', size, units="Msol kpc^-2", noplot=True)
         return im
+
+    def render_gas(self, f, size):
+        return self.render_projected(f.gas, size)
 
     def render_stars(self, f, size):
         return pynbody.plot.stars.render(f[pynbody.filt.BandPass('z', -size / 2, size / 2)], width=size, plot=False, ret_im=True)
@@ -46,6 +49,35 @@ class Images(HaloProperties):
         tx.revert()
         g, s = self.render_gas(f, size), self.render_stars(f, size)
         return g_side, s_side, g_face, s_face, g, s
+
+
+class DmImages(Images):
+    def name(self):
+        return "dm_image_z", "dm_image_x"
+
+    @classmethod
+    def plot_extent(cls):
+        return 1000.0
+
+    @classmethod
+    def plot_xlabel(cls):
+        return "x/kpc comoving"
+
+    @classmethod
+    def plot_ylabel(cls):
+        return "y/kpc comoving"
+
+    def calculate(self, halo, properties):
+        f = halo.ancestor
+        f['pos'] -= properties['SSC']
+        im_z = self.render_projected(f.dm, self.plot_extent()*f.properties['a'])
+        tx = f.rotate_y(90)
+        im_x = self.render_projected(f.dm, self.plot_extent()*f.properties['a'])
+        tx.revert()
+        return im_z, im_x
+
+
+
 
 
 class InflowOutflowImg(HaloProperties):

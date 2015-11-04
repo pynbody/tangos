@@ -40,5 +40,6 @@ def make_map(config):
     map.connect('/showhalo/{id}/{rel}/{num}',controller='sims',action='showhalo')
     map.connect('/showhalo/{id}/{rel}',controller='sims',action='showhalo')
     map.connect('/mergertree/{id}',controller='sims',action='mergertree')
+    map.connect('/mergertree/{id}/{rel}/{num}',controller='sims',action='mergertree')
 
     return map

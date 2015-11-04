@@ -1,13 +1,6 @@
-<%inherit file="/base.mako"/> \
-
-<%def name="header()">${c.name}<small> N<sub>DM</sub>=${c.ndm}; N<sub>Bar</sub>=${c.nbar}</small></%def>
-
-<%def name="breadcrumbs()">
-${h.link_to('simdb',url(controller='sims',action='index'))} | ${h.link_to('simulation',url(controller='sims',action='showsim',id=c.simulation_id))}  | ${h.link_to('timestep',url(controller='sims',action='showstep',id=c.timestep_id))}
-</%def>
+<%inherit file="showhalo_base.mako"/> \
 
 <script type="text/javascript">
-
 
 // solution to easily serialize/*de*serialize form data from
 // http://stackoverflow.com/questions/1489486/jquery-plugin-to-serialize-a-form-and-also-restore-populate-the-form
@@ -93,41 +86,6 @@ function refreshImage() {
 
 var playdata;
 
-function updateElementsFromResponse(data) {
-    // $('#myform').replaceWith($(data).find('#myform'));
-
-    playdata = data;
-    $(".dynamic-update").each(function() {
-        var elementId = '#'+this.id;
-        var newData = $(data).find(elementId);
-        console.info(elementId,newData);
-        if(newData.size()>0) $(this).replaceWith(newData);
-        else console.info("(no action: was null)");
-    })
-
-    restoreFormState();
-
-    refreshImage();
-    updatePositionsAfterScroll();
-    bindArrayInterpretationActions();
-}
-function timeNav(rel) {
-
-    $("#navigation").html("<h2>Loading...</h2>");
-
-    $("#navigation").html("<h2>Loading...</h2>");
-
-    $.ajax({
-           type: "GET",
-           url: rel,
-           beforeSend: function(){ },
-           dataType: "html",
-           success: updateElementsFromResponse
-       });
-
-    return false;
-}
-
 var interpret_name = "";
 var interpret_axis ="";
 
@@ -156,56 +114,6 @@ function clearArrayInterpretation(axis) {
 }
 
 
-var scrollTop = {};
-
-function initScrollOffsetData() {
-    console.info("initScrollOffsetData");
-    $(".keeponscreen").each(function() {
-        if($(this).css('position')!='absolute') {
-            // generate clone that keeps the space for this element
-            var clone = $(this).clone();
-            clone.removeClass("keeponscreen");
-            clone.attr('id', clone.attr('id') + "-placeholder");
-            clone.css('visibility', 'hidden');
-            $(this).after(clone);
-        }
-        scrollTop[this.id]=this.getBoundingClientRect().top;
-
-    });
-}
-
-function updatePositionsAfterScroll() {
-    var windowTop = $(window).scrollTop();
-    var current=0;
-    $(".keeponscreen").each(function() {
-        if(windowTop<scrollTop[this.id]-current) {
-            $(this).css({position:"absolute",
-                         top: scrollTop[this.id]});
-        } else {
-            $(this).css({position:"fixed",
-                         top: current});
-        }
-
-        clone = $("#"+this.id+"-placeholder");
-        if (clone!=null)
-            clone.css({height: this.getBoundingClientRect().height+10});
-
-        current = this.getBoundingClientRect().bottom
-    });
-
-}
-
-function setupScrollAdjustment() {
-    initScrollOffsetData();
-    $(window).scroll(updatePositionsAfterScroll);
-    updatePositionsAfterScroll();
-
-}
-
-function findInOtherSimulation() {
-    timeNav(document.forms['select-othersimulation']['target_sim_id'].value);
-}
-
 function bindArrayInterpretationActions() {
     $(".radio_scalar").click(function(){
             clearArrayInterpretation($(this)[0].name);
@@ -216,57 +124,24 @@ function bindArrayInterpretationActions() {
         popupArrayInterpretationQuery($(this)[0].value, $(this)[0].name);
     });
 }
-var hasInitialized = false;
 
-    $(function() {
-        if(hasInitialized) return;
-        hasInitialized=true;
+$(function() {
 
-        setupScrollAdjustment();
+    bindArrayInterpretationActions();
 
-        bindArrayInterpretationActions();
+    $('.collapsibletable').click(function(){
+        $(this).nextUntil('tr.header').slideToggle(1000);
+    });
 
-        $('.collapsibletable').click(function(){
-            $(this).nextUntil('tr.header').slideToggle(1000);
-        });
+    addNavigationCallback(restoreFormState);
+    addNavigationCallback(refreshImage);
+    addNavigationCallback(bindArrayInterpretationActions);
+
+ });
 
 
-
-     });
 
 </script>
-
-
-
-
-<div class="keeponscreen dynamic-update" id="navigation">
-% for f in c.flash :
-<p style="color:#f00;">${f}</p>
-%endfor
-
-<p>At z=${"%.2f"%c.timestep_z}, t=${c.timestep_t}, dbid=${c.this_id}; show this halo in another step (if available):
-% for rel in ["earliest","-10","earlier","later","+10","latest"] :
-%if rel=="-10" :
-    <% linkurl = url(controller='sims', action='showhalo',id=c.this_id,rel="earlier",num=10)%>
-%elif rel=="+10" :
-    <% linkurl = url(controller='sims', action='showhalo',id=c.this_id,rel="later",num=10)%>
-%else :
-    <% linkurl = url(controller='sims', action='showhalo',id=c.this_id,rel=rel)%>
-%endif
-${h.link_to(rel,linkurl,onclick="return timeNav('"+linkurl+"');")}
-%endfor
-    | ${h.link_to('merger tree', url(controller='sims', action='mergertree', id=c.this_id))}
-    </p>
-    <form id="select-othersimulation">
-        <label for="target_sim_id">Find the same halo in another simulation:</label>
-<select name="target_sim_id" onchange="findInOtherSimulation();">
-    %for sim_name, sim_id, ticked in c.sims:
-    <option value="${url(controller='sims', action='showhalo', id=c.this_id, rel='insim',num=sim_id)}" ${'selected' if ticked else ''}>${sim_name}</option>
-    %endfor
-</select>
-</form>
-
-</div>
 
 <div id="blackholes" class="dynamic-update">
 ${c.bh}

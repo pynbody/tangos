@@ -115,8 +115,10 @@ class SimsController(BaseController):
         if other_halo is None or other_halo==this_halo :
             return self._relative_description(this_halo,other_halo)
         else :
+            linkurl = url(controller="sims", action="showhalo", id=other_halo.id)
             return h.link_to(self._relative_description(this_halo, other_halo),
-                             url(controller="sims", action="showhalo", id=other_halo.id))
+                             linkurl,
+                             onclick="return timeNav('"+linkurl+"');")
 
     def _render_bh(self, links, reverse_links) :
         rt = ""
@@ -234,11 +236,18 @@ class SimsController(BaseController):
         return tx
 
     @classmethod
-    def _construct_preliminary_mergertree(self, halo, base_halo):
+    def _construct_preliminary_mergertree(self, halo, base_halo, visited=None):
+        if visited is None:
+            visited = []
+        recurse = halo.id not in visited
+        visited.append(halo.id)
+
         from halo_db import hopper
         rl = hopper.HopStrategy(halo)
         rl.target_timestep(halo.timestep.previous)
-        rl = rl.all()
+        rl, weights = rl.all_and_weights()
+        if len(rl)>0:
+            rl = [rli for rli,wi in zip(rl,weights) if wi>weights[0]*0.05]
 
         timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr"%(halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
 
@@ -264,13 +273,16 @@ class SimsController(BaseController):
         if halo.links.filter_by(relation_id=db.get_dict_id('Sub')).count()>0:
             nodeclass = 'node-dot-sub'
 
+        if halo == base_halo:
+            nodeclass = 'node-dot-selected'
+
         name = str(halo.halo_number)
 
         if len(name)>4:
             name = ""
 
         output = {'name': name ,
-                  'url': url(controller="sims", action="showhalo", id=halo.id),
+                  'url': url(controller="sims", action="mergertree", id=halo.id),
                   'nodeclass': nodeclass,
                   'moreinfo': moreinfo,
                   'timeinfo': timeinfo,
@@ -280,10 +292,11 @@ class SimsController(BaseController):
 
         maxdepth = 0
 
-        for rli in rl:
-            nx = self._construct_preliminary_mergertree(rli, base_halo)
-            output['contents'].append(nx)
-            if nx['maxdepth']>maxdepth: maxdepth = nx['maxdepth']
+        if recurse:
+            for rli in rl:
+                nx = self._construct_preliminary_mergertree(rli, base_halo,visited)
+                output['contents'].append(nx)
+                if nx['maxdepth']>maxdepth: maxdepth = nx['maxdepth']
 
         output['maxdepth'] = maxdepth+1
         return output
@@ -319,18 +332,21 @@ class SimsController(BaseController):
 
     @classmethod
     def _construct_mergertree(self, halo):
-        tree = self._construct_preliminary_mergertree(halo, halo)
+        tree = self._construct_preliminary_mergertree(halo.latest, halo)
         self._postprocess_mergertree(tree)
         return tree
 
-    def mergertree(self, id):
-        layers = []
+    def mergertree(self, id, rel=None, num=1):
+        halo,id = self._showhalo_prepare(id,rel,num)
+        c.this_action = 'mergertree'
+        c.alternative_action = 'showhalo'
+        c.alternative_action_name = "&larr; halo properties"
         halo = Session.query(meta.Halo).filter_by(id=id).first()
         c.tree = self._construct_mergertree(halo)
         c.breadcrumbs = h.breadcrumbs(halo)
         return render('/sims/mergertree.mako')
 
-    def showhalo(self, id, rel=None,num=1) :
+    def _showhalo_prepare(self, id, rel=None, num=1):
 
         halo = Session.query(meta.Halo).filter_by(id=id).first()
         if not hasattr(c,'flash'):
@@ -348,18 +364,10 @@ class SimsController(BaseController):
                 halo = new_halo
                 id = new_halo.id
 
-
         c.name = "Halo "+str(halo.halo_number)+" of "+halo.timestep.extension
-
-        c.props = self._render_properties(halo.properties, parents=True)
-        c.dep_props = self._render_properties(halo.deprecated_properties, links=False, parents=True)
-        c.bh = self._render_bh(halo.links, halo.reverse_links)
-        c.links = self._render_links(halo.links, halo.reverse_links)
-
         all_sims = db.all_simulations(Session)
 
         c.sims = [(sim.basename, sim.id, sim.id==halo.timestep.simulation_id) for sim in all_sims]
-
 
 
         c.ndm = halo.NDM
@@ -378,7 +386,17 @@ class SimsController(BaseController):
 
         c.breadcrumbs = h.breadcrumbs(halo)
 
+        return halo, id
 
+    def showhalo(self, id, rel=None,num=1) :
+        halo,id = self._showhalo_prepare(id,rel,num)
+        c.this_action = 'showhalo'
+        c.alternative_action = 'mergertree'
+        c.alternative_action_name = "merger tree &rarr;"
+        c.props = self._render_properties(halo.properties, parents=True)
+        c.dep_props = self._render_properties(halo.deprecated_properties, links=False, parents=True)
+        c.bh = self._render_bh(halo.links, halo.reverse_links)
+        c.links = self._render_links(halo.links, halo.reverse_links)
 
         return render('/sims/showhalo.mako')
 
@@ -418,7 +436,7 @@ class SimsController(BaseController):
                 new_halo = targets[0]
                 message = "Confidence %.1f%%" % (100 * weights[0])
                 if len(targets) > 1 and weights[1] is not None:
-                    message += "; the next candidate %r has confidence %.1f%%" % (targets[1], 100 * weights[1])
+                    message += h.literal("; the next candidate is %s and has confidence %.1f%%" % (self._relative_link(targets[0],targets[1]), 100 * weights[1]))
                 c.flash = [message]
 
         else:

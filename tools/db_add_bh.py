@@ -125,7 +125,9 @@ if __name__=="__main__":
             if halo is None:
                 print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
                 continue
-
+            if bh_obj is None:
+                print "WARNING: can't find the db object for BH ",bh_iord,"?"
+                continue
             existing = halo.links.filter_by(relation_id=bh_dict_id.id,halo_to_id=bh_obj.id).count()
 
             if existing==0:
