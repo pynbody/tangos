@@ -52,10 +52,10 @@ class BHShortenedLog(object):
         x.units = y.units = z.units = posunits
         vx.units = vy.units = vz.units = velunits
         #pot.units = potunits
-	time.units = tunits
+        time.units = tunits
         mdot.units = munits/tunits
-	mdotsig.units = munits/tunits
-	mdotmean.units = munits/tunits
+        mdotsig.units = munits/tunits
+        mdotmean.units = munits/tunits
         #E.units = Eunits
 
 
@@ -66,8 +66,8 @@ class BHShortenedLog(object):
         vy.convert_units('km s^-1')
         vz.convert_units('km s^-1')
         mdot.convert_units('Msol yr^-1')
-	mdotmean.convert_units('Msol yr^-1')
-	mdotsig.convert_units('Msol yr^-1')
+        mdotmean.convert_units('Msol yr^-1')
+        mdotsig.convert_units('Msol yr^-1')
         mass.convert_units("Msol")
         time.convert_units("Gyr")
         #E.convert_units('erg')
