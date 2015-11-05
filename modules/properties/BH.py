@@ -108,7 +108,7 @@ class BH(HaloProperties):
         import halo_db as db
         if not isinstance(properties, db.Halo):
             raise RuntimeError("No proxies, please")
-
+        boxsize = halo.properties['boxsize']
         halo = halo.s
 
         if len(halo)!=1:
@@ -143,6 +143,8 @@ class BH(HaloProperties):
             final[t] = float(vars[t][entry])
 
         offset = np.array((final['x'],final['y'],final['z']))-main_halo_ssc
+        bad, = np.where(offset > boxsize/2.)
+        offset[bad] = -1.0 * (offset[bad]/np.abs(offset[bad])) * (boxsize - np.abs(offset[bad]))
 
         return final['mdot'], final['mdotmean'], final['mdotsig'], offset, np.linalg.norm(offset), final['mass']
 
