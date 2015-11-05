@@ -143,7 +143,7 @@ class BH(HaloProperties):
             final[t] = float(vars[t][entry])
 
         offset = np.array((final['x'],final['y'],final['z']))-main_halo_ssc
-        bad, = np.where(offset > boxsize/2.)
+        bad, = np.where(np.abs(offset) > boxsize/2.)
         offset[bad] = -1.0 * (offset[bad]/np.abs(offset[bad])) * (boxsize - np.abs(offset[bad]))
 
         return final['mdot'], final['mdotmean'], final['mdotsig'], offset, np.linalg.norm(offset), final['mass']
