@@ -134,10 +134,10 @@ def add_halos(ts,max_gp=None):
             istart = 0
         else:
             istart = 1
-        if max_grp is None:
-            max_grp = len(h)
+        if max_gp is None:
+            max_gp = len(h)
             if type(h)==pynbody.halo.RockstarIntermediateCatalogue:
-                max_grp -= 1
+                max_gp -= 1
 
         for i in xrange(istart, max_gp):
             try:
