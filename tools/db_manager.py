@@ -117,7 +117,7 @@ def add_simulation_timesteps_ramses(basename, reassess=False):
     core.internal_session.commit()
 
 
-def add_halos(ts,max_gp=1000):
+def add_halos(ts,max_gp=None):
     from terminalcontroller import term
     #if ts.halos.filter_by(halo_type=0).count() > 0:
     #    print term.GREEN, "  Halos already exist for", ts, term.NORMAL
@@ -134,6 +134,11 @@ def add_halos(ts,max_gp=1000):
             istart = 0
         else:
             istart = 1
+        if max_grp is None:
+            max_grp = len(h)
+            if type(h)==pynbody.halo.RockstarIntermediateCatalogue:
+                max_grp -= 1
+
         for i in xrange(istart, max_gp):
             try:
                 hi = h[i]
