@@ -24,7 +24,7 @@ class BHShortenedLog(object):
 
     def __init__(self, f, filename):
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
-        ars = [[] for i in range(14)]
+        ars = [[] for i in range(15)]
         for line in open(name+".shortened.orbit"):
             line_split = line.split()
             ars[0].append(int(line_split[0]))
@@ -36,7 +36,7 @@ class BHShortenedLog(object):
         for w in wrapped_ars:
             w.sim = f
         #bhid, time, step, mass, x, y, z, vx, vy, vz, pot, mdot, deltaM, E, dtEff, scalefac = wrapped_ars
-        bhid, time, step, mass, x, y, z, vx, vy, vz, mdot, mdotmean, mdotsig, scalefac = wrapped_ars
+        bhid, time, step, mass, x, y, z, vx, vy, vz, mdot, mdotmean, mdotsig, scalefac, dM = wrapped_ars
         bhid = np.array(bhid,dtype=int)
         print len(time),"entries"
 
@@ -56,6 +56,7 @@ class BHShortenedLog(object):
         mdot.units = munits/tunits
         mdotsig.units = munits/tunits
         mdotmean.units = munits/tunits
+        dM.units = munits
         #E.units = Eunits
 
 
@@ -70,12 +71,13 @@ class BHShortenedLog(object):
         mdotsig.convert_units('Msol yr^-1')
         mass.convert_units("Msol")
         time.convert_units("Gyr")
+        dM.convert_units("Msol")
         #E.convert_units('erg')
 
 
         self.vars = {'bhid':bhid, 'step':step, 'x':x, 'y':y, 'z':z,
                     'vx':vx, 'vy':vy, 'vz': vz, 'mdot': mdot, 'mdotmean':mdotmean,'mdotsig':mdotsig, 'mass': mass,
-                     'time': time}
+                     'time': time, 'dM': dM}
 
 
     def get_at_stepnum(self, stepnum):
