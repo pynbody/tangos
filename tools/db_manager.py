@@ -130,7 +130,11 @@ def add_halos(ts,max_gp=1000):
         h = f.halos()
         if hasattr(h, 'precalculate'):
             h.precalculate()
-        for i in xrange(1, max_gp):
+        if type(h)==pynbody.halo.RockstarIntermediateCatalogue:
+            istart = 0
+        else:
+            istart = 1
+        for i in xrange(istart, max_gp):
             try:
                 hi = h[i]
                 if (not ts.halos.filter_by(halo_type=0, halo_number=i).count()>0) and len(hi.dm) > 1000:
