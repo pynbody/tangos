@@ -194,3 +194,28 @@ class BHAccHistogram(TimeChunkedProperty):
         #print Mdot_grid
         
         return Mdot_grid[self.store_slice(t_max)]
+
+class BHGalaxy(HaloProperties):
+    def name(self):
+        return "massive_BH_mass", "massive_BH_dist", "massive_BH_mdot", "central_BH_mass", "central_BH_dist", "central_BH_mdot", "bright_BH_mass", "bright_BH_dist", "bright_BH_mdot", "massive_BH_iord", "central_BH_iord", "bright_BH_iord"
+
+    def requires_property(self):
+        return ['BH']
+
+    def requires_simdata(self):
+        return False
+
+    def no_proxies(self):
+        return True
+
+    def calculate(self, halo, properties):
+        bhmass = [bh['BH_mass'] for bh in properties['BH']]
+        bhiord = [bh['iord'] for bh in properties['BH']]
+        mdot = [bh['BH_mdot_ave'] for bh in properties['BH']]
+        offset = [bh['BH_central_distance'] for bh in properties['BH']]
+
+        indm = np.argmax(bhmass)
+        indo = np.argmin(offset)
+        indl = np.argmax(mdot)
+
+        return bhmass[indm], offset[indm], mdot[indm], bhmass[indo], offset[indo], mdot[indo], bhmass[indl], offset[indl], mdot[indl], bhiord[indm], bhiord[indo], bhiord[indl]
