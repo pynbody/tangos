@@ -426,7 +426,8 @@ class TimeStep(Base):
         self.extension = str(extension)
         self.simulation = simulation
         if autoload:
-            f = pynbody.load(self.filename, only_header=True)
+            #f = pynbody.load(self.filename, only_header=True)
+            f = pynbody.load(self.filename)
             self.redshift = f.properties['z']
             try:
                 self.time_gyr = f.properties['time'].in_units("Gyr")

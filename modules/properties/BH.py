@@ -24,7 +24,7 @@ class BHShortenedLog(object):
 
     def __init__(self, f, filename):
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
-        ars = [[] for i in range(14)]
+        ars = [[] for i in range(15)]
         for line in open(name+".shortened.orbit"):
             line_split = line.split()
             ars[0].append(int(line_split[0]))
@@ -36,7 +36,7 @@ class BHShortenedLog(object):
         for w in wrapped_ars:
             w.sim = f
         #bhid, time, step, mass, x, y, z, vx, vy, vz, pot, mdot, deltaM, E, dtEff, scalefac = wrapped_ars
-        bhid, time, step, mass, x, y, z, vx, vy, vz, mdot, mdotmean, mdotsig, scalefac = wrapped_ars
+        bhid, time, step, mass, x, y, z, vx, vy, vz, mdot, mdotmean, mdotsig, scalefac, dM = wrapped_ars
         bhid = np.array(bhid,dtype=int)
         print len(time),"entries"
 
@@ -56,6 +56,7 @@ class BHShortenedLog(object):
         mdot.units = munits/tunits
         mdotsig.units = munits/tunits
         mdotmean.units = munits/tunits
+        dM.units = munits
         #E.units = Eunits
 
 
@@ -70,12 +71,13 @@ class BHShortenedLog(object):
         mdotsig.convert_units('Msol yr^-1')
         mass.convert_units("Msol")
         time.convert_units("Gyr")
+        dM.convert_units("Msol")
         #E.convert_units('erg')
 
 
         self.vars = {'bhid':bhid, 'step':step, 'x':x, 'y':y, 'z':z,
                     'vx':vx, 'vy':vy, 'vz': vz, 'mdot': mdot, 'mdotmean':mdotmean,'mdotsig':mdotsig, 'mass': mass,
-                     'time': time}
+                     'time': time, 'dM': dM}
 
 
     def get_at_stepnum(self, stepnum):
@@ -108,7 +110,7 @@ class BH(HaloProperties):
         import halo_db as db
         if not isinstance(properties, db.Halo):
             raise RuntimeError("No proxies, please")
-
+        boxsize = halo.properties['boxsize']
         halo = halo.s
 
         if len(halo)!=1:
@@ -143,6 +145,8 @@ class BH(HaloProperties):
             final[t] = float(vars[t][entry])
 
         offset = np.array((final['x'],final['y'],final['z']))-main_halo_ssc
+        bad, = np.where(np.abs(offset) > boxsize/2.)
+        offset[bad] = -1.0 * (offset[bad]/np.abs(offset[bad])) * (boxsize - np.abs(offset[bad]))
 
         return final['mdot'], final['mdotmean'], final['mdotsig'], offset, np.linalg.norm(offset), final['mass']
 
@@ -190,3 +194,28 @@ class BHAccHistogram(TimeChunkedProperty):
         #print Mdot_grid
         
         return Mdot_grid[self.store_slice(t_max)]
+
+class BHGalaxy(HaloProperties):
+    def name(self):
+        return "massive_BH_mass", "massive_BH_dist", "massive_BH_mdot", "central_BH_mass", "central_BH_dist", "central_BH_mdot", "bright_BH_mass", "bright_BH_dist", "bright_BH_mdot", "massive_BH_iord", "central_BH_iord", "bright_BH_iord"
+
+    def requires_property(self):
+        return ['BH']
+
+    def requires_simdata(self):
+        return False
+
+    def no_proxies(self):
+        return True
+
+    def calculate(self, halo, properties):
+        bhmass = [bh['BH_mass'] for bh in properties['BH']]
+        bhiord = [bh['iord'] for bh in properties['BH']]
+        mdot = [bh['BH_mdot_ave'] for bh in properties['BH']]
+        offset = [bh['BH_central_distance'] for bh in properties['BH']]
+
+        indm = np.argmax(bhmass)
+        indo = np.argmin(offset)
+        indl = np.argmax(mdot)
+
+        return bhmass[indm], offset[indm], mdot[indm], bhmass[indo], offset[indo], mdot[indo], bhmass[indl], offset[indl], mdot[indl], bhiord[indm], bhiord[indo], bhiord[indl]

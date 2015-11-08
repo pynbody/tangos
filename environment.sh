@@ -18,7 +18,7 @@ if [ -z "$HALODB_DEFAULT_DB" ]; then
     export HALODB_DEFAULT_DB=$DIR/data.db
 fi
 
-if [[ -e enivronment_local.sh ]]
+if [[ -e environment_local.sh ]]
 then
     source environment_local.sh
 fi
