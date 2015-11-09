@@ -50,6 +50,8 @@ class AngMomHI(HaloProperties):
             rad = properties['Rvir']
             halo["pos"] -= com
             halo.wrap()
+            vcen = pynbody.analysis.halo.vel_center(halo,cen_size="1 kpc",retcen=True)
+            halo['vel'] -= vcen
 
             delta = existing_properties.get('delta',0.1)
             j_HI_a = rstat(self, halo, rad, com, delta)
@@ -60,9 +62,12 @@ class AngMomHI(HaloProperties):
             j_HI_tot = np.sqrt(np.sum(jvec**2))
 
             halo["pos"] += com
+            halo['vel'] += vcen
             halo.wrap()
 
             return j_HI_tot, j_HI_a
+        else:
+            return 0, np.array([])
 
 
 
