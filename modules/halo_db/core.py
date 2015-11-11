@@ -769,7 +769,7 @@ class Halo(Base):
         if X is not None:
             X.data = obj
         else:
-            X = session.merge(HaloProperty(self, key.id, obj))
+            X = session.merge(HaloProperty(self, key, obj))
         X.creator = current_creator
 
     def _setitem_one_halo(self, key, obj):
@@ -824,7 +824,6 @@ class Halo(Base):
     def _raw_list_property_cascade(self, *keys, **kwargs):
         on_missing = kwargs.get('on_missing','skip')
         find_next  = kwargs.get('find_next','next')
-        print "**** find_next=",find_next
         output = []
         for key in keys:
             try:
@@ -839,7 +838,6 @@ class Halo(Base):
                     raise
 
         next = getattr(self, find_next)
-        print find_next, next
         if next:
             remainder = next._raw_list_property_cascade(*keys, **kwargs)
             output = [o+r for o,r in zip(output,remainder)]
@@ -1095,7 +1093,8 @@ Index("name_halo_index", HaloProperty.__table__.c.name_id,
 Index("halo_timestep_index", Halo.__table__.c.timestep_id)
 Index("halo_creator_index", Halo.__table__.c.creator_id)
 Index("haloproperties_creator_index", HaloProperty.__table__.c.creator_id)
-
+Index("halolink_index", HaloLink.__table__.c.halo_from_id)
+Index("named_halolink_index", HaloLink.__table__.c.relation_id, HaloLink.__table__.c.halo_from_id)
 
 def all_simulations(session=None):
     global internal_session
@@ -1115,7 +1114,7 @@ def _get_dict_cache_for_session(session):
     return session_dict
 
 def cache_dict():
-    
+
     session_dict = _get_dict_cache_for_session(internal_session)
 
     for x in internal_session.query(DictionaryItem).all():
@@ -1125,7 +1124,7 @@ def cache_dict():
 def get_dict_id(text, default=None, session=None):
     """Get a DictionaryItem id for text (possibly cached). Raises KeyError if
     no dictionary object exists for the specified text"""
-    
+
 
     if session is None:
         session = internal_session
@@ -1402,7 +1401,7 @@ def use_blocking_session():
     internal_session = blocking_session.BlockingSession(bind=engine)
     if current_creator.id is not None:
         current_creator = internal_session.query(Creator).filter_by(id=current_creator.id).first()
-    
+
 
 init_db()
 

@@ -199,30 +199,41 @@ class PlotController(BaseController):
 
     def image_img(self, id) :
         halo_id = request.params.get('halo_id')
-
+        log = request.params.get('image_log')
         prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
         name_id = prop.name_id
 
         if halo_id!=prop.halo_id:
             prop = Session.query(meta.HaloProperty).filter_by(name_id=name_id,halo_id=halo_id).first()
 
+        print "image_img",id,log
         if len(prop.data.shape)==1 :
             return self.array_img(id,prop=prop)
         with imageThreadLock :
             self.start()
             cl = properties.providing_class(prop.name.text)
             width = cl.plot_extent()
+            if log:
+                data = np.log10(prop.data)
+                data[data!=data]=data[data==data].min()
+
+            else:
+                data = prop.data
+
+            print data.min(),data.max(),width
             if width is not None :
-                p.imshow(prop.data,extent=(-width/2,width/2,-width/2,width/2))
+                p.imshow(data,extent=(-width/2,width/2,-width/2,width/2))
             else :
-                p.imshow(prop.data)
+                p.imshow(data)
 
             p.xlabel(cl.plot_xlabel())
             p.ylabel(cl.plot_ylabel())
+
             if len(prop.data.shape) is 2 :
                 cb = p.colorbar()
                 if cl.plot_clabel() :
                     cb.set_label(cl.plot_clabel())
+
             return self.finish()
 
     def halo_img(self, id) :

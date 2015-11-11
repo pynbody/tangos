@@ -69,6 +69,8 @@ class HopStrategy(object):
         except sqlalchemy.exc.ResourceClosedError:
             results = []
 
+        results = filter(lambda x: x is not None, results)
+
         if self.keep_redundant_routes:
             return results
         else:
@@ -98,6 +100,15 @@ class HopStrategy(object):
         weights = [x.weight for x in all]
         halos = [x.halo_to for x in all]
         return halos, weights
+
+    def all_weights_and_routes(self):
+        """Return all possible hops matching the conditions, along with
+        the weights and routes"""
+        all = self._get_query_all()
+        weights = [x.weight for x in all]
+        halos = [x.halo_to for x in all]
+        routes = [x.nodes for x in all]
+        return halos, weights, routes
 
     def first(self):
         """Return the suggested hop."""
@@ -186,10 +197,12 @@ class MultiHopStrategy(HopStrategy):
         self.recursion_query = \
             self.session.query(core.HaloLink.id,
                                core.HaloLink.halo_from_id,
-                               core.HaloLink.halo_to_id,
-                               (self.halolink_recurse_alias.c.weight * core.HaloLink.weight).label("weight"),
+                               core.HaloLink.halo_to_id.label("halo_to_id"),
+                               self.halolink_recurse_alias.c.weight*core.HaloLink.weight,
                                (self.halolink_recurse_alias.c.nhops + 1).label("nhops"),
                                links, nodes)
+
+        print self.recursion_query
 
 
     def _generate_halolink_recurse_cte(self):
@@ -282,6 +295,3 @@ class MultiHopStrategy(HopStrategy):
             return self._link_orm_class.c.nhops
         else:
             return super(MultiHopStrategy,self)._generate_order_arg_from_name(name)
-
-
-

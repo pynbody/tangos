@@ -1,4 +1,5 @@
 import logging
+import time
 
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
@@ -11,6 +12,7 @@ import simdb.model.meta as meta
 from simdb.model.meta import *
 
 import halo_db as db
+import halo_db.hopper
 import math
 import numpy as np
 
@@ -185,11 +187,8 @@ class SimsController(BaseController):
                                                id="RIy_"+k.name.text,
                                                class_="radio_array"))
 
-
-
                     rt+=h.HTML.td(h.link_to("Plot", url(controller='plot', action='image_img', id=k.id),
                                             onclick = "gograph('"+url(controller='plot', action='image_img', id=k.id)+"'); return false; "), h.literal(" / "), \
-
                                   h.link_to("Get >",url(controller='plot', action='array_img', id=k.id, text=True)))
 
 
@@ -235,17 +234,20 @@ class SimsController(BaseController):
         self.creator_cache = {}
         return tx
 
+
     @classmethod
     def _construct_preliminary_mergertree(self, halo, base_halo, visited=None):
         if visited is None:
             visited = []
+        start = time.time()
         recurse = halo.id not in visited
         visited.append(halo.id)
 
-        from halo_db import hopper
-        rl = hopper.HopStrategy(halo)
+        rl = db.hopper.HopStrategy(halo)
         rl.target_timestep(halo.timestep.previous)
+
         rl, weights = rl.all_and_weights()
+
         if len(rl)>0:
             rl = [rli for rli,wi in zip(rl,weights) if wi>weights[0]*0.05]
 
@@ -270,9 +272,11 @@ class SimsController(BaseController):
             unscaled_size = 1.0
         nodeclass = 'node-dot-standard'
 
+
+        start = time.time()
         if halo.links.filter_by(relation_id=db.get_dict_id('Sub')).count()>0:
             nodeclass = 'node-dot-sub'
-
+        self.search_time+=time.time()-start
         if halo == base_halo:
             nodeclass = 'node-dot-selected'
 
@@ -332,8 +336,20 @@ class SimsController(BaseController):
 
     @classmethod
     def _construct_mergertree(self, halo):
-        tree = self._construct_preliminary_mergertree(halo.latest, halo)
+        self.search_time=0
+        start = time.time()
+        base = halo.latest
+        tree = self._construct_preliminary_mergertree(base, halo)
+        print "Preliminary time: ",time.time()-start
         self._postprocess_mergertree(tree)
+        print "Total time: ",time.time()-start
+        print "Search time: ",self.search_time
+
+        start = time.time()
+        rl = db.hopper.MultiHopStrategy(base, directed='backwards', nhops_max=6)
+        print "size=",rl.count()
+        print len(rl.all())
+        print "one-query back: ",time.time()-start
         return tree
 
     def mergertree(self, id, rel=None, num=1):
