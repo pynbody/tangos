@@ -190,7 +190,7 @@ ${c.props}
 <div>
 </div>
 <div>
-<input type="checkbox" name="xlog" id="xlog">X logarithmic</input><input type="checkbox" name="ylog" id="ylog">Y logarithmic</input>
+<input type="checkbox" name="xlog" id="xlog">X logarithmic</input><input type="checkbox" name="ylog" id="ylog">Y logarithmic</input><input type="checkbox" name="image_log" id="image_log">Images logarithmic</input>
 </div><div>
 <input type="submit" value="Plot!" onclick="gograph('${url(controller='plot', action='xy_img')}'); return false;" />
 <input type="submit" href="gograph('); return false;" value="Get!" />
