@@ -40,9 +40,10 @@ class AngMomHI(HaloProperties):
                                                min=0, max=maxrad, nbins=nbins)
 
         j_HI_a = pro['j_HI']
+		j_HI_rb = pro['rbins']
         j_HI_a = np.array(j_HI_a)
 
-        return j_HI_a
+        return j_HI_a, j_HI_rb
 
     def calculate(self,  halo, properties):
         if len(halo.g > 100):
@@ -54,7 +55,7 @@ class AngMomHI(HaloProperties):
             halo['vel'] -= vcen
 
             delta = existing_properties.get('delta',0.1)
-            j_HI_a = rstat(self, halo, rad, com, delta)
+            j_HI_pro = rstat(self, halo, rad, com, delta)
 
             HImass = halo.g['mass']*halo.g['HI']
             mvec = pynbody.array.SimArray(np.transpose(np.vstack((HImass,HImass,HImass))),'Msol')
@@ -65,9 +66,9 @@ class AngMomHI(HaloProperties):
             halo['vel'] += vcen
             halo.wrap()
 
-            return j_HI_tot, j_HI_a
+            return j_HI_tot, j_HI_pro
         else:
-            return 0, np.array([])
+            return 0, (np.array([0]),np.array([0]))
 
 
 
