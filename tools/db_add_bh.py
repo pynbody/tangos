@@ -109,9 +109,12 @@ if __name__=="__main__":
 
         session.commit()
 
-        f_pb['gp'] = f_pb.halos().get_group_array()
-
-        bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
+        f_pbh = f_fpb.halos()
+        if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
+            bh_halos = f_bph.get_fam_group_array(family = 'BH')
+        else:
+            f_pb['gp'] = f_pbh.get_group_array()
+            bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
         bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
         
         print "Associated halos: ",bh_halos
