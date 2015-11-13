@@ -48,9 +48,16 @@ class BHShortenedLog(object):
         #Eunits = munits*potunits
         # decorate with units
 
+        x *= scalefac
+        y *= scalefac
+        z *= scalefac
+        vx *= scalefac
+        vy *= scalefac
+        vz *= scalefac
+
         mass.units = munits
-        x.units = y.units = z.units = posunits
-        vx.units = vy.units = vz.units = velunits
+        x.units = y.units = z.units = posunits / pynbody.units.Units('a')
+        vx.units = vy.units = vz.units = velunits / pynbody.units.Units('a')
         #pot.units = potunits
         time.units = tunits
         mdot.units = munits/tunits
