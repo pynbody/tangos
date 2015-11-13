@@ -110,7 +110,7 @@ class BH(HaloProperties):
         import halo_db as db
         if not isinstance(properties, db.Halo):
             raise RuntimeError("No proxies, please")
-        boxsize = float(halo.properties['boxsize'])
+        boxsize = float(halo.properties['boxsize'].in_units('kpc', a = halo.properties['a']))
         halo = halo.s
 
         if len(halo)!=1:
