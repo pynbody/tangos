@@ -26,7 +26,7 @@ def j_HI(self):
 class AngMomHI(HaloProperties):
 
     def name(self):
-        return "j_HI", "J_HI_profile"
+        return "j_HI", "J_HI_profile", "J_HI_radbins"
 
     def requires_property(self):
         return ['SSC', 'Rvir']
@@ -66,9 +66,9 @@ class AngMomHI(HaloProperties):
             halo['vel'] += vcen
             halo.wrap()
 
-            return j_HI_tot, j_HI_pro
+            return j_HI_tot, j_HI_pro[0], j_HI_pro[1]
         else:
-            return 0, (np.array([0]),np.array([0]))
+            return 0, np.array([0]), np.array([0])
 
 
 
