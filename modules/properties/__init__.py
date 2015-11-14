@@ -211,7 +211,7 @@ class ProxyHalo(object):
 
 
 
-from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr
+from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr, angmom
 
 
 ##############################################################################
