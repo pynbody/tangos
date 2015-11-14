@@ -40,7 +40,7 @@ class AngMomHI(HaloProperties):
                                                min=0, max=maxrad, nbins=nbins)
 
         j_HI_a = pro['j_HI']
-		j_HI_rb = pro['rbins']
+        j_HI_rb = pro['rbins']
         j_HI_a = np.array(j_HI_a)
 
         return j_HI_a, j_HI_rb
