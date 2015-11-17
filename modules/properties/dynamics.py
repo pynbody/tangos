@@ -467,7 +467,13 @@ class AngMomHI(HaloProperties):
             rad = properties['Rvir']
             halo["pos"] -= com
             halo.wrap()
-            vcen = pynbody.analysis.halo.vel_center(halo,cen_size="1 kpc",retcen=True)
+            try:
+                vcen = pynbody.analysis.halo.vel_center(halo,cen_size="1 kpc",retcen=True)
+            except ValueError:
+                try:
+                    vcen = pynbody.analysis.halo.vel_center(halo,cen_size="2 kpc",retcen=True)
+                except ValueError:
+                    return 0, np.array([0]), np.array([0])
             halo['vel'] -= vcen
 
             delta = properties.get('delta',0.1)
