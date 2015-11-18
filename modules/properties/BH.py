@@ -217,7 +217,7 @@ class BHGalaxy(HaloProperties):
 
     def calculate(self, halo, properties):
         bhmass = [bh['BH_mass'] for bh in properties['BH']]
-        bhiord = [bh['iord'] for bh in properties['BH']]
+        bhiord = [bh.halo_number for bh in properties['BH']]
         mdot = [bh['BH_mdot_ave'] for bh in properties['BH']]
         offset = [bh['BH_central_distance'] for bh in properties['BH']]
 
