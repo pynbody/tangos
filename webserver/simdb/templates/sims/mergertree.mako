@@ -127,7 +127,7 @@ function buildTree(containerName, customOptions)
             var left = bbox.left - bbox_top.left + 20;
             var height = 70;
 
-            console.log(bbox.left,bbox.top)
+            // console.log(bbox.left,bbox.top)
 
 
             var box = floatRoot.append('rect');
@@ -187,14 +187,17 @@ function buildTree(containerName, customOptions)
         .append("svg:text")
         .attr("text-anchor", function(d)
         {
-            return d.children ? "end" : "start";
+            // return d.children ? "end" : "start";
+            return "middle";
         })
-        .attr("dx", function(d)
+        .attr("dy", function(d)
         {
-            var gap = 2 * options.nodeRadius;
-            return d.children ? -gap : gap;
+            return d.size+10;
+            // return d.children ? -gap : gap;
+            return gap;
         })
-        .attr("dy", 3)
+        .attr("dx", 0 )
+            .attr("opacity",0.5)
         .text(function(d)
         {
             return d.name;
@@ -229,6 +232,12 @@ function buildTree(containerName, customOptions)
         fill: yellow;
         stroke:black;
         stroke-width: 3px;
+    }
+
+    circle.node-dot-continuation {
+        fill: white;
+        stroke: #bbb;
+        stroke-width: 1px;
     }
 
     path.link {
