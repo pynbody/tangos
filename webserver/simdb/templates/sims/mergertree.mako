@@ -197,7 +197,7 @@ function buildTree(containerName, customOptions)
             return gap;
         })
         .attr("dx", 0 )
-            .attr("opacity",0.5)
+            .attr("fill","#aaa")
         .text(function(d)
         {
             return d.name;

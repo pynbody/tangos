@@ -360,13 +360,18 @@ class SimsController(BaseController):
     def _postprocess_mergertree_layout_by_branch(cls, tree):
 
         tree['space_range'] = (0.0,1.0)
+        existing_ranges = [{} for i in xrange(tree['maxdepth'])]
         for node in cls._visit_tree(tree):
             x_start, x_end = node['space_range']
             node['mid_range'] = (x_start+x_end)/2
             if len(node['contents'])>0:
                 delta = (x_end-x_start)/len(node['contents'])
                 for i,child in enumerate(node['contents']):
-                    child['space_range'] = (x_start + i *delta, x_start + (i+1)*delta)
+                    child_range = existing_ranges[child['depth']].get(child['halo_number'],
+                                                                      (x_start + i *delta, x_start + (i+1)*delta))
+
+                    child['space_range'] = child_range
+                    existing_ranges[child['depth']][child['halo_number']]=child_range
 
         cls._postprocess_mergertree_layout_by_number(tree, 'mid_range')
 
@@ -381,8 +386,11 @@ class SimsController(BaseController):
 
         tree = self._construct_preliminary_mergertree(base, halo)
         print "Merger tree build time:    %.2fs"%(time.time()-start)
-        self._postprocess_mergertree(tree)
         print "of which link search time: %.2fs"%(self.search_time)
+
+        start = time.time()
+        self._postprocess_mergertree(tree)
+        print "Post-processing time: %.2fs"%(time.time()-start)
 
         """
         start = time.time()
