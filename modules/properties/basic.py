@@ -84,6 +84,18 @@ class BasicHaloProperties(HaloProperties):
         else:
             return None, 0, 0, 0, 0
 
+class SSCComoving(HaloProperties):
+    def name(self):
+        return "SSC_comoving"
+
+    def requires_simdata(self):
+        return False
+
+    def no_proxies(self):
+        return True
+
+    def calculate(self, halo, properties):
+        return properties['SSC']*(1.+properties.timestep.redshift)
 
 class MColdGas(HaloProperties):
 
