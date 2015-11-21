@@ -13,6 +13,7 @@ from sqlalchemy.orm.session import Session
 import data_attribute_mapper
 import identifiers
 import config
+import time
 import properties
 
 _loaded_timesteps = {}
@@ -510,15 +511,32 @@ class TimeStep(Base):
         # Step 2: establish the linked list of halos
         linked_halos = []
 
+        start = time.time()
+
+        session = Session.object_session(self)
+
+        halo_from_alias = sqlalchemy.orm.aliased(Halo)
+        timestep_from_alias = sqlalchemy.orm.aliased(TimeStep)
+        halo_to_alias = sqlalchemy.orm.aliased(Halo)
+        timestep_to_alias = sqlalchemy.orm.aliased(TimeStep)
+        linked_halos = session.query(HaloLink).join(halo_from_alias, HaloLink.halo_from)\
+                                              .join(halo_to_alias, HaloLink.halo_to)\
+                                              .join(timestep_from_alias, halo_from_alias.timestep)\
+                                              .join(timestep_to_alias, halo_to_alias.timestep)\
+                                              .filter(and_(timestep_from_alias.id==self.id, timestep_to_alias.id==other.id, HaloLink.weight>0.01))\
+                                              .options(orm.contains_eager(HaloLink.halo_from, alias=halo_from_alias).joinedload(Halo.all_properties),
+                                                       orm.contains_eager(HaloLink.halo_to, alias=halo_to_alias).joinedload(Halo.all_properties))
+
+        linked_halos = [(x.halo_from, x.halo_to) for x in linked_halos]
+
+        """
         for l in self.links_from:
             if l.halo_to.timestep.id == other.id:
                 linked_halos.append((l.halo_from, l.halo_to))
+        """
 
-        for l in self.links_to:
-            if l.halo_from.timestep.id == other.id:
-                linked_halos.append((l.halo_to, l.halo_from))
 
-        print "Found", len(linked_halos), "halos in common"
+        print "Found %d halos in common in %.2fs"%(len(linked_halos),time.time()-start)
 
         # Step 3: get the data
 
@@ -527,6 +545,8 @@ class TimeStep(Base):
             filt = default_filter
 
         out = [[] for i in xrange(len(plist))]
+
+        start = time.time()
 
         for h1, h2 in linked_halos:
             if filt(h1) and filt(h2):
@@ -539,6 +559,8 @@ class TimeStep(Base):
 
                 except (KeyError, IndexError):
                     pass
+
+        print "Queried properties in %.2fs"%(time.time()-start)
 
         return [safe_asarray(x) for x in out]
 
@@ -610,7 +632,6 @@ class TimeStep(Base):
 
 class Halo(Base):
     __tablename__ = 'halos'
-
 
 
     id = Column(Integer, primary_key=True)
@@ -922,7 +943,7 @@ class HaloProperty(Base):
     id = Column(Integer, primary_key=True)
     halo_id = Column(Integer, ForeignKey('halos.id'))
     # n.b. backref defined below
-    halo = relationship(Halo, cascade='none')
+    halo = relationship(Halo, cascade='none', backref=backref('all_properties'))
 
     data_float = Column(Float)
     data_array = deferred(Column(LargeBinary))
@@ -996,8 +1017,8 @@ Halo.deprecated_properties = relationship(HaloProperty, cascade='all',
 
 # eager loading support:
 
-Halo.all_properties = relationship(HaloProperty, primaryjoin=(HaloProperty.halo_id == Halo.id) & (
-                                  HaloProperty.deprecated == False))
+#Halo.all_properties = relationship(HaloProperty, primaryjoin=(HaloProperty.halo_id == Halo.id) & (
+#                                  HaloProperty.deprecated == False))
 
 
 class HaloLink(Base):
