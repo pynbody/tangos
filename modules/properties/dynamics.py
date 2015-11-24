@@ -438,8 +438,91 @@ def j_HI(self):
 
     return j_HI
 
-
 class AngMomHI(HaloProperties):
+    def name(self):
+        return "J_HI_2kpc", "J_HI_5kpc", "J_HI_10kpc", "J_HI_half"
+
+    def requires_property(self):
+        return ['SSC', 'Rvir']
+
+    def AMr(self, rad, halo):
+        inner = halo.g[pynbody.filt.Sphere(rad)]
+        if len(inner)>5:
+            HImass = inner['mass']*inner['HI']
+            mvec = pynbody.array.SimArray(np.transpose(np.vstack((HImass,HImass,HImass))),'Msol')
+            vec = np.sum(inner['j'] * mvec, axis=0)/np.sum(HImass)
+            j_tot = np.sqrt(np.sum(vec**2))
+        else:
+            j_tot = 0
+        return j_tot
+
+    def calculate(self,  halo, properties):
+        com = properties['SSC']
+        rad = properties['Rvir']
+        halo["pos"] -= com
+        halo.wrap()
+        try:
+            vcen = pynbody.analysis.halo.vel_center(halo,cen_size="2 kpc",retcen=True)
+        except ValueError:
+            return 0, 0, 0, 0
+        halo['vel'] -= vcen
+        j_HI_2 = self.AMr('2 kpc', halo)
+        j_HI_5 = self.AMr('5 kpc', halo)
+        j_HI_10 = self.AMr('10 kpc', halo)
+        j_HI_half = self.AMr(str(properties['Rvir']/2.)+' kpc', halo)
+
+        halo["pos"] += com
+        halo['vel'] += vcen
+        halo.wrap()
+
+        return j_HI_2, j_HI_5, j_HI_10, j_HI_half
+
+class AngMomStar(HaloProperties):
+    def name(self):
+        return "J_star_2kpc", "J_star_5kpc", "J_star_10kpc", "J_star_half"
+
+    def requires_property(self):
+        return ['SSC', 'Rvir']
+
+    def AMr(self, rad, halo):
+        inner = halo.s[pynbody.filt.Sphere(rad)]
+
+        inner = inner[(inner['age'].in_units('Gyr')<10)]
+        if len(inner)>5:
+            mass = inner['mass']
+            mvec = pynbody.array.SimArray(np.transpose(np.vstack((mass,mass,mass))),'Msol')
+            vec = np.sum(inner['j'] * mvec, axis=0)/np.sum(mass)
+            j_tot = np.sqrt(np.sum(vec**2))
+        else:
+            j_tot = 0
+        return j_tot
+
+    def calculate(self,  halo, properties):
+        com = properties['SSC']
+        rad = properties['Rvir']
+        halo["pos"] -= com
+        halo.wrap()
+        try:
+            vcen = pynbody.analysis.halo.vel_center(halo,cen_size="2 kpc",retcen=True)
+        except ValueError:
+            return 0, 0, 0, 0
+        halo['vel'] -= vcen
+        j_star_2 = self.AMr('2 kpc', halo)
+        j_star_5 = self.AMr('5 kpc', halo)
+        j_star_10 = self.AMr('10 kpc', halo)
+        j_star_half = self.AMr(str(properties['Rvir']/2.)+' kpc', halo)
+
+        halo["pos"] += com
+        halo['vel'] += vcen
+        halo.wrap()
+
+        return j_star_2, j_star_5, j_star_10, j_star_half
+
+
+
+
+
+class AngMomHI_tot(HaloProperties):
 
     def name(self):
         return "j_HI", "J_HI_profile", "J_HI_radbins"
