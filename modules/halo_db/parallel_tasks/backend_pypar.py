@@ -29,8 +29,8 @@ def finalize():
     pypar.finalize()
 
 
-def launch(function, num_procs):
+def launch(function, num_procs, args):
     if num_procs is not None:
         if rank()==0:
             warnings.warn("Number of processors requested (%d) will be ignored as this is an MPI run that has already selected %d processors"%(num_procs,size()))
-    function()
+    function(*args)

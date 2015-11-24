@@ -1,8 +1,15 @@
 import time
 import warnings
 import importlib
+import sys
+from .. import core
+import traceback
+
 backend = None
 _backend_name = 'pypar'
+
+if "--backend" in sys.argv:
+    _backend_name = sys.argv[sys.argv.index("--backend")+1]
 
 _lock_queues = {}
 
@@ -10,8 +17,19 @@ MESSAGE_REQUEST_JOB = 1
 MESSAGE_DELIVER_JOB = 2
 MESSAGE_REQUEST_LOCK = 3
 MESSAGE_RELINQUISH_LOCK = 5
+MESSAGE_START_ITERATION = 6
+MESSAGE_OUT_OF_JOBS = 7
+MESSAGE_EXIT = 8
+MESSAGE_REQUEST_CREATOR_ID = 9
+MESSAGE_DELIVER_CREATOR_ID = 10
+MESSAGE_CHECK_LOCK = 11
+MESSAGE_LOCK_CLEAR = 12
 
 MESSAGE_GRANT_LOCK_OFFSET = 100
+
+
+SLEEP_BEFORE_ALLOWING_NEXT_LOCK = 1.0
+# number of seconds to sleep after a lock is released before reallocating it
 
 
 def use(name):
@@ -28,10 +46,10 @@ def init_backend():
 
 def launch(function, num_procs=None, args=[]):
     init_backend()
-    backend.launch(function, num_procs, args)
+    backend.launch(_exec_function_or_server, num_procs, [function, args])
 
 def distributed(file_list, proc=None, of=None):
-    """Get a file list for this node (embarrassing parallelization)"""
+    """Distribute a list of tasks between all nodes"""
 
     if type(file_list) == set:
         file_list = list(file_list)
@@ -45,8 +63,107 @@ def distributed(file_list, proc=None, of=None):
         print proc, "processing", i, j, "(inclusive)"
         return file_list[i:j + 1]
     else:
-        init_backend()
         return _mpi_iterate(file_list)
+
+
+class RLock(object):
+    def __init__(self, name):
+        self.name = name
+        self._count = 0
+
+    def acquire(self):
+        if backend is None:
+            return
+        if self._count==0:
+            backend.send(self.name, destination=0, tag=MESSAGE_REQUEST_LOCK)
+            start = time.time()
+            backend.receive(0,tag=_get_tag_for_lock(self.name))
+            print "Lock %r acquired in %.1fs"%(self.name, time.time()-start)
+        self._count+=1
+
+    def release(self):
+        if backend is None:
+            return
+        self._count-=1
+        if self._count==0:
+            backend.send(self.name, destination=0, tag=MESSAGE_RELINQUISH_LOCK)
+
+    def __enter__(self):
+        self.acquire()
+
+    def __exit__(self,type, value, traceback):
+        self.release()
+
+def mpi_sync_db(session):
+    """Causes the halo_db module to use the rank 0 processor's 'Creator' object"""
+    if backend.rank()==0:
+        raise RuntimeError, "Cannot call mpi_sync_db from server process"
+    if _backend_name!='null':
+        backend.send(None, destination=0, tag=MESSAGE_REQUEST_CREATOR_ID)
+        id = backend.receive(0,tag=MESSAGE_DELIVER_CREATOR_ID)
+        core.current_creator = session.query(core.Creator).filter_by(id=id).first()
+
+
+
+
+def _exec_function_or_server(function, args):
+    if backend.rank()==0:
+        _server_thread()
+    else:
+        function(*args)
+        backend.send(None, destination=0, tag=MESSAGE_EXIT)
+    _shutdown_mpi()
+
+def _server_thread():
+    # Sit idle until request for a job comes in, then assign first
+    # available job and move on. Jobs are labelled through the
+    # provided iterator
+
+    j = -1
+    num_jobs = None
+    current_job = 0
+
+    alive = [True for i in xrange(backend.size())]
+
+    while any(alive[1:]):
+        message, source, tag = backend.receive_any(source=None)
+        if tag==MESSAGE_START_ITERATION:
+            if num_jobs is None:
+                num_jobs = message
+            else:
+                if num_jobs!=message:
+                    raise RuntimeError, "Number of jobs expected by rank %d is inconsistent with %d"%(source, num_jobs)
+        elif tag==MESSAGE_REQUEST_JOB:
+            if current_job is not None:
+                print "Manager --> send job %d to node %d"%(current_job, source)
+            else:
+                print "Manager --> end of jobs to node %d"%source
+            backend.send(current_job, destination=source, tag=MESSAGE_DELIVER_JOB)
+            if current_job is not None:
+                current_job+=1
+                if current_job==num_jobs:
+                    num_jobs = None
+                    current_job = None
+        elif tag==MESSAGE_REQUEST_LOCK:
+            _append_to_lock_queue(message, source)
+        elif tag==MESSAGE_RELINQUISH_LOCK:
+            _remove_from_lock_queue(message, source)
+        elif tag==MESSAGE_EXIT:
+            alive[source]=False
+        elif tag==MESSAGE_REQUEST_CREATOR_ID:
+            backend.send(_get_current_creator_id(), destination=source, tag=MESSAGE_DELIVER_CREATOR_ID)
+
+
+    print "Manager --> All jobs done and all processors>0 notified; exiting thread"
+
+def _get_current_creator_id():
+    if core.current_creator.id is None:
+        core.current_creator = core.internal_session.merge(core.current_creator)
+        core.internal_session.commit()
+
+    return core.current_creator.id
+
+
 
 def _get_lock_queue(lock_id):
     global _lock_queues
@@ -67,6 +184,7 @@ def _remove_from_lock_queue(lock_id, proc):
     queue.pop(0)
     print "Manager --> finished with lock %r for proc %d"%(lock_id, proc)
     if len(queue)>0:
+        time.sleep(SLEEP_BEFORE_ALLOWING_NEXT_LOCK)
         _issue_next_lock(lock_id)
 
 def _issue_next_lock(lock_id):
@@ -83,130 +201,28 @@ def _any_locks_alive():
 
 
 
-def _mpi_assign_thread(job_iterator):
-    # Sit idle until request for a job comes in, then assign first
-    # available job and move on. Jobs are labelled through the
-    # provided iterator
 
-    j = -1
-
-    alive = [True for i in xrange(backend.size())]
-
-    while any(alive[1:]) or _any_locks_alive():
-        message, source, tag = backend.receive_any(source=None)
-        print "recv message with tag",tag
-        if tag==MESSAGE_REQUEST_JOB:
-            try:
-                time.sleep(0.05)
-                j = job_iterator.next()[0]
-                print "Manager --> Sending job", j, "to rank", source
-            except StopIteration:
-                alive[source] = False
-                print "Manager --> Sending out of job message to ", source
-                j = None
-
-            backend.send(j, destination=source, tag=MESSAGE_DELIVER_JOB)
-        elif tag==MESSAGE_REQUEST_LOCK:
-            _append_to_lock_queue(message, source)
-        elif tag==MESSAGE_RELINQUISH_LOCK:
-            _remove_from_lock_queue(message, source)
-
-    print "Manager --> All jobs done and all processors>0 notified; exiting thread"
-
-class RLock(object):
-    def __init__(self, name):
-        self.name = name
-        self._count = 0
-
-    def acquire(self):
-        if self._count==0:
-            backend.send(self.name, destination=0, tag=MESSAGE_REQUEST_LOCK)
-            backend.receive(0,tag=_get_tag_for_lock(self.name))
-        self._count+=1
-
-    def release(self):
-        self._count-=1
-        if self._count==0:
-            backend.send(self.name, destination=0, tag=MESSAGE_RELINQUISH_LOCK)
-
-    def __enter__(self):
-        self.acquire()
-
-    def __exit__(self,type, value, traceback):
-        self.release()
-
-def mpi_sync_db(session):
-    """Causes the halo_db module to use the rank 0 processor's 'Creator' object"""
-
-    if _backend_name!='null':
-
-        import halo_db as db
-
-        if backend.rank() == 0:
-            x = session.merge(db.core.current_creator)
-            session.commit()
-            time.sleep(0.5)
-            for i in xrange(1, backend.size()):
-                backend.send(x.id, tag=3, destination=i)
-
-            db.core.current_creator = x
-
-        else:
-            ID = backend.receive(source=0, tag=3)
-            db.core.current_creator = session.query(
-                db.Creator).filter_by(id=ID).first()
-            print db.core.current_creator
-
-    else:
-        pass
 
 
 def _mpi_iterate(task_list):
     """Sets up an iterator returning items of task_list. If this is rank 0 processor, runs
     a separate thread which dishes out tasks to other ranks. If this is >0 processor, relies
     on getting tasks assigned by the rank 0 processor."""
+    assert backend is not None, "Parallelism is not initialised"
 
-    if backend.rank() == 0:
-        job_iterator = iter(enumerate(task_list))
-        #import threading
-        #i_thread = threading.Thread(target= lambda : _mpi_assign_thread(job_iterator))
-        # i_thread.start()
+    backend.send(len(task_list), tag=MESSAGE_START_ITERATION, destination=0)
 
-        # kluge:
-        i_thread = None
-        _mpi_assign_thread(job_iterator)
+    while True:
+        backend.send(None, tag=MESSAGE_REQUEST_JOB, destination=0)
+        job = backend.receive(0, tag=MESSAGE_DELIVER_JOB)
 
-        """
-        while True:
-            try:
-                job = job_iterator.next()[0]
-                print "Manager --> Doing job", job, "of", len(task_list), "myself"
-                yield task_list[job]
-            except StopIteration:
-                print "Manager --> Out of jobs message to myself"
-                if i_thread is not None:
-                    i_thread.join()
-                _mpi_end_embarrass()
-                return
-        """
-    else:
-        while True:
-
-            backend.send(backend.rank(), tag=1, destination=0)
-            job = backend.receive(0, tag=2)
-
-            if job is None:
-                _mpi_end_embarrass()
-                return
-            else:
-                yield task_list[job]
-
-    _mpi_end_embarrass()
+        if job is None:
+            return
+        else:
+            yield task_list[job]
 
 
-
-
-def _mpi_end_embarrass():
+def _shutdown_mpi():
     global backend
     print backend.rank() + 1, " of ", backend.size(), ": waiting for tasks on other CPUs to complete"
     backend.barrier()

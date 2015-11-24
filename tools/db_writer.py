@@ -86,11 +86,11 @@ def create_property(halo, name, prop, session):
     return px
 
 
-def insert_list(property_list, retry=10):
+def insert_list(property_list):
 
-    session = db.core.internal_session
+    with parallel_tasks.RLock("insert_list"):
+        session = db.core.internal_session
 
-    try:
         property_object_list = [create_property(
             p[0], p[1], p[2], session) for p in property_list if p[2] is not None]
 
@@ -98,14 +98,7 @@ def insert_list(property_list, retry=10):
 
         session.commit()
 
-    except sqlalchemy.exc.OperationalError:
-        session.rollback()
-        if retry > 0:
-            print "DB is locked, retrying in 1 second (%d attempts remain)..." % retry
-            time.sleep(1)
-            insert_list(property_list, retry=retry - 1)
-        else:
-            raise
+
 
 
 
@@ -156,6 +149,7 @@ class DbWriter(object):
         parser.add_argument('--part', action='store', nargs=2, type=int,
                             metavar=('N','M'),
                             help="Emulate MPI by handling slice N out of the total workload of M items. If absent, use real MPI.")
+        parser.add_argument('--backend', action='store', type=str, help="Specify the paralellism backend (e.g. pypar, mpi4py)")
         return parser
 
 
@@ -188,7 +182,6 @@ class DbWriter(object):
             ma_files = parallel_tasks.distributed(self.files, proc=self.options.part[0], of=self.options.part[1])
         else:
             ma_files = parallel_tasks.distributed(self.files)
-        parallel_tasks.mpi_sync_db(db.core.internal_session)
         return ma_files
 
     def parse_command_line(self, argv=None):
@@ -321,6 +314,9 @@ class DbWriter(object):
                 self._loaded_timestep = db_timestep.load()
             except IOError:
                 pass
+
+            self._run_preloop(None, db_timestep.filename,
+                              self._property_calculator_instances, self._existing_properties_all_halos)
 
         self._current_timestep_id = db_timestep.id
 
@@ -501,11 +497,15 @@ class DbWriter(object):
 
 
 
+def run_dbwriter(argv):
+    parallel_tasks.mpi_sync_db(db.core.internal_session)
+    writer = DbWriter()
+    writer.parse_command_line(argv)
+    writer.run_calculation_loop()
 
 
 if __name__ == "__main__":
-    db.use_blocking_session()
 
-    writer = DbWriter()
-    writer.parse_command_line(sys.argv)
-    writer.run_calculation_loop()
+
+    parallel_tasks.launch(run_dbwriter, 2, [sys.argv])
+
