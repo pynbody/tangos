@@ -1415,14 +1415,9 @@ def init_db(db_uri=None, timeout=10, verbose=None):
     Base.metadata.create_all(engine)
 
 def use_blocking_session():
-    global internal_session, engine, current_creator
+    global engine
     from . import blocking_session
-    internal_session.commit()
-
-    internal_session = blocking_session.BlockingSession(bind=engine)
-    if current_creator.id is not None:
-        current_creator = internal_session.query(Creator).filter_by(id=current_creator.id).first()
-
+    blocking_session.make_engine_blocking(engine)
 
 init_db()
 
