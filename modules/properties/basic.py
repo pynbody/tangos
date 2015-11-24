@@ -172,7 +172,7 @@ class Magnitudes(HaloProperties):
 
     def calculate(self, halo, existing_properties):
         hm = pynbody.analysis.luminosity.halo_mag
-        return hm(halo, "V"), hm(halo, "B"), hm(halo, "K")
+        return hm(halo, "V"), hm(halo, "B"), hm(halo, "K"), hm(halo, "V"), hm(halo, "J"), hm(halo, "I")
 
     def name(self):
-        return "V", "B", "K"
+        return "V", "B", "K", "U", "J", "I"
