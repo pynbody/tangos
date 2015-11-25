@@ -1,7 +1,12 @@
+import warnings
+
 def send(data, destination, tag=0):
     raise RuntimeError, "Cannot send data to another CPU: parallelism is disabled"
 
 def receive(source=None, tag=0):
+    raise RuntimeError, "Cannot receive data from another CPU: parallelism is disabled"
+
+def receive_any(source=None):
     raise RuntimeError, "Cannot receive data from another CPU: parallelism is disabled"
 
 def rank():
@@ -16,5 +21,8 @@ def barrier():
 def finalize():
     pass
 
-def launch_new_task():
-    raise RuntimeError, "Cannot launch new task: parallelism is disabled"
+
+def launch(function, num_procs, args):
+    if num_procs is not None and num_procs!=1:
+        warnings.warn("Number of processors requested (%d) will be ignored as this is a single-processor run"%num_procs)
+    function(*args)

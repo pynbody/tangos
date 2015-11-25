@@ -43,15 +43,15 @@ So now you probably want to actually put some properties into your database? For
 
 You should be able to do this:
 ```
-db_writer.py SSC dm_density_profile --for <simulation_path> --part 1 1
+db_writer.py SSC dm_density_profile --for <simulation_path> --backend null
 ```
-Hopefully that's fairly self-explanatory except maybe the `--part` bit, which is inherited because the DB writer wants to be running in parallel. The `--part` directive just says "you are node 1 of 1". It's necessary to say this unless you are running on MPI.
+Hopefully that's fairly self-explanatory except maybe the `--backend null` bit, which is inherited because the DB writer wants to be running in parallel. Instead, `--backend null` says "you have no parallelism, just use one core".
 
 The database checkpoints as it goes along (every few minutes or so). You can interrupt it when you feel like it and it'll automatically resume from where it got to. Once again, you can get a summary of progress with `db_manager.py recent-runs 1`, which will spit out something like this:
 
 ```
 Run ID =  141
-Command line =  /Users/app/Science/halo_database/tools//db_writer.py SSC dm_density_profile --for h516.cosmo25cmb.3072g1MbwK1C52 --part 1 1
+Command line =  /Users/app/Science/halo_database/tools//db_writer.py SSC dm_density_profile --for h516.cosmo25cmb.3072g1MbwK1C52 --backend null
 Host =  Rhododendron.local
 Username =  app
 Time =  03/09/15 18:56

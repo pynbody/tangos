@@ -9,7 +9,10 @@ backend = None
 _backend_name = 'pypar'
 
 if "--backend" in sys.argv:
-    _backend_name = sys.argv[sys.argv.index("--backend")+1]
+    index = sys.argv.index("--backend")
+    _backend_name = sys.argv[index+1]
+    sys.argv.pop(index)
+    sys.argv.pop(index)
 
 _lock_queues = {}
 
@@ -46,7 +49,11 @@ def init_backend():
 
 def launch(function, num_procs=None, args=[]):
     init_backend()
-    backend.launch(_exec_function_or_server, num_procs, [function, args])
+
+    if _backend_name!='null':
+        backend.launch(_exec_function_or_server, num_procs, [function, args])
+    else:
+        function(*args)
 
 def distributed(file_list, proc=None, of=None):
     """Distribute a list of tasks between all nodes"""
@@ -55,6 +62,9 @@ def distributed(file_list, proc=None, of=None):
         file_list = list(file_list)
 
     if _backend_name=='null':
+        if proc is None:
+            proc = 1
+            of = 1
         i = (len(file_list) * (proc - 1)) / of
         j = (len(file_list) * proc) / of - 1
         assert proc <= of and proc > 0
@@ -96,6 +106,8 @@ class RLock(object):
 
 def mpi_sync_db(session):
     """Causes the halo_db module to use the rank 0 processor's 'Creator' object"""
+    if _backend_name=='null':
+        return
     if backend.rank()==0:
         raise RuntimeError, "Cannot call mpi_sync_db from server process"
     if _backend_name!='null':
