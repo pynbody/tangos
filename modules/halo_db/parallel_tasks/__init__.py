@@ -82,7 +82,7 @@ class RLock(object):
         self._count = 0
 
     def acquire(self):
-        if backend is None:
+        if _backend_name=='null':
             return
         if self._count==0:
             backend.send(self.name, destination=0, tag=MESSAGE_REQUEST_LOCK)
@@ -92,7 +92,7 @@ class RLock(object):
         self._count+=1
 
     def release(self):
-        if backend is None:
+        if _backend_name=='null':
             return
         self._count-=1
         if self._count==0:
