@@ -22,7 +22,7 @@ def crosslink_sim(sim1, sim2, force=False):
         if need_crosslink_ts(ts1,ts2) or force:
             crosslink_ts(ts1, ts2)
 
-if __name__ == "__main__":
+def run():
     import sys
     import halo_db as db
 
@@ -38,3 +38,7 @@ if __name__ == "__main__":
         crosslink_ts(ts1, ts2)
     else:
         print "Sorry, couldn't work out what to do with your arguments"
+
+
+if __name__ == "__main__":
+    parallel_tasks.launch(run)

@@ -198,7 +198,7 @@ class MultiHopStrategy(HopStrategy):
             self.session.query(core.HaloLink.id,
                                core.HaloLink.halo_from_id,
                                core.HaloLink.halo_to_id.label("halo_to_id"),
-                               self.halolink_recurse_alias.c.weight*core.HaloLink.weight,
+                               sqlalchemy.func.max(self.halolink_recurse_alias.c.weight*core.HaloLink.weight),
                                (self.halolink_recurse_alias.c.nhops + 1).label("nhops"),
                                links, nodes)
 

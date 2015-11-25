@@ -346,7 +346,10 @@ def add_simulation_timesteps(options):
     core.internal_session.commit()
 
 
-def db_import(remote_db, *sims):
+def db_import(options):
+
+    sims = options.sims
+    remote_db = options.file
 
     global current_creator, internal_session
     engine2 = create_engine('sqlite:///' + remote_db, echo=False)
@@ -644,6 +647,12 @@ if __name__ == "__main__":
     subparse_deprecate = subparse.add_parser("deprecate",
                                              help="Deactivate old copies of properties (if they are present)")
     subparse_deprecate.set_defaults(func=update_deprecation)
+
+    subparse_import = subparse.add_parser("import",
+                                          help="Import one or more simulations from another sqlite file")
+    subparse_import.add_argument("file",type=str,help="The filename of the sqlite file from which to import")
+    subparse_import.add_argument("sims",nargs="*",type=str,help="The name of the simulations to import (or import everything if none specified)")
+    subparse_import.set_defaults(func=db_import)
 
     subparse_rollback = subparse.add_parser("rollback", help="Remove database updates (by ID - see recent-runs)")
     subparse_rollback.add_argument("ids",nargs="*",type=int,help="IDs of the database updates to remove")

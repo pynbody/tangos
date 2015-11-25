@@ -61,8 +61,7 @@ def generate_halolinks(sim):
                 db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj,ratio)
 
 
-
-if __name__=="__main__":
+def run():
     db.use_blocking_session()
     session = db.core.internal_session
     query = db.sim_query_from_args(sys.argv, session)
@@ -116,10 +115,10 @@ if __name__=="__main__":
             f_pb['gp'] = f_pbh.get_group_array()
             bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
         bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
-        
+
         print "Associated halos: ",bh_halos
         bh_dict_id = db.core.get_or_create_dictionary_item(session, "BH")
-        
+
         for bhi, haloi in zip(bh_iord, bh_halos):
             haloi = int(haloi)
             bhi = int(bhi)
@@ -134,7 +133,7 @@ if __name__=="__main__":
             existing = halo.links.filter_by(relation_id=bh_dict_id.id,halo_to_id=bh_obj.id).count()
 
             if existing==0:
-                
+
                 session.merge(db.core.HaloLink(halo,bh_obj,bh_dict_id))
             else:
                 print "NOTE: skipping BH in halo",haloi,"as link already exists"
@@ -152,6 +151,9 @@ if __name__=="__main__":
     session.commit()
 
 
+
+if __name__=="__main__":
+    parallel_tasks.launch(run)
 
 
 

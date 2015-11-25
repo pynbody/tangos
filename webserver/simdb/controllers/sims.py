@@ -236,7 +236,7 @@ class SimsController(BaseController):
 
 
     @classmethod
-    def _construct_preliminary_mergertree(self, halo, base_halo, visited=None):
+    def _construct_preliminary_mergertree(self, halo, base_halo, visited=None, depth=0):
         if visited is None:
             visited = []
         start = time.time()
@@ -273,14 +273,20 @@ class SimsController(BaseController):
         nodeclass = 'node-dot-standard'
 
 
+        name = str(halo.halo_number)
         start = time.time()
-        if halo.links.filter_by(relation_id=db.get_dict_id('Sub')).count()>0:
+        if halo.links.filter_by(relation_id=db.get_dict_id('Sub',-1)).count()>0:
             nodeclass = 'node-dot-sub'
         self.search_time+=time.time()-start
         if halo == base_halo:
             nodeclass = 'node-dot-selected'
+        elif depth==0:
+            if halo.next is not None:
+                nodeclass = 'node-dot-continuation'
+                name = '...'
+                moreinfo = "Continues... "+moreinfo
 
-        name = str(halo.halo_number)
+
 
         if len(name)>4:
             name = ""
@@ -290,15 +296,16 @@ class SimsController(BaseController):
                   'nodeclass': nodeclass,
                   'moreinfo': moreinfo,
                   'timeinfo': timeinfo,
-                  '_x': halo.halo_number*10,
+                  'halo_number': halo.halo_number,
                   'unscaled_size': unscaled_size ,
-                  'contents': [] }
+                  'contents': [],
+                  'depth': depth }
 
         maxdepth = 0
 
         if recurse:
             for rli in rl:
-                nx = self._construct_preliminary_mergertree(rli, base_halo,visited)
+                nx = self._construct_preliminary_mergertree(rli, base_halo,visited,depth+1)
                 output['contents'].append(nx)
                 if nx['maxdepth']>maxdepth: maxdepth = nx['maxdepth']
 
@@ -311,23 +318,15 @@ class SimsController(BaseController):
         for subtree in tree['contents']:
             for item in self._visit_tree(subtree) : yield item
 
+
     @classmethod
-    def _postprocess_mergertree(self, tree):
-        x_vals = set()
+    def _postprocess_megertree_rescale(cls, tree):
         max_size = -100
-        for node in self._visit_tree(tree):
-            x_vals.add(node['_x'])
+        for node in cls._visit_tree(tree):
             if node['unscaled_size']>max_size:
                 max_size = node['unscaled_size']
 
-        x_map = {}
-        new_x=0
-        for xv in sorted(x_vals):
-            x_map[xv] = new_x
-            new_x+=20
-
-        for node in self._visit_tree(tree):
-            node['_x']=x_map[node['_x']]
+        for node in cls._visit_tree(tree):
             size = 10+3*(node['unscaled_size']-max_size)
             if size<3:
                 size = 3
@@ -335,21 +334,74 @@ class SimsController(BaseController):
 
 
     @classmethod
+    def _postprocess_mergertree(self, tree):
+        self._postprocess_megertree_rescale(tree)
+        self._postprocess_mergertree_layout_by_branch(tree)
+
+    @classmethod
+    def _postprocess_mergertree_layout_by_number(cls, tree, key='halo_number'):
+        x_vals = [set() for i in xrange(tree['maxdepth'])]
+
+        for node in cls._visit_tree(tree):
+            x_vals[node['depth']].add(node[key])
+
+        max_entries = max([len(v) for v in x_vals])
+        x_map = [{} for i in xrange(tree['maxdepth'])]
+        for this_vals, this_map in zip(x_vals, x_map):
+            new_x = 15 * (max_entries - len(this_vals))
+            for xv in sorted(this_vals):
+                this_map[xv] = new_x
+                new_x += 30
+
+        for node in cls._visit_tree(tree):
+            node['_x'] = x_map[node['depth']][node[key]]
+
+    @classmethod
+    def _postprocess_mergertree_layout_by_branch(cls, tree):
+
+        tree['space_range'] = (0.0,1.0)
+        existing_ranges = [{} for i in xrange(tree['maxdepth'])]
+        for node in cls._visit_tree(tree):
+            x_start, x_end = node['space_range']
+            node['mid_range'] = (x_start+x_end)/2
+            if len(node['contents'])>0:
+                delta = (x_end-x_start)/len(node['contents'])
+                for i,child in enumerate(node['contents']):
+                    child_range = existing_ranges[child['depth']].get(child['halo_number'],
+                                                                      (x_start + i *delta, x_start + (i+1)*delta))
+
+                    child['space_range'] = child_range
+                    existing_ranges[child['depth']][child['halo_number']]=child_range
+
+        cls._postprocess_mergertree_layout_by_number(tree, 'mid_range')
+
+    @classmethod
     def _construct_mergertree(self, halo):
         self.search_time=0
         start = time.time()
-        base = halo.latest
+        base = halo
+        for i in range(5):
+            if base.next is not None:
+                base = base.next
+
         tree = self._construct_preliminary_mergertree(base, halo)
-        print "Preliminary time: ",time.time()-start
-        self._postprocess_mergertree(tree)
-        print "Total time: ",time.time()-start
-        print "Search time: ",self.search_time
+        print "Merger tree build time:    %.2fs"%(time.time()-start)
+        print "of which link search time: %.2fs"%(self.search_time)
 
         start = time.time()
-        rl = db.hopper.MultiHopStrategy(base, directed='backwards', nhops_max=6)
+        self._postprocess_mergertree(tree)
+        print "Post-processing time: %.2fs"%(time.time()-start)
+
+        """
+        start = time.time()
+        rl = db.hopper.MultiHopStrategy(halo, directed='backwards', nhops_max=1)
+        rl.target_simulation(halo.timestep.simulation)
         print "size=",rl.count()
         print len(rl.all())
+        print rl.all_weights_and_routes()[-1]
         print "one-query back: ",time.time()-start
+        """
+
         return tree
 
     def mergertree(self, id, rel=None, num=1):
@@ -398,6 +450,7 @@ class SimsController(BaseController):
         else :
             c.timestep_t = "%.2f Gyr"%halo.timestep.time_gyr
         c.this_id = id
+        c.halo_number = halo.halo_number
 
 
         c.breadcrumbs = h.breadcrumbs(halo)
@@ -439,6 +492,8 @@ class SimsController(BaseController):
             new_halo = halo.latest
             if new_halo is not None and new_halo.id == halo.id:
                 c.flash = ["You're already looking at the latest snapshot for this halo"]
+        elif rel == "other_in_ts":
+            new_halo = halo.timestep.halos.filter_by(halo_number=num).first()
         elif rel == "insim":
             targ = Session.query(meta.Simulation).filter_by(id=num).first()
             strategy = db.hopper.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across')

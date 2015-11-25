@@ -143,6 +143,11 @@ ${h.link_to(rel,linkurl,onclick="return timeNav('"+linkurl+"');")}
     | ${h.link_to(h.literal(c.alternative_action_name), url(controller='sims', action=c.alternative_action, id=c.this_id))}
     </p>
     <form id="select-othersimulation">
+        In this timestep: jump to halo
+    <% linkurl = url(controller='sims', action=c.this_action,id=c.this_id,rel="other_in_ts",num=c.halo_number-1)%>
+    ${h.link_to(str(c.halo_number-1),linkurl,onclick="return timeNav('"+linkurl+"');")} |
+    <% linkurl = url(controller='sims', action=c.this_action,id=c.this_id,rel="other_in_ts",num=c.halo_number+1)%>
+    ${h.link_to(str(c.halo_number+1),linkurl,onclick="return timeNav('"+linkurl+"');")}.
         <label for="target_sim_id">Find the same halo in another simulation:</label>
 <select name="target_sim_id" onchange="findInOtherSimulation();">
     %for sim_name, sim_id, ticked in c.sims:
