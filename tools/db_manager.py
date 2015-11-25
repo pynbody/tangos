@@ -617,7 +617,7 @@ def rollback(options):
 
 if __name__ == "__main__":
 
-    db.core.internal_session = halo_db.blocking_session.BlockingSession(bind = db.core.engine)
+    #db.core.internal_session = halo_db.blocking_session.BlockingSession(bind = db.core.engine)
     import argparse
 
     parser = argparse.ArgumentParser()
