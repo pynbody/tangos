@@ -205,7 +205,7 @@ def _issue_next_lock(lock_id):
     backend.send(lock_id, destination=queue[0], tag=_get_tag_for_lock(lock_id))
 
 def _get_tag_for_lock(lock_id):
-    return MESSAGE_GRANT_LOCK_OFFSET + hash(lock_id)&0xFFFFFF
+    return MESSAGE_GRANT_LOCK_OFFSET + hash(lock_id)&0xFFFF
 
 def _any_locks_alive():
     return any([len(v)>0 for v in _lock_queues.itervalues()])
