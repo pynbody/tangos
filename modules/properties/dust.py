@@ -21,6 +21,8 @@ class DustAttenuation(HaloProperties):
             raise ValueError, "wavelength not in acceptable range"
 
     def calculate(self, halo, properties):
+        if len(halo.gas) < 5:
+            return 0, 0, 0, 0, 0, 0
         Rv = 4.0
         A1600max = 2.0
         dustf = 0.01  #Draine 2007
