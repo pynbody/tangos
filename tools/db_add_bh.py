@@ -20,7 +20,7 @@ def resolve_multiple_mergers(bh_map):
             resolve_multiple_mergers(bh_map)
             return
 
-def generate_halolinks(sim):
+def generate_halolinks(sim, session):
     db.tracker.generate_tracker_halo_links(sim)
     fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
     if len(fname)==0:
@@ -152,7 +152,7 @@ def run():
 
     print "Generate merger trees...."
     for sim in query.all():
-        generate_halolinks(sim)
+        generate_halolinks(sim, session)
 
     session.commit()
 
