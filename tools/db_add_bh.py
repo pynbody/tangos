@@ -7,6 +7,7 @@ import sys
 import numpy as np
 import gc
 import glob
+import pynbody
 
 
 def resolve_multiple_mergers(bh_map):
@@ -110,7 +111,7 @@ def run():
 
         f_pbh = f_pb.halos()
         if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
-            bh_halos = f_bph.get_fam_group_array(family = 'BH')
+            bh_halos = f_pbh.get_fam_group_array(family = 'BH')
         else:
             f_pb['gp'] = f_pbh.get_group_array()
             bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
