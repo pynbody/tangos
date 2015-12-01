@@ -108,7 +108,7 @@ def run():
 
         session.commit()
 
-        f_pbh = f_fpb.halos()
+        f_pbh = f_pb.halos()
         if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
             bh_halos = f_bph.get_fam_group_array(family = 'BH')
         else:
