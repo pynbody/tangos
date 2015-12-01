@@ -112,9 +112,12 @@ def run():
         f_pbh = f_pb.halos()
         if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
             bh_halos = f_pbh.get_fam_group_array(family = 'BH')
+            del(f_pbh)
         else:
+            del(f_pbh)
             f_pb['gp'] = f_pbh.get_group_array()
             bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
+
         bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
 
         print "Associated halos: ",bh_halos
