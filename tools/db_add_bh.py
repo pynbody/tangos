@@ -115,10 +115,10 @@ def run():
             del(f_pbh)
             gc.collect()
         else:
-            del(f_pbh)
-            gc.collect()
             f_pb['gp'] = f_pbh.get_group_array()
             bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
+            del(f_pbh)
+            gc.collect()
 
         bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
 
