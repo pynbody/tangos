@@ -465,7 +465,7 @@ def _translate_halolinks(target_session, halolinks, external_to_internal_halo_id
         translated.append(hl_ext.id)
 
 
-def update_deprecation(opts):
+def flag_duplicates_deprecated(opts):
 
     session = db.core.internal_session
 
@@ -474,8 +474,10 @@ def update_deprecation(opts):
 
     session.commit()
 
-
-
+def remove_duplicates(opts):
+    flag_duplicates_deprecated(None)
+    print "delete    :",session.execute("delete from haloproperties where deprecated=1").rowcount
+    db.core.internal_session.commit()
 
 
 
@@ -644,9 +646,13 @@ if __name__ == "__main__":
     subparse_remruns.add_argument("sims",help="The path to the simulation folder relative to the database folder")
     subparse_remruns.set_defaults(func=rem_simulation_timesteps)
 
-    subparse_deprecate = subparse.add_parser("deprecate",
-                                             help="Deactivate old copies of properties (if they are present)")
-    subparse_deprecate.set_defaults(func=update_deprecation)
+    subparse_deprecate = subparse.add_parser("flag-duplicates",
+                                             help="Flag old copies of properties (if they are present)")
+    subparse_deprecate.set_defaults(func=flag_duplicates_deprecated)
+
+    subparse_deprecate = subparse.add_parser("remove-duplicates",
+                                             help="Remove old copies of properties (if they are present)")
+    subparse_deprecate.set_defaults(func=remove_duplicates)
 
     subparse_import = subparse.add_parser("import",
                                           help="Import one or more simulations from another sqlite file")
