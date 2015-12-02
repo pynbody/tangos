@@ -149,7 +149,7 @@ def add_halos(ts,max_gp=None):
                 pass
 
 def add_halos_from_ahf_halos(ts):
-    add_halos_from_stat(ts, '.z%.3f.AHF_halos'%(ts.redshift)
+    return add_halos_from_stat(ts, '.z%.3f.AHF_halos'%(ts.redshift)
                         , '#ID', 'n_gas', 'n_star', None, 'npart')
 
 def add_halos_from_stat(ts, extension='.amiga.stat', grp='Grp', ngas='N_gas', nstar='N_star',
@@ -159,9 +159,10 @@ def add_halos_from_stat(ts, extension='.amiga.stat', grp='Grp', ngas='N_gas', ns
     try:
         f = file(s + extension)
     except IOError:
-        print term.YELLOW, "  No .stat file found for", ts, term.NORMAL
+        print term.YELLOW, "  No file", s+extension, term.NORMAL
         return False
-    header = filter(lambda x : x.split("(")[0], f.readline().split())
+    print term.GREEN,"  Found file",s+extension
+    header = [x.split("(")[0] for x in f.readline().split()]
     gid_id = header.index(grp)
     NGas_id = header.index(ngas)
     NStar_id = header.index(nstar)
