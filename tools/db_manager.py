@@ -476,7 +476,7 @@ def flag_duplicates_deprecated(opts):
 
 def remove_duplicates(opts):
     flag_duplicates_deprecated(None)
-    print "delete    :",session.execute("delete from haloproperties where deprecated=1").rowcount
+    print "delete    :",db.core.internal_session.execute("delete from haloproperties where deprecated=1").rowcount
     db.core.internal_session.commit()
 
 
