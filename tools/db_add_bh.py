@@ -77,8 +77,12 @@ def run():
     for f in files:
         print f
         sim = f.simulation
-
-        f_pb = f.load()
+        
+        try:
+            f_pb = f.load()
+        except:
+            print "File not found - continuing"
+            continue
         f_pb.physical_units()
         if len(f_pb.star)<1:
             print "No stars - continuing"
