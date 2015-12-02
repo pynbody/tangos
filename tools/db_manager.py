@@ -123,7 +123,7 @@ def add_halos(ts,max_gp=None):
     #    print term.GREEN, "  Halos already exist for", ts, term.NORMAL
     #    return
 
-    if not add_halos_from_stat(ts):
+    if not (add_halos_from_stat(ts) or add_halos_from_ahf_halos(ts)):
         print term.YELLOW, "  -- deriving from halo catalogue instead of .stat file (slower)", ts, term.NORMAL
         s = ts.filename
         f = ts.load()
@@ -148,25 +148,36 @@ def add_halos(ts,max_gp=None):
             except (ValueError, KeyError) as e:
                 pass
 
+def add_halos_from_ahf_halos(ts):
+    add_halos_from_stat(ts, '.z%.3f.AHF_halos'%(ts.redshift)
+                        , '#ID', 'n_gas', 'n_star', None, 'npart')
 
-def add_halos_from_stat(ts):
+def add_halos_from_stat(ts, extension='.amiga.stat', grp='Grp', ngas='N_gas', nstar='N_star',
+                        ndark = 'N_dark', ntot=None):
     from terminalcontroller import term
     s = ts.filename
     try:
-        f = file(s + ".amiga.stat")
+        f = file(s + extension)
     except IOError:
         print term.YELLOW, "  No .stat file found for", ts, term.NORMAL
         return False
-    header = f.readline().split()
-    gid_id = header.index("Grp")
-    NGas_id = header.index("N_gas")
-    NStar_id = header.index("N_star")
-    NDM_id = header.index("N_dark")
+    header = filter(lambda x : x.split("(")[0], f.readline().split())
+    gid_id = header.index(grp)
+    NGas_id = header.index(ngas)
+    NStar_id = header.index(nstar)
+    NDM_id = header.index(ndark or ntot)
     for l in f:
         s = l.split()
-        if int(s[NDM_id]) > 1000:
-            h = Halo(ts, int(s[gid_id]), int(s[NDM_id]), int(
-                s[NStar_id]), int(s[NGas_id]))
+        NDM_or_ntot = int(s[NDM_id])
+        Ngas = int(s[NGas_id])
+        Nstar = int(s[NStar_id])
+        if ntot:
+            NDM = NDM_or_ntot - Ngas - Nstar
+        else:
+            NDM = NDM_or_ntot
+
+        if NDM > 1000:
+            h = Halo(ts, int(s[gid_id]), NDM,  Nstar, Ngas)
             core.internal_session.add(h)
     return True
 
