@@ -110,20 +110,27 @@ def run():
         session.commit()
 
         f_pbh = f_pb.halos()
+        bh_cen_halos=None
         if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
             bh_halos = f_pbh.get_fam_group_array(family = 'BH')
             del(f_pbh)
             gc.collect()
         else:
-            f_pb['gp'] = f_pbh.get_group_array()
-            bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
+            f_pb['gpc'] = f_pbh.get_group_array(top_level=False)
+            f_pb['gpall'] = f_pbh.get_group_array(top_level=True)
+            bh_halos = f_pb.star['gpall'][np.where(f_pb.star['tform']<0)[0]]
+            if type(f_pbh) == pynbody.halo.AHFCatalogue:
+                bh_cen_halos = f_pb.star['gpc'][np.where(f_pb.star['tform']<0)[0]]
             del(f_pbh)
             gc.collect()
 
         bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
+        if bh_cen_halos:
+            bh_cen_halos = bh_cen_halos[np.argsort(bh_mass)[::-1]]
 
         print "Associated halos: ",bh_halos
         bh_dict_id = db.core.get_or_create_dictionary_item(session, "BH")
+        bh_dict_cen_id = db.core.get_or_create_dictionary_item(session, "BH_central")
 
         for bhi, haloi in zip(bh_iord, bh_halos):
             haloi = int(haloi)
@@ -143,6 +150,26 @@ def run():
                 session.merge(db.core.HaloLink(halo,bh_obj,bh_dict_id))
             else:
                 print "NOTE: skipping BH in halo",haloi,"as link already exists"
+
+        if bh_cen_halos:
+            for bhi, haloi in zip(bh_iord, bh_cen_halos):
+                haloi = int(haloi)
+                bhi = int(bhi)
+                halo = f.halos.filter_by(halo_type=0, halo_number=haloi).first()
+                bh_obj = f.halos.filter_by(halo_type=1, halo_number=bhi).first()
+                if halo is None:
+                    print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
+                    continue
+                if bh_obj is None:
+                    print "WARNING: can't find the db object for BH ",bh_iord,"?"
+                    continue
+                existing = halo.links.filter_by(relation_id=bh_dict_cen_id.id,halo_to_id=bh_obj.id).count()
+
+                if existing==0:
+
+                    session.merge(db.core.HaloLink(halo,bh_obj,bh_dict_cen_id))
+                else:
+                    print "NOTE: skipping central BH ", bhi,"in halo",haloi,"as link already exists"
 
         session.commit()
 
