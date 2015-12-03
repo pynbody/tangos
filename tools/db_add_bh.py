@@ -125,12 +125,13 @@ def run():
             gc.collect()
 
         bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
-        if bh_cen_halos:
+        if bh_cen_halos is not None:
             bh_cen_halos = bh_cen_halos[np.argsort(bh_mass)[::-1]]
 
         print "Associated halos: ",bh_halos
         bh_dict_id = db.core.get_or_create_dictionary_item(session, "BH")
-        bh_dict_cen_id = db.core.get_or_create_dictionary_item(session, "BH_central")
+        if bh_cen_halos is not None:
+            bh_dict_cen_id = db.core.get_or_create_dictionary_item(session, "BH_central")
 
         for bhi, haloi in zip(bh_iord, bh_halos):
             haloi = int(haloi)
@@ -151,7 +152,7 @@ def run():
             else:
                 print "NOTE: skipping BH in halo",haloi,"as link already exists"
 
-        if bh_cen_halos:
+        if bh_cen_halos is not None:
             for bhi, haloi in zip(bh_iord, bh_cen_halos):
                 haloi = int(haloi)
                 bhi = int(bhi)
