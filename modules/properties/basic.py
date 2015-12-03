@@ -184,7 +184,20 @@ class Magnitudes(HaloProperties):
 
     def calculate(self, halo, existing_properties):
         hm = pynbody.analysis.luminosity.halo_mag
-        return hm(halo, "V"), hm(halo, "B"), hm(halo, "K")
+        ok, = np.where(halo.s['tform']>0)
+        return hm(halo.s[ok], "v"), hm(halo.s[ok], "b"), hm(halo.s[ok], "k"), hm(halo.s[ok], "u"), hm(halo.s[ok], "j"), hm(halo.s[ok], "i")
 
     def name(self):
-        return "V", "B", "K"
+        return "V", "B", "K", "U", "J", "I"
+
+
+class ABMagnitudes(HaloProperties):
+
+    def calculate(self, halo, existing_properties):
+        hm = pynbody.analysis.luminosity.halo_mag
+        ok, = np.where(halo.s['tform']>0)
+        ABcorr = {'u':0.79,'b':-0.09,'v':0.02,'r':0.21,'i':0.45,'j':0.91,'h':1.39,'k':1.85}
+        return hm(halo.s[ok], "v")+ABcorr['v'], hm(halo.s[ok], "b")+ABcorr['b'], hm(halo.s[ok], "k")+ABcorr['k'], hm(halo.s[ok], "u")+ABcorr['u'], hm(halo.s[ok], "j")+ABcorr['j'], hm(halo.s[ok], "i")+ABcorr['i']
+
+    def name(self):
+        return "AB_V", "AB_B", "AB_K", "AB_U", "AB_J", "AB_I"

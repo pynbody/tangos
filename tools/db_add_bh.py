@@ -7,6 +7,7 @@ import sys
 import numpy as np
 import gc
 import glob
+import pynbody
 
 
 def resolve_multiple_mergers(bh_map):
@@ -19,7 +20,7 @@ def resolve_multiple_mergers(bh_map):
             resolve_multiple_mergers(bh_map)
             return
 
-def generate_halolinks(sim):
+def generate_halolinks(sim, session):
     db.tracker.generate_tracker_halo_links(sim)
     fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
     if len(fname)==0:
@@ -62,7 +63,7 @@ def generate_halolinks(sim):
 
 
 def run():
-    db.use_blocking_session()
+    #db.use_blocking_session()
     session = db.core.internal_session
     query = db.sim_query_from_args(sys.argv, session)
 
@@ -112,9 +113,17 @@ def run():
 
         session.commit()
 
-        f_pb['gp'] = f_pb.halos().get_group_array()
+        f_pbh = f_pb.halos()
+        if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
+            bh_halos = f_pbh.get_fam_group_array(family = 'BH')
+            del(f_pbh)
+            gc.collect()
+        else:
+            f_pb['gp'] = f_pbh.get_group_array()
+            bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
+            del(f_pbh)
+            gc.collect()
 
-        bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
         bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
 
         print "Associated halos: ",bh_halos
@@ -147,7 +156,7 @@ def run():
 
     print "Generate merger trees...."
     for sim in query.all():
-        generate_halolinks(sim)
+        generate_halolinks(sim, session)
 
     session.commit()
 

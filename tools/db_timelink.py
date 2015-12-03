@@ -7,7 +7,7 @@ from halo_db import parallel_tasks, crosslink
 
 
 def run():
-    db.use_blocking_session()
+    #db.use_blocking_session()
     session = db.core.internal_session
 
 

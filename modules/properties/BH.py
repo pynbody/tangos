@@ -48,9 +48,16 @@ class BHShortenedLog(object):
         #Eunits = munits*potunits
         # decorate with units
 
+        x *= scalefac
+        y *= scalefac
+        z *= scalefac
+        vx *= scalefac
+        vy *= scalefac
+        vz *= scalefac
+
         mass.units = munits
-        x.units = y.units = z.units = posunits
-        vx.units = vy.units = vz.units = velunits
+        x.units = y.units = z.units = posunits / pynbody.units.Unit('a')
+        vx.units = vy.units = vz.units = velunits / pynbody.units.Unit('a')
         #pot.units = potunits
         time.units = tunits
         mdot.units = munits/tunits
@@ -110,7 +117,7 @@ class BH(HaloProperties):
         import halo_db as db
         if not isinstance(properties, db.Halo):
             raise RuntimeError("No proxies, please")
-        boxsize = halo.properties['boxsize']
+        boxsize = float(halo.properties['boxsize'].in_units('kpc', a = halo.properties['a']))
         halo = halo.s
 
         if len(halo)!=1:
@@ -210,7 +217,7 @@ class BHGalaxy(HaloProperties):
 
     def calculate(self, halo, properties):
         bhmass = [bh['BH_mass'] for bh in properties['BH']]
-        bhiord = [bh['iord'] for bh in properties['BH']]
+        bhiord = [bh.halo_number for bh in properties['BH']]
         mdot = [bh['BH_mdot_ave'] for bh in properties['BH']]
         offset = [bh['BH_central_distance'] for bh in properties['BH']]
 
