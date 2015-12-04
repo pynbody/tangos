@@ -150,10 +150,10 @@ def add_halos(ts,max_gp=None):
 
 def add_halos_from_ahf_halos(ts):
     return add_halos_from_stat(ts, '.z%.3f.AHF_halos'%(ts.redshift)
-                        , '#ID', 'n_gas', 'n_star', None, 'npart')
+                        , '#ID', 'n_gas', 'n_star', None, 'npart', 1)
 
 def add_halos_from_stat(ts, extension='.amiga.stat', grp='Grp', ngas='N_gas', nstar='N_star',
-                        ndark = 'N_dark', ntot=None):
+                        ndark = 'N_dark', ntot=None, id_offset=0):
     from terminalcontroller import term
     s = ts.filename
     try:
@@ -178,7 +178,7 @@ def add_halos_from_stat(ts, extension='.amiga.stat', grp='Grp', ngas='N_gas', ns
             NDM = NDM_or_ntot
 
         if NDM > 1000:
-            h = Halo(ts, int(s[gid_id]), NDM,  Nstar, Ngas)
+            h = Halo(ts, int(s[gid_id])+id_offset, NDM,  Nstar, Ngas)
             core.internal_session.add(h)
     return True
 
