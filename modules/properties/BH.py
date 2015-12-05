@@ -216,10 +216,10 @@ class BHGalaxy(HaloProperties):
         return True
 
     def calculate(self, halo, properties):
-        bhmass = [bh['BH_mass'] for bh in properties['BH']]
-        bhiord = [bh.halo_number for bh in properties['BH']]
-        mdot = [bh['BH_mdot_ave'] for bh in properties['BH']]
-        offset = [bh['BH_central_distance'] for bh in properties['BH']]
+        bhmass = [bh['BH_mass'] for bh in properties['BH_central']]
+        bhiord = [bh.halo_number for bh in properties['BH_central']]
+        mdot = [bh['BH_mdot_ave'] for bh in properties['BH_central']]
+        offset = [bh['BH_central_distance'] for bh in properties['BH_central']]
 
         indm = np.argmax(bhmass)
         indo = np.argmin(offset)
