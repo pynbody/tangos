@@ -107,6 +107,33 @@ class MColdGas(HaloProperties):
     def name(self):
         return "MColdGas", "MHIGas"
 
+class MassEnclosed(HaloProperties):
+    def name(self):
+        return "MHIGas_2kpc", "MHIGas_5kpc", "MHIGas_10kpc", "MGas_2kpc", "MGas_5kpc", "MGas_10kpc", "MStar_2kpc", \
+               "MStar_5kpc", "MStar_10kpc"
+
+    def Msumr(self, halo, rad, cen):
+        gas = halo.g[pynbody.filt.Sphere(rad, cen)]
+        star = halo.s[pynbody.filt.Sphere(rad, cen)]
+        if len(gas) >0:
+            gmass = gas['mass'].sum()
+            HImass = np.sum(gas['mass']*gas['HI'])
+        else:
+            gmass = 0
+            HImass = 0
+        if len(star)>0:
+            starmass = star['mass'].sum()
+        else:
+            starmass = 0
+        return gmass, starmass, HImass
+
+    def calculate(self, halo, properties):
+        MGas2, MHIGas2, MStar2 = self.Msumr(halo,"2 kpc",properties['SSC'])
+        MGas5, MHIGas5, MStar5 = self.Msumr(halo,"5 kpc",properties['SSC'])
+        MGas10, MHIGas10, MStar10 = self.Msumr(halo,"10 kpc",properties['SSC'])
+        return MHIGas2, MHIGas5, MHIGas10, MGas2, MGas5, MGas10, MStar2, MStar5, MStar10
+
+
 
 class Contamination(HaloProperties):
 
