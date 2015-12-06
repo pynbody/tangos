@@ -100,6 +100,8 @@ class SSCComoving(HaloProperties):
 class MColdGas(HaloProperties):
 
     def calculate(self, halo, exist):
+        if len(halo.gas)==0:
+            return 0, 0
         coldgas = halo.gas[pynbody.filt.LowPass("temp", 2.e4)]["mass"].sum()
         higas = (halo.gas["mass"] * halo.gas["HI"]).sum()
         return coldgas, higas
