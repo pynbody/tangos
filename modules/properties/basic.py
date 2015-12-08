@@ -127,7 +127,7 @@ class MassEnclosed(HaloProperties):
             starmass = star['mass'].sum()
         else:
             starmass = 0
-        return gmass, starmass, HImass
+        return gmass, HImass, starmass
 
     def calculate(self, halo, properties):
         MGas2, MHIGas2, MStar2 = self.Msumr(halo,"2 kpc",properties['SSC'])
