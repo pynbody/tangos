@@ -591,9 +591,14 @@ class TimeStep(Base):
 
         out = [[] for i in xrange(len(plist))]
 
-        for h in self.halos.options(
-                    sqlalchemy.orm.joinedload(Halo.all_properties)
-                  ).all():
+        start = time.time()
+
+        halos = self.halos.options(
+                    sqlalchemy.orm.joinedload(Halo.all_properties),
+                    sqlalchemy.orm.joinedload(Halo.all_links)
+                  ).all()
+        print "Db query took %.1fs"%(time.time()-start)
+        for h in halos:
             try:
                 if filt(h):
                     res = [identifiers.get_halo_property_with_magic_strings(h, p) for p in plist]
@@ -723,7 +728,7 @@ class Halo(Base):
         for x in self.all_properties:
             if x.name_id == key_id:
                 return_vals.append(x.data)
-        for x in self.links:
+        for x in self.all_links:
             if x.relation_id == key_id:
                 return_vals.append(x.halo_to)
 
@@ -946,7 +951,7 @@ class HaloProperty(Base):
     halo = relationship(Halo, cascade='none', backref=backref('all_properties'))
 
     data_float = Column(Float)
-    data_array = deferred(Column(LargeBinary))
+    data_array = Column(LargeBinary)
     data_int = Column(Integer)
 
     name_id = Column(Integer, ForeignKey('dictionary.id'))
@@ -1029,7 +1034,7 @@ class HaloLink(Base):
     halo_to_id = Column(Integer, ForeignKey('halos.id'))
 
     halo_from = relationship(Halo, primaryjoin=halo_from_id == Halo.id,
-                             backref=backref('links', cascade='all, delete-orphan',
+                             backref=backref('links', cascade='all',
                                              lazy='dynamic',
                                              primaryjoin=halo_from_id == Halo.id),
                              cascade='')
@@ -1081,6 +1086,8 @@ TimeStep.links_to = relationship(HaloLink, secondary=Halo.__table__,
                                  cascade='none', lazy='dynamic')
 
 
+
+Halo.all_links = relationship(HaloLink, primaryjoin=(HaloLink.halo_from_id == Halo.id))
 
 
 
