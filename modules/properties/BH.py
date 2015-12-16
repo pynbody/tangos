@@ -109,9 +109,10 @@ class BH(HaloProperties):
         return True
 
     def preloop(self, f, filename, pa):
-        self.log = BHShortenedLog.get_existing_or_new(f,filename)
-        self.filename = filename
-        print self.log
+        if f is not None:
+            self.log = BHShortenedLog.get_existing_or_new(f,filename)
+            self.filename = filename
+            print self.log
 
     def calculate(self, halo, properties):
         import halo_db as db
