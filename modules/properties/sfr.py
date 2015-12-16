@@ -9,7 +9,7 @@ class StarForm(HaloProperties):
     # include
 
     def name(self):
-        return "SFR", "SFR_1kpc", "SFR_250Myr", "SFR_25Myr"
+        return "SFR", "SFR_1kpc", "SFR_5kpc", "SFR_10kpc", "SFR_250Myr", "SFR_25Myr"
 
     def calcForHalo(self, halo, period=2.5e7, hard_period=False):
         sts = halo.star
@@ -50,9 +50,11 @@ class StarForm(HaloProperties):
             return 0.
 
     def calculate(self, halo, existing_properties):
-        return self.calcForHalo(halo), self.calcForHalo(halo[pynbody.filt.Sphere("1 kpc", existing_properties["SSC"])]), \
+        return self.calcForHalo(halo), self.calcForHalo(halo[pynbody.filt.Sphere("1 kpc", existing_properties["SSC"])]),\
+            self.calcForHalo(halo[pynbody.filt.Sphere("5 kpc", existing_properties["SSC"])]),\
+            self.calcForHalo(halo[pynbody.filt.Sphere("10 kpc", existing_properties["SSC"])]),\
             self.calcForHalo(halo, 2.5e8),\
-            self.calcForHalo(halo, hard_period=True)
+            self.calcForHalo(halo, hard_period=True),
 
     def spherical_region(self):
         return True
