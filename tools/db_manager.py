@@ -629,6 +629,10 @@ def rollback(options):
     for run_id in options.ids:
         rem_run(run_id, not options.force)
 
+def dump_id(options):
+    h = db.get_halo(options.halo).load()
+    np.savetxt(options.filename,h['iord'],"%d")
+
 if __name__ == "__main__":
 
     #db.core.internal_session = halo_db.blocking_session.BlockingSession(bind = db.core.engine)
@@ -676,6 +680,11 @@ if __name__ == "__main__":
     subparse_rollback.add_argument("ids",nargs="*",type=int,help="IDs of the database updates to remove")
     subparse_rollback.add_argument("--force","-f",action="store_true",help="Do not prompt for confirmation")
     subparse_rollback.set_defaults(func=rollback)
+
+    subparse_dump_id = subparse.add_parser("dump-iord", help="Dump the iords corresponding to a specified halo")
+    subparse_dump_id.add_argument("halo",type=str,help="The identity of the halo to dump")
+    subparse_dump_id.add_argument("filename",type=str,help="A filename for the output text file")
+    subparse_dump_id.set_defaults(func=dump_id)
 
 
     args = parser.parse_args()
