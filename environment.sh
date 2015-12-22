@@ -6,7 +6,8 @@
 # export any environment variables you wish to change there. The end
 # of this script sources environment_local.sh for you.
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+RELATIVEDIR=$( dirname ${BASH_SOURCE:-$0} )
+DIR=$( cd $RELATIVEDIR && pwd )
 export PYTHONPATH=$DIR/modules/:$PYTHONPATH
 export PATH=$DIR/tools/:$PATH
 
