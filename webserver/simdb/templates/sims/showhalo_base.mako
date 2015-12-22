@@ -38,7 +38,7 @@ function addNavigationCallback(fn) {
 }
 
 
-function timeNav(rel) {
+function timeNav(rel, popping) {
 
     $("#navigation").html("<h2>Loading...</h2>");
 
@@ -52,9 +52,23 @@ function timeNav(rel) {
            success: updateElementsFromResponse
        });
 
+
+    if(!popping) {
+        console.log("push:"+rel);
+        window.history.pushState(rel, "AJAX", rel);
+    }
+
     return false;
 }
 
+
+function popState(event) {
+    console.log("pop:"+event.state);
+    if(event.state)
+        timeNav(event.state, true);
+}
+
+window.onpopstate = popState;
 
 
 var scrollTop = {};

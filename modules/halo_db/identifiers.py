@@ -21,7 +21,7 @@ def get_halo_property_if_special_name(halo,pname):
         return halo
     return None
 
-def get_property_with_live_calculation(halo,pname):
+def get_property_with_live_calculation(halo,pname,raw):
     prop = None
     if pname[0] == ":":
         # live calculate
@@ -36,7 +36,7 @@ def get_property_with_live_calculation(halo,pname):
         else:
             prop = X[c.name().index(pname)]
     else:
-        prop = halo[pname]
+        prop = halo._get_item(pname,raw)
 
     return prop
 
@@ -52,7 +52,7 @@ def find_relation(relation_name, halo, maxhops=2):
         raise ValueError, "match(%s) found no linked halo"%relation_name
 
 
-def get_halo_property_with_relationship(halo, pname):
+def get_halo_property_with_relationship(halo, pname, raw):
     match = re.match("match\(([^\)]+)\)\.(.*)",pname)
     if match is None:
         return None
@@ -62,11 +62,11 @@ def get_halo_property_with_relationship(halo, pname):
 
     halo2 = find_relation(relation, halo)
 
-    return get_halo_property_with_magic_strings(halo2, pname2)
+    return get_halo_property_with_magic_strings(halo2, pname2, raw)
 
-def get_halo_property_with_magic_strings(halo, pname):
+def get_halo_property_with_magic_strings(halo, pname, raw=False):
 
-    prop = get_halo_property_with_relationship(halo, pname)
+    prop = get_halo_property_with_relationship(halo, pname, raw)
     if prop is not None:
         return prop
 
@@ -76,7 +76,7 @@ def get_halo_property_with_magic_strings(halo, pname):
     prop = get_halo_property_if_special_name(halo,pname)
 
     if prop is None:
-        prop = get_property_with_live_calculation(halo, pname)
+        prop = get_property_with_live_calculation(halo, pname, raw)
 
 
     if len(z) == 1:
