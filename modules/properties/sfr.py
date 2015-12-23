@@ -57,7 +57,7 @@ class StarForm(HaloProperties):
             self.calcForHalo(halo, hard_period=True),
 
     def spherical_region(self):
-        return True
+        return False
 
 
 
