@@ -118,18 +118,17 @@ def run():
         bh_halos = None
         if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
             bh_cen_halos = f_pbh.get_fam_group_array(family = 'BH')
-            del(f_pbh)
-            gc.collect()
         if type(f_pbh) == pynbody.halo.AHFCatalogue:
             f_pb['gpc'] = f_pbh.get_group_array(top_level=False)
             f_pb['gpall'] = f_pbh.get_group_array(top_level=True)
             bh_halos = f_pb.star['gpall'][np.where(f_pb.star['tform']<0)[0]]
             bh_cen_halos = f_pb.star['gpc'][np.where(f_pb.star['tform']<0)[0]]
-            del(f_pbh)
-            gc.collect()
         if type(f_pbh) != pynbody.halo.AHFCatalogue and type(f_pbh) != pynbody.halo.RockstarIntermediateCatalogue:
             f_pb['gp'] = f_pbh.get_group_array()
             bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
+
+        del(f_pbh)
+        gc.collect()
 
         if bh_halos is not None:
             bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
