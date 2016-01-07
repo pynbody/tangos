@@ -71,6 +71,8 @@ def run():
         db.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
         order_by(db.TimeStep.time_gyr).all()
 
+    if "backwards" in sys.argv:
+        files = files[::-1]
 
     files = parallel_tasks.distributed(files)
     parallel_tasks.mpi_sync_db(session)
