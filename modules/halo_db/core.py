@@ -1410,7 +1410,7 @@ def process_options(argparser_options):
         config.db = argparser_options.db_filename
     _verbose = argparser_options.db_verbose
 
-def init_db(db_uri=None, timeout=60, verbose=None):
+def init_db(db_uri=None, timeout=30, verbose=None):
     global _verbose, current_creator, internal_session, engine
     if db_uri is None:
         db_uri = 'sqlite:///' + config.db
