@@ -1011,8 +1011,10 @@ class HaloProperty(Base):
 
     @property
     def data(self):
-        cls = self.name.providing_class()
-        print cls, hasattr(cls,'reassemble')
+        try:
+            cls = self.name.providing_class()
+        except NameError:
+            cls = None
         if hasattr(cls, 'reassemble'):
             return cls.reassemble(self)
         else:
