@@ -253,7 +253,7 @@ class SimsController(BaseController):
         rl, weights = rl.all_and_weights()
 
         if len(rl)>0:
-            rl = [rli for rli,wi in zip(rl,weights) if wi>weights[0]*0.05]
+            rl = [rli for rli,wi in zip(rl,weights) if wi>weights[0]*0.02]
 
         timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr"%(halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
 

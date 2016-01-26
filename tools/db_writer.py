@@ -7,13 +7,11 @@ import warnings
 import pynbody
 import numpy as np
 import properties
-import sim_output_finder
 import terminalcontroller
 from terminalcontroller import heading, term
 import sys
 import sqlalchemy
 import sqlalchemy.exc
-import time
 import gc
 import weakref
 import contextlib
@@ -22,6 +20,8 @@ import pdb
 import traceback
 import time
 import random
+
+from halo_db.cached_writer import insert_list
 
 @contextlib.contextmanager
 def check_deleted(a):
@@ -72,31 +72,6 @@ def summarise_timing(timing_details):
         else:
             print term.BLUE + name + term.NORMAL, "%.1fs / %.1f%%" % (v, 100 * v / v_tot)
 
-
-def create_property(halo, name, prop, session):
-
-    name = db.get_or_create_dictionary_item(session, name)
-
-    if isinstance(prop, db.Halo):
-        px = db.HaloLink(halo, prop, name)
-    else:
-        px = db.HaloProperty(halo, name, prop)
-
-    px.creator = db.core.current_creator
-    return px
-
-
-def insert_list(property_list):
-
-    with parallel_tasks.RLock("insert_list"):
-        session = db.core.internal_session
-
-        property_object_list = [create_property(
-            p[0], p[1], p[2], session) for p in property_list if p[2] is not None]
-
-        session.add_all(property_object_list)
-
-        session.commit()
 
 
 

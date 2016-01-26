@@ -9,7 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from halo_db import Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, \
-    Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo, config
+    Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo, config, halo_stat_files as statfiles
 import halo_db as db
 from halo_db import core
 import halo_db.blocking_session
@@ -149,8 +149,8 @@ def add_halos(ts,max_gp=None):
                 pass
 
 def add_halos_from_ahf_halos(ts):
-    return add_halos_from_stat(ts, '.z%.3f.AHF_halos'%(ts.redshift)
-                        , '#ID', 'n_gas', 'n_star', None, 'npart', 1)
+    return add_halos_from_stat(ts, statfiles.ahf_stat_name(ts),
+                         '#ID', 'n_gas', 'n_star', None, 'npart', 1)
 
 def add_halos_from_stat(ts, extension='.amiga.stat', grp='Grp', ngas='N_gas', nstar='N_star',
                         ndark = 'N_dark', ntot=None, id_offset=0):
