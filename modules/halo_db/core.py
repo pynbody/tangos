@@ -1015,6 +1015,7 @@ class HaloProperty(Base):
             cls = self.name.providing_class()
         except NameError:
             cls = None
+
         if hasattr(cls, 'reassemble'):
             return cls.reassemble(self)
         else:

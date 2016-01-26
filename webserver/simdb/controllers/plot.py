@@ -14,6 +14,7 @@ import PIL, PIL.Image, StringIO, threading
 import numpy as np
 import sys
 import properties
+from halo_db import identifiers
 
 imageThreadLock = threading.Lock()
 
@@ -285,10 +286,12 @@ class PlotController(BaseController):
 
             if request.params['type']!='thistimestep' :
                 # gather for this halo at all timesteps
-                h = h.earliest
-                x_vals, y_vals = h.property_cascade(did1,did2)
+                h_start = h.earliest
+                x_vals, y_vals = h_start.property_cascade(did1,did2)
                 if form=="img" :
-                    p.plot(x_vals, y_vals)
+                    p.plot(x_vals, y_vals,'k')
+                    p.plot([identifiers.get_halo_property_with_magic_strings(h,did1)],
+                           [identifiers.get_halo_property_with_magic_strings(h,did2)],'ro')
 
             else :
                 if nosubs :

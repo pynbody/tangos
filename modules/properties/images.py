@@ -74,6 +74,7 @@ class DmImages(Images):
         tx = f.rotate_y(90)
         im_x = self.render_projected(f.dm, self.plot_extent()*f.properties['a'])
         tx.revert()
+        f['pos'] += properties['SSC']
         return im_z, im_x
 
 

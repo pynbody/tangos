@@ -202,8 +202,6 @@ class MultiHopStrategy(HopStrategy):
                                (self.halolink_recurse_alias.c.nhops + 1).label("nhops"),
                                links, nodes).group_by(core.HaloLink.halo_to_id)
 
-        print self.recursion_query
-
 
     def _generate_halolink_recurse_cte(self):
         links = sqlalchemy.cast(core.HaloLink.id,sqlalchemy.String).label("links")
