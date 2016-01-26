@@ -41,7 +41,7 @@ class Images(HaloProperties):
         size = 15.0
         f = halo.ancestor
         f['pos'] -= properties['SSC']
-        tx = pynbody.analysis.angmom.sideon(f, return_transform=True)
+        tx = pynbody.analysis.angmom.sideon(halo, return_transform=True)
         g_side, s_side = self.render_gas(f, size), self.render_stars(f, size)
         f.rotate_x(90)
         g_face, s_face = self.render_gas(f, size), self.render_stars(f, size)
