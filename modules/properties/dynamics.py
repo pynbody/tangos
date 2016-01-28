@@ -520,7 +520,7 @@ class AngMomEncl(HaloProperties):
         halo['vel'] -= vcen
 
         delta = properties.get('delta',0.1)
-        J_tot, J_gas, J_star, J_HI = self.rstat(halo, rad, com, delta)
+        J_tot, J_gas, J_star, J_HI = self.rstat(halo, rad, delta)
         halo["pos"] += com
         halo['vel'] += vcen
         halo.wrap()
