@@ -422,21 +422,111 @@ class RotCurve(HaloProperties):
         return np.array(list(v)), np.array([0.05, maxr])
 
 @pynbody.analysis.profile.Profile.profile_property
-def j_HI(self):
+def j_HI_enc(self):
     """
     Magnitude of the total angular momentum in HI as a function of distance from halo center
     """
-    j_HI = np.zeros(self.nbins)
 
+    jx = np.zeros(self.nbins)
+    jy = np.zeros(self.nbins)
+    jz = np.zeros(self.nbins)
+    jpx = 0
+    jpy = 0
+    jpz = 0
+    MHIenc = 0
     for i in range(self.nbins):
         subs = self.sim[self.binind[i]]
-        jx = (subs['j'][:, 0] * subs['mass'] * subs['HI']).sum() / (self['mass'][i] * self['HI'][i])
-        jy = (subs['j'][:, 1] * subs['mass'] * subs['HI']).sum() / (self['mass'][i] * self['HI'][i])
-        jz = (subs['j'][:, 2] * subs['mass'] * subs['HI']).sum() / (self['mass'][i] * self['HI'][i])
+        MHIenc += (self['mass'][i] * self['HI'][i])
+        jpx += (subs['j'][:, 0] * subs['mass'] * subs['HI']).sum()
+        jpy += (subs['j'][:, 1] * subs['mass'] * subs['HI']).sum()
+        jpz += (subs['j'][:, 2] * subs['mass'] * subs['HI']).sum()
 
-        j_HI[i] = np.sqrt(jx ** 2 + jy ** 2 + jz ** 2)
+        jx[i] = jpx/MHIenc
+        jy[i] = jpy/MHIenc
+        jz[i] = jpz/MHIenc
+
+    j_HI = np.sqrt(jx**2 + jy**2 + jz**2)
 
     return j_HI
+
+@pynbody.analysis.profile.Profile.profile_property
+def j_enc(self):
+    """
+    Magnitude of total angular momentum
+    """
+    jx = np.zeros(self.nbins)
+    jy = np.zeros(self.nbins)
+    jz = np.zeros(self.nbins)
+    jpx = 0
+    jpy = 0
+    jpz = 0
+    MHIenc = 0
+    for i in range(self.nbins):
+        subs = self.sim[self.binind[i]]
+        jpx += (subs['j'][:, 0] * subs['mass']).sum()
+        jpy += (subs['j'][:, 1] * subs['mass']).sum()
+        jpz += (subs['j'][:, 2] * subs['mass']).sum()
+
+        jx[i] = jpx/self['mass_enc'][i]
+        jy[i] = jpy/self['mass_enc'][i]
+        jz[i] = jpz/self['mass_enc'][i]
+
+    j = np.sqrt(jx**2 + jy**2 + jz**2)
+
+    return j
+
+
+class AngMomEncl(HaloProperties):
+    def name(self):
+        return "J_tot_enc", "J_gas_enc", "J_star_enc", "J_HI_enc"
+
+    def requires_property(self):
+        return ['SSC', 'Rvir']
+
+    def rstat(self, halo, maxrad, delta=0.1):
+
+        nbins = int(maxrad / delta)
+        maxrad = delta * (nbins + 1)
+
+        if len(halo.g) > 100:
+            pro = pynbody.analysis.profile.Profile(halo.g, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+            J_HI = pro['j_HI_enc']
+            J_gas = pro['j_enc']
+
+        else:
+            J_HI = np.array([0])
+            J_gas = np.array([0])
+
+        pro = pynbody.analysis.profile.Profile(halo.s, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+        J_star = pro['j_enc']
+
+        pro = pynbody.analysis.profile.Profile(halo, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+        J_tot = pro['j_enc']
+
+        return J_tot, J_gas, J_star, J_HI
+
+    def calculate(self,  halo, properties):
+        com = properties['SSC']
+        rad = properties['Rvir']
+        halo["pos"] -= com
+        halo.wrap()
+        try:
+            vcen = pynbody.analysis.halo.vel_center(halo,cen_size="1 kpc",retcen=True)
+        except ValueError:
+            try:
+                vcen = pynbody.analysis.halo.vel_center(halo,cen_size="2 kpc",retcen=True)
+            except ValueError:
+                return 0, np.array([0]), np.array([0])
+        halo['vel'] -= vcen
+
+        delta = properties.get('delta',0.1)
+        J_tot, J_gas, J_star, J_HI = self.rstat(halo, rad, com, delta)
+        halo["pos"] += com
+        halo['vel'] += vcen
+        halo.wrap()
+        return J_tot, J_gas, J_star, J_HI
+
+
 
 class AngMomHI(HaloProperties):
     def name(self):
