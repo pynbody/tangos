@@ -517,8 +517,7 @@ class AngMomEncl(HaloProperties):
         try:
             vcen = pynbody.analysis.halo.vel_center(halo,cen_size="1 kpc",retcen=True)
         except ValueError:
-            try:
-                vcen = pynbody.analysis.halo.vel_center(halo,cen_size="2 kpc",retcen=True)
+            vcen = pynbody.analysis.halo.vel_center(halo,cen_size="2 kpc",retcen=True)
 
         halo['vel'] -= vcen
 
