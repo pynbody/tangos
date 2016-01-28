@@ -436,7 +436,7 @@ def j_HI_enc(self):
     MHIenc = 0
     for i in range(self.nbins):
         subs = self.sim[self.binind[i]]
-        MHIenc += (self['mass'][i] * self['HI'][i])
+        MHIenc += (subs['mass'] * subs['HI']).sum()
         jpx += (subs['j'][:, 0] * subs['mass'] * subs['HI']).sum()
         jpy += (subs['j'][:, 1] * subs['mass'] * subs['HI']).sum()
         jpz += (subs['j'][:, 2] * subs['mass'] * subs['HI']).sum()
@@ -488,20 +488,24 @@ class AngMomEncl(HaloProperties):
         nbins = int(maxrad / delta)
         maxrad = delta * (nbins + 1)
 
-        if len(halo.g) > 100:
+        pro = pynbody.analysis.profile.Profile(halo, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+        J_tot = pro['j_enc']
+
+        if len(halo.g) > 10:
             pro = pynbody.analysis.profile.Profile(halo.g, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
             J_HI = pro['j_HI_enc']
             J_gas = pro['j_enc']
 
         else:
-            J_HI = np.array([0])
-            J_gas = np.array([0])
+            J_HI = np.zeros(nbins)
+            J_gas = np.zeros(nbins)
 
-        pro = pynbody.analysis.profile.Profile(halo.s, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
-        J_star = pro['j_enc']
+        if len(halo.s) > 10:
+            pro = pynbody.analysis.profile.Profile(halo.s, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+            J_star = pro['j_enc']
 
-        pro = pynbody.analysis.profile.Profile(halo, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
-        J_tot = pro['j_enc']
+        else:
+            J_star = np.zeros(nbins)
 
         return J_tot, J_gas, J_star, J_HI
 
@@ -515,8 +519,7 @@ class AngMomEncl(HaloProperties):
         except ValueError:
             try:
                 vcen = pynbody.analysis.halo.vel_center(halo,cen_size="2 kpc",retcen=True)
-            except ValueError:
-                return 0, np.array([0]), np.array([0])
+
         halo['vel'] -= vcen
 
         delta = properties.get('delta',0.1)
