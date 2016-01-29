@@ -71,6 +71,8 @@ def run():
         db.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
         order_by(db.TimeStep.time_gyr).all()
 
+    if "backwards" in sys.argv:
+        files = files[::-1]
 
     files = parallel_tasks.distributed(files)
     parallel_tasks.mpi_sync_db(session)
@@ -115,43 +117,44 @@ def run():
 
         f_pbh = f_pb.halos()
         bh_cen_halos=None
+        bh_halos = None
         if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
-            bh_halos = f_pbh.get_fam_group_array(family = 'BH')
-            del(f_pbh)
-            gc.collect()
+            bh_cen_halos = f_pbh.get_fam_group_array(family = 'BH')
         if type(f_pbh) == pynbody.halo.AHFCatalogue:
             f_pb['gpc'] = f_pbh.get_group_array(top_level=False)
             f_pb['gpall'] = f_pbh.get_group_array(top_level=True)
             bh_halos = f_pb.star['gpall'][np.where(f_pb.star['tform']<0)[0]]
             bh_cen_halos = f_pb.star['gpc'][np.where(f_pb.star['tform']<0)[0]]
-            del(f_pbh)
-            gc.collect()
         if type(f_pbh) != pynbody.halo.AHFCatalogue and type(f_pbh) != pynbody.halo.RockstarIntermediateCatalogue:
             f_pb['gp'] = f_pbh.get_group_array()
             bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
 
-        bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
-        print "Associated halos: ",bh_halos
-        bh_dict_id = db.core.get_or_create_dictionary_item(session, "BH")
+        del(f_pbh)
+        gc.collect()
 
-        for bhi, haloi in zip(bh_iord, bh_halos):
-            haloi = int(haloi)
-            bhi = int(bhi)
-            halo = f.halos.filter_by(halo_type=0, halo_number=haloi).first()
-            bh_obj = f.halos.filter_by(halo_type=1, halo_number=bhi).first()
-            if halo is None:
-                print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
-                continue
-            if bh_obj is None:
-                print "WARNING: can't find the db object for BH ",bh_iord,"?"
-                continue
-            existing = halo.links.filter_by(relation_id=bh_dict_id.id,halo_to_id=bh_obj.id).count()
+        if bh_halos is not None:
+            bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
+            print "Associated halos: ",bh_halos
+            bh_dict_id = db.core.get_or_create_dictionary_item(session, "BH")
 
-            if existing==0:
+            for bhi, haloi in zip(bh_iord, bh_halos):
+                haloi = int(haloi)
+                bhi = int(bhi)
+                halo = f.halos.filter_by(halo_type=0, halo_number=haloi).first()
+                bh_obj = f.halos.filter_by(halo_type=1, halo_number=bhi).first()
+                if halo is None:
+                    print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
+                    continue
+                if bh_obj is None:
+                    print "WARNING: can't find the db object for BH ",bh_iord,"?"
+                    continue
+                existing = halo.links.filter_by(relation_id=bh_dict_id.id,halo_to_id=bh_obj.id).count()
 
-                session.merge(db.core.HaloLink(halo,bh_obj,bh_dict_id))
-            else:
-                print "NOTE: skipping BH in halo",haloi,"as link already exists"
+                if existing==0:
+
+                    session.merge(db.core.HaloLink(halo,bh_obj,bh_dict_id))
+                else:
+                    print "NOTE: skipping BH in halo",haloi,"as link already exists"
 
         if bh_cen_halos is not None:
             bh_cen_halos = bh_cen_halos[np.argsort(bh_mass)[::-1]]

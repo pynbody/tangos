@@ -30,6 +30,9 @@ def run():
                                 metavar=('N','M'),
                                 help="Emulate MPI by handling slice N out of the total workload of M items. If absent, use real MPI.")
 
+    parser.add_argument('--dmonly', action='store_true',
+                                help='only match halos based on DM particles. Much more memory efficient. ONLY WORKS FOR ROCKSTAR HALOS')
+
 
     args = parser.parse_args()
 
@@ -38,6 +41,7 @@ def run():
 
     max_gp = args.hmax
     force = args.force
+    dmonly = args.dmonly
 
 
 
@@ -73,7 +77,7 @@ def run():
     for s_x, s in pair_list:
         print s_x,"-->",s
         if force or crosslink.need_crosslink_ts(s_x, s):
-            crosslink.crosslink_ts(s_x, s, 0, max_gp)
+            crosslink.crosslink_ts(s_x, s, 0, max_gp, dmonly)
 
 
 parallel_tasks.launch(run)

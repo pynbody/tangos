@@ -31,7 +31,7 @@ class StarForm(HaloProperties):
 
             def get_period():
                 try:
-                    tf = sts["tform"]
+                    tf = sts["tform"][(sts["tform"]>0)]
                     index_period = np.nonzero(tf > now - period / conv)[0]
                 except KeyError:
                     tf = sts['age']

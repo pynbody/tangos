@@ -17,6 +17,11 @@ def get_halo_property_if_special_name(halo,pname):
         return str(halo.timestep.simulation.basename).replace('/', '%') + "/" + str(halo.timestep.extension).replace('/', '%') + "/" + str(halo.halo_number)
     elif pname == "NDM":
         return halo.NDM
+    elif pname == "host":
+        if halo.halo_type==1:
+            return halo.host_halo.halo_number
+        else:
+            return None
     elif pname == "self":
         return halo
     return None
