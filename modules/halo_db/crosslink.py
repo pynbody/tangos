@@ -54,8 +54,8 @@ def crosslink_ts(ts1, ts2, halo_min=0, halo_max=100, dmonly=False, session=None)
 
     try:
         if dmonly is True:
-            cat = snap1.bridge(snap2).fuzzy_match_catalog(halo_min, halo_max, threshold=0.005, dmonly=dmonly)
-            back_cat = snap2.bridge(snap1).fuzzy_match_catalog(halo_min,halo_max, threshold=0.005, dmonly=dmonly)
+            cat = snap1.bridge(snap2).fuzzy_match_catalog(halo_min, halo_max, threshold=0.005, only_family='dark')
+            back_cat = snap2.bridge(snap1).fuzzy_match_catalog(halo_min,halo_max, threshold=0.005, only_family='dark')
         else:
             cat = snap1.bridge(snap2).fuzzy_match_catalog(halo_min, halo_max, threshold=0.005)
             back_cat = snap2.bridge(snap1).fuzzy_match_catalog(halo_min,halo_max, threshold=0.005)
