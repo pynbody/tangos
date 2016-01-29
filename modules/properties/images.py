@@ -38,6 +38,7 @@ class Images(HaloProperties):
         return pynbody.plot.stars.render(f.st[pynbody.filt.HighPass('tform',0) & pynbody.filt.BandPass('z', -size / 2, size / 2)], width=size, plot=False, ret_im=True)
 
     def calculate(self, halo, properties):
+        import pynbody.plot
         size = 15.0
         f = halo.ancestor
         f['pos'] -= properties['SSC']
@@ -48,6 +49,7 @@ class Images(HaloProperties):
         f.rotate_x(-90)
         tx.revert()
         g, s = self.render_gas(f, size), self.render_stars(f, size)
+        f['pos'] += properties['SSC']
         return g_side, s_side, g_face, s_face, g, s
 
 
@@ -68,12 +70,14 @@ class DmImages(Images):
         return "y/kpc comoving"
 
     def calculate(self, halo, properties):
+        import pynbody.plot
         f = halo.ancestor
         f['pos'] -= properties['SSC']
         im_z = self.render_projected(f.dm, self.plot_extent()*f.properties['a'])
         tx = f.rotate_y(90)
         im_x = self.render_projected(f.dm, self.plot_extent()*f.properties['a'])
         tx.revert()
+        f['pos'] += properties['SSC']
         return im_z, im_x
 
 

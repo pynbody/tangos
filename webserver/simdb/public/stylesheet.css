@@ -69,6 +69,11 @@ th {
     display: none;
 }
 
+#tree-container {
+    width: 100%;
+    overflow: scroll;
+}
+
 img.plotimg {
     float: right;
 }

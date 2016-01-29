@@ -200,9 +200,7 @@ class MultiHopStrategy(HopStrategy):
                                core.HaloLink.halo_to_id.label("halo_to_id"),
                                sqlalchemy.func.max(self.halolink_recurse_alias.c.weight*core.HaloLink.weight),
                                (self.halolink_recurse_alias.c.nhops + 1).label("nhops"),
-                               links, nodes)
-
-        print self.recursion_query
+                               links, nodes).group_by(core.HaloLink.halo_to_id)
 
 
     def _generate_halolink_recurse_cte(self):

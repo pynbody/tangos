@@ -697,12 +697,15 @@ class Halo(Base):
         # There are two possible strategies here. If some sort of joined load has been
         # executed, the properties are sitting waiting for us. If not, they are going
         # to be lazy loaded and we want to filter that lazy load.
+        return self._get_item(key)
+
+    def _get_item(self, key, raw=False):
         session = Session.object_session(self)
         key_id = get_dict_id(key, session=session)
         if 'all_properties' not in sqlalchemy.inspect(self).unloaded:
-            return_vals = self._get_item_cached(key_id)
+            return_vals = self._get_item_cached(key_id, raw)
         else:
-            return_vals = self._get_item_from_session(key_id, session)
+            return_vals = self._get_item_from_session(key_id, session, raw)
 
         if len(return_vals) ==0:
             raise KeyError, "No such property %r"%key
@@ -712,22 +715,27 @@ class Halo(Base):
 
         return return_vals
 
-
-    def _get_item_from_session(self, key_id, session):
+    def _get_item_from_session(self, key_id, session, raw=False):
         query_properties = session.query(HaloProperty).filter_by(name_id=key_id, halo_id=self.id,
                                                                  deprecated=False).order_by(HaloProperty.id.desc())
-        ret_values = [x.data for x in query_properties.all()]
+        if raw:
+            ret_values = [x.data_raw for x in query_properties.all()]
+        else:
+            ret_values = [x.data for x in query_properties.all()]
         query_links = session.query(HaloLink).filter_by(relation_id=key_id, halo_from_id=self.id)
         for link in query_links.all():
             ret_values.append(link.halo_to)
         return ret_values
 
-    def _get_item_cached(self, key_id):
+    def _get_item_cached(self, key_id, raw=False):
         return_vals = []
         # we've already got it from the DB, find it locally
         for x in self.all_properties:
             if x.name_id == key_id:
-                return_vals.append(x.data)
+                if raw:
+                    return_vals.append(x.data_raw)
+                else:
+                    return_vals.append(x.data)
         for x in self.all_links:
             if x.relation_id == key_id:
                 return_vals.append(x.halo_to)
@@ -846,14 +854,20 @@ class Halo(Base):
         else:
             return self
 
+    def plot(self, name, *args, **kwargs):
+        name_id = get_dict_id(name, Session.object_session(self))
+        data = self.properties.filter_by(name_id=name_id).first()
+        return data.plot(*args, **kwargs)
 
-    def _raw_list_property_cascade(self, *keys, **kwargs):
+
+    def _property_cascade_as_list(self, *keys, **kwargs):
         on_missing = kwargs.get('on_missing','skip')
         find_next  = kwargs.get('find_next','next')
+        raw = kwargs.get('raw',False)
         output = []
         for key in keys:
             try:
-                output.append([identifiers.get_halo_property_with_magic_strings(self,key)])
+                output.append([identifiers.get_halo_property_with_magic_strings(self,key,raw)])
             except Exception, e:
                 if on_missing=="skip":
                     output = [[] for k in keys]
@@ -865,7 +879,7 @@ class Halo(Base):
 
         next = getattr(self, find_next)
         if next:
-            remainder = next._raw_list_property_cascade(*keys, **kwargs)
+            remainder = next._property_cascade_as_list(*keys, **kwargs)
             output = [o+r for o,r in zip(output,remainder)]
 
         return output
@@ -873,7 +887,7 @@ class Halo(Base):
 
     def property_cascade(self, *keys, **kwargs):
 
-        x = self._raw_list_property_cascade(*keys,**kwargs)
+        x = self._property_cascade_as_list(*keys, **kwargs)
         if len(keys) == 1:
             try:
                 return np.asarray(x)
@@ -992,17 +1006,27 @@ class HaloProperty(Base):
         return (self.data_int is None) and (self.data_float is None)
 
     @property
-    def data(self):
+    def data_raw(self):
         return data_attribute_mapper.get_data_of_unknown_type(self)
 
     @property
-    def reassembled_data(self):
-        cls = self.name.providing_class()
-        print cls, hasattr(cls,'reassemble')
+    def data(self):
+        try:
+            cls = self.name.providing_class()
+        except NameError:
+            cls = None
+
         if hasattr(cls, 'reassemble'):
             return cls.reassemble(self)
         else:
-            return self.data
+            return self.data_raw
+
+    def plot(self, *args, **kwargs):
+        name = self.name
+        data = self.data
+        xdat = np.arange(name.plot_x0(),  name.plot_x0()+name.plot_xdelta()*(len(data)-0.5), name.plot_xdelta())
+        import matplotlib.pyplot as p
+        return p.plot(xdat, data, *args, **kwargs)
 
     @data.setter
     def data(self, data):

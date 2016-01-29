@@ -4,12 +4,12 @@ import sys
 import glob
 import traceback
 import numpy as np
-import pynbody
+pynbody = None
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from halo_db import Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, \
-    Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo, config
+    Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo, config, halo_stat_files as statfiles
 import halo_db as db
 from halo_db import core
 import halo_db.blocking_session
@@ -149,8 +149,8 @@ def add_halos(ts,max_gp=None):
                 pass
 
 def add_halos_from_ahf_halos(ts):
-    return add_halos_from_stat(ts, '.z%.3f.AHF_halos'%(ts.redshift)
-                        , '#ID', 'n_gas', 'n_star', None, 'npart', 1)
+    return add_halos_from_stat(ts, statfiles.ahf_stat_name(ts),
+                         '#ID', 'n_gas', 'n_star', None, 'npart', 1)
 
 def add_halos_from_stat(ts, extension='.amiga.stat', grp='Grp', ngas='N_gas', nstar='N_star',
                         ndark = 'N_dark', ntot=None, id_offset=0):
@@ -629,6 +629,18 @@ def rollback(options):
     for run_id in options.ids:
         rem_run(run_id, not options.force)
 
+def dump_id(options):
+    h = db.get_halo(options.halo).load()
+
+    if options.sphere:
+        pynbody.analysis.halo.center(h,vel=False)
+        h = h.ancestor[pynbody.filt.Sphere(str(options.sphere)+" kpc")]
+
+    if options.family!="":
+        h = getattr(h,options.family)
+
+    np.savetxt(options.filename,h['iord'],"%d")
+
 if __name__ == "__main__":
 
     #db.core.internal_session = halo_db.blocking_session.BlockingSession(bind = db.core.engine)
@@ -676,6 +688,14 @@ if __name__ == "__main__":
     subparse_rollback.add_argument("ids",nargs="*",type=int,help="IDs of the database updates to remove")
     subparse_rollback.add_argument("--force","-f",action="store_true",help="Do not prompt for confirmation")
     subparse_rollback.set_defaults(func=rollback)
+
+    subparse_dump_id = subparse.add_parser("dump-iord", help="Dump the iords corresponding to a specified halo")
+    subparse_dump_id.add_argument("halo",type=str,help="The identity of the halo to dump")
+    subparse_dump_id.add_argument("filename",type=str,help="A filename for the output text file")
+    subparse_dump_id.add_argument("size",type=str,nargs="?",help="Size, in kpc, of sphere to extract (or omit to get just the halo particles)")
+    subparse_dump_id.add_argument("family",type=str,help="The family of particles to extract",default="")
+
+    subparse_dump_id.set_defaults(func=dump_id)
 
 
     args = parser.parse_args()

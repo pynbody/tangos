@@ -14,6 +14,7 @@ import PIL, PIL.Image, StringIO, threading
 import numpy as np
 import sys
 import properties
+from halo_db import identifiers
 
 imageThreadLock = threading.Lock()
 
@@ -285,10 +286,12 @@ class PlotController(BaseController):
 
             if request.params['type']!='thistimestep' :
                 # gather for this halo at all timesteps
-                h = h.earliest
-                x_vals, y_vals = h.property_cascade(did1,did2)
+                h_start = h.earliest
+                x_vals, y_vals = h_start.property_cascade(did1,did2)
                 if form=="img" :
-                    p.plot(x_vals, y_vals)
+                    p.plot(x_vals, y_vals,'k')
+                    p.plot([identifiers.get_halo_property_with_magic_strings(h,did1)],
+                           [identifiers.get_halo_property_with_magic_strings(h,did2)],'ro')
 
             else :
                 if nosubs :
@@ -331,24 +334,26 @@ class PlotController(BaseController):
             response.content_type='text/txt'
 
         with imageThreadLock if not overplot else nocontext :
-            if not (overplot or text) :
-                self.start()
-
-            if prop is None :
-                prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
-            h = prop.halo
-            ts = "# Array "+prop.name.text+" for "+h.timestep.relative_filename+" halo "+str(h.halo_number)+"\n"
-            #assert(type(prop.data) is np.ndarray)
-            name = prop.name
-            data = prop.reassembled_data
-
-            xdat = np.arange(name.plot_x0(),  name.plot_x0()+name.plot_xdelta()*(len(data)-0.5), name.plot_xdelta())
 
             if text :
+                if prop is None :
+                    prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
+                h = prop.halo
+                ts = "# Array "+prop.name.text+" for "+h.timestep.relative_filename+" halo "+str(h.halo_number)+"\n"
+                #assert(type(prop.data) is np.ndarray)
+                name = prop.name
+                data = prop.data
+
+                xdat = np.arange(name.plot_x0(),  name.plot_x0()+name.plot_xdelta()*(len(data)-0.5), name.plot_xdelta())
+
                 for x,y in zip(xdat,data) :
                     ts+="%.5g %.5g\n"%(x,y)
             else :
-                p.plot(xdat,data)
+                if not overplot:
+                    self.start()
+                name = prop.name
+                prop.plot()
+
                 if name.plot_xlog() and name.plot_ylog() :
                     p.loglog()
                 elif name.plot_xlog() :
@@ -363,7 +368,7 @@ class PlotController(BaseController):
                     p.ylabel(name.plot_ylabel())
 
                 if name.plot_yrange():
-                    print "YRANGE->",name.plot_yrange()
+
                     p.ylim(*name.plot_yrange())
 
             if overplot :

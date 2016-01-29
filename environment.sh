@@ -6,7 +6,8 @@
 # export any environment variables you wish to change there. The end
 # of this script sources environment_local.sh for you.
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+RELATIVEDIR=$( dirname ${BASH_SOURCE:-$0} )
+DIR=$( cd $RELATIVEDIR && pwd )
 export PYTHONPATH=$DIR/modules/:$PYTHONPATH
 export PATH=$DIR/tools/:$PATH
 
@@ -18,7 +19,7 @@ if [ -z "$HALODB_DEFAULT_DB" ]; then
     export HALODB_DEFAULT_DB=$DIR/data.db
 fi
 
-if [[ -e environment_local.sh ]]
+if [[ -e $DIR/environment_local.sh ]]
 then
-    source environment_local.sh
+    source $DIR/environment_local.sh
 fi

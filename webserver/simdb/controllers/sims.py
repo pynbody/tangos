@@ -111,7 +111,11 @@ class SimsController(BaseController):
         elif this_halo.timestep.simulation_id == other_halo.timestep.simulation_id :
             return "halo %d at t=%.2e Gyr"%(other_halo.halo_number, other_halo.timestep.time_gyr)
         else :
-            return "halo %d in %8s at t=%.2e Gyr"%(other_halo.halo_number, other_halo.timestep.simulation.basename, other_halo.timestep.time_gyr)
+            if abs(this_halo.timestep.time_gyr - other_halo.timestep.time_gyr)>0.001:
+                return "halo %d in %8s at t=%.2e Gyr"%(other_halo.halo_number, other_halo.timestep.simulation.basename,
+                                                       other_halo.timestep.time_gyr)
+            else:
+                return "halo %d in %8s"%(other_halo.halo_number, other_halo.timestep.simulation.basename)
 
     def _relative_link(self, this_halo, other_halo) :
         if other_halo is None or other_halo==this_halo :
@@ -249,7 +253,7 @@ class SimsController(BaseController):
         rl, weights = rl.all_and_weights()
 
         if len(rl)>0:
-            rl = [rli for rli,wi in zip(rl,weights) if wi>weights[0]*0.05]
+            rl = [rli for rli,wi in zip(rl,weights) if wi>weights[0]*0.02]
 
         timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr"%(halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
 

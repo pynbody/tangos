@@ -375,7 +375,7 @@ class HaloSpin(HaloProperties):
 
     def calculate(self, halo, existing_properties):
 
-        sub_sim_dm = halo[siman.ParticleTypeFilter(siman.Particle.dm)]
+        sub_sim_dm = halo.dm
 
         return self.lambda_prime(halo, existing_properties), self.lambda_prime(sub_sim_dm, existing_properties)
 

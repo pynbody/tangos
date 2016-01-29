@@ -72,3 +72,8 @@ class StarFormHistogram(TimeChunkedProperty):
         M = M[self.store_slice(t_now)]
 
         return M
+
+    @classmethod
+    def reassemble(cls, halo):
+        reassembled = TimeChunkedProperty.reassemble(halo, "SFR_histogram")
+        return reassembled/1e9 # Msol per Gyr -> Msol per yr

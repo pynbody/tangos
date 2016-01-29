@@ -1,6 +1,5 @@
 import numpy as np
 import math
-import pynbody
 import time
 import inspect
 
@@ -92,7 +91,7 @@ class HaloProperties(object):
 
 
     def calculate_from_db(self, db):
-
+        import pynbody
         if self.requires_simdata():
             h = db.load()
             h.physical_units()
@@ -168,15 +167,15 @@ class TimeChunkedProperty(HaloProperties):
         return slice(self.bin_index(time-self.minimum_store_Gyr), self.bin_index(time))
 
     @classmethod
-    def reassemble(cls, halo):
+    def reassemble(cls, halo, name=None):
+        if name is None:
+            name = cls().name()
+
         halo = halo.halo
-        t, stack = halo.reverse_property_cascade("t",cls().name())
+        t, stack = halo.reverse_property_cascade("t",name,raw=True)
 
         t = t[::-1]
         stack = stack[::-1]
-
-        print t
-        print [s.shape for s in stack]
 
         final = np.zeros(cls.bin_index(t[-1]))
         for t_i, hist_i in zip(t,stack):

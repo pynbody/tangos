@@ -1,7 +1,6 @@
 import numpy as np
 import pickle
 import zlib
-import pynbody
 import time
 import datetime
 
@@ -131,7 +130,7 @@ class IntAttributeMapper(ArrayDowncastingAttributeMapper):
 
 class ArrayAttributeMapper(DataAttributeMapper):
     _attribute_name = "data_array"
-    _handled_types = [list, np.ndarray, pynbody.array.SimArray]
+    _handled_types = [list, np.ndarray]
 
     def _unpack_compressed(self, packed):
         return pickle.loads(zlib.decompress(packed[2:]))
