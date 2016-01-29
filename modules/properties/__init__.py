@@ -1,6 +1,5 @@
 import numpy as np
 import math
-import pynbody
 import time
 import inspect
 
@@ -92,7 +91,7 @@ class HaloProperties(object):
 
 
     def calculate_from_db(self, db):
-
+        import pynbody
         if self.requires_simdata():
             h = db.load()
             h.physical_units()

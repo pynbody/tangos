@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.7
-
+import matplotlib
+matplotlib.use('agg')
 
 import halo_db as db
 from halo_db import parallel_tasks
