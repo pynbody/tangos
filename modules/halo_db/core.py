@@ -954,7 +954,10 @@ class BH(Halo):
 
     @property
     def host_halo(self):
-        return self.reverse_links.filter_by(relation_id=get_dict_id('BH')).first().halo_from
+        try:
+            return self.reverse_links.filter_by(relation_id=get_dict_id('BH_central')).first().halo_from
+        except KeyError:
+            return self.reverse_links.filter_by(relation_id=get_dict_id('BH')).first().halo_from
 
 class HaloProperty(Base):
     __tablename__ = 'haloproperties'
