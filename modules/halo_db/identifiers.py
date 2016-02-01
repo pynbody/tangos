@@ -19,7 +19,11 @@ def get_halo_property_if_special_name(halo,pname):
         return halo.NDM
     elif pname == "host":
         if halo.halo_type==1:
-            return halo.host_halo.halo_number
+            try:
+                host = halo.host_halo.halo_number
+                return host
+            except AttributeError:
+                return None
         else:
             return None
     elif pname == "self":
