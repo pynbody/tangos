@@ -40,6 +40,8 @@ class BHShortenedLog(object):
         bhid = np.array(bhid,dtype=int)
         print len(time),"entries"
 
+        bhid[(bhid < 0)] = 2 * 2147483648 + bhid[(bhid < 0)]
+
         munits = f.infer_original_units("Msol")
         posunits = f.infer_original_units("kpc")
         velunits = f.infer_original_units("km s^-1")
