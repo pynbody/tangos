@@ -118,8 +118,10 @@ def HI(self):
     HIfrac = np.zeros(self.nbins)
     for i in range(self.nbins):
         subs = self.sim[self.binind[i]]
-        HIfrac[i] = (subs['mass']*subs['HI']).sum()/subs['mass'].sum()
-
+        if len(subs)>0:
+            HIfrac[i] = (subs['mass']*subs['HI']).sum()/subs['mass'].sum()
+        else:
+            HIfrac[i] = 0.0
     return HIfrac
 
 class MassEnclosed(HaloProperties):
