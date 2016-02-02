@@ -100,4 +100,7 @@ def get_halo_property_with_magic_strings(halo, pname, raw=False):
                 return np.min(prop)
             elif z[1].upper() == "RMS":
                 return np.sqrt((prop ** 2).sum())
+            elif z[1] == "half":
+                ihalf = np.where(prop<=prop[-1]/2.)[-1]
+                return ihalf*0.1
             raise
