@@ -88,7 +88,7 @@ def sfr(self, dt):
         if len(subs) > 0:
             use, = np.where(subs['tform'].in_units('Myr')>now - dt)
             if len(use)>0:
-                sfr_pro[i] = subs['massform'][(subs['tform'].in_units('Myr')>now - dt)].sum()/dt.in_units('yr')
+                sfr_pro[i] = subs['massform'][use].sum()/dt.in_units('yr')
     return sfr_pro
 
 class StarForm_encl(HaloProperties):
