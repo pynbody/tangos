@@ -77,3 +77,40 @@ class StarFormHistogram(TimeChunkedProperty):
     def reassemble(cls, halo):
         reassembled = TimeChunkedProperty.reassemble(halo, "SFR_histogram")
         return reassembled/1e9 # Msol per Gyr -> Msol per yr
+
+@pynbody.analysis.profile.Profile.profile_property
+def sfr(self, dt):
+    dt = pynbody.array.SimArray(dt,'Myr')
+    sfr_pro = np.zeros(self.nbins)
+    now = self.sim.properties['time'].in_units('Myr')
+    for i in range(self.nbins):
+        subs = self.sim[self.binind[i]]
+        if len(subs) > 0:
+            use, = np.where(subs['tform'].in_units('Myr')>now - dt)
+            if len(use)>0:
+                sfr_pro[i] = subs['massform'][(subs['tform'].in_units('Myr')>now - dt)].sum()/dt.in_units('yr')
+    return sfr_pro
+
+class StarForm_encl(HaloProperties):
+    def name(self):
+        return "SFR_encl_25Myr", "SFR_encl_250Myr"
+
+    def rstat(self, halo, rad, delta=0.1):
+        nbins = int(maxrad / delta)
+        maxrad = delta * (nbins + 1)
+        pro = pynbody.analysis.profile.Profile(halo.s[pynbody.filt.HighPass("tform", 0)], type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+        return pro['sfr,25 Myr'], pro['sfr,250 Myr']
+
+    def calculate(self,  halo, existing_properties):
+        com = properties['SSC']
+        rad = properties['Rvir']
+        halo["pos"] -= com
+        halo.wrap()
+        delta = properties.get('delta',0.1)
+
+        SFR_25Myr. SFR_250Myr = self.rstat(halo, rad, delta)
+
+        halo['pos'] += com
+        halo.wrap()
+
+        return SFR_25Myr. SFR_250Myr
