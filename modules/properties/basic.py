@@ -252,7 +252,8 @@ def magnitudes_encl(self,band='v'):
     mag = np.zeros(self.nbins)
     ltot = 0.0
     for i in range(self.nbins):
-        ltot += 10**(-0.4*self['magnitudes,'+band][i])
+        if len(self.sim[self.binind[i]]) > 0:
+            ltot += 10**(-0.4*self['magnitudes,'+band][i])
         mag[i] = -2.5 * np.log10(ltot)
 
     return mag
