@@ -80,7 +80,6 @@ class StarFormHistogram(TimeChunkedProperty):
 
 @pynbody.analysis.profile.Profile.profile_property
 def sfr(self, dt):
-    dt = pynbody.units.Unit(dt)
     sfr_pro = np.zeros(self.nbins)
     now = self.sim.properties['time'].in_units('Myr')
     for i in range(self.nbins):
@@ -99,7 +98,7 @@ class StarForm_encl(HaloProperties):
         nbins = int(rad / delta)
         maxrad = delta * (nbins + 1)
         pro = pynbody.analysis.profile.Profile(halo.s[pynbody.filt.HighPass("tform", 0)], type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
-        return pro['sfr,25 Myr'], pro['sfr,250 Myr']
+        return pro['sfr,25'], pro['sfr,250']
 
     def calculate(self,  halo, properties):
         com = properties['SSC']
