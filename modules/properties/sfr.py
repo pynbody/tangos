@@ -100,7 +100,7 @@ class StarForm_encl(HaloProperties):
         nbins = int(rad / delta)
         maxrad = delta * (nbins + 1)
         pro = pynbody.analysis.profile.Profile(halo.s[pynbody.filt.HighPass("tform", 0)], type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
-        return pro['sfr,25 Myr'], pro['sfr,250 Myr']
+        return np.cumsum(pro['sfr,25 Myr']), np.cumsum(pro['sfr,250 Myr'])
 
     def calculate(self,  halo, properties):
         com = properties['SSC']
