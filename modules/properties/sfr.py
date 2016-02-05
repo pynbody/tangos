@@ -96,7 +96,7 @@ class StarForm_encl(HaloProperties):
         return "SFR_encl_25Myr", "SFR_encl_250Myr"
 
     def rstat(self, halo, rad, delta=0.1):
-        nbins = int(maxrad / delta)
+        nbins = int(rad / delta)
         maxrad = delta * (nbins + 1)
         pro = pynbody.analysis.profile.Profile(halo.s[pynbody.filt.HighPass("tform", 0)], type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
         return pro['sfr,25 Myr'], pro['sfr,250 Myr']
@@ -108,7 +108,7 @@ class StarForm_encl(HaloProperties):
         halo.wrap()
         delta = properties.get('delta',0.1)
 
-        SFR_25Myr. SFR_250Myr = self.rstat(halo, rad, delta)
+        SFR_25Myr, SFR_250Myr = self.rstat(halo, rad, delta)
 
         halo['pos'] += com
         halo.wrap()
