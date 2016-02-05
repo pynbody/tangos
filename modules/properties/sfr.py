@@ -80,6 +80,7 @@ class StarFormHistogram(TimeChunkedProperty):
 
 @pynbody.analysis.profile.Profile.profile_property
 def sfr(self, dt):
+    float(dt)
     sfr_pro = np.zeros(self.nbins)
     now = self.sim.properties['time'].in_units('Myr')
     for i in range(self.nbins):
