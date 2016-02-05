@@ -113,4 +113,4 @@ class StarForm_encl(HaloProperties):
         halo['pos'] += com
         halo.wrap()
 
-        return SFR_25Myr. SFR_250Myr
+        return SFR_25Myr, SFR_250Myr
