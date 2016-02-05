@@ -101,7 +101,7 @@ class StarForm_encl(HaloProperties):
         pro = pynbody.analysis.profile.Profile(halo.s[pynbody.filt.HighPass("tform", 0)], type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
         return pro['sfr,25 Myr'], pro['sfr,250 Myr']
 
-    def calculate(self,  halo, existing_properties):
+    def calculate(self,  halo, properties):
         com = properties['SSC']
         rad = properties['Rvir']
         halo["pos"] -= com
