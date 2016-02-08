@@ -168,6 +168,20 @@ Found 1501 halos in common
 ```
 Note that this will only work on *adjacent timesteps*
 
+Some properties are themselves arrays, such as mass profiles. If  your property is an array, when calling gather_proeprty you can specify which index to gather
+
+```
+>>> step1.gather_property('StarMass_encl//10')
+```
+This will return a 1-d array filled with the 10th value in each halo's StarMass_encl array. In this case, the property is the Stellar mass enclused by a given radius. Unless otherwise noted, every profile property like this is binned in 100 pc intervals. So,  more specifically, this example retuns the stellar mass enclosed in the inner 1 kpc of the halo.
+
+If the Rhalf_[V,U,J,K,I,R] properties have been calculated for the halo (the half-light radius in different bands) you can also use "Rhalf_[V,U,J,K,I,R]" as an identifier. For example, the following returns the stellar mass within the  V-band half light radius for each halo
+
+```
+step1.gather_property('StarMass_encl//Rhalf_V')
+```
+Just like how gather_property with multiple properties in the argument will only return results for halos with both properties included, this will only return data for halos where both StarMass_encl and Rhalf_V have been calculated.
+
 Finally, if we want to study a particular halo in detail, we can load it in as its own object and then aquire time series data on that halo and its progenitors at previous timesteps. To do this we use the function `get_halo` which carries a similar argument syntax, but with one extra component: `simname/%step/halonumber`. We will trace the halo back in time using the function `earliest.property_cascade(<property>)` function.
 ```
 >>> db.get_halo('romulus8.256gst3.bwBH/%2560/1')
