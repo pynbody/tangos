@@ -109,32 +109,48 @@ class MColdGas(HaloProperties):
     def name(self):
         return "MColdGas", "MHIGas"
 
+@pynbody.analysis.profile.Profile.profile_property
+def HI(self):
+    '''
+    profile of total HI fraction
+    '''
+
+    HIfrac = np.zeros(self.nbins)
+    for i in range(self.nbins):
+        subs = self.sim[self.binind[i]]
+        if len(subs)>0:
+            HIfrac[i] = (subs['mass']*subs['HI']).sum()/subs['mass'].sum()
+        else:
+            HIfrac[i] = 0.0
+    return HIfrac
+
 class MassEnclosed(HaloProperties):
     def name(self):
-        return "MHIGas_2kpc", "MHIGas_5kpc", "MHIGas_10kpc", "MGas_2kpc", "MGas_5kpc", "MGas_10kpc", "MStar_2kpc", \
-               "MStar_5kpc", "MStar_10kpc"
+        return "StarMass_encl", "GasMass_encl", "HIMass_encl", "ColdGasMass_encl"
 
-    def Msumr(self, halo, rad, cen):
-        gas = halo.g[pynbody.filt.Sphere(rad, cen)]
-        star = halo.s[pynbody.filt.Sphere(rad, cen)]
-        if len(gas) >0:
-            gmass = gas['mass'].sum()
-            HImass = np.sum(gas['mass']*gas['HI'])
-        else:
-            gmass = 0
-            HImass = 0
-        if len(star)>0:
-            starmass = star['mass'].sum()
-        else:
-            starmass = 0
-        return gmass, HImass, starmass
+    def rstat(self, halo, maxrad, delta=0.1):
+        nbins = int(maxrad / delta)
+        maxrad = delta * (nbins + 1)
+        proS = pynbody.analysis.profile.Profile(halo.s, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+        proG = pynbody.analysis.profile.Profile(halo.g, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+        proCG = pynbody.analysis.profile.Profile(halo.g[pynbody.filt.LowPass("temp", 2.e4)],
+                                                 type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
 
-    def calculate(self, halo, properties):
-        MGas2, MHIGas2, MStar2 = self.Msumr(halo,"2 kpc",properties['SSC'])
-        MGas5, MHIGas5, MStar5 = self.Msumr(halo,"5 kpc",properties['SSC'])
-        MGas10, MHIGas10, MStar10 = self.Msumr(halo,"10 kpc",properties['SSC'])
-        return MHIGas2, MHIGas5, MHIGas10, MGas2, MGas5, MGas10, MStar2, MStar5, MStar10
+        return proS['mass_enc'],proG['mass_enc'], np.cumsum(proG['mass']*proG['HI']), proCG['mass_enc']
 
+    def calculate(self,halo,properties):
+        com = properties['SSC']
+        rad = properties['Rvir']
+        halo["pos"] -= com
+        halo.wrap()
+        delta = properties.get('delta',0.1)
+
+        starM, gasM, HIM, coldM = self.rstat(halo,rad,delta)
+
+        halo["pos"] += com
+        halo.wrap()
+
+        return starM, gasM, HIM, coldM
 
 
 class Contamination(HaloProperties):
@@ -230,3 +246,56 @@ class ABMagnitudes(HaloProperties):
 
     def name(self):
         return "AB_V", "AB_B", "AB_K", "AB_U", "AB_J", "AB_I"
+
+@pynbody.analysis.profile.Profile.profile_property
+def magnitudes_encl(self,band='v'):
+    mag = np.zeros(self.nbins)
+    ltot = 0.0
+    for i in range(self.nbins):
+        if len(self.binind[i]) > 0:
+            subs = self.sim[self.binind[i]]
+            ltot += np.sum(10**(-0.4*subs[band+'_mag']))
+        mag[i] = -2.5 * np.log10(ltot)
+
+    return mag
+
+class ABMagnitudes_encl(HaloProperties):
+    def name(self):
+        return "AB_V_encl", "AB_B_encl", "AB_K_encl", "AB_U_encl", "AB_J_encl", "AB_I_encl"
+
+    def rstat(self, halo, maxrad, delta=0.1):
+        nbins = int(maxrad / delta)
+        maxrad = delta * (nbins + 1)
+        pro = pynbody.analysis.profile.Profile(halo.s[pynbody.filt.HighPass("tform", 0)], type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+        return pro['magnitudes_encl,v'], pro['magnitudes_encl,b'], pro['magnitudes_encl,k'], pro['magnitudes_encl,u'], pro['magnitudes_encl,j'], pro['magnitudes_encl,i']
+
+    def calculate(self,halo,properties):
+        com = properties['SSC']
+        rad = properties['Rvir']
+        halo["pos"] -= com
+        halo.wrap()
+        delta = properties.get('delta',0.1)
+
+        V_encl, B_encl, K_encl, U_encl, J_encl, I_encl = self.rstat(halo, rad, delta)
+        halo["pos"] += com
+        halo.wrap()
+
+        ABcorr = {'u':0.79,'b':-0.09,'v':0.02,'r':0.21,'i':0.45,'j':0.91,'h':1.39,'k':1.85}
+
+        return V_encl+ABcorr['v'], B_encl+ABcorr['b'], K_encl+ABcorr['k'], U_encl+ABcorr['u'], J_encl+ABcorr['j'], I_encl+ABcorr['i']
+
+class HalfLight(HaloProperties):
+    def name(self):
+        return "Rhalf_V", "Rhalf_B", "Rhalf_K", "Rhalf_U", "Rhalf_J", "Rhalf_I"
+
+    def calculate(self, halo, properties):
+        com = properties['SSC']
+        halo["pos"] -= com
+        halo.wrap()
+
+        rhalf = {'v':0.0, 'b':0.0, 'k':0.0, 'u':0.0, 'j':0.0, 'i':0.0}
+
+        for key in rhalf.keys():
+            rhalf[key] = pynbody.analysis.luminosity.half_light_r(halo.s[pynbody.filt.HighPass("tform", 0)], band=key)
+
+        return rhalf['v'], rhalf['b'], rhalf['k'], rhalf['u'], rhalf['j'], rhalf['i']

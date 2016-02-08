@@ -436,6 +436,8 @@ def j_HI_enc(self):
     MHIenc = 0
     for i in range(self.nbins):
         subs = self.sim[self.binind[i]]
+        if len(subs)==0:
+            continue
         MHIenc += (subs['mass'] * subs['HI']).sum()
         jpx += (subs['j'][:, 0] * subs['mass'] * subs['HI']).sum()
         jpy += (subs['j'][:, 1] * subs['mass'] * subs['HI']).sum()

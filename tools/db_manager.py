@@ -128,6 +128,7 @@ def add_halos(ts,max_gp=None):
         s = ts.filename
         f = ts.load()
         h = f.halos()
+        import pynbody
         if hasattr(h, 'precalculate'):
             h.precalculate()
         if type(h)==pynbody.halo.RockstarIntermediateCatalogue:
