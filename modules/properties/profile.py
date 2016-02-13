@@ -188,3 +188,40 @@ class HaloDensityProfile(HaloProperties):
         star_a, star_b = self.rstat(
             halo.star, existing_properties["Rvir"], existing_properties["SSC"],delta)
         return dm_a, dm_b, tot_a, tot_b, gas_a, gas_b, star_a, star_b
+
+
+
+class StellarProfileFaceOn(HaloProperties):
+
+    def name(self):
+        return "v_surface_brightness", "b_surface_brightness", "i_surface_brightness"
+
+    @classmethod
+    def plot_x0(cls):
+        return 0.05
+
+    @classmethod
+    def plot_xdelta(cls):
+        return 0.1
+
+    @classmethod
+    def plot_xlabel(cls):
+        return "R/kpc"
+
+    @classmethod
+    def plot_ylog(cls):
+        return False
+
+    @classmethod
+    def plot_xlog(cls):
+        return False
+
+    @staticmethod
+    def plot_ylabel():
+        return "v mags/arcsec$^2$", "b mags/arcsec$^2$", "i mags/arcsec$^2$"
+
+    def calculate(self, halo, existing_properties):
+        with pynbody.analysis.angmom.faceon(halo):
+            ps = pynbody.analysis.profile.Profile(halo.s, type='lin', ndim=2, min=0, max=20, nbins=200)
+            vals = [ps['sb,'+x] for x in 'v','b','i']
+        return vals
