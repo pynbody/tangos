@@ -354,11 +354,16 @@ class DbWriter(object):
         else:
             db_data = existing_properties
 
-        snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, property_calculator)
+        result = self._get_standin_property_value(property_calculator)
+
+        try:
+            snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, property_calculator)
+        except IOError:
+            print >>sys.stderr, term.RED + "F" + term.NORMAL,
+            sys.stderr.flush()
+            return result
 
         property_calculator.start_timer()
-
-        result = self._get_standin_property_value(property_calculator)
 
         try:
             with self.redirect:
