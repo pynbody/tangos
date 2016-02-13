@@ -4,7 +4,7 @@ import sys
 import glob
 import traceback
 import numpy as np
-import pynbody
+pynbody = None
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -128,6 +128,7 @@ def add_halos(ts,max_gp=None):
         s = ts.filename
         f = ts.load()
         h = f.halos()
+        import pynbody
         if hasattr(h, 'precalculate'):
             h.precalculate()
         if type(h)==pynbody.halo.RockstarIntermediateCatalogue:
@@ -631,6 +632,14 @@ def rollback(options):
 
 def dump_id(options):
     h = db.get_halo(options.halo).load()
+
+    if options.sphere:
+        pynbody.analysis.halo.center(h,vel=False)
+        h = h.ancestor[pynbody.filt.Sphere(str(options.sphere)+" kpc")]
+
+    if options.family!="":
+        h = getattr(h,options.family)
+
     np.savetxt(options.filename,h['iord'],"%d")
 
 if __name__ == "__main__":
@@ -684,6 +693,9 @@ if __name__ == "__main__":
     subparse_dump_id = subparse.add_parser("dump-iord", help="Dump the iords corresponding to a specified halo")
     subparse_dump_id.add_argument("halo",type=str,help="The identity of the halo to dump")
     subparse_dump_id.add_argument("filename",type=str,help="A filename for the output text file")
+    subparse_dump_id.add_argument("size",type=str,nargs="?",help="Size, in kpc, of sphere to extract (or omit to get just the halo particles)")
+    subparse_dump_id.add_argument("family",type=str,help="The family of particles to extract",default="")
+
     subparse_dump_id.set_defaults(func=dump_id)
 
 

@@ -17,6 +17,15 @@ def get_halo_property_if_special_name(halo,pname):
         return str(halo.timestep.simulation.basename).replace('/', '%') + "/" + str(halo.timestep.extension).replace('/', '%') + "/" + str(halo.halo_number)
     elif pname == "NDM":
         return halo.NDM
+    elif pname == "host":
+        if halo.halo_type==1:
+            try:
+                host = halo.host_halo.halo_number
+                return host
+            except AttributeError:
+                return None
+        else:
+            return None
     elif pname == "self":
         return halo
     return None
@@ -91,4 +100,14 @@ def get_halo_property_with_magic_strings(halo, pname, raw=False):
                 return np.min(prop)
             elif z[1].upper() == "RMS":
                 return np.sqrt((prop ** 2).sum())
+            elif z[1] == "half_rad":
+                ihalf = np.where(prop<=prop[-1]/2.)[-1]
+                return ihalf*0.1
+            elif z[1].startswith("Rhalf_"):
+                halfl = get_halo_property_with_relationship(halo,"Rhalf_V",raw)
+                if halfl is None:
+                    return None
+                else:
+                    ihalfl = int(halfl/0.1)
+                    return prop[ihalfl]
             raise

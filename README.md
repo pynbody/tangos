@@ -1,5 +1,25 @@
 This repository contains the complete code for the halo database, which ingests runs and calculates various properties of the halos (including profiles, images etc) then exposes them through a python interface and webserver.
 
+Before you start
+-------------------------------------
+For the database to function properly, you must first source the `environment.sh` (or environment.csh, if working in a cshell) files, which specify the appropriate paths. Sourcing the environment file also reads the user-made file called `environment_local.sh` (or csh). This file doesn't exist by default, but should be created/edited whenever you wish to analyze a new database file.
+
+The `environment_local.sh` file should only include the following lines
+```
+export HALODB_ROOT=~/scratch/Romulus/ 
+export HALODB_DEFAULT_DB=~/scratch/Romulus/DatabaseFiles/cosmo25/data_romulus25.db 
+```
+or, if you are working in cshell, the `environment_local.csh` file should have the following lines
+```
+setenv HALODB_ROOT /nobackupp8/mtremmel/Romulus/
+setenv HALODB_DEFAULT_DB /nobackupp8/mtremmel/DataBaseFiles/romulus8/data_romulus8.db
+```
+The top line in each example points to the parent directory for all of your simulation data directories. If you don't have any simulations (i.e. you are just using a database object already created) then you should not have to worry about this variable. The second line points to the database object you wish to analyze.
+
+Any edits you make to this file will require you to again source the `environment.sh` file.
+
+Remember, you *must* source `environment.sh` *every* time you start a new session on your computer prior to booting up the database, either with the webserver or the python interface (see below)
+
 Quick-start: if you already have a .db file and want to run the webserver
 -------------------------------------------------------------------------
 
@@ -7,7 +27,7 @@ If running on a remote server, you will need to forward the appropriate port usi
 
 1. Clone the repository
 2. Make sure you have an up-to-date version of python, then type `pip install pylons formalchemy` to install the required web frameworks
-3. Put your database file in the halo_database folder, named `data.db` - or edit the `environment.sh` to specify a different location
+3. Put your database file in the halo_database folder, named `data.db` - or create/edit a file called `environment_local.sh` to specify a different location and/or filename (see instructions above)
 4. Type `./webserver.sh` to run the web server
 5. Browse to <http://localhost:5000>
 
@@ -95,7 +115,7 @@ The Python Interface for Analysis
 
 Now that you have your database loaded in and different values calculated and stored, its time to use it for science.
 
-First, you have to check to make sure you have the correct path to your simulation repository in `environment.sh`.  Next is to make sure the syntax matches your environment. The default environment.sh is written for a bash environment. If you are working in cshell, simply change syntax (e.g. export -> setenv). *However* if you do this, do you will need to change the header in webserver.sh (e.g `#!/usr/bin/csh`).
+First, you have to check to make sure you have the correct path to your simulation repository in `environment_local.sh  Next is to make sure the syntax matches your environment. The default environment.sh is written for a bash environment. If you are working in cshell, simply change syntax (e.g. export -> setenv). *However* if you do this, do you will need to change the header in webserver.sh (e.g `#!/usr/bin/csh`).
 
 Now open up your python environment and load in your database.
 ```
@@ -167,6 +187,20 @@ Found 1501 halos in common
         [  1.07352488e+09,   1.07331242e+09]])]
 ```
 Note that this will only work on *adjacent timesteps*
+
+Some properties are themselves arrays, such as mass profiles. If  your property is an array, when calling gather_proeprty you can specify which index to gather
+
+```
+>>> step1.gather_property('StarMass_encl//10')
+```
+This will return a 1-d array filled with the 10th value in each halo's StarMass_encl array. In this case, the property is the Stellar mass enclused by a given radius. Unless otherwise noted, every profile property like this is binned in 100 pc intervals. So,  more specifically, this example retuns the stellar mass enclosed in the inner 1 kpc of the halo.
+
+If the Rhalf_[V,U,J,K,I,R] properties have been calculated for the halo (the half-light radius in different bands) you can also use "Rhalf_[V,U,J,K,I,R]" as an identifier. For example, the following returns the stellar mass within the  V-band half light radius for each halo
+
+```
+step1.gather_property('StarMass_encl//Rhalf_V')
+```
+Just like how gather_property with multiple properties in the argument will only return results for halos with both properties included, this will only return data for halos where both StarMass_encl and Rhalf_V have been calculated.
 
 Finally, if we want to study a particular halo in detail, we can load it in as its own object and then aquire time series data on that halo and its progenitors at previous timesteps. To do this we use the function `get_halo` which carries a similar argument syntax, but with one extra component: `simname/%step/halonumber`. We will trace the halo back in time using the function `earliest.property_cascade(<property>)` function.
 ```

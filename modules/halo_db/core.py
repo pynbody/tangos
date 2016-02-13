@@ -954,7 +954,10 @@ class BH(Halo):
 
     @property
     def host_halo(self):
-        return self.reverse_links.filter_by(relation_id=get_dict_id('BH')).first().halo_from
+        try:
+            return self.reverse_links.filter_by(relation_id=get_dict_id('BH_central')).first().halo_from
+        except KeyError:
+            return self.reverse_links.filter_by(relation_id=get_dict_id('BH')).first().halo_from
 
 class HaloProperty(Base):
     __tablename__ = 'haloproperties'
@@ -1015,6 +1018,7 @@ class HaloProperty(Base):
             cls = self.name.providing_class()
         except NameError:
             cls = None
+
         if hasattr(cls, 'reassemble'):
             return cls.reassemble(self)
         else:
@@ -1433,7 +1437,7 @@ def process_options(argparser_options):
         config.db = argparser_options.db_filename
     _verbose = argparser_options.db_verbose
 
-def init_db(db_uri=None, timeout=10, verbose=None):
+def init_db(db_uri=None, timeout=30, verbose=None):
     global _verbose, current_creator, internal_session, engine
     if db_uri is None:
         db_uri = 'sqlite:///' + config.db
