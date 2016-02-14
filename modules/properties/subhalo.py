@@ -5,11 +5,12 @@ import pynbody
 
 
 class Subhalo(HaloProperties):
-    # include
 
+    @classmethod
     def name(self):
         return "Sub"
 
+    @classmethod
     def requires_simdata(self):
         return False
 

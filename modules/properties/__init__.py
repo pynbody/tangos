@@ -11,17 +11,31 @@ class HaloProperties(object):
         calculate this property"""
         return []
 
+    @classmethod
     def requires_simdata(self):
         """If this returns false, the class can do its
         calculation without any raw simulation data loaded
         (i.e. derived from other properties)"""
         return True
 
+    @classmethod
     def name(self):
         """Returns either the name or a list of names of
         properties that will be calculated by this class"""
         return "undefined"
 
+    @classmethod
+    def index_of_name(cls, name):
+        """Returns the index of the named property in the
+        results returned from calculate().
+
+        For example, for a BasicHaloProperties object X,
+        X.calculate(..)[X.index_of_name("SSC")] returns the SSC.
+        """
+        name = name.split("(")[0]
+        return cls.name().index(name)
+
+    @classmethod
     def no_proxies(self):
         """Returns True if the properties MUST be supplied
         as an actual Halo object rather than the normal
@@ -169,7 +183,7 @@ class TimeChunkedProperty(HaloProperties):
     @classmethod
     def reassemble(cls, halo, name=None):
         if name is None:
-            name = cls().name()
+            name = cls.name()
 
         halo = halo.halo
         t, stack = halo.reverse_property_cascade("t",name,raw=True)
@@ -228,6 +242,10 @@ def all_property_classes():
 
 
 
+def _check_class_provided_name(name):
+    if "(" in name or ")" in name:
+        raise ValueError, "Property names must not include brackets"
+
 def all_properties():
     """Return list of all properties which can be calculated using
     classes derived from HaloProperties"""
@@ -237,9 +255,11 @@ def all_properties():
         i = c()
         name = i.name()
         if type(name) == str:
+            _check_class_provided_name(name)
             pr.append(name)
         else:
             for name_j in name:
+                _check_class_provided_name(name_j)
                 pr.append(name_j)
 
     return pr
@@ -248,10 +268,9 @@ def all_properties():
 def providing_class(property_name, silent_fail=False):
     """Return providing class for given property name"""
     classes = all_property_classes()
-    property_name = property_name.lower().split("[")[0]
+    property_name = property_name.lower().split("(")[0]
     for c in classes:
-        i = c()
-        name = i.name()
+        name = c.name()
         if type(name) != str:
             for name_j in name:
                 if name_j.lower() == property_name:
@@ -273,17 +292,29 @@ def providing_classes(property_name_list, silent_fail=False):
 
     return classes
 
+def _make_numeric_if_possible(s):
+    if "." in s:
+        try:
+            return float(s)
+        except ValueError:
+            return s
+    else:
+        try:
+            return int(s)
+        except ValueError:
+            return s
+
 def instantiate_classes(property_name_list, silent_fail=False):
     instances = []
     classes = []
     for property_name in property_name_list:
         cl = providing_class(property_name, silent_fail)
         if cl not in classes and cl != None:
-            if "[" in property_name:
-                args = property_name.split("[")[1][:-1]
-                assert "]" not in args
+            if "(" in property_name:
+                args = property_name.split("(")[1][:-1]
+                assert ")" not in args
                 vals = args.split(",")
-                vals = [float(v) for v in vals]
+                vals = [_make_numeric_if_possible(v) for v in vals]
             else:
                 vals = []
 
@@ -291,6 +322,13 @@ def instantiate_classes(property_name_list, silent_fail=False):
             classes.append(cl)
 
     return instances
+
+def instantiate_class(property_name, silent_fail=False):
+    instance = instantiate_classes([property_name],silent_fail)
+    if len(instance)==0:
+        return None
+    else:
+        return instance[0]
 
 
 def get_dependent_classes(for_class):

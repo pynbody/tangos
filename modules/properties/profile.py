@@ -2,14 +2,16 @@ from . import HaloProperties
 import numpy as np
 import math
 import pynbody
-
+import scipy.optimize
 
 class CoreSize(HaloProperties):
     # include
 
+    @classmethod
     def name(self):
         return "coresize"
 
+    @classmethod
     def requires_simdata(self):
         return False
 
@@ -40,12 +42,14 @@ class VcircSpherical(HaloProperties):
     def plot_ylabel(cls):
         return r"$\sqrt{GM/r}$"
 
+    @classmethod
     def name(self):
         return "vcirc_spherical"
 
     def requires_property(self):
         return ["dm_density_profile"]
 
+    @classmethod
     def requires_simdata(self):
         return False
 
@@ -59,12 +63,14 @@ class VcircSpherical(HaloProperties):
 
 class VmaxDM(HaloProperties):
 
+    @classmethod
     def name(self):
         return "vmax_dm_local", "rmax_dm_local", "vmax_dm_global"
 
     def requires_property(self):
         return ["dm_density_profile"]
 
+    @classmethod
     def requires_simdata(self):
         return False
 
@@ -86,12 +92,14 @@ class VmaxDM(HaloProperties):
 class HaloDensitySlope(HaloProperties):
     # include
 
+    @classmethod
     def name(self):
         return "dm_alpha_500pc", "dm_alpha_1kpc"
 
     def requires_property(self):
         return ["dm_density_profile"]
 
+    @classmethod
     def requires_simdata(self):
         return False
 
@@ -118,6 +126,7 @@ class HaloDensitySlope(HaloProperties):
 class HaloDensityProfile(HaloProperties):
     # include
 
+    @classmethod
     def name(self):
         return "dm_density_profile", "dm_mass_profile", "tot_density_profile", "tot_mass_profile", "gas_density_profile", "gas_mass_profile", "star_density_profile", "star_mass_profile"
 
@@ -192,7 +201,7 @@ class HaloDensityProfile(HaloProperties):
 
 
 class StellarProfileFaceOn(HaloProperties):
-
+    @classmethod
     def name(self):
         return "v_surface_brightness", "b_surface_brightness", "i_surface_brightness"
 
@@ -225,3 +234,82 @@ class StellarProfileFaceOn(HaloProperties):
             ps = pynbody.analysis.profile.Profile(halo.s, type='lin', ndim=2, min=0, max=20, nbins=200)
             vals = [ps['sb,'+x] for x in 'v','b','i']
         return vals
+
+def sersic_surface_brightness(r, s0, r0, n) :
+    # 2.5 / ln 10 = 1.08573620
+    return s0 + 1.08573620 * (r/r0)**(1./n)
+
+def fit_sersic(r, surface_brightness, return_cov=False):
+    s0_guess = np.mean(surface_brightness[:3])
+    s0_range = [s0_guess-2, s0_guess+2]
+    r0_range = [0.1,r[-1]]
+    n_range = [0.1, 6.0]
+
+    r0_guess = r[len(r)/2]
+    n_guess = 1.0
+
+    sigma = 10**(0.6*(surface_brightness-20))/r
+    sigma = None
+
+    popt, pcov = scipy.optimize.curve_fit(sersic_surface_brightness,r,surface_brightness,
+                                          bounds=np.array((s0_range, r0_range, n_range)).T,
+                                          sigma=sigma,
+                                          p0=(s0_guess, r0_guess, n_guess))
+
+    if return_cov:
+        return popt, pcov
+    else:
+        return popt
+
+class GenericPercentile(HaloProperties):
+    def __init__(self, name, ratio):
+        from . import instantiate_class
+        self._name = name
+        self._ratio = ratio
+        self._cl = instantiate_class(name)
+
+    @classmethod
+    def name(self):
+        return "percentile"
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def calculate(self, halo, existing_properties):
+        x0 = self._cl.plot_x0()
+        delta_x = self._cl.plot_xdelta()
+        val = existing_properties[self._name]
+        val/=val[-1]
+        index = np.where(val>self._ratio)[0][0]
+        return x0+index*delta_x
+
+
+class StellarProfileDiagnosis(HaloProperties):
+    def __init__(self, band):
+        self.band = band
+
+    @classmethod
+    def name(self):
+        return "half_light","sersic_m0", "sersic_n", "sersic_r0"
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def calculate(self, halo, existing_properties):
+        r0 = 0.05
+        delta_r = 0.1
+        surface_brightness = existing_properties[self.band+"_surface_brightness"]
+        flux_density = 10**(surface_brightness/-2.5)
+        nbins = len(surface_brightness)
+        r = np.arange(r0,r0+delta_r*nbins,delta_r)
+        cumu_flux_density = (r * flux_density).cumsum()
+        cumu_flux_density/=cumu_flux_density[-1]
+
+        half_light_i = np.where(cumu_flux_density>0.5)[0][0]
+        half_light = r0+delta_r * half_light_i
+
+
+        m0, n, r0 = fit_sersic(r[4:half_light_i*5], surface_brightness[4:half_light_i*5])
+        return half_light, m0, n, r0

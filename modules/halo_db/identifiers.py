@@ -36,14 +36,14 @@ def get_property_with_live_calculation(halo,pname,raw):
         # live calculate
         pname = pname[1:]
         import properties
-        c = properties.providing_classes([pname])[0]()
+        c = properties.instantiate_classes([pname])[0]
         assert not c.requires_simdata()
         X = c.calculate(None, halo)
 
         if isinstance(c.name(), str):
             prop = X
         else:
-            prop = X[c.name().index(pname)]
+            prop = X[c.index_of_name(pname)]
     else:
         prop = halo._get_item(pname,raw)
 

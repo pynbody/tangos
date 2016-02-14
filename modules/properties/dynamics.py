@@ -40,6 +40,7 @@ class AngMom(HaloProperties):
 
         return vecdm, vec, vecgas
 
+    @classmethod
     def name(self):
         return "angmom_dm_2kpc", "angmom_star_2kpc", "angmom_gas_2kpc"
 
@@ -49,6 +50,7 @@ class MeanJr(HaloProperties):
     def spherical_region(self):
         return False
 
+    @classmethod
     def name(self):
         return "Jr_dm", "Jr_dm_std"
 
@@ -79,6 +81,7 @@ class MeanESpher(HaloProperties):
     def spherical_region(self):
         return False
 
+    @classmethod
     def name(self):
         return "E_spherical_dm", "E_spherical_dm_std"
 
@@ -107,6 +110,7 @@ class MeanR(HaloProperties):
     def spherical_region(self):
         return False
 
+    @classmethod
     def name(self):
         return "r_dm"
 
@@ -122,6 +126,7 @@ class AngMomVecVsScalar(HaloProperties):
     def spherical_region(self):
         return False
 
+    @classmethod
     def name(self):
         return "angmom_dm_500pc_scalar", "angmom_dm_500pc_vector", "angmom_dm_scalar", "angmom_dm_vector"
 
@@ -182,6 +187,7 @@ class Anisotropy(HaloProperties):
 
         return ret
 
+    @classmethod
     def name(self):
         return "dm_vel_ani"
 
@@ -212,6 +218,7 @@ class HaloVelDispersionProfile(HaloProperties):
     def plot_xlabel(cls):
         return "r/kpc"
 
+    @classmethod
     def name(self):
         return "dm_mean_vel","dm_sigma_r", "dm_sigma_t", "dm_beta"
 
@@ -246,6 +253,7 @@ class HaloVelDispersionProfile(HaloProperties):
 class HaloStarVelDispersionProfile(HaloVelDispersionProfile):
     # include
 
+    @classmethod
     def name(self):
         return "st_mean_vel","st_sigma_r", "st_sigma_t", "st_beta"
 
@@ -256,6 +264,7 @@ class HaloStarVelDispersionProfile(HaloVelDispersionProfile):
 
 class DynamicalDensityProfile(HaloProperties):
 
+    @classmethod
     def name(self):
         return "dm_dynamical_density_profile"
 
@@ -281,6 +290,7 @@ class DynamicalDensityProfile(HaloProperties):
         return worker.mass_to_rho(MP)
 
 class JofE(HaloProperties):
+    @classmethod
     def name(self):
         return "Evals","<j>(Evals)", "Evals_theory","<j>(Evals)_theory"
 
@@ -308,6 +318,7 @@ class JofE(HaloProperties):
             return Es, js, Es2, js2
 
 class JofEStars(JofE):
+    @classmethod
     def name(self):
         return ["st_"+x for x in JofE.name(self)]
 
@@ -315,6 +326,7 @@ class JofEStars(JofE):
         return JofE.calculate(self,halo,existing_properties,pynbody.family.star)
 
 class JProportion(HaloProperties):
+    @classmethod
     def name(self):
         return "<E>","<j>"
 
@@ -353,6 +365,7 @@ class JProportion(HaloProperties):
 class HaloSpin(HaloProperties):
     # include
 
+    @classmethod
     def name(self):
         return "lambda_prime", "lambda_prime_dm"
 
@@ -383,6 +396,7 @@ class HaloSpin(HaloProperties):
 class RotCurve(HaloProperties):
     # include
 
+    @classmethod
     def name(self):
         return "rotcurve", "rotcurve:range"
 
@@ -479,6 +493,7 @@ def j_enc(self):
 
 
 class AngMomEncl(HaloProperties):
+    @classmethod
     def name(self):
         return "J_tot_enc", "J_gas_enc", "J_star_enc", "J_HI_enc"
 
