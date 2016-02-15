@@ -106,6 +106,7 @@ def get_halo_property_with_magic_strings(halo, pname, raw=False):
             elif z[1].startswith("Rhalf_"):
                 halfl = get_halo_property_with_relationship(halo,"Rhalf_V",raw)
                 if halfl is None:
+                    print "here"
                     return None
                 else:
                     ihalfl = int(halfl/0.1)
