@@ -252,5 +252,7 @@ class BHHostProperties(HaloProperties):
     def calculate(self, halo, properties):
         if properties.halo_type != 1:
             return None
-
-        return properties.host_halo[self._host_prop]
+        if properties.host_halo is None:
+            return None
+        else:
+            return properties.host_halo[self._host_prop]
