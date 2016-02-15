@@ -102,7 +102,7 @@ def get_halo_property_with_magic_strings(halo, pname, raw=False):
                 return np.sqrt((prop ** 2).sum())
             elif z[1] == "halfrad":
                 ihalf = np.where(prop>=prop[-1]/2.)[0]
-                return ihalf*0.1
+                return ihalf[0]*0.1
             elif z[1].startswith("Rhalf_"):
                 halfl = get_halo_property_with_relationship(halo,"Rhalf_V",raw)
                 if halfl is None:
