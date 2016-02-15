@@ -1,4 +1,4 @@
-from . import HaloProperties
+from . import HaloProperties, instantiate_class
 import numpy as np
 import math
 import pynbody
@@ -263,7 +263,6 @@ def fit_sersic(r, surface_brightness, return_cov=False):
 
 class GenericPercentile(HaloProperties):
     def __init__(self, name, ratio):
-        from . import instantiate_class
         self._name = name
         self._ratio = ratio
         self._cl = instantiate_class(name)
@@ -283,6 +282,37 @@ class GenericPercentile(HaloProperties):
         val/=val[-1]
         index = np.where(val>self._ratio)[0][0]
         return x0+index*delta_x
+
+class AtPosition(HaloProperties):
+    def __init__(self, pos_name, name):
+        self._name = name
+        self._pos_name = pos_name
+        self._cl = instantiate_class(name)
+
+    @classmethod
+    def name(cls):
+        return "at"
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def calculate(self,  halo, existing_properties):
+        x0 = self._cl.plot_x0()
+        delta_x = self._cl.plot_xdelta()
+        pos = existing_properties[self._pos_name]
+        ar = existing_properties[self._name]
+
+        # linear interpolation
+        i0 = int((pos-x0)/delta_x)
+        i1 = i0+1
+
+        i0_loc = float(i0)*delta_x+x0
+        i1_weight = (x0-i0_loc)/delta_x
+        i0_weight = 1.0-i1_weight
+
+        return ar[i0]*i0_weight + ar[i1]*i1_weight
+
 
 
 class StellarProfileDiagnosis(HaloProperties):
