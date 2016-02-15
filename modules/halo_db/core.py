@@ -693,6 +693,9 @@ class Halo(Base):
         else:
             return h[self.halo_number]
 
+    def get_or_calculate(self, key):
+        return identifiers.get_halo_property_with_magic_strings(self, key)
+
     def __getitem__(self, key):
         # There are two possible strategies here. If some sort of joined load has been
         # executed, the properties are sitting waiting for us. If not, they are going

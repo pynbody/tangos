@@ -8,6 +8,7 @@ class StarForm(HaloProperties):
 
     # include
 
+    @classmethod
     def name(self):
         return "SFR", "SFR_1kpc", "SFR_5kpc", "SFR_10kpc", "SFR_250Myr", "SFR_25Myr"
 
@@ -62,6 +63,7 @@ class StarForm(HaloProperties):
 
 
 class StarFormHistogram(TimeChunkedProperty):
+    @classmethod
     def name(self):
         return "SFR_histogram"
 
@@ -93,6 +95,7 @@ def sfr(self, deltat='25 Myr'):
     return sfr_pro
 
 class StarForm_encl(HaloProperties):
+    @classmethod
     def name(self):
         return "SFR_encl_25Myr", "SFR_encl_250Myr"
 

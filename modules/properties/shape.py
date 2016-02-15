@@ -85,6 +85,7 @@ class Ellipsoids(HaloProperties):
         f.dm['pos'] += exist['SSC']
         return phi_val, phi_vec, rho_val, rho_vec
 
+    @classmethod
     def name(self):
         return "tellipsoid_phi_vals", "tellipsoid_phi_vecs", \
             "tellipsoid_rho_vals", "tellipsoid_rho_vecs"

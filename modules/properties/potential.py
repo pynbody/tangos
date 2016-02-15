@@ -16,6 +16,7 @@ class DPot2(HaloProperties):
 
         return phi1, phi2
 
+    @classmethod
     def name(self):
         return "dphi_pb", "dphi_pb_3kpc"
 
@@ -31,6 +32,7 @@ class DPotDM(HaloProperties):
 
         return phi1, phi2
 
+    @classmethod
     def name(self):
         return "dphi_dm", "dphi_dm_3kpc"
 
@@ -73,8 +75,10 @@ class SphericalPotential(HaloProperties):
 
         return pot[::10]
 
+    @classmethod
     def name(self):
         return "dm_spherical_potential"
 
+    @classmethod
     def requires_simdata(self):
         return False
