@@ -100,11 +100,12 @@ def get_halo_property_with_magic_strings(halo, pname, raw=False):
             elif z[1].upper() == "RMS":
                 return np.sqrt((prop ** 2).sum())
             elif z[1] == "half_rad":
-                ihalf = np.where(prop<=prop[-1]/2.)[-1]
-                return ihalf*0.1
+                ihalf = np.where(prop>=prop[-1]/2.)[0]
+                return (ihalf[0]+1)*0.1
             elif z[1].startswith("Rhalf_"):
-                halfl = get_halo_property_with_relationship(halo,"Rhalf_V",raw)
+                halfl = get_property_with_live_calculation(halo,z[1],raw)
                 if halfl is None:
+                    print "here"
                     return None
                 else:
                     ihalfl = int(halfl/0.1)
