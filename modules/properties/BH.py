@@ -236,3 +236,18 @@ class BHGalaxy(HaloProperties):
         indl = np.argmax(mdot)
 
         return bhmass[indm], offset[indm], mdot[indm], bhmass[indo], offset[indo], mdot[indo], bhmass[indl], offset[indl], mdot[indl], bhiord[indm], bhiord[indo], bhiord[indl]
+
+class BHHostProperties(HaloProperties):
+    def __init__(self, propname):
+        self._host_prop = propname
+
+    @classmethod
+    def name(cls):
+        return "bh_host"
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def calculate(self, halo, properties):
+        return properties.host_halo[self._host_prop]
