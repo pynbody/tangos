@@ -46,7 +46,6 @@ class HopStrategy(object):
 
     def _target(self, db_obj):
         """Only return those hops which reach the specifid simulation or timestep"""
-        print "target=",db_obj
         if isinstance(db_obj, core.TimeStep):
             self._target_timestep(db_obj)
         elif isinstance(db_obj, core.Simulation):
