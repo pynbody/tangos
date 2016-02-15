@@ -158,6 +158,14 @@ class MassEnclosed(HaloProperties):
 
         return starM, gasM, HIM, coldM
 
+    @classmethod
+    def plot_x0(cls):
+        return 0.0
+
+    @classmethod
+    def plot_xdelta(cls):
+        return 0.1
+
 
 class Contamination(HaloProperties):
 
@@ -277,13 +285,13 @@ def magnitudes_encl(self,band='v'):
 class ABMagnitudes_encl(HaloProperties):
     @classmethod
     def name(self):
-        return "AB_V_encl", "AB_B_encl", "AB_K_encl", "AB_U_encl", "AB_J_encl", "AB_I_encl"
+        return "AB_V_encl", "AB_B_encl", "AB_K_encl", "AB_U_encl", "AB_J_encl", "AB_I_encl", "AB_R_encl"
 
     def rstat(self, halo, maxrad, delta=0.1):
         nbins = int(maxrad / delta)
         maxrad = delta * (nbins + 1)
         pro = pynbody.analysis.profile.Profile(halo.s[pynbody.filt.HighPass("tform", 0)], type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
-        return pro['magnitudes_encl,v'], pro['magnitudes_encl,b'], pro['magnitudes_encl,k'], pro['magnitudes_encl,u'], pro['magnitudes_encl,j'], pro['magnitudes_encl,i']
+        return pro['magnitudes_encl,v'], pro['magnitudes_encl,b'], pro['magnitudes_encl,k'], pro['magnitudes_encl,u'], pro['magnitudes_encl,j'], pro['magnitudes_encl,i'], pro['magnitudes_encl,r']
 
     def calculate(self,halo,properties):
         com = properties['SSC']
@@ -292,27 +300,38 @@ class ABMagnitudes_encl(HaloProperties):
         halo.wrap()
         delta = properties.get('delta',0.1)
 
-        V_encl, B_encl, K_encl, U_encl, J_encl, I_encl = self.rstat(halo, rad, delta)
+        V_encl, B_encl, K_encl, U_encl, J_encl, I_encl, R_encl = self.rstat(halo, rad, delta)
         halo["pos"] += com
         halo.wrap()
 
         ABcorr = {'u':0.79,'b':-0.09,'v':0.02,'r':0.21,'i':0.45,'j':0.91,'h':1.39,'k':1.85}
 
-        return V_encl+ABcorr['v'], B_encl+ABcorr['b'], K_encl+ABcorr['k'], U_encl+ABcorr['u'], J_encl+ABcorr['j'], I_encl+ABcorr['i']
+        return V_encl+ABcorr['v'], B_encl+ABcorr['b'], K_encl+ABcorr['k'], U_encl+ABcorr['u'], J_encl+ABcorr['j'], I_encl+ABcorr['i'], R_encl+ABcorr['r']
+
+    @classmethod
+    def plot_x0(cls):
+        return 0.0
+
+    @classmethod
+    def plot_xdelta(cls):
+        return 0.1
 
 class HalfLight(HaloProperties):
     @classmethod
     def name(self):
-        return "Rhalf_V", "Rhalf_B", "Rhalf_K", "Rhalf_U", "Rhalf_J", "Rhalf_I"
+        return "Rhalf_V", "Rhalf_B", "Rhalf_K", "Rhalf_U", "Rhalf_J", "Rhalf_I", "Rhalf_R"
 
     def calculate(self, halo, properties):
         com = properties['SSC']
         halo["pos"] -= com
         halo.wrap()
 
-        rhalf = {'v':0.0, 'b':0.0, 'k':0.0, 'u':0.0, 'j':0.0, 'i':0.0}
+        rhalf = {'v':0.0, 'b':0.0, 'k':0.0, 'u':0.0, 'j':0.0, 'i':0.0, 'r':0.0}
 
         for key in rhalf.keys():
             rhalf[key] = pynbody.analysis.luminosity.half_light_r(halo.s[pynbody.filt.HighPass("tform", 0)], band=key)
 
-        return rhalf['v'], rhalf['b'], rhalf['k'], rhalf['u'], rhalf['j'], rhalf['i']
+        halo["pos"] += com
+        halo.wrap()
+
+        return rhalf['v'], rhalf['b'], rhalf['k'], rhalf['u'], rhalf['j'], rhalf['i'], rhalf['r']
