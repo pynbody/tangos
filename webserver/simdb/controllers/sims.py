@@ -500,8 +500,7 @@ class SimsController(BaseController):
             new_halo = halo.timestep.halos.filter_by(halo_number=num).first()
         elif rel == "insim":
             targ = Session.query(meta.Simulation).filter_by(id=num).first()
-            strategy = db.hopper.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across')
-            strategy.target(targ)
+            strategy = db.hopper.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across', targ)
 
             targets, weights = strategy.all_and_weights()
 

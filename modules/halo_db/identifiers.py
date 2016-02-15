@@ -51,8 +51,7 @@ def get_property_with_live_calculation(halo,pname,raw):
 
 def find_relation(relation_name, halo, maxhops=2):
     relation = core.get_item(relation_name)
-    strategy = hopper.MultiHopStrategy(halo, maxhops, "across")
-    strategy.target(relation)
+    strategy = hopper.MultiHopStrategy(halo, maxhops, "across", relation)
     res = strategy.all()
 
     if len(res)>0:
