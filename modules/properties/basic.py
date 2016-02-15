@@ -315,4 +315,7 @@ class HalfLight(HaloProperties):
         for key in rhalf.keys():
             rhalf[key] = pynbody.analysis.luminosity.half_light_r(halo.s[pynbody.filt.HighPass("tform", 0)], band=key)
 
+        halo["pos"] += com
+        halo.wrap()
+
         return rhalf['v'], rhalf['b'], rhalf['k'], rhalf['u'], rhalf['j'], rhalf['i'], rhalf['r']
