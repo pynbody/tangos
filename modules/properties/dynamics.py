@@ -544,3 +544,11 @@ class AngMomEncl(HaloProperties):
         halo['vel'] += vcen
         halo.wrap()
         return J_tot, J_gas, J_star, J_HI
+
+    @classmethod
+    def plot_x0(cls):
+        return 0.05
+
+    @classmethod
+    def plot_xdelta(cls):
+        return 0.1

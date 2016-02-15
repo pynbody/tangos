@@ -158,6 +158,14 @@ class MassEnclosed(HaloProperties):
 
         return starM, gasM, HIM, coldM
 
+    @classmethod
+    def plot_x0(cls):
+        return 0.05
+
+    @classmethod
+    def plot_xdelta(cls):
+        return 0.1
+
 
 class Contamination(HaloProperties):
 
@@ -299,6 +307,14 @@ class ABMagnitudes_encl(HaloProperties):
         ABcorr = {'u':0.79,'b':-0.09,'v':0.02,'r':0.21,'i':0.45,'j':0.91,'h':1.39,'k':1.85}
 
         return V_encl+ABcorr['v'], B_encl+ABcorr['b'], K_encl+ABcorr['k'], U_encl+ABcorr['u'], J_encl+ABcorr['j'], I_encl+ABcorr['i'], R_encl+ABcorr['r']
+
+    @classmethod
+    def plot_x0(cls):
+        return 0.05
+
+    @classmethod
+    def plot_xdelta(cls):
+        return 0.1
 
 class HalfLight(HaloProperties):
     @classmethod
