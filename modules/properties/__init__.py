@@ -224,8 +224,6 @@ class ProxyHalo(object):
 
 
 
-from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr, dust
-
 
 ##############################################################################
 # UTILITY FUNCTIONS
@@ -636,3 +634,7 @@ def mv(sname, dname, prop, metaprop=None, interactive=False, cp=False):
                     mp[b] = mp[a]
                 if not cp:
                     del mp[a]
+
+
+from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr, dust
+
