@@ -121,7 +121,7 @@ class StarForm_encl(HaloProperties):
 
     @classmethod
     def plot_x0(cls):
-        return 0.05
+        return 0.0
 
     @classmethod
     def plot_xdelta(cls):
