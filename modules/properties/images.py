@@ -7,6 +7,7 @@ import pynbody
 class Images(HaloProperties):
     # include
 
+    @classmethod
     def name(self):
         return "gas_image_sideon", "stellar_image_sideon", "gas_image_faceon", "stellar_image_faceon", "gas_image_original", "stellar_image_original"
 
@@ -54,6 +55,7 @@ class Images(HaloProperties):
 
 
 class DmImages(Images):
+    @classmethod
     def name(self):
         return "dm_image_z", "dm_image_x"
 
@@ -86,6 +88,7 @@ class DmImages(Images):
 
 class InflowOutflowImg(HaloProperties):
 
+    @classmethod
     def name(self):
         return "virial_rho", "virial_vr", "virial_rho_Z"
 

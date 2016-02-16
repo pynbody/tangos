@@ -7,9 +7,11 @@ import pynbody
 class OutflowEnergy(HaloProperties):
     # include
 
+    @classmethod
     def name(self):
         return "outflow_energy_1", "SFR_250Myr_energy"
 
+    @classmethod
     def requires_simdata(self):
         return False
 
@@ -21,6 +23,7 @@ class OutflowEnergy(HaloProperties):
 
 class TestInflowOutflow(HaloProperties):
 
+    @classmethod
     def name(self):
         return "test_inflow", "test_vel_inflow", "test_outflow", "test_vel_outflow"
 
@@ -79,6 +82,7 @@ class InflowOutflow(HaloProperties):
 
     # include
 
+    @classmethod
     def name(self):
         return "inflow_.5", "outflow_.5", "vel_in_.5", "vel_out_.5", "inflow_1", "outflow_1", "vel_in_1", "vel_out_1", "inflow_2", "outflow_2", "vel_in_2", "vel_out_2"
 
@@ -162,6 +166,7 @@ class InflowOutflow(HaloProperties):
 class InflowOutflow60Kpc(InflowOutflow):
     # include
 
+    @classmethod
     def name(self):
         return "inflow_15kpc", "outflow_15kpc", "vel_in_15kpc", "vel_out_15kpc"
 

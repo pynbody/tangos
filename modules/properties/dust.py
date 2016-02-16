@@ -6,6 +6,7 @@ import pynbody
 lamcen = {'u':0.365,'b':0.445,'v':0.551,'r':0.658,'i':0.806,'j':1.22,'h':1.63,'k':2.19}
 
 class DustAttenuation(HaloProperties):
+    @classmethod
     def name(self):
         return "dustExt_V", "dustExt_B", "dustExt_K", "dustExt_U", "dustExt_J", "dustExt_I"
 

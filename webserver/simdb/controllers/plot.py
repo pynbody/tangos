@@ -334,17 +334,16 @@ class PlotController(BaseController):
             response.content_type='text/txt'
 
         with imageThreadLock if not overplot else nocontext :
+            if prop is None :
+                prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
+            assert isinstance(prop, meta.HaloProperty)
 
             if text :
-                if prop is None :
-                    prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
                 h = prop.halo
                 ts = "# Array "+prop.name.text+" for "+h.timestep.relative_filename+" halo "+str(h.halo_number)+"\n"
-                #assert(type(prop.data) is np.ndarray)
-                name = prop.name
-                data = prop.data
 
-                xdat = np.arange(name.plot_x0(),  name.plot_x0()+name.plot_xdelta()*(len(data)-0.5), name.plot_xdelta())
+                data = prop.data
+                xdat = prop.x_values()
 
                 for x,y in zip(xdat,data) :
                     ts+="%.5g %.5g\n"%(x,y)

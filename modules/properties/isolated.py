@@ -6,6 +6,7 @@ import pynbody
 
 class REnergy(HaloProperties):
 
+    @classmethod
     def name(self):
         return "ramses_pe", "ramses_ke", "ramses_te"
 
@@ -88,6 +89,7 @@ class REnergy(HaloProperties):
 
 class HaloSelfEnergy(HaloProperties):
 
+    @classmethod
     def name(self):
         return "selfenergy", "dm_selfenergy"
 
@@ -105,9 +107,11 @@ class HaloSelfEnergy(HaloProperties):
 
 class GasProfilePhi(HaloProperties):
 
+    @classmethod
     def name(self):
         return "gas_profile_phi"
 
+    @classmethod
     def requires_simdata(self):
         return False
 
@@ -121,9 +125,11 @@ class GasProfilePhi(HaloProperties):
 
 class ProfilePhi(HaloProperties):
 
+    @classmethod
     def name(self):
         return "profile_phi"
 
+    @classmethod
     def requires_simdata(self):
         return False
 
@@ -137,9 +143,11 @@ class ProfilePhi(HaloProperties):
 
 class ProfileSelfEnergy(HaloProperties):
 
+    @classmethod
     def name(self):
         return "dm_profile_pe", "dm_profile_selfenergy", "dm_profile_Ir2"
 
+    @classmethod
     def requires_simdata(self):
         return False
 

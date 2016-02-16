@@ -36,23 +36,22 @@ def get_property_with_live_calculation(halo,pname,raw):
         # live calculate
         pname = pname[1:]
         import properties
-        c = properties.providing_classes([pname])[0]()
+        c = properties.instantiate_classes([pname])[0]
         assert not c.requires_simdata()
         X = c.calculate(None, halo)
 
         if isinstance(c.name(), str):
             prop = X
         else:
-            prop = X[c.name().index(pname)]
+            prop = X[c.index_of_name(pname)]
     else:
-        prop = halo._get_item(pname,raw)
+        prop = halo._get_data(pname, raw)
 
     return prop
 
 def find_relation(relation_name, halo, maxhops=2):
     relation = core.get_item(relation_name)
-    strategy = hopper.MultiHopStrategy(halo, maxhops, "across")
-    strategy.target(relation)
+    strategy = hopper.MultiHopStrategy(halo, maxhops, "across", relation)
     res = strategy.all()
 
     if len(res)>0:
@@ -101,11 +100,12 @@ def get_halo_property_with_magic_strings(halo, pname, raw=False):
             elif z[1].upper() == "RMS":
                 return np.sqrt((prop ** 2).sum())
             elif z[1] == "half_rad":
-                ihalf = np.where(prop<=prop[-1]/2.)[-1]
-                return ihalf*0.1
+                ihalf = np.where(prop>=prop[-1]/2.)[0]
+                return (ihalf[0]+1)*0.1
             elif z[1].startswith("Rhalf_"):
-                halfl = get_halo_property_with_relationship(halo,"Rhalf_V",raw)
+                halfl = get_property_with_live_calculation(halo,z[1],raw)
                 if halfl is None:
+                    print "here"
                     return None
                 else:
                     ihalfl = int(halfl/0.1)

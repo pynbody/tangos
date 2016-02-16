@@ -101,12 +101,14 @@ class BHShortenedLog(object):
 
 class BH(HaloProperties):
 
+    @classmethod
     def name(self):
         return "BH_mdot", "BH_mdot_ave", "BH_mdot_std", "BH_central_offset", "BH_central_distance", "BH_mass"
 
     def requires_property(self):
         return []
 
+    @classmethod
     def no_proxies(self):
         return True
 
@@ -162,6 +164,7 @@ class BH(HaloProperties):
 
 
 class BHAccHistogram(TimeChunkedProperty):
+    @classmethod
     def name(self):
         return "BH_mdot_histogram"
 
@@ -172,6 +175,7 @@ class BHAccHistogram(TimeChunkedProperty):
     def preloop(self, f, filename, pa):
         self.log = BHShortenedLog.get_existing_or_new(f,filename)
 
+    @classmethod
     def no_proxies(self):
         return True
 
@@ -189,8 +193,8 @@ class BHAccHistogram(TimeChunkedProperty):
         if(mask.sum()==0):
             raise RuntimeError("Can't find BH in .orbit file")
 
-        t_orbit = self.log.vars['time']
-        Mdot_orbit = self.log.vars['mdotmean']
+        t_orbit = self.log.vars['time'][mask]
+        Mdot_orbit = self.log.vars['mdotmean'][mask]
         order = np.argsort(t_orbit)
 
         t_max = properties.timestep.time_gyr
@@ -206,15 +210,18 @@ class BHAccHistogram(TimeChunkedProperty):
         return Mdot_grid[self.store_slice(t_max)]
 
 class BHGalaxy(HaloProperties):
+    @classmethod
     def name(self):
         return "massive_BH_mass", "massive_BH_dist", "massive_BH_mdot", "central_BH_mass", "central_BH_dist", "central_BH_mdot", "bright_BH_mass", "bright_BH_dist", "bright_BH_mdot", "massive_BH_iord", "central_BH_iord", "bright_BH_iord"
 
     def requires_property(self):
         return ['BH']
 
+    @classmethod
     def requires_simdata(self):
         return False
 
+    @classmethod
     def no_proxies(self):
         return True
 
