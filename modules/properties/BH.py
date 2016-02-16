@@ -193,8 +193,8 @@ class BHAccHistogram(TimeChunkedProperty):
         if(mask.sum()==0):
             raise RuntimeError("Can't find BH in .orbit file")
 
-        t_orbit = self.log.vars['time']
-        Mdot_orbit = self.log.vars['mdotmean']
+        t_orbit = self.log.vars['time'][mask]
+        Mdot_orbit = self.log.vars['mdotmean'][mask]
         order = np.argsort(t_orbit)
 
         t_max = properties.timestep.time_gyr
