@@ -708,9 +708,9 @@ class Halo(Base):
         # There are two possible strategies here. If some sort of joined load has been
         # executed, the properties are sitting waiting for us. If not, they are going
         # to be lazy loaded and we want to filter that lazy load.
-        return self._get_data(key)
+        return self.get_data(key)
 
-    def _get_data(self, key, raw=False):
+    def get_data(self, key, raw=False, always_return_array=False):
         return_objs = self._get_object(key)
 
         return_data = []
@@ -724,7 +724,7 @@ class Halo(Base):
                 raise TypeError, "Unknown type of data encountered during internal get_item processing"
             return_data.append(data)
 
-        if len(return_data) == 1:
+        if (not always_return_array) and len(return_data) == 1:
             return_data = return_data[0]
 
         return return_data
