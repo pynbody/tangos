@@ -209,6 +209,22 @@ class BHAccHistogram(TimeChunkedProperty):
         
         return Mdot_grid[self.store_slice(t_max)]
 
+class BH(HaloProperties):
+    def __init__(self, name):
+        self._name = name
+
+    @classmethod
+    def name(cls):
+        return "BH"
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def calculate(self,  halo, existing_properties):
+        return existing_properties["BH"][0].get_or_calculate(self._name)
+
+
 class BHGalaxy(HaloProperties):
     @classmethod
     def name(self):
