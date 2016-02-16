@@ -696,52 +696,71 @@ class Halo(Base):
     def get_or_calculate(self, key):
         return identifiers.get_halo_property_with_magic_strings(self, key)
 
+    def get_x_values_for(self, key):
+        obj = self._get_object(key)
+        if len(obj)>1:
+            raise ValueError, "More than one piece of data with the same key; cannot generate unambiguous x values"
+        if not isinstance(obj[0], HaloProperty):
+            raise TypeError, "No x-values for stored data of type %r"%type(obj[0])
+        return obj[0].x_values()
+
     def __getitem__(self, key):
         # There are two possible strategies here. If some sort of joined load has been
         # executed, the properties are sitting waiting for us. If not, they are going
         # to be lazy loaded and we want to filter that lazy load.
-        return self._get_item(key)
+        return self._get_data(key)
 
-    def _get_item(self, key, raw=False):
+    def _get_data(self, key, raw=False):
+        return_objs = self._get_object(key)
+
+        return_data = []
+
+        for r in return_objs:
+            if isinstance(r, HaloProperty):
+                data = r.data_raw if raw else r.data
+            elif isinstance(r, HaloLink):
+                data = r.halo_to
+            else:
+                raise TypeError, "Unknown type of data encountered during internal get_item processing"
+            return_data.append(data)
+
+        if len(return_data) == 1:
+            return_data = return_data[0]
+
+        return return_data
+
+    def _get_object(self, key):
         session = Session.object_session(self)
         key_id = get_dict_id(key, session=session)
         if 'all_properties' not in sqlalchemy.inspect(self).unloaded:
-            return_vals = self._get_item_cached(key_id, raw)
+            return_objs = self._get_object_cached(key_id)
         else:
-            return_vals = self._get_item_from_session(key_id, session, raw)
+            return_objs = self._get_object_from_session(key_id, session)
+        if len(return_objs) == 0:
+            raise KeyError, "No such property %r" % key
+        return return_objs
 
-        if len(return_vals) ==0:
-            raise KeyError, "No such property %r"%key
-
-        if len(return_vals) == 1:
-            return_vals = return_vals[0]
-
-        return return_vals
-
-    def _get_item_from_session(self, key_id, session, raw=False):
+    def _get_object_from_session(self, key_id, session):
         query_properties = session.query(HaloProperty).filter_by(name_id=key_id, halo_id=self.id,
                                                                  deprecated=False).order_by(HaloProperty.id.desc())
-        if raw:
-            ret_values = [x.data_raw for x in query_properties.all()]
-        else:
-            ret_values = [x.data for x in query_properties.all()]
+
+        ret_values = query_properties.all()
         query_links = session.query(HaloLink).filter_by(relation_id=key_id, halo_from_id=self.id)
         for link in query_links.all():
-            ret_values.append(link.halo_to)
+            ret_values.append(link)
+
         return ret_values
 
-    def _get_item_cached(self, key_id, raw=False):
+    def _get_object_cached(self, key_id):
         return_vals = []
         # we've already got it from the DB, find it locally
         for x in self.all_properties:
             if x.name_id == key_id:
-                if raw:
-                    return_vals.append(x.data_raw)
-                else:
-                    return_vals.append(x.data)
+                return_vals.append(x)
+
         for x in self.all_links:
             if x.relation_id == key_id:
-                return_vals.append(x.halo_to)
+                return_vals.append(x)
 
         return return_vals
 
@@ -1027,12 +1046,15 @@ class HaloProperty(Base):
         else:
             return self.data_raw
 
+    def x_values(self):
+        if not self.data_is_array():
+            raise ValueError, "The data is not an array"
+        return self.name.providing_class().plot_x_values(self.data)
+
     def plot(self, *args, **kwargs):
-        name = self.name
-        data = self.data
-        xdat = np.arange(name.plot_x0(),  name.plot_x0()+name.plot_xdelta()*(len(data)-0.5), name.plot_xdelta())
+        xdat = self.x_values()
         import matplotlib.pyplot as p
-        return p.plot(xdat, data, *args, **kwargs)
+        return p.plot(xdat, self.data, *args, **kwargs)
 
     @data.setter
     def data(self, data):

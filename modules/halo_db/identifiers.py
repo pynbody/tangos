@@ -45,7 +45,7 @@ def get_property_with_live_calculation(halo,pname,raw):
         else:
             prop = X[c.index_of_name(pname)]
     else:
-        prop = halo._get_item(pname,raw)
+        prop = halo._get_data(pname, raw)
 
     return prop
 
