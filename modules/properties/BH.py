@@ -209,6 +209,39 @@ class BHAccHistogram(TimeChunkedProperty):
         
         return Mdot_grid[self.store_slice(t_max)]
 
+class BHAccHistogramMerged(HaloProperties):
+    @classmethod
+    def name(cls):
+        return "BH_mdot_histogram_all"
+
+    @classmethod
+    def no_proxies(self):
+        return True
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    @classmethod
+    def accumulate_on_mergers(cls,array, bh):
+        while bh is not None:
+            if "BH_merger" in bh.keys():
+                for targ_bh in bh.get_data("BH_merger",always_return_array=True):
+                    if targ_bh.timestep.time_gyr < bh.timestep.time_gyr:
+                        try:
+                            accum = targ_bh["BH_mdot_histogram"]
+                            array[:len(accum)][accum==accum]+=accum[accum==accum]
+                        except KeyError:
+                            pass
+                        cls.accumulate_on_mergers(array, targ_bh)
+
+            bh = bh.previous
+
+    def calculate(self,  simdata, bh):
+        mdot = bh['BH_mdot_histogram']
+        self.accumulate_on_mergers(mdot, bh)
+        return mdot
+
 class BH(HaloProperties):
     def __init__(self, name):
         self._name = name
