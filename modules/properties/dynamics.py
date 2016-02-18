@@ -507,7 +507,7 @@ class AngMomEncl(HaloProperties):
         maxrad = delta * (nbins + 1)
 
         pro = pynbody.analysis.profile.Profile(halo.dm, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
-        J_dm_tot = pro['j_enc']
+        J_dm = pro['j_enc']
 
         if len(halo.g) > 10:
             pro = pynbody.analysis.profile.Profile(halo.g, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
@@ -525,7 +525,7 @@ class AngMomEncl(HaloProperties):
         else:
             J_star = None
 
-        return J_dm_tot, J_gas, J_star, J_HI
+        return J_dm, J_gas, J_star, J_HI
 
     def calculate(self,  halo, properties):
         com = properties['SSC']
@@ -539,11 +539,11 @@ class AngMomEncl(HaloProperties):
         halo['vel'] -= vcen
 
         delta = properties.get('delta',0.1)
-        J_dm_tot, J_gas, J_star, J_HI = self.rstat(halo, rad, delta)
+        J_dm, J_gas, J_star, J_HI = self.rstat(halo, rad, delta)
         halo["pos"] += com
         halo['vel'] += vcen
         halo.wrap()
-        return J_dm_tot, J_gas, J_star, J_HI
+        return J_dm, J_gas, J_star, J_HI
 
     @classmethod
     def plot_x0(cls):
