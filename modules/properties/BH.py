@@ -237,7 +237,7 @@ class BHGalaxy(HaloProperties):
 
         return bhmass[indm], offset[indm], mdot[indm], bhmass[indo], offset[indo], mdot[indo], bhmass[indl], offset[indl], mdot[indl], bhiord[indm], bhiord[indo], bhiord[indl]
 
-class BHHostProperties(HaloProperties):
+class BHHosts(HaloProperties):
     def __init__(self, propname):
         self._host_prop = propname
 
@@ -256,3 +256,42 @@ class BHHostProperties(HaloProperties):
             return None
         else:
             return properties.host_halo[self._host_prop]
+
+class BHGal(HaloProperties):
+    def __init__(self, prop, choose='max BH_mass', central=True):
+        choose = choose.split(' ')
+        self._central = central
+        self._maxmin = 'max'
+        self._choicep = choose[-1]
+        if len(choose)==2:
+            self._maxmin = choose[0]
+        self._bhprop = prop
+
+    @classmethod
+    def name(cls):
+        return 'bh'
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def calcualte(self, halo, properties):
+        if properties.halo_type != 0:
+            return None
+        if self._central:
+            bhtype = 'BH_central'
+        else:
+            bhtype = 'BH'
+        if len(properties['BH']) == 0:
+            return None
+        chp = [bh[self._choicep] for bh in properties[bhtype]]
+        data = [bh[self._bhprop] for bh in properties[bhtype]]
+        target = None
+        if self._maxmin == 'min':
+            target = np.argmin(chp)
+        if self._maxmin == 'max':
+            target = np.artmax(chp)
+        if target is None:
+            return None
+
+        return data[target]
