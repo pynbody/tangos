@@ -461,7 +461,7 @@ def j_HI_enc(self):
         jy[i] = jpy/MHIenc
         jz[i] = jpz/MHIenc
 
-    j_HI = np.sqrt(jx**2 + jy**2 + jz**2)
+    j_HI = np.concatenate(([jx],[jy],[jz])).T
 
     return j_HI
 
@@ -479,15 +479,16 @@ def j_enc(self):
     MHIenc = 0
     for i in range(self.nbins):
         subs = self.sim[self.binind[i]]
-        jpx += (subs['j'][:, 0] * subs['mass']).sum()
-        jpy += (subs['j'][:, 1] * subs['mass']).sum()
-        jpz += (subs['j'][:, 2] * subs['mass']).sum()
+        if len(subs) > 0:
+            jpx += (subs['j'][:, 0] * subs['mass']).sum()
+            jpy += (subs['j'][:, 1] * subs['mass']).sum()
+            jpz += (subs['j'][:, 2] * subs['mass']).sum()
 
         jx[i] = jpx/self['mass_enc'][i]
         jy[i] = jpy/self['mass_enc'][i]
         jz[i] = jpz/self['mass_enc'][i]
 
-    j = np.sqrt(jx**2 + jy**2 + jz**2)
+    j = np.concatenate(([jx],[jy],[jz])).T
 
     return j
 
@@ -495,7 +496,7 @@ def j_enc(self):
 class AngMomEncl(HaloProperties):
     @classmethod
     def name(self):
-        return "J_tot_enc", "J_gas_enc", "J_star_enc", "J_HI_enc"
+        return "J_dm_enc", "J_gas_enc", "J_star_enc", "J_HI_enc"
 
     def requires_property(self):
         return ['SSC', 'Rvir']
@@ -505,8 +506,8 @@ class AngMomEncl(HaloProperties):
         nbins = int(maxrad / delta)
         maxrad = delta * (nbins + 1)
 
-        pro = pynbody.analysis.profile.Profile(halo, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
-        J_tot = pro['j_enc']
+        pro = pynbody.analysis.profile.Profile(halo.dm, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+        J_dm_tot = pro['j_enc']
 
         if len(halo.g) > 10:
             pro = pynbody.analysis.profile.Profile(halo.g, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
@@ -514,17 +515,17 @@ class AngMomEncl(HaloProperties):
             J_gas = pro['j_enc']
 
         else:
-            J_HI = np.zeros(nbins)
-            J_gas = np.zeros(nbins)
+            J_HI = None
+            J_gas = None
 
         if len(halo.s) > 10:
             pro = pynbody.analysis.profile.Profile(halo.s, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
             J_star = pro['j_enc']
 
         else:
-            J_star = np.zeros(nbins)
+            J_star = None
 
-        return J_tot, J_gas, J_star, J_HI
+        return J_dm_tot, J_gas, J_star, J_HI
 
     def calculate(self,  halo, properties):
         com = properties['SSC']
@@ -532,18 +533,17 @@ class AngMomEncl(HaloProperties):
         halo["pos"] -= com
         halo.wrap()
         try:
-            vcen = pynbody.analysis.halo.vel_center(halo,cen_size="1 kpc",retcen=True)
-        except ValueError:
-            vcen = pynbody.analysis.halo.vel_center(halo,cen_size="2 kpc",retcen=True)
-
+            vcen = pynbody.analysis.halo.center_of_mass_velocity(halo.dm[pynbody.filt.Sphere('1 kpc')])
+        except:
+            vcen = pynbody.analysis.halo.center_of_mass_velocity(halo.dm[pynbody.filt.Sphere('2 kpc')])
         halo['vel'] -= vcen
 
         delta = properties.get('delta',0.1)
-        J_tot, J_gas, J_star, J_HI = self.rstat(halo, rad, delta)
+        J_dm_tot, J_gas, J_star, J_HI = self.rstat(halo, rad, delta)
         halo["pos"] += com
         halo['vel'] += vcen
         halo.wrap()
-        return J_tot, J_gas, J_star, J_HI
+        return J_dm_tot, J_gas, J_star, J_HI
 
     @classmethod
     def plot_x0(cls):
