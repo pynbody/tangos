@@ -331,7 +331,7 @@ class BHGal(HaloProperties):
             bhtype = 'BH_central'
         else:
             bhtype = 'BH'
-        if len(properties['BH']) == 0:
+        if len(properties[bhtype]) == 0:
             return None
         chp = [bh[self._choicep] for bh in properties[bhtype]]
         data = [bh[self._bhprop] for bh in properties[bhtype]]
