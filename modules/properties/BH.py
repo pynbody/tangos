@@ -332,6 +332,7 @@ class BHGal(HaloProperties):
             return None
         chp = [bh[self._choicep] for bh in properties[bhtype]]
         data = [bh[self._bhprop] for bh in properties[bhtype]]
+        print chp, data
         target = None
         if self._maxmin == 'min':
             target = np.argmin(chp)
