@@ -322,6 +322,7 @@ class BHGal(HaloProperties):
         return False
 
     def calcualte(self, halo, properties):
+        print self._central, self._maxmin, self._choicep, self._bhprop
         if properties.halo_type != 0:
             return None
         if self._central:
@@ -329,6 +330,7 @@ class BHGal(HaloProperties):
         else:
             bhtype = 'BH'
         if len(properties[bhtype]) == 0:
+            print 'uh oh'
             return None
         chp = [bh[self._choicep] for bh in properties[bhtype]]
         data = [bh[self._bhprop] for bh in properties[bhtype]]
