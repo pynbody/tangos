@@ -248,7 +248,7 @@ class BH(HaloProperties):
 
     @classmethod
     def name(cls):
-        return "BH"
+        return "BHs"
 
     @classmethod
     def requires_simdata(self):
