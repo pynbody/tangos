@@ -109,7 +109,7 @@ if __name__ == "__main__":
                     print "res from ",i
                     try:
                         res = int(
-                            re.findall("([0-9][0-9][0-9]+)(g|.0|.tip)", i.split("/")[-1])[0][0])
+                            re.findall("([0-9][0-9][0-9]+)(g|.0|.tip|.c)", i.split("/")[-1])[0][0])
                     except (IndexError, ValueError):
                         if res is None:
                             raise RuntimeError, "Cannot work out run resolution from filename"

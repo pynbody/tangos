@@ -12,6 +12,12 @@ class HaloProperties(object):
         return []
 
     @classmethod
+    def plot_x_values(cls, for_data):
+        """Return a suitable array of x values to match the
+        given y values"""
+        return np.arange(cls.plot_x0(),  cls.plot_x0()+cls.plot_xdelta()*(len(for_data)-0.5), cls.plot_xdelta())
+
+    @classmethod
     def requires_simdata(self):
         """If this returns false, the class can do its
         calculation without any raw simulation data loaded

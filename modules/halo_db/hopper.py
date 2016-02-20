@@ -193,12 +193,12 @@ class MultiHopStrategy(HopStrategy):
     def link_ids(self):
         """Return the links for the possible hops, in the form of a list of HaloLink IDs for
         each path"""
-
+        raise NotImplementedError
         return [[int(y) for y in x.links.split(",")] for x in self._get_query_all()]
 
     def node_ids(self):
         """Return the nodes, i.e. halo IDs visited, for each path"""
-
+        raise NotImplementedError
         return [[int(y) for y in x.nodes.split(",")] for x in self._get_query_all()]
 
     def nodes(self):
@@ -354,7 +354,7 @@ class MultiHopStrategy(HopStrategy):
                 self.session.query(
                                    core.HaloLink.halo_from_id,
                                    core.HaloLink.halo_to_id.label("halo_to_id"),
-                                   sqlalchemy.func.sum(self._table.c.weight*core.HaloLink.weight),
+                                   sqlalchemy.func.max(self._table.c.weight*core.HaloLink.weight),
                                    (self._table.c.nhops + 1).label("nhops"),
                                    sqlalchemy.func.group_concat(links,"+"),
                                    sqlalchemy.func.group_concat(nodes,"+")).filter(and_(

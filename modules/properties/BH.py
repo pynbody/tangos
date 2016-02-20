@@ -193,8 +193,8 @@ class BHAccHistogram(TimeChunkedProperty):
         if(mask.sum()==0):
             raise RuntimeError("Can't find BH in .orbit file")
 
-        t_orbit = self.log.vars['time']
-        Mdot_orbit = self.log.vars['mdotmean']
+        t_orbit = self.log.vars['time'][mask]
+        Mdot_orbit = self.log.vars['mdotmean'][mask]
         order = np.argsort(t_orbit)
 
         t_max = properties.timestep.time_gyr
@@ -208,6 +208,55 @@ class BHAccHistogram(TimeChunkedProperty):
         #print Mdot_grid
         
         return Mdot_grid[self.store_slice(t_max)]
+
+class BHAccHistogramMerged(HaloProperties):
+    @classmethod
+    def name(cls):
+        return "BH_mdot_histogram_all"
+
+    @classmethod
+    def no_proxies(self):
+        return True
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    @classmethod
+    def accumulate_on_mergers(cls,array, bh):
+        while bh is not None:
+            if "BH_merger" in bh.keys():
+                for targ_bh in bh.get_data("BH_merger",always_return_array=True):
+                    if targ_bh.timestep.time_gyr < bh.timestep.time_gyr:
+                        try:
+                            accum = targ_bh["BH_mdot_histogram"]
+                            array[:len(accum)][accum==accum]+=accum[accum==accum]
+                        except KeyError:
+                            pass
+                        cls.accumulate_on_mergers(array, targ_bh)
+
+            bh = bh.previous
+
+    def calculate(self,  simdata, bh):
+        mdot = bh['BH_mdot_histogram']
+        self.accumulate_on_mergers(mdot, bh)
+        return mdot
+
+class BH(HaloProperties):
+    def __init__(self, name):
+        self._name = name
+
+    @classmethod
+    def name(cls):
+        return "BH"
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def calculate(self,  halo, existing_properties):
+        return existing_properties["BH"][0].get_or_calculate(self._name)
+
 
 class BHGalaxy(HaloProperties):
     @classmethod

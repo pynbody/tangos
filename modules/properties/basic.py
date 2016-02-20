@@ -192,6 +192,18 @@ class HaloVvir(HaloProperties):
         _G = 4.33227e-6
         return math.sqrt(_G * properties["Mvir"] / properties["Rvir"])
 
+class HaloMDM(HaloProperties):
+    @classmethod
+    def name(cls):
+        return "MDM"
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def calculate(self, halo, properties):
+        return properties['Mvir']-properties['Mbar']
+
 
 class HaloRmax(HaloProperties):
 

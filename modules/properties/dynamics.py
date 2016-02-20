@@ -319,7 +319,7 @@ class JofE(HaloProperties):
 
 class JofEStars(JofE):
     @classmethod
-    def name(self):
+    def name(cls):
         return ["st_"+x for x in JofE.name()]
 
     def calculate(self, halo, existing_properties):
