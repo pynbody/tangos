@@ -321,7 +321,7 @@ class BHGal(HaloProperties):
     def requires_simdata(self):
         return False
 
-    def calcualte(self, halo, properties):
+    def calculate(self, halo, properties):
         print self._central, self._maxmin, self._choicep, self._bhprop
         if properties.halo_type != 0:
             return None
