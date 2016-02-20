@@ -242,22 +242,6 @@ class BHAccHistogramMerged(HaloProperties):
         self.accumulate_on_mergers(mdot, bh)
         return mdot
 
-class BH(HaloProperties):
-    def __init__(self, name):
-        self._name = name
-
-    @classmethod
-    def name(cls):
-        return "BH"
-
-    @classmethod
-    def requires_simdata(self):
-        return False
-
-    def calculate(self,  halo, existing_properties):
-        return existing_properties["BH"][0].get_or_calculate(self._name)
-
-
 class BHGalaxy(HaloProperties):
     @classmethod
     def name(self):
@@ -307,14 +291,11 @@ class BHHosts(HaloProperties):
             return properties.host_halo[self._host_prop]
 
 class BHGal(HaloProperties):
-    def __init__(self, prop, choose='max BH_mass', central=True):
-        choose = choose.split(' ')
-        self._central = central
-        self._maxmin = 'max'
-        self._choicep = choose[-1]
-        if len(choose)==2:
-            self._maxmin = choose[0]
+    def __init__(self, prop, choose='BH_mass', minmax='max', bhtype='BH_central'):
+        self._maxmin = minmax
+        self._choicep = choose
         self._bhprop = prop
+        self._bhtype = bhtype
 
     @classmethod
     def name(cls):
@@ -324,23 +305,23 @@ class BHGal(HaloProperties):
     def requires_simdata(self):
         return False
 
-    def calcualte(self, halo, properties):
+    def calculate(self, halo, properties):
         if properties.halo_type != 0:
             return None
-        if self._central:
-            bhtype = 'BH_central'
-        else:
-            bhtype = 'BH'
-        if len(properties['BH']) == 0:
-            return None
-        chp = [bh[self._choicep] for bh in properties[bhtype]]
-        data = [bh[self._bhprop] for bh in properties[bhtype]]
-        target = None
-        if self._maxmin == 'min':
-            target = np.argmin(chp)
-        if self._maxmin == 'max':
-            target = np.artmax(chp)
-        if target is None:
+
+        if self._bhtype not in properties.keys():
             return None
 
-        return data[target]
+        if type(properties[self._bhtype]) is list:
+            chp = [bh.get_or_calculate(self._choicep) for bh in properties[self._bhtype]]
+            data = [bh.get_or_calculate(self._bhprop) for bh in properties[self._bhtype]]
+            target = None
+            if self._maxmin == 'min':
+                target = np.argmin(chp)
+            if self._maxmin == 'max':
+                target = np.argmax(chp)
+            if target is None:
+                return None
+            return data[target]
+        else:
+            return properties[self._bhtype].get_or_calculate(self._bhprop)
