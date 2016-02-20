@@ -283,6 +283,7 @@ class BHHosts(HaloProperties):
         return False
 
     def calculate(self, halo, properties):
+        print "here!"
         if properties.halo_type != 1:
             return None
         if properties.host_halo is None:
