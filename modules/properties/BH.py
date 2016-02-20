@@ -307,7 +307,7 @@ class BHHosts(HaloProperties):
             return properties.host_halo[self._host_prop]
 
 class BHGal(HaloProperties):
-    def __init__(self, prop, choose='BH_mass', central=True, minmax='max'):
+    def __init__(self, prop, choose='BH_mass', minmax='max', central=True):
         self._central = central
         self._maxmin = minmax
         self._choicep = choose
@@ -322,7 +322,6 @@ class BHGal(HaloProperties):
         return False
 
     def calculate(self, halo, properties):
-        print self._central, self._maxmin, self._choicep, self._bhprop
         if properties.halo_type != 0:
             return None
         if self._central:
