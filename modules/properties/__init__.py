@@ -282,6 +282,7 @@ def providing_class(property_name, silent_fail=False):
         elif name.lower() == property_name:
             return c
     if silent_fail:
+        print 'silent'
         return None
     raise NameError, "No providing class for property " + property_name
 
