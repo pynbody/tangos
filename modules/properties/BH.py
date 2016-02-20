@@ -307,9 +307,9 @@ class BHHosts(HaloProperties):
             return properties.host_halo[self._host_prop]
 
 class BHGal(HaloProperties):
-    def __init__(self, prop, choose='BH_mass', central=True, type='max'):
+    def __init__(self, prop, choose='BH_mass', central=True, minmax='max'):
         self._central = central
-        self._maxmin = type
+        self._maxmin = minmax
         self._choicep = choose
         self._bhprop = prop
 
@@ -332,8 +332,8 @@ class BHGal(HaloProperties):
         if bhtype not in properties.keys():
             return None
         if type(properties[bhtype]) is list:
-            chp = [bh[self._choicep] for bh in properties[bhtype]]
-            data = [bh[self._bhprop] for bh in properties[bhtype]]
+            chp = [bh.get_or_calculate(self._choicep) for bh in properties[bhtype]]
+            data = [bh.get_or_calculate(self._bhprop) for bh in properties[bhtype]]
             target = None
             if self._maxmin == 'min':
                 target = np.argmin(chp)
@@ -343,4 +343,4 @@ class BHGal(HaloProperties):
                 return None
             return data[target]
         else:
-            return properties['bhtype'][self._bhprop]
+            return properties[bhtype].get_or_calculate(self._bhprop)
