@@ -577,7 +577,7 @@ class TimeStep(Base):
 
         filt = lambda x: True
         allow_none = False
-        htype=None
+        host=False
 
         if kwargs.has_key("filt"):
             filt = kwargs["filt"]
@@ -585,8 +585,8 @@ class TimeStep(Base):
         if kwargs.has_key("allow_none"):
             allow_none = kwargs["allow_none"]
 
-        if kwargs.has_key("htype"):
-            htype=kwargs["htype"]
+        if kwargs.has_key("host"):
+            host=kwargs["host"]
 
         verbose = kwargs.get("verbose", False)
 
@@ -603,8 +603,11 @@ class TimeStep(Base):
                   ).all()
         print "Db query took %.1fs"%(time.time()-start)
         for h in halos:
-            if htype is not None:
-                if h.halo_type != htype:
+            if host is True:
+                if h.halo_type != 1:
+                    continue
+                h = h.host_halo
+                if h is None:
                     continue
             try:
                 if filt(h):
