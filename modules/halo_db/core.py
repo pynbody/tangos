@@ -577,12 +577,16 @@ class TimeStep(Base):
 
         filt = lambda x: True
         allow_none = False
+        htype=None
 
         if kwargs.has_key("filt"):
             filt = kwargs["filt"]
 
         if kwargs.has_key("allow_none"):
             allow_none = kwargs["allow_none"]
+
+        if kwargs.has_key("htype"):
+            htype=kwargs["htype"]
 
         verbose = kwargs.get("verbose", False)
 
@@ -599,6 +603,9 @@ class TimeStep(Base):
                   ).all()
         print "Db query took %.1fs"%(time.time()-start)
         for h in halos:
+            if htype is not None:
+                if h.halo_type != htype:
+                    continue
             try:
                 if filt(h):
                     res = [identifiers.get_halo_property_with_magic_strings(h, p) for p in plist]
