@@ -247,8 +247,7 @@ class SimsController(BaseController):
         recurse = halo.id not in visited
         visited.append(halo.id)
 
-        rl = db.hopper.HopStrategy(halo)
-        rl.target_timestep(halo.timestep.previous)
+        rl = db.hopper.HopStrategy(halo,target=halo.timestep.previous)
 
         rl, weights = rl.all_and_weights()
 
