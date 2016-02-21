@@ -32,9 +32,14 @@ def get_halo_property_if_special_name(halo,pname):
 
 def get_property_with_live_calculation(halo,pname,raw):
     prop = None
+    live_calculate=False
     if pname[0] == ":":
-        # live calculate
+        live_calculate = True
         pname = pname[1:]
+    elif "(" in pname:
+        live_calculate=True
+
+    if live_calculate:
         import properties
         c = properties.instantiate_classes([pname])[0]
         assert not c.requires_simdata()

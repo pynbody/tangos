@@ -2,6 +2,7 @@ import numpy as np
 import math
 import time
 import inspect
+import pyparsing as pp
 
 
 class HaloProperties(object):
@@ -308,20 +309,42 @@ def _make_numeric_if_possible(s):
         except ValueError:
             return s
 
+def _process_numerical_value(s,l,t):
+    if "." in t[0] or "e" in t[0] or "E" in t[0]:
+        return float(t[0])
+    else:
+        return int(t[0])
+
+def _parse_property_name(name):
+    property_name = pp.Word(pp.alphanums+"_")
+    property_name_with_params = pp.Forward()
+    numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]\d+)?').setParseAction(_process_numerical_value)
+    value_or_property_name = pp.Group(numerical_value | property_name_with_params)
+    parameters = pp.Literal("(").suppress()+pp.Optional(value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name))+pp.Literal(")").suppress()
+    property_name_with_params << property_name+pp.Optional(parameters)
+    property_complete = pp.stringStart()+property_name_with_params+pp.stringEnd()
+    return property_complete.parseString(name)
+
+def _regenerate_name(parsed):
+    if not isinstance(parsed[0],str):
+        return parsed[0]
+    name = parsed[0]
+    if len(parsed)>1:
+        name+="("
+        name+=_regenerate_name(parsed[1])
+        for other in parsed[2:]:
+            name+=","+_regenerate_name(other)
+        name+=")"
+    return name
+
 def instantiate_classes(property_name_list, silent_fail=False):
     instances = []
     classes = []
-    for property_name in property_name_list:
-        cl = providing_class(property_name, silent_fail)
+    for property_identifier in property_name_list:
+        property_parsed = _parse_property_name(property_identifier)
+        cl = providing_class(property_parsed[0], silent_fail)
         if cl not in classes and cl != None:
-            if "(" in property_name:
-                args = property_name.split("(")[1][:-1]
-                assert ")" not in args
-                vals = args.split(",")
-                vals = [_make_numeric_if_possible(v) for v in vals]
-            else:
-                vals = []
-
+            vals = [_regenerate_name(x) for x in property_parsed[1:]]
             instances.append(cl(*vals))
             classes.append(cl)
 
