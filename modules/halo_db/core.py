@@ -578,6 +578,7 @@ class TimeStep(Base):
         filt = lambda x: True
         allow_none = False
         host=False
+        htype=None
 
         if kwargs.has_key("filt"):
             filt = kwargs["filt"]
@@ -587,6 +588,9 @@ class TimeStep(Base):
 
         if kwargs.has_key("host"):
             host=kwargs["host"]
+
+        if kwargs.has_key("htype"):
+            htype=kwargs['htype']
 
         verbose = kwargs.get("verbose", False)
 
@@ -608,6 +612,9 @@ class TimeStep(Base):
                     continue
                 h = h.host_halo
                 if h is None:
+                    continue
+            if htype is not None:
+                if h.halo_type != htype:
                     continue
             try:
                 if filt(h):
