@@ -45,14 +45,7 @@ def get_property_with_live_calculation(halo,pname,raw):
         else:
             prop = X[c.index_of_name(pname)]
     else:
-        if pname.startswith('host_'):
-            pname = pname.split('_')[1]
-            if halo.halo_type == 1 and halo.host_halo is not None:
-                prop = halo.host_halo.get_data(pname,raw)
-            else:
-                prop = None
-        else:
-            prop = halo.get_data(pname, raw)
+        prop = halo.get_data(pname, raw)
 
     return prop
 
