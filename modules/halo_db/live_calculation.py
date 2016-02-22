@@ -27,6 +27,7 @@ class FixedInputDescription(CalculationDescription):
     def values(self, halos):
         return [self.value]*len(halos)
 
+
 class FixedNumericInputDescription(FixedInputDescription):
     @staticmethod
     def _process_numerical_value(t):
@@ -92,7 +93,7 @@ class StoredPropertyDescription(CalculationDescription):
 
 
 def parse_property_name( name):
-    property_name = pp.Word(pp.alphanums+"_")
+    property_name = pp.Word(pp.alphas,pp.alphanums+"_")
     stored_property = property_name.setParseAction(StoredPropertyDescription)
     live_calculation_property = pp.Forward().setParseAction(LivePropertyDescription)
 
