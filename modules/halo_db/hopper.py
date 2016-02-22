@@ -180,6 +180,8 @@ class MultiHopStrategy(HopStrategy):
         self.nhops_max = nhops_max
         self.directed = directed
         self.session =  Session.object_session(halo_from)
+        assert isinstance(self.session, Session)
+        self.connection = self.session.connection()
         self._combine_routes = combine_routes
 
         with self._manage_temp_table():
@@ -251,10 +253,11 @@ class MultiHopStrategy(HopStrategy):
 
 
     def _delete_temp_table(self):
-        self._table.drop(checkfirst=True,bind=core.engine)
-        self._prelim_table.drop(checkfirst=True,bind=core.engine)
+        self._table.drop(checkfirst=True,bind=self.connection)
+        self._prelim_table.drop(checkfirst=True,bind=self.connection)
         core.Base.metadata.remove(self._table)
         core.Base.metadata.remove(self._prelim_table)
+
         """
         print
         print "END"
@@ -262,18 +265,18 @@ class MultiHopStrategy(HopStrategy):
         logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
         """
 
+
     def _create_temp_table(self):
+
         """
         logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
         print
         print "START", self.directed
         print
         """
-        rstr = ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
 
-        # ideally this would be a temporary table but for some reason can't get
-        # this to work with sqlalchemy, so name it something unique and make sure
-        # it gets dropped later
+        rstr = ''.join(random.choice(string.ascii_lowercase) for _ in range(4))
+
         multi_hop_link_table = Table(
             'multihoplink_final_'+rstr,
             core.Base.metadata,
@@ -283,7 +286,8 @@ class MultiHopStrategy(HopStrategy):
             Column('weight',Float),
             Column('nhops',Integer),
             Column('links',String),
-            Column('nodes',String)
+            Column('nodes',String),
+            prefixes = ['TEMPORARY']
         )
 
         multi_hop_link_prelim_table = Table(
@@ -295,19 +299,22 @@ class MultiHopStrategy(HopStrategy):
             Column('weight',Float),
             Column('nhops',Integer),
             Column('links',String),
-            Column('nodes',String)
+            Column('nodes',String),
+            prefixes = ['TEMPORARY']
         )
 
         self._table = multi_hop_link_table
         self._prelim_table = multi_hop_link_prelim_table
-        self._table.create(checkfirst=True,bind=core.engine)
-        self._prelim_table.create(checkfirst=True,bind=core.engine)
+        self._table.create(checkfirst=True,bind=self.connection)
+        self._prelim_table.create(checkfirst=True,bind=self.connection)
+
 
     @contextlib.contextmanager
     def _manage_temp_table(self):
         self._create_temp_table()
         yield
         self._delete_temp_table()
+
 
     def _seed_temp_table(self):
         links = sqlalchemy.cast(core.HaloLink.id,sqlalchemy.String)
@@ -327,7 +334,7 @@ class MultiHopStrategy(HopStrategy):
 
         startpoint_query = self._supplement_halolink_query_with_filter(startpoint_query)
 
-        core.engine.execute(self._table.insert().from_select(['halo_from_id','halo_to_id','weight','nhops','links','nodes'],
+        self.connection.execute(self._table.insert().from_select(['halo_from_id','halo_to_id','weight','nhops','links','nodes'],
                                          startpoint_query))
 
     def _make_hops(self):
@@ -378,7 +385,7 @@ class MultiHopStrategy(HopStrategy):
         insert = self._prelim_table.insert().from_select(['halo_from_id','halo_to_id','weight','nhops','links','nodes'],
                                                 recursion_query)
 
-        core.engine.execute(insert)
+        self.connection.execute(insert)
 
     def _filter_prelim_links_into_final(self):
 
@@ -392,8 +399,8 @@ class MultiHopStrategy(HopStrategy):
         q = self._supplement_halolink_query_with_filter(q, self._prelim_table)
 
 
-        core.engine.execute(self._table.insert().from_select(['halo_from_id','halo_to_id','weight','nhops','links','nodes'],q))
-        core.engine.execute(self._prelim_table.delete())
+        self.connection.execute(self._table.insert().from_select(['halo_from_id','halo_to_id','weight','nhops','links','nodes'],q))
+        self.connection.execute(self._prelim_table.delete())
 
 
 

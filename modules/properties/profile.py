@@ -300,8 +300,11 @@ class AtPosition(HaloProperties):
     def calculate(self,  halo, existing_properties):
         x0 = self._cl.plot_x0()
         delta_x = self._cl.plot_xdelta()
-        pos = existing_properties[self._pos_name]
-        ar = existing_properties[self._name]
+        if isinstance(self._pos_name, float):
+            pos = self._pos_name
+        else:
+            pos = existing_properties[self._pos_name]
+        ar = existing_properties.get_or_calculate(self._name)
 
         # linear interpolation
         i0 = int((pos-x0)/delta_x)
@@ -311,6 +314,22 @@ class AtPosition(HaloProperties):
         i1_weight = (pos-i0_loc)/delta_x
         i0_weight = 1.0-i1_weight
         return ar[i0]*i0_weight + ar[i1]*i1_weight
+
+
+class AbsProperty(HaloProperties):
+    def __init__(self, name):
+        self._name = name
+
+    @classmethod
+    def name(self):
+        return "abs"
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def calculate(self, halo, properties):
+        return np.linalg.norm(properties.get_or_calculate(self._name), axis=1)
 
 
 
