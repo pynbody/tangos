@@ -1,5 +1,6 @@
 from . import core
 from sqlalchemy import Column, Table, String, Integer, Float, ForeignKey
+import sqlalchemy
 import random
 import string
 import contextlib
@@ -32,10 +33,13 @@ def _delete_temp_halolist(table):
 
 def _insert_into_temp_halolist(table, ids):
     connection = _get_connection_for(table)
-    connection.execute(
-        table.insert(),
-        *[{'halo_id': id} for id in ids]
-    )
+    if isinstance(ids, sqlalchemy.orm.query.Query):
+        connection.execute(table.insert().from_select(['halo_id'], ids))
+    else:
+        connection.execute(
+            table.insert(),
+            *[{'halo_id': id} for id in ids]
+        )
 
 def _get_session_for(table):
     global _temp_sessions
@@ -54,10 +58,12 @@ def halolink_query(table):
     return session.query(core.HaloLink).select_from(table).join(core.HaloLink, core.HaloLink.halo_from_id==table.c.halo_id)
 
 @contextlib.contextmanager
-def temporary_halolist_table(session, ids=None):
+def temporary_halolist_table(session, ids=None, callback=None):
 
     table = _create_temp_halolist(session)
     if ids is not None:
         _insert_into_temp_halolist(table, ids)
     yield table
     _delete_temp_halolist(table)
+    if callback is None:
+        callback()

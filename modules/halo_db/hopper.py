@@ -23,15 +23,13 @@ class HopStrategy(object):
         query = halo_from.links
         assert isinstance(halo_from, core.Halo)
         assert isinstance(query, sqlalchemy.orm.query.Query)
+        self.session =  Session.object_session(halo_from)
         self.halo_from = halo_from
         self._initialise_order_by(order_by)
-
         self.query = query
         self._link_orm_class = core.HaloLink
-        if target is not None:
-            self._target(target)
-
-        self._execute_query()
+        self._target = target
+        self._all = None
 
     def _target_timestep(self, ts):
         """Only return those hops which reach the specified timestep"""
@@ -44,9 +42,11 @@ class HopStrategy(object):
         """Only return those hops which reach the specified simulation"""
         self.query = self.query.join("halo_to","timestep").filter(core.TimeStep.simulation_id==sim.id)
 
-    def _target(self, db_obj):
+    def _filter_query_for_target(self, db_obj):
         """Only return those hops which reach the specifid simulation or timestep"""
-        if isinstance(db_obj, core.TimeStep):
+        if db_obj is None:
+            return
+        elif isinstance(db_obj, core.TimeStep):
             self._target_timestep(db_obj)
         elif isinstance(db_obj, core.Simulation):
             self._target_simulation(db_obj)
@@ -77,8 +77,8 @@ class HopStrategy(object):
         return len(self._get_query_all())
 
     def _execute_query(self):
-
         try:
+            self._filter_query_for_target(self._target)
             results = self._query_ordered.all()
         except sqlalchemy.exc.ResourceClosedError:
             results = []
@@ -89,7 +89,14 @@ class HopStrategy(object):
 
 
     def _get_query_all(self):
+        if self._all is None:
+            self._execute_query()
         return self._all
+
+    def temp_table(self):
+        import temporary_halolist
+        # N.B. this could be made more efficient
+        return temporary_halolist.temporary_halolist_table(self.session, [x.id for x in self.all()])
 
     def all(self):
         """Return all possible hops matching the conditions"""
@@ -169,28 +176,57 @@ class HopMajorProgenitorStrategy(HopStrategy):
             self._all = []
 
 
-
-
 class MultiHopStrategy(HopStrategy):
     """An extension of the HopStrategy class that takes multiple hops across
     HaloLinks, up to a specified maximum, before finding the target halo."""
+
+    halo_old = sqlalchemy.orm.aliased(core.Halo,name="halo_old")
+    halo_new = sqlalchemy.orm.aliased(core.Halo,name="halo_new")
+    timestep_old = sqlalchemy.orm.aliased(core.TimeStep,name="timestep_old")
+    timestep_new = sqlalchemy.orm.aliased(core.TimeStep,name="timestep_new")
 
     def __init__(self, halo_from, nhops_max, directed=None, target=None, order_by=None, combine_routes=True):
         super(MultiHopStrategy,self).__init__(halo_from,target,order_by)
         self.nhops_max = nhops_max
         self.directed = directed
-        self.session =  Session.object_session(halo_from)
         assert isinstance(self.session, Session)
         self.connection = self.session.connection()
         self._combine_routes = combine_routes
 
+
+
+
+    def temp_table(self):
+        import temporary_halolist
+        tt = self._manage_temp_table()
+        tt.__enter__()
+        try:
+            self._prepare_query()
+        except:
+            tt.__exit__()
+            raise
+        thl = temporary_halolist.temporary_halolist_table(self.session,
+                                                          self._query_ordered.from_self(
+                                                                  self._link_orm_class.halo_to_id),
+                                                          callback=lambda : tt.__exit__(None, None, None)
+                                                          )
+        return thl
+
+    def _prepare_query(self):
+        self._seed_temp_table()
+        self._make_hops()
+        self._generate_query()
+        self._filter_query_for_target(self._target)
+
+    def _execute_query(self):
         with self._manage_temp_table():
-            self._seed_temp_table()
-            self._make_hops()
-            self._generate_query()
-            if target is not None:
-                self._target(target)
-            self._execute_query()
+            self._prepare_query()
+            try:
+                results = self._query_ordered.all()
+            except sqlalchemy.exc.ResourceClosedError:
+                results = []
+
+        self._all = results
 
     def link_ids(self):
         """Return the links for the possible hops, in the form of a list of HaloLink IDs for
@@ -215,18 +251,15 @@ class MultiHopStrategy(HopStrategy):
             if table is None:
                 table = core.HaloLink.__table__
 
-            halo_old = sqlalchemy.orm.aliased(core.Halo,name="halo_old")
-            halo_new = sqlalchemy.orm.aliased(core.Halo,name="halo_new")
-            timestep_old = sqlalchemy.orm.aliased(core.TimeStep,name="timestep_old")
-            timestep_new = sqlalchemy.orm.aliased(core.TimeStep,name="timestep_new")
 
-            filter = self._generate_link_filter(timestep_old, timestep_new)
+
+            filter = self._generate_link_filter(self.timestep_old, self.timestep_new)
 
             query = query. \
-                join(halo_old, table.c.halo_from_id==halo_old.id). \
-                join(halo_new, table.c.halo_to_id==halo_new.id). \
-                join(timestep_old, halo_old.timestep). \
-                join(timestep_new, halo_new.timestep). \
+                join(self.halo_old, table.c.halo_from_id==self.halo_old.id). \
+                join(self.halo_new, table.c.halo_to_id==self.halo_new.id). \
+                join(self.timestep_old, self.halo_old.timestep). \
+                join(self.timestep_new, self.halo_new.timestep). \
                 filter(filter)
 
 
@@ -339,7 +372,9 @@ class MultiHopStrategy(HopStrategy):
 
     def _make_hops(self):
         for i in xrange(1,self.nhops_max):
-            self._generate_next_level_prelim_links(i-1)
+            generated_count = self._generate_next_level_prelim_links(i-1)
+            if generated_count==0:
+                break
             self._filter_prelim_links_into_final()
 
     def _generate_next_level_prelim_links(self,from_nhops=0):
@@ -385,7 +420,8 @@ class MultiHopStrategy(HopStrategy):
         insert = self._prelim_table.insert().from_select(['halo_from_id','halo_to_id','weight','nhops','links','nodes'],
                                                 recursion_query)
 
-        self.connection.execute(insert)
+        result = self.connection.execute(insert)
+        return result.rowcount
 
     def _filter_prelim_links_into_final(self):
 
@@ -403,9 +439,6 @@ class MultiHopStrategy(HopStrategy):
         self.connection.execute(self._prelim_table.delete())
 
 
-
-
-
     def _generate_query(self):
 
         class MultiHopHaloLink(core.Base):
@@ -415,8 +448,6 @@ class MultiHopStrategy(HopStrategy):
 
         self._link_orm_class = MultiHopHaloLink
 
-
-
         self.query = self.session.query(MultiHopHaloLink)
 
 
@@ -425,3 +456,31 @@ class MultiHopStrategy(HopStrategy):
             return self._link_orm_class.c.nhops
         else:
             return super(MultiHopStrategy,self)._generate_order_arg_from_name(name)
+
+
+
+class MultiHopMajorProgenitorsStrategy(MultiHopStrategy):
+    """A hop strategy that suggests the major progenitor for a halo at every step"""
+    def __init__(self, halo_from, nhops_max=100):
+        self.sim_id = halo_from.timestep.simulation_id
+        super(MultiHopMajorProgenitorsStrategy,self).__init__(halo_from, nhops_max,
+                                                             directed='backwards')
+
+    def _supplement_halolink_query_with_filter(self, query, table=None):
+        query = super(MultiHopMajorProgenitorsStrategy,self)._supplement_halolink_query_with_filter(query, table)
+        return query.filter(self.timestep_new.simulation_id==self.sim_id).\
+            order_by(self.timestep_new.time_gyr.desc(), self.halo_new.halo_number).\
+            limit(1)
+
+class MultiHopMajorDescendantsStrategy(MultiHopStrategy):
+    """A hop strategy that suggests the major descendant for a halo at every step"""
+    def __init__(self, halo_from, nhops_max=100):
+        self.sim_id = halo_from.timestep.simulation_id
+        super(MultiHopMajorDescendantsStrategy,self).__init__(halo_from, nhops_max,
+                                                             directed='forwards')
+
+    def _supplement_halolink_query_with_filter(self, query, table=None):
+        query = super(MultiHopMajorDescendantsStrategy,self)._supplement_halolink_query_with_filter(query, table)
+        return query.filter(self.timestep_new.simulation_id==self.sim_id).\
+            order_by(self.timestep_new.time_gyr, self.halo_new.halo_number).\
+            limit(1)

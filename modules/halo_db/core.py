@@ -11,7 +11,6 @@ from sqlalchemy import and_
 from sqlalchemy.orm.session import Session
 
 import data_attribute_mapper
-import live_calculation
 import config
 import time
 import properties
@@ -181,6 +180,7 @@ class Simulation(Base):
         propobj = self.properties.filter_by(name_id=name.id).first()
         if propobj is None:
             propobj = session.merge(SimulationProperty(self, name, data))
+
         propobj.data = data
         session.commit()
 
@@ -209,6 +209,7 @@ class SimulationProperty(Base):
     data_time = Column(DateTime)
     data_string = Column(String)
     data_array = Column(LargeBinary)
+
 
     def __init__(self, sim, name, data):
         self.simulation = sim
@@ -887,6 +888,14 @@ class Halo(Base):
         find_next  = kwargs.get('find_next','next')
         raw = kwargs.get('raw',False)
         output = []
+
+        session = Session.object_session(self)
+        targets = [get_dict_id(k,session) for k in keys]
+
+        from . import hopper
+        hopper.MajorDescendantStrategy(self)
+
+
         for key in keys:
             try:
                 output.append([identifiers.get_halo_property_with_magic_strings(self,key,raw)])
