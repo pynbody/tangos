@@ -2,6 +2,7 @@ __author__ = 'app'
 
 import halo_db as db
 import halo_db.hopper as hopper
+import halo_db.temporary_halolist as thl
 import os
 import sqlalchemy, sqlalchemy.orm
 
@@ -177,3 +178,10 @@ def test_twostep_direction():
     assert db.get_item("sim/ts1") in timesteps
     assert db.get_item("sim/ts2") not in timesteps
     assert db.get_item("sim/ts3") not in timesteps
+
+def test_results_as_temptable():
+    standard_results = hopper.MultiHopStrategy(db.get_item("sim/ts2/1"),2,'backwards').all()
+    with hopper.MultiHopStrategy(db.get_item("sim/ts2/1"),2,'backwards').temp_table() as table:
+        thl_results = thl.halo_query(table).all()
+
+    assert standard_results==thl_results
