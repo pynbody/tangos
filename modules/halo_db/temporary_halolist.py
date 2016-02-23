@@ -10,7 +10,10 @@ _temp_sessions = {}
 def _create_temp_halolist(session):
     global _temp_sessions
 
-    connection = session.connection()
+    if hasattr(session, 'connection'):
+        connection = session.connection()
+    else:
+        connection = session
     rstr = ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
     halolist_table = Table(
             'halolist_'+rstr,
@@ -65,5 +68,5 @@ def temporary_halolist_table(session, ids=None, callback=None):
         _insert_into_temp_halolist(table, ids)
     yield table
     _delete_temp_halolist(table)
-    if callback is None:
+    if callback is not None:
         callback()

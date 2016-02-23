@@ -1,12 +1,13 @@
 import numpy as np
 import re
-
-import core
+import warnings
 import hopper
 import pyparsing as pp
 import properties
+from . import core
+from . import temporary_halolist as thl
+from sqlalchemy.orm import contains_eager, aliased
 
-from sqlalchemy.orm import contains_eager
 
 class CalculationDescription(object):
     def __repr__(self):
@@ -16,18 +17,23 @@ class CalculationDescription(object):
         return set()
 
     def retrieves_dict_ids(self):
-        return [core.get_dict_id(r) for r in self.retrieves()]
+        if not hasattr(self, "_r_dict_ids_cached"):
+            self._r_dict_ids_cached = [core.get_dict_id(r) for r in self.retrieves()]
+        return self._r_dict_ids_cached
+
+    def _has_required_properties(self, halo):
+        prop_ids = [x.name_id for x in halo.all_properties]
+        link_ids = [x.relation_id for x in halo.all_links]
+        return all([p_id in prop_ids or p_id in link_ids for p_id in self.retrieves_dict_ids()])
 
     def values(self, halos):
         raise NotImplementedError
 
     def supplement_halo_query(self, halo_query):
         name_targets = self.retrieves_dict_ids()
-
-        augmented_query = halo_query.join(core.Halo.all_properties).\
-            options(contains_eager(core.Halo.all_properties)).\
-            filter(core.HaloProperty.name_id.in_(name_targets))
-
+        augmented_query =halo_query.outerjoin(core.HaloProperty,
+                                              (core.Halo.id==core.HaloProperty.halo_id) & (core.HaloProperty.name_id.in_(name_targets))).\
+                                    options(contains_eager(core.Halo.all_properties))
         return augmented_query
 
     def proxy_value(self):
@@ -102,11 +108,17 @@ class LivePropertyDescription(CalculationDescription):
             result=result.union(i.retrieves())
         return result
 
+
+
     def values(self, halos):
         input_values = [i.values(halos) for i in self.inputs]
         results = []
         for inputs in zip(halos, *input_values):
-            results.append(properties.live_calculate(self.name, *inputs))
+            if self._has_required_properties(inputs[0]):
+                results.append(properties.live_calculate(self.name, *inputs))
+            else:
+                results.append(None)
+
         return results
 
     def proxy_value(self):
@@ -124,7 +136,47 @@ class LinkDescription(CalculationDescription):
 
     def proxy_value(self):
         """Return a placeholder value for this calculation"""
-        return UnknownHalo()
+        return UnknownValue()
+
+    def retrieves(self):
+        # the property retrieval will not be on the set of halos known to higher levels,
+        # so only the locator retrieval needs to be reported upwards
+        return self.locator.retrieves()
+
+    def values(self, halos):
+        if len(halos)==0:
+            return []
+
+        target_halos = self.locator.values(halos)
+        target_halos_weeded = []
+        for th in target_halos:
+            if isinstance(th, list):
+                target_halos_weeded.append(th[0].id)
+            elif th is None:
+                continue
+            else:
+                target_halos_weeded.append(th.id)
+
+        # need a new session for the subqueries, because we might have cached copies of objects where
+        # a different set of properties has been loaded into all_properties
+        new_session = core.Session()
+
+        with thl.temporary_halolist_table(new_session, target_halos_weeded) as tab:
+            target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
+            values = self.property.values(target_halos_supplemented)
+
+        values_with_Nones = []
+        i=0
+        for th in target_halos:
+            if th is not None:
+                warnings.warn("More than one relation for target %r has been found. Picking the first."%str(self.locator))
+                values_with_Nones.append(values[i])
+                i+=1
+            else:
+                values_with_Nones.append(None)
+
+        return values_with_Nones
+
 
 
 class StoredPropertyDescription(CalculationDescription):
@@ -139,7 +191,11 @@ class StoredPropertyDescription(CalculationDescription):
         return {self.name}
 
     def values(self, halos):
-        return [h[self.name] for h in halos]
+        print halos
+        print [self._has_required_properties(h) for h in halos]
+        print halos[0].all_properties
+        print self.retrieves()
+        return [h[self.name] if self._has_required_properties(h) else None for h in halos]
 
     def proxy_value(self):
         """Return a placeholder value for this calculation"""

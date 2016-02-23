@@ -587,6 +587,19 @@ class TimeStep(Base):
         results = query.all()
         out = property_description.values(results)
 
+        # weed out "None" values
+        remove = []
+        for i in xrange(len(out[0])):
+            for ar in out:
+                if ar[i] is None:
+                    remove.append(i)
+                    break
+
+        for i in remove[::-1]:
+            for ar in out:
+                del ar[i]
+
+
         return [safe_asarray(x) for x in out]
 
 
@@ -709,10 +722,8 @@ class Halo(Base):
         session = Session.object_session(self)
         key_id = get_dict_id(key, session=session)
         if 'all_properties' not in sqlalchemy.inspect(self).unloaded:
-            print "get_cached"
             return_objs = self._get_object_cached(key_id)
         else:
-            print "get_uncached"
             return_objs = self._get_object_from_session(key_id, session)
         if len(return_objs) == 0:
             raise KeyError, "No such property %r" % key
@@ -1454,7 +1465,7 @@ def process_options(argparser_options):
     _verbose = argparser_options.db_verbose
 
 def init_db(db_uri=None, timeout=30, verbose=None):
-    global _verbose, current_creator, internal_session, engine
+    global _verbose, current_creator, internal_session, engine, Session
     if db_uri is None:
         db_uri = 'sqlite:///' + config.db
     engine = create_engine(db_uri, echo=verbose or _verbose,
