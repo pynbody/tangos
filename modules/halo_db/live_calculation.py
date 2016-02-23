@@ -32,8 +32,13 @@ class CalculationDescription(object):
     def supplement_halo_query(self, halo_query):
         name_targets = self.retrieves_dict_ids()
         augmented_query =halo_query.outerjoin(core.HaloProperty,
-                                              (core.Halo.id==core.HaloProperty.halo_id) & (core.HaloProperty.name_id.in_(name_targets))).\
-                                    options(contains_eager(core.Halo.all_properties))
+                                              (core.Halo.id==core.HaloProperty.halo_id)
+                                              & (core.HaloProperty.name_id.in_(name_targets))).\
+                                    outerjoin(core.HaloLink,
+                                              (core.Halo.id==core.HaloLink.halo_from_id)
+                                              & (core.HaloLink.relation_id.in_(name_targets))).\
+                                    options(contains_eager(core.Halo.all_properties),
+                                            contains_eager(core.Halo.all_links))
         return augmented_query
 
     def proxy_value(self):
@@ -191,10 +196,6 @@ class StoredPropertyDescription(CalculationDescription):
         return {self.name}
 
     def values(self, halos):
-        print halos
-        print [self._has_required_properties(h) for h in halos]
-        print halos[0].all_properties
-        print self.retrieves()
         return [h[self.name] if self._has_required_properties(h) else None for h in halos]
 
     def proxy_value(self):
