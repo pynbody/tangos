@@ -1,4 +1,8 @@
 import halo_db as db
+import numpy as np
+import numpy.testing as npt
+import properties
+
 
 def setup():
     db.init_db("sqlite://")
@@ -55,10 +59,74 @@ def setup():
     session.add_all([db.HaloLink(ts2_h3,ts3_h3,rel,1.0)])
 
     for i,h in enumerate([ts1_h1,ts1_h2,ts1_h3,ts1_h4,ts2_h1,ts2_h2,ts2_h3,ts2_h4,ts3_h1,ts3_h2,ts3_h3]):
-        h['Mvir'] = float(i)
+        h['Mvir'] = float(i+1)
+        h['Rvir'] = float(i+1)*0.1
+
+
+class TestProperty(properties.HaloProperties):
+
+    @classmethod
+    def name(self):
+        return "RvirPlusMvir"
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def requires_property(self):
+        return "Mvir", "Rvir"
+
+    def calculate(self, halo, properties):
+        return properties["Mvir"]+properties["Rvir"]
+
+class TestErrorProperty(properties.HaloProperties):
+
+    @classmethod
+    def name(self):
+        return "RvirPlusMvirMiscoded"
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def requires_property(self):
+        return "Mvir",
+
+    def calculate(self, halo, properties):
+        return properties["Mvir"]+properties["Rvir"]
+
+class TestPropertyWithParameter(properties.HaloProperties):
+    @classmethod
+    def name(cls):
+        return "squared"
+
+    def __init__(self, value):
+        self.value = value
+
+    def calculate(self, halo, properties):
+        return self.value**2
 
 
 def test_gather_property():
-    Mv = db.get_timestep("sim/ts1").gather_property("Mvir")
-    print Mv
-    assert False
+    Mv,  = db.get_timestep("sim/ts1").gather_property("Mvir")
+    npt.assert_allclose(Mv,[1,2,3,4])
+
+    Mv, Rv  = db.get_timestep("sim/ts1").gather_property("Mvir", "Rvir")
+    npt.assert_allclose(Mv,[1,2,3,4])
+    npt.assert_allclose(Rv,[0.1,0.2,0.3,0.4])
+
+def test_gather_function():
+
+    Vv, = db.get_timestep("sim/ts1").gather_property("RvirPlusMvir()")
+    npt.assert_allclose(Vv,[1.1,2.2,3.3,4.4])
+
+
+    with npt.assert_raises(KeyError):
+        # The following should fail.
+        # If it does not raise a keyerror, the live calculation has ignored the directive
+        # to only load in the named properties.
+        Vv, = db.get_timestep("sim/ts1").gather_property("RvirPlusMvirMiscoded()")
+
+def test_gather_function_with_parameter():
+    res, = db.get_timestep("sim/ts1").gather_property("squared(Mvir)")
+    npt.assert_allclose(res, [1.0, 4.0, 9.0, 16.0])

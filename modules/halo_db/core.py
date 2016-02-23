@@ -504,6 +504,8 @@ class TimeStep(Base):
         the timestep specified by "other", using stored DB links to establish
         a 1:1 correspondence. """
 
+        from . import live_calculation
+
         # Step 1: get the other timestep
 
         if not isinstance(other, TimeStep):
@@ -552,8 +554,8 @@ class TimeStep(Base):
         for h1, h2 in linked_halos:
             if filt(h1) and filt(h2):
                 try:
-                    res = [(identifiers.get_halo_property_with_magic_strings(h1, p),
-                            identifiers.get_halo_property_with_magic_strings(h2, p)) for p in plist]
+                    res = [(live_calculation.get_halo_property_with_magic_strings(h1, p),
+                            live_calculation.get_halo_property_with_magic_strings(h2, p)) for p in plist]
 
                     for a, p in zip(out, res):
                         a.append(p)
@@ -576,44 +578,17 @@ class TimeStep(Base):
         filt(halo) is True. If filt=True, this function defaults
         to checking that Sub is 0"""
 
-        filt = lambda x: True
-        allow_none = False
+        from . import live_calculation
 
-        if kwargs.has_key("filt"):
-            filt = kwargs["filt"]
 
-        if kwargs.has_key("allow_none"):
-            allow_none = kwargs["allow_none"]
+        property_description = live_calculation.parse_property_names(*plist)
 
-        verbose = kwargs.get("verbose", False)
-
-        if filt is True:
-            filt = default_filter
-
-        out = [[] for i in xrange(len(plist))]
-
-        start = time.time()
-
-        halos = self.halos.options(
-                    sqlalchemy.orm.joinedload(Halo.all_properties),
-                    sqlalchemy.orm.joinedload(Halo.all_links)
-                  ).all()
-        print "Db query took %.1fs"%(time.time()-start)
-        for h in halos:
-            try:
-                if filt(h):
-                    res = [identifiers.get_halo_property_with_magic_strings(h, p) for p in plist]
-                    if verbose:
-                        print h, res
-                    if (not any([r is None for r in res])) or allow_none:
-                        for a, p in zip(out, res):
-                            a.append(p)
-                elif verbose:
-                    print "reject - ", h['Sub']
-            except (KeyError, IndexError):
-                pass
+        query = property_description.supplement_halo_query(self.halos)
+        results = query.all()
+        out = property_description.values(results)
 
         return [safe_asarray(x) for x in out]
+
 
     @property
     def next(self):
@@ -734,8 +709,10 @@ class Halo(Base):
         session = Session.object_session(self)
         key_id = get_dict_id(key, session=session)
         if 'all_properties' not in sqlalchemy.inspect(self).unloaded:
+            print "get_cached"
             return_objs = self._get_object_cached(key_id)
         else:
+            print "get_uncached"
             return_objs = self._get_object_from_session(key_id, session)
         if len(return_objs) == 0:
             raise KeyError, "No such property %r" % key

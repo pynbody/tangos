@@ -6,6 +6,8 @@ import hopper
 import pyparsing as pp
 import properties
 
+from sqlalchemy.orm import contains_eager
+
 class CalculationDescription(object):
     def __repr__(self):
         return "<Calculation description for %s>"%str(self)
@@ -13,8 +15,38 @@ class CalculationDescription(object):
     def retrieves(self):
         return set()
 
-    def values(self):
+    def retrieves_dict_ids(self):
+        return [core.get_dict_id(r) for r in self.retrieves()]
+
+    def values(self, halos):
         raise NotImplementedError
+
+    def supplement_halo_query(self, halo_query):
+        name_targets = self.retrieves_dict_ids()
+
+        augmented_query = halo_query.join(core.Halo.all_properties).\
+            options(contains_eager(core.Halo.all_properties)).\
+            filter(core.HaloProperty.name_id.in_(name_targets))
+
+        return augmented_query
+
+    def proxy_value(self):
+        """Return a placeholder value for this calculation"""
+        raise NotImplementedError
+
+
+class MultiCalculationDescription(CalculationDescription):
+    def __init__(self, *calculations):
+        self.calculations = calculations
+
+    def retrieves(self):
+        x = set()
+        for c in self.calculations:
+            x.update(c.retrieves())
+        return x
+
+    def values(self, halos):
+        return [c.values(halos) for c in self.calculations]
 
 
 class FixedInputDescription(CalculationDescription):
@@ -27,6 +59,15 @@ class FixedInputDescription(CalculationDescription):
     def values(self, halos):
         return [self.value]*len(halos)
 
+    def proxy_value(self):
+        """Return a placeholder value for this calculation"""
+        return self.value
+
+class UnknownValue(object):
+    pass
+
+class UnknownHalo(object):
+    pass
 
 class FixedNumericInputDescription(FixedInputDescription):
     @staticmethod
@@ -54,7 +95,9 @@ class LivePropertyDescription(CalculationDescription):
 
     def retrieves(self):
         result = set()
-        result = result.union(properties.providing_class(self.name).requires_property())
+        proxy_values = [i.proxy_value() for i in self.inputs]
+        providing_instance = properties.providing_class(self.name)(*proxy_values)
+        result = result.union(providing_instance.requires_property())
         for i in self.inputs:
             result=result.union(i.retrieves())
         return result
@@ -66,6 +109,10 @@ class LivePropertyDescription(CalculationDescription):
             results.append(properties.live_calculate(self.name, *inputs))
         return results
 
+    def proxy_value(self):
+        """Return a placeholder value for this calculation"""
+        return UnknownValue()
+
 
 class LinkDescription(CalculationDescription):
     def __init__(self, tokens):
@@ -74,6 +121,10 @@ class LinkDescription(CalculationDescription):
 
     def __str__(self):
         return str(self.locator)+"."+str(self.property)
+
+    def proxy_value(self):
+        """Return a placeholder value for this calculation"""
+        return UnknownHalo()
 
 
 class StoredPropertyDescription(CalculationDescription):
@@ -89,6 +140,10 @@ class StoredPropertyDescription(CalculationDescription):
 
     def values(self, halos):
         return [h[self.name] for h in halos]
+
+    def proxy_value(self):
+        """Return a placeholder value for this calculation"""
+        return UnknownValue()
 
 
 
@@ -120,6 +175,8 @@ def parse_property_name( name):
     return property_complete.parseString(name)[0]
 
 
+def parse_property_names(*names):
+    return MultiCalculationDescription(*[parse_property_name(n) for n in names])
 
 
 

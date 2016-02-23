@@ -55,7 +55,7 @@ class HaloProperties(object):
     def requires_property(self):
         """Returns a list of existing properties
         required to calculate this property"""
-        return ["SSC"]
+        return []
 
     def preloop(self, sim, filename, property_array):
         """Perform one-time pre-halo-loop calculations,
@@ -228,7 +228,6 @@ class ProxyHalo(object):
 
     def __int__(self):
         return int(self.value)
-
 
 
 

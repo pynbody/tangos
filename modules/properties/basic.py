@@ -188,6 +188,9 @@ class HaloVvir(HaloProperties):
     def requires_simdata(self):
         return False
 
+    def requires_property(self):
+        return "Mvir", "Rvir"
+
     def calculate(self, halo, properties):
         _G = 4.33227e-6
         return math.sqrt(_G * properties["Mvir"] / properties["Rvir"])
