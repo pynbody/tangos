@@ -9,7 +9,7 @@ Examples
 The following examples mainly use fictional functions and properties.
 
 - `function(property)` calls `function` with the value of the specified halo property `property` and returns the result
-- `function(23)`, `function(23.0)` and `function("twenty three") call `function` with the literal integer/float/string arguments specified
+- `function(23)`, `function(23.0)` and `function("twenty three")` call `function` with the literal integer/float/string arguments specified
 - `function()` can be used to call a function that takes no arguments. Note that `function` on its own does not work, as it would refer to a stored value
 - All functions can implicitly access halo properties, so that (for example) `Vvir()` returns the virtual velocity without having to specify manually that it should calculate this from `Rvir` and `Vvir`
 - `link.value` returns the `value` stored in the linked halo where the link is named `link`
