@@ -16,29 +16,74 @@ class CalculationDescription(object):
     def retrieves(self):
         return set()
 
-    def retrieves_dict_ids(self,level=0):
-        if not hasattr(self, "_r_dict_ids_cached"):
-            self._r_dict_ids_cached = [core.get_dict_id(r.split(".")[level]) for r in self.retrieves()]
+    def retrieves_dict_ids(self):
+        self._generate_dict_ids_and_levels()
         return self._r_dict_ids_cached
+
+    def _essential_dict_ids(self):
+        self._generate_dict_ids_and_levels()
+        return self._r_dict_ids_essential_cached
+
+    def n_join_levels(self):
+        self._generate_dict_ids_and_levels()
+        return self._n_join_levels
+
+    def _generate_dict_ids_and_levels(self):
+        if not hasattr(self, "_r_dict_ids_cached"):
+            self._r_dict_ids_cached = []
+            self._r_dict_ids_essential_cached = []
+            retrieves = self.retrieves()
+            self._n_join_levels = max([r.count('.') for r in retrieves])+1
+            for r in retrieves:
+                r_split = r.split(".")
+                for w in r_split:
+                    self._r_dict_ids_cached.append(core.get_dict_id(w))
+                self._r_dict_ids_essential_cached.append(core.get_dict_id(r_split[0]))
 
     def _has_required_properties(self, halo):
         prop_ids = [x.name_id for x in halo.all_properties]
         link_ids = [x.relation_id for x in halo.all_links]
-        return all([p_id in prop_ids or p_id in link_ids for p_id in self.retrieves_dict_ids()])
+        return all([p_id in prop_ids or p_id in link_ids for p_id in self._essential_dict_ids()])
 
     def values(self, halos):
         raise NotImplementedError
 
+    def n_columns(self):
+        return 1
+
     def supplement_halo_query(self, halo_query):
         name_targets = self.retrieves_dict_ids()
-        augmented_query =halo_query.outerjoin(core.HaloProperty,
-                                              (core.Halo.id==core.HaloProperty.halo_id)
-                                              & (core.HaloProperty.name_id.in_(name_targets))).\
-                                    outerjoin(core.HaloLink,
-                                              (core.Halo.id==core.HaloLink.halo_from_id)
-                                              & (core.HaloLink.relation_id.in_(name_targets))).\
-                                    options(contains_eager(core.Halo.all_properties),
-                                            contains_eager(core.Halo.all_links))
+        halo_alias = core.Halo
+        augmented_query = halo_query
+        print "for query",str(self)
+        print "retrieves=",self.retrieves()
+        print "name_targets=",name_targets
+        for i in xrange(self.n_join_levels()):
+            halo_property_alias = aliased(core.HaloProperty)
+            halo_link_alias = aliased(core.HaloLink)
+
+            path_to_properties = [core.Halo.all_links, core.HaloLink.halo_to]*i + [core.Halo.all_properties]
+            path_to_links = [core.Halo.all_links, core.HaloLink.halo_to]*i + [core.Halo.all_links]
+
+
+            augmented_query =augmented_query.outerjoin(halo_property_alias,
+                                                  (halo_alias.id==halo_property_alias.halo_id)
+                                                  & (halo_property_alias.name_id.in_(name_targets))).\
+                                        outerjoin(halo_link_alias,
+                                                  (halo_alias.id==halo_link_alias.halo_from_id)
+                                                  & (halo_link_alias.relation_id.in_(name_targets))).\
+                                        options(contains_eager(*path_to_properties, alias=halo_property_alias),
+                                                contains_eager(*path_to_links, alias=halo_link_alias))
+
+            if i<self.n_join_levels()-1:
+                next_level_halo_alias = aliased(core.Halo)
+                path_to_new_halo = path_to_links + [core.HaloLink.halo_to]
+                augmented_query = augmented_query.outerjoin(next_level_halo_alias,
+                                                            (halo_link_alias.halo_to_id==next_level_halo_alias.id)).\
+                                        options(contains_eager(*path_to_new_halo, alias=next_level_halo_alias))
+
+                halo_alias = next_level_halo_alias
+
         return augmented_query
 
     def proxy_value(self):
@@ -56,8 +101,19 @@ class MultiCalculationDescription(CalculationDescription):
             x.update(c.retrieves())
         return x
 
+    def __str__(self):
+        return "("+(", ".join(str(x) for x in self.calculations))+")"
+
     def values(self, halos):
-        return [c.values(halos) for c in self.calculations]
+        results = np.empty((self.n_columns(),len(halos)), dtype=object)
+        c_column = 0
+        for c in self.calculations:
+            results[c_column:c_column+c.n_columns()] = c.values(halos)
+            c_column+=c.n_columns()
+        return results
+
+    def n_columns(self):
+        return sum(c.n_columns() for c in self.calculations)
 
 
 class FixedInputDescription(CalculationDescription):
@@ -68,7 +124,7 @@ class FixedInputDescription(CalculationDescription):
         return '"'+str(self.value)+'"'
 
     def values(self, halos):
-        return [self.value]*len(halos)
+        return np.array([[self.value]*len(halos)],dtype=object)
 
     def proxy_value(self):
         """Return a placeholder value for this calculation"""
@@ -116,7 +172,7 @@ class LivePropertyDescription(CalculationDescription):
 
 
     def values(self, halos):
-        input_values = [i.values(halos) for i in self.inputs]
+        input_values = [i.values(halos)[0] for i in self.inputs]
         results = []
         for inputs in zip(halos, *input_values):
             if self._has_required_properties(inputs[0]):
@@ -124,7 +180,7 @@ class LivePropertyDescription(CalculationDescription):
             else:
                 results.append(None)
 
-        return results
+        return np.array([results],dtype=object)
 
     def proxy_value(self):
         """Return a placeholder value for this calculation"""
@@ -148,20 +204,23 @@ class LinkDescription(CalculationDescription):
         # so only the locator retrieval needs to be reported upwards
         return self.locator.retrieves()
 
-    def values(self, halos):
-        if len(halos)==0:
-            return []
+    def n_columns(self):
+        return self.property.n_columns()
 
+    def values(self, halos):
         target_halos = self.locator.values(halos)
-        target_halos_weeded = []
-        for th in target_halos:
-            if isinstance(th, list):
+
+        results = np.empty_like(target_halos,dtype=object)
+
+        results_target = np.where(np.not_equal(target_halos, None))
+        target_halos_weeded = target_halos[results_target]
+
+        for i in xrange(len(target_halos_weeded)):
+            if isinstance(target_halos_weeded[i], list):
                 warnings.warn("More than one relation for target %r has been found. Picking the first."%str(self.locator))
-                target_halos_weeded.append(th[0].id)
-            elif th is None:
-                continue
+                target_halos_weeded[i] = target_halos_weeded[i][0].id
             else:
-                target_halos_weeded.append(th.id)
+                target_halos_weeded[i] = target_halos_weeded[i].id
 
         # need a new session for the subqueries, because we might have cached copies of objects where
         # a different set of properties has been loaded into all_properties
@@ -171,16 +230,9 @@ class LinkDescription(CalculationDescription):
             target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
             values = self.property.values(target_halos_supplemented)
 
-        values_with_Nones = []
-        i=0
-        for th in target_halos:
-            if th is not None:
-                values_with_Nones.append(values[i])
-                i+=1
-            else:
-                values_with_Nones.append(None)
+        results[results_target] = values
 
-        return values_with_Nones
+        return results
 
 
 
@@ -196,7 +248,7 @@ class StoredPropertyDescription(CalculationDescription):
         return {self.name}
 
     def values(self, halos):
-        return [h[self.name] if self._has_required_properties(h) else None for h in halos]
+        return np.array([[h[self.name] if self._has_required_properties(h) else None for h in halos]],dtype=object)
 
     def proxy_value(self):
         """Return a placeholder value for this calculation"""

@@ -2,10 +2,11 @@ import halo_db as db
 import numpy as np
 import numpy.testing as npt
 import properties
+from halo_db import live_calculation
 import sqlalchemy
 
 def setup():
-    db.init_db("sqlite://")
+    db.init_db("sqlite://",verbose=False)
 
     session = db.core.internal_session
 
@@ -124,6 +125,8 @@ class TestErrorProperty(properties.LiveHaloProperties):
         return "Mvir",
 
     def live_calculate(self, halo):
+        print "Fixed cache:",halo._use_fixed_cache()
+        print "all properties:",halo.all_properties
         return halo["Mvir"]+halo["Rvir"]
 
 class TestPropertyWithParameter(properties.LiveHaloProperties):
@@ -138,6 +141,8 @@ class TestPropertyWithParameter(properties.LiveHaloProperties):
         return self.value**2
 
 class TestPathChoice(properties.LiveHaloProperties):
+    num_calls = 0
+
     @classmethod
     def name(clscls):
         return "my_BH"
@@ -150,6 +155,7 @@ class TestPathChoice(properties.LiveHaloProperties):
         return "BH", "BH."+self.criterion
 
     def live_calculate(self, halo):
+        type(self).num_calls+=1
         bh_links = halo["BH"]
         if isinstance(bh_links,list):
             for lk in bh_links:
@@ -177,6 +183,7 @@ def test_gather_function():
     npt.assert_allclose(Vv,[5.5,6.6,7.7,8.8])
 
 
+def test_gather_function_fails():
     with npt.assert_raises(KeyError):
         # The following should fail.
         # If it does not raise a keyerror, the live calculation has ignored the directive
@@ -196,7 +203,27 @@ def test_gather_linked_property():
     npt.assert_allclose(BH_mass, [100.,200.,300.])
     npt.assert_allclose(Mv, [1.,2.,3.])
 
-
+def test_gather_linked_property_with_fn():
     BH_mass, Mv = db.get_timestep("sim/ts1").gather_property('my_BH().hole_mass',"Mvir")
     npt.assert_allclose(BH_mass, [100.,200.,400.])
     npt.assert_allclose(Mv, [1.,2.,3.])
+
+    BH_mass, Mv = db.get_timestep("sim/ts1").gather_property('my_BH("hole_spin").hole_mass',"Mvir")
+    npt.assert_allclose(BH_mass, [100.,200.,300.])
+    npt.assert_allclose(Mv, [1.,2.,3.])
+
+def test_path_factorisation():
+
+    TestPathChoice.num_calls = 0
+
+    BH_mass, BH_spin, Mv = db.get_timestep("sim/ts1").gather_property('my_BH("hole_spin").hole_mass','my_BH("hole_spin").hole_spin',"Mvir")
+    npt.assert_allclose(BH_mass, [100.,200.,300.])
+    npt.assert_allclose(BH_spin, [900.,800.,700.])
+    npt.assert_allclose(Mv, [1.,2.,3.])
+
+    # despite being referred to twice, the my_BH function should only actually be called
+    # once per halo. Otherwise the factorisation has been done wrong (and in particular,
+    # a second call to the DB to retrieve the BH objects has been made, which could be
+    # expensive)
+    assert TestPathChoice.num_calls==3
+

@@ -580,27 +580,21 @@ class TimeStep(Base):
 
         from . import live_calculation
 
-
-        property_description = live_calculation.parse_property_names(*plist)
+        if isinstance(plist[0], live_calculation.CalculationDescription):
+            property_description = plist[0]
+        else:
+            property_description = live_calculation.parse_property_names(*plist)
 
         query = property_description.supplement_halo_query(self.halos)
         results = query.all()
         out = property_description.values(results)
 
         # weed out "None" values
-        remove = []
-        for i in xrange(len(out[0])):
-            for ar in out:
-                if ar[i] is None:
-                    remove.append(i)
-                    break
-
-        for i in remove[::-1]:
-            for ar in out:
-                del ar[i]
+        keep_rows = np.all(np.not_equal(out,None), axis=0)
+        out = out[:,keep_rows]
 
 
-        return [safe_asarray(x) for x in out]
+        return [np.array(x, dtype=type(x[0])) for x in out]
 
 
     @property
