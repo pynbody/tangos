@@ -156,6 +156,7 @@ class LinkDescription(CalculationDescription):
         target_halos_weeded = []
         for th in target_halos:
             if isinstance(th, list):
+                warnings.warn("More than one relation for target %r has been found. Picking the first."%str(self.locator))
                 target_halos_weeded.append(th[0].id)
             elif th is None:
                 continue
@@ -174,7 +175,6 @@ class LinkDescription(CalculationDescription):
         i=0
         for th in target_halos:
             if th is not None:
-                warnings.warn("More than one relation for target %r has been found. Picking the first."%str(self.locator))
                 values_with_Nones.append(values[i])
                 i+=1
             else:
