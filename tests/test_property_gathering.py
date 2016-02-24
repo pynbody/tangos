@@ -77,7 +77,7 @@ def setup():
 
 
 
-    ts1_h1_bh = db.core.Halo(ts1,1,100,0,0,0)
+    ts1_h1_bh = db.core.BH(ts1,1)
     ts1_h2_bh = db.core.BH(ts1,2)
     ts1_h3_bh = db.core.BH(ts1,3)
     ts1_h3_bh2 = db.core.BH(ts1,4)
@@ -87,6 +87,7 @@ def setup():
 
     for i,h in enumerate([ts1_h1_bh, ts1_h2_bh, ts1_h3_bh, ts1_h3_bh2]):
         h['hole_mass'] = float(i+1)*100
+        h['hole_spin'] = 1000-float(i+1)*100
 
 
     ts1_h1["BH"] = ts1_h1_bh
@@ -98,23 +99,18 @@ def setup():
 
 
 
-class TestProperty(properties.HaloProperties):
-
+class TestProperty(properties.LiveHaloProperties):
     @classmethod
     def name(self):
         return "RvirPlusMvir"
 
-    @classmethod
-    def requires_simdata(self):
-        return False
-
     def requires_property(self):
         return "Mvir", "Rvir"
 
-    def calculate(self, halo, properties):
-        return properties["Mvir"]+properties["Rvir"]
+    def live_calculate(self, halo):
+        return halo["Mvir"]+halo["Rvir"]
 
-class TestErrorProperty(properties.HaloProperties):
+class TestErrorProperty(properties.LiveHaloProperties):
 
     @classmethod
     def name(self):
@@ -127,10 +123,10 @@ class TestErrorProperty(properties.HaloProperties):
     def requires_property(self):
         return "Mvir",
 
-    def calculate(self, halo, properties):
-        return properties["Mvir"]+properties["Rvir"]
+    def live_calculate(self, halo):
+        return halo["Mvir"]+halo["Rvir"]
 
-class TestPropertyWithParameter(properties.HaloProperties):
+class TestPropertyWithParameter(properties.LiveHaloProperties):
     @classmethod
     def name(cls):
         return "squared"
@@ -138,8 +134,30 @@ class TestPropertyWithParameter(properties.HaloProperties):
     def __init__(self, value):
         self.value = value
 
-    def calculate(self, halo, properties):
+    def live_calculate(self, halo):
         return self.value**2
+
+class TestPathChoice(properties.LiveHaloProperties):
+    @classmethod
+    def name(clscls):
+        return "my_BH"
+
+    def __init__(self, criterion="hole_mass", default_val=0.0):
+        self.criterion = criterion
+        self.default_val = 0.0
+
+    def requires_property(self):
+        return "BH", "BH."+self.criterion
+
+    def live_calculate(self, halo):
+        bh_links = halo["BH"]
+        if isinstance(bh_links,list):
+            for lk in bh_links:
+                print lk.keys()
+            vals = [lk[self.criterion] if self.criterion in lk else self.default_val for lk in bh_links]
+            return bh_links[np.argmax(vals)]
+        else:
+            return bh_links
 
 
 def test_gather_property():
@@ -176,4 +194,9 @@ def test_gather_linked_property():
 
     BH_mass, Mv = db.get_timestep("sim/ts1").gather_property("BH.hole_mass","Mvir")
     npt.assert_allclose(BH_mass, [100.,200.,300.])
+    npt.assert_allclose(Mv, [1.,2.,3.])
+
+
+    BH_mass, Mv = db.get_timestep("sim/ts1").gather_property('my_BH().hole_mass',"Mvir")
+    npt.assert_allclose(BH_mass, [100.,200.,400.])
     npt.assert_allclose(Mv, [1.,2.,3.])

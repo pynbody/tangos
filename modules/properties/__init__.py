@@ -219,6 +219,15 @@ class TimeChunkedProperty(HaloProperties):
         return False
 
 
+class LiveHaloProperties(HaloProperties):
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def calculate(self, _, db_halo):
+        return self.live_calculate(db_halo)
+
+
 class ProxyHalo(object):
 
     """Used to return pointers to halos within this snapshot to the database"""

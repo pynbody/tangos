@@ -718,10 +718,13 @@ class Halo(Base):
 
         return return_data
 
+    def _use_fixed_cache(self):
+        return 'all_properties' not in sqlalchemy.inspect(self).unloaded
+
     def _get_object(self, key):
         session = Session.object_session(self)
         key_id = get_dict_id(key, session=session)
-        if 'all_properties' not in sqlalchemy.inspect(self).unloaded:
+        if self._use_fixed_cache():
             return_objs = self._get_object_cached(key_id)
         else:
             return_objs = self._get_object_from_session(key_id, session)
@@ -837,12 +840,22 @@ class Halo(Base):
 
     def keys(self):
         names = []
-        for p in self.properties:
+        if self._use_fixed_cache():
+            props = self.all_properties
+            links = self.all_links
+        else:
+            props = self.properties
+            links = self.links
+
+        for p in props:
             names.append(p.name.text)
-        for p in self.links:
+        for p in links:
             names.append(p.relation.text)
 
         return names
+
+    def __contains__(self, item):
+        return item in self.keys()
 
     @property
     def tracker(self):

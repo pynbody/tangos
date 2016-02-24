@@ -16,9 +16,9 @@ class CalculationDescription(object):
     def retrieves(self):
         return set()
 
-    def retrieves_dict_ids(self):
+    def retrieves_dict_ids(self,level=0):
         if not hasattr(self, "_r_dict_ids_cached"):
-            self._r_dict_ids_cached = [core.get_dict_id(r) for r in self.retrieves()]
+            self._r_dict_ids_cached = [core.get_dict_id(r.split(".")[level]) for r in self.retrieves()]
         return self._r_dict_ids_cached
 
     def _has_required_properties(self, halo):
