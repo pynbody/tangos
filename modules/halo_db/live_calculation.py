@@ -30,15 +30,15 @@ class CalculationDescription(object):
 
     def _generate_dict_ids_and_levels(self):
         if not hasattr(self, "_r_dict_ids_cached"):
-            self._r_dict_ids_cached = []
-            self._r_dict_ids_essential_cached = []
+            self._r_dict_ids_cached = set()
+            self._r_dict_ids_essential_cached = set()
             retrieves = self.retrieves()
             self._n_join_levels = max([r.count('.') for r in retrieves])+1
             for r in retrieves:
                 r_split = r.split(".")
                 for w in r_split:
-                    self._r_dict_ids_cached.append(core.get_dict_id(w))
-                self._r_dict_ids_essential_cached.append(core.get_dict_id(r_split[0]))
+                    self._r_dict_ids_cached.add(core.get_dict_id(w))
+                self._r_dict_ids_essential_cached.add(core.get_dict_id(r_split[0]))
 
     def _has_required_properties(self, halo):
         prop_ids = [x.name_id for x in halo.all_properties]
@@ -55,9 +55,6 @@ class CalculationDescription(object):
         name_targets = self.retrieves_dict_ids()
         halo_alias = core.Halo
         augmented_query = halo_query
-        print "for query",str(self)
-        print "retrieves=",self.retrieves()
-        print "name_targets=",name_targets
         for i in xrange(self.n_join_levels()):
             halo_property_alias = aliased(core.HaloProperty)
             halo_link_alias = aliased(core.HaloLink)
@@ -83,7 +80,6 @@ class CalculationDescription(object):
                                         options(contains_eager(*path_to_new_halo, alias=next_level_halo_alias))
 
                 halo_alias = next_level_halo_alias
-
         return augmented_query
 
     def proxy_value(self):
@@ -145,7 +141,6 @@ class FixedNumericInputDescription(FixedInputDescription):
             return int(t)
 
     def __init__(self, tokens):
-        #print "FixedInputDescription.__init__",tokens
         self.value = self._process_numerical_value(tokens[0])
 
     def __str__(self):
@@ -153,7 +148,6 @@ class FixedNumericInputDescription(FixedInputDescription):
 
 class LivePropertyDescription(CalculationDescription):
     def __init__(self, tokens):
-        #print "LivePropertyDescription.__init__",tokens
         self.name = str(tokens[0])
         self.inputs = list(tokens[1:])
 
@@ -238,7 +232,6 @@ class LinkDescription(CalculationDescription):
 
 class StoredPropertyDescription(CalculationDescription):
     def __init__(self, tokens):
-        #print "StoredPropertyDescription.__init__",tokens
         self.name = tokens[0]
 
     def __str__(self):
