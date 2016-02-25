@@ -2,7 +2,7 @@ import halo_db as db
 import numpy as np
 import numpy.testing as npt
 import properties
-from halo_db import live_calculation
+from halo_db import live_calculation as lc
 import sqlalchemy
 
 def setup():
@@ -206,7 +206,7 @@ def test_gather_linked_property():
 def test_gather_linked_property_with_fn():
     BH_mass, Mv = db.get_timestep("sim/ts1").gather_property('my_BH().hole_mass',"Mvir")
     npt.assert_allclose(BH_mass, [100.,200.,400.])
-    npt.assert_allclose(Mv, [1.,2.,3.])
+    npt.assert_allclose(Mv, [1.,2.,3.]) 
 
     BH_mass, Mv = db.get_timestep("sim/ts1").gather_property('my_BH("hole_spin").hole_mass',"Mvir")
     npt.assert_allclose(BH_mass, [100.,200.,300.])
@@ -216,7 +216,22 @@ def test_path_factorisation():
 
     TestPathChoice.num_calls = 0
 
-    BH_mass, BH_spin, Mv = db.get_timestep("sim/ts1").gather_property('my_BH("hole_spin").hole_mass','my_BH("hole_spin").hole_spin',"Mvir")
+    """
+    desc = lc.MultiCalculationDescription(lc.LinkDescription(
+        lc.LivePropertyDescription("my_BH","hole_spin"),
+        lc.MultiCalculationDescription(lc.StoredPropertyDescription("hole_mass"),lc.StoredPropertyDescription("hole_spin"))
+    ),lc.StoredPropertyDescription("Mvir"))
+
+    desc = lc.MultiCalculationDescription(lc.LinkDescription(
+            lc.LivePropertyDescription("my_BH","hole_spin"),
+            lc.StoredPropertyDescription("hole_mass")),
+        lc.LinkDescription(
+            lc.LivePropertyDescription("my_BH","hole_spin"),
+            lc.StoredPropertyDescription("hole_spin")),
+        lc.StoredPropertyDescription("Mvir"))
+
+
+    BH_mass, BH_spin, Mv = db.get_timestep("sim/ts1").gather_property(desc)
     npt.assert_allclose(BH_mass, [100.,200.,300.])
     npt.assert_allclose(BH_spin, [900.,800.,700.])
     npt.assert_allclose(Mv, [1.,2.,3.])
@@ -226,4 +241,5 @@ def test_path_factorisation():
     # a second call to the DB to retrieve the BH objects has been made, which could be
     # expensive)
     assert TestPathChoice.num_calls==3
+    """
 
