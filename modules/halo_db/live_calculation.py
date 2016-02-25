@@ -13,6 +13,9 @@ class CalculationDescription(object):
     def __repr__(self):
         return "<Calculation description for %s>"%str(self)
 
+    def __str__(self):
+        raise NotImplementedError
+
     def retrieves(self):
         return set()
 
@@ -80,6 +83,7 @@ class CalculationDescription(object):
                                         options(contains_eager(*path_to_new_halo, alias=next_level_halo_alias))
 
                 halo_alias = next_level_halo_alias
+
         return augmented_query
 
     def proxy_value(self):
@@ -202,12 +206,21 @@ class LinkDescription(CalculationDescription):
         return self.property.n_columns()
 
     def values(self, halos):
-        target_halos = self.locator.values(halos)
+        if self.locator.n_columns()!=1:
+            raise ValueError, "Cannot use property %r, which returns more than one column, as a halo locator"%(str(self.locator))
 
-        results = np.empty_like(target_halos,dtype=object)
+        target_halos = self.locator.values(halos)[0]
+        print "hal=",halos
+        print halos[0].all_links
+        print halos[0].links.all()
+        print "th=",self.locator.values(halos)
+
+        results = np.empty((self.n_columns(),len(halos)),dtype=object)
 
         results_target = np.where(np.not_equal(target_halos, None))
         target_halos_weeded = target_halos[results_target]
+
+        print "thw=",target_halos_weeded
 
         for i in xrange(len(target_halos_weeded)):
             if isinstance(target_halos_weeded[i], list):
@@ -224,7 +237,7 @@ class LinkDescription(CalculationDescription):
             target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
             values = self.property.values(target_halos_supplemented)
 
-        results[results_target] = values
+        results[:,results_target] = values
 
         return results
 
