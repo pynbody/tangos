@@ -444,10 +444,10 @@ def j_HI_enc(self):
     jx = np.zeros(self.nbins)
     jy = np.zeros(self.nbins)
     jz = np.zeros(self.nbins)
-    jpx = 0
-    jpy = 0
-    jpz = 0
-    MHIenc = 0
+    jpx = 0.
+    jpy = 0.
+    jpz = 0.
+    MHIenc = 0.
     for i in range(self.nbins):
         subs = self.sim[self.binind[i]]
         if len(subs)>0:
@@ -455,10 +455,10 @@ def j_HI_enc(self):
             jpx += (subs['j'][:, 0] * subs['mass'] * subs['HI']).sum()
             jpy += (subs['j'][:, 1] * subs['mass'] * subs['HI']).sum()
             jpz += (subs['j'][:, 2] * subs['mass'] * subs['HI']).sum()
-
-        jx[i] = jpx/MHIenc
-        jy[i] = jpy/MHIenc
-        jz[i] = jpz/MHIenc
+        if MHIenc > 0:
+            jx[i] = jpx/MHIenc
+            jy[i] = jpy/MHIenc
+            jz[i] = jpz/MHIenc
 
     j_HI = np.concatenate(([jx],[jy],[jz])).T
 
@@ -472,20 +472,19 @@ def j_enc(self):
     jx = np.zeros(self.nbins)
     jy = np.zeros(self.nbins)
     jz = np.zeros(self.nbins)
-    jpx = 0
-    jpy = 0
-    jpz = 0
-    MHIenc = 0
+    jpx = 0.
+    jpy = 0.
+    jpz = 0.
     for i in range(self.nbins):
         subs = self.sim[self.binind[i]]
         if len(subs) > 0:
             jpx += (subs['j'][:, 0] * subs['mass']).sum()
             jpy += (subs['j'][:, 1] * subs['mass']).sum()
             jpz += (subs['j'][:, 2] * subs['mass']).sum()
-
-        jx[i] = jpx/self['mass_enc'][i]
-        jy[i] = jpy/self['mass_enc'][i]
-        jz[i] = jpz/self['mass_enc'][i]
+        if self['mass_enc'][i] >0:
+            jx[i] = jpx/self['mass_enc'][i]
+            jy[i] = jpy/self['mass_enc'][i]
+            jz[i] = jpz/self['mass_enc'][i]
 
     j = np.concatenate(([jx],[jy],[jz])).T
 
