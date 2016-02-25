@@ -585,9 +585,16 @@ class TimeStep(Base):
         else:
             property_description = live_calculation.parse_property_names(*plist)
 
-        query = property_description.supplement_halo_query(self.halos)
+        # must be performed in its own session as we intentionally load in a lot of
+        # objects with incomplete lazy-loaded properties
+        session = Session()
+        raw_query = session.query(Halo).filter_by(timestep_id=self.id)
+
+        query = property_description.supplement_halo_query(raw_query)
         results = query.all()
         out = property_description.values(results)
+
+
 
         # weed out "None" values
         keep_rows = np.all(np.not_equal(out,None), axis=0)
