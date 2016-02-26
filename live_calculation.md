@@ -17,7 +17,7 @@ Now:
 
 - `ts.gather_property("Mvir")` returns the virial mass of every halo
 - `ts.gather_property("Mvir","Mgas")` returns the virial mass and gas mass of every halo
-- `ts.gather_property("Vvir()") calls the live-calculation function `Vvir` to work out the virial velocity of every halo (from stored properties `Mvir` and `Rvir`)
+- `ts.gather_property("Vvir()")` calls the live-calculation function `Vvir` to work out the virial velocity of every halo (from stored properties `Mvir` and `Rvir`)
 - `ts.gather_property("at(2.0,'dm_density_profile')")` returns the DM density profile at 2 kpc
 - `ts.gather_property("at(rhalf, 'dm_density_profile')")` returns the DM density profile at `rhalf`
 - `ts.gather_property("BH.BH_mdot")` finds the first BH referenced by a halo and returns that BH's accretion `BH_mdot` (i.e. accretion rate) property. Note that the thing that happens to be referenced first in this way may or may not be the BH you care about so...
