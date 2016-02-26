@@ -32,16 +32,16 @@ Now:
 - `ts.gather_property('bh().BH_mass', 'bh().BH_mdot')` returns the mass and accretion rate of the most massive BH
 - `ts.gather_property('bh().(BH_mass, BH_mdot)')` does *precisely* the same thing as the previous example, but more efficiently as it now only has to search *once* for the "right" BH in each halo
 
-The exact same syntax can be used with `get_halo`.
+The exact same syntax can be used with `h.property_cascade`.
 
-Syntax examples
----------------
+Syntax notes
+------------
 
-The following examples mainly use fictional functions and properties to illustrate everything that's available.
+There are some subtleties about the mini-language used in the queries above. The following examples, which could be used with `gather_property` or `property_cascade` alike, mainly use fictional functions and properties to illustrate everything that's available. 
 
 - `function(property)` calls `function` with the value of the specified halo property `property` and returns the result
 - `function(23)`, `function(23.0)` and `function("twenty three")` call `function` with the literal integer/float/string arguments specified. Single or double quotes can be used (`'twenty three'` and `"twenty three"` are both fine, but not `'twenty three"`)
 - `function()` can be used to call a function that takes no arguments. Note that `function` on its own does not work, as it would refer to a stored value
 - All functions can implicitly access halo properties, so that (for example) `Vvir()` returns the virtual velocity without having to specify manually that it should calculate this from `Rvir` and `Vvir`
 - `link.value` returns the `value` stored in the linked halo where the link is named `link`
-- Functions and links can be chained and nested, so for example `average(biggest_BH().BH_mdot_hist)` is valid
+- Functions and links can be chained and nested, so for example `average(biggest_BH().BH_mdot_hist)` is valid syntax
