@@ -233,3 +233,7 @@ def test_path_factorisation():
     assert TestPathChoice.num_calls==3
 
 
+def test_single_quotes():
+    BH_mass, Mv = db.get_timestep("sim/ts1").gather_property("my_BH('hole_spin').hole_mass","Mvir")
+    npt.assert_allclose(BH_mass, [100.,200.,300.])
+    npt.assert_allclose(Mv, [1.,2.,3.])

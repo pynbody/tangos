@@ -279,8 +279,10 @@ def parse_property_name( name):
     numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]\d+)?').setParseAction(pack_args(FixedNumericInputDescription))
 
     dbl_quotes = pp.Literal("\"").suppress()
+    sng_quotes = pp.Literal("'").suppress()
 
-    string_value = dbl_quotes.suppress() + pp.SkipTo(dbl_quotes).setParseAction(pack_args(FixedInputDescription)) + dbl_quotes.suppress()
+    string_value = dbl_quotes.suppress() + pp.SkipTo(dbl_quotes).setParseAction(pack_args(FixedInputDescription)) + dbl_quotes.suppress() | \
+                   sng_quotes.suppress() + pp.SkipTo(sng_quotes).setParseAction(pack_args(FixedInputDescription)) + sng_quotes.suppress()
 
     redirection = pp.Forward().setParseAction(pack_args(LinkDescription))
 
