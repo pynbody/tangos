@@ -22,7 +22,13 @@ Now:
 - `ts.gather_property("at(rhalf, 'dm_density_profile')")` returns the DM density profile at `rhalf`
 - `ts.gather_property("BH.BH_mdot")` finds the first BH referenced by a halo and returns that BH's accretion `BH_mdot` (i.e. accretion rate) property. Note that the thing that happens to be referenced first in this way may or may not be the BH you care about so...
 - `ts.gather_property("bh().BH_mdot")` picks out the most massive BH referenced by the halo and returns its accretion rate
-- `ts.gather_property('bh("BH_mdot","max").BH_mass')` picks out the most rapidly accreting BH referenced by the halo and returns its mass
+- `ts.gather_property('bh("BH_mdot","max").BH_mass')` picks out the most rapidly accreting BH referenced by the halo and returns its mass. 
+  - _Question:_ Why does `BH_mdot` appear in quotes in this example, when properties should normally be referred to without quotes?
+  - _Answer:_ Because it is *not* a property belonging to the halos collected by `gather_property`. Only the halo properties are directly available. But `BH_mdot` belongs to the black holes that we are trying to select.
+  - _Question:_ OK, so why not something like `BH.BH_mdot`, rather than `'BH_mdot'` which is cryptic?
+  - _Answer:_ because that (as discussed above) returns the *first* referenced black hole's value of `BH_mdot` - still no good, since the whole point is for `bh()` to be able to scan through all the black holes.
+  - _Question:_ Ah, I get it... the `bh` function needs to know the *name* of a property it's accessing - it is explicitly being passed a *string* that gives it that name.
+  - _Answer:_ Yes. That's it.
 - `ts.gather_property('bh().BH_mass', 'bh().BH_mdot')` returns the mass and accretion rate of the most massive BH
 - `ts.gather_property('bh().(BH_mass, BH_mdot)')` does *precisely* the same thing as the previous example, but more efficiently as it now only has to search *once* for the "right" BH in each halo
 
@@ -34,7 +40,7 @@ Syntax examples
 The following examples mainly use fictional functions and properties to illustrate everything that's available.
 
 - `function(property)` calls `function` with the value of the specified halo property `property` and returns the result
-- `function(23)`, `function(23.0)` and `function("twenty three")` call `function` with the literal integer/float/string arguments specified
+- `function(23)`, `function(23.0)` and `function("twenty three")` call `function` with the literal integer/float/string arguments specified. Single or double quotes can be used (`'twenty three'` and `"twenty three"` are both fine, but not `'twenty three"`)
 - `function()` can be used to call a function that takes no arguments. Note that `function` on its own does not work, as it would refer to a stored value
 - All functions can implicitly access halo properties, so that (for example) `Vvir()` returns the virtual velocity without having to specify manually that it should calculate this from `Rvir` and `Vvir`
 - `link.value` returns the `value` stored in the linked halo where the link is named `link`
