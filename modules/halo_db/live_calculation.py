@@ -51,6 +51,14 @@ class CalculationDescription(object):
     def values(self, halos):
         raise NotImplementedError
 
+    def values_sanitized(self, halos):
+        out = self.values(halos)
+
+        keep_rows = np.all(np.not_equal(out,None), axis=0)
+        out = out[:,keep_rows]
+
+        return [np.array(x, dtype=type(x[0])) for x in out]
+
     def n_columns(self):
         return 1
 
