@@ -1,4 +1,4 @@
-from . import HaloProperties, TimeChunkedProperty
+from . import HaloProperties, LiveHaloProperties, TimeChunkedProperty
 import numpy as np
 import math
 import pynbody
@@ -242,70 +242,22 @@ class BHAccHistogramMerged(HaloProperties):
         self.accumulate_on_mergers(mdot, bh)
         return mdot
 
-class BHGalaxy(HaloProperties):
-    @classmethod
-    def name(self):
-        return "massive_BH_mass", "massive_BH_dist", "massive_BH_mdot", "central_BH_mass", "central_BH_dist", "central_BH_mdot", "bright_BH_mass", "bright_BH_dist", "bright_BH_mdot", "massive_BH_iord", "central_BH_iord", "bright_BH_iord"
 
-    def requires_property(self):
-        return ['BH']
 
-    @classmethod
-    def requires_simdata(self):
-        return False
-
-    @classmethod
-    def no_proxies(self):
-        return True
-
-    def calculate(self, halo, properties):
-        bhmass = [bh['BH_mass'] for bh in properties['BH_central']]
-        bhiord = [bh.halo_number for bh in properties['BH_central']]
-        mdot = [bh['BH_mdot_ave'] for bh in properties['BH_central']]
-        offset = [bh['BH_central_distance'] for bh in properties['BH_central']]
-
-        indm = np.argmax(bhmass)
-        indo = np.argmin(offset)
-        indl = np.argmax(mdot)
-
-        return bhmass[indm], offset[indm], mdot[indm], bhmass[indo], offset[indo], mdot[indo], bhmass[indl], offset[indl], mdot[indl], bhiord[indm], bhiord[indo], bhiord[indl]
-
-class BHHosts(HaloProperties):
-    def __init__(self, propname):
-        self._host_prop = propname
-
-    @classmethod
-    def name(cls):
-        return "bh_host"
-
-    @classmethod
-    def requires_simdata(self):
-        return False
-
-    def calculate(self, halo, properties):
-        if properties.halo_type != 1:
-            return None
-        if properties.host_halo is None:
-            return None
-        else:
-            return properties.host_halo[self._host_prop]
-
-class BHGal(HaloProperties):
-    def __init__(self, prop, choose='BH_mass', minmax='max', bhtype='BH_central'):
+class BHGal(LiveHaloProperties):
+    def __init__(self, choose='BH_mass', minmax='max', bhtype='BH_central'):
         self._maxmin = minmax
         self._choicep = choose
-        self._bhprop = prop
         self._bhtype = bhtype
 
     @classmethod
     def name(cls):
         return 'bh'
 
-    @classmethod
-    def requires_simdata(self):
-        return False
+    def requires_property(self):
+        return self._bhtype, self._bhtype+"."+self._choicep
 
-    def calculate(self, halo, properties):
+    def live_calculate(self, properties):
         if properties.halo_type != 0:
             return None
 
@@ -313,8 +265,7 @@ class BHGal(HaloProperties):
             return None
 
         if type(properties[self._bhtype]) is list:
-            chp = [bh.get_or_calculate(self._choicep) for bh in properties[self._bhtype]]
-            data = [bh.get_or_calculate(self._bhprop) for bh in properties[self._bhtype]]
+            chp = [bh[self._choicep] for bh in properties[self._bhtype] if self._choicep in bh]
             target = None
             if self._maxmin == 'min':
                 target = np.argmin(chp)
@@ -322,6 +273,6 @@ class BHGal(HaloProperties):
                 target = np.argmax(chp)
             if target is None:
                 return None
-            return data[target]
+            return properties[self._bhtype][target]
         else:
-            return properties[self._bhtype].get_or_calculate(self._bhprop)
+            return properties[self._bhtype]
