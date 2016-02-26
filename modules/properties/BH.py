@@ -257,7 +257,7 @@ class BHGal(LiveHaloProperties):
     def requires_property(self):
         return self._bhtype, self._bhtype+"."+self._choicep
 
-    def live_calculate(self, properties):
+    def live_calculate(self, properties, names):
         if properties.halo_type != 0:
             return None
 

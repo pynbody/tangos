@@ -19,6 +19,9 @@ class CalculationDescription(object):
     def retrieves(self):
         return set()
 
+    def name(self):
+        return None
+
     def retrieves_dict_ids(self):
         self._generate_dict_ids_and_levels()
         return self._r_dict_ids_cached
@@ -36,7 +39,10 @@ class CalculationDescription(object):
             self._r_dict_ids_cached = set()
             self._r_dict_ids_essential_cached = set()
             retrieves = self.retrieves()
-            self._n_join_levels = max([r.count('.') for r in retrieves])+1
+            try:
+                self._n_join_levels = max([r.count('.') for r in retrieves])+1
+            except ValueError:
+                self._n_join_levels = 0
             for r in retrieves:
                 r_split = r.split(".")
                 for w in r_split:
@@ -160,29 +166,32 @@ class FixedNumericInputDescription(FixedInputDescription):
 
 class LivePropertyDescription(CalculationDescription):
     def __init__(self, *tokens):
-        self.name = str(tokens[0])
-        self.inputs = list(tokens[1:])
+        self._name = str(tokens[0])
+        self._inputs = list(tokens[1:])
 
     def __str__(self):
-        return self.name+"("+(",".join(str(x) for x in self.inputs))+")"
+        return self._name + "(" + (",".join(str(x) for x in self._inputs)) + ")"
+
+    def name(self):
+        return self._name
 
     def retrieves(self):
         result = set()
-        proxy_values = [i.proxy_value() for i in self.inputs]
-        providing_instance = properties.providing_class(self.name)(*proxy_values)
+        proxy_values = [i.proxy_value() for i in self._inputs]
+        providing_instance = properties.providing_class(self._name)(*proxy_values)
         result = result.union(providing_instance.requires_property())
-        for i in self.inputs:
+        for i in self._inputs:
             result=result.union(i.retrieves())
         return result
 
 
 
     def values(self, halos):
-        input_values = [i.values(halos)[0] for i in self.inputs]
+        input_values = [i.values(halos)[0] for i in self._inputs]
         results = []
         for inputs in zip(halos, *input_values):
             if self._has_required_properties(inputs[0]):
-                results.append(properties.live_calculate(self.name, *inputs))
+                results.append(properties.live_calculate(self._name, *inputs, names=[i.name() for i in self._inputs]))
             else:
                 results.append(None)
 
@@ -204,6 +213,10 @@ class LinkDescription(CalculationDescription):
 
     def __str__(self):
         return str(self.locator)+"."+str(self.property)
+
+    def name(self):
+        return self.property.name()
+
 
     def proxy_value(self):
         """Return a placeholder value for this calculation"""
@@ -252,16 +265,19 @@ class LinkDescription(CalculationDescription):
 
 class StoredPropertyDescription(CalculationDescription):
     def __init__(self, *tokens):
-        self.name = tokens[0]
+        self._name = tokens[0]
 
     def __str__(self):
-        return self.name
+        return self._name
+
+    def name(self):
+        return self._name
 
     def retrieves(self):
-        return {self.name}
+        return {self._name}
 
     def values(self, halos):
-        return np.array([[h[self.name] if self._has_required_properties(h) else None for h in halos]],dtype=object)
+        return np.array([[h[self._name] if self._has_required_properties(h) else None for h in halos]], dtype=object)
 
     def proxy_value(self):
         """Return a placeholder value for this calculation"""

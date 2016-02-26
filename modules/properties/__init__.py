@@ -225,7 +225,7 @@ class LiveHaloProperties(HaloProperties):
         return False
 
     def calculate(self, _, db_halo):
-        return self.live_calculate(db_halo)
+        return self.live_calculate(db_halo, [None]*100)
 
 
 class ProxyHalo(object):
@@ -368,11 +368,17 @@ def instantiate_class(property_name, silent_fail=False):
 def get_required_properties(property_name):
     return providing_class(property_name).requires_property()
 
-def live_calculate(property_name, db_halo, *args):
+def live_calculate(property_name, db_halo, *args, **kwargs):
+    inputs_names = kwargs.pop('names',[None]*100)
     C = providing_class(property_name)
     I = C(*args)
     names = I.name()
-    results = I.calculate(None, db_halo)
+    if hasattr(I, 'live_calculate'):
+        # new-style context-aware calculation
+        results = I.live_calculate(db_halo, inputs_names)
+    else:
+        # old-style calculation that happens to have no simulation data loaded
+        results = I.calculate(None, db_halo)
     if not isinstance(names, str):
         results = results[names.index(property_name)]
     return results

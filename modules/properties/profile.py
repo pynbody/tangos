@@ -284,26 +284,22 @@ class GenericPercentile(HaloProperties):
         return x0+index*delta_x
 
 class AtPosition(LiveHaloProperties):
-    def __init__(self, position, name):
-        self._name = name
+    def __init__(self, position, array):
+        self._array = array
         self._position = position
-        self._cl = instantiate_class(name)
 
     @classmethod
     def name(cls):
         return "at"
 
-    def requires_property(self):
-        return self._name,
 
-    def live_calculate(self,  existing_properties):
-        x0 = self._cl.plot_x0()
-        delta_x = self._cl.plot_xdelta()
-        if isinstance(self._position, float):
-            pos = self._position
-        else:
-            pos = existing_properties[self._position]
-        ar = existing_properties[self._name]
+    def live_calculate(self, existing_properties, input_names):
+        cl = instantiate_class(input_names[1])
+        x0 = cl.plot_x0()
+        delta_x = cl.plot_xdelta()
+
+        ar = self._array
+        pos = self._position
 
         # linear interpolation
         i0 = int((pos-x0)/delta_x)

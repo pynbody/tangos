@@ -6,7 +6,7 @@ from halo_db import live_calculation as lc
 import sqlalchemy
 
 def setup():
-    db.init_db("sqlite://",verbose=True)
+    db.init_db("sqlite://")
 
     session = db.core.internal_session
 
@@ -108,7 +108,7 @@ class TestProperty(properties.LiveHaloProperties):
     def requires_property(self):
         return "Mvir", "Rvir"
 
-    def live_calculate(self, halo):
+    def live_calculate(self, halo, names):
         return halo["Mvir"]+halo["Rvir"]
 
 class TestErrorProperty(properties.LiveHaloProperties):
@@ -124,7 +124,7 @@ class TestErrorProperty(properties.LiveHaloProperties):
     def requires_property(self):
         return "Mvir",
 
-    def live_calculate(self, halo):
+    def live_calculate(self, halo, names):
         print "Fixed cache:",halo._use_fixed_cache()
         print "all properties:",halo.all_properties
         return halo["Mvir"]+halo["Rvir"]
@@ -137,7 +137,7 @@ class TestPropertyWithParameter(properties.LiveHaloProperties):
     def __init__(self, value):
         self.value = value
 
-    def live_calculate(self, halo):
+    def live_calculate(self, halo, names):
         return self.value**2
 
 class TestPathChoice(properties.LiveHaloProperties):
@@ -154,7 +154,7 @@ class TestPathChoice(properties.LiveHaloProperties):
     def requires_property(self):
         return "BH", "BH."+self.criterion
 
-    def live_calculate(self, halo):
+    def live_calculate(self, halo, names):
         type(self).num_calls+=1
         bh_links = halo["BH"]
         if isinstance(bh_links,list):
