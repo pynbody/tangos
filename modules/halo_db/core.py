@@ -497,86 +497,9 @@ class TimeStep(Base):
         session = Session.object_session(self)
         raise RuntimeError, "Not implemented"
 
-    def gather_linked_property(self, other, *plist, **kwargs):
-        """Gather up specified properties from the chlid halos,
-        using arguments as in gather_property. However, additionally
-        gather all these specified properties for the same halos in
-        the timestep specified by "other", using stored DB links to establish
-        a 1:1 correspondence. """
-
-        from . import live_calculation
-
-        # Step 1: get the other timestep
-
-        if not isinstance(other, TimeStep):
-            other = get_timestep(other)
-
-        # Step 2: establish the linked list of halos
-        linked_halos = []
-
-        start = time.time()
-
-        session = Session.object_session(self)
-
-        halo_from_alias = sqlalchemy.orm.aliased(Halo)
-        timestep_from_alias = sqlalchemy.orm.aliased(TimeStep)
-        halo_to_alias = sqlalchemy.orm.aliased(Halo)
-        timestep_to_alias = sqlalchemy.orm.aliased(TimeStep)
-        linked_halos = session.query(HaloLink).join(halo_from_alias, HaloLink.halo_from)\
-                                              .join(halo_to_alias, HaloLink.halo_to)\
-                                              .join(timestep_from_alias, halo_from_alias.timestep)\
-                                              .join(timestep_to_alias, halo_to_alias.timestep)\
-                                              .filter(and_(timestep_from_alias.id==self.id, timestep_to_alias.id==other.id, HaloLink.weight>0.01))\
-                                              .options(orm.contains_eager(HaloLink.halo_from, alias=halo_from_alias).joinedload(Halo.all_properties),
-                                                       orm.contains_eager(HaloLink.halo_to, alias=halo_to_alias).joinedload(Halo.all_properties))
-
-        linked_halos = [(x.halo_from, x.halo_to) for x in linked_halos]
-
-        """
-        for l in self.links_from:
-            if l.halo_to.timestep.id == other.id:
-                linked_halos.append((l.halo_from, l.halo_to))
-        """
-
-
-        print "Found %d halos in common in %.2fs"%(len(linked_halos),time.time()-start)
-
-        # Step 3: get the data
-
-        filt = kwargs.get("filt", lambda x: True)
-        if filt is True:
-            filt = default_filter
-
-        out = [[] for i in xrange(len(plist))]
-
-        start = time.time()
-
-        for h1, h2 in linked_halos:
-            if filt(h1) and filt(h2):
-                try:
-                    res = [(live_calculation.get_halo_property_with_magic_strings(h1, p),
-                            live_calculation.get_halo_property_with_magic_strings(h2, p)) for p in plist]
-
-                    for a, p in zip(out, res):
-                        a.append(p)
-
-                except (KeyError, IndexError):
-                    pass
-
-        print "Queried properties in %.2fs"%(time.time()-start)
-
-        return [safe_asarray(x) for x in out]
-
     def gather_property(self, *plist, **kwargs):
         """Gather up the specified properties from the child
-        halos. For each argument either name a property or, for array
-        properties, you can use <propertyname>//<n> where n is the
-        array element to return, or <propertyname>//+ or
-        <propertyname>//- to return the maximum or minimum element.
-
-        Pass a function filt to only return halos where
-        filt(halo) is True. If filt=True, this function defaults
-        to checking that Sub is 0"""
+        halos."""
 
         from . import live_calculation
 
@@ -592,16 +515,7 @@ class TimeStep(Base):
 
         query = property_description.supplement_halo_query(raw_query)
         results = query.all()
-        out = property_description.values(results)
-
-
-
-        # weed out "None" values
-        keep_rows = np.all(np.not_equal(out,None), axis=0)
-        out = out[:,keep_rows]
-
-
-        return [np.array(x, dtype=type(x[0])) for x in out]
+        return property_description.values_sanitized(results)
 
 
     @property
@@ -885,75 +799,26 @@ class Halo(Base):
         return data.plot(*args, **kwargs)
 
 
-    def _property_cascade_as_list(self, *keys, **kwargs):
-        on_missing = kwargs.get('on_missing','skip')
-        find_next  = kwargs.get('find_next','next')
-        raw = kwargs.get('raw',False)
-        output = []
-
-        session = Session.object_session(self)
-        targets = [get_dict_id(k,session) for k in keys]
-
+    def property_cascade(self, *plist):
+        from . import live_calculation
         from . import hopper
-        hopper.MajorDescendantStrategy(self)
+        from . import temporary_halolist as thl
 
-
-        for key in keys:
-            try:
-                output.append([identifiers.get_halo_property_with_magic_strings(self,key,raw)])
-            except Exception, e:
-                if on_missing=="skip":
-                    output = [[] for k in keys]
-                    break
-                elif on_missing=="none":
-                    output.append([np.NaN])
-                else:
-                    raise
-
-        next = getattr(self, find_next)
-        if next:
-            remainder = next._property_cascade_as_list(*keys, **kwargs)
-            output = [o+r for o,r in zip(output,remainder)]
-
-        return output
-
-
-    def property_cascade(self, *keys, **kwargs):
-
-        x = self._property_cascade_as_list(*keys, **kwargs)
-        if len(keys) == 1:
-            try:
-                return np.asarray(x)
-            except:
-                return x
+        if isinstance(plist[0], live_calculation.CalculationDescription):
+            property_description = plist[0]
         else:
-            y = []
-            for z in x:
-                try:
-                    y.append(np.asarray(z))
-                except:
-                    y.append(z)
+            property_description = live_calculation.parse_property_names(*plist)
 
-            return y
-
-    def reverse_property_cascade(self, *keys, **kwargs):
-        kwargs['find_next']='previous'
-        return self.property_cascade(*keys,**kwargs)
+        # must be performed in its own session as we intentionally load in a lot of
+        # objects with incomplete lazy-loaded properties
+        session = Session()
+        with hopper.MultiHopMajorDescendantsStrategy(get_halo(self.id, session)).temp_table() as tt:
+            raw_query = thl.halo_query(tt)
+            query = property_description.supplement_halo_query(raw_query)
+            results = query.all()
+            return property_description.values_sanitized(results)
 
 
-    @property
-    def number_cascade(self):
-        try:
-            return [self.halo_number] + self.next.number_cascade
-        except AttributeError:
-            return [self.halo_number]
-
-    @property
-    def reverse_number_cascade(self):
-        try:
-            return [self.halo_number] + self.previous.reverse_number_cascade
-        except AttributeError:
-            return [self.halo_number]
 
     @property
     def next(self):
@@ -1373,11 +1238,13 @@ def construct_halo_cat(timestep_db, type_id):
         return TrackerHaloCatalogue(f,timestep_db.simulation.trackers)
 
 
-def get_timestep(id):
+def get_timestep(id, session=None):
+    if session is None:
+        session = internal_session
     if isinstance(id, str):
         sim, ts = id.split("/")
         sim = get_simulation(sim)
-        res = internal_session.query(TimeStep).filter(
+        res = session.query(TimeStep).filter(
             and_(TimeStep.extension.like(ts), TimeStep.simulation_id == sim.id))
         num = res.count()
         if num == 0:
@@ -1388,10 +1255,12 @@ def get_timestep(id):
         else:
             return res.first()
     else:
-        return internal_session.query(TimeStep).filter_by(id=id).first()
+        return session.query(TimeStep).filter_by(id=id).first()
 
 
-def get_halo(id):
+def get_halo(id, session=None):
+    if session is None:
+        session = internal_session
     if isinstance(id, str):
         sim, ts, halo = id.split("/")
         ts = get_timestep(sim + "/" + ts)
@@ -1399,18 +1268,18 @@ def get_halo(id):
             halo_type, halo_number = map(int, halo.split("."))
         else:
             halo_type, halo_number = 0, int(halo)
-        return internal_session.query(Halo).filter_by(timestep_id=ts.id, halo_number=halo_number, halo_type=halo_type).first()
-    return internal_session.query(Halo).filter_by(id=id).first()
+        return session.query(Halo).filter_by(timestep_id=ts.id, halo_number=halo_number, halo_type=halo_type).first()
+    return session.query(Halo).filter_by(id=id).first()
 
 
-def get_item(path):
+def get_item(path, session=None):
     c = path.count("/")
     if c is 0:
-        return get_simulation(path)
+        return get_simulation(path, session)
     elif c is 1:
-        return get_timestep(path)
+        return get_timestep(path, session)
     elif c is 2:
-        return get_halo(path)
+        return get_halo(path, session)
 
 
 def get_haloproperty(id):

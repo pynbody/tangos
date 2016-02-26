@@ -221,14 +221,6 @@ def test_path_factorisation():
     #    'my_BH("hole_spin").hole_spin',
     #    'Mvir')
 
-    desc = lc.MultiCalculationDescription(
-        lc.LinkDescription('my_BH("hole_spin")',
-                           lc.MultiCalculationDescription("hole_mass","hole_spin")),
-        'Mvir')
-
-
-
-
     BH_mass, BH_spin, Mv = db.get_timestep("sim/ts1").gather_property('my_BH("hole_spin").(hole_mass, hole_spin)', 'Mvir')
     npt.assert_allclose(BH_mass, [100.,200.,300.])
     npt.assert_allclose(BH_spin, [900.,800.,700.])
