@@ -1,4 +1,4 @@
-from . import HaloProperties, instantiate_class
+from . import HaloProperties, instantiate_class, LiveHaloProperties
 import numpy as np
 import math
 import pynbody
@@ -283,28 +283,27 @@ class GenericPercentile(HaloProperties):
         index = np.where(val>self._ratio)[0][0]
         return x0+index*delta_x
 
-class AtPosition(HaloProperties):
-    def __init__(self, pos_name, name):
+class AtPosition(LiveHaloProperties):
+    def __init__(self, position, name):
         self._name = name
-        self._pos_name = pos_name
+        self._position = position
         self._cl = instantiate_class(name)
 
     @classmethod
     def name(cls):
         return "at"
 
-    @classmethod
-    def requires_simdata(self):
-        return False
+    def requires_property(self):
+        return self._name,
 
-    def calculate(self,  halo, existing_properties):
+    def live_calculate(self,  existing_properties):
         x0 = self._cl.plot_x0()
         delta_x = self._cl.plot_xdelta()
-        if isinstance(self._pos_name, float):
-            pos = self._pos_name
+        if isinstance(self._position, float):
+            pos = self._position
         else:
-            pos = existing_properties[self._pos_name]
-        ar = existing_properties.get_or_calculate(self._name)
+            pos = existing_properties[self._position]
+        ar = existing_properties[self._name]
 
         # linear interpolation
         i0 = int((pos-x0)/delta_x)
@@ -317,19 +316,22 @@ class AtPosition(HaloProperties):
 
 
 class AbsProperty(HaloProperties):
-    def __init__(self, name):
-        self._name = name
+    def __init__(self, array):
+        self._array = array
 
     @classmethod
     def name(self):
         return "abs"
+
+    def requires_property(self):
+        return self._array,
 
     @classmethod
     def requires_simdata(self):
         return False
 
     def calculate(self, halo, properties):
-        return np.linalg.norm(properties.get_or_calculate(self._name), axis=1)
+        return np.linalg.norm(self._array, axis=1)
 
 
 
