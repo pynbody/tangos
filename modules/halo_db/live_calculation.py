@@ -93,7 +93,7 @@ class CalculationDescription(object):
 
 class MultiCalculationDescription(CalculationDescription):
     def __init__(self, *calculations):
-        self.calculations = calculations
+        self.calculations = [c if isinstance(c,CalculationDescription) else parse_property_name(c) for c in calculations]
 
     def retrieves(self):
         x = set()
@@ -117,7 +117,7 @@ class MultiCalculationDescription(CalculationDescription):
 
 
 class FixedInputDescription(CalculationDescription):
-    def __init__(self, tokens):
+    def __init__(self, *tokens):
         self.value = str(tokens[0])
 
     def __str__(self):
@@ -144,14 +144,14 @@ class FixedNumericInputDescription(FixedInputDescription):
         else:
             return int(t)
 
-    def __init__(self, tokens):
+    def __init__(self, *tokens):
         self.value = self._process_numerical_value(tokens[0])
 
     def __str__(self):
         return str(self.value)
 
 class LivePropertyDescription(CalculationDescription):
-    def __init__(self, tokens):
+    def __init__(self, *tokens):
         self.name = str(tokens[0])
         self.inputs = list(tokens[1:])
 
@@ -186,9 +186,13 @@ class LivePropertyDescription(CalculationDescription):
 
 
 class LinkDescription(CalculationDescription):
-    def __init__(self, tokens):
+    def __init__(self, *tokens):
         self.locator = tokens[0]
         self.property = tokens[1]
+        if not isinstance(self.locator, CalculationDescription):
+            self.locator = parse_property_name(self.locator)
+        if not isinstance(self.property, CalculationDescription):
+            self.property = parse_property_name(self.property)
 
     def __str__(self):
         return str(self.locator)+"."+str(self.property)
@@ -210,17 +214,12 @@ class LinkDescription(CalculationDescription):
             raise ValueError, "Cannot use property %r, which returns more than one column, as a halo locator"%(str(self.locator))
 
         target_halos = self.locator.values(halos)[0]
-        print "hal=",halos
-        print halos[0].all_links
-        print halos[0].links.all()
-        print "th=",self.locator.values(halos)
 
         results = np.empty((self.n_columns(),len(halos)),dtype=object)
 
         results_target = np.where(np.not_equal(target_halos, None))
         target_halos_weeded = target_halos[results_target]
 
-        print "thw=",target_halos_weeded
 
         for i in xrange(len(target_halos_weeded)):
             if isinstance(target_halos_weeded[i], list):
@@ -237,14 +236,14 @@ class LinkDescription(CalculationDescription):
             target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
             values = self.property.values(target_halos_supplemented)
 
-        results[:,results_target] = values
+        results[:,results_target[0]] = values
 
         return results
 
 
 
 class StoredPropertyDescription(CalculationDescription):
-    def __init__(self, tokens):
+    def __init__(self, *tokens):
         self.name = tokens[0]
 
     def __str__(self):
@@ -263,25 +262,29 @@ class StoredPropertyDescription(CalculationDescription):
 
 
 def parse_property_name( name):
-    property_name = pp.Word(pp.alphas,pp.alphanums+"_")
-    stored_property = property_name.setParseAction(StoredPropertyDescription)
-    live_calculation_property = pp.Forward().setParseAction(LivePropertyDescription)
+    pack_args = lambda fun: lambda t: fun(*t)
 
-    numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]\d+)?').setParseAction(FixedNumericInputDescription)
+    property_name = pp.Word(pp.alphas,pp.alphanums+"_")
+    stored_property = property_name.setParseAction(pack_args(StoredPropertyDescription))
+    live_calculation_property = pp.Forward().setParseAction(pack_args(LivePropertyDescription))
+
+    numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]\d+)?').setParseAction(pack_args(FixedNumericInputDescription))
 
     dbl_quotes = pp.Literal("\"").suppress()
 
-    string_value = dbl_quotes.suppress() + pp.SkipTo(dbl_quotes).setParseAction(FixedInputDescription) + dbl_quotes.suppress()
+    string_value = dbl_quotes.suppress() + pp.SkipTo(dbl_quotes).setParseAction(pack_args(FixedInputDescription)) + dbl_quotes.suppress()
 
-    redirection = pp.Forward().setParseAction(LinkDescription)
-
+    redirection = pp.Forward().setParseAction(pack_args(LinkDescription))
 
 
     value_or_property_name = string_value | numerical_value \
                              | redirection | live_calculation_property \
                              | stored_property
 
-    redirection << (live_calculation_property | stored_property) + pp.Literal(".").suppress() + (redirection | live_calculation_property | stored_property)
+    multiple_properties = (pp.Literal("(").suppress()+value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name) +pp.Literal(")").suppress()).setParseAction(pack_args(MultiCalculationDescription))
+
+
+    redirection << (live_calculation_property | stored_property) + pp.Literal(".").suppress() + (redirection | live_calculation_property | stored_property | multiple_properties)
 
     parameters = pp.Literal("(").suppress()+pp.Optional(value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name))+pp.Literal(")").suppress()
     live_calculation_property << property_name+parameters
