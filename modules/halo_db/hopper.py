@@ -1,10 +1,11 @@
 import core
 import sqlalchemy, sqlalchemy.orm, sqlalchemy.orm.dynamic, sqlalchemy.orm.query, sqlalchemy.exc
 from sqlalchemy.orm import Session, relationship
-from sqlalchemy import and_, Table, Column, String, Integer, Float, MetaData, ForeignKey
+from sqlalchemy import and_, Table, Column, String, Integer, Float, MetaData, ForeignKey, Index
 import string
 import random
 import contextlib
+import time
 import logging
 import pyparsing as pp
 
@@ -185,15 +186,18 @@ class MultiHopStrategy(HopStrategy):
     timestep_old = sqlalchemy.orm.aliased(core.TimeStep,name="timestep_old")
     timestep_new = sqlalchemy.orm.aliased(core.TimeStep,name="timestep_new")
 
-    def __init__(self, halo_from, nhops_max, directed=None, target=None, order_by=None, combine_routes=True):
+    def __init__(self, halo_from, nhops_max, directed=None, target=None,
+                 order_by=None, combine_routes=True, min_aggregated_weight=0.0,
+                 min_onehop_weight=0.0, store_full_paths=False):
         super(MultiHopStrategy,self).__init__(halo_from,target,order_by)
         self.nhops_max = nhops_max
         self.directed = directed
+        self._min_aggregated_weight = min_aggregated_weight
+        self._min_onehop_weight = min_onehop_weight
+        self._store_full_paths = store_full_paths
         assert isinstance(self.session, Session)
         self.connection = self.session.connection()
         self._combine_routes = combine_routes
-
-
 
 
     def temp_table(self):
@@ -247,40 +251,41 @@ class MultiHopStrategy(HopStrategy):
         return _recursive_map_ids_to_objects(self.link_ids(),core.HaloLink,self.session)
 
     def _supplement_halolink_query_with_filter(self, query, table=None):
-        if self._needs_link_filter():
-            if table is None:
-                table = core.HaloLink.__table__
 
+        if table is None:
+            table = core.HaloLink.__table__
 
-
-            filter = self._generate_link_filter(self.timestep_old, self.timestep_new)
+        if self._needs_join_for_link_filter():
 
             query = query. \
                 join(self.halo_old, table.c.halo_from_id==self.halo_old.id). \
                 join(self.halo_new, table.c.halo_to_id==self.halo_new.id). \
                 join(self.timestep_old, self.halo_old.timestep). \
-                join(self.timestep_new, self.halo_new.timestep). \
-                filter(filter)
+                join(self.timestep_new, self.halo_new.timestep)
 
+        filter = self._generate_link_filter(self.timestep_old, self.timestep_new, table)
+        query = query.filter(filter)
 
         return query
 
-    def _needs_link_filter(self):
+    def _needs_join_for_link_filter(self):
         return self.directed is not None
 
-    def _generate_link_filter(self, timestep_old, timestep_new):
-        if self.directed is None:
-            return None
+    def _generate_link_filter(self, timestep_old, timestep_new, table):
 
-        directed = self.directed.lower()
-        if directed == 'backwards':
-            recursion_filter = timestep_new.time_gyr < timestep_old.time_gyr
-        elif directed == 'forwards':
-            recursion_filter = timestep_new.time_gyr > timestep_old.time_gyr
-        elif directed == 'across':
-            recursion_filter = sqlalchemy.func.abs(timestep_new.time_gyr-timestep_old.time_gyr)<1e-4
-        else:
-            raise ValueError, "Unknown direction %r"%directed
+        recursion_filter = table.c.weight>self._min_aggregated_weight
+
+        if self.directed is not None:
+            directed = self.directed.lower()
+            if directed == 'backwards':
+                recursion_filter &= timestep_new.time_gyr < timestep_old.time_gyr
+            elif directed == 'forwards':
+                recursion_filter &= timestep_new.time_gyr > timestep_old.time_gyr
+            elif directed == 'across':
+                recursion_filter &= sqlalchemy.func.abs(timestep_new.time_gyr-timestep_old.time_gyr)<1e-4
+            else:
+                raise ValueError, "Unknown direction %r"%directed
+
 
         return recursion_filter
 
@@ -288,6 +293,7 @@ class MultiHopStrategy(HopStrategy):
     def _delete_temp_table(self):
         self._table.drop(checkfirst=True,bind=self.connection)
         self._prelim_table.drop(checkfirst=True,bind=self.connection)
+        #self._index.drop(bind=self.connection)
         core.Base.metadata.remove(self._table)
         core.Base.metadata.remove(self._prelim_table)
 
@@ -339,6 +345,7 @@ class MultiHopStrategy(HopStrategy):
         self._table = multi_hop_link_table
         self._prelim_table = multi_hop_link_prelim_table
         self._table.create(checkfirst=True,bind=self.connection)
+
         self._prelim_table.create(checkfirst=True,bind=self.connection)
 
 
@@ -375,52 +382,63 @@ class MultiHopStrategy(HopStrategy):
             generated_count = self._generate_next_level_prelim_links(i-1)
             if generated_count==0:
                 break
-            self._filter_prelim_links_into_final()
+            filtered_count = self._filter_prelim_links_into_final()
 
     def _generate_next_level_prelim_links(self,from_nhops=0):
 
-        links = self._table.c.links +\
-                                  sqlalchemy.literal(",") +\
-                                  sqlalchemy.cast(core.HaloLink.id,sqlalchemy.String)
+        if self._store_full_paths:
+            links = self._table.c.links +\
+                                      sqlalchemy.literal(",") +\
+                                      sqlalchemy.cast(core.HaloLink.id,sqlalchemy.String)
 
-        nodes = self._table.c.nodes +\
-                                  sqlalchemy.literal(",") +\
-                                  sqlalchemy.cast(core.HaloLink.halo_to_id,sqlalchemy.String)
+            nodes = self._table.c.nodes +\
+                                      sqlalchemy.literal(",") +\
+                                      sqlalchemy.cast(core.HaloLink.halo_to_id,sqlalchemy.String)
 
-        links = sqlalchemy.literal("(")+links+sqlalchemy.literal(")")
-        nodes = sqlalchemy.literal("(")+nodes+sqlalchemy.literal(")")
+            links = sqlalchemy.literal("(")+links+sqlalchemy.literal(")")
+            nodes = sqlalchemy.literal("(")+nodes+sqlalchemy.literal(")")
+
+            if self._combine_routes:
+                links = sqlalchemy.func.group_concat(links,"+")
+                nodes = sqlalchemy.func.group_concat(nodes,"+")
+        else:
+            links = sqlalchemy.literal("")
+            nodes = sqlalchemy.literal("")
+
+
+        new_weight = self._table.c.weight*core.HaloLink.weight
 
         if self._combine_routes:
-
-            recursion_query = \
-                self.session.query(
-                                   core.HaloLink.halo_from_id,
-                                   core.HaloLink.halo_to_id.label("halo_to_id"),
-                                   sqlalchemy.func.max(self._table.c.weight*core.HaloLink.weight),
-                                   (self._table.c.nhops + 1).label("nhops"),
-                                   sqlalchemy.func.group_concat(links,"+"),
-                                   sqlalchemy.func.group_concat(nodes,"+")).filter(and_(
-                                        self._table.c.halo_to_id==core.HaloLink.halo_from_id,
-                                        self._table.c.nhops==from_nhops
-                                    )).group_by(core.HaloLink.halo_to_id)
-        else:
-            recursion_query = \
-                self.session.query(
-                                   core.HaloLink.halo_from_id,
-                                   core.HaloLink.halo_to_id.label("halo_to_id"),
-                                   self._table.c.weight*core.HaloLink.weight,
-                                   (self._table.c.nhops + 1).label("nhops"),
-                                   links, nodes).filter(and_(
-                                        self._table.c.halo_to_id==core.HaloLink.halo_from_id,
-                                        self._table.c.nhops==from_nhops
-                                    ))
+            new_weight = sqlalchemy.func.max(new_weight)
 
 
+
+        recursion_query = \
+            self.session.query(
+                               core.HaloLink.halo_from_id,
+                               core.HaloLink.halo_to_id.label("halo_to_id"),
+                               new_weight,
+                               (self._table.c.nhops + sqlalchemy.literal(1)).label("nhops"),
+                               links, nodes).\
+                                select_from(self._table).\
+                               join(core.HaloLink, and_(self._table.c.nhops==from_nhops,
+                                                        self._table.c.halo_to_id==core.HaloLink.halo_from_id)).\
+                            filter(core.HaloLink.weight>self._min_onehop_weight
+                                )
+
+        if self._combine_routes:
+            recursion_query = recursion_query.group_by(core.HaloLink.halo_to_id)
+
+
+        ct = recursion_query.count()
 
         insert = self._prelim_table.insert().from_select(['halo_from_id','halo_to_id','weight','nhops','links','nodes'],
                                                 recursion_query)
 
+
         result = self.connection.execute(insert)
+
+
         return result.rowcount
 
     def _filter_prelim_links_into_final(self):
@@ -434,10 +452,10 @@ class MultiHopStrategy(HopStrategy):
 
         q = self._supplement_halolink_query_with_filter(q, self._prelim_table)
 
+        added_rows = self.connection.execute(self._table.insert().from_select(['halo_from_id','halo_to_id','weight','nhops','links','nodes'],q)).rowcount
 
-        self.connection.execute(self._table.insert().from_select(['halo_from_id','halo_to_id','weight','nhops','links','nodes'],q))
         self.connection.execute(self._prelim_table.delete())
-
+        return added_rows
 
     def _generate_query(self):
 
