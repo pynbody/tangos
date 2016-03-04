@@ -387,5 +387,5 @@ def live_calculate(property_name, db_halo, *args, **kwargs):
 
 
 
-from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr, dust
+from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr, dust, intrinsic
 

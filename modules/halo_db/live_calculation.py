@@ -57,13 +57,19 @@ class CalculationDescription(object):
     def values(self, halos):
         raise NotImplementedError
 
+    def _make_final_array(self, x):
+        if isinstance(x[0], np.ndarray):
+            return np.array(list(x), dtype=type(x[0][0]))
+        else:
+            return np.array(x, dtype=type(x[0]))
+
     def values_sanitized(self, halos):
         out = self.values(halos)
 
         keep_rows = np.all(np.not_equal(out,None), axis=0)
         out = out[:,keep_rows]
 
-        return [np.array(x, dtype=type(x[0])) for x in out]
+        return [self._make_final_array(x) for x in out]
 
     def n_columns(self):
         return 1
@@ -277,7 +283,11 @@ class StoredPropertyDescription(CalculationDescription):
         return {self._name}
 
     def values(self, halos):
-        return np.array([[h[self._name] if self._has_required_properties(h) else None for h in halos]], dtype=object)
+        ret = np.empty((1,len(halos)),dtype=object)
+        for i, h in enumerate(halos):
+            if self._has_required_properties(h):
+                ret[0,i]=h[self._name]
+        return ret
 
     def proxy_value(self):
         """Return a placeholder value for this calculation"""
@@ -302,7 +312,6 @@ def parse_property_name( name):
 
     redirection = pp.Forward().setParseAction(pack_args(LinkDescription))
 
-
     value_or_property_name = string_value | numerical_value \
                              | redirection | live_calculation_property \
                              | stored_property
@@ -310,7 +319,7 @@ def parse_property_name( name):
     multiple_properties = (pp.Literal("(").suppress()+value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name) +pp.Literal(")").suppress()).setParseAction(pack_args(MultiCalculationDescription))
 
 
-    redirection << (live_calculation_property | stored_property) + pp.Literal(".").suppress() + (redirection | live_calculation_property | stored_property | multiple_properties)
+    redirection << (live_calculation_property | stored_property ) + pp.Literal(".").suppress() + (redirection | live_calculation_property | stored_property | multiple_properties)
 
     parameters = pp.Literal("(").suppress()+pp.Optional(value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name))+pp.Literal(")").suppress()
     live_calculation_property << property_name+parameters
