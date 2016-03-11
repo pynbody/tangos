@@ -46,7 +46,9 @@ class DataAttributeMapper(object):
         for subclass in cls.__all_nonabstract_subclasses():
             if subclass._handles_db_object(db_object):
                 return subclass
-        raise TypeError, "No data found in object %r"%db_object
+
+        # NullAttributeMapper should prevent the following line from being reached
+        assert False, "Internal error in data_attribute_mapper: no subclass claimed responsibility for object"
 
     @classmethod
     def _subclass_from_data(cls, data):
