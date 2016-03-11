@@ -1,5 +1,5 @@
 import halo_db as db
-import halo_db.hopper as hopper
+import halo_db.halo_finder as halo_finder
 
 def setup():
     db.init_db("sqlite://")

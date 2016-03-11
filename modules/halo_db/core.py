@@ -503,7 +503,7 @@ class TimeStep(Base):
 
         from . import live_calculation
 
-        if isinstance(plist[0], live_calculation.CalculationDescription):
+        if isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]
         else:
             property_description = live_calculation.parse_property_names(*plist)
@@ -597,8 +597,14 @@ class Halo(Base):
         else:
             return h[self.halo_number]
 
-    def get_or_calculate(self, key):
-        return identifiers.get_halo_property_with_magic_strings(self, key)
+    def calculate(self, name):
+        from . import live_calculation
+        calculation = live_calculation.parse_property_name(name)
+        value = calculation.value(self)
+        if len(value)==1:
+            return value[0]
+        else:
+            return value
 
     def get_x_values_for(self, key):
         obj = self._get_object(key)
@@ -799,12 +805,25 @@ class Halo(Base):
         return data.plot(*args, **kwargs)
 
 
-    def property_cascade(self, *plist):
+    def property_cascade(self, *plist, **kwargs):
+        """Run the specified calculations on this halo and its descendants
+
+        Each argument is a string (or an instance of live_calculation.Calculation), following the syntax
+        described in live_calculation.md.
+
+        *kwargs*:
+
+        :param nmax: The maximum number of descendants to consider (default 1000)
+        :param hop_class: The class to use to find the descendants (default halo_finder.MultiHopMajorDescendantsStrategy)
+        """
         from . import live_calculation
-        from . import hopper
+        from . import halo_finder
         from . import temporary_halolist as thl
 
-        if isinstance(plist[0], live_calculation.CalculationDescription):
+        nmax = kwargs.get('nmax',1000)
+        hop_class = kwargs.get('hop_class', halo_finder.MultiHopMajorDescendantsStrategy)
+
+        if isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]
         else:
             property_description = live_calculation.parse_property_names(*plist)
@@ -812,19 +831,27 @@ class Halo(Base):
         # must be performed in its own session as we intentionally load in a lot of
         # objects with incomplete lazy-loaded properties
         session = Session()
-        with hopper.MultiHopMajorDescendantsStrategy(get_halo(self.id, session)).temp_table() as tt:
+        with hop_class(get_halo(self.id, session), nhops_max=nmax, include_startpoint=True).temp_table() as tt:
             raw_query = thl.halo_query(tt)
             query = property_description.supplement_halo_query(raw_query)
             results = query.all()
             return property_description.values_sanitized(results)
 
+    def reverse_property_cascade(self, *plist, **kwargs):
+        """Run the specified calculations on the progenitors of this halo
+
+        For more information see property_cascade.
+        """
+        from . import halo_finder
+        kwargs['hop_class'] = halo_finder.MultiHopMajorProgenitorsStrategy
+        return self.property_cascade(*plist, **kwargs)
 
 
     @property
     def next(self):
         if not hasattr(self, '_next'):
-            from . import hopper
-            strategy = hopper.HopMajorDescendantStrategy(self)
+            from . import halo_finder
+            strategy = halo_finder.HopMajorDescendantStrategy(self)
             self._next=strategy.first()
 
         return self._next
@@ -832,8 +859,8 @@ class Halo(Base):
     @property
     def previous(self):
         if not hasattr(self, '_previous'):
-            from . import hopper
-            strategy = hopper.HopMajorProgenitorStrategy(self)
+            from . import halo_finder
+            strategy = halo_finder.HopMajorProgenitorStrategy(self)
             self._previous=strategy.first()
 
         return self._previous

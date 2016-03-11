@@ -1,7 +1,7 @@
 import numpy as np
 import re
 import warnings
-import hopper
+import halo_finder
 import pyparsing as pp
 import properties
 from . import core
@@ -9,7 +9,7 @@ from . import temporary_halolist as thl
 from sqlalchemy.orm import contains_eager, aliased
 
 
-class CalculationDescription(object):
+class Calculation(object):
     def __repr__(self):
         return "<Calculation description for %s>"%str(self)
 
@@ -56,6 +56,9 @@ class CalculationDescription(object):
 
     def values(self, halos):
         raise NotImplementedError
+
+    def value(self, halo):
+        return self.values([halo])[:,0]
 
     def _make_final_array(self, x):
         if isinstance(x[0], np.ndarray):
@@ -111,9 +114,9 @@ class CalculationDescription(object):
         raise NotImplementedError
 
 
-class MultiCalculationDescription(CalculationDescription):
+class MultiCalculation(Calculation):
     def __init__(self, *calculations):
-        self.calculations = [c if isinstance(c,CalculationDescription) else parse_property_name(c) for c in calculations]
+        self.calculations = [c if isinstance(c, Calculation) else parse_property_name(c) for c in calculations]
 
     def retrieves(self):
         x = set()
@@ -136,7 +139,7 @@ class MultiCalculationDescription(CalculationDescription):
         return sum(c.n_columns() for c in self.calculations)
 
 
-class FixedInputDescription(CalculationDescription):
+class FixedInput(Calculation):
     def __init__(self, *tokens):
         self.value = str(tokens[0])
 
@@ -156,7 +159,7 @@ class UnknownValue(object):
 class UnknownHalo(object):
     pass
 
-class FixedNumericInputDescription(FixedInputDescription):
+class FixedNumericInputDescription(FixedInput):
     @staticmethod
     def _process_numerical_value(t):
         if "." in t or "e" in t or "E" in t:
@@ -170,7 +173,7 @@ class FixedNumericInputDescription(FixedInputDescription):
     def __str__(self):
         return str(self.value)
 
-class LivePropertyDescription(CalculationDescription):
+class LiveProperty(Calculation):
     def __init__(self, *tokens):
         self._name = str(tokens[0])
         self._inputs = list(tokens[1:])
@@ -208,13 +211,13 @@ class LivePropertyDescription(CalculationDescription):
         return UnknownValue()
 
 
-class LinkDescription(CalculationDescription):
+class Link(Calculation):
     def __init__(self, *tokens):
         self.locator = tokens[0]
         self.property = tokens[1]
-        if not isinstance(self.locator, CalculationDescription):
+        if not isinstance(self.locator, Calculation):
             self.locator = parse_property_name(self.locator)
-        if not isinstance(self.property, CalculationDescription):
+        if not isinstance(self.property, Calculation):
             self.property = parse_property_name(self.property)
 
     def __str__(self):
@@ -269,7 +272,7 @@ class LinkDescription(CalculationDescription):
 
 
 
-class StoredPropertyDescription(CalculationDescription):
+class StoredProperty(Calculation):
     def __init__(self, *tokens):
         self._name = tokens[0]
 
@@ -299,25 +302,26 @@ def parse_property_name( name):
     pack_args = lambda fun: lambda t: fun(*t)
 
     property_name = pp.Word(pp.alphas,pp.alphanums+"_")
-    stored_property = property_name.setParseAction(pack_args(StoredPropertyDescription))
-    live_calculation_property = pp.Forward().setParseAction(pack_args(LivePropertyDescription))
+    stored_property = property_name.setParseAction(pack_args(StoredProperty))
+    live_calculation_property = pp.Forward().setParseAction(pack_args(LiveProperty))
 
     numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]\d+)?').setParseAction(pack_args(FixedNumericInputDescription))
 
     dbl_quotes = pp.Literal("\"").suppress()
     sng_quotes = pp.Literal("'").suppress()
 
-    string_value = dbl_quotes.suppress() + pp.SkipTo(dbl_quotes).setParseAction(pack_args(FixedInputDescription)) + dbl_quotes.suppress() | \
-                   sng_quotes.suppress() + pp.SkipTo(sng_quotes).setParseAction(pack_args(FixedInputDescription)) + sng_quotes.suppress()
+    string_value = dbl_quotes.suppress() + pp.SkipTo(dbl_quotes).setParseAction(pack_args(FixedInput)) + dbl_quotes.suppress() | \
+                   sng_quotes.suppress() + pp.SkipTo(sng_quotes).setParseAction(pack_args(FixedInput)) + sng_quotes.suppress()
 
-    redirection = pp.Forward().setParseAction(pack_args(LinkDescription))
+    redirection = pp.Forward().setParseAction(pack_args(Link))
+
+    multiple_properties = pp.Forward().setParseAction(pack_args(MultiCalculation))
 
     value_or_property_name = string_value | numerical_value \
                              | redirection | live_calculation_property \
-                             | stored_property
+                             | stored_property | multiple_properties
 
-    multiple_properties = (pp.Literal("(").suppress()+value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name) +pp.Literal(")").suppress()).setParseAction(pack_args(MultiCalculationDescription))
-
+    multiple_properties << (pp.Literal("(").suppress()+value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name) +pp.Literal(")").suppress())
 
     redirection << (live_calculation_property | stored_property ) + pp.Literal(".").suppress() + (redirection | live_calculation_property | stored_property | multiple_properties)
 
@@ -329,7 +333,7 @@ def parse_property_name( name):
 
 
 def parse_property_names(*names):
-    return MultiCalculationDescription(*[parse_property_name(n) for n in names])
+    return MultiCalculation(*[parse_property_name(n) for n in names])
 
 
 
@@ -385,7 +389,7 @@ def get_property_with_live_calculation(halo,pname,raw):
 
 def find_relation(relation_name, halo, maxhops=2):
     relation = core.get_item(relation_name)
-    strategy = hopper.MultiHopStrategy(halo, maxhops, "across", relation)
+    strategy = halo_finder.MultiHopStrategy(halo, maxhops, "across", relation)
     res = strategy.all()
 
     if len(res)>0:

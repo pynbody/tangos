@@ -5,6 +5,10 @@ import properties
 from halo_db import live_calculation as lc
 import sqlalchemy
 
+def _add_symmetric_link(h1, h2):
+    rel = db.get_or_create_dictionary_item(db.core.internal_session, "ptcls_in_common")
+    db.core.internal_session.add_all([db.HaloLink(h1,h2,rel,1.0), db.HaloLink(h2,h1,rel,1.0)])
+
 def setup():
     db.init_db("sqlite://")
 
@@ -35,11 +39,6 @@ def setup():
 
     session.add_all([ts1_h1,ts1_h2,ts1_h3,ts1_h4])
 
-
-
-
-
-
     ts2_h1 = db.Halo(ts2,1,1000,0,0,0)
     ts2_h2 = db.Halo(ts2,2,900,0,0,0)
     ts2_h3 = db.Halo(ts2,3,800,0,0,0)
@@ -57,26 +56,20 @@ def setup():
 
     session.add_all([ts3_h1,ts3_h2,ts3_h3])
 
-    rel = db.get_or_create_dictionary_item(session, "ptcls_in_common")
 
-    session.add_all([db.HaloLink(ts1_h1,ts2_h1,rel,1.0)])
-    session.add_all([db.HaloLink(ts1_h2,ts2_h2,rel,1.0)])
-    session.add_all([db.HaloLink(ts1_h3,ts2_h3,rel,1.0)])
-    session.add_all([db.HaloLink(ts1_h4,ts2_h4,rel,1.0)])
+    _add_symmetric_link(ts1_h1, ts2_h1)
+    _add_symmetric_link(ts1_h2, ts2_h2)
+    _add_symmetric_link(ts1_h3, ts2_h3)
+    _add_symmetric_link(ts1_h4, ts2_h4)
 
-    session.add_all([db.HaloLink(ts2_h1,ts3_h1,rel,1.0)])
-    session.add_all([db.HaloLink(ts2_h2,ts3_h2,rel,1.0)])
-    session.add_all([db.HaloLink(ts2_h3,ts3_h3,rel,1.0)])
-
+    _add_symmetric_link(ts2_h1, ts3_h1)
+    _add_symmetric_link(ts2_h2, ts3_h2)
+    _add_symmetric_link(ts2_h3, ts3_h3)
 
 
     for i,h in enumerate([ts1_h1,ts1_h2,ts1_h3,ts1_h4,ts2_h1,ts2_h2,ts2_h3,ts2_h4,ts3_h1,ts3_h2,ts3_h3]):
         h['Mvir'] = float(i+1)
         h['Rvir'] = float(i+1)*0.1
-
-
-
-
 
     ts1_h1_bh = db.core.BH(ts1,1)
     ts1_h2_bh = db.core.BH(ts1,2)
@@ -237,3 +230,16 @@ def test_single_quotes():
     BH_mass, Mv = db.get_timestep("sim/ts1").gather_property("my_BH('hole_spin').hole_mass","Mvir")
     npt.assert_allclose(BH_mass, [100.,200.,300.])
     npt.assert_allclose(Mv, [1.,2.,3.])
+
+
+def test_property_cascade():
+    h = db.get_halo("sim/ts1/1")
+    objs, = h.property_cascade("dbid()")
+    assert len(objs)==3
+    assert all([objs[i]==db.get_halo(x).id for i,x in enumerate(("sim/ts1/1", "sim/ts2/1", "sim/ts3/1"))])
+
+def test_reverse_property_cascade():
+    h = db.get_halo("sim/ts3/1")
+    objs, = h.reverse_property_cascade("dbid()")
+    assert len(objs)==3
+    assert all([objs[i]==db.get_halo(x).id for i,x in enumerate(("sim/ts3/1", "sim/ts2/1", "sim/ts1/1"))])
