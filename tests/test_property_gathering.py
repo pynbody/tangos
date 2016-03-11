@@ -101,7 +101,7 @@ class TestProperty(properties.LiveHaloProperties):
     def requires_property(self):
         return "Mvir", "Rvir"
 
-    def live_calculate(self, halo, names):
+    def live_calculate(self, halo):
         return halo["Mvir"]+halo["Rvir"]
 
 class TestErrorProperty(properties.LiveHaloProperties):
@@ -117,7 +117,7 @@ class TestErrorProperty(properties.LiveHaloProperties):
     def requires_property(self):
         return "Mvir",
 
-    def live_calculate(self, halo, names):
+    def live_calculate(self, halo):
         print "Fixed cache:",halo._use_fixed_cache()
         print "all properties:",halo.all_properties
         return halo["Mvir"]+halo["Rvir"]
@@ -127,33 +127,31 @@ class TestPropertyWithParameter(properties.LiveHaloProperties):
     def name(cls):
         return "squared"
 
-    def __init__(self, value):
-        self.value = value
-
-    def live_calculate(self, halo, names):
-        return self.value**2
+    def live_calculate(self, halo, value):
+        return value**2
 
 class TestPathChoice(properties.LiveHaloProperties):
     num_calls = 0
 
-    @classmethod
-    def name(clscls):
-        return "my_BH"
-
-    def __init__(self, criterion="hole_mass", default_val=0.0):
+    def __init__(self, simulation, criterion="hole_mass"):
+        super(TestPathChoice, self).__init__(simulation, criterion)
+        assert isinstance(criterion, basestring), "Criterion must be a named BH property"
         self.criterion = criterion
-        self.default_val = 0.0
+
+    @classmethod
+    def name(cls):
+        return "my_BH"
 
     def requires_property(self):
         return "BH", "BH."+self.criterion
 
-    def live_calculate(self, halo, names):
+    def live_calculate(self, halo, criterion="hole_mass"):
         type(self).num_calls+=1
         bh_links = halo["BH"]
         if isinstance(bh_links,list):
             for lk in bh_links:
                 print lk.keys()
-            vals = [lk[self.criterion] if self.criterion in lk else self.default_val for lk in bh_links]
+            vals = [lk[criterion] if criterion in lk else self.default_val for lk in bh_links]
             return bh_links[np.argmax(vals)]
         else:
             return bh_links

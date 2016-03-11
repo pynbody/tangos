@@ -600,7 +600,7 @@ class Halo(Base):
     def calculate(self, name):
         from . import live_calculation
         calculation = live_calculation.parse_property_name(name)
-        value = calculation.value(self)
+        value = calculation.values_sanitized([self])[0]
         if len(value)==1:
             return value[0]
         else:
@@ -1286,6 +1286,12 @@ def get_timestep(id, session=None):
 
 
 def get_halo(id, session=None):
+    """Get a halo from an ID or an identifying string
+
+    Optionally, use the specified session.
+
+    :rtype: Halo
+    """
     if session is None:
         session = internal_session
     if isinstance(id, str):

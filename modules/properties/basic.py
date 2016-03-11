@@ -158,11 +158,9 @@ class MassEnclosed(HaloProperties):
 
         return starM, gasM, HIM, coldM
 
-    @classmethod
     def plot_x0(cls):
         return 0.0
 
-    @classmethod
     def plot_xdelta(cls):
         return 0.1
 
@@ -323,11 +321,9 @@ class ABMagnitudes_encl(HaloProperties):
 
         return V_encl+ABcorr['v'], B_encl+ABcorr['b'], K_encl+ABcorr['k'], U_encl+ABcorr['u'], J_encl+ABcorr['j'], I_encl+ABcorr['i'], R_encl+ABcorr['r']
 
-    @classmethod
     def plot_x0(cls):
         return 0.0
 
-    @classmethod
     def plot_xdelta(cls):
         return 0.1
 

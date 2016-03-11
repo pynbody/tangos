@@ -245,7 +245,8 @@ class BHAccHistogramMerged(HaloProperties):
 
 
 class BHGal(LiveHaloProperties):
-    def __init__(self, choose='BH_mass', minmax='max', bhtype='BH_central'):
+    def __init__(self, simulation=None, choose='BH_mass', minmax='max', bhtype='BH_central'):
+        super(BHGal, self).__init__(simulation)
         self._maxmin = minmax
         self._choicep = choose
         self._bhtype = bhtype

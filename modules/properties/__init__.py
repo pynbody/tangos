@@ -6,17 +6,18 @@ import pyparsing as pp
 
 
 class HaloProperties(object):
+    def __init__(self, simulation):
+        """Initialise a HaloProperties calculation object
+
+        :param simulation: The simulation from which the properties will be derived
+        :type simulation: halo_db.core.Simulation
+        """
+        self._simulation = simulation
 
     def requires_array(self):
         """Returns a list of loaded arrays required to
         calculate this property"""
         return []
-
-    @classmethod
-    def plot_x_values(cls, for_data):
-        """Return a suitable array of x values to match the
-        given y values"""
-        return np.arange(cls.plot_x0(),  cls.plot_x0()+cls.plot_xdelta()*(len(for_data)-0.5), cls.plot_xdelta())
 
     @classmethod
     def requires_simdata(self):
@@ -105,11 +106,45 @@ class HaloProperties(object):
                 return False
         return True
 
-    def calculate(self,  halo, existing_properties):
-        """Performs calculation, given halo, and returns
-        the property to be stored under dict[name()]."""
+    def calculate(self, pynbody_halo_data, db_halo_entry):
+        """Calculate the properties using the given data
 
+        :param pynbody_halo_data: The halo data, if available
+        :type pynbody_halo_data: pynbody.snapshot.SimSnap
 
+        :param db_halo_entry: The database object associated with the halo, if available
+        :type db_halo_entry: halo_db.core.Halo
+        :return: All properties as named by names()
+        """
+        raise NotImplementedError
+
+    def live_calculate(self, db_halo_entry, *input_values):
+        """Calculate the result of a function, using the existing data in the database alone
+
+        :param db_halo_entry: The database object associated with the halo
+        :type db_halo_entry: halo_db.core.Halo
+
+        :param input_values: Input values for the function
+        :return: All function values as named by self.name()
+        """
+        return self.calculate(None, db_halo_entry)
+
+    def live_calculate_named(self, name, db_halo_entry, *input_values):
+        """Calculate the result of a function, using the existing data in the database alone
+
+        :param name: The name of the one property to return (which must be one of the values specified by self.name())
+        :param db_halo_entry: The database object associated with the halo
+        :type db_halo_entry: halo_db.core.Halo
+
+        :param input_values: Input values for the function
+        :return: The single named value
+        """
+        values = self.live_calculate(db_halo_entry, *input_values)
+        names = self.name()
+        if isinstance(names, basestring):
+            return values
+        else:
+            return values[self.name().index(name)]
 
     def calculate_from_db(self, db):
         import pynbody
@@ -130,40 +165,36 @@ class HaloProperties(object):
         self.start_timer()
         return self.calculate(gp_sp, db)
 
-    @classmethod
-    def plot_x_extent(cls):
+    def plot_x_values(self, for_data):
+        """Return a suitable array of x values to match the
+        given y values"""
+        return np.arange(self.plot_x0(), self.plot_x0() + self.plot_xdelta() * (len(for_data) - 0.5), self.plot_xdelta())
+
+    def plot_x_extent(self):
         return None
 
-    @classmethod
-    def plot_x0(cls):
+    def plot_x0(self):
         return 0
 
-    @classmethod
-    def plot_xdelta(cls):
+    def plot_xdelta(self):
         return 1.0
 
-    @classmethod
-    def plot_xlabel(cls):
+    def plot_xlabel(self):
         return None
 
-    @classmethod
-    def plot_ylabel(cls):
+    def plot_ylabel(self):
         return None
 
-    @classmethod
-    def plot_yrange(cls):
+    def plot_yrange(self):
         return None
 
-    @classmethod
-    def plot_xlog(cls):
+    def plot_xlog(self):
         return True
 
-    @classmethod
-    def plot_ylog(cls):
+    def plot_ylog(self):
         return True
 
-    @classmethod
-    def plot_clabel(cls):
+    def plot_clabel(self):
         return None
 
 
@@ -206,27 +237,45 @@ class TimeChunkedProperty(HaloProperties):
 
         return final
 
-    @classmethod
     def plot_xdelta(cls):
         return cls.tmax_Gyr/cls.nbins
 
-    @classmethod
     def plot_xlog(cls):
         return False
 
-    @classmethod
     def plot_ylog(cls):
         return False
 
 
 class LiveHaloProperties(HaloProperties):
+    def __init__(self, simulation, *args):
+        super(LiveHaloProperties, self).__init__(simulation)
+        self._nargs = len(args)
+
     @classmethod
     def requires_simdata(self):
         return False
 
     def calculate(self, _, db_halo):
-        return self.live_calculate(db_halo, [None]*100)
+        return self.live_calculate(db_halo, *([None]*self._nargs))
 
+class LiveHaloPropertiesInheritingMetaProperties(LiveHaloProperties):
+    """LiveHaloProperties which inherit the meta-data (i.e. x0, delta_x values etc) from
+    one of the input arguments"""
+    def __init__(self, simulation, inherits_from):
+        """
+        :param simulation: The simulation DB entry for this instance
+        :param inherits_from: The HaloProperties description from which the metadata should be inherited
+        :type inherits_from: HaloProperties
+        """
+        super(LiveHaloPropertiesInheritingMetaProperties, self).__init__(simulation)
+        self._inherits_from = inherits_from
+
+    def plot_x0(self):
+        return self._inherits_from.plot_x0()
+
+    def plot_xdelta(self):
+        return self._inherits_from.plot_xdelta()
 
 class ProxyHalo(object):
 
@@ -323,43 +372,15 @@ def _process_numerical_value(s,l,t):
     else:
         return int(t[0])
 
-def _parse_property_name(name):
-    property_name = pp.Word(pp.alphanums+"_")
-    property_name_with_params = pp.Forward()
-    numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]\d+)?').setParseAction(_process_numerical_value)
-    value_or_property_name = pp.Group(numerical_value | property_name_with_params)
-    parameters = pp.Literal("(").suppress()+pp.Optional(value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name))+pp.Literal(")").suppress()
-    property_name_with_params << property_name+pp.Optional(parameters)
-    property_complete = pp.stringStart()+property_name_with_params+pp.stringEnd()
-    return property_complete.parseString(name)
-
-def _regenerate_name(parsed):
-    if not isinstance(parsed[0],str):
-        return parsed[0]
-    name = parsed[0]
-    if len(parsed)>1:
-        name+="("
-        name+=_regenerate_name(parsed[1])
-        for other in parsed[2:]:
-            name+=","+_regenerate_name(other)
-        name+=")"
-    return name
-
-def instantiate_classes(property_name_list, silent_fail=False):
+def instantiate_classes(simulation, property_name_list, silent_fail=False):
     instances = []
-    classes = []
     for property_identifier in property_name_list:
-        property_parsed = _parse_property_name(property_identifier)
-        cl = providing_class(property_parsed[0], silent_fail)
-        if cl not in classes and cl != None:
-            vals = [_regenerate_name(x) for x in property_parsed[1:]]
-            instances.append(cl(*vals))
-            classes.append(cl)
+        instances.append(providing_class(property_identifier, silent_fail)(simulation))
 
     return instances
 
-def instantiate_class(property_name, silent_fail=False):
-    instance = instantiate_classes([property_name],silent_fail)
+def instantiate_class(simulation, property_name, silent_fail=False):
+    instance = instantiate_classes(simulation, [property_name],silent_fail)
     if len(instance)==0:
         return None
     else:

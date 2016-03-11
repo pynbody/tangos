@@ -1,4 +1,4 @@
-from . import HaloProperties, instantiate_class, LiveHaloProperties
+from . import HaloProperties, instantiate_class, providing_class, LiveHaloProperties, LiveHaloPropertiesInheritingMetaProperties
 import numpy as np
 import math
 import pynbody
@@ -262,7 +262,8 @@ def fit_sersic(r, surface_brightness, return_cov=False):
         return popt
 
 class GenericPercentile(HaloProperties):
-    def __init__(self, name, ratio):
+    def __init__(self, simulation, name, ratio):
+        super(GenericPercentile, self).__init__(simulation)
         self._name = name
         self._ratio = ratio
         self._cl = instantiate_class(name)
@@ -284,22 +285,17 @@ class GenericPercentile(HaloProperties):
         return x0+index*delta_x
 
 class AtPosition(LiveHaloProperties):
-    def __init__(self, position, array):
-        self._array = array
-        self._position = position
+    def __init__(self, simulation, position, array):
+        super(AtPosition, self).__init__(simulation)
+        self._array_info = array
 
     @classmethod
     def name(cls):
         return "at"
 
-
-    def live_calculate(self, existing_properties, input_names):
-        cl = instantiate_class(input_names[1])
-        x0 = cl.plot_x0()
-        delta_x = cl.plot_xdelta()
-
-        ar = self._array
-        pos = self._position
+    def live_calculate(self, halo, pos, ar):
+        x0 = self._array_info.plot_x0()
+        delta_x = self._array_info.plot_xdelta()
 
         # linear interpolation
         i0 = int((pos-x0)/delta_x)
@@ -311,28 +307,20 @@ class AtPosition(LiveHaloProperties):
         return ar[i0]*i0_weight + ar[i1]*i1_weight
 
 
-class AbsProperty(HaloProperties):
-    def __init__(self, array):
-        self._array = array
+class AbsProperty(LiveHaloPropertiesInheritingMetaProperties):
 
     @classmethod
     def name(self):
         return "abs"
 
-    def requires_property(self):
-        return self._array,
-
-    @classmethod
-    def requires_simdata(self):
-        return False
-
-    def calculate(self, halo, properties):
-        return np.linalg.norm(self._array, axis=1)
+    def live_calculate(self, halo, array):
+        return np.linalg.norm(array, axis=-1)
 
 
 
-class StellarProfileDiagnosis(HaloProperties):
-    def __init__(self, band):
+class StellarProfileDiagnosis(LiveHaloProperties):
+    def __init__(self, simulation, band):
+        super(StellarProfileDiagnosis, self).__init__(simulation)
         self.band = band
 
     @classmethod

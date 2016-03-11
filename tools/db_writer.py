@@ -451,7 +451,7 @@ class DbWriter(object):
 
 
     def run_timestep_calculation(self, db_timestep):
-        self._property_calculator_instances = properties.instantiate_classes(self.options.properties[1:])
+        self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties[1:])
         db_halos = self._build_halo_list(db_timestep)
         self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
 
