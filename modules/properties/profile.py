@@ -304,7 +304,11 @@ class AtPosition(LiveHaloProperties):
         i0_loc = float(i0)*delta_x+x0
         i1_weight = (pos-i0_loc)/delta_x
         i0_weight = 1.0-i1_weight
-        return ar[i0]*i0_weight + ar[i1]*i1_weight
+
+        if i1>=len(ar) or i0<0:
+            return None
+        else:
+            return ar[i0]*i0_weight + ar[i1]*i1_weight
 
 
 class AbsProperty(LiveHaloPropertiesInheritingMetaProperties):

@@ -173,6 +173,9 @@ class HaloProperties(object):
     def plot_x_extent(self):
         return None
 
+    def plot_extent(self):
+        return None
+
     def plot_x0(self):
         return 0
 
@@ -224,7 +227,7 @@ class TimeChunkedProperty(HaloProperties):
             name = cls.name()
 
         halo = halo.halo
-        t, stack = halo.reverse_property_cascade("t",name,raw=True)
+        t, stack = halo.reverse_property_cascade("t()","raw("+name+")")
 
         t = t[::-1]
         stack = stack[::-1]
@@ -247,6 +250,7 @@ class TimeChunkedProperty(HaloProperties):
         return False
 
 
+
 class LiveHaloProperties(HaloProperties):
     def __init__(self, simulation, *args):
         super(LiveHaloProperties, self).__init__(simulation)
@@ -259,10 +263,11 @@ class LiveHaloProperties(HaloProperties):
     def calculate(self, _, db_halo):
         return self.live_calculate(db_halo, *([None]*self._nargs))
 
+
 class LiveHaloPropertiesInheritingMetaProperties(LiveHaloProperties):
     """LiveHaloProperties which inherit the meta-data (i.e. x0, delta_x values etc) from
     one of the input arguments"""
-    def __init__(self, simulation, inherits_from):
+    def __init__(self, simulation, inherits_from, *args):
         """
         :param simulation: The simulation DB entry for this instance
         :param inherits_from: The HaloProperties description from which the metadata should be inherited
@@ -329,7 +334,7 @@ def all_properties():
 
 def providing_class(property_name, silent_fail=False):
     """Return providing class for given property name"""
-    classes = all_property_classes()
+    classes = all_property_classes()[::-1] # search backwards to catch most recent things first
     property_name = property_name.lower().split("(")[0]
     for c in classes:
         name = c.name()
@@ -408,5 +413,5 @@ def live_calculate(property_name, db_halo, *args, **kwargs):
 
 
 
-from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr, dust, intrinsic
+from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr, dust, intrinsic, disk_dynamics
 

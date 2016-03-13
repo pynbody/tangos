@@ -14,7 +14,6 @@ import PIL, PIL.Image, StringIO, threading
 import numpy as np
 import sys
 import properties
-from halo_db import identifiers
 
 imageThreadLock = threading.Lock()
 
@@ -212,7 +211,7 @@ class PlotController(BaseController):
             return self.array_img(id,prop=prop)
         with imageThreadLock :
             self.start()
-            cl = properties.providing_class(prop.name.text)
+            cl = properties.providing_class(prop.name.text)(prop.halo.timestep.simulation)
             width = cl.plot_extent()
             if log:
                 data = np.log10(prop.data)
@@ -290,8 +289,8 @@ class PlotController(BaseController):
                 x_vals, y_vals = h_start.property_cascade(did1,did2)
                 if form=="img" :
                     p.plot(x_vals, y_vals,'k')
-                    p.plot([identifiers.get_halo_property_with_magic_strings(h,did1)],
-                           [identifiers.get_halo_property_with_magic_strings(h,did2)],'ro')
+                    p.plot([h.calculate(did1)],
+                           [h.calculate(did2)],'ro')
 
             else :
                 if nosubs :
@@ -350,25 +349,25 @@ class PlotController(BaseController):
             else :
                 if not overplot:
                     self.start()
-                name = prop.name
+                property_info = prop.name.providing_class()(prop.halo.timestep.simulation)
                 prop.plot()
 
-                if name.plot_xlog() and name.plot_ylog() :
+                if property_info.plot_xlog() and property_info.plot_ylog() :
                     p.loglog()
-                elif name.plot_xlog() :
+                elif property_info.plot_xlog() :
                     p.semilogx()
-                elif name.plot_ylog() :
+                elif property_info.plot_ylog() :
                     p.semilogy()
 
-                if name.plot_xlabel() :
-                    p.xlabel(name.plot_xlabel())
+                if property_info.plot_xlabel() :
+                    p.xlabel(property_info.plot_xlabel())
 
-                if name.plot_ylabel() :
-                    p.ylabel(name.plot_ylabel())
+                if property_info.plot_ylabel() :
+                    p.ylabel(property_info.plot_ylabel())
 
-                if name.plot_yrange():
+                if property_info.plot_yrange():
 
-                    p.ylim(*name.plot_yrange())
+                    p.ylim(*property_info.plot_yrange())
 
             if overplot :
                 return

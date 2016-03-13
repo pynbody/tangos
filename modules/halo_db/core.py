@@ -46,43 +46,6 @@ class DictionaryItem(Base):
     def providing_class(self):
         return properties.providing_class(self.text)
 
-    def _x_fn(self, fn_name):
-        cl = self.providing_class()
-        response = getattr(cl, fn_name)()
-        if isinstance(response, tuple):
-            return response[cl().name().index(self.text)]
-        else:
-            return response
-
-    def plot_x0(self):
-        return self._x_fn("plot_x0")
-
-    def plot_x_extent(self):
-        return self._x_fn("plot_x_extent")
-
-    def plot_x0(self):
-        return self._x_fn("plot_x0")
-
-    def plot_xdelta(self):
-        return self._x_fn("plot_xdelta")
-
-    def plot_xlabel(self):
-        return self._x_fn("plot_xlabel")
-
-    def plot_ylabel(self):
-        return self._x_fn("plot_ylabel")
-
-    def plot_yrange(self):
-        return self._x_fn("plot_yrange")
-
-    def plot_xlog(self):
-        return self._x_fn("plot_xlog")
-
-    def plot_ylog(self):
-        return self._x_fn("plot_ylog")
-
-    def plot_clabel(self):
-        return self._x_fn("plot_clabel")
 
 
 
@@ -606,13 +569,11 @@ class Halo(Base):
         else:
             return value
 
-    def get_x_values_for(self, key):
-        obj = self._get_object(key)
-        if len(obj)>1:
-            raise ValueError, "More than one piece of data with the same key; cannot generate unambiguous x values"
-        if not isinstance(obj[0], HaloProperty):
-            raise TypeError, "No x-values for stored data of type %r"%type(obj[0])
-        return obj[0].x_values()
+    def calculate_abcissa_values(self, name):
+        from . import live_calculation
+        calculation = live_calculation.parse_property_name(name)
+        (value, ), description = calculation.values_and_description([self])
+        return description.plot_x_values(value[0])
 
     def __getitem__(self, key):
         # There are two possible strategies here. If some sort of joined load has been
@@ -957,7 +918,7 @@ class HaloProperty(Base):
     def x_values(self):
         if not self.data_is_array():
             raise ValueError, "The data is not an array"
-        return self.name.providing_class().plot_x_values(self.data)
+        return self.name.providing_class()(self.halo.timestep.simulation).plot_x_values(self.data)
 
     def plot(self, *args, **kwargs):
         xdat = self.x_values()

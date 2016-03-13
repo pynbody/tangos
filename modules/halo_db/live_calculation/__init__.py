@@ -1,12 +1,10 @@
 import numpy as np
-import re
 import warnings
-import halo_finder
 import pyparsing as pp
 import properties
-from . import consistent_collection
-from . import core
-from . import temporary_halolist as thl
+from .. import consistent_collection
+from .. import core
+from .. import temporary_halolist as thl
 from sqlalchemy.orm import contains_eager, aliased
 
 
@@ -104,7 +102,10 @@ class Calculation(object):
 
     def _make_final_array(self, x):
         if isinstance(x[0], np.ndarray):
-            return np.array(list(x), dtype=type(x[0][0]))
+            try:
+                return np.array(list(x), dtype=type(x[0][0]))
+            except ValueError:
+                return x
         else:
             return np.array(x, dtype=type(x[0]))
 
@@ -340,13 +341,24 @@ class StoredProperty(Calculation):
     def values_and_description(self, halos):
         values = self.values(halos)
         sim = consistent_collection.consistent_simulation_from_halos(halos)
-        description_class = properties.providing_class(self.name(), silent_fail=True)
+        description_class = properties.providing_class(self._name, silent_fail=True)
         description = None if description_class is None else description_class(sim)
         return values, description
 
     def proxy_value(self):
         """Return a placeholder value for this calculation"""
         return UnknownValue()
+
+class StoredPropertyRawValue(StoredProperty):
+    def name(self):
+        return "raw("+self._name+")"
+
+    def values(self, halos):
+        ret = np.empty((1,len(halos)),dtype=object)
+        for i, h in enumerate(halos):
+            if self._has_required_properties(h):
+                ret[0,i]=h.get_data(self._name,True)
+        return ret
 
 
 
@@ -355,6 +367,8 @@ def parse_property_name( name):
 
     property_name = pp.Word(pp.alphas,pp.alphanums+"_")
     stored_property = property_name.setParseAction(pack_args(StoredProperty))
+
+    raw_stored_property = (pp.Literal("raw(").suppress()+property_name.setParseAction(pack_args(StoredPropertyRawValue))+pp.Literal(")").suppress())
     live_calculation_property = pp.Forward().setParseAction(pack_args(LiveProperty))
 
     numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]\d+)?').setParseAction(pack_args(FixedNumericInputDescription))
@@ -369,7 +383,7 @@ def parse_property_name( name):
 
     multiple_properties = pp.Forward().setParseAction(pack_args(MultiCalculation))
 
-    value_or_property_name = string_value | numerical_value \
+    value_or_property_name = raw_stored_property | string_value | numerical_value \
                              | redirection | live_calculation_property \
                              | stored_property | multiple_properties
 
