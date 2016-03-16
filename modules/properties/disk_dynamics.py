@@ -19,6 +19,12 @@ class DiskDynamicsProperties(HaloProperties):
     def plot_xdelta(self):
         return 0.2
 
+    def plot_xlog(self):
+        return False
+
+    def plot_ylog(self):
+        return False
+
     def make_profile_object(self, halo):
         import pynbody
         return pynbody.analysis.profile.Profile(halo,min=0,max=20,nbins=int(20/self.plot_xdelta()))
