@@ -258,15 +258,15 @@ class BHGal(LiveHaloProperties):
     def requires_property(self):
         return self._bhtype, self._bhtype+"."+self._choicep
 
-    def live_calculate(self, properties, names):
-        if properties.halo_type != 0:
+    def live_calculate(self, halo, *args):
+        if halo.halo_type != 0:
             return None
 
-        if self._bhtype not in properties.keys():
+        if self._bhtype not in halo.keys():
             return None
 
-        if type(properties[self._bhtype]) is list:
-            chp = [bh[self._choicep] for bh in properties[self._bhtype] if self._choicep in bh]
+        if type(halo[self._bhtype]) is list:
+            chp = [bh[self._choicep] for bh in halo[self._bhtype] if self._choicep in bh]
             target = None
             if self._maxmin == 'min':
                 target = np.argmin(chp)
@@ -274,6 +274,6 @@ class BHGal(LiveHaloProperties):
                 target = np.argmax(chp)
             if target is None:
                 return None
-            return properties[self._bhtype][target]
+            return halo[self._bhtype][target]
         else:
-            return properties[self._bhtype]
+            return halo[self._bhtype]

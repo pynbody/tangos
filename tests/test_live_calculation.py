@@ -29,10 +29,12 @@ def setup():
     ts1_h1['dummy_property_2'] = angmom
 
 
-    ts1_h1_bh = db.core.BH(ts1,1)
-    ts1_h1["BH"] = ts1_h1_bh
+    ts1_h1_bh1 = db.core.BH(ts1,1)
+    ts1_h1_bh1["BH_mass"]=1000.0
 
-    ts1_h1_bh["BH_mass"]=1000.0
+    ts1_h1_bh2 = db.core.BH(ts1,2)
+    ts1_h1_bh2["BH_mass"]=900.0
+    ts1_h1["BH"] = ts1_h1_bh1, ts1_h1_bh2
 
     db.core.internal_session.commit()
 
@@ -89,3 +91,11 @@ def test_function_after_property_redirection():
     halo = db.get_halo("sim/ts1/1")
     bh_dbid= halo.calculate("BH.dbid()")
     assert bh_dbid == db.get_halo("sim/ts1/1.1").id
+
+def test_BH_redirection_function():
+    halo = db.get_halo("sim/ts1/1")
+    bh_dbid= halo.calculate("BH('BH_mass','max','BH').dbid()")
+    assert bh_dbid == db.get_halo("sim/ts1/1.1").id
+
+    bh_dbid= halo.calculate("BH('BH_mass','min','BH').dbid()")
+    assert bh_dbid == db.get_halo("sim/ts1/1.2").id
