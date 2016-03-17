@@ -434,8 +434,6 @@ class MultiHopStrategy(HopStrategy):
         if self._combine_routes:
             recursion_query = recursion_query.group_by(core.HaloLink.halo_to_id)
 
-        ct = recursion_query.count()
-
         insert = self._prelim_table.insert().from_select(
             ['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'links', 'nodes'],
             recursion_query)
