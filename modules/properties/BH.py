@@ -279,3 +279,22 @@ class BHGal(LiveHaloProperties):
             return halo[self._bhtype][target]
         else:
             return halo[self._bhtype]
+
+class BHHosts(LiveHaloProperties):
+    def __init__(self, simulation=None, property='Mvir'):
+        super(BHHosts, self).__init__(simulation)
+        self._host_prop = property
+
+    @classmethod
+    def name(cls):
+        return "bh_host"
+
+    def live_calculate(self, halo, *args):
+        if halo.halo_type != 1:
+            return None
+        if halo.host_halo is None:
+            return None
+        if self._host_prop in halo.host_halo.keys():
+            return halo.host_halo[self._host_prop]
+        else:
+            return None
