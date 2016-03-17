@@ -267,6 +267,8 @@ class BHGal(LiveHaloProperties):
 
         if type(halo[self._bhtype]) is list:
             chp = [bh[self._choicep] for bh in halo[self._bhtype] if self._choicep in bh]
+            if len(chp) == 0:
+                return None
             target = None
             if self._maxmin == 'min':
                 target = np.argmin(chp)
