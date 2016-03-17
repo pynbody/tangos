@@ -283,7 +283,6 @@ class BHGal(LiveHaloProperties):
 class BHHosts(LiveHaloProperties):
     def __init__(self, simulation=None):
         super(BHHosts, self).__init__(simulation)
-        self._host_prop = property
 
     @classmethod
     def name(cls):
