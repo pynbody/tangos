@@ -101,6 +101,8 @@ class Calculation(object):
         return [self._make_final_array(x) for x in out]
 
     def _make_final_array(self, x):
+        if len(x)==0:
+            raise ValueError, "Calculation returned no results"
         if isinstance(x[0], np.ndarray):
             try:
                 return np.array(list(x), dtype=type(x[0][0]))

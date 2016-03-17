@@ -1,3 +1,5 @@
+from nose.tools import assert_raises
+
 import halo_db as db
 import numpy as np
 import properties
@@ -21,6 +23,7 @@ def setup():
 
 
     ts1_h1 = db.Halo(ts1,1,1000,0,0,0)
+    ts1_h2 = db.Halo(ts1,2,900,0,0,0)
 
     ts1_h1['dummy_property_1'] = np.arange(0,100.0)
 
@@ -99,3 +102,13 @@ def test_BH_redirection_function():
 
     bh_dbid= halo.calculate("BH('BH_mass','min','BH').dbid()")
     assert bh_dbid == db.get_halo("sim/ts1/1.2").id
+
+def test_non_existent_property():
+    halo = db.get_halo("sim/ts1/1")
+    with assert_raises(KeyError):
+        halo.calculate("non_existent_property")
+
+def test_non_existent_redirection():
+    halo = db.get_halo("sim/ts1/2")
+    with assert_raises(ValueError):
+        halo.calculate("BH.dbid()")
