@@ -19,5 +19,4 @@ def fix_reverse_links(session, name_forwards, name_reverse):
     connection.execute(insert)
     session.commit()
 
-fix_reverse_links(db.core.internal_session,"BH_central","host_halo_central")
-fix_reverse_links(db.core.internal_session,"BH","host_halo")
+fix_reverse_links(db.core.internal_session,"BH_central","host_halo")
