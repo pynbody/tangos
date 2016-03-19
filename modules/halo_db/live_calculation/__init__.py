@@ -296,27 +296,42 @@ class Link(Calculation):
         results = np.empty((self.n_columns(),len(halos)),dtype=object)
 
         results_target = np.where(np.not_equal(target_halos, None))
-        target_halos_weeded = target_halos[results_target]
+        target_halo_ids_weeded = target_halos[results_target]
 
 
-        for i in xrange(len(target_halos_weeded)):
-            if isinstance(target_halos_weeded[i], list):
+        for i in xrange(len(target_halo_ids_weeded)):
+            if isinstance(target_halo_ids_weeded[i], list):
                 warnings.warn("More than one relation for target %r has been found. Picking the first."%str(self.locator))
-                target_halos_weeded[i] = target_halos_weeded[i][0].id
+                target_halo_ids_weeded[i] = target_halo_ids_weeded[i][0].id
             else:
-                target_halos_weeded[i] = target_halos_weeded[i].id
+                target_halo_ids_weeded[i] = target_halo_ids_weeded[i].id
 
         # need a new session for the subqueries, because we might have cached copies of objects where
         # a different set of properties has been loaded into all_properties
         new_session = core.Session()
 
-        with thl.temporary_halolist_table(new_session, target_halos_weeded) as tab:
+        with thl.temporary_halolist_table(new_session, target_halo_ids_weeded) as tab:
             target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
-            values, description = self.property.values_and_description(target_halos_supplemented)
+
+            # sqlalchemy's deduplication means we are now missing any halos that appear more than once in
+            # target_halos_ids_weeded. But we actually want the duplication.
+            target_halos_supplemented_with_duplicates = \
+                self._add_entries_for_duplicates(target_halos_supplemented, target_halo_ids_weeded)
+
+            values, description = self.property.values_and_description(target_halos_supplemented_with_duplicates)
 
         results[:,results_target[0]] = values
 
         return results, description
+
+    @staticmethod
+    def _add_entries_for_duplicates(target_objs, target_ids):
+        if len(target_objs)==len(target_ids):
+            return target_objs
+        target_obj_ids = [t.id for  t in target_objs]
+        return [target_objs[target_obj_ids.index(t_id)] for t_id in target_ids]
+
+
 
 
 
