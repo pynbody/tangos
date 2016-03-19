@@ -66,27 +66,32 @@ def setup():
     _add_symmetric_link(ts2_h2, ts3_h2)
     _add_symmetric_link(ts2_h3, ts3_h3)
 
-
     for i,h in enumerate([ts1_h1,ts1_h2,ts1_h3,ts1_h4,ts2_h1,ts2_h2,ts2_h3,ts2_h4,ts3_h1,ts3_h2,ts3_h3]):
         h['Mvir'] = float(i+1)
         h['Rvir'] = float(i+1)*0.1
 
-    ts1_h1_bh = db.core.BH(ts1,1)
-    ts1_h2_bh = db.core.BH(ts1,2)
-    ts1_h3_bh = db.core.BH(ts1,3)
-    ts1_h3_bh2 = db.core.BH(ts1,4)
+    for ts in ts1, ts2, ts3:
+        ts1_h1_bh = db.core.BH(ts,1)
+        ts1_h2_bh = db.core.BH(ts,2)
+        ts1_h3_bh = db.core.BH(ts,3)
+        ts1_h3_bh2 = db.core.BH(ts,4)
 
 
-    session.add_all([ts1_h1_bh, ts1_h2_bh, ts1_h3_bh, ts1_h3_bh2])
+        session.add_all([ts1_h1_bh, ts1_h2_bh, ts1_h3_bh, ts1_h3_bh2])
 
-    for i,h in enumerate([ts1_h1_bh, ts1_h2_bh, ts1_h3_bh, ts1_h3_bh2]):
-        h['hole_mass'] = float(i+1)*100
-        h['hole_spin'] = 1000-float(i+1)*100
+        for i,h in enumerate([ts1_h1_bh, ts1_h2_bh, ts1_h3_bh, ts1_h3_bh2]):
+            h['hole_mass'] = float(i+1)*100
+            h['hole_spin'] = 1000-float(i+1)*100
 
 
-    ts1_h1["BH"] = ts1_h1_bh
-    ts1_h2["BH"] = ts1_h2_bh
-    ts1_h3["BH"] = ts1_h3_bh, ts1_h3_bh2
+        ts.halos.filter_by(halo_number=1).first()["BH"] = ts1_h1_bh
+        ts.halos.filter_by(halo_number=2).first()["BH"] = ts1_h2_bh
+        ts.halos.filter_by(halo_number=3).first()["BH"] = ts1_h3_bh, ts1_h3_bh2
+
+    for ts_a, ts_b in (ts1, ts2), (ts2, ts3):
+        assert isinstance(ts_a, db.TimeStep)
+        assert isinstance(ts_b, db.TimeStep)
+        _add_symmetric_link(ts_a.halos.filter_by(halo_type=1).first(), ts_b.halos.filter_by(halo_type=1).first())
 
 
     db.core.internal_session.commit()
@@ -241,3 +246,13 @@ def test_reverse_property_cascade():
     objs, = h.reverse_property_cascade("dbid()")
     assert len(objs)==3
     assert all([objs[i]==db.get_halo(x).id for i,x in enumerate(("sim/ts3/1", "sim/ts2/1", "sim/ts1/1"))])
+
+def test_bh_source():
+    bh = db.get_halo("sim/ts1/1.1")
+    bh_id, host_id = bh.property_cascade("dbid()","bh_host().dbid()")
+
+    expected_bh = [db.get_halo(x).id for x in "sim/ts1/1.1", "sim/ts2/1.1", "sim/ts3/1.1"]
+    expected_host = [db.get_halo(x).id for x in "sim/ts1/1", "sim/ts2/1", "sim/ts3/1"]
+
+    assert all(bh_id==expected_bh)
+    assert all(host_id==expected_host)
