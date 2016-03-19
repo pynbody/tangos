@@ -136,6 +136,7 @@ def run():
             bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
             print "Associated halos: ",bh_halos
             bh_dict_id = db.core.get_or_create_dictionary_item(session, "BH")
+            host_dict_id = db.core.get_or_create_dictionary_item(session, "host_halo")
 
             for bhi, haloi in zip(bh_iord, bh_halos):
                 haloi = int(haloi)
@@ -153,12 +154,15 @@ def run():
                 if existing==0:
 
                     session.merge(db.core.HaloLink(halo,bh_obj,bh_dict_id))
+                    session.merge(db.core.HaloLink(bh_obj,halo,host_dict_id))
                 else:
                     print "NOTE: skipping BH in halo",haloi,"as link already exists"
 
         if bh_cen_halos is not None:
             bh_cen_halos = bh_cen_halos[np.argsort(bh_mass)[::-1]]
             bh_dict_cen_id = db.core.get_or_create_dictionary_item(session, "BH_central")
+            host_dict_id = db.core.get_or_create_dictionary_item(session, "host_halo_central")
+
             for bhi, haloi in zip(bh_iord, bh_cen_halos):
                 haloi = int(haloi)
                 bhi = int(bhi)
@@ -175,6 +179,7 @@ def run():
                 if existing==0:
 
                     session.merge(db.core.HaloLink(halo,bh_obj,bh_dict_cen_id))
+                    session.merge(db.core.HaloLink(bh_obj,halo,host_dict_id))
                 else:
                     print "NOTE: skipping central BH ", bhi,"in halo",haloi,"as link already exists"
 
