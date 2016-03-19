@@ -30,4 +30,3 @@ def test_bh_identity():
 def test_bh_mapping():
     assert db.get_halo(2) in db.get_halo(1)['BH']
     assert db.get_halo(3) in db.get_halo(1)['BH']
-    assert db.get_halo(2).host_halo == db.get_halo(1)

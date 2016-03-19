@@ -789,22 +789,6 @@ class BH(Halo):
     def __init__(self, timestep, halo_number):
         super(BH, self).__init__(timestep, halo_number, 0,0,0,1)
 
-    @property
-    def host_halo(self):
-        try:
-            match = self._get_object("BH_central",getters=[halo_data_extraction_patterns.ReverseHaloLinkGetter])
-        except KeyError:
-            try:
-                match = self._get_object("BH",getters=[halo_data_extraction_patterns.ReverseHaloLinkGetter])
-            except KeyError, e:
-                return None
-
-        if len(match)==0:
-            return None
-        elif len(match)==1:
-            return match[0].halo_from
-        else:
-            raise ValueError, "More than one halo claims ownership of this black hole"
 
 class HaloProperty(Base):
     __tablename__ = 'haloproperties'
