@@ -66,6 +66,9 @@ class DummyProperty2(properties.HaloProperties):
         return 0.2
 
 
+def test_simple_retrieval():
+    BH = db.get_halo("sim/ts1/1.1")
+    assert BH['BH_mass'] == BH.calculate("BH_mass")
 
 def test_at_function():
     halo = db.get_halo("sim/ts1/1")

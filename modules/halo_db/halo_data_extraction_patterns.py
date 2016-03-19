@@ -28,6 +28,20 @@ class HaloPropertyGetter(object):
         return cls._postprocess(query_properties.all())
 
     @classmethod
+    def cache_contains(cls, halo, property_id):
+        """Return True if the existing in-memory cache has the specified property
+
+        :type halo: Halo
+        :type property_id: int"""
+
+        for x in halo.all_properties:
+            if x.name_id == property_id:
+                return True
+
+        return False
+
+
+    @classmethod
     def _postprocess(cls, outputs):
         return outputs
 
@@ -61,10 +75,17 @@ class HaloLinkGetter(HaloPropertyGetter):
         query_links = session.query(core.HaloLink).filter_by(relation_id=property_id, halo_from_id=halo.id)
         return cls._postprocess(query_links.all())
 
+    @classmethod
+    def cache_contains(cls, halo, property_id):
+        for x in halo.all_links:
+            if x.relation_id == property_id:
+                return True
+
+        return False
+
 class HaloLinkTargetGetter(HaloLinkGetter):
     @classmethod
     def _postprocess(cls, outputs):
-        print outputs
         return [o.halo_to for o in outputs]
 
 class ReverseHaloLinkGetter(HaloLinkGetter):
@@ -76,13 +97,25 @@ class ReverseHaloLinkGetter(HaloLinkGetter):
             if x.relation_id == property_id:
                 return_vals.append(x)
 
-        return return_vals
+        return cls._postprocess(return_vals)
 
     @classmethod
     def get_from_session(cls, halo, property_id, session):
         from . import core
         query_links = session.query(core.HaloLink).filter_by(relation_id=property_id,
                                                              halo_to_id=halo.id)
-        return query_links.all()
+        return cls._postprocess(query_links.all())
+
+    @classmethod
+    def cache_contains(cls, halo, property_id):
+        for x in halo.all_reverse_links:
+            if x.relation_id == property_id:
+                return True
+
+        return False
 
 
+class ReverseHaloLinkSourceGetter(ReverseHaloLinkGetter):
+    @classmethod
+    def _postprocess(cls, outputs):
+        return [o.halo_from for o in outputs]

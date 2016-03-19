@@ -247,18 +247,3 @@ def test_reverse_property_cascade():
     assert len(objs)==3
     assert all([objs[i]==db.get_halo(x).id for i,x in enumerate(("sim/ts3/1", "sim/ts2/1", "sim/ts1/1"))])
 
-def test_bh_source():
-    bh = db.get_halo("sim/ts1/1.1")
-    bh_id, host_id = bh.property_cascade("dbid()","bh_host().dbid()")
-
-    expected_bh = [db.get_halo(x).id for x in "sim/ts1/1.1", "sim/ts2/1.1", "sim/ts3/1.1"]
-    expected_host = [db.get_halo(x).id for x in "sim/ts1/1", "sim/ts2/1", "sim/ts3/1"]
-
-    assert all(bh_id==expected_bh)
-    assert all(host_id==expected_host)
-
-    bh_id, host_id = db.get_timestep("sim/ts1").gather_property("dbid()", "bh_host().dbid()")
-    expected_bh = [db.get_halo(x).id for x in "sim/ts1/1.1", "sim/ts1/1.2", "sim/ts1/1.3", "sim/ts1/1.4"]
-    expected_host = [db.get_halo(x).id for x in "sim/ts1/1", "sim/ts1/2", "sim/ts1/3", "sim/ts1/3"]
-    assert all(bh_id==expected_bh)
-    assert all(host_id==expected_host)

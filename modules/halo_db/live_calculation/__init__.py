@@ -6,14 +6,20 @@ from .. import consistent_collection
 from .. import core
 from .. import temporary_halolist as thl
 from sqlalchemy.orm import contains_eager, aliased
-
+from .. import halo_data_extraction_patterns
 
 class Calculation(object):
+    def __init__(self):
+        self._extraction_pattern = halo_data_extraction_patterns.HaloPropertyValueGetter
+
     def __repr__(self):
         return "<Calculation description for %s>"%str(self)
 
     def __str__(self):
         raise NotImplementedError
+
+    def set_extraction_pattern(self, extraction_pattern):
+        self._extraction_pattern = extraction_pattern
 
     def retrieves(self):
         """Return the set of named halo properties that this calculation will access
@@ -25,6 +31,10 @@ class Calculation(object):
     def name(self):
         """The name of this calculation, such that parse_property_name(name) generates a copy."""
         return None
+
+    def _has_required_properties(self, halo):
+        property_is_present = [self._extraction_pattern.cache_contains(halo, p_id) for p_id in self._essential_dict_ids()]
+        return all(property_is_present)
 
     def retrieves_dict_ids(self):
         """Return the dictionary IDs of the named properties to be retrieved for each halo to
@@ -58,11 +68,6 @@ class Calculation(object):
                 for w in r_split:
                     self._r_dict_ids_cached.add(core.get_dict_id(w))
                 self._r_dict_ids_essential_cached.add(core.get_dict_id(r_split[0]))
-
-    def _has_required_properties(self, halo):
-        prop_ids = [x.name_id for x in halo.all_properties]
-        link_ids = [x.relation_id for x in halo.all_links]
-        return all([p_id in prop_ids or p_id in link_ids for p_id in self._essential_dict_ids()])
 
     def values_and_description(self, halos):
         """Return the values of this calculation, as well as a HaloProperties object describing the
@@ -102,7 +107,7 @@ class Calculation(object):
 
     def _make_final_array(self, x):
         if len(x)==0:
-            raise ValueError, "Calculation returned no results"
+            raise ValueError, "Calculation %s returned no results"%self
         if isinstance(x[0], np.ndarray):
             try:
                 return np.array(list(x), dtype=type(x[0][0]))
@@ -154,6 +159,7 @@ class Calculation(object):
 
 class MultiCalculation(Calculation):
     def __init__(self, *calculations):
+        super(MultiCalculation, self).__init__()
         self.calculations = [c if isinstance(c, Calculation) else parse_property_name(c) for c in calculations]
 
     def retrieves(self):
@@ -181,6 +187,7 @@ class MultiCalculation(Calculation):
 
 class FixedInput(Calculation):
     def __init__(self, *tokens):
+        super(FixedInput, self).__init__()
         self.value = str(tokens[0])
 
     def __str__(self):
@@ -199,6 +206,9 @@ class UnknownValue(object):
     pass
 
 class FixedNumericInputDescription(FixedInput):
+    def __init__(self, *tokens):
+        super(FixedNumericInputDescription, self).__init__()
+
     @staticmethod
     def _process_numerical_value(t):
         if "." in t or "e" in t or "E" in t:
@@ -214,6 +224,7 @@ class FixedNumericInputDescription(FixedInput):
 
 class LiveProperty(Calculation):
     def __init__(self, *tokens):
+        super(LiveProperty, self).__init__()
         self._name = str(tokens[0])
         self._inputs = list(tokens[1:])
 
@@ -262,12 +273,14 @@ class LiveProperty(Calculation):
 
 class Link(Calculation):
     def __init__(self, *tokens):
+        super(Link, self).__init__()
         self.locator = tokens[0]
         self.property = tokens[1]
         if not isinstance(self.locator, Calculation):
             self.locator = parse_property_name(self.locator)
         if not isinstance(self.property, Calculation):
             self.property = parse_property_name(self.property)
+        self.locator.set_extraction_pattern(halo_data_extraction_patterns.HaloLinkTargetGetter)
 
     def __str__(self):
         return str(self.locator)+"."+str(self.property)
@@ -292,7 +305,6 @@ class Link(Calculation):
             raise ValueError, "Cannot use property %r, which returns more than one column, as a halo locator"%(str(self.locator))
 
         target_halos = self.locator.values(halos)[0]
-
         results = np.empty((self.n_columns(),len(halos)),dtype=object)
 
         results_target = np.where(np.not_equal(target_halos, None))
@@ -324,6 +336,9 @@ class Link(Calculation):
 
         return results, description
 
+    def _get_targets(self, halos):
+        return self.locator.values(halos)[0]
+
     @staticmethod
     def _add_entries_for_duplicates(target_objs, target_ids):
         if len(target_objs)==len(target_ids):
@@ -332,12 +347,11 @@ class Link(Calculation):
         return [target_objs[target_obj_ids.index(t_id)] for t_id in target_ids]
 
 
-
-
-
 class StoredProperty(Calculation):
     def __init__(self, *tokens):
+        super(StoredProperty,self).__init__()
         self._name = tokens[0]
+
 
     def __str__(self):
         return self._name
@@ -349,10 +363,11 @@ class StoredProperty(Calculation):
         return {self._name}
 
     def values(self, halos):
+        self._name_id = core.get_dict_id(self._name)
         ret = np.empty((1,len(halos)),dtype=object)
         for i, h in enumerate(halos):
-            if self._has_required_properties(h):
-                ret[0,i]=h[self._name]
+            if self._extraction_pattern.cache_contains(h, self._name_id):
+                ret[0,i]=self._extraction_pattern.get_from_cache(h, self._name_id)[0]
         return ret
 
     def values_and_description(self, halos):
@@ -366,16 +381,16 @@ class StoredProperty(Calculation):
         """Return a placeholder value for this calculation"""
         return UnknownValue()
 
+
+
 class StoredPropertyRawValue(StoredProperty):
+    def __init__(self, *tokens):
+        super(StoredPropertyRawValue,self).__init__(*tokens)
+        self._extraction_pattern = halo_data_extraction_patterns.HaloPropertyRawValueGetter
+
     def name(self):
         return "raw("+self._name+")"
 
-    def values(self, halos):
-        ret = np.empty((1,len(halos)),dtype=object)
-        for i, h in enumerate(halos):
-            if self._has_required_properties(h):
-                ret[0,i]=h.get_data(self._name,True)
-        return ret
 
 
 
@@ -400,13 +415,12 @@ def parse_property_name( name):
 
     multiple_properties = pp.Forward().setParseAction(pack_args(MultiCalculation))
 
-    value_or_property_name = raw_stored_property | string_value | numerical_value \
-                             | redirection | live_calculation_property \
-                             | stored_property | multiple_properties
+    property_identifier = (redirection | live_calculation_property | stored_property | multiple_properties | raw_stored_property)
+
+    value_or_property_name = string_value | numerical_value | property_identifier
 
     multiple_properties << (pp.Literal("(").suppress()+value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name) +pp.Literal(")").suppress())
-
-    redirection << (live_calculation_property | stored_property ) + pp.Literal(".").suppress() + (redirection | live_calculation_property | stored_property | multiple_properties)
+    redirection << (live_calculation_property | stored_property ) + pp.Literal(".").suppress() + property_identifier
 
     parameters = pp.Literal("(").suppress()+pp.Optional(value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name))+pp.Literal(")").suppress()
     live_calculation_property << property_name+parameters
