@@ -9,6 +9,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, sessionmaker, clear_mappers, deferred
 from sqlalchemy import and_
 from sqlalchemy.orm.session import Session
+from . import halo_data_extraction_patterns
 
 import data_attribute_mapper
 import config
@@ -502,6 +503,7 @@ class TimeStep(Base):
             return self._previous
 
 
+
 class Halo(Base):
     __tablename__ = 'halos'
 
@@ -581,19 +583,20 @@ class Halo(Base):
         # to be lazy loaded and we want to filter that lazy load.
         return self.get_data(key)
 
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
     def get_data(self, key, raw=False, always_return_array=False):
-        return_objs = self._get_object(key)
+        if raw:
+            getters=[halo_data_extraction_patterns.HaloPropertyRawValueGetter]
+        else:
+            getters=[halo_data_extraction_patterns.HaloPropertyValueGetter]
+        getters+=[halo_data_extraction_patterns.HaloLinkTargetGetter]
 
-        return_data = []
-
-        for r in return_objs:
-            if isinstance(r, HaloProperty):
-                data = r.data_raw if raw else r.data
-            elif isinstance(r, HaloLink):
-                data = r.halo_to
-            else:
-                raise TypeError, "Unknown type of data encountered during internal get_item processing"
-            return_data.append(data)
+        return_data = self._get_object(key,getters)
 
         if (not always_return_array) and len(return_data) == 1:
             return_data = return_data[0]
@@ -603,85 +606,33 @@ class Halo(Base):
     def _use_fixed_cache(self):
         return 'all_properties' not in sqlalchemy.inspect(self).unloaded
 
-    def _get_object(self, key):
+    def _get_object(self, key, getters = [halo_data_extraction_patterns.HaloPropertyGetter,
+                                          halo_data_extraction_patterns.HaloLinkGetter]):
         session = Session.object_session(self)
         key_id = get_dict_id(key, session=session)
+
         if self._use_fixed_cache():
-            return_objs = self._get_object_cached(key_id)
+            return_objs = self._get_object_cached(key_id, getters)
         else:
-            return_objs = self._get_object_from_session(key_id, session)
+            return_objs = self._get_object_from_session(key_id, session, getters)
         if len(return_objs) == 0:
             raise KeyError, "No such property %r" % key
         return return_objs
 
-    def _get_object_from_session(self, key_id, session):
-        query_properties = session.query(HaloProperty).filter_by(name_id=key_id, halo_id=self.id,
-                                                                 deprecated=False).order_by(HaloProperty.id.desc())
-
-        ret_values = query_properties.all()
-        query_links = session.query(HaloLink).filter_by(relation_id=key_id, halo_from_id=self.id)
-        for link in query_links.all():
-            ret_values.append(link)
+    def _get_object_from_session(self, key_id, session, getters):
+        ret_values = []
+        for g in getters:
+            ret_values+=g.get_from_session(self, key_id, session)
 
         return ret_values
 
-    def _get_object_cached(self, key_id):
-        return_vals = []
-        # we've already got it from the DB, find it locally
-        for x in self.all_properties:
-            if x.name_id == key_id:
-                return_vals.append(x)
-
-        for x in self.all_links:
-            if x.relation_id == key_id:
-                return_vals.append(x)
-
-        return return_vals
-
-    def get_property(self, key, default=None):
-        session = Session.object_session(self)
-        key_id = get_dict_id(key, session=session)
-        prop= self.properties.filter_by(name_id=key_id,deprecated=False).first()
-        if prop is None:
-            return default
-        else:
-            return prop.data
-
-    def get_linked_halo(self, key, default=None):
-        session = Session.object_session(self)
-        key_id = get_dict_id(key, session=session)
-        prop= session.query(HaloLink).filter_by(halo_from_id=self.id,
-                               relation_id=key_id).first()
-        if prop is None:
-            return default
-        else:
-            return prop.halo_to
-
-    def get_reverse_linked_halo(self, key, default=None):
-        session = Session.object_session(self)
-        key_id = get_dict_id(key, session=session)
-        prop= session.query(HaloLink).filter_by(halo_to_id=self.id,
-                               relation_id=key_id).first()
-        if prop is None:
-            return default
-        else:
-            return prop.halo_from
-
-    def get_either_linked_halo(self, key, default=None):
-        ret = self.get_linked_halo(key)
-        if ret is None:
-            ret = self.get_reverse_linked_halo(key)
-        if ret is None:
-            ret = default
-        return ret
+    def _get_object_cached(self, key_id, getters):
+        ret_values = []
+        for g in getters:
+            ret_values+=g.get_from_cache(self, key_id)
+        return ret_values
 
 
-
-    def get(self, key, default=None):
-        try:
-            return self[key]
-        except KeyError:
-            return default
 
     def __setitem__(self, key, obj):
 
@@ -841,14 +792,19 @@ class BH(Halo):
     @property
     def host_halo(self):
         try:
-            match =  self.reverse_links.filter_by(relation_id=get_dict_id('BH_central')).first()
+            match = self._get_object("BH_central",getters=[halo_data_extraction_patterns.ReverseHaloLinkGetter])
         except KeyError:
-            match =  self.reverse_links.filter_by(relation_id=get_dict_id('BH')).first()
+            try:
+                match = self._get_object("BH",getters=[halo_data_extraction_patterns.ReverseHaloLinkGetter])
+            except KeyError, e:
+                return None
 
-        if match is None:
+        if len(match)==0:
             return None
+        elif len(match)==1:
+            return match[0].halo_from
         else:
-            return match.halo_from
+            raise ValueError, "More than one halo claims ownership of this black hole"
 
 class HaloProperty(Base):
     __tablename__ = 'haloproperties'
@@ -1009,7 +965,7 @@ TimeStep.links_to = relationship(HaloLink, secondary=Halo.__table__,
 
 
 Halo.all_links = relationship(HaloLink, primaryjoin=(HaloLink.halo_from_id == Halo.id))
-
+Halo.all_reverse_links = relationship(HaloLink, primaryjoin=(HaloLink.halo_to_id == Halo.id))
 
 
 class ArrayPlotOptions(Base):
