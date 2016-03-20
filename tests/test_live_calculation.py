@@ -1,6 +1,7 @@
 from nose.tools import assert_raises
 
 import halo_db as db
+import halo_db.live_calculation as lc
 import numpy as np
 import properties
 
@@ -115,3 +116,6 @@ def test_non_existent_redirection():
     halo = db.get_halo("sim/ts1/2")
     with assert_raises(ValueError):
         halo.calculate("BH.dbid()")
+
+def test_parse_raw_psuedofunction():
+    assert isinstance(lc.parse_property_name("raw(bla)"), lc.StoredPropertyRawValue)

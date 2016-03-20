@@ -415,7 +415,7 @@ def parse_property_name( name):
 
     multiple_properties = pp.Forward().setParseAction(pack_args(MultiCalculation))
 
-    property_identifier = (redirection | live_calculation_property | stored_property | multiple_properties | raw_stored_property)
+    property_identifier = (redirection | raw_stored_property | live_calculation_property | stored_property | multiple_properties)
 
     value_or_property_name = string_value | numerical_value | property_identifier
 
