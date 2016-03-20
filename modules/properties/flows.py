@@ -75,6 +75,60 @@ class TestInflowOutflow(HaloProperties):
         return i, vi, o, vo
 
 
+class FlowProfile(HaloProperties):
+    _xmax = 300.0
+    _threshold_vel = 20.0
+
+    @classmethod
+    def name(cls):
+        return "inflow_Mdot", "outflow_Mdot", "inflow_vel", "outflow_vel", "inflow_temp", "outflow_temp"
+
+    @classmethod
+    def plot_x0(cls):
+        return 2.5
+
+    @classmethod
+    def plot_xdelta(cls):
+        return 5.0
+
+    def generate_cells(self, halo):
+        nx = 2*self._xmax/self.plot_xdelta()
+        grid_vr = pynbody.sph.to_3d_grid(halo.ancestor.gas, 'vr', nx, x2=self._xmax,denoise=True)
+        grid_rho = pynbody.sph.to_3d_grid(halo.ancestor.gas, 'rho', nx, x2=self._xmax,denoise=True)
+        grid_r = pynbody.sph.to_3d_grid(halo.ancestor.gas, 'r', nx, x2=self._xmax,denoise=True)
+        grid_temp = pynbody.sph.to_3d_grid(halo.ancestor.gas, 'temp', nx, x2=self._xmax,denoise=True)
+        Mdot = ((grid_rho*grid_vr*4.0*np.pi*grid_r**2).in_units("Msol yr^-1")).flatten()
+        vr = grid_vr.flatten()
+        r = grid_r.flatten()
+        return r,vr,Mdot,grid_temp.flatten()
+
+    def cells_to_r_bins(self, r, vr, Mdot, T, vr_cut):
+        ar_length = int(self._xmax/self.plot_xdelta())
+        if vr_cut>0:
+            mask = vr>vr_cut
+        else:
+            mask = vr<vr_cut
+
+        r_index = np.array((r-self.plot_x0())/self.plot_xdelta(),dtype=int)
+
+        bincount = np.bincount(r_index, minlength=ar_length)[:ar_length]
+        Mdot_tot = np.bincount(r_index[mask],Mdot[mask],minlength=ar_length)[:ar_length]
+        vr_tot = np.bincount(r_index[mask],vr[mask]*Mdot[mask],minlength=ar_length)[:ar_length]
+        temp_tot = np.bincount(r_index[mask],T[mask]*Mdot[mask],minlength=ar_length)[:ar_length]
+
+        return Mdot_tot/bincount, vr_tot/Mdot_tot, temp_tot/Mdot_tot
+
+
+    def calculate(self, halo, properties):
+        with pynbody.analysis.halo.center(halo.gas):
+            r,vr,Mdot,T = self.generate_cells(halo.gas)
+            inflow_Mdot, inflow_vel, inflow_temp = self.cells_to_r_bins(r,vr,Mdot,T,-self._threshold_vel)
+            outflow_Mdot, outflow_vel, outflow_temp = self.cells_to_r_bins(r,vr,Mdot,T,self._threshold_vel)
+
+        return -inflow_Mdot, outflow_Mdot, -inflow_vel, outflow_vel,  inflow_temp, outflow_temp
+
+
+
 class InflowOutflow(HaloProperties):
 
     """Inflow and outflow rates at various multiples of the virial radius, in Msol yr^-1.
