@@ -100,7 +100,9 @@ class FlowProfile(HaloProperties):
         Mdot = ((grid_rho*grid_vr*4.0*np.pi*grid_r**2).in_units("Msol yr^-1")).flatten()
         vr = grid_vr.flatten()
         r = grid_r.flatten()
-        return r,vr,Mdot,grid_temp.flatten()
+
+        mask = (r==r)
+        return r[mask],vr[mask],Mdot[mask],grid_temp.flatten()[mask]
 
     def cells_to_r_bins(self, r, vr, Mdot, T, vr_cut):
         ar_length = int(self._xmax/self.plot_xdelta())
