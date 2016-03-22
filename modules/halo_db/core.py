@@ -1219,6 +1219,8 @@ def get_item(path, session=None):
 def get_haloproperty(id):
     return internal_session.query(HaloProperty).filter_by(id=id).first()
 
+def get_items(path_list, session=None):
+    return [get_item(path,session) for path in path_list]
 
 def copy_property(halo_from, halo_to, *props):
     halo_from = get_halo(halo_from)
