@@ -1,3 +1,10 @@
+"""Logic for getting halo properties and links from a Halo object.
+
+The classes in this module are designed to be used static, and contain commonly-used patterns such as
+getting a HaloProperty (HaloPropertyGetter), getting a HaloProperty's value (HaloPropertyValueGetter/
+HaloPropertyRawValueGetter), getting a HaloLink (HaloLinkGetter) and its target (HaloLinkTargetGetter).
+"""
+
 class HaloPropertyGetter(object):
     @classmethod
     def get_from_cache(cls, halo, property_id):
