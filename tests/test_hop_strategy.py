@@ -35,6 +35,7 @@ def setup():
     ts1_h2 = db.Halo(ts1,2,900,0,0,0)
     ts1_h3 = db.Halo(ts1,3,800,0,0,0)
     ts1_h4 = db.Halo(ts1,4,300,0,0,0)
+    ts1_h5 = db.Halo(ts1,5,10,0,0,0) # intentional "orphan" halo with no progenitors for test_multisource
 
     session.add_all([ts1_h1,ts1_h2,ts1_h3,ts1_h4])
 
@@ -202,3 +203,18 @@ def test_major_progenitors():
 def test_major_descendants():
     results = halo_finding.MultiHopMajorDescendantsStrategy(db.get_item("sim/ts1/2"),include_startpoint=True).all()
     testing.assert_halolists_equal(results, ["sim/ts1/2","sim/ts2/1","sim/ts3/1"])
+
+def test_multisource():
+    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/3"]), directed='forwards',nhops_max=10,
+                                                       include_startpoint=True,target=db.core.get_item("sim/ts3")).one_to_one_mapping()
+    testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/2"])
+
+def test_multisource_with_duplicates():
+    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/2","sim/ts1/3"]), directed='forwards',nhops_max=10,
+                                                       include_startpoint=True,target=db.core.get_item("sim/ts3")).one_to_one_mapping()
+    testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/1","sim/ts3/2"])
+
+def test_multisource_with_nones():
+    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/2","sim/ts1/3","sim/ts1/5"]), directed='forwards',nhops_max=10,
+                                                       include_startpoint=True,target=db.core.get_item("sim/ts3")).one_to_one_mapping()
+    testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/1","sim/ts3/2",None])

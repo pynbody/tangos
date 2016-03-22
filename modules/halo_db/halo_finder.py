@@ -343,6 +343,7 @@ class MultiHopStrategy(HopStrategy):
             'multihoplink_final_' + rstr,
             core.Base.metadata,
             Column('id', Integer, primary_key=True),
+            Column('source_id', Integer),
             Column('halo_from_id', Integer, ForeignKey('halos.id')),
             Column('halo_to_id', Integer, ForeignKey('halos.id')),
             Column('weight', Float),
@@ -356,6 +357,7 @@ class MultiHopStrategy(HopStrategy):
             'multihoplink_prelim_' + rstr,
             core.Base.metadata,
             Column('id', Integer, primary_key=True),
+            Column('source_id', Integer),
             Column('halo_from_id', Integer, ForeignKey('halos.id')),
             Column('halo_to_id', Integer, ForeignKey('halos.id')),
             Column('weight', Float),
@@ -424,7 +426,7 @@ class MultiHopStrategy(HopStrategy):
                 core.HaloLink.halo_to_id.label("halo_to_id"),
                 new_weight,
                 (self._table.c.nhops + sqlalchemy.literal(1)).label("nhops"),
-                links, nodes). \
+                links, nodes, self._table.c.source_id). \
                 select_from(self._table). \
                 join(core.HaloLink, and_(self._table.c.nhops == from_nhops,
                                          self._table.c.halo_to_id == core.HaloLink.halo_from_id)). \
@@ -432,10 +434,10 @@ class MultiHopStrategy(HopStrategy):
                        )
 
         if self._combine_routes:
-            recursion_query = recursion_query.group_by(core.HaloLink.halo_to_id)
+            recursion_query = recursion_query.group_by(core.HaloLink.halo_to_id,self._table.c.source_id)
 
         insert = self._prelim_table.insert().from_select(
-            ['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'links', 'nodes'],
+            ['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'links', 'nodes', 'source_id'],
             recursion_query)
 
         result = self._connection.execute(insert)
@@ -449,12 +451,13 @@ class MultiHopStrategy(HopStrategy):
                                self._prelim_table.c.weight,
                                self._prelim_table.c.nhops,
                                self._prelim_table.c.links,
-                               self._prelim_table.c.nodes)
+                               self._prelim_table.c.nodes,
+                               self._prelim_table.c.source_id)
 
         q = self._supplement_halolink_query_with_filter(q, self._prelim_table)
 
         added_rows = self._connection.execute(
-            self._table.insert().from_select(['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'links', 'nodes'],
+            self._table.insert().from_select(['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'links', 'nodes', 'source_id'],
                                              q)).rowcount
 
         self._connection.execute(self._prelim_table.delete())
@@ -480,6 +483,63 @@ class MultiHopStrategy(HopStrategy):
         else:
             return super(MultiHopStrategy, self)._generate_order_arg_from_name(name)
 
+class MultiSourceMultiHopStrategy(MultiHopStrategy):
+    """A variant of MultiHopStrategy that finds halos corresponding to multiple start points."""
+
+    def __init__(self, halos_from, *args, **kwargs):
+        super(MultiSourceMultiHopStrategy, self).__init__(halos_from[0], *args, **kwargs)
+        self._all_halo_from = halos_from
+
+    def _seed_temp_table(self):
+        for i,halo_from in enumerate(self._all_halo_from):
+            insert_statement = self._table.insert().values(halo_from_id=halo_from.id, halo_to_id=halo_from.id,
+                                        weight=1.0, nhops=0, links="", nodes=str(halo_from.id), source_id=i)
+            self._connection.execute(insert_statement)
+
+
+    def _filter_prelim_links_into_final(self):
+        prelim_alias = sqlalchemy.orm.aliased(self._prelim_table)
+        # pick only top ranking by weight
+
+        q = self.session.query(self._prelim_table.c.halo_from_id,
+                               self._prelim_table.c.halo_to_id,
+                               self._prelim_table.c.weight,
+                               self._prelim_table.c.nhops,
+                               self._prelim_table.c.links,
+                               self._prelim_table.c.nodes,
+                               self._prelim_table.c.source_id).\
+                          select_from(prelim_alias).\
+                          group_by(prelim_alias.c.halo_from_id).\
+                          join(self._prelim_table,
+                               and_(self._prelim_table.c.halo_from_id == prelim_alias.c.halo_from_id,
+                               self._prelim_table.c.weight == prelim_alias.c.weight))
+
+
+        q = self._supplement_halolink_query_with_filter(q, self._prelim_table)
+
+        added_rows = self._connection.execute(
+            self._table.insert().from_select(['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'links', 'nodes', 'source_id'],
+                                             q)).rowcount
+
+        self._connection.execute(self._prelim_table.delete())
+        return added_rows
+
+    @property
+    def _order_by_clause(self):
+        return [self._link_orm_class.source_id]
+
+    def one_to_one_mapping(self):
+        all = self._get_query_all()
+        source_ids = [x.source_id for x in self._all]
+        num_sources = len(self._all_halo_from)
+        matches = dict([(source, destination.halo_to) for source,destination in zip(source_ids, all)])
+        return [matches.get(i,None) for i in xrange(num_sources)]
+
+    def _execute_query(self):
+        super(MultiSourceMultiHopStrategy, self)._execute_query()
+
+
+
 
 class MultiHopMajorProgenitorsStrategy(MultiHopStrategy):
     """A hop strategy that suggests the major progenitor for a halo at every step"""
@@ -488,7 +548,8 @@ class MultiHopMajorProgenitorsStrategy(MultiHopStrategy):
         self.sim_id = halo_from.timestep.simulation_id
         super(MultiHopMajorProgenitorsStrategy, self).__init__(halo_from, nhops_max,
                                                                directed='backwards',
-                                                               include_startpoint=include_startpoint)
+                                                               include_startpoint=include_startpoint,
+                                                               target=halo_from.timestep.simulation)
 
     def _supplement_halolink_query_with_filter(self, query, table):
         query = super(MultiHopMajorProgenitorsStrategy, self)._supplement_halolink_query_with_filter(query, table)
@@ -504,7 +565,8 @@ class MultiHopMajorDescendantsStrategy(MultiHopStrategy):
         self.sim_id = halo_from.timestep.simulation_id
         super(MultiHopMajorDescendantsStrategy, self).__init__(halo_from, nhops_max,
                                                                directed='forwards',
-                                                               include_startpoint=include_startpoint)
+                                                               include_startpoint=include_startpoint,
+                                                               target=halo_from.timestep.simulation)
 
     def _supplement_halolink_query_with_filter(self, query, table):
         query = super(MultiHopMajorDescendantsStrategy, self)._supplement_halolink_query_with_filter(query, table)
