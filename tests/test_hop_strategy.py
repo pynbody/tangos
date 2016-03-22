@@ -3,6 +3,7 @@ __author__ = 'app'
 import halo_db as db
 import halo_db.halo_finder as halo_finding
 import halo_db.temporary_halolist as thl
+import halo_db.testing as testing
 import os
 import sqlalchemy, sqlalchemy.orm
 
@@ -193,3 +194,11 @@ def test_self_inclusion():
 
     results = halo_finding.MultiHopStrategy(db.get_item("sim/ts1/1"), 5, 'forwards', include_startpoint=True).all()
     assert db.get_item("sim/ts1/1") in results
+
+def test_major_progenitors():
+    results = halo_finding.MultiHopMajorProgenitorsStrategy(db.get_item("sim/ts3/1"),include_startpoint=True).all()
+    testing.assert_halolists_equal(results, ["sim/ts3/1","sim/ts2/1","sim/ts1/2"])
+
+def test_major_descendants():
+    results = halo_finding.MultiHopMajorDescendantsStrategy(db.get_item("sim/ts1/2"),include_startpoint=True).all()
+    testing.assert_halolists_equal(results, ["sim/ts1/2","sim/ts2/1","sim/ts3/1"])
