@@ -1,8 +1,8 @@
 from . import core
 
-def _add_symmetric_link(h1, h2):
-    rel = db.get_or_create_dictionary_item(core.internal_session, "ptcls_in_common")
-    db.core.internal_session.add_all([core.HaloLink(h1,h2,rel,1.0), core.HaloLink(h2,h1,rel,1.0)])
+def add_symmetric_link(h1, h2, weight=1.0):
+    rel = core.get_or_create_dictionary_item(core.internal_session, "ptcls_in_common")
+    core.internal_session.add_all([core.HaloLink(h1,h2,rel,weight), core.HaloLink(h2,h1,rel,weight)])
 
 
 def _as_halos(hlist, session=None):
@@ -16,6 +16,9 @@ def _as_halos(hlist, session=None):
             rvals.append(core.get_halo(h, session))
     return rvals
 
+def _halos_to_strings(hlist):
+    return [hx.path for hx in _as_halos(hlist)]
+
 def halolists_equal(hl1, hl2, session=None):
     """Return True if hl1 and hl2 are equivalent lists of halos"""
 
@@ -26,4 +29,4 @@ def halolists_equal(hl1, hl2, session=None):
 
 def assert_halolists_equal(hl1, hl2, session=None):
     equal = halolists_equal(hl1, hl2, session=None)
-    assert equal, "Not equal: %s %s"%(hl1,hl2)
+    assert equal, "Not equal: %s %s"%(_halos_to_strings(hl1),_halos_to_strings(hl2))

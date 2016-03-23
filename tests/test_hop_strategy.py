@@ -90,6 +90,23 @@ def setup():
 
 
 
+    # A second simulation to test linking across
+    sim2 = db.Simulation("sim2")
+    session.add(sim2)
+    s2_ts2 = db.TimeStep(sim2,"ts2",False)
+    session.add(s2_ts2)
+    s2_ts2.time_gyr = 2
+    s2_ts2.redshift = 5
+
+    s2_ts2_h1 = db.Halo(s2_ts2, 1, 1000, 0, 0, 0)
+    s2_ts2_h2 = db.Halo(s2_ts2, 2, 500, 0, 0, 0)
+    session.add_all([s2_ts2_h1, s2_ts2_h2])
+    testing.add_symmetric_link(s2_ts2_h1, ts2_h2)
+    testing.add_symmetric_link(s2_ts2_h2, ts2_h1)
+
+    session.commit()
+
+
 def test_get_halo():
     assert isinstance(db.get_item("sim/ts1/1"), db.Halo)
     assert db.get_item("sim/ts1/1").NDM==1000
@@ -205,16 +222,37 @@ def test_major_descendants():
     testing.assert_halolists_equal(results, ["sim/ts1/2","sim/ts2/1","sim/ts3/1"])
 
 def test_multisource():
-    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/3"]), directed='forwards',nhops_max=10,
-                                                       include_startpoint=True,target=db.core.get_item("sim/ts3")).one_to_one_mapping()
+    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/3"]),
+                                                       db.core.get_item("sim/ts3")).all()
     testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/2"])
 
 def test_multisource_with_duplicates():
-    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/2","sim/ts1/3"]), directed='forwards',nhops_max=10,
-                                                       include_startpoint=True,target=db.core.get_item("sim/ts3")).one_to_one_mapping()
+    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/2","sim/ts1/3"]),
+                                                       db.core.get_item("sim/ts3")).all()
     testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/1","sim/ts3/2"])
 
 def test_multisource_with_nones():
-    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/2","sim/ts1/3","sim/ts1/5"]), directed='forwards',nhops_max=10,
-                                                       include_startpoint=True,target=db.core.get_item("sim/ts3")).one_to_one_mapping()
+    strategy = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/2","sim/ts1/3","sim/ts1/5"]),
+                                                       db.core.get_item("sim/ts3"))
+    results = strategy.all()
     testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/1","sim/ts3/2",None])
+    assert strategy._nhops_taken==2 # despite not finding a match for ts1/5, the strategy should halt after 2 steps
+
+def test_multisource_with_nones_as_temptable():
+    strategy = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/2","sim/ts1/3","sim/ts1/5"]),
+                                                     db.core.get_item("sim/ts3"))
+    with strategy.temp_table() as table:
+        results = thl.all_halos_with_duplicates(table)
+    testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/1","sim/ts3/2",None])
+
+def test_multisource_backwards():
+    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts3/1","sim/ts3/2","sim/ts3/3"]),
+                                                       db.core.get_item("sim/ts1")).all()
+    testing.assert_halolists_equal(results,["sim/ts1/1","sim/ts1/3","sim/ts1/4"])
+
+def test_multisource_across():
+    strategy = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts2/1","sim/ts2/2","sim/ts2/3"]),
+                                                       db.core.get_item("sim2"))
+    results = strategy.all()
+    testing.assert_halolists_equal(results, ["sim2/ts2/2", "sim2/ts2/1", None])
+    assert strategy._nhops_taken==1

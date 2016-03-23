@@ -5,10 +5,12 @@ from sqlalchemy import and_, Table, Column, String, Integer, Float, MetaData, Fo
 import string
 import random
 import contextlib
+from . import consistent_collection
 import time
 import logging
 import pyparsing as pp
 
+NHOPS_MAX_DEFAULT = 100
 
 def _recursive_map_ids_to_objects(x, db_class, session):
     if hasattr(x, '__len__'):
@@ -98,7 +100,8 @@ class HopStrategy(object):
     def temp_table(self):
         import temporary_halolist
         # N.B. this could be made more efficient
-        return temporary_halolist.temporary_halolist_table(self.session, [x.id for x in self.all()])
+        ids_list = [x.id if hasattr(x,'id') else None for x in self.all() ]
+        return temporary_halolist.temporary_halolist_table(self.session, ids_list)
 
     def all(self):
         """Return all possible hops matching the conditions"""
@@ -189,7 +192,7 @@ class MultiHopStrategy(HopStrategy):
     timestep_old = sqlalchemy.orm.aliased(core.TimeStep, name="timestep_old")
     timestep_new = sqlalchemy.orm.aliased(core.TimeStep, name="timestep_new")
 
-    def __init__(self, halo_from, nhops_max, directed=None, target=None,
+    def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, directed=None, target=None,
                  order_by=None, combine_routes=True, min_aggregated_weight=0.0,
                  min_onehop_weight=0.0, store_full_paths=False,
                  include_startpoint=False):
@@ -260,10 +263,10 @@ class MultiHopStrategy(HopStrategy):
         return thl
 
     def _prepare_query(self):
-        self._seed_temp_table()
-        self._make_hops()
         self._generate_query()
         self._filter_query_for_target(self._target)
+        self._seed_temp_table()
+        self._make_hops()
 
     def _execute_query(self):
         with self._manage_temp_table():
@@ -393,6 +396,7 @@ class MultiHopStrategy(HopStrategy):
             filtered_count = self._filter_prelim_links_into_final()
             if filtered_count == 0:
                 break
+        self._nhops_taken = i # stored for debug/testing purposes
 
     def _generate_next_level_prelim_links(self, from_nhops=0):
 
@@ -484,11 +488,38 @@ class MultiHopStrategy(HopStrategy):
             return super(MultiHopStrategy, self)._generate_order_arg_from_name(name)
 
 class MultiSourceMultiHopStrategy(MultiHopStrategy):
-    """A variant of MultiHopStrategy that finds halos corresponding to multiple start points."""
+    """A variant of MultiHopStrategy that finds halos corresponding to multiple start points.
 
-    def __init__(self, halos_from, *args, **kwargs):
-        super(MultiSourceMultiHopStrategy, self).__init__(halos_from[0], *args, **kwargs)
+    Note that the behaviour is necessarily somewhat different to the other classes which start from a single
+    halo. Specifically, a target *must* be specified, and the direction of the hops to follow is inferred
+    from the nature of the target.
+
+    Additionally, as soon as any halo is "matched" in the target, the entire query is stopped. In other words,
+    this class assumes that the number of hops is the same to reach all target halos.
+
+    In terms of implementation, the class could be significantly optimised in future. While the all() function
+    only retains the highest-weight final halos, this weeding could be done earlier - at the point of making the
+    underlying query (to save the ORM mapping) or even during the hops."""
+
+    def __init__(self, halos_from, target, **kwargs):
+        directed = self._infer_direction(halos_from, target)
+        kwargs["target"] = target
+        kwargs["directed"] = directed
+        super(MultiSourceMultiHopStrategy, self).__init__(halos_from[0], **kwargs)
         self._all_halo_from = halos_from
+
+    def _infer_direction(self, halos_from, target):
+        if isinstance(target, core.Simulation):
+            return "across"
+        elif isinstance(target, core.TimeStep):
+            collected_halos = consistent_collection.ConsistentCollection(halos_from)
+            if collected_halos.timestep.simulation_id!=target.simulation_id:
+                return "across"
+            elif collected_halos.timestep.time_gyr<target.time_gyr:
+                return "forwards"
+            else:
+                return "backwards"
+
 
     def _seed_temp_table(self):
         for i,halo_from in enumerate(self._all_halo_from):
@@ -496,44 +527,33 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
                                         weight=1.0, nhops=0, links="", nodes=str(halo_from.id), source_id=i)
             self._connection.execute(insert_statement)
 
+    def _generate_next_level_prelim_links(self, from_nhops=0):
+        if self._should_halt():
+            return 0
+        else:
+            return super(MultiSourceMultiHopStrategy, self)._generate_next_level_prelim_links(from_nhops)
 
-    def _filter_prelim_links_into_final(self):
-        prelim_alias = sqlalchemy.orm.aliased(self._prelim_table)
-        # pick only top ranking by weight
-
-        q = self.session.query(self._prelim_table.c.halo_from_id,
-                               self._prelim_table.c.halo_to_id,
-                               self._prelim_table.c.weight,
-                               self._prelim_table.c.nhops,
-                               self._prelim_table.c.links,
-                               self._prelim_table.c.nodes,
-                               self._prelim_table.c.source_id).\
-                          select_from(prelim_alias).\
-                          group_by(prelim_alias.c.halo_from_id).\
-                          join(self._prelim_table,
-                               and_(self._prelim_table.c.halo_from_id == prelim_alias.c.halo_from_id,
-                               self._prelim_table.c.weight == prelim_alias.c.weight))
-
-
-        q = self._supplement_halolink_query_with_filter(q, self._prelim_table)
-
-        added_rows = self._connection.execute(
-            self._table.insert().from_select(['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'links', 'nodes', 'source_id'],
-                                             q)).rowcount
-
-        self._connection.execute(self._prelim_table.delete())
-        return added_rows
+    def _should_halt(self):
+        return self.query.count()>0
 
     @property
     def _order_by_clause(self):
-        return [self._link_orm_class.source_id]
+        return [self._link_orm_class.source_id, self._table.c.weight]
 
-    def one_to_one_mapping(self):
+    def all(self):
         all = self._get_query_all()
+        print [x.halo_to for x in all]
         source_ids = [x.source_id for x in self._all]
         num_sources = len(self._all_halo_from)
         matches = dict([(source, destination.halo_to) for source,destination in zip(source_ids, all)])
         return [matches.get(i,None) for i in xrange(num_sources)]
+
+    def temp_table(self):
+        # because of the custom manipulation performed above, the MultiHopStrategy implementation of
+        # temp_table does not return the correct results. Ideally, we should fix this by implementing
+        # the custom manipulation in all() inside the actual query instead. For now, the fix is to
+        # use the clunky "get everything then put it back into the database as a new temp table" approach.
+        return HopStrategy.temp_table(self)
 
     def _execute_query(self):
         super(MultiSourceMultiHopStrategy, self)._execute_query()
@@ -541,10 +561,13 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
 
 
 
+
+
+
 class MultiHopMajorProgenitorsStrategy(MultiHopStrategy):
     """A hop strategy that suggests the major progenitor for a halo at every step"""
 
-    def __init__(self, halo_from, nhops_max=100, include_startpoint=False):
+    def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False):
         self.sim_id = halo_from.timestep.simulation_id
         super(MultiHopMajorProgenitorsStrategy, self).__init__(halo_from, nhops_max,
                                                                directed='backwards',
@@ -561,7 +584,7 @@ class MultiHopMajorProgenitorsStrategy(MultiHopStrategy):
 class MultiHopMajorDescendantsStrategy(MultiHopStrategy):
     """A hop strategy that suggests the major descendant for a halo at every step"""
 
-    def __init__(self, halo_from, nhops_max=100, include_startpoint=False):
+    def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False):
         self.sim_id = halo_from.timestep.simulation_id
         super(MultiHopMajorDescendantsStrategy, self).__init__(halo_from, nhops_max,
                                                                directed='forwards',
@@ -573,3 +596,5 @@ class MultiHopMajorDescendantsStrategy(MultiHopStrategy):
         return query.filter(self.timestep_new.simulation_id == self.sim_id). \
             order_by(self.timestep_new.time_gyr, table.c.weight.desc(), self.halo_new.halo_number). \
             limit(1)
+
+

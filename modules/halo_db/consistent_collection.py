@@ -4,15 +4,19 @@ class ConsistentCollection(object):
 
     def __getitem__(self, item):
         values = [x[item] for x in self._objects]
-        return self._ensure_consistent(values)
+        return self._ensure_consistent(values, item)
+
+    def __getattr__(self, item):
+        values = [getattr(x, item) for x in self._objects]
+        return self._ensure_consistent(values, item)
 
     def get(self, item, default=None):
         values = [x.get(item, default) for x in self._objects]
-        return self._ensure_consistent(values)
+        return self._ensure_consistent(values, item)
 
-    def _ensure_consistent(self, values):
+    def _ensure_consistent(self, values, item_name):
         if any([v!=values[0] for v in values]):
-            raise ValueError, "Item %r is not consistent between members of the collection"
+            raise ValueError, "Item %r is not consistent between members of the collection"%item_name
         return values[0]
 
 

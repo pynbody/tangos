@@ -56,6 +56,10 @@ def halo_query(table):
     session = _get_session_for(table)
     return session.query(core.Halo).select_from(table).join(core.Halo)
 
+def all_halos_with_duplicates(table):
+    session = _get_session_for(table)
+    return [x[1] for x in session.query(table.c.id, core.Halo).select_from(table).outerjoin(core.Halo).all()]
+
 def halolink_query(table):
     session = _get_session_for(table)
     return session.query(core.HaloLink).select_from(table).join(core.HaloLink, core.HaloLink.halo_from_id==table.c.halo_id)
