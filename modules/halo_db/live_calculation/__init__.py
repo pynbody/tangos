@@ -304,7 +304,7 @@ class Link(Calculation):
         if self.locator.n_columns()!=1:
             raise ValueError, "Cannot use property %r, which returns more than one column, as a halo locator"%(str(self.locator))
 
-        target_halos = self.locator.values(halos)[0]
+        target_halos = self._get_target_halos(halos)
         results = np.empty((self.n_columns(),len(halos)),dtype=object)
 
         results_target = np.where(np.not_equal(target_halos, None))
@@ -336,8 +336,9 @@ class Link(Calculation):
 
         return results, description
 
-    def _get_targets(self, halos):
-        return self.locator.values(halos)[0]
+    def _get_target_halos(self, source_halos):
+        target_halos = self.locator.values(source_halos)[0]
+        return target_halos
 
     @staticmethod
     def _add_entries_for_duplicates(target_objs, target_ids):
@@ -345,6 +346,23 @@ class Link(Calculation):
             return target_objs
         target_obj_ids = [t.id for  t in target_objs]
         return [target_objs[target_obj_ids.index(t_id)] for t_id in target_ids]
+
+
+class MatchLink(Link):
+    def __init__(self, *tokens):
+        super(MatchLink, self).__init__(*tokens)
+        if not isinstance(self.locator, FixedInput):
+            raise ValueError, "MatchLink requires a string input to describe the target timestep or simulation to match against"
+        self._target = core.get_item(self.locator.proxy_value())
+
+    def __str__(self):
+        return "!match(%s).%s"%(self.locator, self.property)
+
+    def _get_target_halos(self, source_halos):
+        from .. import halo_finder
+        results = halo_finder.MultiSourceMultiHopStrategy(source_halos, self._target).all()
+        assert len(results)==len(source_halos)
+        return np.array(results, dtype=object)
 
 
 class StoredProperty(Calculation):
@@ -413,18 +431,24 @@ def parse_property_name( name):
 
     redirection = pp.Forward().setParseAction(pack_args(Link))
 
+    matched_redirection = pp.Forward().setParseAction(pack_args(MatchLink))
+
     multiple_properties = pp.Forward().setParseAction(pack_args(MultiCalculation))
 
-    property_identifier = (redirection | raw_stored_property | live_calculation_property | stored_property | multiple_properties)
+    property_identifier = (matched_redirection | redirection | raw_stored_property | live_calculation_property | stored_property | multiple_properties)
 
     value_or_property_name = string_value | numerical_value | property_identifier
 
     multiple_properties << (pp.Literal("(").suppress()+value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name) +pp.Literal(")").suppress())
+
     redirection << (live_calculation_property | stored_property ) + pp.Literal(".").suppress() + property_identifier
+    matched_redirection << pp.Literal("match(").suppress()+string_value+pp.Literal(").").suppress() + property_identifier
+
 
     parameters = pp.Literal("(").suppress()+pp.Optional(value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name))+pp.Literal(")").suppress()
     live_calculation_property << property_name+parameters
     property_complete = pp.stringStart()+value_or_property_name+pp.stringEnd()
+
 
     return property_complete.parseString(name)[0]
 

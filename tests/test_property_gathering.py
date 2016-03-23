@@ -2,12 +2,9 @@ import halo_db as db
 import numpy as np
 import numpy.testing as npt
 import properties
-from halo_db import live_calculation as lc
-import sqlalchemy
+from halo_db import testing
+from halo_db.testing import add_symmetric_link
 
-def _add_symmetric_link(h1, h2):
-    rel = db.get_or_create_dictionary_item(db.core.internal_session, "ptcls_in_common")
-    db.core.internal_session.add_all([db.HaloLink(h1,h2,rel,1.0), db.HaloLink(h2,h1,rel,1.0)])
 
 def setup():
     db.init_db("sqlite://")
@@ -57,14 +54,14 @@ def setup():
     session.add_all([ts3_h1,ts3_h2,ts3_h3])
 
 
-    _add_symmetric_link(ts1_h1, ts2_h1)
-    _add_symmetric_link(ts1_h2, ts2_h2)
-    _add_symmetric_link(ts1_h3, ts2_h3)
-    _add_symmetric_link(ts1_h4, ts2_h4)
+    add_symmetric_link(ts1_h1, ts2_h1)
+    add_symmetric_link(ts1_h2, ts2_h2)
+    add_symmetric_link(ts1_h3, ts2_h3)
+    add_symmetric_link(ts1_h4, ts2_h4)
 
-    _add_symmetric_link(ts2_h1, ts3_h1)
-    _add_symmetric_link(ts2_h2, ts3_h2)
-    _add_symmetric_link(ts2_h3, ts3_h3)
+    add_symmetric_link(ts2_h1, ts3_h1)
+    add_symmetric_link(ts2_h2, ts3_h2)
+    add_symmetric_link(ts2_h3, ts3_h3)
 
     for i,h in enumerate([ts1_h1,ts1_h2,ts1_h3,ts1_h4,ts2_h1,ts2_h2,ts2_h3,ts2_h4,ts3_h1,ts3_h2,ts3_h3]):
         h['Mvir'] = float(i+1)
@@ -91,7 +88,7 @@ def setup():
     for ts_a, ts_b in (ts1, ts2), (ts2, ts3):
         assert isinstance(ts_a, db.TimeStep)
         assert isinstance(ts_b, db.TimeStep)
-        _add_symmetric_link(ts_a.halos.filter_by(halo_type=1).first(), ts_b.halos.filter_by(halo_type=1).first())
+        add_symmetric_link(ts_a.halos.filter_by(halo_type=1).first(), ts_b.halos.filter_by(halo_type=1).first())
 
 
     db.core.internal_session.commit()
@@ -247,3 +244,7 @@ def test_reverse_property_cascade():
     assert len(objs)==3
     assert all([objs[i]==db.get_halo(x).id for i,x in enumerate(("sim/ts3/1", "sim/ts2/1", "sim/ts1/1"))])
 
+def test_match_gather():
+    ts1_halos, ts3_halos = db.get_timestep("sim/ts1").gather_property('dbid()','match("sim/ts3").dbid()')
+    testing.assert_halolists_equal(ts1_halos, ['sim/ts1/1','sim/ts1/2','sim/ts1/3', 'sim/ts1/1.1'])
+    testing.assert_halolists_equal(ts3_halos, ['sim/ts3/1','sim/ts3/2','sim/ts3/3', 'sim/ts3/1.1'])
