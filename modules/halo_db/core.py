@@ -9,6 +9,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, sessionmaker, clear_mappers, deferred
 from sqlalchemy import and_
 from sqlalchemy.orm.session import Session
+
 from . import halo_data_extraction_patterns
 
 import data_attribute_mapper
@@ -470,7 +471,7 @@ class TimeStep(Base):
         if isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]
         else:
-            property_description = live_calculation.parse_property_names(*plist)
+            property_description = live_calculation.parser.parse_property_names(*plist)
 
         # must be performed in its own session as we intentionally load in a lot of
         # objects with incomplete lazy-loaded properties
@@ -564,7 +565,7 @@ class Halo(Base):
 
     def calculate(self, name):
         from . import live_calculation
-        calculation = live_calculation.parse_property_name(name)
+        calculation = live_calculation.parser.parse_property_name(name)
         value = calculation.values_sanitized([self])[0]
         if len(value)==1:
             return value[0]
@@ -573,7 +574,7 @@ class Halo(Base):
 
     def calculate_abcissa_values(self, name):
         from . import live_calculation
-        calculation = live_calculation.parse_property_name(name)
+        calculation = live_calculation.parser.parse_property_name(name)
         (value, ), description = calculation.values_and_description([self])
         return description.plot_x_values(value[0])
 
@@ -738,7 +739,7 @@ class Halo(Base):
         if isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]
         else:
-            property_description = live_calculation.parse_property_names(*plist)
+            property_description = live_calculation.parser.parse_property_names(*plist)
 
         # must be performed in its own session as we intentionally load in a lot of
         # objects with incomplete lazy-loaded properties

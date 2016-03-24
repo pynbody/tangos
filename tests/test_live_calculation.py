@@ -3,6 +3,8 @@ from nose.tools import assert_raises
 import halo_db as db
 import halo_db.live_calculation as lc
 import numpy as np
+
+import halo_db.live_calculation.parser
 import properties
 
 def setup():
@@ -118,4 +120,4 @@ def test_non_existent_redirection():
         halo.calculate("BH.dbid()")
 
 def test_parse_raw_psuedofunction():
-    assert isinstance(lc.parse_property_name("raw(bla)"), lc.StoredPropertyRawValue)
+    assert isinstance(halo_db.live_calculation.parser.parse_property_name("raw(bla)"), lc.StoredPropertyRawValue)
