@@ -1,4 +1,10 @@
 class ConsistentCollection(object):
+    """Access attributes of an underlying collection of objects, ensuring they are consistent.
+
+    This class wraps a list of objects and, when getting attributes or values, behaves transparently as though it is
+    just one of those objects provided that they all actually return the same. If any individual in the collection
+    returns a different value, a ValueError is raised."""
+
     def __init__(self, objects):
         self._objects = set(objects)
 
@@ -18,7 +24,6 @@ class ConsistentCollection(object):
         if any([v!=values[0] for v in values]):
             raise ValueError, "Item %r is not consistent between members of the collection"%item_name
         return values[0]
-
 
 def consistent_simulation_from_halos(halos):
     return ConsistentCollection([x.timestep.simulation for x in halos])
