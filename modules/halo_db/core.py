@@ -565,7 +565,7 @@ class Halo(Base):
 
     def calculate(self, name):
         from . import live_calculation
-        calculation = live_calculation.parser.parse_property_name(name)
+        calculation = live_calculation.parser.parse_property_name_if_required(name)
         value = calculation.values_sanitized([self])[0]
         if len(value)==1:
             return value[0]
@@ -574,7 +574,7 @@ class Halo(Base):
 
     def calculate_abcissa_values(self, name):
         from . import live_calculation
-        calculation = live_calculation.parser.parse_property_name(name)
+        calculation = live_calculation.parser.parse_property_name_if_required(name)
         (value, ), description = calculation.values_and_description([self])
         return description.plot_x_values(value[0])
 
