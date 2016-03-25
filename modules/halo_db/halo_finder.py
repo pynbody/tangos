@@ -542,7 +542,6 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
 
     def all(self):
         all = self._get_query_all()
-        print [x.halo_to for x in all]
         source_ids = [x.source_id for x in self._all]
         num_sources = len(self._all_halo_from)
         matches = dict([(source, destination.halo_to) for source,destination in zip(source_ids, all)])
