@@ -248,3 +248,13 @@ def test_match_gather():
     ts1_halos, ts3_halos = db.get_timestep("sim/ts1").gather_property('dbid()','match("sim/ts3").dbid()')
     testing.assert_halolists_equal(ts1_halos, ['sim/ts1/1','sim/ts1/2','sim/ts1/3', 'sim/ts1/1.1'])
     testing.assert_halolists_equal(ts3_halos, ['sim/ts3/1','sim/ts3/2','sim/ts3/3', 'sim/ts3/1.1'])
+
+def test_later():
+    ts1_halos, ts3_halos = db.get_timestep("sim/ts1").gather_property('dbid()', 'later(2).dbid()')
+    testing.assert_halolists_equal(ts1_halos, ['sim/ts1/1', 'sim/ts1/2', 'sim/ts1/3', 'sim/ts1/1.1'])
+    testing.assert_halolists_equal(ts3_halos, ['sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts3/1.1'])
+
+def test_earlier():
+    ts3_halos, ts1_halos = db.get_timestep("sim/ts3").gather_property('dbid()', 'earlier(2).dbid()')
+    testing.assert_halolists_equal(ts1_halos, ['sim/ts1/1', 'sim/ts1/2', 'sim/ts1/3', 'sim/ts1/1.1'])
+    testing.assert_halolists_equal(ts3_halos, ['sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts3/1.1'])

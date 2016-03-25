@@ -1,7 +1,7 @@
 import pyparsing as pp
 
-from . import StoredProperty, StoredPropertyRawValue, LiveProperty, FixedNumericInputDescription, \
-    FixedInput, Link, MatchLink, MultiCalculation
+from . import StoredProperty, LiveProperty, FixedNumericInput, \
+    FixedInput, Link, MultiCalculation, Calculation
 
 
 def parse_property_name( name):
@@ -10,10 +10,9 @@ def parse_property_name( name):
     property_name = pp.Word(pp.alphas,pp.alphanums+"_")
     stored_property = property_name.setParseAction(pack_args(StoredProperty))
 
-    raw_stored_property = (pp.Literal("raw(").suppress()+property_name.setParseAction(pack_args(StoredPropertyRawValue))+pp.Literal(")").suppress())
     live_calculation_property = pp.Forward().setParseAction(pack_args(LiveProperty))
 
-    numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]\d+)?').setParseAction(pack_args(FixedNumericInputDescription))
+    numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]\d+)?').setParseAction(pack_args(FixedNumericInput))
 
     dbl_quotes = pp.Literal("\"").suppress()
     sng_quotes = pp.Literal("'").suppress()
@@ -23,18 +22,16 @@ def parse_property_name( name):
 
     redirection = pp.Forward().setParseAction(pack_args(Link))
 
-    matched_redirection = pp.Forward().setParseAction(pack_args(MatchLink))
 
     multiple_properties = pp.Forward().setParseAction(pack_args(MultiCalculation))
 
-    property_identifier = (matched_redirection | redirection | raw_stored_property | live_calculation_property | stored_property | multiple_properties)
+    property_identifier = (redirection | live_calculation_property | stored_property | multiple_properties)
 
     value_or_property_name = string_value | numerical_value | property_identifier
 
     multiple_properties << (pp.Literal("(").suppress()+value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name) +pp.Literal(")").suppress())
 
     redirection << (live_calculation_property | stored_property ) + pp.Literal(".").suppress() + property_identifier
-    matched_redirection << pp.Literal("match(").suppress()+string_value+pp.Literal(").").suppress() + property_identifier
 
 
     parameters = pp.Literal("(").suppress()+pp.Optional(value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name))+pp.Literal(")").suppress()
@@ -44,6 +41,11 @@ def parse_property_name( name):
 
     return property_complete.parseString(name)[0]
 
+def parse_property_name_if_required(name):
+    if isinstance(name, Calculation):
+        return name
+    else:
+        return parse_property_name(name)
 
 def parse_property_names(*names):
     return MultiCalculation(*[parse_property_name(n) for n in names])

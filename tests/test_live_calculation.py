@@ -2,9 +2,12 @@ from nose.tools import assert_raises
 
 import halo_db as db
 import halo_db.live_calculation as lc
+import halo_db.testing as testing
 import numpy as np
 
 import halo_db.live_calculation.parser
+import halo_db
+from halo_db import halo_data_extraction_patterns
 import properties
 
 def setup():
@@ -41,6 +44,15 @@ def setup():
     ts1_h1_bh2 = db.core.BH(ts1,2)
     ts1_h1_bh2["BH_mass"]=900.0
     ts1_h1["BH"] = ts1_h1_bh1, ts1_h1_bh2
+
+
+    ts2 = db.TimeStep(sim, "ts2", False)
+    session.add(ts2)
+    ts2.time_gyr = 2
+    ts2.redshift = 9
+
+    ts2_h1 = db.Halo(ts2,1,10000,0,0,0)
+    testing.add_symmetric_link(ts2_h1, ts1_h1)
 
     db.core.internal_session.commit()
 
@@ -120,4 +132,24 @@ def test_non_existent_redirection():
         halo.calculate("BH.dbid()")
 
 def test_parse_raw_psuedofunction():
-    assert isinstance(halo_db.live_calculation.parser.parse_property_name("raw(bla)"), lc.StoredPropertyRawValue)
+    parsed = halo_db.live_calculation.parser.parse_property_name("raw(dummy_property_1)")
+    assert parsed._inputs[0]._extraction_pattern is halo_data_extraction_patterns.HaloPropertyRawValueGetter
+
+    assert all(db.get_halo("sim/ts1/1").calculate(parsed)==db.get_halo("sim/ts1/1")['dummy_property_1'])
+
+def test_new_builtin():
+    from halo_db.live_calculation import BuiltinFunction
+
+    @BuiltinFunction.register
+    def my_test_function(halos):
+        return [[101]*len(halos)]
+
+    assert db.get_halo("sim/ts1/2").calculate("my_test_function()")==101
+
+def test_match():
+    dbid = db.get_halo("sim/ts1/1").calculate("match('sim/ts2').dbid()")
+    assert dbid==db.get_halo("sim/ts2/1").id
+
+def test_match_inappropriate_argument():
+    with assert_raises(ValueError):
+        db.get_halo("sim/ts1/1").calculate("match(dbid()).dbid()")

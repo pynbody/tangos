@@ -206,9 +206,9 @@ class FixedInput(Calculation):
 class UnknownValue(object):
     pass
 
-class FixedNumericInputDescription(FixedInput):
+class FixedNumericInput(FixedInput):
     def __init__(self, *tokens):
-        super(FixedNumericInputDescription, self).__init__()
+        super(FixedNumericInput, self).__init__()
 
     @staticmethod
     def _process_numerical_value(t):
@@ -224,6 +224,13 @@ class FixedNumericInputDescription(FixedInput):
         return str(self.value)
 
 class LiveProperty(Calculation):
+    def __new__(cls, *tokens):
+        if BuiltinFunction.has_function(str(tokens[0])):
+            return object.__new__(BuiltinFunction, *tokens)
+        else:
+            return object.__new__(LiveProperty, *tokens)
+
+
     def __init__(self, *tokens):
         super(LiveProperty, self).__init__()
         self._name = str(tokens[0])
@@ -248,28 +255,118 @@ class LiveProperty(Calculation):
     def values_and_description(self, halos):
         input_values = []
         input_descriptions = []
-        for input in self._inputs:
-            val, desc = input.values_and_description(halos)
-            if len(val)!=1:
-                raise ValueError, "Functions cannot receive more than one value per input"
-            input_values.append(val[0])
-            input_descriptions.append(desc)
+        for input in xrange(len(self._inputs)):
+            iv, id = self._input_value_and_description(input, halos)
+            input_values.append(iv)
+            input_descriptions.append(id)
 
+        calculator, results = self._evaluate_function(halos, input_descriptions, input_values)
+
+        return results, calculator
+
+    def _input_value_and_description(self, input_id, halos):
+        input = self._inputs[input_id]
+        val, desc = input.values_and_description(halos)
+        if len(val) != 1:
+            raise ValueError, "Functions cannot receive more than one value per input"
+        return val[0], desc
+
+    def _evaluate_function(self, halos, input_descriptions, input_values):
         sim = consistent_collection.consistent_simulation_from_halos(halos)
-
         results = []
         calculator = properties.providing_class(self.name())(sim, *input_descriptions)
-
         for inputs in zip(halos, *input_values):
             if self._has_required_properties(inputs[0]):
-                results.append(calculator.live_calculate_named(self.name(),*inputs))
+                results.append(calculator.live_calculate_named(self.name(), *inputs))
             else:
                 results.append(None)
-
-        return np.array([results],dtype=object), calculator
+        results = np.array([results], dtype=object)
+        return calculator, results
 
     def proxy_value(self):
         return UnknownValue()
+
+class BuiltinFunction(LiveProperty):
+    __registered_functions = {}
+    __default_args = {'provide_proxy': False, 'assert_class': None}
+
+    @classmethod
+    def register(cls, func):
+        """Register a built-in function for the live calculation (LC) system.
+
+        The LC-exposed version of the function inherits the same name as the python function.
+
+        The python function takes a list of halos and then further lists for each argument given to the
+        live-calculation. By default, these arugments are lists of the values for each halo. However
+        this behaviour can be customised by calling set_input_options.
+
+        For examples, see the builtin_functions module.
+        """
+        cls.__registered_functions[func.__name__] = {'function': func}
+        func.set_input_options = lambda arg_id, **kwargs: cls.set_input_options(func, arg_id, **kwargs)
+        func.set_initialisation = lambda init_fn: cls.set_initialisation(func, init_fn)
+        return func
+
+    @classmethod
+    def set_input_options(cls, func, argument_id, **kwargs):
+        """For the registered function, set input options.
+
+        :param argument_id: The 0-based ID of the input argument (as seen in the LC langauge,
+                            i.e. discounting the halos input)
+        :param provide_proxy: If True, the value of the input is not evaluated and only a proxy is passed
+        :param assert_class: If not None, the input must be an instance of the provided class
+        """
+        for k in kwargs.keys():
+            if k not in cls.__default_args.keys():
+                raise ValueError, "Unknown input option %s"%k
+        cls.__registered_functions[func.__name__][argument_id] = kwargs
+
+    @classmethod
+    def set_initialisation(cls, func, initialisation_func):
+        """For the registered function, add an initialisation function that receives the input objects"""
+        cls.__registered_functions[func.__name__]['initialisation'] = initialisation_func
+
+    @classmethod
+    def has_function(cls, func_name):
+        return func_name in cls.__registered_functions.keys()
+
+    def __init__(self, *tokens):
+        super(BuiltinFunction, self).__init__(*tokens)
+        self._func = self.__registered_functions[self._name]['function']
+        self._info = self.__registered_functions[self._name]
+        for i in xrange(len(self._inputs)):
+            assert_class = self._get_input_option(i, 'assert_class')
+            if assert_class is not None and not isinstance(self._inputs[i], assert_class):
+                raise ValueError, "Input %d to function %s must be of type %s (received %s)"%\
+                                  (i,self._name,assert_class,type(self._inputs[i]))
+        if 'initialisation' in self._info:
+            self._info['initialisation'](*self._inputs)
+
+    def _get_input_option(self, input_id, option):
+        default = self.__default_args[option]
+        if input_id in self._info:
+            return self._info[input_id].get(option, default)
+        else:
+            return default
+
+    def _input_value_and_description(self, input_id, halos):
+        if self._get_input_option(input_id, 'provide_proxy'):
+            return self._inputs[input_id].proxy_value(), None
+        else:
+            return super(BuiltinFunction, self)._input_value_and_description(input_id, halos)
+
+
+
+    def retrieves(self):
+        return set()
+
+    def _evaluate_function(self, halos, input_descriptions, input_values):
+        if len(input_descriptions)>0:
+            inherited_description = input_descriptions[0]
+        else:
+            inherited_description = None
+        return inherited_description, np.array([self._func(halos, *input_values)], dtype=object)
+
 
 
 class Link(Calculation):
@@ -349,21 +446,6 @@ class Link(Calculation):
         return [target_objs[target_obj_ids.index(t_id)] for t_id in target_ids]
 
 
-class MatchLink(Link):
-    def __init__(self, *tokens):
-        super(MatchLink, self).__init__(*tokens)
-        if not isinstance(self.locator, FixedInput):
-            raise ValueError, "MatchLink requires a string input to describe the target timestep or simulation to match against"
-        self._target = core.get_item(self.locator.proxy_value())
-
-    def __str__(self):
-        return "!match(%s).%s"%(self.locator, self.property)
-
-    def _get_target_halos(self, source_halos):
-        from .. import halo_finder
-        results = halo_finder.MultiSourceMultiHopStrategy(source_halos, self._target).all()
-        assert len(results)==len(source_halos)
-        return np.array(results, dtype=object)
 
 
 class StoredProperty(Calculation):
@@ -402,15 +484,8 @@ class StoredProperty(Calculation):
 
 
 
-class StoredPropertyRawValue(StoredProperty):
-    def __init__(self, *tokens):
-        super(StoredPropertyRawValue,self).__init__(*tokens)
-        self._extraction_pattern = halo_data_extraction_patterns.HaloPropertyRawValueGetter
-
-    def name(self):
-        return "raw("+self._name+")"
-
 
 
 
 from . import parser
+from . import builtin_functions
