@@ -43,4 +43,4 @@ def modifying_underlying_input(input):
     input._extraction_pattern = halo_data_extraction_patterns.HaloPropertyRawValueGetter
 
 
-from . import arithmetic
+from . import arithmetic, array
