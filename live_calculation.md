@@ -20,6 +20,8 @@ Now:
 - `ts.gather_property("Vvir()")` calls the live-calculation function `Vvir` to work out the virial velocity of every halo (from stored properties `Mvir` and `Rvir`)
 - `ts.gather_property("at(2.0,dm_density_profile)")` returns the DM density profile at 2 kpc
 - `ts.gather_property("at(rhalf, dm_density_profile)")` returns the DM density profile at `rhalf`
+- `ts.gather_property("at(Rvir/2, dm_density_profile)")` returns the DM density profile at half the virial radius
+- `ts.gather_property("at(5.0, dm_density_profile/earlier(5).dm_density_profile)")` returns the ratio of the DM density profile to its value 5 steps previously, at 5 kpc._
 - `ts.gather_property("BH.BH_mdot")` finds the first BH referenced by a halo and returns that BH's accretion `BH_mdot` (i.e. accretion rate) property. Note that the thing that happens to be referenced first in this way may or may not be the BH you care about so...
 - `ts.gather_property("bh().BH_mdot")` picks out the most massive BH referenced by the halo and returns its accretion rate
 - `ts.gather_property('bh("BH_mdot","max").BH_mass')` picks out the most rapidly accreting BH referenced by the halo and returns its mass. 
@@ -45,3 +47,4 @@ There are some subtleties about the mini-language used in the queries above. The
 - All functions can implicitly access halo properties, so that (for example) `Vvir()` returns the virtual velocity without having to specify manually that it should calculate this from `Rvir` and `Vvir`
 - `link.value` returns the `value` stored in the linked halo where the link is named `link`
 - Functions and links can be chained and nested, so for example `average(biggest_BH().BH_mdot_hist)` is valid syntax
+- Basic arithmetic works as you'd expect, so you can use `+`, `-`, `*` and `/`, as well as brackets to control precedence
