@@ -153,3 +153,17 @@ def test_match():
 def test_match_inappropriate_argument():
     with assert_raises(ValueError):
         db.get_halo("sim/ts1/1").calculate("match(dbid()).dbid()")
+
+
+def test_arithmetic():
+    h = db.get_halo("sim/ts1/1")
+    pname = lc.parser.parse_property_name("1.0+2.0")
+    assert h.calculate("1.0+2.0")==3.0
+    assert h.calculate("1.0-2.0") == -1.0
+    assert h.calculate("1.0/2.0") == 0.5
+    assert h.calculate("3.0*2.0") == 6.0
+    assert h.calculate("1.0+2.0*3.0")==7.0
+    assert h.calculate("2.0*3.0+1.0")==7.0
+    assert h.calculate("2.0*(3.0+1.0)") == 8.0
+    assert h.calculate("at(1.0,dummy_property_1)*at(5.0,dummy_property_1)") ==\
+           h.calculate("at(1.0,dummy_property_1)") * h.calculate("at(5.0,dummy_property_1)")
