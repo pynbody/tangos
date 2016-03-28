@@ -57,6 +57,7 @@ class Calculation(object):
 
     def _generate_dict_ids_and_levels(self):
         if not hasattr(self, "_r_dict_ids_cached"):
+            session = core.Session()
             self._r_dict_ids_cached = set()
             self._r_dict_ids_essential_cached = set()
             retrieves = self.retrieves()
@@ -67,8 +68,8 @@ class Calculation(object):
             for r in retrieves:
                 r_split = r.split(".")
                 for w in r_split:
-                    self._r_dict_ids_cached.add(core.get_dict_id(w))
-                self._r_dict_ids_essential_cached.add(core.get_dict_id(r_split[0]))
+                    self._r_dict_ids_cached.add(core.get_dict_id(w,session=session))
+                self._r_dict_ids_essential_cached.add(core.get_dict_id(r_split[0],session=session))
 
     def values_and_description(self, halos):
         """Return the values of this calculation, as well as a HaloProperties object describing the
@@ -243,14 +244,22 @@ class LiveProperty(Calculation):
         return self._name
 
     def retrieves(self):
+        result = self._calculation_retrieves()
+        result = result.union(self._parameters_retrieve())
+        return result
+
+    def _parameters_retrieve(self):
+        result = set()
+        for i in self._inputs:
+            result = result.union(i.retrieves())
+        return result
+
+    def _calculation_retrieves(self):
         result = set()
         proxy_values = [i.proxy_value() for i in self._inputs]
         providing_instance = properties.providing_class(self._name)(None, *proxy_values)
         result = result.union(providing_instance.requires_property())
-        for i in self._inputs:
-            result=result.union(i.retrieves())
         return result
-
 
     def values_and_description(self, halos):
         input_values = []
@@ -355,9 +364,7 @@ class BuiltinFunction(LiveProperty):
         else:
             return super(BuiltinFunction, self)._input_value_and_description(input_id, halos)
 
-
-
-    def retrieves(self):
+    def _calculation_retrieves(self):
         return set()
 
     def _evaluate_function(self, halos, input_descriptions, input_values):
@@ -464,7 +471,7 @@ class StoredProperty(Calculation):
         return {self._name}
 
     def values(self, halos):
-        self._name_id = core.get_dict_id(self._name)
+        self._name_id = core.get_dict_id(self._name,session=core.Session())
         ret = np.empty((1,len(halos)),dtype=object)
         for i, h in enumerate(halos):
             if self._extraction_pattern.cache_contains(h, self._name_id):

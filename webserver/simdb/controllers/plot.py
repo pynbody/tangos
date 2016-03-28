@@ -161,7 +161,7 @@ class PlotController(BaseController):
         redshift = []
         px = []
         spoint = prop.halo.earliest
-        redshift, px = spoint.property_cascade("t",prop.name.text)
+        redshift, px = spoint.property_cascade("t()",prop.name.text)
 
         """while spoint!=None :
             prop_tv = Session.query(meta.HaloProperty).filter_by(halo_id=spoint.id, name_id=prop.name_id).order_by(meta.HaloProperty.id.desc()).first()
@@ -262,10 +262,10 @@ class PlotController(BaseController):
         did1 = str(request.params['x'])
         did2 = str(request.params['y'])
         if request.params['x_array_element']!="":
-            did1+="//"+request.params['x_array_element']
+            did1="at("+request.params['x_array_element']+","+did1+")"
 
         if request.params['y_array_element']!="":
-            did2+="//"+request.params['y_array_element']
+            did2 = "at(" + request.params['y_array_element'] + "," + did2 + ")"
 
         nosubs = request.params.get('nosubs')=='on'
 
