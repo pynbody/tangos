@@ -6,6 +6,20 @@ import pyparsing as pp
 
 
 class HaloProperties(object):
+    _all_classes = {}
+
+    class __metaclass__(type):
+        # Present to register new subclasses of HaloProperties, so that subclasses can be dynamically
+        # instantiated when required based on their cls.name() values. Stored as a dictionary so that
+        # reloaded classes overwrite their old versions.
+        def __init__(cls, name, bases, dict):
+            type.__init__(cls, name, bases, dict)
+            cls._all_classes[name] = cls
+
+    @classmethod
+    def all_classes(cls):
+        return cls._all_classes.values()
+
     def __init__(self, simulation):
         """Initialise a HaloProperties calculation object
 
@@ -200,7 +214,6 @@ class HaloProperties(object):
     def plot_clabel(self):
         return None
 
-
 class TimeChunkedProperty(HaloProperties):
     nbins = 1000
     tmax_Gyr = 20.0
@@ -301,11 +314,7 @@ class ProxyHalo(object):
 def all_property_classes():
     """Return list of all classes derived from HaloProperties"""
 
-    x = HaloProperties.__subclasses__()
-    for c in x :
-        for s in c.__subclasses__():
-            x.append(s)
-    return x
+    return HaloProperties.all_classes()
 
 
 
@@ -334,7 +343,7 @@ def all_properties():
 
 def providing_class(property_name, silent_fail=False):
     """Return providing class for given property name"""
-    classes = all_property_classes()[::-1] # search backwards to catch most recent things first
+    classes = all_property_classes()
     property_name = property_name.lower().split("(")[0]
     for c in classes:
         name = c.name()
