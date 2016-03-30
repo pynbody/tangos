@@ -39,7 +39,7 @@ def raw(halos, values):
 raw.set_input_options(0, assert_class=StoredProperty)
 
 @raw.set_initialisation
-def modifying_underlying_input(input):
+def raw_initialisation(input):
     input._extraction_pattern = halo_data_extraction_patterns.HaloPropertyRawValueGetter
 
 
