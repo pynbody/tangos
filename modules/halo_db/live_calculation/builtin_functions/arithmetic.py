@@ -1,9 +1,10 @@
 from .. import BuiltinFunction, FixedNumericInput
 import numpy as np
+import functools
 
 @BuiltinFunction.register
 def abs(halos, vals):
-    return [np.linalg.norm(v, axis=-1) for v in vals]
+    return arithmetic_unary_op(vals, functools.partial(np.linalg.norm, axis=-1))
 
 @BuiltinFunction.register
 def sqrt(halos, vals):
