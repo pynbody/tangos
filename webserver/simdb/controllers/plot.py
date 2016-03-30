@@ -350,6 +350,7 @@ class PlotController(BaseController):
                 if not overplot:
                     self.start()
                 property_info = prop.name.providing_class()(prop.halo.timestep.simulation)
+                index = property_info.index_of_name(prop.name.text)
                 prop.plot()
 
                 if property_info.plot_xlog() and property_info.plot_ylog() :
@@ -360,10 +361,10 @@ class PlotController(BaseController):
                     p.semilogy()
 
                 if property_info.plot_xlabel() :
-                    p.xlabel(property_info.plot_xlabel())
+                    p.xlabel(property_info.plot_xlabel()[index])
 
                 if property_info.plot_ylabel() :
-                    p.ylabel(property_info.plot_ylabel())
+                    p.ylabel(property_info.plot_ylabel()[index])
 
                 if property_info.plot_yrange():
 
