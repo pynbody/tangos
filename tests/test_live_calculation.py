@@ -165,5 +165,7 @@ def test_arithmetic():
     assert h.calculate("1.0+2.0*3.0")==7.0
     assert h.calculate("2.0*3.0+1.0")==7.0
     assert h.calculate("2.0*(3.0+1.0)") == 8.0
+    assert h.calculate("2.0**2")==4.0
+    assert h.calculate("2.0*3.0**2")==18.0
     assert h.calculate("at(1.0,dummy_property_1)*at(5.0,dummy_property_1)") ==\
            h.calculate("at(1.0,dummy_property_1)") * h.calculate("at(5.0,dummy_property_1)")

@@ -11,7 +11,8 @@ def pack_args(for_function):
 
 numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]\d+)?').setParseAction(pack_args(FixedNumericInput))
 
-IN_OPS = [("*", "multiply"),
+IN_OPS = [("**", "power"),
+          ("*", "multiply"),
           ("/", "divide"),
           ("+", "add"),
           ("-", "subtract")]

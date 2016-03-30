@@ -7,9 +7,29 @@ def abs(halos, vals):
 
 @BuiltinFunction.register
 def sqrt(halos, vals):
-    return [np.sqrt(v) if v is not None else v for v in vals]
+    return arithmetic_unary_op(vals, np.sqrt)
 
-def arithmetic_op(vals1, vals2, op):
+@BuiltinFunction.register
+def subtract(halos, vals1, vals2):
+    return arithmetic_binary_op(vals1, vals2, np.subtract)
+
+@BuiltinFunction.register
+def add(halos, vals1, vals2):
+    return arithmetic_binary_op(vals1, vals2, np.add)
+
+@BuiltinFunction.register
+def divide(halos, vals1, vals2):
+    return arithmetic_binary_op(vals1, vals2, np.divide)
+
+@BuiltinFunction.register
+def multiply(halos, vals1, vals2):
+    return arithmetic_binary_op(vals1, vals2, np.multiply)
+
+@BuiltinFunction.register
+def power(halos, vals1, vals2):
+    return arithmetic_binary_op(vals1, vals2, np.power)
+
+def arithmetic_binary_op(vals1, vals2, op):
     results = []
     for v1,v2 in zip(vals1, vals2):
         if v1 is not None and v2 is not None:
@@ -21,19 +41,13 @@ def arithmetic_op(vals1, vals2, op):
         results.append(result)
     return results
 
-@BuiltinFunction.register
-def subtract(halos, vals1, vals2):
-    return arithmetic_op(vals1, vals2, np.subtract)
-
-@BuiltinFunction.register
-def add(halos, vals1, vals2):
-    return arithmetic_op(vals1, vals2, np.add)
-
-@BuiltinFunction.register
-def divide(halos, vals1, vals2):
-    return arithmetic_op(vals1, vals2, np.divide)
-
-@BuiltinFunction.register
-def multiply(halos, vals1, vals2):
-    return arithmetic_op(vals1, vals2, np.multiply)
-
+def arithmetic_unary_op(vals1, op):
+    results = []
+    for v1 in vals1:
+        if v1 is not None:
+            v1 = np.asarray(v1, dtype=float)
+            result = op(v1)
+        else:
+            result = None
+        results.append(result)
+    return results
