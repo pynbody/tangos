@@ -135,7 +135,7 @@ Now, load in a single timestep from the simulation.
 <TimeStep(<Simulation("romulus8.256gst3.bwBH")>,"romulus8.256gst3.bwBH.002560") z=0.50 t=8.64 Gyr>
 >>> step1 = _
 ```
-The entire simulation step including all halos is loaded as `step1`. Note the syntax in the agrgument for `get_timestep` is `simname/%step`. You cal also use the % syntax to avoid witing the entire simulation name, e.g.  `db.get_timestep('romulus8%/%2560')`. Using the timestep object one can access individual halos.
+The entire simulation step including all halos is loaded as `step1`. Note the syntax in the argument for `get_timestep` is `simname/%step`. You cal also use the % wildcard syntax to avoid writing the entire simulation name, e.g.  `db.get_timestep('romulus8%/%2560')`. Using the timestep object one can access individual halos (indexed starting at zero, even if the halo finder calls it halo 1):
 
 ```
 >>> step1.halos[0]                       #look at the largest halo
@@ -166,21 +166,29 @@ The entire simulation step including all halos is loaded as `step1`. Note the sy
  u'gas_image_original',
  u'stellar_image_original']
  ```
- You can also load in data for all halos at once using `gather_property`. Note that it returns a list even with one arguement given. You can give it as many value key names as you want and it will return a list of arrays for each.
+ You can also load in data for all halos at once using `gather_property`. This is *much* faster than accessing each halo in turn. Note that it returns a list even with one argument given. You can give it as many value key names as you want and it will return a list of arrays for each.
 ```
 >>> mvir, = step1.gather_property('Mvir')              #get the virial mass for every halo in the simulation
->>> mvir, cen = step1.gather_property('Mvstar','SSC')   #get both the stellar mass AND the center of the halo
+>>> mvir, cen = step1.gather_property('Mstar','SSC')   #get both the stellar mass AND the center of the halo
 ```
-Some properties are not inherently already saved in the database, but can be calculated on the fly from already stored properties (we call these "live calculations"). These are generally called as functions and can be used with either `gather_property` or the `calculate` function for a single halo. For example, the property `Vvir` is calculated using `Mvir` and `Rvir` that are already loaded into the database. To calculate for a single halo, `h`, one would type `h.calculate('Vvir()')`. Note the extra set of "()" in the attribute name. This will return the live-calculated value for halo h. To do it for an entire step, you would do `step.gather_property('Vvir()')`. 
 
-One can also make their own calculatiosn on the fly. For example, `h.calculate('Mgas/Mstar')` will calculate the ratio of those two properties. In general, arithmetic involving *, +, -, and / all work for any already calculated (or live calculated) halo property.
+Calculations
+------------
+
+Some properties are not inherently already saved in the database, but can be calculated on the fly from already stored properties (we call these "live calculations"). These are called a bit like functions and can be used with either `gather_property` or the `calculate` function for a single halo. 
+
+For example, the property `Vvir` is calculated using `Mvir` and `Rvir` that are already loaded into the database. To calculate for a single halo, `h`, one would type `h.calculate('Vvir()')`. Note the extra set of "()" in the attribute name, because this is a *function* that the database will call.  To do it for an entire step, you would do `step.gather_property('Vvir()')`. 
+
+Once again, the reason for using this approach is that the database is able to vastly optimise the calculation compared to the performance you'd get by manually going through each halo doing the calculation in your own code. 
+
+You can also make custom calculations on the fly. For example, `h.calculate('Mgas/Mstar')` will calculate the ratio of those two properties. In general, arithmetic involving *, +, -, and / all work for any already calculated (or live calculated) halo property.
 
 For more information on live calculations including more examples and syntax explanation, go [here] (live_calculation.md).
 
 Linking Halos Across Timesteps
 ------------------------------------
 
-One other important live calculation are the earlier and later functions. These take an integer argument and will return either the descendant halo or main progenitor halo. You can then easily retrieve information about that future/past halo. For example, `h.calculate(later(5).Mvir)` returns the virial mass of the descendant halo 5 snapshots later than the current snapshot that houses halo `h`. This strategy can also be useful in linking the properties of all halos in two different snapshots.
+Two important live calculation built-in functions are the `earlier` and `later` functions. These take an integer argument and will return either the descendant halo or main progenitor halo. You can then easily retrieve information about that future/past halo. For example, `h.calculate('later(5).Mvir')` returns the virial mass of the descendant halo 5 snapshots later than the current snapshot that houses halo `h`. This strategy can also be useful in linking the properties of all halos in two different snapshots.
 
 ```
 step.gather_property('Mstar', 'earlier(10).Mstar')  #returns both the stellar mass of all halos in the current step and the stellar mass of each halo's descendant 10 snapshots earlier.
