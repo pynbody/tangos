@@ -115,7 +115,7 @@ The Python Interface for Analysis
 
 Now that you have your database loaded in and different values calculated and stored, its time to use it for science.
 
-First, you have to check to make sure you have the correct path to your simulation repository in `environment_local.sh  Next is to make sure the syntax matches your environment. The default environment.sh is written for a bash environment. If you are working in cshell, simply change syntax (e.g. export -> setenv). *However* if you do this, do you will need to change the header in webserver.sh (e.g `#!/usr/bin/csh`).
+First, you have to check to make sure you have the correct path to your simulation repository in `environment_local.sh`. Next is to make sure the syntax matches your environment. The default environment.sh is written for a bash environment. If you are working in cshell, simply change syntax (e.g. export -> setenv). *However* if you do this, do you will need to change the header in webserver.sh (e.g `#!/usr/bin/csh`).
 
 Now open up your python environment and load in your database.
 ```
@@ -173,7 +173,7 @@ The entire simulation step including all halos is loaded as `step1`. Note the sy
 ```
 Some properties are not inherently already saved in the database, but can be calculated on the fly from already stored properties (we call these "live calculations"). These are generally called as functions and can be used with either `gather_property` or the `calculate` function for a single halo. For example, the property `Vvir` is calculated using `Mvir` and `Rvir` that are already loaded into the database. To calculate for a single halo, `h`, one would type `h.calculate('Vvir()')`. Note the extra set of "()" in the attribute name. This will return the live-calculated value for halo h. To do it for an entire step, you would do `step.gather_property('Vvir()')`. 
 
-One can also make their own calculatiosn on the fly. For example, `h.calculate(Mgas/Mstar)` will calculate the ratio of those two properties. In general, arithmetic involving *, +, -, and / all work for any already calculated (or live calculated) halo property.
+One can also make their own calculatiosn on the fly. For example, `h.calculate('Mgas/Mstar')` will calculate the ratio of those two properties. In general, arithmetic involving *, +, -, and / all work for any already calculated (or live calculated) halo property.
 
 For more information on live calculations including more examples and syntax explanation, go [here] (live_calculation.md).
 
@@ -186,7 +186,7 @@ One other important live calculation are the earlier and later functions. These 
 step.gather_property('Mstar', 'earlier(10).Mstar')  #returns both the stellar mass of all halos in the current step and the stellar mass of each halo's descendant 10 snapshots earlier.
 ```
 
-Again, please visit the [live calculatsions page](live_calculation.md) for more information and examples.
+Again, please visit the [live calculations page](live_calculation.md) for more information and examples.
 
 Profile properties
 -----------------------------------------
