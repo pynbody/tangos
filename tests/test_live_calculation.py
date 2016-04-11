@@ -80,6 +80,13 @@ class DummyProperty2(properties.HaloProperties):
     def plot_xdelta(cls):
         return 0.2
 
+class DummyPropertyArray(properties.LiveHaloProperties):
+    @classmethod
+    def name(cls):
+        return "dummy_property_array"
+
+    def live_calculate(self, db_halo_entry, *input_values):
+        return np.array([1,2,3])
 
 def test_simple_retrieval():
     BH = db.get_halo("sim/ts1/1.1")
@@ -169,3 +176,10 @@ def test_arithmetic():
     assert h.calculate("2.0*3.0**2")==18.0
     assert h.calculate("at(1.0,dummy_property_1)*at(5.0,dummy_property_1)") ==\
            h.calculate("at(1.0,dummy_property_1)") * h.calculate("at(5.0,dummy_property_1)")
+
+def test_calculate_array():
+    h = db.get_halo("sim/ts1/1")
+
+    assert (h.calculate("dummy_property_array()")==[1,2,3]).all()
+
+    assert (h.calculate("BH.dummy_property_array()") == [1, 2, 3]).all()

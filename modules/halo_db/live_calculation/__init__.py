@@ -289,8 +289,9 @@ class LiveProperty(Calculation):
                 results.append(calculator.live_calculate_named(self.name(), *inputs))
             else:
                 results.append(None)
-        results = np.array([results], dtype=object)
-        return calculator, results
+        results_array = np.empty((1,len(results)),dtype=object)
+        results_array[0,:] = results
+        return calculator, results_array
 
     def proxy_value(self):
         return UnknownValue()
