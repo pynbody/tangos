@@ -1,7 +1,9 @@
 __author__ = 'app'
 
 import halo_db as db
-import halo_db.hopper as hopper
+import halo_db.halo_finder as halo_finding
+import halo_db.temporary_halolist as thl
+import halo_db.testing as testing
 import os
 import sqlalchemy, sqlalchemy.orm
 
@@ -33,6 +35,7 @@ def setup():
     ts1_h2 = db.Halo(ts1,2,900,0,0,0)
     ts1_h3 = db.Halo(ts1,3,800,0,0,0)
     ts1_h4 = db.Halo(ts1,4,300,0,0,0)
+    ts1_h5 = db.Halo(ts1,5,10,0,0,0) # intentional "orphan" halo with no progenitors for test_multisource
 
     session.add_all([ts1_h1,ts1_h2,ts1_h3,ts1_h4])
 
@@ -87,6 +90,23 @@ def setup():
 
 
 
+    # A second simulation to test linking across
+    sim2 = db.Simulation("sim2")
+    session.add(sim2)
+    s2_ts2 = db.TimeStep(sim2,"ts2",False)
+    session.add(s2_ts2)
+    s2_ts2.time_gyr = 2
+    s2_ts2.redshift = 5
+
+    s2_ts2_h1 = db.Halo(s2_ts2, 1, 1000, 0, 0, 0)
+    s2_ts2_h2 = db.Halo(s2_ts2, 2, 500, 0, 0, 0)
+    session.add_all([s2_ts2_h1, s2_ts2_h2])
+    testing.add_symmetric_link(s2_ts2_h1, ts2_h2)
+    testing.add_symmetric_link(s2_ts2_h2, ts2_h1)
+
+    session.commit()
+
+
 def test_get_halo():
     assert isinstance(db.get_item("sim/ts1/1"), db.Halo)
     assert db.get_item("sim/ts1/1").NDM==1000
@@ -117,7 +137,7 @@ def test_previous_finds_major_progenitor():
 
 
 def test_simple_twostep_hop():
-    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts3/3"),2,'backwards')
+    strategy = halo_finding.MultiHopStrategy(db.get_item("sim/ts3/3"), 2, 'backwards')
     assert strategy.count()==2
     all, weights = strategy.all_and_weights()
 
@@ -127,19 +147,19 @@ def test_simple_twostep_hop():
     assert weights[1]==1.0
 
 def test_twostep_ordering():
-    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts3/3"),2,'backwards',order_by="time_asc")
+    strategy = halo_finding.MultiHopStrategy(db.get_item("sim/ts3/3"), 2, 'backwards', order_by="time_asc")
 
     all = strategy.all()
     print all
     assert db.get_item("sim/ts1/4")==all[0]
     assert db.get_item("sim/ts2/4")==all[1]
 
-    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts3/3"),2,'backwards',order_by="time_desc")
+    strategy = halo_finding.MultiHopStrategy(db.get_item("sim/ts3/3"), 2, 'backwards', order_by="time_desc")
     all = strategy.all()
     assert db.get_item("sim/ts2/4")==all[0]
     assert db.get_item("sim/ts1/4")==all[1]
 
-    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts3/1"),2,'backwards',order_by=["time_asc","weight"])
+    strategy = halo_finding.MultiHopStrategy(db.get_item("sim/ts3/1"), 2, 'backwards', order_by=["time_asc", "weight"])
     all, weights = strategy.all_and_weights()
 
     I = db.get_item
@@ -156,7 +176,7 @@ def test_twostep_ordering():
 
 
 def test_twostep_multiroute():
-    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts3/1"),2,'backwards',order_by=["time_asc","weight"],combine_routes=False)
+    strategy = halo_finding.MultiHopStrategy(db.get_item("sim/ts3/1"), 2, 'backwards', order_by=["time_asc", "weight"], combine_routes=False)
     all, weights = strategy.all_and_weights()
 
     I = db.get_item
@@ -172,8 +192,67 @@ def test_twostep_multiroute():
     #assert strategy.node_ids()==[[9, 6, 1], [9, 5, 2], [9, 5, 1], [9, 5], [9, 6]]
 
 def test_twostep_direction():
-    strategy = hopper.MultiHopStrategy(db.get_item("sim/ts2/1"),2,'backwards')
+    strategy = halo_finding.MultiHopStrategy(db.get_item("sim/ts2/1"), 2, 'backwards')
     timesteps = set([x.timestep for x in strategy.all()])
     assert db.get_item("sim/ts1") in timesteps
     assert db.get_item("sim/ts2") not in timesteps
     assert db.get_item("sim/ts3") not in timesteps
+
+def test_results_as_temptable():
+    standard_results = halo_finding.MultiHopStrategy(db.get_item("sim/ts2/1"), 2, 'backwards').all()
+    with halo_finding.MultiHopStrategy(db.get_item("sim/ts2/1"), 2, 'backwards').temp_table() as table:
+        thl_results = thl.halo_query(table).all()
+
+    assert standard_results==thl_results
+
+def test_self_inclusion():
+    # default: include_startpoint = False
+    results = halo_finding.MultiHopStrategy(db.get_item("sim/ts1/1"), 5, 'forwards').all()
+    assert db.get_item("sim/ts1/1") not in results
+
+    results = halo_finding.MultiHopStrategy(db.get_item("sim/ts1/1"), 5, 'forwards', include_startpoint=True).all()
+    assert db.get_item("sim/ts1/1") in results
+
+def test_major_progenitors():
+    results = halo_finding.MultiHopMajorProgenitorsStrategy(db.get_item("sim/ts3/1"),include_startpoint=True).all()
+    testing.assert_halolists_equal(results, ["sim/ts3/1","sim/ts2/1","sim/ts1/2"])
+
+def test_major_descendants():
+    results = halo_finding.MultiHopMajorDescendantsStrategy(db.get_item("sim/ts1/2"),include_startpoint=True).all()
+    testing.assert_halolists_equal(results, ["sim/ts1/2","sim/ts2/1","sim/ts3/1"])
+
+def test_multisource():
+    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/3"]),
+                                                       db.core.get_item("sim/ts3")).all()
+    testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/2"])
+
+def test_multisource_with_duplicates():
+    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/2","sim/ts1/3"]),
+                                                       db.core.get_item("sim/ts3")).all()
+    testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/1","sim/ts3/2"])
+
+def test_multisource_with_nones():
+    strategy = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/2","sim/ts1/3","sim/ts1/5"]),
+                                                       db.core.get_item("sim/ts3"))
+    results = strategy.all()
+    testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/1","sim/ts3/2",None])
+    assert strategy._nhops_taken==2 # despite not finding a match for ts1/5, the strategy should halt after 2 steps
+
+def test_multisource_with_nones_as_temptable():
+    strategy = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts1/1","sim/ts1/2","sim/ts1/3","sim/ts1/5"]),
+                                                     db.core.get_item("sim/ts3"))
+    with strategy.temp_table() as table:
+        results = thl.all_halos_with_duplicates(table)
+    testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/1","sim/ts3/2",None])
+
+def test_multisource_backwards():
+    results = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts3/1","sim/ts3/2","sim/ts3/3"]),
+                                                       db.core.get_item("sim/ts1")).all()
+    testing.assert_halolists_equal(results,["sim/ts1/1","sim/ts1/3","sim/ts1/4"])
+
+def test_multisource_across():
+    strategy = halo_finding.MultiSourceMultiHopStrategy(db.core.get_items(["sim/ts2/1","sim/ts2/2","sim/ts2/3"]),
+                                                       db.core.get_item("sim2"))
+    results = strategy.all()
+    testing.assert_halolists_equal(results, ["sim2/ts2/2", "sim2/ts2/1", None])
+    assert strategy._nhops_taken==1

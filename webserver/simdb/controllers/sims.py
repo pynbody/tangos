@@ -12,7 +12,7 @@ import simdb.model.meta as meta
 from simdb.model.meta import *
 
 import halo_db as db
-import halo_db.hopper
+import halo_db.halo_finder
 import math
 import numpy as np
 
@@ -247,7 +247,7 @@ class SimsController(BaseController):
         recurse = halo.id not in visited
         visited.append(halo.id)
 
-        rl = db.hopper.HopStrategy(halo,target=halo.timestep.previous)
+        rl = db.halo_finder.HopStrategy(halo,target=halo.timestep.previous)
 
         rl, weights = rl.all_and_weights()
 
@@ -397,7 +397,7 @@ class SimsController(BaseController):
 
         """
         start = time.time()
-        rl = db.hopper.MultiHopStrategy(halo, directed='backwards', nhops_max=1)
+        rl = db.halo_finder.MultiHopStrategy(halo, directed='backwards', nhops_max=1)
         rl.target_simulation(halo.timestep.simulation)
         print "size=",rl.count()
         print len(rl.all())
@@ -499,7 +499,7 @@ class SimsController(BaseController):
             new_halo = halo.timestep.halos.filter_by(halo_number=num).first()
         elif rel == "insim":
             targ = Session.query(meta.Simulation).filter_by(id=num).first()
-            strategy = db.hopper.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across', targ)
+            strategy = db.halo_finder.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across', targ)
 
             targets, weights = strategy.all_and_weights()
 

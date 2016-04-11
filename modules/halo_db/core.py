@@ -10,8 +10,9 @@ from sqlalchemy.orm import relationship, backref, sessionmaker, clear_mappers, d
 from sqlalchemy import and_
 from sqlalchemy.orm.session import Session
 
+from . import halo_data_extraction_patterns
+
 import data_attribute_mapper
-import identifiers
 import config
 import time
 import properties
@@ -47,43 +48,6 @@ class DictionaryItem(Base):
     def providing_class(self):
         return properties.providing_class(self.text)
 
-    def _x_fn(self, fn_name):
-        cl = self.providing_class()
-        response = getattr(cl, fn_name)()
-        if isinstance(response, tuple):
-            return response[cl().name().index(self.text)]
-        else:
-            return response
-
-    def plot_x0(self):
-        return self._x_fn("plot_x0")
-
-    def plot_x_extent(self):
-        return self._x_fn("plot_x_extent")
-
-    def plot_x0(self):
-        return self._x_fn("plot_x0")
-
-    def plot_xdelta(self):
-        return self._x_fn("plot_xdelta")
-
-    def plot_xlabel(self):
-        return self._x_fn("plot_xlabel")
-
-    def plot_ylabel(self):
-        return self._x_fn("plot_ylabel")
-
-    def plot_yrange(self):
-        return self._x_fn("plot_yrange")
-
-    def plot_xlog(self):
-        return self._x_fn("plot_xlog")
-
-    def plot_ylog(self):
-        return self._x_fn("plot_ylog")
-
-    def plot_clabel(self):
-        return self._x_fn("plot_clabel")
 
 
 
@@ -181,6 +145,7 @@ class Simulation(Base):
         propobj = self.properties.filter_by(name_id=name.id).first()
         if propobj is None:
             propobj = session.merge(SimulationProperty(self, name, data))
+
         propobj.data = data
         session.commit()
 
@@ -209,6 +174,7 @@ class SimulationProperty(Base):
     data_time = Column(DateTime)
     data_string = Column(String)
     data_array = Column(LargeBinary)
+
 
     def __init__(self, sim, name, data):
         self.simulation = sim
@@ -496,123 +462,26 @@ class TimeStep(Base):
         session = Session.object_session(self)
         raise RuntimeError, "Not implemented"
 
-    def gather_linked_property(self, other, *plist, **kwargs):
-        """Gather up specified properties from the chlid halos,
-        using arguments as in gather_property. However, additionally
-        gather all these specified properties for the same halos in
-        the timestep specified by "other", using stored DB links to establish
-        a 1:1 correspondence. """
-
-        # Step 1: get the other timestep
-
-        if not isinstance(other, TimeStep):
-            other = get_timestep(other)
-
-        # Step 2: establish the linked list of halos
-        linked_halos = []
-
-        start = time.time()
-
-        session = Session.object_session(self)
-
-        halo_from_alias = sqlalchemy.orm.aliased(Halo)
-        timestep_from_alias = sqlalchemy.orm.aliased(TimeStep)
-        halo_to_alias = sqlalchemy.orm.aliased(Halo)
-        timestep_to_alias = sqlalchemy.orm.aliased(TimeStep)
-        linked_halos = session.query(HaloLink).join(halo_from_alias, HaloLink.halo_from)\
-                                              .join(halo_to_alias, HaloLink.halo_to)\
-                                              .join(timestep_from_alias, halo_from_alias.timestep)\
-                                              .join(timestep_to_alias, halo_to_alias.timestep)\
-                                              .filter(and_(timestep_from_alias.id==self.id, timestep_to_alias.id==other.id, HaloLink.weight>0.01))\
-                                              .options(orm.contains_eager(HaloLink.halo_from, alias=halo_from_alias).joinedload(Halo.all_properties),
-                                                       orm.contains_eager(HaloLink.halo_to, alias=halo_to_alias).joinedload(Halo.all_properties))
-
-        linked_halos = [(x.halo_from, x.halo_to) for x in linked_halos]
-
-        """
-        for l in self.links_from:
-            if l.halo_to.timestep.id == other.id:
-                linked_halos.append((l.halo_from, l.halo_to))
-        """
-
-
-        print "Found %d halos in common in %.2fs"%(len(linked_halos),time.time()-start)
-
-        # Step 3: get the data
-
-        filt = kwargs.get("filt", lambda x: True)
-        if filt is True:
-            filt = default_filter
-
-        out = [[] for i in xrange(len(plist))]
-
-        start = time.time()
-
-        for h1, h2 in linked_halos:
-            if filt(h1) and filt(h2):
-                try:
-                    res = [(identifiers.get_halo_property_with_magic_strings(h1, p),
-                            identifiers.get_halo_property_with_magic_strings(h2, p)) for p in plist]
-
-                    for a, p in zip(out, res):
-                        a.append(p)
-
-                except (KeyError, IndexError):
-                    pass
-
-        print "Queried properties in %.2fs"%(time.time()-start)
-
-        return [safe_asarray(x) for x in out]
-
     def gather_property(self, *plist, **kwargs):
         """Gather up the specified properties from the child
-        halos. For each argument either name a property or, for array
-        properties, you can use <propertyname>//<n> where n is the
-        array element to return, or <propertyname>//+ or
-        <propertyname>//- to return the maximum or minimum element.
+        halos."""
 
-        Pass a function filt to only return halos where
-        filt(halo) is True. If filt=True, this function defaults
-        to checking that Sub is 0"""
+        from . import live_calculation
 
-        filt = lambda x: True
-        allow_none = False
+        if isinstance(plist[0], live_calculation.Calculation):
+            property_description = plist[0]
+        else:
+            property_description = live_calculation.parser.parse_property_names(*plist)
 
-        if kwargs.has_key("filt"):
-            filt = kwargs["filt"]
+        # must be performed in its own session as we intentionally load in a lot of
+        # objects with incomplete lazy-loaded properties
+        session = Session()
+        raw_query = session.query(Halo).filter_by(timestep_id=self.id)
 
-        if kwargs.has_key("allow_none"):
-            allow_none = kwargs["allow_none"]
+        query = property_description.supplement_halo_query(raw_query)
+        results = query.all()
+        return property_description.values_sanitized(results)
 
-        verbose = kwargs.get("verbose", False)
-
-        if filt is True:
-            filt = default_filter
-
-        out = [[] for i in xrange(len(plist))]
-
-        start = time.time()
-
-        halos = self.halos.options(
-                    sqlalchemy.orm.joinedload(Halo.all_properties),
-                    sqlalchemy.orm.joinedload(Halo.all_links)
-                  ).all()
-        print "Db query took %.1fs"%(time.time()-start)
-        for h in halos:
-            try:
-                if filt(h):
-                    res = [identifiers.get_halo_property_with_magic_strings(h, p) for p in plist]
-                    if verbose:
-                        print h, res
-                    if (not any([r is None for r in res])) or allow_none:
-                        for a, p in zip(out, res):
-                            a.append(p)
-                elif verbose:
-                    print "reject - ", h['Sub']
-            except (KeyError, IndexError):
-                pass
-
-        return [safe_asarray(x) for x in out]
 
     @property
     def next(self):
@@ -633,6 +502,7 @@ class TimeStep(Base):
             self._previous = session.query(TimeStep).filter(and_(
                 TimeStep.time_gyr < self.time_gyr, TimeStep.simulation == self.simulation)).order_by(TimeStep.time_gyr.desc()).first()
             return self._previous
+
 
 
 class Halo(Base):
@@ -693,16 +563,20 @@ class Halo(Base):
         else:
             return h[self.halo_number]
 
-    def get_or_calculate(self, key):
-        return identifiers.get_halo_property_with_magic_strings(self, key)
+    def calculate(self, name):
+        from . import live_calculation
+        calculation = live_calculation.parser.parse_property_name_if_required(name)
+        value = calculation.values_sanitized([self])[0]
+        if len(value)==1:
+            return value[0]
+        else:
+            return value
 
-    def get_x_values_for(self, key):
-        obj = self._get_object(key)
-        if len(obj)>1:
-            raise ValueError, "More than one piece of data with the same key; cannot generate unambiguous x values"
-        if not isinstance(obj[0], HaloProperty):
-            raise TypeError, "No x-values for stored data of type %r"%type(obj[0])
-        return obj[0].x_values()
+    def calculate_abcissa_values(self, name):
+        from . import live_calculation
+        calculation = live_calculation.parser.parse_property_name_if_required(name)
+        (value, ), description = calculation.values_and_description([self])
+        return description.plot_x_values(value[0])
 
     def __getitem__(self, key):
         # There are two possible strategies here. If some sort of joined load has been
@@ -710,104 +584,56 @@ class Halo(Base):
         # to be lazy loaded and we want to filter that lazy load.
         return self.get_data(key)
 
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
     def get_data(self, key, raw=False, always_return_array=False):
-        return_objs = self._get_object(key)
+        if raw:
+            getters=[halo_data_extraction_patterns.HaloPropertyRawValueGetter]
+        else:
+            getters=[halo_data_extraction_patterns.HaloPropertyValueGetter]
+        getters+=[halo_data_extraction_patterns.HaloLinkTargetGetter]
 
-        return_data = []
-
-        for r in return_objs:
-            if isinstance(r, HaloProperty):
-                data = r.data_raw if raw else r.data
-            elif isinstance(r, HaloLink):
-                data = r.halo_to
-            else:
-                raise TypeError, "Unknown type of data encountered during internal get_item processing"
-            return_data.append(data)
+        return_data = self._get_object(key,getters)
 
         if (not always_return_array) and len(return_data) == 1:
             return_data = return_data[0]
 
         return return_data
 
-    def _get_object(self, key):
+    def _use_fixed_cache(self):
+        return 'all_properties' not in sqlalchemy.inspect(self).unloaded
+
+    def _get_object(self, key, getters = [halo_data_extraction_patterns.HaloPropertyGetter,
+                                          halo_data_extraction_patterns.HaloLinkGetter]):
         session = Session.object_session(self)
         key_id = get_dict_id(key, session=session)
-        if 'all_properties' not in sqlalchemy.inspect(self).unloaded:
-            return_objs = self._get_object_cached(key_id)
+
+        if self._use_fixed_cache():
+            return_objs = self._get_object_cached(key_id, getters)
         else:
-            return_objs = self._get_object_from_session(key_id, session)
+            return_objs = self._get_object_from_session(key_id, session, getters)
         if len(return_objs) == 0:
             raise KeyError, "No such property %r" % key
         return return_objs
 
-    def _get_object_from_session(self, key_id, session):
-        query_properties = session.query(HaloProperty).filter_by(name_id=key_id, halo_id=self.id,
-                                                                 deprecated=False).order_by(HaloProperty.id.desc())
-
-        ret_values = query_properties.all()
-        query_links = session.query(HaloLink).filter_by(relation_id=key_id, halo_from_id=self.id)
-        for link in query_links.all():
-            ret_values.append(link)
+    def _get_object_from_session(self, key_id, session, getters):
+        ret_values = []
+        for g in getters:
+            ret_values+=g.get_from_session(self, key_id, session)
 
         return ret_values
 
-    def _get_object_cached(self, key_id):
-        return_vals = []
-        # we've already got it from the DB, find it locally
-        for x in self.all_properties:
-            if x.name_id == key_id:
-                return_vals.append(x)
-
-        for x in self.all_links:
-            if x.relation_id == key_id:
-                return_vals.append(x)
-
-        return return_vals
-
-    def get_property(self, key, default=None):
-        session = Session.object_session(self)
-        key_id = get_dict_id(key, session=session)
-        prop= self.properties.filter_by(name_id=key_id,deprecated=False).first()
-        if prop is None:
-            return default
-        else:
-            return prop.data
-
-    def get_linked_halo(self, key, default=None):
-        session = Session.object_session(self)
-        key_id = get_dict_id(key, session=session)
-        prop= session.query(HaloLink).filter_by(halo_from_id=self.id,
-                               relation_id=key_id).first()
-        if prop is None:
-            return default
-        else:
-            return prop.halo_to
-
-    def get_reverse_linked_halo(self, key, default=None):
-        session = Session.object_session(self)
-        key_id = get_dict_id(key, session=session)
-        prop= session.query(HaloLink).filter_by(halo_to_id=self.id,
-                               relation_id=key_id).first()
-        if prop is None:
-            return default
-        else:
-            return prop.halo_from
-
-    def get_either_linked_halo(self, key, default=None):
-        ret = self.get_linked_halo(key)
-        if ret is None:
-            ret = self.get_reverse_linked_halo(key)
-        if ret is None:
-            ret = default
-        return ret
+    def _get_object_cached(self, key_id, getters):
+        ret_values = []
+        for g in getters:
+            ret_values+=g.get_from_cache(self, key_id)
+        return ret_values
 
 
-
-    def get(self, key, default=None):
-        try:
-            return self[key]
-        except KeyError:
-            return default
 
     def __setitem__(self, key, obj):
 
@@ -848,12 +674,22 @@ class Halo(Base):
 
     def keys(self):
         names = []
-        for p in self.properties:
+        if self._use_fixed_cache():
+            props = self.all_properties
+            links = self.all_links
+        else:
+            props = self.properties
+            links = self.links
+
+        for p in props:
             names.append(p.name.text)
-        for p in self.links:
+        for p in links:
             names.append(p.relation.text)
 
         return names
+
+    def __contains__(self, item):
+        return item in self.keys()
 
     @property
     def tracker(self):
@@ -882,73 +718,53 @@ class Halo(Base):
         return data.plot(*args, **kwargs)
 
 
-    def _property_cascade_as_list(self, *keys, **kwargs):
-        on_missing = kwargs.get('on_missing','skip')
-        find_next  = kwargs.get('find_next','next')
-        raw = kwargs.get('raw',False)
-        output = []
-        for key in keys:
-            try:
-                output.append([identifiers.get_halo_property_with_magic_strings(self,key,raw)])
-            except Exception, e:
-                if on_missing=="skip":
-                    output = [[] for k in keys]
-                    break
-                elif on_missing=="none":
-                    output.append([np.NaN])
-                else:
-                    raise
+    def property_cascade(self, *plist, **kwargs):
+        """Run the specified calculations on this halo and its descendants
 
-        next = getattr(self, find_next)
-        if next:
-            remainder = next._property_cascade_as_list(*keys, **kwargs)
-            output = [o+r for o,r in zip(output,remainder)]
+        Each argument is a string (or an instance of live_calculation.Calculation), following the syntax
+        described in live_calculation.md.
 
-        return output
+        *kwargs*:
 
+        :param nmax: The maximum number of descendants to consider (default 1000)
+        :param hop_class: The class to use to find the descendants (default halo_finder.MultiHopMajorDescendantsStrategy)
+        """
+        from . import live_calculation
+        from . import halo_finder
+        from . import temporary_halolist as thl
 
-    def property_cascade(self, *keys, **kwargs):
+        nmax = kwargs.get('nmax',1000)
+        hop_class = kwargs.get('hop_class', halo_finder.MultiHopMajorDescendantsStrategy)
 
-        x = self._property_cascade_as_list(*keys, **kwargs)
-        if len(keys) == 1:
-            try:
-                return np.asarray(x)
-            except:
-                return x
+        if isinstance(plist[0], live_calculation.Calculation):
+            property_description = plist[0]
         else:
-            y = []
-            for z in x:
-                try:
-                    y.append(np.asarray(z))
-                except:
-                    y.append(z)
+            property_description = live_calculation.parser.parse_property_names(*plist)
 
-            return y
+        # must be performed in its own session as we intentionally load in a lot of
+        # objects with incomplete lazy-loaded properties
+        session = Session()
+        with hop_class(get_halo(self.id, session), nhops_max=nmax, include_startpoint=True).temp_table() as tt:
+            raw_query = thl.halo_query(tt)
+            query = property_description.supplement_halo_query(raw_query)
+            results = query.all()
+            return property_description.values_sanitized(results)
 
-    def reverse_property_cascade(self, *keys, **kwargs):
-        kwargs['find_next']='previous'
-        return self.property_cascade(*keys,**kwargs)
+    def reverse_property_cascade(self, *plist, **kwargs):
+        """Run the specified calculations on the progenitors of this halo
 
+        For more information see property_cascade.
+        """
+        from . import halo_finder
+        kwargs['hop_class'] = halo_finder.MultiHopMajorProgenitorsStrategy
+        return self.property_cascade(*plist, **kwargs)
 
-    @property
-    def number_cascade(self):
-        try:
-            return [self.halo_number] + self.next.number_cascade
-        except AttributeError:
-            return [self.halo_number]
-
-    @property
-    def reverse_number_cascade(self):
-        try:
-            return [self.halo_number] + self.previous.reverse_number_cascade
-        except AttributeError:
-            return [self.halo_number]
 
     @property
     def next(self):
         if not hasattr(self, '_next'):
-            from . import hopper
-            strategy = hopper.HopMajorDescendantStrategy(self)
+            from . import halo_finder
+            strategy = halo_finder.HopMajorDescendantStrategy(self)
             self._next=strategy.first()
 
         return self._next
@@ -956,8 +772,8 @@ class Halo(Base):
     @property
     def previous(self):
         if not hasattr(self, '_previous'):
-            from . import hopper
-            strategy = hopper.HopMajorProgenitorStrategy(self)
+            from . import halo_finder
+            strategy = halo_finder.HopMajorProgenitorStrategy(self)
             self._previous=strategy.first()
 
         return self._previous
@@ -974,17 +790,6 @@ class BH(Halo):
     def __init__(self, timestep, halo_number):
         super(BH, self).__init__(timestep, halo_number, 0,0,0,1)
 
-    @property
-    def host_halo(self):
-        try:
-            match =  self.reverse_links.filter_by(relation_id=get_dict_id('BH_central')).first()
-        except KeyError:
-            match =  self.reverse_links.filter_by(relation_id=get_dict_id('BH')).first()
-
-        if match is None:
-            return None
-        else:
-            return match.halo_from
 
 class HaloProperty(Base):
     __tablename__ = 'haloproperties'
@@ -1054,7 +859,7 @@ class HaloProperty(Base):
     def x_values(self):
         if not self.data_is_array():
             raise ValueError, "The data is not an array"
-        return self.name.providing_class().plot_x_values(self.data)
+        return self.name.providing_class()(self.halo.timestep.simulation).plot_x_values(self.data)
 
     def plot(self, *args, **kwargs):
         xdat = self.x_values()
@@ -1145,7 +950,7 @@ TimeStep.links_to = relationship(HaloLink, secondary=Halo.__table__,
 
 
 Halo.all_links = relationship(HaloLink, primaryjoin=(HaloLink.halo_from_id == Halo.id))
-
+Halo.all_reverse_links = relationship(HaloLink, primaryjoin=(HaloLink.halo_to_id == Halo.id))
 
 
 class ArrayPlotOptions(Base):
@@ -1362,11 +1167,13 @@ def construct_halo_cat(timestep_db, type_id):
         return TrackerHaloCatalogue(f,timestep_db.simulation.trackers)
 
 
-def get_timestep(id):
+def get_timestep(id, session=None):
+    if session is None:
+        session = internal_session
     if isinstance(id, str):
         sim, ts = id.split("/")
         sim = get_simulation(sim)
-        res = internal_session.query(TimeStep).filter(
+        res = session.query(TimeStep).filter(
             and_(TimeStep.extension.like(ts), TimeStep.simulation_id == sim.id))
         num = res.count()
         if num == 0:
@@ -1377,10 +1184,18 @@ def get_timestep(id):
         else:
             return res.first()
     else:
-        return internal_session.query(TimeStep).filter_by(id=id).first()
+        return session.query(TimeStep).filter_by(id=id).first()
 
 
-def get_halo(id):
+def get_halo(id, session=None):
+    """Get a halo from an ID or an identifying string
+
+    Optionally, use the specified session.
+
+    :rtype: Halo
+    """
+    if session is None:
+        session = internal_session
     if isinstance(id, str):
         sim, ts, halo = id.split("/")
         ts = get_timestep(sim + "/" + ts)
@@ -1388,23 +1203,25 @@ def get_halo(id):
             halo_type, halo_number = map(int, halo.split("."))
         else:
             halo_type, halo_number = 0, int(halo)
-        return internal_session.query(Halo).filter_by(timestep_id=ts.id, halo_number=halo_number, halo_type=halo_type).first()
-    return internal_session.query(Halo).filter_by(id=id).first()
+        return session.query(Halo).filter_by(timestep_id=ts.id, halo_number=halo_number, halo_type=halo_type).first()
+    return session.query(Halo).filter_by(id=id).first()
 
 
-def get_item(path):
+def get_item(path, session=None):
     c = path.count("/")
     if c is 0:
-        return get_simulation(path)
+        return get_simulation(path, session)
     elif c is 1:
-        return get_timestep(path)
+        return get_timestep(path, session)
     elif c is 2:
-        return get_halo(path)
+        return get_halo(path, session)
 
 
 def get_haloproperty(id):
     return internal_session.query(HaloProperty).filter_by(id=id).first()
 
+def get_items(path_list, session=None):
+    return [get_item(path,session) for path in path_list]
 
 def copy_property(halo_from, halo_to, *props):
     halo_from = get_halo(halo_from)
@@ -1468,7 +1285,7 @@ def process_options(argparser_options):
     _verbose = argparser_options.db_verbose
 
 def init_db(db_uri=None, timeout=30, verbose=None):
-    global _verbose, current_creator, internal_session, engine
+    global _verbose, current_creator, internal_session, engine, Session
     if db_uri is None:
         db_uri = 'sqlite:///' + config.db
     engine = create_engine(db_uri, echo=verbose or _verbose,

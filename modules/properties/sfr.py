@@ -61,7 +61,6 @@ class StarForm(HaloProperties):
         return True
 
 
-
 class StarFormHistogram(TimeChunkedProperty):
     @classmethod
     def name(self):
