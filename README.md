@@ -149,7 +149,6 @@ The entire simulation step including all halos is loaded as `step1`. Note the sy
  u'Mgas',
  u'Mbar',
  u'Mstar',
- u'Vvir',
  u'dm_density_profile',
  u'dm_mass_profile',
  u'tot_density_profile',
@@ -172,75 +171,32 @@ The entire simulation step including all halos is loaded as `step1`. Note the sy
 >>> mvir, = step1.gather_property('Mvir')              #get the virial mass for every halo in the simulation
 >>> mvir, cen = step1.gather_property('Mvstar','SSC')   #get both the stellar mass AND the center of the halo
 ```
-One major strength of the data base is the linking of halos acorss time.  The function `gather_linked_property` is similar to the above, but will return a two demensional array, with quantities for each halo at the current timestep and at the previous timestep.
-```
->>> db.get_timestep('romulus8.256gst3.bwBH/%2552')   #first read in the previous timestep
->>> step2 = _
->>> step1.gather_linked_property(step2,'Mvir')       #first column is the current step, second is the previous one
-Found 1501 halos in common
-[array([[  1.98903316e+12,   1.98116762e+12],
-        [  7.26636744e+11,   7.24125555e+11],
-        [  6.89803158e+11,   6.88452929e+11],
-        ..., 
-        [  1.09008265e+09,   1.09190501e+09],
-        [  1.08419140e+09,   1.08393742e+09],
-        [  1.07352488e+09,   1.07331242e+09]])]
-```
-Note that this will only work on *adjacent timesteps*
+Some properties are not inherently already saved in the database, but can be calculated on the fly from already stored properties (we call these "live calculations"). These are generally called as functions and can be used with either `gather_property` or the `calculate` function for a single halo. For example, the property `Vvir` is calculated using `Mvir` and `Rvir` that are already loaded into the database. To calculate for a single halo, `h`, one would type `h.calculate('Vvir()')`. Note the extra set of "()" in the attribute name. This will return the live-calculated value for halo h. To do it for an entire step, you would do `step.gather_property('Vvir()')`. 
 
-Some properties are themselves arrays, such as mass profiles. If  your property is an array, when calling gather_proeprty you can specify which index to gather
+One can also make their own calculatiosn on the fly. For example, `h.calculate(Mgas/Mstar)` will calculate the ratio of those two properties. In general, arithmetic involving *, +, -, and / all work for any already calculated (or live calculated) halo property.
+
+For more information on live calculations including more examples and syntax explanation, go [here] (live_calculation.md).
+
+Linking Halos Across Timesteps
+------------------------------------
+
+One other important live calculation are the earlier and later functions. These take an integer argument and will return either the descendant halo or main progenitor halo. You can then easily retrieve information about that future/past halo. For example, `h.calculate(later(5).Mvir)` returns the virial mass of the descendant halo 5 snapshots later than the current snapshot that houses halo `h`. This strategy can also be useful in linking the properties of all halos in two different snapshots.
 
 ```
->>> step1.gather_property('StarMass_encl//10')
+step.gather_property('Mstar', 'earlier(10).Mstar')  #returns both the stellar mass of all halos in the current step and the stellar mass of each halo's descendant 10 snapshots earlier.
 ```
-This will return a 1-d array filled with the 10th value in each halo's StarMass_encl array. In this case, the property is the Stellar mass enclused by a given radius. Unless otherwise noted, every profile property like this is binned in 100 pc intervals. So,  more specifically, this example retuns the stellar mass enclosed in the inner 1 kpc of the halo.
 
-If the Rhalf_[V,U,J,K,I,R] properties have been calculated for the halo (the half-light radius in different bands) you can also use "Rhalf_[V,U,J,K,I,R]" as an identifier. For example, the following returns the stellar mass within the  V-band half light radius for each halo
+Again, please visit the (live calculatsions page)[live_calculation.md] for more information and examples.
+
+Profile properties
+-----------------------------------------
+There are many properties that are profiles, meaning they represent some value at different radii within a given halo. Such properties are themselves arrays and can be called just like any other property, e.g. `h['StarMass_encl']` will give an array of the stellar mass enclosed within different radii. These types of values are particularly useful for giving the user the freedom to return a given property at any radius they wish. For this, we use the `at()` function (see the (live calculations page)[live_calculation.md] for more details on functions like this).
 
 ```
-step1.gather_property('StarMass_encl//Rhalf_V')
+h.calculate('at(10,StarMass_encl)')  #returns the stellar mass within 10 kpc from center
+h.calculate('at(Rvir/2,StarMass_encl)') #returns the stellar mass at one half the virial radius of the halo
+h.calculate('at(Rvir/2,StarMass_encl/GasMass_encl)') #returns the ratio of stellar mass to Gas Mass witin one half the virial radius
 ```
-Just like how gather_property with multiple properties in the argument will only return results for halos with both properties included, this will only return data for halos where both StarMass_encl and Rhalf_V have been calculated.
 
-Finally, if we want to study a particular halo in detail, we can load it in as its own object and then aquire time series data on that halo and its progenitors at previous timesteps. To do this we use the function `get_halo` which carries a similar argument syntax, but with one extra component: `simname/%step/halonumber`. We will trace the halo back in time using the function `earliest.property_cascade(<property>)` function.
-```
->>> db.get_halo('romulus8.256gst3.bwBH/%2560/1')
-<Halo 1 of <TimeStep(... z=0.50 ...)> | NDM=4977308 NStar=1662499 NGas=1196008 >
->>> h = _
->>> h.earliest.property_cascade('Mvir')   #The function takes in  any property in h.keys() except images
-array([  1.20783658e+09,   2.76221415e+09,   3.81488357e+09,
-         6.76882025e+09,   8.92294277e+09,   2.55281867e+10,
-         4.83871878e+10,   5.47559418e+10,   7.07271842e+10,
-         9.02300850e+10,   1.25683465e+11,   1.29329152e+11,
-         1.65832854e+11,   1.85550295e+11,   1.90878505e+11,
-         2.15603091e+11,   2.18132769e+11,   2.69072119e+11,
-         2.70083939e+11,   3.14911746e+11,   3.44944910e+11,
-         3.53728087e+11,   4.05120204e+11,   5.56876045e+11,
-         5.72826066e+11,   6.56326002e+11,   1.42140774e+12,
-         1.63484359e+12,   1.80043950e+12,   1.86123429e+12,
-         1.86347417e+12,   1.76513065e+12,   1.73259171e+12,
-         1.72794707e+12,   1.81462015e+12,   1.90725257e+12,
-         1.98116762e+12,   1.98903316e+12])
->>> h.earliest.property_cascade('z')      #...including some new ones like redshift...
-array([ 11.92667287,  10.23120912,   9.9654623 ,   8.95954232,
-         7.99544143,   6.99173217,   6.22752112,   5.9997759 ,
-         5.49389304,   4.98886168,   4.55232998,   4.49625335,
-         3.99624439,   3.59548895,   3.49736876,   2.99695863,
-         2.96365129,   2.50930483,   2.49710535,   2.16362263,
-         1.99818409,   1.88981316,   1.66627764,   1.49975392,
-         1.47943355,   1.32027672,   1.18258336,   1.06190289,
-         0.99940303,   0.95496197,   0.85929534,   0.77300839,
-         0.74959449,   0.6946194 ,   0.62295176,   0.55705851,
-         0.49984008,   0.49616842])
-
->>> h.earliest.property_cascade('t')       #...and time!
-array([ 0.37250148,  0.45991652,  0.47672711,  0.55069369,  0.64147085,
-        0.76586919,  0.89026752,  0.93397504,  1.04492491,  1.1794096 ,
-        1.32061852,  1.34079122,  1.54588037,  1.75096951,  1.8081255 ,
-        2.15442357,  2.18132051,  2.6116715 ,  2.62511997,  3.0420225 ,
-        3.29081917,  3.4723735 ,  3.90272449,  4.28264373,  4.33307549,
-        4.76342648,  5.19377748,  5.62412848,  5.86956303,  6.05447947,
-        6.48483047,  6.91518146,  7.0395798 ,  7.34553246,  7.77588346,
-        8.20623445,  8.60968851,  8.63658545])
-
+The last example above also shows how one can perform multiple live calculations at once to derive a single property.
 
