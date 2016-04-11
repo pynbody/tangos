@@ -194,7 +194,8 @@ Two important live calculation built-in functions are the `earlier` and `later` 
 step.gather_property('Mstar', 'earlier(10).Mstar')  #returns both the stellar mass of all halos in the current step and the stellar mass of each halo's descendant 10 snapshots earlier.
 ```
 
-Again, please visit the [live calculations page](live_calculation.md) for more information and examples.
+Note that there is another function, `property_cascade` to use if you to get a property for a single halo but at all timesteps. Again, please visit the [live calculations page](live_calculation.md) for more information and examples.
+
 
 Profile properties
 -----------------------------------------
@@ -207,4 +208,3 @@ h.calculate('at(Rvir/2,StarMass_encl/GasMass_encl)') #returns the ratio of stell
 ```
 
 The last example above also shows how one can perform multiple live calculations at once to derive a single property.
-
