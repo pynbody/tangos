@@ -186,11 +186,11 @@ One other important live calculation are the earlier and later functions. These 
 step.gather_property('Mstar', 'earlier(10).Mstar')  #returns both the stellar mass of all halos in the current step and the stellar mass of each halo's descendant 10 snapshots earlier.
 ```
 
-Again, please visit the (live calculatsions page)[live_calculation.md] for more information and examples.
+Again, please visit the [live calculatsions page](live_calculation.md) for more information and examples.
 
 Profile properties
 -----------------------------------------
-There are many properties that are profiles, meaning they represent some value at different radii within a given halo. Such properties are themselves arrays and can be called just like any other property, e.g. `h['StarMass_encl']` will give an array of the stellar mass enclosed within different radii. These types of values are particularly useful for giving the user the freedom to return a given property at any radius they wish. For this, we use the `at()` function (see the (live calculations page)[live_calculation.md] for more details on functions like this).
+There are many properties that are profiles, meaning they represent some value at different radii within a given halo. Such properties are themselves arrays and can be called just like any other property, e.g. `h['StarMass_encl']` will give an array of the stellar mass enclosed within different radii. These types of values are particularly useful for giving the user the freedom to return a given property at any radius they wish. For this, we use the `at()` function (see the [live calculations page](live_calculation.md) for more details on functions like this).
 
 ```
 h.calculate('at(10,StarMass_encl)')  #returns the stellar mass within 10 kpc from center
