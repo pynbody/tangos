@@ -145,28 +145,13 @@ The entire simulation step including all halos is loaded as `step1`. Note the sy
 >>> step1.halos[0].keys()                #see a list of the loaded properties for halo 1
 [u'SSC',
  u'Rvir',
- u'Mvir',
- u'Mgas',
- u'Mbar',
- u'Mstar',
- u'dm_density_profile',
- u'dm_mass_profile',
- u'tot_density_profile',
- u'tot_mass_profile',
- u'gas_density_profile',
- u'gas_mass_profile',
- u'star_density_profile',
- u'star_mass_profile',
- u'dm_alpha_500pc',
- u'dm_alpha_1kpc',
- u'gas_image_sideon',
- u'stellar_image_sideon',
- u'gas_image_faceon',
- u'stellar_image_faceon',
+ ...
  u'gas_image_original',
  u'stellar_image_original']
- ```
- You can also load in data for all halos at once using `gather_property`. This is *much* faster than accessing each halo in turn. Note that it returns a list even with one argument given. You can give it as many value key names as you want and it will return a list of arrays for each.
+```
+ 
+You can also load in data for all halos at once using `gather_property`. This is *much* faster than accessing each halo in turn. Note that it returns a list even with one argument given. You can give it as many value key names as you want and it will return a list of arrays for each.
+
 ```
 >>> mvir, = step1.gather_property('Mvir')              #get the virial mass for every halo in the simulation
 >>> mvir, cen = step1.gather_property('Mstar','SSC')   #get both the stellar mass AND the center of the halo
