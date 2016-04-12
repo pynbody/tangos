@@ -240,7 +240,7 @@ class SimsController(BaseController):
 
 
     @classmethod
-    def _construct_preliminary_mergertree(self, halo, base_halo, visited=None, depth=0):
+    def _construct_preliminary_mergertree(self, halo, base_halo, must_include, visited=None, depth=0):
         if visited is None:
             visited = []
         start = time.time()
@@ -252,7 +252,7 @@ class SimsController(BaseController):
         rl, weights = rl.all_and_weights()
 
         if len(rl)>0:
-            rl = [rli for rli,wi in zip(rl,weights) if wi>weights[0]*0.02]
+            rl = [rli for rli,wi in zip(rl,weights) if wi>weights[0]*0.02 or rli.id in must_include]
 
         timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr"%(halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
 
@@ -308,7 +308,7 @@ class SimsController(BaseController):
 
         if recurse:
             for rli in rl:
-                nx = self._construct_preliminary_mergertree(rli, base_halo,visited,depth+1)
+                nx = self._construct_preliminary_mergertree(rli, base_halo, must_include, visited,depth+1)
                 output['contents'].append(nx)
                 if nx['maxdepth']>maxdepth: maxdepth = nx['maxdepth']
 
@@ -383,11 +383,13 @@ class SimsController(BaseController):
         self.search_time=0
         start = time.time()
         base = halo
+        must_include = []
         for i in range(5):
+            must_include.append(base.id)
             if base.next is not None:
                 base = base.next
 
-        tree = self._construct_preliminary_mergertree(base, halo)
+        tree = self._construct_preliminary_mergertree(base, halo, must_include)
         print "Merger tree build time:    %.2fs"%(time.time()-start)
         print "of which link search time: %.2fs"%(self.search_time)
 

@@ -262,11 +262,9 @@ def fit_sersic(r, surface_brightness, return_cov=False):
         return popt
 
 class GenericPercentile(HaloProperties):
-    def __init__(self, simulation, name, ratio):
+    def __init__(self, simulation, ratio, name):
         super(GenericPercentile, self).__init__(simulation)
-        self._name = name
-        self._ratio = ratio
-        self._cl = instantiate_class(name)
+        self._name_info = name
 
     @classmethod
     def name(self):
@@ -276,12 +274,11 @@ class GenericPercentile(HaloProperties):
     def requires_simdata(self):
         return False
 
-    def calculate(self, halo, existing_properties):
-        x0 = self._cl.plot_x0()
-        delta_x = self._cl.plot_xdelta()
-        val = existing_properties[self._name]
-        val/=val[-1]
-        index = np.where(val>self._ratio)[0][0]
+    def live_calculate(self, halo, ratio, ar):
+        x0 = self._name_info.plot_x0()
+        delta_x = self._name_info.plot_xdelta()
+        ar/=ar[-1]
+        index = np.where(ar>ratio)[0][0]
         return x0+index*delta_x
 
 class AtPosition(LiveHaloProperties):
@@ -326,17 +323,6 @@ class MaxMinProperty(LiveHaloProperties):
         return float(max_), float(min_), index_to_r(amax), index_to_r(amin)
 
 
-class AbsProperty(LiveHaloPropertiesInheritingMetaProperties):
-
-    @classmethod
-    def name(self):
-        return "abs"
-
-    def live_calculate(self, halo, array):
-        return np.linalg.norm(array, axis=-1)
-
-
-
 class StellarProfileDiagnosis(LiveHaloProperties):
     def __init__(self, simulation, band):
         super(StellarProfileDiagnosis, self).__init__(simulation)
@@ -350,11 +336,15 @@ class StellarProfileDiagnosis(LiveHaloProperties):
     def requires_simdata(self):
         return False
 
+    def requires_property(self):
+        return self.band+"_surface_brightness",
+
     def calculate(self, halo, existing_properties):
         r0 = 0.05
         delta_r = 0.1
         surface_brightness = existing_properties[self.band+"_surface_brightness"]
         flux_density = 10**(surface_brightness/-2.5)
+        flux_density[flux_density!=flux_density]=0
         nbins = len(surface_brightness)
         r = np.arange(r0,r0+delta_r*nbins,delta_r)
         cumu_flux_density = (r * flux_density).cumsum()
@@ -363,6 +353,11 @@ class StellarProfileDiagnosis(LiveHaloProperties):
         half_light_i = np.where(cumu_flux_density>0.5)[0][0]
         half_light = r0+delta_r * half_light_i
 
+        r_fit = r[4:half_light_i*5]
+        sb_fit = surface_brightness[4:half_light_i*5]
 
-        m0, n, r0 = fit_sersic(r[4:half_light_i*5], surface_brightness[4:half_light_i*5])
+        mask_not_nan = sb_fit==sb_fit
+        r_fit = r_fit[mask_not_nan]
+        sb_fit = sb_fit[mask_not_nan]
+        m0, n, r0 = fit_sersic(r_fit, sb_fit)
         return half_light, m0, n, r0
