@@ -289,9 +289,13 @@ class LiveProperty(Calculation):
                 results.append(calculator.live_calculate_named(self.name(), *inputs))
             else:
                 results.append(None)
-        results_array = np.empty((1,len(results)),dtype=object)
-        results_array[0,:] = results
-        return calculator, results_array
+        return calculator, self._as_1xn_array(results)
+
+    @classmethod
+    def _as_1xn_array(cls, results):
+        results_array = np.empty((1, len(results)), dtype=object)
+        results_array[0, :] = results
+        return results_array
 
     def proxy_value(self):
         return UnknownValue()
@@ -373,7 +377,7 @@ class BuiltinFunction(LiveProperty):
             inherited_description = input_descriptions[0]
         else:
             inherited_description = None
-        return inherited_description, np.array([self._func(halos, *input_values)], dtype=object)
+        return inherited_description, self._as_1xn_array(self._func(halos, *input_values))
 
 
 

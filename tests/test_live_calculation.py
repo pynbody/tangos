@@ -151,7 +151,7 @@ def test_new_builtin():
     def my_test_function(halos):
         return [[101]*len(halos)]
 
-    assert db.get_halo("sim/ts1/2").calculate("my_test_function()")==101
+    assert db.get_halo("sim/ts1/2").calculate("my_test_function()")[0]==101
 
 def test_match():
     dbid = db.get_halo("sim/ts1/1").calculate("match('sim/ts2').dbid()")
@@ -183,3 +183,5 @@ def test_calculate_array():
     assert (h.calculate("dummy_property_array()")==[1,2,3]).all()
 
     assert (h.calculate("BH.dummy_property_array()") == [1, 2, 3]).all()
+
+    assert (h.calculate("dummy_property_array()*2/(BH.dummy_property_array()*2)") == np.array([1,1,1])).all()
