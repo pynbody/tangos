@@ -15,7 +15,37 @@ not possible. So the HaloPropertyValueWithReassemblyOptionsGetter has no "defaul
 instantiated when required.
 """
 
+import sqlalchemy
+
 class HaloPropertyGetter(object):
+    def use_fixed_cache(self, halo):
+        return 'all_properties' not in sqlalchemy.inspect(halo).unloaded
+
+    def get(self, halo, property_id, session):
+        """Get the specified property, from the in-memory cache if it exists otherwise from the database
+        using the specified session
+
+        :type halo: Halo
+        :type property_id: int
+        :type session: sqlalchemy.orm.session.Session
+        """
+        if self.use_fixed_cache(halo):
+            return self.get_from_cache(halo, property_id)
+        else:
+            return self.get_from_session(halo, property_id, session)
+
+    def keys(self, halo, session):
+        """Get a list of keys, from the in-memory cache if it exists otherwise from the database
+            using the specified session
+
+        :type halo: Halo
+        :type session: sqlalchemy.orm.session.Session
+        """
+        if self.use_fixed_cache(halo):
+            return self.keys_from_cache(halo)
+        else:
+            return self.keys_from_session(halo, session)
+
     def get_from_cache(self, halo, property_id):
         """Get the specified property from an existing in-memory cache
 
@@ -30,6 +60,7 @@ class HaloPropertyGetter(object):
 
         return self._postprocess(return_vals)
 
+
     def get_from_session(self, halo, property_id, session):
         """Get the specified property from the database using the specified session
 
@@ -42,6 +73,16 @@ class HaloPropertyGetter(object):
 
         return self._postprocess(query_properties.all())
 
+    def keys_from_cache(self, halo):
+        """Return a list of keys from an existing in-memory cache"""
+        return [x.name.text for x in halo.all_properties]
+
+    def keys_from_session(self, halo, session):
+        from . import core
+        query_properties = session.query(core.HaloProperty).filter_by(halo_id=halo.id,
+                                                                      deprecated=False)
+        return [x.name.text for x in query_properties.all()]
+
     def cache_contains(self, halo, property_id):
         """Return True if the existing in-memory cache has the specified property
 
@@ -53,6 +94,7 @@ class HaloPropertyGetter(object):
                 return True
 
         return False
+
 
     def _postprocess(self, outputs):
         return outputs
@@ -102,6 +144,15 @@ class HaloLinkGetter(HaloPropertyGetter):
                 return True
 
         return False
+
+    def keys_from_cache(self, halo):
+        """Return a list of keys from an existing in-memory cache"""
+        return [x.relation.text for x in halo.all_links]
+
+    def keys_from_session(self, halo, session):
+        from . import core
+        query_properties = session.query(core.HaloLink).filter_by(halo_from_id=halo.id)
+        return [x.relation.text for x in query_properties.all()]
     
 halo_link_getter = HaloLinkGetter()
 

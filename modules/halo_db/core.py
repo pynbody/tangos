@@ -629,29 +629,14 @@ class Halo(Base):
         session = Session.object_session(self)
         key_id = get_dict_id(key, session=session)
 
-        if self._use_fixed_cache():
-            return_objs = self._get_objects_from_cache(key_id, getters)
-        else:
-            return_objs = self._get_objects_from_session(key_id, session, getters)
-        if len(return_objs) == 0:
+        ret_values = []
+        for g in getters:
+            ret_values += g.get(self, key_id, session)
+
+        if len(ret_values) == 0:
             raise KeyError, "No such property %r" % key
-        return return_objs
-
-    def _use_fixed_cache(self):
-        return 'all_properties' not in sqlalchemy.inspect(self).unloaded
-
-    def _get_objects_from_session(self, key_id, session, getters):
-        ret_values = []
-        for g in getters:
-            ret_values+=g.get_from_session(self, key_id, session)
-
         return ret_values
 
-    def _get_objects_from_cache(self, key_id, getters):
-        ret_values = []
-        for g in getters:
-            ret_values+=g.get_from_cache(self, key_id)
-        return ret_values
 
     def __setitem__(self, key, obj):
         if isinstance(obj, Halo):
@@ -689,19 +674,13 @@ class Halo(Base):
         session.add_all(links)
 
 
-    def keys(self):
+    def keys(self, getters = [halo_data_extraction_patterns.halo_property_getter,
+                              halo_data_extraction_patterns.halo_link_getter]):
         names = []
-        if self._use_fixed_cache():
-            props = self.all_properties
-            links = self.all_links
-        else:
-            props = self.properties
-            links = self.links
+        session = Session.object_session(self)
+        for g in getters:
+            names+=g.keys(self, session)
 
-        for p in props:
-            names.append(p.name.text)
-        for p in links:
-            names.append(p.relation.text)
 
         return names
 
