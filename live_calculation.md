@@ -48,6 +48,8 @@ Let's take the SFR as an example. If you have a halo `h`, and ask for `h['SFR_hi
  
 You can instead request the SFR summed over *all* branches by typing `h.calculate("reassemble(SFR_histogram, 'sum')")`. Simiarly, for a BH accretion history you could do `h.calculate("BH.reassemble(BH_mdot_histogram, 'sum')")`._
 
+If you want to manually handle the reassembly, one useful option is `h.calculate("reassemble(SFR_histogram, 'place')")`. This correctly zero-pads the histogram, but does not fill in any of the data from preceding steps, so you are free to do that yourself.
+
 Under the hood, this is implemented using the `reassemble` property of `TimeChunkedProperty` which you can find in `properties.__init__.py`. In principle it's therefore possible to implement further methods for reconstructing SFR where even more complex manipulations of the little mini-history chunks is undertaken.
 
 **Technical note**: to access the data that is actually stored in the database, as opposed to the default reconstruction, you can ask for `h.calculate("raw(SFR_histogram)")`. The default data access `h['SFR_histogram']` or `h.calculate("SFR_histogram")`_ actually expands to something equivalent to `h.calculate("reassemble(SFR_histogram")`, and the default parameter to `reassemble` is `major`, which (as previously stated) sums only over the major progenitor branch.
