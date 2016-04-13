@@ -68,7 +68,6 @@ class DummyProperty1(properties.HaloProperties):
     def plot_xdelta(cls):
         return 0.1
 
-
 class DummyProperty2(properties.HaloProperties):
     @classmethod
     def name(self):
@@ -99,6 +98,17 @@ class DummyPropertyWithReassemblyOptions(properties.HaloProperties):
             return property.data_raw
         else:
             return test_option
+
+class LivePropertyRequiringRedirectedProperty(properties.LiveHaloProperties):
+    @classmethod
+    def name(cls):
+        return "first_BHs_BH_mass"
+
+    def requires_property(self):
+        return "BH.BH_mass",
+
+    def live_calculate(self, db_halo_entry, *input_values):
+        return db_halo_entry["BH"][0]["BH_mass"]
 
 
 def test_simple_retrieval():
@@ -214,3 +224,10 @@ def test_reassembly():
 
     # our dummy reassembly function can return the actual value if suitably requested
     assert h.calculate('reassemble(dummy_property_with_reassembly, "actual_data")') == 101
+
+
+def test_liveproperty_requiring_redirection():
+    h = db.get_halo("sim/ts1/1")
+    assert h.calculate("first_BHs_BH_mass()") == h['BH'][0]['BH_mass']
+    cascade_version = h.property_cascade("first_BHs_BH_mass()")
+    assert cascade_version[0] == h['BH'][0]['BH_mass']

@@ -34,7 +34,16 @@ class Calculation(object):
         return None
 
     def _has_required_properties(self, halo):
-        property_is_present = [self._extraction_pattern.cache_contains(halo, p_id) for p_id in self._essential_dict_ids()]
+        property_is_present = []
+        for p_id in self._essential_dict_ids():
+            this_property_ok = False
+            for extraction_pattern in (halo_data_extraction_patterns.halo_link_getter,
+                                       halo_data_extraction_patterns.halo_property_getter):
+                if not extraction_pattern.use_fixed_cache(halo):
+                    this_property_ok = True
+                elif extraction_pattern.cache_contains(halo, p_id):
+                    this_property_ok = True
+            property_is_present.append(this_property_ok)
         return all(property_is_present)
 
     def retrieves_dict_ids(self):
