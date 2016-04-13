@@ -58,7 +58,6 @@ class StarForm(HaloProperties):
         return True
 
 
-
 class StarFormHistogram(TimeChunkedProperty):
     @classmethod
     def name(self):
@@ -73,8 +72,8 @@ class StarFormHistogram(TimeChunkedProperty):
         return M
 
     @classmethod
-    def reassemble(cls, halo):
-        reassembled = TimeChunkedProperty.reassemble(halo, "SFR_histogram")
+    def reassemble(cls, *options):
+        reassembled = TimeChunkedProperty.reassemble(*options)
         return reassembled/1e9 # Msol per Gyr -> Msol per yr
 
 @pynbody.analysis.profile.Profile.profile_property

@@ -12,3 +12,4 @@ Base = declarative_base()
 
 from halo_db import DictionaryItem, Creator, Simulation, TimeStep, Halo, HaloLink, HaloProperty, ArrayPlotOptions, SimulationProperty
 from sqlalchemy import and_,or_,not_
+

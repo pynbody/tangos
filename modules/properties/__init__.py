@@ -6,17 +6,32 @@ import pyparsing as pp
 
 
 class HaloProperties(object):
+    _all_classes = {}
+
+    class __metaclass__(type):
+        # Present to register new subclasses of HaloProperties, so that subclasses can be dynamically
+        # instantiated when required based on their cls.name() values. Stored as a dictionary so that
+        # reloaded classes overwrite their old versions.
+        def __init__(cls, name, bases, dict):
+            type.__init__(cls, name, bases, dict)
+            cls._all_classes[name] = cls
+
+    @classmethod
+    def all_classes(cls):
+        return cls._all_classes.values()
+
+    def __init__(self, simulation):
+        """Initialise a HaloProperties calculation object
+
+        :param simulation: The simulation from which the properties will be derived
+        :type simulation: halo_db.core.Simulation
+        """
+        self._simulation = simulation
 
     def requires_array(self):
         """Returns a list of loaded arrays required to
         calculate this property"""
         return []
-
-    @classmethod
-    def plot_x_values(cls, for_data):
-        """Return a suitable array of x values to match the
-        given y values"""
-        return np.arange(cls.plot_x0(),  cls.plot_x0()+cls.plot_xdelta()*(len(for_data)-0.5), cls.plot_xdelta())
 
     @classmethod
     def requires_simdata(self):
@@ -55,7 +70,7 @@ class HaloProperties(object):
     def requires_property(self):
         """Returns a list of existing properties
         required to calculate this property"""
-        return ["SSC"]
+        return []
 
     def preloop(self, sim, filename, property_array):
         """Perform one-time pre-halo-loop calculations,
@@ -105,11 +120,45 @@ class HaloProperties(object):
                 return False
         return True
 
-    def calculate(self,  halo, existing_properties):
-        """Performs calculation, given halo, and returns
-        the property to be stored under dict[name()]."""
+    def calculate(self, pynbody_halo_data, db_halo_entry):
+        """Calculate the properties using the given data
 
+        :param pynbody_halo_data: The halo data, if available
+        :type pynbody_halo_data: pynbody.snapshot.SimSnap
 
+        :param db_halo_entry: The database object associated with the halo, if available
+        :type db_halo_entry: halo_db.core.Halo
+        :return: All properties as named by names()
+        """
+        raise NotImplementedError
+
+    def live_calculate(self, db_halo_entry, *input_values):
+        """Calculate the result of a function, using the existing data in the database alone
+
+        :param db_halo_entry: The database object associated with the halo
+        :type db_halo_entry: halo_db.core.Halo
+
+        :param input_values: Input values for the function
+        :return: All function values as named by self.name()
+        """
+        return self.calculate(None, db_halo_entry)
+
+    def live_calculate_named(self, name, db_halo_entry, *input_values):
+        """Calculate the result of a function, using the existing data in the database alone
+
+        :param name: The name of the one property to return (which must be one of the values specified by self.name())
+        :param db_halo_entry: The database object associated with the halo
+        :type db_halo_entry: halo_db.core.Halo
+
+        :param input_values: Input values for the function
+        :return: The single named value
+        """
+        values = self.live_calculate(db_halo_entry, *input_values)
+        names = self.name()
+        if isinstance(names, basestring):
+            return values
+        else:
+            return values[self.name().index(name)]
 
     def calculate_from_db(self, db):
         import pynbody
@@ -130,44 +179,45 @@ class HaloProperties(object):
         self.start_timer()
         return self.calculate(gp_sp, db)
 
-    @classmethod
-    def plot_x_extent(cls):
+    def plot_x_values(self, for_data):
+        """Return a suitable array of x values to match the
+        given y values"""
+        return np.arange(self.plot_x0(), self.plot_x0() + self.plot_xdelta() * (len(for_data) - 0.5), self.plot_xdelta())
+
+    def plot_x_extent(self):
         return None
 
-    @classmethod
-    def plot_x0(cls):
+    def plot_extent(self):
+        return None
+
+    def plot_x0(self):
         return 0
 
-    @classmethod
-    def plot_xdelta(cls):
+    def plot_xdelta(self):
         return 1.0
 
-    @classmethod
-    def plot_xlabel(cls):
+    def plot_xlabel(self):
         return None
 
-    @classmethod
-    def plot_ylabel(cls):
+    def plot_ylabel(self):
         return None
 
-    @classmethod
-    def plot_yrange(cls):
+    def plot_yrange(self):
         return None
 
-    @classmethod
-    def plot_xlog(cls):
+    def plot_xlog(self):
         return True
 
-    @classmethod
-    def plot_ylog(cls):
+    def plot_ylog(self):
         return True
 
-    @classmethod
-    def plot_clabel(cls):
+    def plot_clabel(self):
         return None
-
 
 class TimeChunkedProperty(HaloProperties):
+    """TimeChunkedProperty implements a special type of halo property where chunks of a histogram are stored
+    at each time step, then appropriately reassembled when the histogram is retrieved."""
+
     nbins = 1000
     tmax_Gyr = 20.0
     minimum_store_Gyr = 1.0
@@ -178,6 +228,7 @@ class TimeChunkedProperty(HaloProperties):
 
     @classmethod
     def bin_index(self, time):
+        """Convert a time (Gyr) to a bin index in the histogram"""
         index = int(self.nbins*time/self.tmax_Gyr)
         if index<0:
             index = 0
@@ -185,39 +236,112 @@ class TimeChunkedProperty(HaloProperties):
 
     @classmethod
     def store_slice(self, time):
+        """Tells subclasses which have generated a histogram over all time which slice of that histogram
+        they should store."""
         return slice(self.bin_index(time-self.minimum_store_Gyr), self.bin_index(time))
 
     @classmethod
-    def reassemble(cls, halo, name=None):
-        if name is None:
-            name = cls.name()
+    def reassemble(cls, property, reassembly_type='major'):
+        """Reassemble a histogram by suitable treatment of the merger tree leading up to the current halo.
 
-        halo = halo.halo
-        t, stack = halo.reverse_property_cascade("t",name,raw=True)
+        This function is normally called by the framework (see Halo.get_data_with_reassembly_options) and you would
+        rarely call it directly yourself. From within a live-calculation, it can be accessed using the
+        reassemble(halo_property, options...) function. See live_calculation.md for more information.
 
-        t = t[::-1]
-        stack = stack[::-1]
+        :param: property - the halo property for which the reassembly should occur
 
-        final = np.zeros(cls.bin_index(t[-1]))
-        for t_i, hist_i in zip(t,stack):
-            end = cls.bin_index(t_i)
-            start = end - len(hist_i)
-            final[start:end] = hist_i
+        :param: reassembly_type - if 'major' (default), return the histogram for the major progenitor branch
+                                - if 'sum', return the histogram summed over all progenitors
+                                (e.g. this can be used to return SFR histograms that count infalling material as well
+                                as the major progenitor)
+                                - if 'place', return only the histogram stored at this step but place it within
+                                a correctly zero-padded array
+                                - if 'raw', return the raw data
+        """
 
+        from halo_db import relation_finding_strategies as rfs
+
+        if reassembly_type=='major':
+            return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy)
+        elif reassembly_type=='sum':
+            return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopAllProgenitorsStrategy)
+        elif reassembly_type=='place':
+            return cls._place_data(property.halo.timestep.time_gyr, property.data_raw)
+        elif reassembly_type=='raw':
+            return property.data_raw
+        else:
+            raise ValueError, "Unknown reassembly type"
+
+    @classmethod
+    def _place_data(cls, time, raw_data):
+        final = np.zeros(cls.bin_index(time))
+        end = len(final)
+        start = end - len(raw_data)
+        final[start:] = raw_data
         return final
 
     @classmethod
+    def _reassemble_using_finding_strategy(cls, property, strategy):
+        name = property.name.text
+        halo = property.halo
+        t, stack = halo.property_cascade("t()", "raw(" + name + ")", strategy=strategy)
+        final = np.zeros(cls.bin_index(t[0]))
+        previous_end = -1
+        for t_i, hist_i in zip(t, stack):
+            end = cls.bin_index(t_i)
+            start = end - len(hist_i)
+            valid = hist_i == hist_i
+            if end != previous_end:
+                # new timestep; overwrite what was there previously
+                final[start:end][valid] = hist_i[valid]
+            else:
+                # same timestep, multiple halos; accumulate
+                final[start:end][valid] += hist_i[valid]
+            previous_end = end
+        return final
+
+
     def plot_xdelta(cls):
         return cls.tmax_Gyr/cls.nbins
 
-    @classmethod
     def plot_xlog(cls):
         return False
 
-    @classmethod
     def plot_ylog(cls):
         return False
 
+
+
+class LiveHaloProperties(HaloProperties):
+    def __init__(self, simulation, *args):
+        super(LiveHaloProperties, self).__init__(simulation)
+        self._nargs = len(args)
+
+    @classmethod
+    def requires_simdata(self):
+        return False
+
+    def calculate(self, _, db_halo):
+        return self.live_calculate(db_halo, *([None]*self._nargs))
+
+
+class LiveHaloPropertiesInheritingMetaProperties(LiveHaloProperties):
+    """LiveHaloProperties which inherit the meta-data (i.e. x0, delta_x values etc) from
+    one of the input arguments"""
+    def __init__(self, simulation, inherits_from, *args):
+        """
+        :param simulation: The simulation DB entry for this instance
+        :param inherits_from: The HaloProperties description from which the metadata should be inherited
+        :type inherits_from: HaloProperties
+        """
+        super(LiveHaloPropertiesInheritingMetaProperties, self).__init__(simulation)
+        self._inherits_from = inherits_from
+
+    def plot_x0(self):
+        return self._inherits_from.plot_x0()
+
+    def plot_xdelta(self):
+        return self._inherits_from.plot_xdelta()
 
 class ProxyHalo(object):
 
@@ -231,7 +355,6 @@ class ProxyHalo(object):
 
 
 
-
 ##############################################################################
 # UTILITY FUNCTIONS
 ##############################################################################
@@ -239,11 +362,7 @@ class ProxyHalo(object):
 def all_property_classes():
     """Return list of all classes derived from HaloProperties"""
 
-    x = HaloProperties.__subclasses__()
-    for c in x :
-        for s in c.__subclasses__():
-            x.append(s)
-    return x
+    return HaloProperties.all_classes()
 
 
 
@@ -315,355 +434,41 @@ def _process_numerical_value(s,l,t):
     else:
         return int(t[0])
 
-def _parse_property_name(name):
-    property_name = pp.Word(pp.alphanums+"_")
-    property_name_with_params = pp.Forward()
-    numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]\d+)?').setParseAction(_process_numerical_value)
-    value_or_property_name = pp.Group(numerical_value | property_name_with_params)
-    parameters = pp.Literal("(").suppress()+pp.Optional(value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name))+pp.Literal(")").suppress()
-    property_name_with_params << property_name+pp.Optional(parameters)
-    property_complete = pp.stringStart()+property_name_with_params+pp.stringEnd()
-    return property_complete.parseString(name)
-
-def _regenerate_name(parsed):
-    if not isinstance(parsed[0],str):
-        return parsed[0]
-    name = parsed[0]
-    if len(parsed)>1:
-        name+="("
-        name+=_regenerate_name(parsed[1])
-        for other in parsed[2:]:
-            name+=","+_regenerate_name(other)
-        name+=")"
-    return name
-
-def instantiate_classes(property_name_list, silent_fail=False):
+def instantiate_classes(simulation, property_name_list, silent_fail=False):
     instances = []
-    classes = []
     for property_identifier in property_name_list:
-        property_parsed = _parse_property_name(property_identifier)
-        cl = providing_class(property_parsed[0], silent_fail)
-        if cl not in classes and cl != None:
-            vals = [_regenerate_name(x) for x in property_parsed[1:]]
-            instances.append(cl(*vals))
-            classes.append(cl)
+        instances.append(providing_class(property_identifier, silent_fail)(simulation))
 
     return instances
 
-def instantiate_class(property_name, silent_fail=False):
-    instance = instantiate_classes([property_name],silent_fail)
+def instantiate_class(simulation, property_name, silent_fail=False):
+    instance = instantiate_classes(simulation, [property_name],silent_fail)
     if len(instance)==0:
         return None
     else:
         return instance[0]
 
+def get_required_properties(property_name):
+    return providing_class(property_name).requires_property()
 
-def get_dependent_classes(for_class):
-
-    out_classes = []
-    provides = for_class().name()
-    if type(provides) == str:
-        provides = [provides]
-
-    for c in all_property_classes():
-        needs = c().requires_property()
-        if any([p in needs for p in provides]):
-            out_classes.append(c)
-            sub_dep = get_dependent_classes(c)
-            for s in sub_dep:
-                if s not in out_classes:
-                    out_classes.append(s)
-
-    return out_classes
-
-
-def resolve_dependencies(existing_properties, classes):
-    """Return ordered list of classes to run to calculate properties in
-    specified list of classes, given the dictionary of existing properties.
-
-    This automagically (1) orders classes such that dependencies are
-                           available when required
-
-                       (2) adds classes if they calculate a required
-                           dependency"""
-
-    ordered_classes = []
-
-    for c in classes:
-        depend = [
-            d for d in c().requires_property() if d not in existing_properties]
-        for d in depend:
-            cl = providing_class(d)
-            if cl == None:
-                raise RuntimeError(
-                    "Dependencies cannot be resolved -- no providing class for property " + d)
-            classes = resolve_dependencies(existing_properties, [cl])
-            classes.reverse()
-            for cl in classes:
-                # bring to front
-                if cl in ordered_classes:
-                    del ordered_classes[ordered_classes.index(cl)]
-                ordered_classes = [cl] + ordered_classes
-
-        if c not in ordered_classes:
-            ordered_classes.append(c)
-
-    return ordered_classes
-
-
-def gc_codelib(meta_properties, code_library):
-
-    valid_hash = []
-    delete_hash = []
-    for i in meta_properties:
-        for k in i:
-            try:
-                if i[k]['code'] not in valid_hash:
-                    valid_hash.append(i[k]['code'])
-            except KeyError:
-                pass
-
-    print "Code library: ", len(code_library), " items"
-
-    for k in code_library:
-        code = code_library[k].split("\n")
-        if k not in valid_hash:
-            print "(del) ", code[0], "(l", len(code), ")"
-            delete_hash.append(k)
-        else:
-            print "      ", code_library[k].split("\n")[0], "(l", len(code), ")"
-
-    print "Removing ", len(delete_hash), " items"
-    for d in delete_hash:
-        del code_library[d]
-
-
-def codehash(code):
-    import hashlib
-    import re
-    return hashlib.sha1(re.sub("\s+", "", code)).hexdigest()
-
-
-def safe_write(fname, p_array, code_library, meta_properties):
-    import cPickle as pickle
-    try:
-        pickle.dump(p_array, file(fname + ".halo_properties", "w"))
-        pickle.dump((code_library, meta_properties), file(
-            fname + ".halo_properties.meta", "w"))
-    except KeyboardInterrupt:
-        import sys
-        print "(please wait, writing files)",
-        sys.stdout.flush()
-        safe_write(fname, p_array, code_library, meta_properties)
-        raise KeyboardInterrupt
-
-
-code_lib = {}
-
-
-def ld_dat(fname):
-    import cPickle as pickle
-    dat = pickle.load(file(fname))
-    try:
-        meta = pickle.load(file(fname + ".meta"))
-        for d, m in zip(dat, meta[1]):
-            infl = {}
-            for t in m:
-                # magic inflation of DLA_blahblah_* type keys
-                if t[-1] == "*":
-                    # find matching data keys
-                    for k in d:
-                        if k[:len(t) - 1] == t[:-1] and "_" not in k[len(t):]:
-                            infl[k] = m[t]
-            m.update(infl)
-            d["**"] = m
-
-        code_lib.update(meta[0])
-    except IOError:
-        pass
-    return dat
-
-
-def info(dataset, propertyname):
-    """Using property metadata inflated using ld_dat, writes useful
-    information about the specified property in the given dataset"""
-    import time
-
-    reverse_d = {}
-
-    for k in dataset:
-        if k.has_key("**") and k.has_key(propertyname) or propertyname[-1] == "*":
-            try:
-                st = k["**"][propertyname]["code"]
-
-            except KeyError:
-                pass
-
-            if reverse_d.has_key(st):
-                if k["legend"] not in reverse_d[st]:
-                    reverse_d[st].append(k["legend"])
-            else:
-                reverse_d[st] = [k["legend"]]
-
-    xkid = None
-    for k in reverse_d:
-        print "*" * 51
-        if k == None:
-            print "Unknown is used by "
-        else:
-            print k[:3], "is used by "
-        for z in reverse_d[k]:
-            st = None
-            for q in dataset:
-                try:
-                    if q["legend"] == z and q["**"][propertyname]["code"] == k:
-                        if st == None:
-                            st = q["uid"]
-                            ifo = q["**"][propertyname]["host"] + \
-                                time.strftime(
-                                    " %D %H:%M", q["**"][propertyname]["calculated"])
-                        stx = q["uid"]
-                    else:
-                        if st != None:
-                            print st, "->", stx, ":", ifo
-                            st = None
-                except KeyError:
-                    pass
-
-            if st != None:
-                print st, "->", stx, ":", ifo
-
-        if xkid != None:
-            print "- " * 26
-            if k != "?" and k != None:
-                print "copy paste diff command : properties.cdiff('" + xkid[:3] + "','" + k[:3] + "')"
-        else:
-            if k != "?" and k != None:
-                xkid = k
-
-
-def expand_hash(snippet):
-    candidates = [i for i in code_lib if type(
-        i) == str and snippet == i[:len(snippet)]]
-    if len(candidates) == 0:
-        raise RuntimeError, "No match for snippet"
-    elif len(candidates) > 1:
-        raise RuntimeError, "Multiple matches for snippet"
+def live_calculate(property_name, db_halo, *args, **kwargs):
+    inputs_names = kwargs.pop('names',[None]*100)
+    C = providing_class(property_name)
+    I = C(*args)
+    names = I.name()
+    if hasattr(I, 'live_calculate'):
+        # new-style context-aware calculation
+        results = I.live_calculate(db_halo, inputs_names)
     else:
-        return candidates[0]
+        # old-style calculation that happens to have no simulation data loaded
+        results = I.calculate(None, db_halo)
+    if not isinstance(names, str):
+        results = results[names.index(property_name)]
+    return results
 
 
-def cdiff(i1, i2):
-    import difflib
-
-    cd1 = code_lib[expand_hash(i1)].splitlines(1)
-    cd2 = code_lib[expand_hash(i2)].splitlines(1)
-
-    d = difflib.Differ()
-    result = list(d.compare(cd1, cd2))
-    r = [q for q in result if q[0] != " "]
-    print "".join(r)
 
 
-def interpret_file_arguments(argv):
-    """Smart interpretation of what files are to be processed by
-    a script. Returns a list of files and the remaining command line."""
-    import os
-    import glob
-    files = []
-    out = []
 
-    def _add_files(a, file_list):
-        """Returns true if some files were matched off the candidate a"""
-        if os.path.exists(a):
-            if os.path.exists(a + ".amiga.grp") or os.path.exists(a + ".amiga.grp.gz"):
-                file_list.append(a)
-            elif os.path.isdir(a):
-                return np.sometrue([_add_files(f, file_list) for f in glob.glob(a + "/*")])
-            else:
-                return False
-        else:
-            return False
-        return True
-
-    for a in argv:
-        if not _add_files(a, files):
-            out.append(a)
-
-    return files, out
-
-
-def match_properties(k, kto, keys):
-    kx = k.split("*")
-
-    ktox = kto.split("*")
-
-    assert(len(kx) == len(ktox))
-    if len(kx) == 1:
-        if k in keys:
-            return [(k, kto)]
-        else:
-            return []
-    else:
-        output = []
-        for cand in keys:
-            targ_cand = cand
-            for f, r in zip(kx, ktox):
-                if f != "":
-                    targ_cand = r.join(targ_cand.split(f))
-            if cand != targ_cand:
-                output.append((cand, targ_cand))
-        return output
-
-
-def mv(sname, dname, prop, metaprop=None, interactive=False, cp=False):
-
-    import terminalcontroller as t
-    warned = False
-
-    for p in prop:
-        repl = match_properties(sname, dname, p.keys())
-        if len(repl) > 0 and not warned:
-            if interactive:
-                t.heading("CONFIRM...")
-            for a, b in repl:
-                if b[:5] != "trash":
-                    print a, "->", b
-                else:
-                    print t.term.RED + "trash " + t.term.NORMAL + a
-
-            if interactive:
-                t.heading("TYPE YES TO CONTINUE, NO TO QUIT...")
-                c = raw_input()
-                if c != "YES":
-                    raise RuntimeError, "Quit"
-            warned = True
-        for a, b in repl:
-            if p.has_key(b):
-                raise RuntimeError, "Name clash in target"
-            if b[:5] != "trash":
-                p[b] = p[a]
-            if not cp:
-                del p[a]
-
-    if metaprop != None:
-        warned = False
-        for mp in metaprop:
-            repl = match_properties(sname, dname, mp.keys())
-            if not warned and len(repl) > 0:
-                t.heading("In MetaProperties it looks like this:")
-                for a, b in repl:
-                    if b[:5] != "trash":
-                        print a, "->", b
-                    else:
-                        print t.term.RED + "trash " + t.term.NORMAL + a
-                warned = True
-            for a, b in repl:
-                if b[:5] != "trash":
-                    mp[b] = mp[a]
-                if not cp:
-                    del mp[a]
-
-
-from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr, dust
+from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr, dust, intrinsic, disk_dynamics
 

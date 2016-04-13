@@ -12,7 +12,7 @@ import simdb.model.meta as meta
 from simdb.model.meta import *
 
 import halo_db as db
-import halo_db.hopper
+import halo_db.relation_finding_strategies
 import math
 import numpy as np
 
@@ -240,19 +240,19 @@ class SimsController(BaseController):
 
 
     @classmethod
-    def _construct_preliminary_mergertree(self, halo, base_halo, visited=None, depth=0):
+    def _construct_preliminary_mergertree(self, halo, base_halo, must_include, visited=None, depth=0):
         if visited is None:
             visited = []
         start = time.time()
         recurse = halo.id not in visited
         visited.append(halo.id)
 
-        rl = db.hopper.HopStrategy(halo,target=halo.timestep.previous)
+        rl = db.relation_finding_strategies.HopStrategy(halo,target=halo.timestep.previous)
 
         rl, weights = rl.all_and_weights()
 
         if len(rl)>0:
-            rl = [rli for rli,wi in zip(rl,weights) if wi>weights[0]*0.02]
+            rl = [rli for rli,wi in zip(rl,weights) if wi>weights[0]*0.02 or rli.id in must_include]
 
         timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr"%(halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
 
@@ -308,7 +308,7 @@ class SimsController(BaseController):
 
         if recurse:
             for rli in rl:
-                nx = self._construct_preliminary_mergertree(rli, base_halo,visited,depth+1)
+                nx = self._construct_preliminary_mergertree(rli, base_halo, must_include, visited,depth+1)
                 output['contents'].append(nx)
                 if nx['maxdepth']>maxdepth: maxdepth = nx['maxdepth']
 
@@ -383,11 +383,13 @@ class SimsController(BaseController):
         self.search_time=0
         start = time.time()
         base = halo
+        must_include = []
         for i in range(5):
+            must_include.append(base.id)
             if base.next is not None:
                 base = base.next
 
-        tree = self._construct_preliminary_mergertree(base, halo)
+        tree = self._construct_preliminary_mergertree(base, halo, must_include)
         print "Merger tree build time:    %.2fs"%(time.time()-start)
         print "of which link search time: %.2fs"%(self.search_time)
 
@@ -397,7 +399,7 @@ class SimsController(BaseController):
 
         """
         start = time.time()
-        rl = db.hopper.MultiHopStrategy(halo, directed='backwards', nhops_max=1)
+        rl = db.relation_finding_strategies.MultiHopStrategy(halo, directed='backwards', nhops_max=1)
         rl.target_simulation(halo.timestep.simulation)
         print "size=",rl.count()
         print len(rl.all())
@@ -499,7 +501,7 @@ class SimsController(BaseController):
             new_halo = halo.timestep.halos.filter_by(halo_number=num).first()
         elif rel == "insim":
             targ = Session.query(meta.Simulation).filter_by(id=num).first()
-            strategy = db.hopper.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across', targ)
+            strategy = db.relation_finding_strategies.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across', targ)
 
             targets, weights = strategy.all_and_weights()
 

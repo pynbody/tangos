@@ -1,3 +1,7 @@
+"""Logic to help flexibly get/set data in ORM objects (specifically HaloProperty and SimulationProperty) where data
+of different types has to be stored in different attributes.
+"""
+
 import numpy as np
 import pickle
 import zlib
@@ -9,13 +13,14 @@ import datetime
 _THRESHOLD_FOR_COMPRESSION = 1000
 
 def get_data_of_unknown_type(obj):
+    """Starting from the ORM object, extract data which may be stored in a variety of attributes depending on its type"""
     mapper = DataAttributeMapper(db_object=obj)
     return mapper.get(obj)
 
 def set_data_of_unknown_type(obj, data):
+    """Store the given data in the ORM object, using an appropriate attribute for the given data type"""
     mapper = DataAttributeMapper(data=data)
     mapper.set(obj,data)
-
 
 
 class DataAttributeMapper(object):
@@ -46,7 +51,9 @@ class DataAttributeMapper(object):
         for subclass in cls.__all_nonabstract_subclasses():
             if subclass._handles_db_object(db_object):
                 return subclass
-        raise TypeError, "No data found in object %r"%db_object
+
+        # NullAttributeMapper should prevent the following line from being reached
+        assert False, "Internal error in data_attribute_mapper: no subclass claimed responsibility for object"
 
     @classmethod
     def _subclass_from_data(cls, data):

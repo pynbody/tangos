@@ -1,4 +1,4 @@
-from . import HaloProperties, instantiate_class
+from . import HaloProperties, instantiate_class, providing_class, LiveHaloProperties, LiveHaloPropertiesInheritingMetaProperties
 import numpy as np
 import math
 import pynbody
@@ -262,10 +262,9 @@ def fit_sersic(r, surface_brightness, return_cov=False):
         return popt
 
 class GenericPercentile(HaloProperties):
-    def __init__(self, name, ratio):
-        self._name = name
-        self._ratio = ratio
-        self._cl = instantiate_class(name)
+    def __init__(self, simulation, ratio, name):
+        super(GenericPercentile, self).__init__(simulation)
+        self._name_info = name
 
     @classmethod
     def name(self):
@@ -275,36 +274,25 @@ class GenericPercentile(HaloProperties):
     def requires_simdata(self):
         return False
 
-    def calculate(self, halo, existing_properties):
-        x0 = self._cl.plot_x0()
-        delta_x = self._cl.plot_xdelta()
-        val = existing_properties[self._name]
-        val/=val[-1]
-        index = np.where(val>self._ratio)[0][0]
+    def live_calculate(self, halo, ratio, ar):
+        x0 = self._name_info.plot_x0()
+        delta_x = self._name_info.plot_xdelta()
+        ar/=ar[-1]
+        index = np.where(ar>ratio)[0][0]
         return x0+index*delta_x
 
-class AtPosition(HaloProperties):
-    def __init__(self, pos_name, name):
-        self._name = name
-        self._pos_name = pos_name
-        self._cl = instantiate_class(name)
+class AtPosition(LiveHaloProperties):
+    def __init__(self, simulation, position, array):
+        super(AtPosition, self).__init__(simulation)
+        self._array_info = array
 
     @classmethod
     def name(cls):
         return "at"
 
-    @classmethod
-    def requires_simdata(self):
-        return False
-
-    def calculate(self,  halo, existing_properties):
-        x0 = self._cl.plot_x0()
-        delta_x = self._cl.plot_xdelta()
-        if isinstance(self._pos_name, float):
-            pos = self._pos_name
-        else:
-            pos = existing_properties[self._pos_name]
-        ar = existing_properties.get_or_calculate(self._name)
+    def live_calculate(self, halo, pos, ar):
+        x0 = self._array_info.plot_x0()
+        delta_x = self._array_info.plot_xdelta()
 
         # linear interpolation
         i0 = int((pos-x0)/delta_x)
@@ -313,28 +301,31 @@ class AtPosition(HaloProperties):
         i0_loc = float(i0)*delta_x+x0
         i1_weight = (pos-i0_loc)/delta_x
         i0_weight = 1.0-i1_weight
-        return ar[i0]*i0_weight + ar[i1]*i1_weight
 
+        if i1>=len(ar) or i0<0:
+            return None
+        else:
+            return ar[i0]*i0_weight + ar[i1]*i1_weight
 
-class AbsProperty(HaloProperties):
-    def __init__(self, name):
-        self._name = name
+class MaxMinProperty(LiveHaloProperties):
+    def __init__(self, simulation, array):
+        super(MaxMinProperty, self).__init__(simulation)
+        self._array_info = array
 
     @classmethod
-    def name(self):
-        return "abs"
+    def name(cls):
+        return "max", "min", "posmax", "posmin"
 
-    @classmethod
-    def requires_simdata(self):
-        return False
-
-    def calculate(self, halo, properties):
-        return np.linalg.norm(properties.get_or_calculate(self._name), axis=1)
-
+    def live_calculate(self, halo, array):
+        max_, min_ = np.max(array), np.min(array)
+        amax, amin = np.argmax(array), np.argmin(array)
+        index_to_r = lambda index: index*self._array_info.plot_xdelta()+self._array_info.plot_x0()
+        return float(max_), float(min_), index_to_r(amax), index_to_r(amin)
 
 
-class StellarProfileDiagnosis(HaloProperties):
-    def __init__(self, band):
+class StellarProfileDiagnosis(LiveHaloProperties):
+    def __init__(self, simulation, band):
+        super(StellarProfileDiagnosis, self).__init__(simulation)
         self.band = band
 
     @classmethod
@@ -345,11 +336,15 @@ class StellarProfileDiagnosis(HaloProperties):
     def requires_simdata(self):
         return False
 
+    def requires_property(self):
+        return self.band+"_surface_brightness",
+
     def calculate(self, halo, existing_properties):
         r0 = 0.05
         delta_r = 0.1
         surface_brightness = existing_properties[self.band+"_surface_brightness"]
         flux_density = 10**(surface_brightness/-2.5)
+        flux_density[flux_density!=flux_density]=0
         nbins = len(surface_brightness)
         r = np.arange(r0,r0+delta_r*nbins,delta_r)
         cumu_flux_density = (r * flux_density).cumsum()
@@ -358,6 +353,11 @@ class StellarProfileDiagnosis(HaloProperties):
         half_light_i = np.where(cumu_flux_density>0.5)[0][0]
         half_light = r0+delta_r * half_light_i
 
+        r_fit = r[4:half_light_i*5]
+        sb_fit = surface_brightness[4:half_light_i*5]
 
-        m0, n, r0 = fit_sersic(r[4:half_light_i*5], surface_brightness[4:half_light_i*5])
+        mask_not_nan = sb_fit==sb_fit
+        r_fit = r_fit[mask_not_nan]
+        sb_fit = sb_fit[mask_not_nan]
+        m0, n, r0 = fit_sersic(r_fit, sb_fit)
         return half_light, m0, n, r0

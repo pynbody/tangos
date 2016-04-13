@@ -112,6 +112,7 @@ def test_array_pack_format():
     target.data=test_data
     assert target.data_array.startswith("ZX")
     assert target.data_array.endswith(zlib.compress(pickle.dumps(test_data)))
+    assert np.allclose(target.data, test_data)
 
 def test_none():
     target = TestTarget()
@@ -121,6 +122,14 @@ def test_none():
     target.data=None
     assert target.data is None
 
+def test_unknown_storage_type():
+    class DummyClass(object):
+        pass
+
+    target = TestTarget()
+
+    with assert_raises(TypeError):
+        target.data = DummyClass()
 
 def test_float_downcast_from_ndarray():
     data = np.array(3.0)
@@ -150,3 +159,17 @@ def test_int_downcast_from_list():
     target.data = data
     assert target.data==3
     target.assert_datatype("int")
+
+def test_old_format():
+    data = np.array([1.0,2.0,3.0])
+    target = TestTarget()
+    target.data_array = data.tobytes()
+    assert np.allclose(data,target.data)
+
+def test_empty_container():
+    target = TestTarget()
+    assert target.data is None
+
+    target.data_array = ""
+    assert target.data is None
+
