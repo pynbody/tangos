@@ -120,8 +120,6 @@ class TestErrorProperty(properties.LiveHaloProperties):
         return "Mvir",
 
     def live_calculate(self, halo):
-        print "Fixed cache:",halo._use_fixed_cache()
-        print "all properties:",halo.all_properties
         return halo["Mvir"]+halo["Rvir"]
 
 class TestPropertyWithParameter(properties.LiveHaloProperties):

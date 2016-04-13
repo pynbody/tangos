@@ -79,3 +79,10 @@ def test_live_calculation_summed_reconstruction():
     reconstructed = ts2_h1.get_objects("dummy_histogram")[0].get_data_with_reassembly_options('sum')
     reconstructed_lc = ts2_h1.calculate("reassemble(dummy_histogram, 'sum')")
     npt.assert_almost_equal(reconstructed, reconstructed_lc)
+
+def test_placed_reconstruction():
+    reconstructed = ts2_h1.get_objects("dummy_histogram")[0].get_data_with_reassembly_options('place')
+    manual_reconstruction = np.zeros(len(ts2_h1['dummy_histogram']))
+    raw_data = ts2_h1.get_data('dummy_histogram',raw=True)
+    manual_reconstruction[-len(raw_data):] = raw_data
+    return npt.assert_almost_equal(reconstructed, manual_reconstruction)

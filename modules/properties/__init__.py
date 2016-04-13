@@ -254,6 +254,9 @@ class TimeChunkedProperty(HaloProperties):
                                 - if 'sum', return the histogram summed over all progenitors
                                 (e.g. this can be used to return SFR histograms that count infalling material as well
                                 as the major progenitor)
+                                - if 'place', return only the histogram stored at this step but place it within
+                                a correctly zero-padded array
+                                - if 'raw', return the raw data
         """
 
         from halo_db import relation_finding_strategies as rfs
@@ -262,8 +265,20 @@ class TimeChunkedProperty(HaloProperties):
             return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy)
         elif reassembly_type=='sum':
             return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopAllProgenitorsStrategy)
+        elif reassembly_type=='place':
+            return cls._place_data(property.halo.timestep.time_gyr, property.data_raw)
+        elif reassembly_type=='raw':
+            return property.data_raw
         else:
             raise ValueError, "Unknown reassembly type"
+
+    @classmethod
+    def _place_data(cls, time, raw_data):
+        final = np.zeros(cls.bin_index(time))
+        end = len(final)
+        start = end - len(raw_data)
+        final[start:] = raw_data
+        return final
 
     @classmethod
     def _reassemble_using_finding_strategy(cls, property, strategy):
