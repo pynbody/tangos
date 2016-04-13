@@ -557,6 +557,10 @@ class Halo(Base):
 
 
     def load(self, partial=False):
+        """Use pynbody to load the data for this halo, if it is present on this computer's filesystem.
+
+        By default, the entire simulation is loaded and a subview with this halo is returned. If partial=True,
+        pynbody's partial loading system is used to only load the data for the one halo, saving memory."""
         h = construct_halo_cat(self.timestep, self.halo_type)
         if partial:
             return h.load_copy(self.halo_number)
@@ -564,6 +568,9 @@ class Halo(Base):
             return h[self.halo_number]
 
     def calculate(self, name):
+        """Use the live-calculation system to calculate a user-specified function of the stored data.
+
+        See live_calculation.md for an introduction to this powerful functionality."""
         from . import live_calculation
         calculation = live_calculation.parser.parse_property_name_if_required(name)
         value = calculation.values_sanitized([self])[0]
@@ -579,64 +586,74 @@ class Halo(Base):
         return description.plot_x_values(value[0])
 
     def __getitem__(self, key):
-        # There are two possible strategies here. If some sort of joined load has been
-        # executed, the properties are sitting waiting for us. If not, they are going
-        # to be lazy loaded and we want to filter that lazy load.
+        """Highest-level method for retrieving data or link"""
         return self.get_data(key)
 
     def get(self, key, default=None):
+        """Highest-level method for retrieving data or link, with default return value if no data is found
+        under the specified key"""
         try:
-            return self[key]
+            return self.get_data(key)
         except KeyError:
             return default
 
     def get_data(self, key, raw=False, always_return_array=False):
-        if raw:
-            getters=[halo_data_extraction_patterns.HaloPropertyRawValueGetter]
-        else:
-            getters=[halo_data_extraction_patterns.HaloPropertyValueGetter]
-        getters+=[halo_data_extraction_patterns.HaloLinkTargetGetter]
+        """High-level data access to the property or linked halo named by key.
 
-        return_data = self._get_object(key,getters)
+        :param key: string with the name of the property or link
+        :param raw: if True, get the raw data rather than attempt to reassemble the data into a science-ready form
+        :param always_return_array: if True, always return the data as a list of values, even if there is only one
+           stored property with the specified name
+        """
+
+        if raw:
+            getters=[halo_data_extraction_patterns.halo_property_raw_value_getter]
+        else:
+            getters=[halo_data_extraction_patterns.halo_property_value_getter]
+        getters+=[halo_data_extraction_patterns.halo_link_target_getter]
+
+        return_data = self.get_objects(key, getters)
 
         if (not always_return_array) and len(return_data) == 1:
             return_data = return_data[0]
 
         return return_data
 
-    def _use_fixed_cache(self):
-        return 'all_properties' not in sqlalchemy.inspect(self).unloaded
+    def get_objects(self, key, getters = [halo_data_extraction_patterns.halo_property_getter,
+                                          halo_data_extraction_patterns.halo_link_getter]):
+        """Get objects belonging to this halo named by the specified key.
 
-    def _get_object(self, key, getters = [halo_data_extraction_patterns.HaloPropertyGetter,
-                                          halo_data_extraction_patterns.HaloLinkGetter]):
+        Compared to get_data, this allows access to the underlying HaloProperty or HaloLink objects, or to perform
+        custom processing of the data by specifying particular extraction patterns to getters. For more information,
+        see halo_data_extraction_patterns."""
         session = Session.object_session(self)
         key_id = get_dict_id(key, session=session)
 
         if self._use_fixed_cache():
-            return_objs = self._get_object_cached(key_id, getters)
+            return_objs = self._get_objects_from_cache(key_id, getters)
         else:
-            return_objs = self._get_object_from_session(key_id, session, getters)
+            return_objs = self._get_objects_from_session(key_id, session, getters)
         if len(return_objs) == 0:
             raise KeyError, "No such property %r" % key
         return return_objs
 
-    def _get_object_from_session(self, key_id, session, getters):
+    def _use_fixed_cache(self):
+        return 'all_properties' not in sqlalchemy.inspect(self).unloaded
+
+    def _get_objects_from_session(self, key_id, session, getters):
         ret_values = []
         for g in getters:
             ret_values+=g.get_from_session(self, key_id, session)
 
         return ret_values
 
-    def _get_object_cached(self, key_id, getters):
+    def _get_objects_from_cache(self, key_id, getters):
         ret_values = []
         for g in getters:
             ret_values+=g.get_from_cache(self, key_id)
         return ret_values
 
-
-
     def __setitem__(self, key, obj):
-
         if isinstance(obj, Halo):
             self._setitem_one_halo(key, obj)
         elif hasattr(obj, '__len__') and all([isinstance(x,Halo) for x in obj]):
@@ -727,14 +744,14 @@ class Halo(Base):
         *kwargs*:
 
         :param nmax: The maximum number of descendants to consider (default 1000)
-        :param hop_class: The class to use to find the descendants (default halo_finder.MultiHopMajorDescendantsStrategy)
+        :param strategy: The class to use to find the descendants (default relation_finding_strategies.MultiHopMajorDescendantsStrategy)
         """
         from . import live_calculation
-        from . import halo_finder
+        from . import relation_finding_strategies
         from . import temporary_halolist as thl
 
         nmax = kwargs.get('nmax',1000)
-        hop_class = kwargs.get('hop_class', halo_finder.MultiHopMajorDescendantsStrategy)
+        strategy = kwargs.get('strategy', relation_finding_strategies.MultiHopMajorDescendantsStrategy)
 
         if isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]
@@ -744,7 +761,7 @@ class Halo(Base):
         # must be performed in its own session as we intentionally load in a lot of
         # objects with incomplete lazy-loaded properties
         session = Session()
-        with hop_class(get_halo(self.id, session), nhops_max=nmax, include_startpoint=True).temp_table() as tt:
+        with strategy(get_halo(self.id, session), nhops_max=nmax, include_startpoint=True).temp_table() as tt:
             raw_query = thl.halo_query(tt)
             query = property_description.supplement_halo_query(raw_query)
             results = query.all()
@@ -755,16 +772,16 @@ class Halo(Base):
 
         For more information see property_cascade.
         """
-        from . import halo_finder
-        kwargs['hop_class'] = halo_finder.MultiHopMajorProgenitorsStrategy
+        from . import relation_finding_strategies
+        kwargs['strategy'] = relation_finding_strategies.MultiHopMajorProgenitorsStrategy
         return self.property_cascade(*plist, **kwargs)
 
 
     @property
     def next(self):
         if not hasattr(self, '_next'):
-            from . import halo_finder
-            strategy = halo_finder.HopMajorDescendantStrategy(self)
+            from . import relation_finding_strategies
+            strategy = relation_finding_strategies.HopMajorDescendantStrategy(self)
             self._next=strategy.first()
 
         return self._next
@@ -772,8 +789,8 @@ class Halo(Base):
     @property
     def previous(self):
         if not hasattr(self, '_previous'):
-            from . import halo_finder
-            strategy = halo_finder.HopMajorProgenitorStrategy(self)
+            from . import relation_finding_strategies
+            strategy = relation_finding_strategies.HopMajorProgenitorStrategy(self)
             self._previous=strategy.first()
 
         return self._previous
@@ -824,9 +841,9 @@ class HaloProperty(Base):
 
     def __repr__(self):
         if self.deprecated:
-            x = "<HaloProperty (deprecated)"
+            x = "<HaloProperty (deprecated) "
         else:
-            x = "<HaloProperty"
+            x = "<HaloProperty "
         if self.data_float is not None:
             return (x + self.name.text + "=%.2e" % self.data) + " of " + self.halo.short() + ">"
         elif self.data_array is not None:
@@ -846,13 +863,16 @@ class HaloProperty(Base):
 
     @property
     def data(self):
+        return self.get_data_with_reassembly_options()
+
+    def get_data_with_reassembly_options(self, *options):
         try:
             cls = self.name.providing_class()
         except NameError:
             cls = None
 
         if hasattr(cls, 'reassemble'):
-            return cls.reassemble(self)
+            return cls.reassemble(self, *options)
         else:
             return self.data_raw
 

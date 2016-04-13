@@ -12,7 +12,7 @@ import simdb.model.meta as meta
 from simdb.model.meta import *
 
 import halo_db as db
-import halo_db.halo_finder
+import halo_db.relation_finding_strategies
 import math
 import numpy as np
 
@@ -247,7 +247,7 @@ class SimsController(BaseController):
         recurse = halo.id not in visited
         visited.append(halo.id)
 
-        rl = db.halo_finder.HopStrategy(halo,target=halo.timestep.previous)
+        rl = db.relation_finding_strategies.HopStrategy(halo,target=halo.timestep.previous)
 
         rl, weights = rl.all_and_weights()
 
@@ -399,7 +399,7 @@ class SimsController(BaseController):
 
         """
         start = time.time()
-        rl = db.halo_finder.MultiHopStrategy(halo, directed='backwards', nhops_max=1)
+        rl = db.relation_finding_strategies.MultiHopStrategy(halo, directed='backwards', nhops_max=1)
         rl.target_simulation(halo.timestep.simulation)
         print "size=",rl.count()
         print len(rl.all())
@@ -501,7 +501,7 @@ class SimsController(BaseController):
             new_halo = halo.timestep.halos.filter_by(halo_number=num).first()
         elif rel == "insim":
             targ = Session.query(meta.Simulation).filter_by(id=num).first()
-            strategy = db.halo_finder.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across', targ)
+            strategy = db.relation_finding_strategies.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across', targ)
 
             targets, weights = strategy.all_and_weights()
 

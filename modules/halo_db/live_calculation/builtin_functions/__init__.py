@@ -1,17 +1,17 @@
 from .. import BuiltinFunction, FixedInput, FixedNumericInput, StoredProperty
 from ... import consistent_collection
 from ... import core
-from ... import halo_data_extraction_patterns
+
 import numpy as np
 
 
 
 @BuiltinFunction.register
 def match(source_halos, target):
-    from ... import halo_finder
+    from ... import relation_finding_strategies
     if not isinstance(target, core.Base):
         target = core.get_item(target)
-    results = halo_finder.MultiSourceMultiHopStrategy(source_halos, target).all()
+    results = relation_finding_strategies.MultiSourceMultiHopStrategy(source_halos, target).all()
     assert len(results) == len(source_halos)
     return np.array(results, dtype=object)
 match.set_input_options(0, provide_proxy=True, assert_class = FixedInput)
@@ -33,14 +33,5 @@ def earlier(source_halos, num_steps):
 earlier.set_input_options(0, provide_proxy=True, assert_class = FixedNumericInput)
 
 
-@BuiltinFunction.register
-def raw(halos, values):
-    return values
-raw.set_input_options(0, assert_class=StoredProperty)
 
-@raw.set_initialisation
-def raw_initialisation(input):
-    input._extraction_pattern = halo_data_extraction_patterns.HaloPropertyRawValueGetter
-
-
-from . import arithmetic, array
+from . import arithmetic, array, reassembly

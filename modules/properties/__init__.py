@@ -215,6 +215,9 @@ class HaloProperties(object):
         return None
 
 class TimeChunkedProperty(HaloProperties):
+    """TimeChunkedProperty implements a special type of halo property where chunks of a histogram are stored
+    at each time step, then appropriately reassembled when the histogram is retrieved."""
+
     nbins = 1000
     tmax_Gyr = 20.0
     minimum_store_Gyr = 1.0
@@ -225,6 +228,7 @@ class TimeChunkedProperty(HaloProperties):
 
     @classmethod
     def bin_index(self, time):
+        """Convert a time (Gyr) to a bin index in the histogram"""
         index = int(self.nbins*time/self.tmax_Gyr)
         if index<0:
             index = 0
@@ -232,26 +236,55 @@ class TimeChunkedProperty(HaloProperties):
 
     @classmethod
     def store_slice(self, time):
+        """Tells subclasses which have generated a histogram over all time which slice of that histogram
+        they should store."""
         return slice(self.bin_index(time-self.minimum_store_Gyr), self.bin_index(time))
 
     @classmethod
-    def reassemble(cls, halo, name=None):
-        if name is None:
-            name = cls.name()
+    def reassemble(cls, property, reassembly_type='major'):
+        """Reassemble a histogram by suitable treatment of the merger tree leading up to the current halo.
 
-        halo = halo.halo
-        t, stack = halo.reverse_property_cascade("t()","raw("+name+")")
+        This function is normally called by the framework (see Halo.get_data_with_reassembly_options) and you would
+        rarely call it directly yourself. From within a live-calculation, it can be accessed using the
+        reassemble(halo_property, options...) function. See live_calculation.md for more information.
 
-        t = t[::-1]
-        stack = stack[::-1]
+        :param: property - the halo property for which the reassembly should occur
 
-        final = np.zeros(cls.bin_index(t[-1]))
-        for t_i, hist_i in zip(t,stack):
+        :param: reassembly_type - if 'major' (default), return the histogram for the major progenitor branch
+                                - if 'sum', return the histogram summed over all progenitors
+                                (e.g. this can be used to return SFR histograms that count infalling material as well
+                                as the major progenitor)
+        """
+
+        from halo_db import relation_finding_strategies as rfs
+
+        if reassembly_type=='major':
+            return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy)
+        elif reassembly_type=='sum':
+            return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopAllProgenitorsStrategy)
+        else:
+            raise ValueError, "Unknown reassembly type"
+
+    @classmethod
+    def _reassemble_using_finding_strategy(cls, property, strategy):
+        name = property.name.text
+        halo = property.halo
+        t, stack = halo.property_cascade("t()", "raw(" + name + ")", strategy=strategy)
+        final = np.zeros(cls.bin_index(t[0]))
+        previous_end = -1
+        for t_i, hist_i in zip(t, stack):
             end = cls.bin_index(t_i)
             start = end - len(hist_i)
-            final[start:end] = hist_i
-
+            valid = hist_i == hist_i
+            if end != previous_end:
+                # new timestep; overwrite what was there previously
+                final[start:end][valid] = hist_i[valid]
+            else:
+                # same timestep, multiple halos; accumulate
+                final[start:end][valid] += hist_i[valid]
+            previous_end = end
         return final
+
 
     def plot_xdelta(cls):
         return cls.tmax_Gyr/cls.nbins

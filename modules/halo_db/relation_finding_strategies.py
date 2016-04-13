@@ -67,6 +67,8 @@ class HopStrategy(object):
                       product of the weights along the path found.
          - 'time_asc' - the time of the snapshot, ascending order
          - 'time_desc' - the time of the snapshot, descending order
+         - 'halo_number_asc' - the halo number, ascending
+         - 'halo_number_desc' - the halo number, descending
          - 'nhops' - the number of hops taken to reach the halo (MultiHopStrategy only)
 
         Multiple names can be given to order by more than one property.
@@ -136,28 +138,41 @@ class HopStrategy(object):
         else:
             return link[0].halo_to
 
-    @property
-    def _order_by_clause(self):
-        return [self._generate_order_arg_from_name(name) for name in self._order_by_names]
+    def _order_by_clause(self, halo_alias, timestep_alias):
+        return [self._generate_order_arg_from_name(name, halo_alias, timestep_alias) for name in self._order_by_names]
 
-    def _generate_order_arg_from_name(self, name):
+    def _generate_order_arg_from_name(self, name, halo_alias, timestep_alias):
         if name == 'weight':
             return self._link_orm_class.weight.desc()
         elif name == 'time_asc':
-            return core.TimeStep.time_gyr
+            return timestep_alias.time_gyr
         elif name == 'time_desc':
-            return core.TimeStep.time_gyr.desc()
+            return timestep_alias.time_gyr.desc()
+        elif name == 'halo_number_asc':
+            return halo_alias.halo_number
+        elif name == 'halo_number_desc':
+            return halo_alias.halo_number.desc()
         else:
             raise ValueError, "Unknown ordering method %r" % name
+
+    def _ordering_requires_join(self):
+        return 'time_asc' in self._order_by_names \
+               or 'time_desc' in self._order_by_names \
+               or 'halo_number_asc' in self._order_by_names \
+               or 'halo_number_desc' in self._order_by_names
 
     @property
     def _query_ordered(self):
         query = self.query
         assert isinstance(query, sqlalchemy.orm.query.Query)
-        if 'time_asc' in self._order_by_names or 'time_desc' in self._order_by_names:
-            query = query.join(core.Halo, self._link_orm_class.halo_to).join(core.TimeStep)
+        timestep_alias = None
+        halo_alias = None
+        if self._ordering_requires_join():
+            timestep_alias = sqlalchemy.orm.aliased(core.TimeStep)
+            halo_alias = sqlalchemy.orm.aliased(core.Halo)
+            query = query.join(halo_alias, self._link_orm_class.halo_to).join(timestep_alias)
 
-        query = query.order_by(*self._order_by_clause)
+        query = query.order_by(*self._order_by_clause(halo_alias, timestep_alias))
         return query
 
 
@@ -481,11 +496,11 @@ class MultiHopStrategy(HopStrategy):
         if not self._include_startpoint:
             self.query = self.query.filter(self._table.c.nhops>0)
 
-    def _generate_order_arg_from_name(self, name):
+    def _generate_order_arg_from_name(self, name, halo_alias, timestep_alias):
         if name == 'nhops':
             return self._link_orm_class.c.nhops
         else:
-            return super(MultiHopStrategy, self)._generate_order_arg_from_name(name)
+            return super(MultiHopStrategy, self)._generate_order_arg_from_name(name, halo_alias, timestep_alias)
 
 class MultiSourceMultiHopStrategy(MultiHopStrategy):
     """A variant of MultiHopStrategy that finds halos corresponding to multiple start points.
@@ -536,8 +551,7 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
     def _should_halt(self):
         return self.query.count()>0
 
-    @property
-    def _order_by_clause(self):
+    def _order_by_clause(self, halo_alias, timestep_alias):
         return [self._link_orm_class.source_id, self._table.c.weight]
 
     def all(self):
@@ -562,22 +576,31 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
 
 
 
-
-class MultiHopMajorProgenitorsStrategy(MultiHopStrategy):
-    """A hop strategy that suggests the major progenitor for a halo at every step"""
-
-    def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False):
+class MultiHopAllProgenitorsStrategy(MultiHopStrategy):
+    """A hop strategy that suggests all progenitors for a halo at every step"""
+    def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False, target=None, combine_routes=True):
         self.sim_id = halo_from.timestep.simulation_id
-        super(MultiHopMajorProgenitorsStrategy, self).__init__(halo_from, nhops_max,
+        target = target or halo_from.timestep.simulation
+        super(MultiHopAllProgenitorsStrategy, self).__init__(halo_from, nhops_max,
                                                                directed='backwards',
                                                                include_startpoint=include_startpoint,
-                                                               target=halo_from.timestep.simulation)
+                                                               target=target,
+                                                               order_by=['time_desc', 'halo_number_asc'],
+                                                               combine_routes=combine_routes)
+
+    def _supplement_halolink_query_with_filter(self, query, table):
+        query = super(MultiHopAllProgenitorsStrategy, self)._supplement_halolink_query_with_filter(query, table)
+        return query.filter(self.timestep_new.simulation_id == self.sim_id)
+
+
+class MultiHopMajorProgenitorsStrategy(MultiHopAllProgenitorsStrategy):
+    """A hop strategy that suggests the major progenitor for a halo at every step"""
 
     def _supplement_halolink_query_with_filter(self, query, table):
         query = super(MultiHopMajorProgenitorsStrategy, self)._supplement_halolink_query_with_filter(query, table)
-        return query.filter(self.timestep_new.simulation_id == self.sim_id). \
-            order_by(self.timestep_new.time_gyr.desc(), table.c.weight.desc(), self.halo_new.halo_number). \
+        return query.order_by(self.timestep_new.time_gyr.desc(), table.c.weight.desc(), self.halo_new.halo_number). \
             limit(1)
+
 
 
 class MultiHopMajorDescendantsStrategy(MultiHopStrategy):

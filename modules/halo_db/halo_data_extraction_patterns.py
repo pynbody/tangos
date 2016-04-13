@@ -1,13 +1,22 @@
 """Logic for getting halo properties and links from a Halo object.
 
-The classes in this module are designed to be used static, and contain commonly-used patterns such as
-getting a HaloProperty (HaloPropertyGetter), getting a HaloProperty's value (HaloPropertyValueGetter/
-HaloPropertyRawValueGetter), getting a HaloLink (HaloLinkGetter) and its target (HaloLinkTargetGetter).
+Commonly-used patterns are effectively static (i.e. they have no options), and default instances for these patterns
+are provided.
+
+e.g.
+ - getting a HaloProperty (HaloPropertyGetter -> default instance halo_property_getter);
+ - getting a HaloProperty's value (HaloPropertyValueGetter -> default instance halo_property_value_getter);
+ - getting a HaloProperty's value without calling reassemble (HaloPropertyRawValueGetter -> halo_property_raw_value_getter);
+ - getting a HaloLink (HaloLinkGetter -> halo_link_getter) ;
+ - getting a HaloLink target (HaloLinkTargetGetter -> halo_link_target_getter).
+
+However, in one case -- where one wants to pass options to the data reassembly process -- a static implementation is
+not possible. So the HaloPropertyValueWithReassemblyOptionsGetter has no "default" instance and has to be
+instantiated when required.
 """
 
 class HaloPropertyGetter(object):
-    @classmethod
-    def get_from_cache(cls, halo, property_id):
+    def get_from_cache(self, halo, property_id):
         """Get the specified property from an existing in-memory cache
 
         :type halo: Halo
@@ -19,10 +28,9 @@ class HaloPropertyGetter(object):
             if x.name_id == property_id:
                 return_vals.append(x)
 
-        return cls._postprocess(return_vals)
+        return self._postprocess(return_vals)
 
-    @classmethod
-    def get_from_session(cls, halo, property_id, session):
+    def get_from_session(self, halo, property_id, session):
         """Get the specified property from the database using the specified session
 
         :type halo: Halo
@@ -32,10 +40,9 @@ class HaloPropertyGetter(object):
         query_properties = session.query(core.HaloProperty).filter_by(name_id=property_id, halo_id=halo.id,
                                                                  deprecated=False).order_by(core.HaloProperty.id.desc())
 
-        return cls._postprocess(query_properties.all())
+        return self._postprocess(query_properties.all())
 
-    @classmethod
-    def cache_contains(cls, halo, property_id):
+    def cache_contains(self, halo, property_id):
         """Return True if the existing in-memory cache has the specified property
 
         :type halo: Halo
@@ -47,74 +54,82 @@ class HaloPropertyGetter(object):
 
         return False
 
-
-    @classmethod
-    def _postprocess(cls, outputs):
+    def _postprocess(self, outputs):
         return outputs
 
+halo_property_getter = HaloPropertyGetter()
 
 class HaloPropertyValueGetter(HaloPropertyGetter):
-    @classmethod
-    def _postprocess(cls, outputs):
-        return [o.data for o in outputs]
+    def _postprocess(self, outputs):
+        return [o.get_data_with_reassembly_options() for o in outputs]
+    
+halo_property_value_getter = HaloPropertyValueGetter()
+
+
+class HaloPropertyValueWithReassemblyOptionsGetter(HaloPropertyGetter):
+    def __init__(self, *options):
+        self._options = options
+
+    def _postprocess(self, outputs):
+        return [o.get_data_with_reassembly_options(*self._options) for o in outputs]
+
 
 class HaloPropertyRawValueGetter(HaloPropertyGetter):
-    @classmethod
-    def _postprocess(cls, outputs):
+    def _postprocess(self, outputs):
         return [o.data_raw for o in outputs]
 
+halo_property_raw_value_getter=HaloPropertyRawValueGetter()
 
 
 class HaloLinkGetter(HaloPropertyGetter):
-    @classmethod
-    def get_from_cache(cls, halo, property_id):
+    def get_from_cache(self, halo, property_id):
         return_vals = []
 
         for x in halo.all_links:
             if x.relation_id == property_id:
                 return_vals.append(x)
 
-        return cls._postprocess(return_vals)
+        return self._postprocess(return_vals)
 
-    @classmethod
-    def get_from_session(cls, halo, property_id, session):
+    def get_from_session(self, halo, property_id, session):
         from . import core
         query_links = session.query(core.HaloLink).filter_by(relation_id=property_id, halo_from_id=halo.id)
-        return cls._postprocess(query_links.all())
+        return self._postprocess(query_links.all())
 
-    @classmethod
-    def cache_contains(cls, halo, property_id):
+    def cache_contains(self, halo, property_id):
         for x in halo.all_links:
             if x.relation_id == property_id:
                 return True
 
         return False
+    
+halo_link_getter = HaloLinkGetter()
+
 
 class HaloLinkTargetGetter(HaloLinkGetter):
-    @classmethod
-    def _postprocess(cls, outputs):
+    def _postprocess(self, outputs):
         return [o.halo_to for o in outputs]
 
+halo_link_target_getter = HaloLinkTargetGetter()
+
+
 class ReverseHaloLinkGetter(HaloLinkGetter):
-    @classmethod
-    def get_from_cache(cls, halo, property_id):
+    def get_from_cache(self, halo, property_id):
         return_vals = []
 
         for x in halo.all_reverse_links:
             if x.relation_id == property_id:
                 return_vals.append(x)
 
-        return cls._postprocess(return_vals)
+        return self._postprocess(return_vals)
 
-    @classmethod
-    def get_from_session(cls, halo, property_id, session):
+    def get_from_session(self, halo, property_id, session):
         from . import core
         query_links = session.query(core.HaloLink).filter_by(relation_id=property_id,
                                                              halo_to_id=halo.id)
-        return cls._postprocess(query_links.all())
+        return self._postprocess(query_links.all())
 
-    @classmethod
-    def cache_contains(cls, halo, property_id):
+    def cache_contains(self, halo, property_id):
         for x in halo.all_reverse_links:
             if x.relation_id == property_id:
                 return True
@@ -123,6 +138,5 @@ class ReverseHaloLinkGetter(HaloLinkGetter):
 
 
 class ReverseHaloLinkSourceGetter(ReverseHaloLinkGetter):
-    @classmethod
-    def _postprocess(cls, outputs):
+    def _postprocess(self, outputs):
         return [o.halo_from for o in outputs]

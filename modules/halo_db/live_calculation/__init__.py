@@ -11,7 +11,7 @@ from .. import temporary_halolist as thl
 
 class Calculation(object):
     def __init__(self):
-        self._extraction_pattern = halo_data_extraction_patterns.HaloPropertyValueGetter
+        self._extraction_pattern = halo_data_extraction_patterns.halo_property_value_getter
 
     def __repr__(self):
         return "<Calculation description for %s>"%str(self)
@@ -390,7 +390,7 @@ class Link(Calculation):
             self.locator = parser.parse_property_name(self.locator)
         if not isinstance(self.property, Calculation):
             self.property = parser.parse_property_name(self.property)
-        self.locator.set_extraction_pattern(halo_data_extraction_patterns.HaloLinkTargetGetter)
+        self.locator.set_extraction_pattern(halo_data_extraction_patterns.halo_link_target_getter)
 
     def __str__(self):
         return str(self.locator)+"."+str(self.property)

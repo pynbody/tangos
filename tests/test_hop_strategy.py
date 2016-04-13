@@ -1,7 +1,7 @@
 __author__ = 'app'
 
 import halo_db as db
-import halo_db.halo_finder as halo_finding
+import halo_db.relation_finding_strategies as halo_finding
 import halo_db.temporary_halolist as thl
 import halo_db.testing as testing
 import os

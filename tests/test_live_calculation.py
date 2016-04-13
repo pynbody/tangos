@@ -88,6 +88,19 @@ class DummyPropertyArray(properties.LiveHaloProperties):
     def live_calculate(self, db_halo_entry, *input_values):
         return np.array([1,2,3])
 
+class DummyPropertyWithReassemblyOptions(properties.HaloProperties):
+    @classmethod
+    def name(self):
+        return "dummy_property_with_reassembly"
+
+    @classmethod
+    def reassemble(cls, property, test_option=25):
+        if test_option=='actual_data':
+            return property.data_raw
+        else:
+            return test_option
+
+
 def test_simple_retrieval():
     BH = db.get_halo("sim/ts1/1.1")
     assert BH['BH_mass'] == BH.calculate("BH_mass")
@@ -140,7 +153,7 @@ def test_non_existent_redirection():
 
 def test_parse_raw_psuedofunction():
     parsed = halo_db.live_calculation.parser.parse_property_name("raw(dummy_property_1)")
-    assert parsed._inputs[0]._extraction_pattern is halo_data_extraction_patterns.HaloPropertyRawValueGetter
+    assert parsed._inputs[0]._extraction_pattern is halo_data_extraction_patterns.halo_property_raw_value_getter
 
     assert all(db.get_halo("sim/ts1/1").calculate(parsed)==db.get_halo("sim/ts1/1")['dummy_property_1'])
 
@@ -185,3 +198,19 @@ def test_calculate_array():
     assert (h.calculate("BH.dummy_property_array()") == [1, 2, 3]).all()
 
     assert (h.calculate("dummy_property_array()*2/(BH.dummy_property_array()*2)") == np.array([1,1,1])).all()
+
+def test_reassembly():
+    h = db.get_halo("sim/ts1/1")
+    h['dummy_property_with_reassembly']=101
+
+    # default reassembly (see above) always returns 25
+    assert h['dummy_property_with_reassembly'] == 25
+
+    # raw stored value is 101
+    assert h.calculate('raw(dummy_property_with_reassembly)') == 101
+
+    # we can pass in an option to the reassembly function
+    assert h.calculate('reassemble(dummy_property_with_reassembly, 50)') == 50
+
+    # our dummy reassembly function can return the actual value if suitably requested
+    assert h.calculate('reassemble(dummy_property_with_reassembly, "actual_data")') == 101

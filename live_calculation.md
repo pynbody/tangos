@@ -38,6 +38,20 @@ Some functions, rather than return a property, return a linked object. For examp
 
 `ts.gather_property('earlier(2).at(Rvir/2,GasMass_encl')` returns the gas mass within half of the virial radius of each halo's main progenitor 2 snapshots previoius.
 
+
+Special case use for histogram properties
+-----------------------------------------
+
+For *histogram* properties (currently these are just `SFR_histogram` and `BH_mdot_histogram`), the live calculation language is also the interface to special use of the stored histograms.
+
+Let's take the SFR as an example. If you have a halo `h`, and ask for `h['SFR_histogram']`, you just get a SFR histogram back as you'd expect, one bin per 20 Myr by default. However, the database is actually storing *chunks* of the star formation history and automatically recreating it for you on the *major progenitor* branch.
+ 
+You can instead request the SFR summed over *all* branches by typing `h.calculate("reassemble(SFR_histogram, 'sum')")`. Simiarly, for a BH accretion history you could do `h.calculate("BH.reassemble(BH_mdot_histogram, 'sum')")`._
+
+Under the hood, this is implemented using the `reassemble` property of `TimeChunkedProperty` which you can find in `properties.__init__.py`. In principle it's therefore possible to implement further methods for reconstructing SFR where even more complex manipulations of the little mini-history chunks is undertaken.
+
+**Technical note**: to access the data that is actually stored in the database, as opposed to the default reconstruction, you can ask for `h.calculate("raw(SFR_histogram)")`. The default data access `h['SFR_histogram']` or `h.calculate("SFR_histogram")`_ actually expands to something equivalent to `h.calculate("reassemble(SFR_histogram")`, and the default parameter to `reassemble` is `major`, which (as previously stated) sums only over the major progenitor branch.
+
 General Syntax Notes
 ------------
 - a given live calculation function, `f()`, returns a value using already calculated properties of a halo
@@ -52,56 +66,44 @@ General Syntax Notes
 - live calculation functions and link functions can be combined. For example, given a property function `F` and link function `L`, one can do L(...).F(...) where F will calcualte a property given the properties from the link function results and its own inputs.
 - live calculation functions can be nested, e.g. given `f1` and `f2`, `f1(5,f2(Mvir))` will return the value of `f1` given, as its second argument, the value of `f2` with the halo property `Mvir` as input.
 
-List of Useful Functions
------------
+List of Useful mini-language functions
+--------------------------------------
 Functions that return linked objects are denoted by "[Link]"
 
 Note that string inputs *must* have quotes when used, but property names do not need quotes.
 
-`at(r,property)`: returns value of property at radius r
-
-input:
-
-r (float, integer, or halo property): radius at which to take value
-
-property (halo property, must be a profile): target property to operate on
+* `at(r,property)`: returns value of property at radius r
+    Inputs:
+        - r (float, integer, or halo property): radius at which to take value
+        - property (halo property, must be a profile): target property to operate on
+        
   
-`Vvir()`: returns virial velocity of halo
+* `Vvir()`: returns virial velocity of halo
+* `halo_number()`:returns halo number of target halo
+* `t()`: returns simulation time of target halo
+* `NDM()`: returns number of DM particles in halo
+* `NStar()`: returns number of star particles in halo
+* `Ngas()`: returns number of gas particles in halo
+*  **[link]** `earlier(n)`: returns main progenitor halo n snapshots previous to current snapshot
+    Inputs:
+        - n (integer): number of snapshots
+* **[link]** `later(n)`: returns descendant halo n snapshots forward in time 
+    Inputs:
+        - n (integer): number of snapshots
+ 
+* **[Link]** `bh(BH_property, minmax, bhtype)`: returns a black hole object from a halo chosen based on having the max/min of the given BH_property 
+   Inputs:
+       - *BH_property* (string) : black hole property (default is "BH_mass")
+       - *minmax* (string): either "min" or "max" (default is "max")
+       - *bhtype* (string): either "BH" or "BH_central" (default is "BH_central")
 
-`halo_number()`:returns halo number of target halo
-
-  
-`t()`: returns simulation time of target halo
-  
-`NDM()`: returns number of DM particles in halo
-
-`NStar()`: returns number of star particles in halo
-
-`Ngas()`: returns number of gas particles in halo
-
-`earlier(n)`: returns main progenitor halo n snapshots previous to current snapshot [link]
-
-inputs:
-
-n (integer): number of snapshots
-  	
-`later(n)`: returns descendant halo n snapshots forward in time [link]
-
-inputs:
-
-n (integer): number of snapshots
-  
-`bh(BH_property, minmax, bhtype)`: returns a black hole object from a halo chosen based on having the max/min of the given BH_property [link]
-
-inputs:
-
-BH_property(string) : black hole property (default is "BH_mass")
-
-minmax (string): either "min" or "max" (default is "max")
-
-bhtype (string): either "BH" or "BH_central" (default is "BH_central")
-
-
-`bh_host()`: returns host halo of a given black hole [link]
+* `raw(property)`: returns the raw value as stored in the database. Currently only used for histogram properties; see discussion of these above.
+  Inputs:
+     - *property* (halo property)
+     
+* `reassemble(property, ...)`: controls the way the raw value is turned into a science-ready value. Currently only used for histogram properties; see discussion of these above.
+    Inputs:
+     - *property* (halo property)
+     - *...* followed by zero or more string, float or integer arguments that get passed to python `reassemble` function for the appropriate property
 
 

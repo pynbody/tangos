@@ -1,5 +1,5 @@
 import halo_db as db
-import halo_db.halo_finder as halo_finder
+import halo_db.relation_finding_strategies as relation_finding_strategies
 
 def setup():
     db.init_db("sqlite://")
