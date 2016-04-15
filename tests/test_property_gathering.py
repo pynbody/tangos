@@ -4,10 +4,12 @@ import numpy.testing as npt
 import properties
 from halo_db import testing
 from halo_db.testing import add_symmetric_link
-
+import os
 
 def setup():
-    db.init_db("sqlite://")
+    # This DB cannot be in RAM -- otherwise connections tests do not work (as only one connection is ever
+    # created to a RAM database)
+    db.init_db("sqlite:///temporary_testing.db")
 
     session = db.core.internal_session
 
@@ -93,7 +95,8 @@ def setup():
 
     db.core.internal_session.commit()
 
-
+def teardown():
+    os.remove("temporary_testing.db")
 
 class TestProperty(properties.LiveHaloProperties):
     @classmethod
@@ -256,3 +259,18 @@ def test_earlier():
     ts3_halos, ts1_halos = db.get_timestep("sim/ts3").gather_property('dbid()', 'earlier(2).dbid()')
     testing.assert_halolists_equal(ts1_halos, ['sim/ts1/1', 'sim/ts1/2', 'sim/ts1/3', 'sim/ts1/1.1'])
     testing.assert_halolists_equal(ts3_halos, ['sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts3/1.1'])
+
+
+def test_cascade_closes_connections():
+    h = db.get_halo("sim/ts3/1")
+    with db.testing.assert_connections_all_closed():
+        h.reverse_property_cascade("Mvir")
+
+def test_redirection_cascade_closes_connections():
+    h = db.get_halo("sim/ts3/1")
+    with db.testing.assert_connections_all_closed():
+        h.reverse_property_cascade("my_BH('hole_spin').hole_mass")
+
+def test_gather_closes_connections():
+     with db.testing.assert_connections_all_closed():
+        db.get_timestep("sim/ts1").gather_property('Mvir')

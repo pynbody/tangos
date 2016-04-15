@@ -88,18 +88,21 @@ class Calculation(object):
     def _generate_dict_ids_and_levels(self):
         if not hasattr(self, "_r_dict_ids_cached"):
             session = core.Session()
-            self._r_dict_ids_cached = set()
-            self._r_dict_ids_essential_cached = set()
-            retrieves = self.retrieves()
             try:
-                self._n_join_levels = max([r.count('.') for r in retrieves])+1
-            except ValueError:
-                self._n_join_levels = 0
-            for r in retrieves:
-                r_split = r.split(".")
-                for w in r_split:
-                    self._r_dict_ids_cached.add(core.get_dict_id(w,session=session))
-                self._r_dict_ids_essential_cached.add(core.get_dict_id(r_split[0],session=session))
+                self._r_dict_ids_cached = set()
+                self._r_dict_ids_essential_cached = set()
+                retrieves = self.retrieves()
+                try:
+                    self._n_join_levels = max([r.count('.') for r in retrieves])+1
+                except ValueError:
+                    self._n_join_levels = 0
+                for r in retrieves:
+                    r_split = r.split(".")
+                    for w in r_split:
+                        self._r_dict_ids_cached.add(core.get_dict_id(w,session=session))
+                    self._r_dict_ids_essential_cached.add(core.get_dict_id(r_split[0],session=session))
+            finally:
+                session.close()
 
     def values_and_description(self, halos):
         """Return the values of this calculation, as well as a HaloProperties object describing the
@@ -468,15 +471,18 @@ class Link(Calculation):
         # a different set of properties has been loaded into all_properties
         new_session = core.Session()
 
-        with thl.temporary_halolist_table(new_session, target_halo_ids_weeded) as tab:
-            target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
+        try:
+            with thl.temporary_halolist_table(new_session, target_halo_ids_weeded) as tab:
+                target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
 
-            # sqlalchemy's deduplication means we are now missing any halos that appear more than once in
-            # target_halos_ids_weeded. But we actually want the duplication.
-            target_halos_supplemented_with_duplicates = \
-                self._add_entries_for_duplicates(target_halos_supplemented, target_halo_ids_weeded)
+                # sqlalchemy's deduplication means we are now missing any halos that appear more than once in
+                # target_halos_ids_weeded. But we actually want the duplication.
+                target_halos_supplemented_with_duplicates = \
+                    self._add_entries_for_duplicates(target_halos_supplemented, target_halo_ids_weeded)
 
-            values, description = self.property.values_and_description(target_halos_supplemented_with_duplicates)
+                values, description = self.property.values_and_description(target_halos_supplemented_with_duplicates)
+        finally:
+            new_session.connection().close()
 
         results[:,results_target[0]] = values
 
@@ -513,7 +519,7 @@ class StoredProperty(Calculation):
         return {self._name}
 
     def values(self, halos):
-        self._name_id = core.get_dict_id(self._name,session=core.Session())
+        self._name_id = core.get_dict_id(self._name)
         ret = np.empty((1,len(halos)),dtype=object)
         for i, h in enumerate(halos):
             if self._extraction_pattern.cache_contains(h, self._name_id):
