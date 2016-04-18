@@ -740,11 +740,14 @@ class Halo(Base):
         # must be performed in its own session as we intentionally load in a lot of
         # objects with incomplete lazy-loaded properties
         session = Session()
-        with strategy(get_halo(self.id, session), nhops_max=nmax, include_startpoint=True).temp_table() as tt:
-            raw_query = thl.halo_query(tt)
-            query = property_description.supplement_halo_query(raw_query)
-            results = query.all()
-            return property_description.values_sanitized(results)
+        try:
+            with strategy(get_halo(self.id, session), nhops_max=nmax, include_startpoint=True).temp_table() as tt:
+                raw_query = thl.halo_query(tt)
+                query = property_description.supplement_halo_query(raw_query)
+                results = query.all()
+                return property_description.values_sanitized(results)
+        finally:
+            session.close()
 
     def reverse_property_cascade(self, *plist, **kwargs):
         """Run the specified calculations on the progenitors of this halo
@@ -1016,9 +1019,12 @@ def get_dict_id(text, default=None, session=None):
 
 
     if session is None:
-        session = internal_session
-
-    _dict_id = _get_dict_cache_for_session(session)
+        session = Session()
+        _dict_id = _get_dict_cache_for_session(internal_session)
+        close_session=True
+    else:
+        _dict_id = _get_dict_cache_for_session(session)
+        close_session=False
 
     try:
         return _dict_id[text]
@@ -1031,6 +1037,9 @@ def get_dict_id(text, default=None, session=None):
                 raise
             else:
                 return default
+        finally:
+            if close_session:
+                session.close()
 
         if obj is None:
             if default is None:
@@ -1040,6 +1049,7 @@ def get_dict_id(text, default=None, session=None):
 
         _dict_id[text] = obj.id
         return obj.id
+
 
 def sim_query_from_name_list(names, session=None):
     if session == None:

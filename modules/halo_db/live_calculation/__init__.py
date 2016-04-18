@@ -1,3 +1,7 @@
+"""The live calculation system, used by Halo.calculate, Halo.property_cascade and TimeStep.gather_property.
+
+For more overview information, see live_calculation.md. """
+
 import warnings
 
 import numpy as np
@@ -8,8 +12,22 @@ from .. import core
 from .. import halo_data_extraction_patterns
 from .. import temporary_halolist as thl
 
+class UnknownValue(object):
+    """A dummy object returned by Calculation.proxy_value when the value of the calculation cannot be predicted"""
+    pass
+
 
 class Calculation(object):
+    """Represents a live-calculation to be performed on database objects.
+
+    A typical Calculation is composed of many different Calculation subclasses arranged in some form of tree.
+    For example A.B parses to Link(StoredProperty('A'), StoredProperty('B')) whereas
+                A.B() parses to Link(StoredProperty('A'), LiveProperty('B'))
+    and so on.
+
+    It is normally easiest to instantiate Calculation objects using the parser in
+    live_calculation.parser"""
+
     def __init__(self):
         self._extraction_pattern = halo_data_extraction_patterns.halo_property_value_getter
 
@@ -30,7 +48,7 @@ class Calculation(object):
         return set()
 
     def name(self):
-        """The name of this calculation, such that parse_property_name(name) generates a copy."""
+        """Returns the name of this calculation, formatted such that parser.parse_property_name(name) generates a copy."""
         return None
 
     def _has_required_properties(self, halo):
@@ -47,12 +65,15 @@ class Calculation(object):
         return all(property_is_present)
 
     def retrieves_dict_ids(self):
-        """Return the dictionary IDs of the named properties to be retrieved for each halo to
+        """Returns the dictionary IDs of the named properties to be retrieved for each halo to
         allow this calculation to run"""
         self._generate_dict_ids_and_levels()
         return self._r_dict_ids_cached
 
     def _essential_dict_ids(self):
+        """Returns the dictionary IDs of properties that must be present in a halo for the calculation to run.
+
+        If any of the required IDs are not present, the result of the calculation is assumed to be None"""
         self._generate_dict_ids_and_levels()
         return self._r_dict_ids_essential_cached
 
@@ -67,18 +88,21 @@ class Calculation(object):
     def _generate_dict_ids_and_levels(self):
         if not hasattr(self, "_r_dict_ids_cached"):
             session = core.Session()
-            self._r_dict_ids_cached = set()
-            self._r_dict_ids_essential_cached = set()
-            retrieves = self.retrieves()
             try:
-                self._n_join_levels = max([r.count('.') for r in retrieves])+1
-            except ValueError:
-                self._n_join_levels = 0
-            for r in retrieves:
-                r_split = r.split(".")
-                for w in r_split:
-                    self._r_dict_ids_cached.add(core.get_dict_id(w,session=session))
-                self._r_dict_ids_essential_cached.add(core.get_dict_id(r_split[0],session=session))
+                self._r_dict_ids_cached = set()
+                self._r_dict_ids_essential_cached = set()
+                retrieves = self.retrieves()
+                try:
+                    self._n_join_levels = max([r.count('.') for r in retrieves])+1
+                except ValueError:
+                    self._n_join_levels = 0
+                for r in retrieves:
+                    r_split = r.split(".")
+                    for w in r_split:
+                        self._r_dict_ids_cached.add(core.get_dict_id(w,session=session))
+                    self._r_dict_ids_essential_cached.add(core.get_dict_id(r_split[0],session=session))
+            finally:
+                session.close()
 
     def values_and_description(self, halos):
         """Return the values of this calculation, as well as a HaloProperties object describing the
@@ -94,7 +118,6 @@ class Calculation(object):
 
     def value(self, halo):
         """Return the value of this calculation applied to the given halo"""
-
         return self.values([halo])[:,0]
 
     def value_sanitized(self, halo):
@@ -128,6 +151,9 @@ class Calculation(object):
             return np.array(x, dtype=type(x[0]))
 
     def n_columns(self):
+        """Return the number of separate properties returned for each halo.
+
+        The return from values_sanitized has shape n_columns() x n_halos"""
         return 1
 
     def supplement_halo_query(self, halo_query):
@@ -169,6 +195,7 @@ class Calculation(object):
 
 
 class MultiCalculation(Calculation):
+    """Represents a single calculation that returns the results from multiple sub-calculations."""
     def __init__(self, *calculations):
         super(MultiCalculation, self).__init__()
         self.calculations = [c if isinstance(c, Calculation) else parser.parse_property_name(c) for c in calculations]
@@ -197,6 +224,7 @@ class MultiCalculation(Calculation):
 
 
 class FixedInput(Calculation):
+    """Represents a calculation that returns a fixed value"""
     def __init__(self, *tokens):
         super(FixedInput, self).__init__()
         self.value = str(tokens[0])
@@ -213,10 +241,8 @@ class FixedInput(Calculation):
     def proxy_value(self):
         return self.value
 
-class UnknownValue(object):
-    pass
-
 class FixedNumericInput(FixedInput):
+    """Represents a calculation that returns a fixed numerical value"""
     def __init__(self, *tokens):
         super(FixedNumericInput, self).__init__()
 
@@ -234,6 +260,7 @@ class FixedNumericInput(FixedInput):
         return str(self.value)
 
 class LiveProperty(Calculation):
+    """Represents a calculation that is achieved by executing the live_calculate method of a Properties instance"""
     def __new__(cls, *tokens):
         if BuiltinFunction.has_function(str(tokens[0])):
             return object.__new__(BuiltinFunction, *tokens)
@@ -310,6 +337,8 @@ class LiveProperty(Calculation):
         return UnknownValue()
 
 class BuiltinFunction(LiveProperty):
+    """Represents a calculation that is achieved by executing a python function. See the builtin_functions module."""
+
     __registered_functions = {}
     __default_args = {'provide_proxy': False, 'assert_class': None}
 
@@ -391,6 +420,7 @@ class BuiltinFunction(LiveProperty):
 
 
 class Link(Calculation):
+    """Represents a calculation to be made on a halo linked to the input in some way"""
     def __init__(self, *tokens):
         super(Link, self).__init__()
         self.locator = tokens[0]
@@ -441,15 +471,18 @@ class Link(Calculation):
         # a different set of properties has been loaded into all_properties
         new_session = core.Session()
 
-        with thl.temporary_halolist_table(new_session, target_halo_ids_weeded) as tab:
-            target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
+        try:
+            with thl.temporary_halolist_table(new_session, target_halo_ids_weeded) as tab:
+                target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
 
-            # sqlalchemy's deduplication means we are now missing any halos that appear more than once in
-            # target_halos_ids_weeded. But we actually want the duplication.
-            target_halos_supplemented_with_duplicates = \
-                self._add_entries_for_duplicates(target_halos_supplemented, target_halo_ids_weeded)
+                # sqlalchemy's deduplication means we are now missing any halos that appear more than once in
+                # target_halos_ids_weeded. But we actually want the duplication.
+                target_halos_supplemented_with_duplicates = \
+                    self._add_entries_for_duplicates(target_halos_supplemented, target_halo_ids_weeded)
 
-            values, description = self.property.values_and_description(target_halos_supplemented_with_duplicates)
+                values, description = self.property.values_and_description(target_halos_supplemented_with_duplicates)
+        finally:
+            new_session.connection().close()
 
         results[:,results_target[0]] = values
 
@@ -470,10 +503,11 @@ class Link(Calculation):
 
 
 class StoredProperty(Calculation):
+    """Represents a named property with value stored in the database"""
+
     def __init__(self, *tokens):
         super(StoredProperty,self).__init__()
         self._name = tokens[0]
-
 
     def __str__(self):
         return self._name
@@ -485,7 +519,7 @@ class StoredProperty(Calculation):
         return {self._name}
 
     def values(self, halos):
-        self._name_id = core.get_dict_id(self._name,session=core.Session())
+        self._name_id = core.get_dict_id(self._name)
         ret = np.empty((1,len(halos)),dtype=object)
         for i, h in enumerate(halos):
             if self._extraction_pattern.cache_contains(h, self._name_id):
@@ -502,7 +536,6 @@ class StoredProperty(Calculation):
     def proxy_value(self):
         """Return a placeholder value for this calculation"""
         return UnknownValue()
-
 
 
 
