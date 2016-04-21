@@ -1,7 +1,9 @@
 This repository contains the complete code for the halo database, which ingests runs and calculates various properties of the halos (including profiles, images etc) then exposes them through a python interface and webserver.
 
 Before you start
--------------------------------------
+----------------
+**The database is experimental technology. Please offer Andrew and Michael coauthorship on papers where you find it useful, in recognition of the very substantial development effort. The plan is to ultimately make it open source and citable, but until then we'd appreciate your support.**
+
 For the database to function properly, you must first source the `environment.sh` (or environment.csh, if working in a cshell) files, which specify the appropriate paths. Sourcing the environment file also reads the user-made file called `environment_local.sh` (or csh). This file doesn't exist by default, but should be created/edited whenever you wish to analyze a new database file.
 
 The `environment_local.sh` file should only include the following lines
