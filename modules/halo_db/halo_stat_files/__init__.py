@@ -134,10 +134,6 @@ class HaloStatFile(object):
 class AHFStatFile(HaloStatFile):
     _id_offset = 1
 
-    @staticmethod
-    def _ndm(n_gas, n_star, npart):
-        return npart - n_gas - n_star
-
     _column_translations = {'n_dm': translations.Function(lambda ngas, nstar, npart: npart-ngas-nstar,
                                                           'n_gas', 'n_star', 'npart')}
 
