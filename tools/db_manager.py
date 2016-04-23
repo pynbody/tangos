@@ -471,7 +471,17 @@ def flag_duplicates_deprecated(opts):
 
 def remove_duplicates(opts):
     flag_duplicates_deprecated(None)
-    print "delete    :",db.core.internal_session.execute("delete from haloproperties where deprecated=1").rowcount
+    count = 1
+    while count>0:
+        # Order of name_id, halo_id in group clause below is important for optimisation - halo_id, name_id
+        # does *not* match the index.
+        count = db.core.internal_session.execute("delete from haloproperties where haloproperties.id in "
+                                                 "(SELECT min(id) FROM haloproperties "
+                                                 "    GROUP BY name_id, halo_id HAVING COUNT(halo_id)>1);").rowcount
+        if count>0 :
+            print "Deleted %d rows"%count
+            print "  checking for further duplicates..."
+    print "Done"
     db.core.internal_session.commit()
 
 
