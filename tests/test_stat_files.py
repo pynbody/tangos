@@ -1,5 +1,8 @@
 import halo_db as db
 import os
+
+import halo_db.core.simulation
+import halo_db.core.timestep
 import halo_db.halo_stat_files as stat
 import numpy as np
 import numpy.testing as npt
@@ -11,14 +14,14 @@ def setup():
 
     session = db.core.internal_session
 
-    sim = db.Simulation("test_stat_files")
+    sim = halo_db.core.simulation.Simulation("test_stat_files")
     session.add(sim)
 
-    ts1 = db.TimeStep(sim, "pioneer50h128.1536gst1.bwK1.000832", False)
+    ts1 = halo_db.core.timestep.TimeStep(sim, "pioneer50h128.1536gst1.bwK1.000832", False)
     ts1.time_gyr = 6  # unimportant
     ts1.redshift = 2.323  # matters for AHF filename
 
-    ts2 = db.TimeStep(sim,"h242.cosmo50PLK.1536g1bwK1C52.004096",False)
+    ts2 = halo_db.core.timestep.TimeStep(sim, "h242.cosmo50PLK.1536g1bwK1C52.004096", False)
     ts2.time_gyr = 10
     ts2.redshift = 0
 

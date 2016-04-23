@@ -3,6 +3,8 @@
 
 import halo_db as db
 import argparse
+
+import halo_db.core.timestep
 from halo_db import parallel_tasks, crosslink
 
 
@@ -51,8 +53,8 @@ def run():
     pairs = []
 
     for x in base_sim:
-        ts = db.core.internal_session.query(db.TimeStep).filter_by(
-            simulation_id=x.id, available=True).order_by(db.TimeStep.redshift.desc()).all()
+        ts = db.core.internal_session.query(halo_db.core.timestep.TimeStep).filter_by(
+            simulation_id=x.id, available=True).order_by(halo_db.core.timestep.TimeStep.redshift.desc()).all()
         for a, b in zip(ts[:-1], ts[1:]):
             pairs.append((a, b))
 

@@ -1,5 +1,9 @@
 import os
 import numpy as np
+
+import halo_db.core.dictionary
+import halo_db.core.halo
+import halo_db.core.halo_data
 from . import translations
 from .. import core
 import sqlalchemy
@@ -103,7 +107,7 @@ class HaloStatFile(object):
         halos = []
         for num, NDM, Nstar, Ngas in self.iter_rows("n_dm", "n_star", "n_gas"):
             if NDM > min_NDM:
-                h = core.Halo(self._timestep, num, NDM, Nstar, Ngas)
+                h = halo_db.core.halo.Halo(self._timestep, num, NDM, Nstar, Ngas)
                 halos.append(h)
         return halos
 
@@ -120,13 +124,13 @@ class HaloStatFile(object):
 
         session = core.Session.object_session(self._timestep)
 
-        property_db_names = [core.get_or_create_dictionary_item(session, name) for name in property_names]
+        property_db_names = [halo_db.core.dictionary.get_or_create_dictionary_item(session, name) for name in property_names]
         property_objects = []
         for values in self.iter_rows(*property_names):
             halo = halos_map.get(values[0], None)
             if halo is not None:
                 for name_object, value in zip(property_db_names, values[1:]):
-                    property_objects.append(core.HaloProperty(halo, name_object, value))
+                    property_objects.append(halo_db.core.halo_data.HaloProperty(halo, name_object, value))
 
         session.add_all(property_objects)
 

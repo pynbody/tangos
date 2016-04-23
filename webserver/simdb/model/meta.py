@@ -10,6 +10,9 @@ Session = scoped_session(sessionmaker())
 # The declarative Base
 Base = declarative_base()
 
-from halo_db import DictionaryItem, Creator, Simulation, TimeStep, Halo, HaloLink, HaloProperty, ArrayPlotOptions, SimulationProperty
+from halo_db.core import DictionaryItem, Simulation, TimeStep, Halo, HaloLink, HaloProperty
+from halo_db.core.stored_options import ArrayPlotOptions
+from halo_db.core.simulation import SimulationProperty
+from halo_db.core import Creator, Simulation, TimeStep, Halo, HaloProperty, HaloLink
 from sqlalchemy import and_,or_,not_
 

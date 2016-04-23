@@ -6,6 +6,11 @@ import string
 import random
 import contextlib
 import sys
+
+import halo_db.core.halo
+import halo_db.core.halo_data
+import halo_db.core.simulation
+import halo_db.core.timestep
 from . import consistent_collection
 import time
 import logging
@@ -27,13 +32,13 @@ class HopStrategy(object):
     def __init__(self, halo_from, target=None, order_by=None):
         """Construct a HopStrategy starting from the specified halo"""
         query = halo_from.links
-        assert isinstance(halo_from, core.Halo)
+        assert isinstance(halo_from, halo_db.core.halo.Halo)
         assert isinstance(query, sqlalchemy.orm.query.Query)
         self.session = Session.object_session(halo_from)
         self.halo_from = halo_from
         self._initialise_order_by(order_by)
         self.query = query
-        self._link_orm_class = core.HaloLink
+        self._link_orm_class = halo_db.core.halo_data.HaloLink
         self._target = target
         self._all = None
 
@@ -42,19 +47,20 @@ class HopStrategy(object):
         if ts is None:
             self.query = self.query.filter(0 == 1)
         else:
-            self.query = self.query.join("halo_to").filter(core.Halo.timestep_id == ts.id)
+            self.query = self.query.join("halo_to").filter(halo_db.core.halo.Halo.timestep_id == ts.id)
 
     def _target_simulation(self, sim):
         """Only return those hops which reach the specified simulation"""
-        self.query = self.query.join("halo_to", "timestep").filter(core.TimeStep.simulation_id == sim.id)
+        self.query = self.query.join("halo_to", "timestep").filter(
+            halo_db.core.timestep.TimeStep.simulation_id == sim.id)
 
     def _filter_query_for_target(self, db_obj):
         """Only return those hops which reach the specifid simulation or timestep"""
         if db_obj is None:
             return
-        elif isinstance(db_obj, core.TimeStep):
+        elif isinstance(db_obj, halo_db.core.timestep.TimeStep):
             self._target_timestep(db_obj)
-        elif isinstance(db_obj, core.Simulation):
+        elif isinstance(db_obj, halo_db.core.simulation.Simulation):
             self._target_simulation(db_obj)
         else:
             raise ValueError("Unknown target type")
@@ -169,8 +175,8 @@ class HopStrategy(object):
         timestep_alias = None
         halo_alias = None
         if self._ordering_requires_join():
-            timestep_alias = sqlalchemy.orm.aliased(core.TimeStep)
-            halo_alias = sqlalchemy.orm.aliased(core.Halo)
+            timestep_alias = sqlalchemy.orm.aliased(halo_db.core.timestep.TimeStep)
+            halo_alias = sqlalchemy.orm.aliased(halo_db.core.halo.Halo)
             query = query.join(halo_alias, self._link_orm_class.halo_to).join(timestep_alias)
 
         query = query.order_by(*self._order_by_clause(halo_alias, timestep_alias))
@@ -203,10 +209,10 @@ class MultiHopStrategy(HopStrategy):
     """An extension of the HopStrategy class that takes multiple hops across
     HaloLinks, up to a specified maximum, before finding the target halo."""
 
-    halo_old = sqlalchemy.orm.aliased(core.Halo, name="halo_old")
-    halo_new = sqlalchemy.orm.aliased(core.Halo, name="halo_new")
-    timestep_old = sqlalchemy.orm.aliased(core.TimeStep, name="timestep_old")
-    timestep_new = sqlalchemy.orm.aliased(core.TimeStep, name="timestep_new")
+    halo_old = sqlalchemy.orm.aliased(halo_db.core.halo.Halo, name="halo_old")
+    halo_new = sqlalchemy.orm.aliased(halo_db.core.halo.Halo, name="halo_new")
+    timestep_old = sqlalchemy.orm.aliased(halo_db.core.timestep.TimeStep, name="timestep_old")
+    timestep_new = sqlalchemy.orm.aliased(halo_db.core.timestep.TimeStep, name="timestep_new")
 
     def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, directed=None, target=None,
                  order_by=None, combine_routes=True, min_aggregated_weight=0.0,
@@ -306,15 +312,15 @@ class MultiHopStrategy(HopStrategy):
         return [[int(y) for y in x.nodes.split(",")] for x in self._get_query_all()]
 
     def nodes(self):
-        return _recursive_map_ids_to_objects(self.node_ids(), core.Halo, self.session)
+        return _recursive_map_ids_to_objects(self.node_ids(), halo_db.core.halo.Halo, self.session)
 
     def links(self):
-        return _recursive_map_ids_to_objects(self.link_ids(), core.HaloLink, self.session)
+        return _recursive_map_ids_to_objects(self.link_ids(), halo_db.core.halo_data.HaloLink, self.session)
 
     def _supplement_halolink_query_with_filter(self, query, table=None):
 
         if table is None:
-            table = core.HaloLink.__table__
+            table = halo_db.core.halo_data.HaloLink.__table__
 
         if self._needs_join_for_link_filter():
             query = query. \
@@ -419,11 +425,11 @@ class MultiHopStrategy(HopStrategy):
         if self._store_full_paths:
             links = self._table.c.links + \
                     sqlalchemy.literal(",") + \
-                    sqlalchemy.cast(core.HaloLink.id, sqlalchemy.String)
+                    sqlalchemy.cast(halo_db.core.halo_data.HaloLink.id, sqlalchemy.String)
 
             nodes = self._table.c.nodes + \
                     sqlalchemy.literal(",") + \
-                    sqlalchemy.cast(core.HaloLink.halo_to_id, sqlalchemy.String)
+                    sqlalchemy.cast(halo_db.core.halo_data.HaloLink.halo_to_id, sqlalchemy.String)
 
             links = sqlalchemy.literal("(") + links + sqlalchemy.literal(")")
             nodes = sqlalchemy.literal("(") + nodes + sqlalchemy.literal(")")
@@ -435,26 +441,26 @@ class MultiHopStrategy(HopStrategy):
             links = sqlalchemy.literal("")
             nodes = sqlalchemy.literal("")
 
-        new_weight = self._table.c.weight * core.HaloLink.weight
+        new_weight = self._table.c.weight * halo_db.core.halo_data.HaloLink.weight
 
         if self._combine_routes:
             new_weight = sqlalchemy.func.max(new_weight)
 
         recursion_query = \
             self.session.query(
-                core.HaloLink.halo_from_id,
-                core.HaloLink.halo_to_id.label("halo_to_id"),
+                halo_db.core.halo_data.HaloLink.halo_from_id,
+                halo_db.core.halo_data.HaloLink.halo_to_id.label("halo_to_id"),
                 new_weight,
                 (self._table.c.nhops + sqlalchemy.literal(1)).label("nhops"),
                 links, nodes, self._table.c.source_id). \
                 select_from(self._table). \
-                join(core.HaloLink, and_(self._table.c.nhops == from_nhops,
-                                         self._table.c.halo_to_id == core.HaloLink.halo_from_id)). \
-                filter(core.HaloLink.weight > self._min_onehop_weight
+                join(halo_db.core.halo_data.HaloLink, and_(self._table.c.nhops == from_nhops,
+                                                           self._table.c.halo_to_id == halo_db.core.halo_data.HaloLink.halo_from_id)). \
+                filter(halo_db.core.halo_data.HaloLink.weight > self._min_onehop_weight
                        )
 
         if self._combine_routes:
-            recursion_query = recursion_query.group_by(core.HaloLink.halo_to_id,self._table.c.source_id)
+            recursion_query = recursion_query.group_by(halo_db.core.halo_data.HaloLink.halo_to_id, self._table.c.source_id)
 
         insert = self._prelim_table.insert().from_select(
             ['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'links', 'nodes', 'source_id'],
@@ -487,8 +493,8 @@ class MultiHopStrategy(HopStrategy):
 
         class MultiHopHaloLink(core.Base):
             __table__ = self._table
-            halo_from = relationship(core.Halo, primaryjoin=self._table.c.halo_from_id == core.Halo.id)
-            halo_to = relationship(core.Halo, primaryjoin=(self._table.c.halo_to_id == core.Halo.id))
+            halo_from = relationship(halo_db.core.halo.Halo, primaryjoin=self._table.c.halo_from_id == halo_db.core.halo.Halo.id)
+            halo_to = relationship(halo_db.core.halo.Halo, primaryjoin=(self._table.c.halo_to_id == halo_db.core.halo.Halo.id))
 
         self._link_orm_class = MultiHopHaloLink
 
@@ -525,9 +531,9 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         self._all_halo_from = halos_from
 
     def _infer_direction(self, halos_from, target):
-        if isinstance(target, core.Simulation):
+        if isinstance(target, halo_db.core.simulation.Simulation):
             return "across"
-        elif isinstance(target, core.TimeStep):
+        elif isinstance(target, halo_db.core.timestep.TimeStep):
             collected_halos = consistent_collection.ConsistentCollection(halos_from)
             if collected_halos.timestep.simulation_id!=target.simulation_id:
                 return "across"

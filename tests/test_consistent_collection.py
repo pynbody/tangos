@@ -2,6 +2,10 @@ from nose.tools import assert_raises
 
 import halo_db as db
 import halo_db.consistent_collection as cc
+import halo_db.core.halo
+import halo_db.core.simulation
+import halo_db.core.timestep
+
 
 def setup():
     global sim1, sim2, collection, h1, h2
@@ -9,12 +13,12 @@ def setup():
 
     session = db.core.internal_session
 
-    sim1 = db.Simulation("sim1")
-    sim2 = db.Simulation("sim2")
-    ts1 = db.TimeStep(sim1, "ts", autoload=False)
-    h1  = db.Halo(ts1, 1,1000,0,0,0)
-    ts2 = db.TimeStep(sim2, "ts", autoload=False)
-    h2  = db.Halo(ts2, 1,1000,0,0,0)
+    sim1 = halo_db.core.simulation.Simulation("sim1")
+    sim2 = halo_db.core.simulation.Simulation("sim2")
+    ts1 = halo_db.core.timestep.TimeStep(sim1, "ts", autoload=False)
+    h1  = halo_db.core.halo.Halo(ts1, 1, 1000, 0, 0, 0)
+    ts2 = halo_db.core.timestep.TimeStep(sim2, "ts", autoload=False)
+    h2  = halo_db.core.halo.Halo(ts2, 1, 1000, 0, 0, 0)
 
     session.add_all([sim1,sim2,ts1,ts2,h1,h2])
 

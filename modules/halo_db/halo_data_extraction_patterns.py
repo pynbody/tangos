@@ -17,6 +17,9 @@ instantiated when required.
 
 import sqlalchemy
 
+
+
+
 class HaloPropertyGetter(object):
     def use_fixed_cache(self, halo):
         return 'all_properties' not in sqlalchemy.inspect(halo).unloaded
@@ -68,8 +71,9 @@ class HaloPropertyGetter(object):
         :type property_id: int
         :type session: sqlalchemy.orm.session.Session"""
         from . import core
-        query_properties = session.query(core.HaloProperty).filter_by(name_id=property_id, halo_id=halo.id,
-                                                                 deprecated=False).order_by(core.HaloProperty.id.desc())
+        query_properties = session.query(core.halo_data.HaloProperty).filter_by(name_id=property_id, halo_id=halo.id,
+                                                                                        deprecated=False).order_by(
+            core.halo_data.HaloProperty.id.desc())
 
         return self._postprocess(query_properties.all())
 
@@ -79,8 +83,8 @@ class HaloPropertyGetter(object):
 
     def keys_from_session(self, halo, session):
         from . import core
-        query_properties = session.query(core.HaloProperty).filter_by(halo_id=halo.id,
-                                                                      deprecated=False)
+        query_properties = session.query(core.halo_data.HaloProperty).filter_by(halo_id=halo.id,
+                                                                                        deprecated=False)
         return [x.name.text for x in query_properties.all()]
 
     def cache_contains(self, halo, property_id):
@@ -135,7 +139,7 @@ class HaloLinkGetter(HaloPropertyGetter):
 
     def get_from_session(self, halo, property_id, session):
         from . import core
-        query_links = session.query(core.HaloLink).filter_by(relation_id=property_id, halo_from_id=halo.id)
+        query_links = session.query(core.halo_data.HaloLink).filter_by(relation_id=property_id, halo_from_id=halo.id)
         return self._postprocess(query_links.all())
 
     def cache_contains(self, halo, property_id):
@@ -151,7 +155,7 @@ class HaloLinkGetter(HaloPropertyGetter):
 
     def keys_from_session(self, halo, session):
         from . import core
-        query_properties = session.query(core.HaloLink).filter_by(halo_from_id=halo.id)
+        query_properties = session.query(core.halo_data.HaloLink).filter_by(halo_from_id=halo.id)
         return [x.relation.text for x in query_properties.all()]
     
 halo_link_getter = HaloLinkGetter()
@@ -176,8 +180,8 @@ class ReverseHaloLinkGetter(HaloLinkGetter):
 
     def get_from_session(self, halo, property_id, session):
         from . import core
-        query_links = session.query(core.HaloLink).filter_by(relation_id=property_id,
-                                                             halo_to_id=halo.id)
+        query_links = session.query(core.halo_data.HaloLink).filter_by(relation_id=property_id,
+                                                                               halo_to_id=halo.id)
         return self._postprocess(query_links.all())
 
     def cache_contains(self, halo, property_id):

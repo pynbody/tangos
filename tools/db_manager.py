@@ -8,8 +8,10 @@ pynbody = None
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from halo_db import Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, \
-    Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo, config, halo_stat_files
+from halo_db import Simulation, TimeStep, Halo, Base, Creator, all_simulations, get_simulation, HaloProperty, HaloLink, get_halo, config, halo_stat_files
+from halo_db.core.tracking import TrackData
+from halo_db.core.simulation import SimulationProperty
+from halo_db.core import get_or_create_dictionary_item, Creator, Simulation, TimeStep, Halo, HaloProperty, HaloLink
 import halo_db as db
 from halo_db import core
 from terminalcontroller import term

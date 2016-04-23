@@ -24,7 +24,7 @@ class HaloProperties(object):
         """Initialise a HaloProperties calculation object
 
         :param simulation: The simulation from which the properties will be derived
-        :type simulation: halo_db.core.Simulation
+        :type simulation: halo_db.core.simulation.Simulation
         """
         self._simulation = simulation
 
@@ -127,7 +127,7 @@ class HaloProperties(object):
         :type pynbody_halo_data: pynbody.snapshot.SimSnap
 
         :param db_halo_entry: The database object associated with the halo, if available
-        :type db_halo_entry: halo_db.core.Halo
+        :type db_halo_entry: halo_db.core.halo.Halo
         :return: All properties as named by names()
         """
         raise NotImplementedError
@@ -136,7 +136,7 @@ class HaloProperties(object):
         """Calculate the result of a function, using the existing data in the database alone
 
         :param db_halo_entry: The database object associated with the halo
-        :type db_halo_entry: halo_db.core.Halo
+        :type db_halo_entry: halo_db.core.halo.Halo
 
         :param input_values: Input values for the function
         :return: All function values as named by self.name()
@@ -148,7 +148,7 @@ class HaloProperties(object):
 
         :param name: The name of the one property to return (which must be one of the values specified by self.name())
         :param db_halo_entry: The database object associated with the halo
-        :type db_halo_entry: halo_db.core.Halo
+        :type db_halo_entry: halo_db.core.halo.Halo
 
         :param input_values: Input values for the function
         :return: The single named value

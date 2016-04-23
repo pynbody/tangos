@@ -9,3 +9,5 @@ from sqlalchemy.orm.session import Session
 
 import core
 from .core import *
+
+core.init_db()
