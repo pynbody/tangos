@@ -65,7 +65,8 @@ One of the quickest ways to populate the database is to use what AHF already cal
 Mvir and Rvir columns from the `.AHF_halos` file. Then you simply type: `db_import_from_stat.py Mvir Rvir`. Now running
 `db_manager.py recent-runs 1` should show you what you just did:
 
-```Run ID =  141
+```
+Run ID =  141
 Command line =  /Users/app/Science/halo_database/tools//db_import_from_stat.py Mvir Rvir
 Host =  Rhododendron.local
 Username =  app
@@ -88,7 +89,7 @@ Hopefully that's fairly self-explanatory except maybe the `--backend null` bit, 
 The database checkpoints as it goes along (every few minutes or so). You can interrupt it when you feel like it and it'll automatically resume from where it got to. Once again, you can get a summary of progress with `db_manager.py recent-runs 1`, which will spit out something like this:
 
 ```
-Run ID =  141
+Run ID =  142
 Command line =  /Users/app/Science/halo_database/tools//db_writer.py SSC dm_density_profile --for h516.cosmo25cmb.3072g1MbwK1C52 --backend null
 Host =  Rhododendron.local
 Username =  app
