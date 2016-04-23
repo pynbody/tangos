@@ -213,11 +213,12 @@ class MultiCalculation(Calculation):
         results = np.empty((self.n_columns(),len(halos)), dtype=object)
         c_column = 0
         for c in self.calculations:
-            results[c_column:c_column+c.n_columns()] = c.values(halos)
+            values, description = c.values_and_description(halos)
+            results[c_column:c_column+c.n_columns()] = values
             c_column+=c.n_columns()
 
         # problem: there is no good description of multiple properties
-        return results, None
+        return results, description
 
     def n_columns(self):
         return sum(c.n_columns() for c in self.calculations)

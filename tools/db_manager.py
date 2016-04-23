@@ -9,10 +9,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from halo_db import Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, \
-    Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo, config, halo_stat_files as statfiles
+    Halo, Base, Creator, all_simulations, get_simulation, TrackData, HaloProperty, HaloLink, get_halo, config, halo_stat_files
 import halo_db as db
 from halo_db import core
-import halo_db.blocking_session
 from terminalcontroller import term
 
 
@@ -123,7 +122,7 @@ def add_halos(ts,max_gp=None):
     #    print term.GREEN, "  Halos already exist for", ts, term.NORMAL
     #    return
 
-    if not (add_halos_from_stat(ts) or add_halos_from_ahf_halos(ts)):
+    if not add_halos_from_stat(ts):
         print term.YELLOW, "  -- deriving from halo catalogue instead of .stat file (slower)", ts, term.NORMAL
         s = ts.filename
         f = ts.load()
@@ -149,38 +148,19 @@ def add_halos(ts,max_gp=None):
             except (ValueError, KeyError) as e:
                 pass
 
-def add_halos_from_ahf_halos(ts):
-    return add_halos_from_stat(ts, statfiles.ahf_stat_name(ts),
-                         '#ID', 'n_gas', 'n_star', None, 'npart', 1)
 
-def add_halos_from_stat(ts, extension='.amiga.stat', grp='Grp', ngas='N_gas', nstar='N_star',
-                        ndark = 'N_dark', ntot=None, id_offset=0):
+def add_halos_from_stat(ts):
     from terminalcontroller import term
-    s = ts.filename
-    try:
-        f = file(s + extension)
-    except IOError:
-        print term.YELLOW, "  No file", s+extension, term.NORMAL
-        return False
-    print term.GREEN,"  Found file",s+extension
-    header = [x.split("(")[0] for x in f.readline().split()]
-    gid_id = header.index(grp)
-    NGas_id = header.index(ngas)
-    NStar_id = header.index(nstar)
-    NDM_id = header.index(ndark or ntot)
-    for l in f:
-        s = l.split()
-        NDM_or_ntot = int(s[NDM_id])
-        Ngas = int(s[NGas_id])
-        Nstar = int(s[NStar_id])
-        if ntot:
-            NDM = NDM_or_ntot - Ngas - Nstar
-        else:
-            NDM = NDM_or_ntot
 
-        if NDM > 1000:
-            h = Halo(ts, int(s[gid_id])+id_offset, NDM,  Nstar, Ngas)
-            core.internal_session.add(h)
+    try:
+        statfile = halo_stat_files.HaloStatFile(ts)
+        print term.GREEN, ("  Adding halos using stat file %s"%statfile.filename), term.NORMAL
+    except IOError:
+        print term.YELLOW,"  No .stat file found", term.NORMAL
+        return False
+
+    statfile.add_halos()
+
     return True
 
 
