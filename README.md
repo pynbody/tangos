@@ -53,7 +53,7 @@ Time =  03/09/15 18:42
 >>>    1 simulations
 >>>    12 timesteps
 >>>    942 halos
->>> 8 simulation properties
+>>>    8 simulation properties
 ```
 
 It tells you how many simulations, timesteps, halos, and properties were added to the database by your command.

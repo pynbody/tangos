@@ -1306,8 +1306,8 @@ def init_db(db_uri=None, timeout=30, verbose=None):
 
 def use_blocking_session():
     global engine
-    from . import blocking_session
-    blocking_session.make_engine_blocking(engine)
+    from . import blocking
+    blocking.make_engine_blocking(engine)
 
 init_db()
 

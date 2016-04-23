@@ -361,7 +361,7 @@ class PlotController(BaseController):
                     p.semilogy()
 
                 if property_info.plot_xlabel() :
-                    p.xlabel(property_info.plot_xlabel()[index])
+                    p.xlabel(property_info.plot_xlabel())
 
                 if property_info.plot_ylabel() :
                     p.ylabel(property_info.plot_ylabel()[index])
