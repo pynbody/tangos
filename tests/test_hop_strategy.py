@@ -4,8 +4,7 @@ import halo_db as db
 import halo_db.relation_finding_strategies as halo_finding
 import halo_db.temporary_halolist as thl
 import halo_db.testing as testing
-import os
-import sqlalchemy, sqlalchemy.orm
+from nose.tools import assert_raises
 
 def setup():
     db.init_db("sqlite://")
@@ -204,6 +203,20 @@ def test_results_as_temptable():
         thl_results = thl.halo_query(table).all()
 
     assert standard_results==thl_results
+
+def test_temptable_exceptions():
+    strategy = halo_finding.MultiHopStrategy(db.get_item("sim/ts2/1"), 2, 'backwards')
+
+    class TestException(Exception):
+        pass
+
+    def raise_exception():
+        raise TestException
+
+    strategy._prepare_query = raise_exception
+    with assert_raises(TestException):
+        with strategy.temp_table() as table:
+            assert False, "This point should not be reached"
 
 def test_self_inclusion():
     # default: include_startpoint = False

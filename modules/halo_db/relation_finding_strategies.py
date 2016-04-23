@@ -5,6 +5,7 @@ from sqlalchemy import and_, Table, Column, String, Integer, Float, MetaData, Fo
 import string
 import random
 import contextlib
+import sys
 from . import consistent_collection
 import time
 import logging
@@ -268,7 +269,7 @@ class MultiHopStrategy(HopStrategy):
         try:
             self._prepare_query()
         except:
-            tt.__exit__()
+            tt.__exit__(*sys.exc_info())
             raise
         thl = temporary_halolist.temporary_halolist_table(self.session,
                                                           self._query_ordered.from_self(
