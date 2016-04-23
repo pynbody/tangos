@@ -1,6 +1,3 @@
-import halo_db.core.dictionary
-import halo_db.core.halo
-import halo_db.core.halo_data
 from . import core
 import sqlalchemy, sqlalchemy.event
 import contextlib
@@ -8,8 +5,8 @@ import gc
 import traceback
 
 def add_symmetric_link(h1, h2, weight=1.0):
-    rel = halo_db.core.dictionary.get_or_create_dictionary_item(core.internal_session, "ptcls_in_common")
-    core.internal_session.add_all([halo_db.core.halo_data.HaloLink(h1, h2, rel, weight), halo_db.core.halo_data.HaloLink(h2, h1, rel, weight)])
+    rel = core.dictionary.get_or_create_dictionary_item(core.internal_session, "ptcls_in_common")
+    core.internal_session.add_all([core.halo_data.HaloLink(h1, h2, rel, weight), core.halo_data.HaloLink(h2, h1, rel, weight)])
 
 
 def _as_halos(hlist, session=None):
@@ -17,7 +14,7 @@ def _as_halos(hlist, session=None):
         session = core.internal_session
     rvals = []
     for h in hlist:
-        if isinstance(h, halo_db.core.halo.Halo):
+        if isinstance(h, core.halo.Halo):
             rvals.append(h)
         else:
             rvals.append(core.get_halo(h, session))

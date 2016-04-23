@@ -1,6 +1,3 @@
-import halo_db.core.dictionary
-import halo_db.core.halo
-import halo_db.core.halo_data
 from . import core
 import traceback
 import sys
@@ -14,19 +11,19 @@ def get_halo_entry(ts, halo_number):
 
 def need_crosslink_ts(ts1,ts2,session=None):
     session = session or core.internal_session
-    same_d_id = halo_db.core.dictionary.get_or_create_dictionary_item(session, "ptcls_in_common").id
+    same_d_id = core.dictionary.get_or_create_dictionary_item(session, "ptcls_in_common").id
     sources = [h.id for h in ts1.halos.all()]
     targets = [h.id for h in ts2.halos.all()]
     if len(targets)==0 or len(sources)==0:
         print "--> no halos"
         return False
 
-    halo_source = sqlalchemy.orm.aliased(halo_db.core.halo.Halo, name="halo_source")
-    halo_target = sqlalchemy.orm.aliased(halo_db.core.halo.Halo, name="halo_target")
-    exists = session.query(halo_db.core.halo_data.HaloLink).join(halo_source, halo_db.core.halo_data.HaloLink.halo_from).\
-                                        join(halo_target, halo_db.core.halo_data.HaloLink.halo_to).\
+    halo_source = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_source")
+    halo_target = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_target")
+    exists = session.query(core.halo_data.HaloLink).join(halo_source, core.halo_data.HaloLink.halo_from).\
+                                        join(halo_target, core.halo_data.HaloLink.halo_to).\
                                         filter(halo_source.timestep_id == ts1.id, halo_target.timestep_id == ts2.id,
-                                               halo_db.core.halo_data.HaloLink.relation_id == same_d_id).count() > 0
+                                               core.halo_data.HaloLink.relation_id == same_d_id).count() > 0
 
     if exists:
         print "--> existing objects"
@@ -35,7 +32,7 @@ def need_crosslink_ts(ts1,ts2,session=None):
 
 def create_db_objects_from_catalog(cat, ts1, ts2, session=None):
     session = session or core.internal_session
-    same_d_id = halo_db.core.dictionary.get_or_create_dictionary_item(session, "ptcls_in_common")
+    same_d_id = core.dictionary.get_or_create_dictionary_item(session, "ptcls_in_common")
     items = []
     for i, possibilities in enumerate(cat):
         h1 = get_halo_entry(ts1,i)
@@ -44,7 +41,7 @@ def create_db_objects_from_catalog(cat, ts1, ts2, session=None):
 
             if h1 is not None and h2 is not None:
                 print i,cat_i,h1,h2,weight
-                items.append(halo_db.core.halo_data.HaloLink(h1, h2, same_d_id, weight))
+                items.append(core.halo_data.HaloLink(h1, h2, same_d_id, weight))
 
     with pt.RLock("create_db_objects_from_catalog"):
         session.add_all(items)
