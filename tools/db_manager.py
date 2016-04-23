@@ -4,16 +4,17 @@ import sys
 import glob
 import traceback
 import numpy as np
-pynbody = None
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from halo_db import Simulation, TimeStep, Halo, Base, Creator, all_simulations, get_simulation, HaloProperty, HaloLink, get_halo, config, halo_stat_files
+from halo_db import core
+from halo_db.core import Base, all_simulations, get_simulation, get_halo, config, get_or_create_dictionary_item, \
+    Creator, Simulation, TimeStep, Halo, HaloProperty, HaloLink
+from halo_db import halo_stat_files
 from halo_db.core.tracking import TrackData
 from halo_db.core.simulation import SimulationProperty
-from halo_db.core import get_or_create_dictionary_item, Creator, Simulation, TimeStep, Halo, HaloProperty, HaloLink
 import halo_db as db
-from halo_db import core
+
 from terminalcontroller import term
 
 
@@ -502,6 +503,8 @@ def rem_simulation_timesteps(options):
 
 def add_tracker(halo, size=None):
 
+    import pynbody
+
     try:
         halo = get_halo(halo)
     except:
@@ -623,6 +626,8 @@ def rollback(options):
         rem_run(run_id, not options.force)
 
 def dump_id(options):
+    import pynbody
+
     h = db.get_halo(options.halo).load()
 
     if options.sphere:
@@ -640,7 +645,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    db.supplement_argparser(parser)
+    core.supplement_argparser(parser)
     parser.add_argument("--verbose", action="store_true",
                         help="Print extra information")
 
@@ -692,87 +697,6 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
-    db.process_options(args)
-    db.init_db()
+    core.process_options(args)
+    core.init_db()
     args.func(args)
-
-    """
-
-
-    if "verbose" in sys.argv:
-        del sys.argv[sys.argv.index("verbose")]
-    if "db-verbose" in sys.argv:
-        del sys.argv[sys.argv.index("db-verbose")]
-
-
-    if len(sys.argv) <= 1:
-        print "halo_db.py can perform the following operations (mutually exclusively on each run):
-
-add <base_dir> - scan under base_dir for timesteps and add them under a new simulation
-rem <base_dir> - remove everything relating to simulation identified by base_dir
-rollback <run_id1> , <run_id2>, ...
-rollback <run_id_first> - <run_id_last_inclusive> [-f] - remove everything added by a particular process (prompts for confirmation)
-recent-runs <n> - list n most recent processes which modified the database
-deprecate - ensure the deprecation records of all halo properties are consistent
-grep-run - find runs with command line matching expression
-add-tracker <base_halo> - add a "tracker" halo to the simulation by tracking the DM particles in the centre of the specified existing halo
-copy-property <base_halo> <relationship> <property1> <property2> ...
-update-trackers - sync all timesteps references to halo trackers (useful after adding more timesteps)
-db-import <db> <sim> - import the simulation from the specified db file into the current main db
-db-export <db> <sim> - export the simulation from the default db into the mentioned file [NOT IMPLEMENTED]
-list-simulations - list all known simulations
-"
-        sys.exit(0)
-
-    if sys.argv[1] == "list-simulations":
-        for x in all_simulations():
-            print x.basename
-
-    if sys.argv[1] == "add":
-        for sim in sys.argv[2:]:
-            add_simulation_timesteps(sim, True)
-
-    if sys.argv[1] == "update-trackers":
-        update_tracker_halos(*sys.argv[2:])
-
-    if sys.argv[1] == "rem":
-        for sim in sys.argv[2:]:
-            rem_simulation_timesteps(sim)
-
-    if sys.argv[1] == "add-tracker":
-        add_tracker(*sys.argv[2:])
-
-    if sys.argv[1] == "rollback":
-        confirm = True
-        if "-f" in sys.argv:
-            confirm = False
-        if "-" in sys.argv:
-            dash = sys.argv.index("-")
-            for run_id in xrange(int(sys.argv[dash - 1]), int(sys.argv[dash + 1])):
-                rem_run(run_id, confirm)
-
-        for run_id in sys.argv[2:]:
-            rem_run(int(run_id),confirm)
-
-    if sys.argv[1] == "recent-runs":
-        list_recent_runs(int(sys.argv[2]))
-
-    if sys.argv[1] == "deprecate":
-        update_deprecation(internal_session)
-
-    if sys.argv[1] == "update":
-        update_simulations()
-
-    if sys.argv[1] == "grep-run":
-        grep_run(" ".join(sys.argv[2:]))
-
-    if sys.argv[1] == 'db-import':
-        db_import(*sys.argv[2:])
-
-    if sys.argv[1] == 'db-export':
-        db_export(*sys.argv[2:])
-
-    if sys.argv[1] == 'copy-property':
-        copy_property(*sys.argv[2:])
-
-    """
