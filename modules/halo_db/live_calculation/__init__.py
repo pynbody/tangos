@@ -291,6 +291,7 @@ class LiveProperty(Calculation):
         return result
 
     def _calculation_retrieves(self):
+        import properties
         result = set()
         proxy_values = [i.proxy_value() for i in self._inputs]
         providing_instance = properties.providing_class(self._name)(None, *proxy_values)
