@@ -58,14 +58,30 @@ Time =  03/09/15 18:42
 
 It tells you how many simulations, timesteps, halos, and properties were added to the database by your command.
 
-Populating the database
+Copying AHF properties into the database
+----------------------------------------
+
+One of the quickest ways to populate the database is to use what AHF already calculated for you. Suppose you want to import the
+Mvir and Rvir columns from the `.AHF_halos` file. Then you simply type: `db_import_from_stat.py Mvir Rvir`. Now running
+`db_manager.py recent-runs 1` should show you what you just did:
+
+```Run ID =  141
+Command line =  /Users/app/Science/halo_database/tools//db_import_from_stat.py Mvir Rvir
+Host =  Rhododendron.local
+Username =  app
+Time =  03/09/15 18:50
+>>>    3860 halo properties
+```
+
+
+Populating the database with other properties
 -----------------------
 
 So now you probably want to actually put some properties into your database? For a tiny simulation, you can do this on a single node. Let's say you want to add the `SSC` property (that means 'shrink sphere center') and the `dm_density_profile` (sorta what it says on the tin).
 
 You should be able to do this:
 ```
-db_writer.py SSC dm_density_profile --for <simulation_path> --backend null
+db_writer.py SSC dm_density_profile --for <simulation_name> --backend null
 ```
 Hopefully that's fairly self-explanatory except maybe the `--backend null` bit, which is inherited because the DB writer wants to be running in parallel. Instead, `--backend null` says "you have no parallelism, just use one core".
 
