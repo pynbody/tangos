@@ -15,7 +15,6 @@ from . import halo_data_extraction_patterns
 import data_attribute_mapper
 import config
 import time
-import properties
 
 _loaded_timesteps = {}
 _loaded_halocats = {}
@@ -46,6 +45,7 @@ class DictionaryItem(Base):
         self.text = text
 
     def providing_class(self):
+        import properties
         return properties.providing_class(self.text)
 
 

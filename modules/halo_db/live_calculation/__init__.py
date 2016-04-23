@@ -6,7 +6,6 @@ import warnings
 
 import numpy as np
 from sqlalchemy.orm import contains_eager, aliased
-import properties
 from .. import consistent_collection
 from .. import core
 from .. import halo_data_extraction_patterns
@@ -318,6 +317,7 @@ class LiveProperty(Calculation):
         return val[0], desc
 
     def _evaluate_function(self, halos, input_descriptions, input_values):
+        import properties
         sim = consistent_collection.consistent_simulation_from_halos(halos)
         results = []
         calculator = properties.providing_class(self.name())(sim, *input_descriptions)
@@ -528,6 +528,7 @@ class StoredProperty(Calculation):
         return ret
 
     def values_and_description(self, halos):
+        import properties
         values = self.values(halos)
         sim = consistent_collection.consistent_simulation_from_halos(halos)
         description_class = properties.providing_class(self._name, silent_fail=True)
