@@ -99,8 +99,21 @@ Time =  03/09/15 18:56
 
 Note that `db_writer.py` has a lot of options to customize what it calculates and for which halos. Type `db_writer.py -h` for information.
 
-Populating the database (MPI - preferred)
------------------------------------------
+
+Generating halo merger trees
+----------------------------
+
+To start making the database useful, you probably want to generate some merger tree information, allowing your later analysis
+to link properties between timesteps.
+
+To do this you type:
+```
+db_timelink.py --for <simulation_name> --backend null
+```
+again assuming you don't want to parallelise using MPI. But these steps can be speeded up by distributing tasks, so read on...
+
+Do it with MPI
+--------------
 
 With MPI, you automatically distribute the tasks between nodes. This is far preferable. But it does mean you need to get python and MPI to understand each other. If you have an MPI compiler avaiable, this is pretty easy - you just type `pip install pypar` and it's all done. 
 
@@ -124,7 +137,7 @@ SIMS="romulus8.256gst3.bwBH"
 
 mpirun db_writer.py Mvir Vvir dm_density_profile dm_alpha_500pc Sub --for $SIMS --partial-load
 mpirun db_writer.py stellar_image_faceon --hmax 100 --backwards --for $SIMS --partial-load
-mpirun db_timelink.py for $SIMS
+mpirun db_timelink.py --for $SIMS
 mpirun add_bh.py for $SIMS
 mpirun db_writer.py BH_mass --for $SIMS --htype 1 --partial-load
 # htype 1 in the line above means "do this for the black hole pseudo halos, not the regular halos". 
