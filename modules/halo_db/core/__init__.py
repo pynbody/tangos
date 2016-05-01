@@ -6,7 +6,6 @@ from sqlalchemy.orm import sessionmaker, clear_mappers
 from .. import config
 
 _verbose = False
-current_creator=None
 internal_session=None
 engine=None
 Session=None
@@ -229,21 +228,18 @@ def process_options(argparser_options):
     _verbose = argparser_options.db_verbose
 
 def init_db(db_uri=None, timeout=30, verbose=None):
-    global _verbose, current_creator, internal_session, engine, Session
+    global _verbose, internal_session, engine, Session
     if db_uri is None:
         db_uri = 'sqlite:///' + config.db
     engine = create_engine(db_uri, echo=verbose or _verbose,
                            isolation_level='READ UNCOMMITTED',  connect_args={'timeout': timeout})
-    current_creator = Creator()
     Session = sessionmaker(bind=engine)
     internal_session=Session()
     Base.metadata.create_all(engine)
 
-def use_blocking_session():
+def get_engine():
     global engine
-    from .. import blocking
-    blocking.make_engine_blocking(engine)
-
+    return engine
 
 from .dictionary import _get_dict_cache_for_session, get_dict_id, get_or_create_dictionary_item
 

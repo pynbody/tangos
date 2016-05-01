@@ -1,15 +1,14 @@
-from sqlalchemy import Column, Integer, ForeignKey, orm
-from sqlalchemy.orm import relationship, backref
 import weakref
 
+from sqlalchemy import Column, Integer, ForeignKey, orm
+from sqlalchemy.orm import relationship, backref
+
+from halo_db.core import extraction_patterns
 from . import Base
-from .creator import Creator
-from .timestep import TimeStep
+from . import creator
 from .dictionary import get_dict_id, get_or_create_dictionary_item
+from .timestep import TimeStep
 from .tracking import TrackerHaloCatalogue
-
-from .. import halo_data_extraction_patterns
-
 
 
 class Halo(Base):
@@ -24,7 +23,7 @@ class Halo(Base):
     NDM = Column(Integer)
     NStar = Column(Integer)
     NGas = Column(Integer)
-    creator = relationship(Creator, backref=backref(
+    creator = relationship(creator.Creator, backref=backref(
         'halos', cascade='all', lazy='dynamic'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
     halo_type = Column(Integer, nullable=False)
@@ -35,7 +34,6 @@ class Halo(Base):
     }
 
     def __init__(self, timestep, halo_number, NDM, NStar, NGas, halo_type=0):
-        from . import current_creator
         self.timestep = timestep
         self.halo_number = halo_number
         self.NDM = NDM
@@ -43,7 +41,7 @@ class Halo(Base):
         self.NGas = NGas
         self.halo_type = halo_type
         self.init_on_load()
-        self.creator = current_creator
+        self.creator_id = creator.get_creator_id()
 
     @orm.reconstructor
     def init_on_load(self):
@@ -115,10 +113,10 @@ class Halo(Base):
         """
 
         if raw:
-            getters=[halo_data_extraction_patterns.halo_property_raw_value_getter]
+            getters=[extraction_patterns.halo_property_raw_value_getter]
         else:
-            getters=[halo_data_extraction_patterns.halo_property_value_getter]
-        getters+=[halo_data_extraction_patterns.halo_link_target_getter]
+            getters=[extraction_patterns.halo_property_value_getter]
+        getters+=[extraction_patterns.halo_link_target_getter]
 
         return_data = self.get_objects(key, getters)
 
@@ -127,8 +125,8 @@ class Halo(Base):
 
         return return_data
 
-    def get_objects(self, key, getters = [halo_data_extraction_patterns.halo_property_getter,
-                                          halo_data_extraction_patterns.halo_link_getter]):
+    def get_objects(self, key, getters = [extraction_patterns.halo_property_getter,
+                                          extraction_patterns.halo_link_getter]):
         """Get objects belonging to this halo named by the specified key.
 
         Compared to get_data, this allows access to the underlying HaloProperty or HaloLink objects, or to perform
@@ -156,7 +154,7 @@ class Halo(Base):
             self._setitem_property(key, obj)
 
     def _setitem_property(self, key, obj):
-        from . import Session, current_creator
+        from . import Session
         from .halo_data import HaloProperty
 
         session = Session.object_session(self)
@@ -166,16 +164,16 @@ class Halo(Base):
             X.data = obj
         else:
             X = session.merge(HaloProperty(self, key, obj))
-        X.creator = current_creator
+        X.creator_id = creator.get_creator_id()
 
     def _setitem_one_halo(self, key, obj):
-        from . import Session, current_creator, HaloLink
+        from . import Session, HaloLink
         session = Session.object_session(self)
         key = get_or_create_dictionary_item(session, key)
         X = self.links.filter_by(halo_from_id=self.id, relation_id=key.id).first()
         if X is None:
             X = session.merge(HaloLink(self, obj, key))
-            X.creator = current_creator
+            X.creator_id = creator.get_creator_id()
         else:
             X.halo_to = obj
 
@@ -190,8 +188,8 @@ class Halo(Base):
         session.add_all(links)
 
 
-    def keys(self, getters = [halo_data_extraction_patterns.halo_property_getter,
-                              halo_data_extraction_patterns.halo_link_getter]):
+    def keys(self, getters = [extraction_patterns.halo_property_getter,
+                              extraction_patterns.halo_link_getter]):
         from . import Session
         names = []
         session = Session.object_session(self)

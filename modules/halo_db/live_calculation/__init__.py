@@ -10,9 +10,9 @@ from sqlalchemy.orm import contains_eager, aliased
 import halo_db.core.dictionary
 import halo_db.core.halo
 import halo_db.core.halo_data
+from halo_db.core import extraction_patterns
 from .. import consistent_collection
 from .. import core
-from .. import halo_data_extraction_patterns
 from .. import temporary_halolist as thl
 
 class UnknownValue(object):
@@ -32,7 +32,7 @@ class Calculation(object):
     live_calculation.parser"""
 
     def __init__(self):
-        self._extraction_pattern = halo_data_extraction_patterns.halo_property_value_getter
+        self._extraction_pattern = extraction_patterns.halo_property_value_getter
 
     def __repr__(self):
         return "<Calculation description for %s>"%str(self)
@@ -58,8 +58,8 @@ class Calculation(object):
         property_is_present = []
         for p_id in self._essential_dict_ids():
             this_property_ok = False
-            for extraction_pattern in (halo_data_extraction_patterns.halo_link_getter,
-                                       halo_data_extraction_patterns.halo_property_getter):
+            for extraction_pattern in (extraction_patterns.halo_link_getter,
+                                       extraction_patterns.halo_property_getter):
                 if not extraction_pattern.use_fixed_cache(halo):
                     this_property_ok = True
                 elif extraction_pattern.cache_contains(halo, p_id):
@@ -438,7 +438,7 @@ class Link(Calculation):
             self.locator = parser.parse_property_name(self.locator)
         if not isinstance(self.property, Calculation):
             self.property = parser.parse_property_name(self.property)
-        self.locator.set_extraction_pattern(halo_data_extraction_patterns.halo_link_target_getter)
+        self.locator.set_extraction_pattern(extraction_patterns.halo_link_target_getter)
 
     def __str__(self):
         return str(self.locator)+"."+str(self.property)

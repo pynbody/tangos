@@ -11,7 +11,7 @@ def event_commit_or_rollback(conn):
     rlock.release()
 
 
-def make_engine_blocking(engine):
+def make_engine_blocking(engine=None):
     global rlock
     assert isinstance(engine, sqlalchemy.engine.Engine)
     rlock = pt.RLock("db_write_lock")

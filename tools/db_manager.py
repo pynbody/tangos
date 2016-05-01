@@ -347,34 +347,31 @@ def db_import(options):
     sims = options.sims
     remote_db = options.file
 
-    global current_creator, internal_session
+    global internal_session
     engine2 = create_engine('sqlite:///' + remote_db, echo=False)
     ext_session = sessionmaker(bind=engine2)()
-
-    core.current_creator = core.internal_session.merge(core.current_creator)
 
     _db_import_export(core.internal_session, ext_session, *sims)
 
 
 def db_export(remote_db, *sims):
 
-    global current_creator, internal_session
+    global internal_session
     engine2 = create_engine('sqlite:///' + remote_db, echo=False)
 
     int_session = core.internal_session
     ext_session = sessionmaker(bind=engine2)()
-    external_to_internal_halo_id = {}
 
     Base.metadata.create_all(engine2)
 
-    _xcurrent_creator = core.current_creator
+    _xcurrent_creator = core.creator.get_creator()
 
     core.internal_session = ext_session
-    core.current_creator = ext_session.merge(Creator())
+    core.set_creator(ext_session.merge(Creator()))
 
     _db_import_export(ext_session, int_session, *sims)
 
-    core.current_creator = _xcurrent_creator
+    core.set_creator(_xcurrent_creator)
     core.internal_session = int_session
 
 

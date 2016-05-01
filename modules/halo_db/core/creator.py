@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime
 
 from . import Base
 
+_current_creator = None
 
 class Creator(Base):
     __tablename__ = 'creators'
@@ -50,4 +51,37 @@ class Creator(Base):
         if run.properties.count() > 0:
             print ">>>   ", run.properties.count(), "halo properties"
         if run.simproperties.count() > 0:
-            print ">>>", run.simproperties.count(), "simulation properties"
+            print ">>>   ", run.simproperties.count(), "simulation properties"
+
+
+def get_creator(session=None):
+    """Get a Creator object for this process, for the specified session.
+
+    If session is None, return the object for the default session."""
+    from . import internal_session
+    global _current_creator
+
+    if _current_creator is not None:
+        if session is None:
+            return _current_creator
+        else:
+            return session.query(Creator).filter_by(id=_current_creator.id).first()
+    else:
+        if session is None:
+            session = internal_session
+        _current_creator = session.merge(Creator())
+        return _current_creator
+
+def get_creator_id():
+    return get_creator().id
+
+def set_creator(creator):
+    """Set the Creator object to be used in all writes during the lifetime of the current process.
+
+    A Creator object is normally constructed automatically, but this function allows all future writes to be
+    associated with a different Creator. This is mainly used by MPI runs to give the illusion that all data was
+    written by one process."""
+    global _current_creator
+    _current_creator = creator
+
+

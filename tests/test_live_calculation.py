@@ -1,17 +1,17 @@
+import numpy as np
 from nose.tools import assert_raises
 
 import halo_db as db
+import halo_db
 import halo_db.core.halo
 import halo_db.core.simulation
 import halo_db.core.timestep
 import halo_db.live_calculation as lc
-import halo_db.testing as testing
-import numpy as np
-
 import halo_db.live_calculation.parser
-import halo_db
-from halo_db import halo_data_extraction_patterns
+import halo_db.testing as testing
 import properties
+from halo_db.core import extraction_patterns
+
 
 def setup():
     db.init_db("sqlite://")
@@ -166,7 +166,7 @@ def test_non_existent_redirection():
 
 def test_parse_raw_psuedofunction():
     parsed = halo_db.live_calculation.parser.parse_property_name("raw(dummy_property_1)")
-    assert parsed._inputs[0]._extraction_pattern is halo_data_extraction_patterns.halo_property_raw_value_getter
+    assert parsed._inputs[0]._extraction_pattern is extraction_patterns.halo_property_raw_value_getter
 
     assert all(db.get_halo("sim/ts1/1").calculate(parsed)==db.get_halo("sim/ts1/1")['dummy_property_1'])
 
