@@ -61,6 +61,8 @@ def generate_halolinks(sim, session):
                 db.tracker.generate_tracker_halo_link_if_not_present(bh_src_before,bh_dest_after,dict_obj,1.0)
                 db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj,ratio)
 
+        session.commit()
+
 
 def run():
     #db.use_blocking_session()
