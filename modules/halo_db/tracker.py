@@ -25,10 +25,14 @@ def generate_tracker_halo_links(sim):
         #halos_2 = ts2.halos.filter_by(halo_type=1).all()
         nums1 = [h.halo_number for h in halos_1]
         nums2 = [h.halo_number for h in halos_2]
+        if len(nums1) == 0 or len(nums2) == 0:
+            continue
         o1 = np.where(np.in1d(nums1,nums2))[0]
         o2 = np.where(np.in1d(nums2,nums1))[0]
+        if len(o1) == 0 or len(o2) == 0:
+            continue
         if nums1[o1] != nums2[o2]:
-            print "ERROR list matching went wrong"
+            print "ERROR list matching went wrong ", o1, o2, nums1[o1], nums2[o2]
         for ii, jj in zip(o1,o2):
             generate_tracker_halo_link_if_not_present(halos_1[ii],halos_2[jj])
             generate_tracker_halo_link_if_not_present(halos_2[jj], halos_1[ii])
