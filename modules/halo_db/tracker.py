@@ -32,7 +32,7 @@ def generate_tracker_halo_links(sim):
         if len(o1) == 0 or len(o2) == 0:
             continue
         for ii, jj in zip(o1,o2):
-            if halos_1[ii].halo_number != halos_2.halo_number:
+            if halos_1[ii].halo_number != halos_2[jj].halo_number:
                 print "ERROR! Mismatch!"
             generate_tracker_halo_link_if_not_present(halos_1[ii],halos_2[jj])
             generate_tracker_halo_link_if_not_present(halos_2[jj], halos_1[ii])
