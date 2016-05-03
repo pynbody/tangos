@@ -10,7 +10,7 @@ def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, wei
 
     if dict_obj is None:
         dict_obj = get_or_create_dictionary_item(session, "tracker")
-    print halo_1.id,"->",halo_2.id
+    #print halo_1.id,"->",halo_2.id
     session.merge(HaloLink(halo_1,halo_2,dict_obj,weight))
 
 
