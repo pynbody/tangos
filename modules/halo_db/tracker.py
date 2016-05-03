@@ -31,8 +31,9 @@ def generate_tracker_halo_links(sim):
             print "ERROR list matching went wrong"
         for ii, jj in zip(o1,o2):
             generate_tracker_halo_link_if_not_present(halos_1[ii],halos_2[jj])
-            generate_tracker_halo_link_if_not_present(halo_2[jj], halo_1[ii])
+            generate_tracker_halo_link_if_not_present(halos_2[jj], halos_1[ii])
        # for halo_1 in halos_1:
         #    halo_2 = filter(lambda x: x.halo_number==halo_1.halo_number, halos_2)
          #   if len(halo_2)!=0:
+                 #generate_tracker_halo_link_if_not_present(halo_1, halo_2[0])
           ##     generate_tracker_halo_link_if_not_present(halo_2[0], halo_1)
