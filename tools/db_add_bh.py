@@ -36,7 +36,6 @@ def generate_halolinks(sim, session):
     dict_obj = db.core.get_or_create_dictionary_item(session, "BH_merger")
 
     for ts1, ts2 in zip(sim.timesteps[:-1],sim.timesteps[1:]):
-        print ts1, ts2
         ts1_step = int(ts1.extension[-6:])
         ts2_step = int(ts2.extension[-6:])
 
