@@ -16,7 +16,7 @@ def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, wei
     session.merge(HaloLink(halo_1,halo_2,dict_obj,weight))
 
 
-def generate_tracker_halo_links(sim):
+def generate_tracker_halo_links(sim, session=None):
     for ts1, ts2 in parallel_tasks.distributed(zip(sim.timesteps[1:],sim.timesteps[:-1])):
         print "generating links for", ts1, ts2
         halos_1 = ts1.halos.filter_by(halo_type=1).order_by(Halo.halo_number).all()
@@ -36,6 +36,8 @@ def generate_tracker_halo_links(sim):
                 print "ERROR! Mismatch!"
             generate_tracker_halo_link_if_not_present(halos_1[ii],halos_2[jj])
             generate_tracker_halo_link_if_not_present(halos_2[jj], halos_1[ii])
+        if session:
+            session.commit()
        # for halo_1 in halos_1:
         #    halo_2 = filter(lambda x: x.halo_number==halo_1.halo_number, halos_2)
          #   if len(halo_2)!=0:
