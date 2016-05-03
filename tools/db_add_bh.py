@@ -190,7 +190,7 @@ def run():
         gc.collect()
 
     print "Generate merger trees...."
-    for sim in query.all():
+    for sim in parallel_tasks.distributed(query.all()):
         generate_halolinks(sim, session)
 
     session.commit()
