@@ -31,9 +31,9 @@ def generate_tracker_halo_links(sim):
         o2 = np.where(np.in1d(nums2,nums1))[0]
         if len(o1) == 0 or len(o2) == 0:
             continue
-        if nums1[o1] != nums2[o2]:
-            print "ERROR list matching went wrong ", o1, o2, nums1[o1], nums2[o2]
         for ii, jj in zip(o1,o2):
+            if halos_1[ii].halo_number != halos_2.halo_number:
+                print "ERROR! Mismatch!"
             generate_tracker_halo_link_if_not_present(halos_1[ii],halos_2[jj])
             generate_tracker_halo_link_if_not_present(halos_2[jj], halos_1[ii])
        # for halo_1 in halos_1:
