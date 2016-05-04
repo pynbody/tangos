@@ -22,7 +22,9 @@ class BHShortenedLog(object):
         return obj
 
 
-    def __init__(self, f, filename):
+    def __init__(self, filename):
+        f = pynbody.load(filename)
+        self.boxsize = float(f.properties['boxsize'].in_units('kpc', a = f.properties['a']))
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
         ars = [[] for i in range(15)]
         for line in open(name+".shortened.orbit"):
@@ -112,28 +114,30 @@ class BH(HaloProperties):
     def no_proxies(self):
         return True
 
+    def requires_simdata(self):
+        return False
+
     def preloop(self, f, filename, pa):
-        if f is not None:
-            self.log = BHShortenedLog.get_existing_or_new(f,filename)
-            self.filename = filename
-            print self.log
+        self.log = BHShortenedLog.get_existing_or_new(filename)
+        self.filename = filename
+        print self.log
 
     def calculate(self, halo, properties):
         import halo_db as db
         if not isinstance(properties, db.Halo):
             raise RuntimeError("No proxies, please")
-        boxsize = float(halo.properties['boxsize'].in_units('kpc', a = halo.properties['a']))
-        halo = halo.s
+        boxsize = self.log.boxsize
+       # halo = halo.s
 
-        if len(halo)!=1:
-            raise RuntimeError("Not a BH!")
+        #if len(halo)!=1:
+         #   raise RuntimeError("Not a BH!")
 
-        if halo['tform'][0]>0:
-            raise RuntimeError("Not a BH!")
+        #if halo['tform'][0]>0:
+         #   raise RuntimeError("Not a BH!")
 
         vars = self.log.get_for_named_snapshot(self.filename)
 
-        mask = vars['bhid']==halo['iord']
+        mask = vars['bhid']==properties.halo_number()
         if(mask.sum()==0):
             raise RuntimeError("Can't find BH in .orbit file")
 
@@ -145,7 +149,7 @@ class BH(HaloProperties):
                 break
         if main_halo is None:
             raise RuntimeError("Can't relate BH to its parent halo")
-        print "Main halo is:", main_halo
+        #print "Main halo is:", main_halo
 
         main_halo_ssc = main_halo['SSC']
 
