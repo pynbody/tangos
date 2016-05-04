@@ -17,7 +17,7 @@ def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, wei
 
 
 def generate_tracker_halo_links(sim, session=None):
-    for ts1, ts2 in parallel_tasks.distributed(zip(sim.timesteps[1:],sim.timesteps[:-1])):
+    for ts1, ts2 in zip(sim.timesteps[1:],sim.timesteps[:-1]):
         print "generating links for", ts1, ts2
         halos_1 = ts1.halos.filter_by(halo_type=1).order_by(Halo.halo_number).all()
         halos_2 = ts2.halos.filter_by(halo_type=1).order_by(Halo.halo_number).all()
