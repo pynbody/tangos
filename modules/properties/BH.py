@@ -11,7 +11,7 @@ class BHShortenedLog(object):
     
         
     @classmethod
-    def get_existing_or_new(cls, f,filename):
+    def get_existing_or_new(cls, filename):
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
         obj = cls._cache.get(name, None)
         if obj is not None:
@@ -118,7 +118,7 @@ class BH(HaloProperties):
         return False
 
     def preloop(self, f, filename, pa):
-        self.log = BHShortenedLog.get_existing_or_new(f, filename)
+        self.log = BHShortenedLog.get_existing_or_new(filename)
         self.filename = filename
         print self.log
 
