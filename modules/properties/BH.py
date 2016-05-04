@@ -137,7 +137,7 @@ class BH(HaloProperties):
 
         vars = self.log.get_for_named_snapshot(self.filename)
 
-        mask = vars['bhid']==properties.halo_number()
+        mask = vars['bhid']==properties.halo_number
         if(mask.sum()==0):
             raise RuntimeError("Can't find BH in .orbit file")
 
