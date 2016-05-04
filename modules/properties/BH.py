@@ -17,7 +17,7 @@ class BHShortenedLog(object):
         if obj is not None:
             return obj
         
-        obj = cls(f,filename)
+        obj = cls(filename)
         cls._cache[name] = obj
         return obj
 
@@ -118,7 +118,7 @@ class BH(HaloProperties):
         return False
 
     def preloop(self, f, filename, pa):
-        self.log = BHShortenedLog.get_existing_or_new(filename)
+        self.log = BHShortenedLog.get_existing_or_new(f, filename)
         self.filename = filename
         print self.log
 
