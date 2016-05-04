@@ -35,7 +35,7 @@ def generate_halolinks(sim, session):
     timestep_numbers = np.array([int(ts.extension[-6:]) for ts in sim.timesteps])
     dict_obj = db.core.get_or_create_dictionary_item(session, "BH_merger")
 
-    for ts1, ts2 in parallel_tasks.distributed(zip(sim.timesteps[:-1],sim.timesteps[1:])):
+    for ts1, ts2 in zip(sim.timesteps[:-1],sim.timesteps[1:]):
         #ts1_step = int(ts1.extension[-6:])
         #ts2_step = int(ts2.extension[-6:])
 
