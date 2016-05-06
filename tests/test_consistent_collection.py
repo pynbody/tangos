@@ -11,7 +11,7 @@ def setup():
     global sim1, sim2, collection, h1, h2
     db.init_db("sqlite://")
 
-    session = db.core.internal_session
+    session = db.core.get_default_session()
 
     sim1 = halo_db.core.simulation.Simulation("sim1")
     sim2 = halo_db.core.simulation.Simulation("sim2")

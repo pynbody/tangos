@@ -8,6 +8,7 @@ import halo_db.core.simulation
 import halo_db.core.timestep
 import halo_db.live_calculation as lc
 import halo_db.live_calculation.parser
+import halo_db
 import halo_db.testing as testing
 import properties
 from halo_db.core import extraction_patterns
@@ -16,7 +17,7 @@ from halo_db.core import extraction_patterns
 def setup():
     db.init_db("sqlite://")
 
-    session = db.core.internal_session
+    session = db.core.get_default_session()
 
     sim = halo_db.core.simulation.Simulation("sim")
 
@@ -57,7 +58,7 @@ def setup():
     ts2_h1 = halo_db.core.halo.Halo(ts2, 1, 10000, 0, 0, 0)
     testing.add_symmetric_link(ts2_h1, ts1_h1)
 
-    db.core.internal_session.commit()
+    db.core.get_default_session().commit()
 
 
 class DummyProperty1(properties.HaloProperties):
@@ -115,52 +116,52 @@ class LivePropertyRequiringRedirectedProperty(properties.LiveHaloProperties):
 
 
 def test_simple_retrieval():
-    BH = db.get_halo("sim/ts1/1.1")
+    BH = halo_db.get_halo("sim/ts1/1.1")
     assert BH['BH_mass'] == BH.calculate("BH_mass")
 
 def test_at_function():
-    halo = db.get_halo("sim/ts1/1")
+    halo = halo_db.get_halo("sim/ts1/1")
     assert np.allclose(halo.calculate("at(3.0,dummy_property_1)"), 30.0)
 
 def test_abs_function():
-    halo = db.get_halo("sim/ts1/1")
+    halo = halo_db.get_halo("sim/ts1/1")
     assert np.allclose(halo.calculate("abs(dummy_property_2)"), np.arange(0,100.0)*np.sqrt(3))
 
 def test_nested_abs_at_function():
-    halo = db.get_halo("sim/ts1/1")
+    halo = halo_db.get_halo("sim/ts1/1")
     # n.b. for J_dm_enc
     assert np.allclose(halo.calculate("abs(at(3.0,dummy_property_2))"), 15.0*np.sqrt(3))
 
 def test_abcissa_passing_function():
     """In this example, the x-coordinates need to be successfully passed "through" the abs function for the
     at function to return the correct result."""
-    halo = db.get_halo("sim/ts1/1")
+    halo = halo_db.get_halo("sim/ts1/1")
     assert np.allclose(halo.calculate("at(3.0,abs(dummy_property_2))"), 15.0*np.sqrt(3))
 
 def test_property_redirection():
-    halo = db.get_halo("sim/ts1/1")
-    assert halo.calculate("BH.BH_mass")==db.get_halo("sim/ts1/1.1")["BH_mass"]
+    halo = halo_db.get_halo("sim/ts1/1")
+    assert halo.calculate("BH.BH_mass") == halo_db.get_halo("sim/ts1/1.1")["BH_mass"]
 
 def test_function_after_property_redirection():
-    halo = db.get_halo("sim/ts1/1")
+    halo = halo_db.get_halo("sim/ts1/1")
     bh_dbid= halo.calculate("BH.dbid()")
-    assert bh_dbid == db.get_halo("sim/ts1/1.1").id
+    assert bh_dbid == halo_db.get_halo("sim/ts1/1.1").id
 
 def test_BH_redirection_function():
-    halo = db.get_halo("sim/ts1/1")
+    halo = halo_db.get_halo("sim/ts1/1")
     bh_dbid= halo.calculate("BH('BH_mass','max','BH').dbid()")
-    assert bh_dbid == db.get_halo("sim/ts1/1.1").id
+    assert bh_dbid == halo_db.get_halo("sim/ts1/1.1").id
 
     bh_dbid= halo.calculate("BH('BH_mass','min','BH').dbid()")
-    assert bh_dbid == db.get_halo("sim/ts1/1.2").id
+    assert bh_dbid == halo_db.get_halo("sim/ts1/1.2").id
 
 def test_non_existent_property():
-    halo = db.get_halo("sim/ts1/1")
+    halo = halo_db.get_halo("sim/ts1/1")
     with assert_raises(KeyError):
         halo.calculate("non_existent_property")
 
 def test_non_existent_redirection():
-    halo = db.get_halo("sim/ts1/2")
+    halo = halo_db.get_halo("sim/ts1/2")
     with assert_raises(ValueError):
         halo.calculate("BH.dbid()")
 
@@ -168,7 +169,7 @@ def test_parse_raw_psuedofunction():
     parsed = halo_db.live_calculation.parser.parse_property_name("raw(dummy_property_1)")
     assert parsed._inputs[0]._extraction_pattern is extraction_patterns.halo_property_raw_value_getter
 
-    assert all(db.get_halo("sim/ts1/1").calculate(parsed)==db.get_halo("sim/ts1/1")['dummy_property_1'])
+    assert all(halo_db.get_halo("sim/ts1/1").calculate(parsed) == halo_db.get_halo("sim/ts1/1")['dummy_property_1'])
 
 def test_new_builtin():
     from halo_db.live_calculation import BuiltinFunction
@@ -177,19 +178,19 @@ def test_new_builtin():
     def my_test_function(halos):
         return [[101]*len(halos)]
 
-    assert db.get_halo("sim/ts1/2").calculate("my_test_function()")[0]==101
+    assert halo_db.get_halo("sim/ts1/2").calculate("my_test_function()")[0] == 101
 
 def test_match():
-    dbid = db.get_halo("sim/ts1/1").calculate("match('sim/ts2').dbid()")
-    assert dbid==db.get_halo("sim/ts2/1").id
+    dbid = halo_db.get_halo("sim/ts1/1").calculate("match('sim/ts2').dbid()")
+    assert dbid == halo_db.get_halo("sim/ts2/1").id
 
 def test_match_inappropriate_argument():
     with assert_raises(ValueError):
-        db.get_halo("sim/ts1/1").calculate("match(dbid()).dbid()")
+        halo_db.get_halo("sim/ts1/1").calculate("match(dbid()).dbid()")
 
 
 def test_arithmetic():
-    h = db.get_halo("sim/ts1/1")
+    h = halo_db.get_halo("sim/ts1/1")
     pname = lc.parser.parse_property_name("1.0+2.0")
     assert h.calculate("1.0+2.0")==3.0
     assert h.calculate("1.0-2.0") == -1.0
@@ -204,7 +205,7 @@ def test_arithmetic():
            h.calculate("at(1.0,dummy_property_1)") * h.calculate("at(5.0,dummy_property_1)")
 
 def test_calculate_array():
-    h = db.get_halo("sim/ts1/1")
+    h = halo_db.get_halo("sim/ts1/1")
 
     assert (h.calculate("dummy_property_array()")==[1,2,3]).all()
 
@@ -213,7 +214,7 @@ def test_calculate_array():
     assert (h.calculate("dummy_property_array()*2/(BH.dummy_property_array()*2)") == np.array([1,1,1])).all()
 
 def test_reassembly():
-    h = db.get_halo("sim/ts1/1")
+    h = halo_db.get_halo("sim/ts1/1")
     h['dummy_property_with_reassembly']=101
 
     # default reassembly (see above) always returns 25
@@ -230,7 +231,7 @@ def test_reassembly():
 
 
 def test_liveproperty_requiring_redirection():
-    h = db.get_halo("sim/ts1/1")
+    h = halo_db.get_halo("sim/ts1/1")
     assert h.calculate("first_BHs_BH_mass()") == h['BH'][0]['BH_mass']
     cascade_version = h.property_cascade("first_BHs_BH_mass()")
     assert cascade_version[0] == h['BH'][0]['BH_mass']

@@ -173,8 +173,8 @@ def _server_thread():
 def _get_current_creator_id():
     creator = core.creator.get_creator()
     if creator.id is None:
-        core.creator.set_creator(core.internal_session.merge(creator))
-        core.internal_session.commit()
+        core.creator.set_creator(core.get_default_session().merge(creator))
+        core.get_default_session().commit()
 
     return creator.id
 

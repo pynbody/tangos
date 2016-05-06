@@ -12,7 +12,7 @@ def setup():
     db.init_db("sqlite://")
     db.config.base = os.getcwd()+"/"
 
-    session = db.core.internal_session
+    session = db.core.get_default_session()
 
     sim = halo_db.core.simulation.Simulation("test_stat_files")
     session.add(sim)
@@ -55,7 +55,7 @@ def test_idl_values():
 
 def test_insert_halos():
     stat.HaloStatFile(ts1).add_halos(min_NDM=200000)
-    db.core.internal_session.commit()
+    db.core.get_default_session().commit()
     assert ts1.halos.count()==3
     assert ts1.halos[0].NDM==4348608
     assert ts1.halos[1].NDM==402567

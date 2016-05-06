@@ -2,9 +2,10 @@ import numpy as np
 from sqlalchemy import Column, Integer, LargeBinary, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-from .simulation import Simulation
 from . import Base
 from . import creator
+from .simulation import Simulation
+
 
 class TrackData(Base):
     __tablename__ = 'trackdata'
@@ -132,8 +133,9 @@ class TrackerHaloCatalogue(object):
 
 
 def update_tracker_halos(sim=None):
-    from . import internal_session, get_simulation
-    from terminalcontroller import heading
+    from . import internal_session
+    from halo_db import get_simulation
+    from halo_db.tools.terminalcontroller import heading
 
     if sim is None:
         x = internal_session.query(TrackData).all()

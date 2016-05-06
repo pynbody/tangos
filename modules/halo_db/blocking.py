@@ -1,5 +1,6 @@
 import sqlalchemy, sqlalchemy.engine, sqlalchemy.event
 from . import parallel_tasks as pt
+from . import core
 global rlock
 
 __author__ = 'app'
@@ -13,6 +14,8 @@ def event_commit_or_rollback(conn):
 
 def make_engine_blocking(engine=None):
     global rlock
+    if engine is None:
+        engine = core.get_default_engine()
     assert isinstance(engine, sqlalchemy.engine.Engine)
     rlock = pt.RLock("db_write_lock")
 

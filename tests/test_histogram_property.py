@@ -2,6 +2,7 @@ import halo_db as db
 import halo_db.core.halo
 import halo_db.core.simulation
 import halo_db.core.timestep
+import halo_db
 import halo_db.testing as testing
 import properties
 import numpy as np
@@ -15,7 +16,7 @@ def setup():
     global test_histogram, ts2_h1
 
     db.init_db("sqlite://")
-    session = db.core.internal_session
+    session = db.core.get_default_session()
 
     sim = halo_db.core.simulation.Simulation("sim")
 
@@ -55,7 +56,7 @@ def setup():
     ts1_h2['dummy_histogram'] = test_histogram[DummyHistogramProperty.store_slice(ts1.time_gyr)]*0.5
     ts2_h1['dummy_histogram'] = test_histogram[DummyHistogramProperty.store_slice(ts2.time_gyr)]
 
-    db.core.internal_session.commit()
+    db.core.get_default_session().commit()
 
 
 class DummyHistogramProperty(properties.TimeChunkedProperty):
@@ -73,7 +74,7 @@ def test_summed_reconstruction():
     reconstructed = ts2_h1.get_objects("dummy_histogram")[0].get_data_with_reassembly_options('sum')
 
     manual_reconstruction = ts2_h1['dummy_histogram']
-    added_bit = db.get_halo("sim/ts1/2")['dummy_histogram']
+    added_bit = halo_db.get_halo("sim/ts1/2")['dummy_histogram']
     manual_reconstruction[:len(added_bit)]+=added_bit
 
     npt.assert_almost_equal(reconstructed, manual_reconstruction)

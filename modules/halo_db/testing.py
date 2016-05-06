@@ -1,3 +1,4 @@
+import halo_db
 from . import core
 import sqlalchemy, sqlalchemy.event
 import contextlib
@@ -5,19 +6,19 @@ import gc
 import traceback
 
 def add_symmetric_link(h1, h2, weight=1.0):
-    rel = core.dictionary.get_or_create_dictionary_item(core.internal_session, "ptcls_in_common")
-    core.internal_session.add_all([core.halo_data.HaloLink(h1, h2, rel, weight), core.halo_data.HaloLink(h2, h1, rel, weight)])
+    rel = core.dictionary.get_or_create_dictionary_item(core.get_default_session(), "ptcls_in_common")
+    core.get_default_session().add_all([core.halo_data.HaloLink(h1, h2, rel, weight), core.halo_data.HaloLink(h2, h1, rel, weight)])
 
 
 def _as_halos(hlist, session=None):
     if session is None:
-        session = core.internal_session
+        session = core.get_default_session()
     rvals = []
     for h in hlist:
         if isinstance(h, core.halo.Halo):
             rvals.append(h)
         else:
-            rvals.append(core.get_halo(h, session))
+            rvals.append(halo_db.get_halo(h, session))
     return rvals
 
 def _halos_to_strings(hlist):
@@ -51,15 +52,15 @@ def assert_connections_all_closed():
 
     gc.collect()
 
-    sqlalchemy.event.listen(core.engine.pool, 'checkout', on_checkout)
-    sqlalchemy.event.listen(core.engine.pool, 'checkin', on_checkin)
+    sqlalchemy.event.listen(core.get_default_engine().pool, 'checkout', on_checkout)
+    sqlalchemy.event.listen(core.get_default_engine().pool, 'checkin', on_checkin)
 
     yield
 
     gc.collect()
 
-    sqlalchemy.event.remove(core.engine.pool, 'checkout', on_checkout)
-    sqlalchemy.event.remove(core.engine.pool, 'checkin', on_checkin)
+    sqlalchemy.event.remove(core.get_default_engine().pool, 'checkout', on_checkout)
+    sqlalchemy.event.remove(core.get_default_engine().pool, 'checkin', on_checkin)
 
     for k,v in connection_details.iteritems():
         print "object id",k,"not checked in; was created here:"

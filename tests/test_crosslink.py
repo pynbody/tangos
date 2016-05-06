@@ -3,12 +3,14 @@ import halo_db.core.halo
 import halo_db.core.simulation
 import halo_db.core.timestep
 import halo_db.crosslink
+import halo_db
+
 
 def setup():
 
     db.init_db("sqlite://")
 
-    session = db.core.internal_session
+    session = db.core.get_default_session()
 
     sim = halo_db.core.simulation.Simulation("sim")
 
@@ -26,9 +28,9 @@ def setup():
         session.add_all((h1,h2,h3))
 
 def test_needs_crosslink():
-    ts1 = db.get_timestep("sim/ts1")
-    ts2 = db.get_timestep("sim/ts2")
-    ts3 = db.get_timestep("sim/ts3")
+    ts1 = halo_db.get_timestep("sim/ts1")
+    ts2 = halo_db.get_timestep("sim/ts2")
+    ts3 = halo_db.get_timestep("sim/ts3")
 
     ts1.halos[0]["ptcls_in_common"] = ts2.halos[0]
 

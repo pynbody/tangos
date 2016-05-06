@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime
 
-from . import Base
+from . import Base, get_default_session
 
 _current_creator = None
 
@@ -58,7 +58,6 @@ def get_creator(session=None):
     """Get a Creator object for this process, for the specified session.
 
     If session is None, return the object for the default session."""
-    from . import internal_session
     global _current_creator
 
     if _current_creator is not None:
@@ -68,7 +67,7 @@ def get_creator(session=None):
             return session.query(Creator).filter_by(id=_current_creator.id).first()
     else:
         if session is None:
-            session = internal_session
+            session = get_default_session()
         _current_creator = session.merge(Creator())
         return _current_creator
 

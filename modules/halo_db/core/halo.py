@@ -244,7 +244,8 @@ class Halo(Base):
         from .. import live_calculation
         from .. import relation_finding_strategies
         from .. import temporary_halolist as thl
-        from . import Session, get_halo
+        from . import Session
+        from .. import query as db_query
 
         nmax = kwargs.get('nmax',1000)
         strategy = kwargs.get('strategy', relation_finding_strategies.MultiHopMajorDescendantsStrategy)
@@ -258,7 +259,7 @@ class Halo(Base):
         # objects with incomplete lazy-loaded properties
         session = Session()
         try:
-            with strategy(get_halo(self.id, session), nhops_max=nmax, include_startpoint=True).temp_table() as tt:
+            with strategy(db_query.get_halo(self.id, session), nhops_max=nmax, include_startpoint=True).temp_table() as tt:
                 raw_query = thl.halo_query(tt)
                 query = property_description.supplement_halo_query(raw_query)
                 results = query.all()

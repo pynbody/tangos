@@ -3,12 +3,14 @@ import halo_db.core.halo
 import halo_db.core.simulation
 import halo_db.core.timestep
 import halo_db.crosslink
+import halo_db
+
 
 def setup():
 
     db.init_db("sqlite://")
 
-    session = db.core.internal_session
+    session = db.core.get_default_session()
 
     sim = halo_db.core.simulation.Simulation("sim")
 
@@ -26,17 +28,17 @@ def setup():
         session.add_all((h1,h2,h3))
 
 def test_setitem():
-    db.get_halo("sim/ts1/1")['bla'] = 23
-    db.core.internal_session.commit()
-    assert db.get_halo("sim/ts1/1")['bla']==23
+    halo_db.get_halo("sim/ts1/1")['bla'] = 23
+    db.core.get_default_session().commit()
+    assert halo_db.get_halo("sim/ts1/1")['bla'] == 23
 
 def test_set_another_item():
-    db.get_halo("sim/ts1/2")['bla'] = 42
-    db.core.internal_session.commit()
-    assert db.get_halo("sim/ts1/2")['bla']==42
+    halo_db.get_halo("sim/ts1/2")['bla'] = 42
+    db.core.get_default_session().commit()
+    assert halo_db.get_halo("sim/ts1/2")['bla'] == 42
 
 def test_update_item():
-    assert db.get_halo("sim/ts1/1")['bla']==23
-    db.get_halo("sim/ts1/1")['bla'] = 96
-    db.core.internal_session.commit()
-    assert db.get_halo("sim/ts1/1")['bla']==96
+    assert halo_db.get_halo("sim/ts1/1")['bla'] == 23
+    halo_db.get_halo("sim/ts1/1")['bla'] = 96
+    db.core.get_default_session().commit()
+    assert halo_db.get_halo("sim/ts1/1")['bla'] == 96
