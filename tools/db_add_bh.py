@@ -21,7 +21,7 @@ def resolve_multiple_mergers(bh_map):
             return
 
 def generate_halolinks(sim, session):
-    db.tracker.generate_tracker_halo_links(sim)
+    db.tracker.generate_tracker_halo_links(sim, session)
     fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
     if len(fname)==0:
         print "No merger file for "+sim.basename
@@ -36,19 +36,19 @@ def generate_halolinks(sim, session):
     dict_obj = db.core.get_or_create_dictionary_item(session, "BH_merger")
 
     for ts1, ts2 in zip(sim.timesteps[:-1],sim.timesteps[1:]):
-        ts1_step = int(ts1.extension[-6:])
-        ts2_step = int(ts2.extension[-6:])
+        #ts1_step = int(ts1.extension[-6:])
+        #ts2_step = int(ts2.extension[-6:])
 
         bh_map = {}
         print ts1, ts2
         for l in open(fname[0]):
             l_split = l.split()
-            ts = float(l_split[1])
+            t = float(l_split[0])
             bh_dest_id = int(l_split[2])
             bh_src_id = int(l_split[3])
             ratio = float(l_split[4])
 
-            if ts>ts1_step and ts<=ts2_step:
+            if t>ts1.time_gyr and t<=ts2.time_gyr:
                 bh_map[bh_src_id] = (bh_dest_id, ratio)
 
         resolve_multiple_mergers(bh_map)
@@ -60,6 +60,8 @@ def generate_halolinks(sim, session):
             if bh_src_before is not None and bh_dest_after is not None:
                 db.tracker.generate_tracker_halo_link_if_not_present(bh_src_before,bh_dest_after,dict_obj,1.0)
                 db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj,ratio)
+
+        session.commit()
 
 
 def run():

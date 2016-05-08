@@ -552,3 +552,39 @@ class AngMomEncl(HaloProperties):
     @classmethod
     def plot_xdelta(cls):
         return 0.1
+
+class AMdist(HaloProperties):
+    @classmethod
+    def name(self):
+        return "AMdist_tot", "AMdist_dm", "AMdist_gas", "AMdist_star"
+
+    def requires_property(self):
+        return ['SSC']
+
+    def cdist(self, sim, bins=50, max=5):
+        jall = np.sqrt(np.sum(sim['j']**2,axis=1))
+        jstar  =  np.sqrt(np.sum(sim.s['j']**2,axis=1))
+        jgas = np.sqrt(np.sum(sim.g['j']**2,axis=1))
+        jdm = np.sqrt(np.sum(sim.dm['j']**2,axis=1))
+        jtot = np.sqrt(np.sum(np.sum(sim['j'],axis=0)**2))
+        amdist_tot = np.histogram(jall/jtot,range=[0,max],density=True, bins=bins)
+        amdist_dm = np.histogram(jdm/jtot,range=[0,max],density=True, bins=bins)
+        amdist_gas = np.histogram(jgas/jtot,range=[0,max],density=True, bins=bins)
+        amdist_star = np.histogram(jstar/jtot,range=[0,max],density=True, bins=bins)
+        return amdist_tot, amdist_dm, amdist_gas, amdist_star
+
+    def calculate(self, halo, properties):
+        cen = properties['SSC']
+        halo['pos'] -= cen
+
+        try:
+            vcen = pynbody.analysis.halo.center_of_mass_velocity(halo.dm[pynbody.filt.Sphere('1 kpc')])
+        except:
+            vcen = pynbody.analysis.halo.center_of_mass_velocity(halo.dm[pynbody.filt.Sphere('2 kpc')])
+
+        halo['vel'] -= vcen
+        amdist_tot, amdist_dm, amdist_gas, amdist_star = self.cdist(halo)
+        halo['pos'] += cen
+        halo['vel'] += vcen
+        return amdist_tot, amdist_dm, amdist_gas, amdist_star
+
