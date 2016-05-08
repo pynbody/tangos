@@ -33,11 +33,10 @@ def generate_halolinks(sim, session):
 
 
     timestep_numbers = np.array([int(ts.extension[-6:]) for ts in sim.timesteps])
-    dict_obj = db.core.get_or_create_dictionary_item(session, "BH_merger")
+    dict_obj_next = db.core.get_or_create_dictionary_item(session, "BH_merger_next")
+    dict_obj_prev = db.core.get_or_create_dictionary_item(session, "BH_merger_prev")
 
     for ts1, ts2 in zip(sim.timesteps[:-1],sim.timesteps[1:]):
-        #ts1_step = int(ts1.extension[-6:])
-        #ts2_step = int(ts2.extension[-6:])
 
         bh_map = {}
         print ts1, ts2
@@ -58,8 +57,8 @@ def generate_halolinks(sim, session):
             bh_dest_after = ts2.halos.filter_by(halo_type=1,halo_number=dest).first()
 
             if bh_src_before is not None and bh_dest_after is not None:
-                db.tracker.generate_tracker_halo_link_if_not_present(bh_src_before,bh_dest_after,dict_obj,1.0)
-                db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj,ratio)
+                db.tracker.generate_tracker_halo_link_if_not_present(bh_src_before,bh_dest_after,dict_obj_next,1.0)
+                db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj_prev,ratio)
 
         session.commit()
 
