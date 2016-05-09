@@ -27,7 +27,10 @@ log = logging.getLogger(__name__)
 MAXHOPS_FIND_HALO = 3
 
 def creator_link(creator) :
-    return h.link_to(repr(creator), url(controller="creator", action="more", id=creator.id))
+    if creator:
+        return h.link_to(repr(creator), url(controller="creator", action="more", id=creator.id))
+    else:
+        return "(No creator information)"
 
 class SimsController(BaseController):
 
