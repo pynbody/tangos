@@ -21,8 +21,7 @@ def generate_tracker_halo_links(sim, session=None):
         print "generating links for", ts1, ts2
         halos_1 = ts1.halos.filter_by(halo_type=1).order_by(Halo.halo_number).all()
         halos_2 = ts2.halos.filter_by(halo_type=1).order_by(Halo.halo_number).all()
-        #halos_1 = ts1.halos.filter_by(halo_type=1).all()
-        #halos_2 = ts2.halos.filter_by(halo_type=1).all()
+
         nums1 = [h.halo_number for h in halos_1]
         nums2 = [h.halo_number for h in halos_2]
         if len(nums1) == 0 or len(nums2) == 0:
@@ -33,13 +32,8 @@ def generate_tracker_halo_links(sim, session=None):
             continue
         for ii, jj in zip(o1,o2):
             if halos_1[ii].halo_number != halos_2[jj].halo_number:
-                print "ERROR! Mismatch!"
+                raise RuntimeError("ERROR mismatch of BH iords")
             generate_tracker_halo_link_if_not_present(halos_1[ii],halos_2[jj])
             generate_tracker_halo_link_if_not_present(halos_2[jj], halos_1[ii])
         if session:
             session.commit()
-       # for halo_1 in halos_1:
-        #    halo_2 = filter(lambda x: x.halo_number==halo_1.halo_number, halos_2)
-         #   if len(halo_2)!=0:
-                 #generate_tracker_halo_link_if_not_present(halo_1, halo_2[0])
-          ##     generate_tracker_halo_link_if_not_present(halo_2[0], halo_1)
