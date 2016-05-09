@@ -263,6 +263,9 @@ class TimeChunkedProperty(HaloProperties):
 
         if reassembly_type=='major':
             return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy)
+        elif reassembly_type=='major_across_simulations':
+            return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy,
+                                                          strategy_kwargs = {'target': None})
         elif reassembly_type=='sum':
             return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopAllProgenitorsStrategy)
         elif reassembly_type=='place':
@@ -281,10 +284,10 @@ class TimeChunkedProperty(HaloProperties):
         return final
 
     @classmethod
-    def _reassemble_using_finding_strategy(cls, property, strategy):
+    def _reassemble_using_finding_strategy(cls, property, strategy, strategy_kwargs={}):
         name = property.name.text
         halo = property.halo
-        t, stack = halo.property_cascade("t()", "raw(" + name + ")", strategy=strategy)
+        t, stack = halo.property_cascade("t()", "raw(" + name + ")", strategy=strategy, strategy_kwargs=strategy_kwargs)
         final = np.zeros(cls.bin_index(t[0]))
         previous_end = -1
         for t_i, hist_i in zip(t, stack):

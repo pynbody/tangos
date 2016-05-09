@@ -249,6 +249,7 @@ class Halo(Base):
 
         nmax = kwargs.get('nmax',1000)
         strategy = kwargs.get('strategy', relation_finding_strategies.MultiHopMajorDescendantsStrategy)
+        strategy_kwargs = kwargs.get('strategy_kwargs', {})
 
         if isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]
@@ -259,7 +260,8 @@ class Halo(Base):
         # objects with incomplete lazy-loaded properties
         session = Session()
         try:
-            with strategy(db_query.get_halo(self.id, session), nhops_max=nmax, include_startpoint=True).temp_table() as tt:
+            with strategy(db_query.get_halo(self.id, session), nhops_max=nmax,
+                          include_startpoint=True, **strategy_kwargs).temp_table() as tt:
                 raw_query = thl.halo_query(tt)
                 query = property_description.supplement_halo_query(raw_query)
                 results = query.all()
