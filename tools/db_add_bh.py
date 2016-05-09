@@ -78,6 +78,9 @@ def run():
     files = parallel_tasks.distributed(files)
     parallel_tasks.mpi_sync_db(session)
 
+    if "link-only" in sys.argv:
+        files = []
+
     for f in files:
         print f
         sim = f.simulation
