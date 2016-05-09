@@ -416,24 +416,6 @@ def providing_classes(property_name_list, silent_fail=False):
 
     return classes
 
-def _make_numeric_if_possible(s):
-    if "." in s:
-        try:
-            return float(s)
-        except ValueError:
-            return s
-    else:
-        try:
-            return int(s)
-        except ValueError:
-            return s
-
-def _process_numerical_value(s,l,t):
-    if "." in t[0] or "e" in t[0] or "E" in t[0]:
-        return float(t[0])
-    else:
-        return int(t[0])
-
 def instantiate_classes(simulation, property_name_list, silent_fail=False):
     instances = []
     for property_identifier in property_name_list:
