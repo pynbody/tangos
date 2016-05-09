@@ -1,4 +1,7 @@
 import halo_db as db
+import halo_db.core.halo
+import halo_db.core.simulation
+import halo_db.core.timestep
 import halo_db.testing as testing
 import properties
 import numpy as np
@@ -14,11 +17,11 @@ def setup():
     db.init_db("sqlite://")
     session = db.core.internal_session
 
-    sim = db.Simulation("sim")
+    sim = halo_db.core.simulation.Simulation("sim")
 
     session.add(sim)
 
-    ts1 = db.TimeStep(sim,"ts1",False)
+    ts1 = halo_db.core.timestep.TimeStep(sim, "ts1", False)
 
 
     session.add(ts1)
@@ -27,7 +30,7 @@ def setup():
     ts1.redshift = 10
 
 
-    ts2 = db.TimeStep(sim, "ts2", False)
+    ts2 = halo_db.core.timestep.TimeStep(sim, "ts2", False)
 
     session.add(ts2)
 
@@ -36,12 +39,12 @@ def setup():
 
 
 
-    ts1_h1 = db.Halo(ts1,1,1000,0,0,0)
-    ts1_h2 = db.Halo(ts1,2,900,0,0,0)
+    ts1_h1 = halo_db.core.halo.Halo(ts1, 1, 1000, 0, 0, 0)
+    ts1_h2 = halo_db.core.halo.Halo(ts1, 2, 900, 0, 0, 0)
 
     # both halos at ts1 merge into one halo at ts2
 
-    ts2_h1 = db.Halo(ts2,1,10000,0,0,0)
+    ts2_h1 = halo_db.core.halo.Halo(ts2, 1, 10000, 0, 0, 0)
 
     session.add_all([ts1_h1, ts1_h2, ts2_h1])
     testing.add_symmetric_link(ts2_h1, ts1_h1)

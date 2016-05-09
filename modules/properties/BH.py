@@ -1,3 +1,4 @@
+import halo_db.core.halo
 from . import HaloProperties, LiveHaloProperties, TimeChunkedProperty
 import numpy as np
 import math
@@ -124,7 +125,7 @@ class BH(HaloProperties):
 
     def calculate(self, halo, properties):
         import halo_db as db
-        if not isinstance(properties, db.Halo):
+        if not isinstance(properties, halo_db.core.halo.Halo):
             raise RuntimeError("No proxies, please")
         boxsize = self.log.boxsize
 

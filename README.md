@@ -1,7 +1,9 @@
 This repository contains the complete code for the halo database, which ingests runs and calculates various properties of the halos (including profiles, images etc) then exposes them through a python interface and webserver.
 
 Before you start
--------------------------------------
+----------------
+**The database is experimental technology. Please offer Andrew and Michael coauthorship on papers where you find it useful, in recognition of the very substantial development effort. The plan is to ultimately make it open source and citable, but until then we'd appreciate your support.**
+
 For the database to function properly, you must first source the `environment.sh` (or environment.csh, if working in a cshell) files, which specify the appropriate paths. Sourcing the environment file also reads the user-made file called `environment_local.sh` (or csh). This file doesn't exist by default, but should be created/edited whenever you wish to analyze a new database file.
 
 The `environment_local.sh` file should only include the following lines
@@ -51,26 +53,43 @@ Time =  03/09/15 18:42
 >>>    1 simulations
 >>>    12 timesteps
 >>>    942 halos
->>> 8 simulation properties
+>>>    8 simulation properties
 ```
 
 It tells you how many simulations, timesteps, halos, and properties were added to the database by your command.
 
-Populating the database
+Copying AHF properties into the database
+----------------------------------------
+
+One of the quickest ways to populate the database is to use what AHF already calculated for you. Suppose you want to import the
+Mvir and Rvir columns from the `.AHF_halos` file. Then you simply type: `db_import_from_stat.py Mvir Rvir`. Now running
+`db_manager.py recent-runs 1` should show you what you just did:
+
+```
+Run ID =  141
+Command line =  /Users/app/Science/halo_database/tools//db_import_from_stat.py Mvir Rvir
+Host =  Rhododendron.local
+Username =  app
+Time =  03/09/15 18:50
+>>>    3860 halo properties
+```
+
+
+Populating the database with other properties
 -----------------------
 
 So now you probably want to actually put some properties into your database? For a tiny simulation, you can do this on a single node. Let's say you want to add the `SSC` property (that means 'shrink sphere center') and the `dm_density_profile` (sorta what it says on the tin).
 
 You should be able to do this:
 ```
-db_writer.py SSC dm_density_profile --for <simulation_path> --backend null
+db_writer.py SSC dm_density_profile --for <simulation_name> --backend null
 ```
 Hopefully that's fairly self-explanatory except maybe the `--backend null` bit, which is inherited because the DB writer wants to be running in parallel. Instead, `--backend null` says "you have no parallelism, just use one core".
 
 The database checkpoints as it goes along (every few minutes or so). You can interrupt it when you feel like it and it'll automatically resume from where it got to. Once again, you can get a summary of progress with `db_manager.py recent-runs 1`, which will spit out something like this:
 
 ```
-Run ID =  141
+Run ID =  142
 Command line =  /Users/app/Science/halo_database/tools//db_writer.py SSC dm_density_profile --for h516.cosmo25cmb.3072g1MbwK1C52 --backend null
 Host =  Rhododendron.local
 Username =  app
@@ -80,8 +99,21 @@ Time =  03/09/15 18:56
 
 Note that `db_writer.py` has a lot of options to customize what it calculates and for which halos. Type `db_writer.py -h` for information.
 
-Populating the database (MPI - preferred)
------------------------------------------
+
+Generating halo merger trees
+----------------------------
+
+To start making the database useful, you probably want to generate some merger tree information, allowing your later analysis
+to link properties between timesteps.
+
+To do this you type:
+```
+db_timelink.py --for <simulation_name> --backend null
+```
+again assuming you don't want to parallelise using MPI. But these steps can be speeded up by distributing tasks, so read on...
+
+Do it with MPI
+--------------
 
 With MPI, you automatically distribute the tasks between nodes. This is far preferable. But it does mean you need to get python and MPI to understand each other. If you have an MPI compiler avaiable, this is pretty easy - you just type `pip install pypar` and it's all done. 
 
@@ -105,7 +137,7 @@ SIMS="romulus8.256gst3.bwBH"
 
 mpirun db_writer.py Mvir Vvir dm_density_profile dm_alpha_500pc Sub --for $SIMS --partial-load
 mpirun db_writer.py stellar_image_faceon --hmax 100 --backwards --for $SIMS --partial-load
-mpirun db_timelink.py for $SIMS
+mpirun db_timelink.py --for $SIMS
 mpirun add_bh.py for $SIMS
 mpirun db_writer.py BH_mass --for $SIMS --htype 1 --partial-load
 # htype 1 in the line above means "do this for the black hole pseudo halos, not the regular halos". 

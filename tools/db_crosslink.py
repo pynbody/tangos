@@ -1,5 +1,7 @@
 #!/usr/bin/env python2.7
 import halo_db as db
+import halo_db.core.simulation
+import halo_db.core.timestep
 from halo_db import parallel_tasks
 from halo_db.crosslink import need_crosslink_ts, crosslink_ts
 
@@ -33,9 +35,9 @@ def run():
     ts1 = db.get_item(sys.argv[1])
     ts2 = db.get_item(sys.argv[2])
 
-    if isinstance(ts1, db.Simulation) and isinstance(ts2, db.Simulation):
+    if isinstance(ts1, halo_db.core.simulation.Simulation) and isinstance(ts2, halo_db.core.simulation.Simulation):
         crosslink_sim(ts1, ts2)
-    elif isinstance(ts1, db.TimeStep) and isinstance(ts2, db.TimeStep):
+    elif isinstance(ts1, halo_db.core.timestep.TimeStep) and isinstance(ts2, halo_db.core.timestep.TimeStep):
         crosslink_ts(ts1, ts2)
     else:
         print "Sorry, couldn't work out what to do with your arguments"

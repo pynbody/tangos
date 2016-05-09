@@ -1,13 +1,17 @@
 import halo_db as db
+import halo_db.core.dictionary
+import halo_db.core.halo
+import halo_db.core.halo_data
+
 
 def create_property(halo, name, prop, session):
 
-    name = db.get_or_create_dictionary_item(session, name)
+    name = halo_db.core.dictionary.get_or_create_dictionary_item(session, name)
 
-    if isinstance(prop, db.Halo):
-        px = db.HaloLink(halo, prop, name)
+    if isinstance(prop, halo_db.core.halo.Halo):
+        px = halo_db.core.halo_data.HaloLink(halo, prop, name)
     else:
-        px = db.HaloProperty(halo, name, prop)
+        px = halo_db.core.halo_data.HaloProperty(halo, name, prop)
 
     px.creator = db.core.current_creator
     return px

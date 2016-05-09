@@ -1,5 +1,9 @@
 #!/usr/bin/env python2.7
 import matplotlib
+
+import halo_db.core.halo
+import halo_db.core.timestep
+
 matplotlib.use('agg')
 
 import halo_db as db
@@ -140,9 +144,9 @@ class DbWriter(object):
                 except IndexError:
                     pass
         else:
-            files = db.core.internal_session.query(db.TimeStep).filter(
-                db.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
-                order_by(db.TimeStep.time_gyr).all()
+            files = db.core.internal_session.query(halo_db.core.timestep.TimeStep).filter(
+                halo_db.core.timestep.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
+                order_by(halo_db.core.timestep.TimeStep.time_gyr).all()
 
         if self.options.backwards:
             files = files[::-1]
@@ -177,11 +181,11 @@ class DbWriter(object):
 
     def _build_halo_list(self, db_timestep):
         query = db.and_(
-            db.Halo.timestep == db_timestep, db.or_(db.Halo.NDM > 1000, db.Halo.NDM == 0))
+            halo_db.core.halo.Halo.timestep == db_timestep, db.or_(halo_db.core.halo.Halo.NDM > 1000, halo_db.core.halo.Halo.NDM == 0))
         if self.options.htype is not None:
-            query = db.and_(query, db.Halo.halo_type == self.options.htype)
+            query = db.and_(query, halo_db.core.halo.Halo.halo_type == self.options.htype)
 
-        halos = db.core.internal_session.query(db.Halo).filter(query).all()
+        halos = db.core.internal_session.query(halo_db.core.halo.Halo).filter(query).all()
 
         halos = halos[self.options.hmin:]
 
@@ -244,7 +248,7 @@ class DbWriter(object):
         for n, r in zip(names, results):
             if isinstance(r, properties.ProxyHalo):
                 # resolve halo
-                r = db.core.internal_session.query(db.Halo).filter_by(
+                r = db.core.internal_session.query(halo_db.core.halo.Halo).filter_by(
                     halo_number=int(r), timestep=db_halo.timestep).first()
             if self.options.force or (n not in existing_properties_data.keys()):
                 existing_properties_data[n] = r
