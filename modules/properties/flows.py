@@ -76,23 +76,27 @@ class TestInflowOutflow(HaloProperties):
 
 
 class FlowProfile(HaloProperties):
-    _xmax = 300.0
+    _xmax = 100.0
     _threshold_vel = 20.0
 
     @classmethod
     def name(cls):
-        return "inflow_Mdot", "outflow_Mdot", "inflow_vel", "outflow_vel", "inflow_temp", "outflow_temp"
+        return "inflow_Mdot", "outflow_Mdot", \
+               "inflow_vel", "outflow_vel", \
+               "inflow_vel2", "outflow_vel2", \
+               "inflow_temp", "outflow_temp"
+
 
     @classmethod
     def plot_x0(cls):
-        return 2.5
+        return 0.5
 
     @classmethod
     def plot_xdelta(cls):
-        return 5.0
+        return 1.0
 
     def generate_cells(self, halo):
-        nx = 2*self._xmax/self.plot_xdelta()
+        nx = 3*self._xmax/self.plot_xdelta()
         grid_vr = pynbody.sph.to_3d_grid(halo.ancestor.gas, 'vr', nx, x2=self._xmax,denoise=True)
         grid_rho = pynbody.sph.to_3d_grid(halo.ancestor.gas, 'rho', nx, x2=self._xmax,denoise=True)
         grid_r = pynbody.sph.to_3d_grid(halo.ancestor.gas, 'r', nx, x2=self._xmax,denoise=True)
@@ -116,18 +120,19 @@ class FlowProfile(HaloProperties):
         bincount = np.bincount(r_index, minlength=ar_length)[:ar_length]
         Mdot_tot = np.bincount(r_index[mask],Mdot[mask],minlength=ar_length)[:ar_length]
         vr_tot = np.bincount(r_index[mask],vr[mask]*Mdot[mask],minlength=ar_length)[:ar_length]
+        vr2_tot = np.bincount(r_index[mask], vr[mask]**2 * Mdot[mask], minlength=ar_length)[:ar_length]
         temp_tot = np.bincount(r_index[mask],T[mask]*Mdot[mask],minlength=ar_length)[:ar_length]
 
-        return Mdot_tot/bincount, vr_tot/Mdot_tot, temp_tot/Mdot_tot
+        return Mdot_tot/bincount, vr_tot/Mdot_tot, vr2_tot/Mdot_tot, temp_tot/Mdot_tot
 
 
     def calculate(self, halo, properties):
         with pynbody.analysis.halo.center(halo.gas):
             r,vr,Mdot,T = self.generate_cells(halo.gas)
-            inflow_Mdot, inflow_vel, inflow_temp = self.cells_to_r_bins(r,vr,Mdot,T,-self._threshold_vel)
-            outflow_Mdot, outflow_vel, outflow_temp = self.cells_to_r_bins(r,vr,Mdot,T,self._threshold_vel)
+            inflow_Mdot, inflow_vel, inflow_vel2, inflow_temp = self.cells_to_r_bins(r,vr,Mdot,T,-self._threshold_vel)
+            outflow_Mdot, outflow_vel, outflow_vel2, outflow_temp = self.cells_to_r_bins(r,vr,Mdot,T,self._threshold_vel)
 
-        return -inflow_Mdot, outflow_Mdot, -inflow_vel, outflow_vel,  inflow_temp, outflow_temp
+        return -inflow_Mdot, outflow_Mdot, -inflow_vel, outflow_vel,  inflow_vel2, outflow_vel2, inflow_temp, outflow_temp
 
 
 

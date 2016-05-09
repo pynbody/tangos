@@ -50,15 +50,16 @@ def _get_connection_for(table):
 
 def halo_query(table):
     session = _get_session_for(table)
-    return session.query(core.Halo).select_from(table).join(core.Halo)
+    return session.query(core.halo.Halo).select_from(table).join(core.halo.Halo)
 
 def all_halos_with_duplicates(table):
     session = _get_session_for(table)
-    return [x[1] for x in session.query(table.c.id, core.Halo).select_from(table).outerjoin(core.Halo).all()]
+    return [x[1] for x in session.query(table.c.id, core.halo.Halo).select_from(table).outerjoin(
+        core.halo.Halo).all()]
 
 def halolink_query(table):
     session = _get_session_for(table)
-    return session.query(core.HaloLink).select_from(table).join(core.HaloLink, core.HaloLink.halo_from_id==table.c.halo_id)
+    return session.query(core.halo_data.HaloLink).select_from(table).join(core.halo_data.HaloLink, core.halo_data.HaloLink.halo_from_id == table.c.halo_id)
 
 @contextlib.contextmanager
 def temporary_halolist_table(session, ids=None, callback=None):

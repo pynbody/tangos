@@ -2,7 +2,9 @@
 
 import argparse
 import halo_db as db
+import halo_db.core.timestep
 from halo_db import halo_stat_files as hsf, cached_writer as cw, parallel_tasks as pt
+from terminalcontroller import term
 
 def run():
 
@@ -29,28 +31,16 @@ def run():
     names = args.properties
 
     for x in base_sim:
-        timesteps = db.core.internal_session.query(db.TimeStep).filter_by(
-            simulation_id=x.id, available=True).order_by(db.TimeStep.redshift.desc()).all()
+        timesteps = db.core.internal_session.query(halo_db.core.timestep.TimeStep).filter_by(
+            simulation_id=x.id, available=True).order_by(halo_db.core.timestep.TimeStep.redshift.desc()).all()
 
         if args.backwards:
             timesteps = timesteps[::-1]
 
         for ts in timesteps:
-            print "Compiling list for ",ts
-            objects = []
-            halos = ts.halos.all()
-            halos_map = {}
-            for h in halos:
-                halos_map[h.halo_number] = h
-
-            for values in hsf.iter_halostat(ts, *names):
-                halo = halos_map.get(values[0], None)
-                if halo is not None:
-                    for name, value in zip(names, values[1:]):
-                        objects.append((halo, name, value))
-            print " ... committing"
-            cw.insert_list(objects)
-            print " ... done!"
+            print term.GREEN, "Processing ",ts, term.NORMAL
+            hsf.HaloStatFile(ts).add_halo_properties(*names)
+            db.core.internal_session.commit()
 
 if __name__=="__main__":
     run()

@@ -1,3 +1,4 @@
+import halo_db.core.halo
 from . import HaloProperties, LiveHaloProperties, TimeChunkedProperty
 import numpy as np
 import math
@@ -124,16 +125,9 @@ class BH(HaloProperties):
 
     def calculate(self, halo, properties):
         import halo_db as db
-        if not isinstance(properties, db.Halo):
+        if not isinstance(properties, halo_db.core.halo.Halo):
             raise RuntimeError("No proxies, please")
         boxsize = self.log.boxsize
-       # halo = halo.s
-
-        #if len(halo)!=1:
-         #   raise RuntimeError("Not a BH!")
-
-        #if halo['tform'][0]>0:
-         #   raise RuntimeError("Not a BH!")
 
         vars = self.log.get_for_named_snapshot(self.filename)
 
@@ -149,7 +143,6 @@ class BH(HaloProperties):
                 break
         if main_halo is None:
             raise RuntimeError("Can't relate BH to its parent halo")
-        #print "Main halo is:", main_halo
 
         main_halo_ssc = main_halo['SSC']
 

@@ -1,6 +1,11 @@
 #!/usr/bin/env python2.7
 
 import halo_db as db
+import halo_db.core.dictionary
+import halo_db.core.halo
+import halo_db.core.halo_data
+import halo_db.core.timestep
+import halo_db.core.tracking
 import halo_db.parallel_tasks as parallel_tasks
 import halo_db.tracker
 import sys
@@ -33,11 +38,10 @@ def generate_halolinks(sim, session):
 
 
     timestep_numbers = np.array([int(ts.extension[-6:]) for ts in sim.timesteps])
-    dict_obj = db.core.get_or_create_dictionary_item(session, "BH_merger")
+    dict_obj_next = db.core.get_or_create_dictionary_item(session, "BH_merger_next")
+    dict_obj_prev = db.core.get_or_create_dictionary_item(session, "BH_merger_prev")
 
     for ts1, ts2 in zip(sim.timesteps[:-1],sim.timesteps[1:]):
-        #ts1_step = int(ts1.extension[-6:])
-        #ts2_step = int(ts2.extension[-6:])
 
         bh_map = {}
         print ts1, ts2
@@ -58,8 +62,8 @@ def generate_halolinks(sim, session):
             bh_dest_after = ts2.halos.filter_by(halo_type=1,halo_number=dest).first()
 
             if bh_src_before is not None and bh_dest_after is not None:
-                db.tracker.generate_tracker_halo_link_if_not_present(bh_src_before,bh_dest_after,dict_obj,1.0)
-                db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj,ratio)
+                db.tracker.generate_tracker_halo_link_if_not_present(bh_src_before,bh_dest_after,dict_obj_next,1.0)
+                db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj_prev,ratio)
 
         session.commit()
 
@@ -69,15 +73,18 @@ def run():
     session = db.core.internal_session
     query = db.sim_query_from_args(sys.argv, session)
 
-    files = db.core.internal_session.query(db.TimeStep).filter(
-        db.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
-        order_by(db.TimeStep.time_gyr).all()
+    files = db.core.internal_session.query(halo_db.core.timestep.TimeStep).filter(
+        halo_db.core.timestep.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
+        order_by(halo_db.core.timestep.TimeStep.time_gyr).all()
 
     if "backwards" in sys.argv:
         files = files[::-1]
 
     files = parallel_tasks.distributed(files)
     parallel_tasks.mpi_sync_db(session)
+
+    if "link-only" in sys.argv:
+        files = []
 
     for f in files:
         print f
@@ -103,7 +110,7 @@ def run():
             bhi = int(bhi)
             if sim.trackers.filter_by(halo_number=bhi).count()==0 :
                 print "ADD ",bhi
-                tx = db.TrackData(sim, bhi)
+                tx = halo_db.core.tracking.TrackData(sim, bhi)
                 tx = session.merge(tx)
                 tx.particles = [bhi]
                 tx.use_iord = True
@@ -112,7 +119,7 @@ def run():
                 tx = sim.trackers.filter_by(halo_number=bhi).first()
 
             if f.halos.filter_by(halo_number=tx.halo_number, halo_type = 1).count()==0:
-                session.merge(db.Halo(f, tx.halo_number, 0, 0, 0, 1))
+                session.merge(halo_db.core.halo.Halo(f, tx.halo_number, 0, 0, 0, 1))
 
 
         session.commit()
@@ -137,7 +144,7 @@ def run():
         if bh_halos is not None:
             bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
             print "Associated halos: ",bh_halos
-            bh_dict_id = db.core.get_or_create_dictionary_item(session, "BH")
+            bh_dict_id = halo_db.core.dictionary.get_or_create_dictionary_item(session, "BH")
 
             for bhi, haloi in zip(bh_iord, bh_halos):
                 haloi = int(haloi)
@@ -154,14 +161,14 @@ def run():
 
                 if existing==0:
 
-                    session.merge(db.core.HaloLink(halo,bh_obj,bh_dict_id))
+                    session.merge(halo_db.core.halo_data.HaloLink(halo, bh_obj, bh_dict_id))
                 else:
                     print "NOTE: skipping BH in halo",haloi,"as link already exists"
 
         if bh_cen_halos is not None:
             bh_cen_halos = bh_cen_halos[np.argsort(bh_mass)[::-1]]
-            bh_dict_cen_id = db.core.get_or_create_dictionary_item(session, "BH_central")
-            host_dict_id = db.core.get_or_create_dictionary_item(session, "host_halo")
+            bh_dict_cen_id = halo_db.core.dictionary.get_or_create_dictionary_item(session, "BH_central")
+            host_dict_id = halo_db.core.dictionary.get_or_create_dictionary_item(session, "host_halo")
 
             for bhi, haloi in zip(bh_iord, bh_cen_halos):
                 haloi = int(haloi)
@@ -178,8 +185,8 @@ def run():
 
                 if existing==0:
 
-                    session.merge(db.core.HaloLink(halo,bh_obj,bh_dict_cen_id))
-                    session.merge(db.core.HaloLink(bh_obj,halo,host_dict_id))
+                    session.merge(halo_db.core.halo_data.HaloLink(halo, bh_obj, bh_dict_cen_id))
+                    session.merge(halo_db.core.halo_data.HaloLink(bh_obj, halo, host_dict_id))
                 else:
                     print "NOTE: skipping central BH ", bhi,"in halo",haloi,"as link already exists"
 

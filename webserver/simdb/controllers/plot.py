@@ -3,6 +3,9 @@ import logging
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 
+import halo_db.core.halo
+import halo_db.core.halo_data
+import halo_db.core.stored_options
 from simdb.lib.base import BaseController, render
 
 import simdb.lib.helpers as h
@@ -71,7 +74,7 @@ class PlotController(BaseController):
         try :
             item = prop.array_plot_options[0]
         except IndexError :
-            item = meta.ArrayPlotOptions
+            item = halo_db.core.stored_options.ArrayPlotOptions
 
         c.fs = formalchemy.FieldSet(item, data=request.POST or None)
 
@@ -98,7 +101,7 @@ class PlotController(BaseController):
 
         c.id = id
 
-        prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
+        prop = Session.query(halo_db.core.halo_data.HaloProperty).filter_by(id=id).first()
 
         if rel is not None :
             halo = prop.halo
@@ -126,7 +129,7 @@ class PlotController(BaseController):
         try :
             item = prop.name.array_plot_options[0]
         except IndexError :
-            item = meta.ArrayPlotOptions
+            item = halo_db.core.stored_options.ArrayPlotOptions
 
         c.fs = formalchemy.FieldSet(item)
         c.fs.configure()
@@ -144,7 +147,7 @@ class PlotController(BaseController):
     def time(self, id) :
         c.id = id
 
-        prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
+        prop = Session.query(halo_db.core.halo_data.HaloProperty).filter_by(id=id).first()
         c.breadcrumbs = h.breadcrumbs(prop)
 
         c.name = prop.name.text
@@ -155,7 +158,7 @@ class PlotController(BaseController):
 
     def time_img(self, id) :
         print "HID = ",id
-        prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
+        prop = Session.query(halo_db.core.halo_data.HaloProperty).filter_by(id=id).first()
         assert(type(prop.data) is float)
 
         redshift = []
@@ -184,7 +187,7 @@ class PlotController(BaseController):
     def raw_dat(self, id) :
         response.content_type='text/txt'
         ts=""
-        prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
+        prop = Session.query(halo_db.core.halo_data.HaloProperty).filter_by(id=id).first()
         ts+="# Raw data from simdb\n"
         ts+="# %s for halo %d of %s"%(prop.name.text,prop.halo.halo_number,prop.halo.timestep.relative_filename)
         ts+="""# The class provides the following plot information:
@@ -200,11 +203,11 @@ class PlotController(BaseController):
     def image_img(self, id) :
         halo_id = request.params.get('halo_id')
         log = request.params.get('image_log')
-        prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
+        prop = Session.query(halo_db.core.halo_data.HaloProperty).filter_by(id=id).first()
         name_id = prop.name_id
 
         if halo_id!=prop.halo_id:
-            prop = Session.query(meta.HaloProperty).filter_by(name_id=name_id,halo_id=halo_id).first()
+            prop = Session.query(halo_db.core.halo_data.HaloProperty).filter_by(name_id=name_id, halo_id=halo_id).first()
 
         print "image_img",id,log
         if len(prop.data.shape)==1 :
@@ -237,14 +240,15 @@ class PlotController(BaseController):
             return self.finish()
 
     def halo_img(self, id) :
-        prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
+        prop = Session.query(halo_db.core.halo_data.HaloProperty).filter_by(id=id).first()
         assert(type(prop.data) is float)
 
         nx = []
         px = []
         spoint = prop.halo.timestep_id
 
-        props = Session.query(meta.HaloProperty).join(meta.Halo).filter(and_(meta.Halo.timestep_id==spoint, meta.HaloProperty.name_id==prop.name_id)).all()
+        props = Session.query(halo_db.core.halo_data.HaloProperty).join(halo_db.core.halo.Halo).filter(and_(
+            halo_db.core.halo.Halo.timestep_id == spoint, halo_db.core.halo_data.HaloProperty.name_id == prop.name_id)).all()
 
         # filter(and_(meta.Halo.timestep_id==spoint, meta.HaloProperty.name_id==prop.name_id)).all()
 
@@ -271,7 +275,7 @@ class PlotController(BaseController):
 
         halo_id = int(request.params['halo_id'])
 
-        h = Session.query(meta.Halo).filter_by(id=halo_id).first()
+        h = Session.query(halo_db.core.halo.Halo).filter_by(id=halo_id).first()
         ts = h.timestep
 
         xlog = (request.params.get('xlog'))=='on'
@@ -334,8 +338,8 @@ class PlotController(BaseController):
 
         with imageThreadLock if not overplot else nocontext :
             if prop is None :
-                prop = Session.query(meta.HaloProperty).filter_by(id=id).first()
-            assert isinstance(prop, meta.HaloProperty)
+                prop = Session.query(halo_db.core.halo_data.HaloProperty).filter_by(id=id).first()
+            assert isinstance(prop, halo_db.core.halo_data.HaloProperty)
 
             if text :
                 h = prop.halo
@@ -361,7 +365,7 @@ class PlotController(BaseController):
                     p.semilogy()
 
                 if property_info.plot_xlabel() :
-                    p.xlabel(property_info.plot_xlabel()[index])
+                    p.xlabel(property_info.plot_xlabel())
 
                 if property_info.plot_ylabel() :
                     p.ylabel(property_info.plot_ylabel()[index])

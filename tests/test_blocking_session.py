@@ -1,5 +1,8 @@
 from nose.tools import assert_raises
 import halo_db as db
+import halo_db.core.halo
+import halo_db.core.simulation
+import halo_db.core.timestep
 import halo_db.parallel_tasks as pt
 import halo_db.parallel_tasks.backend_multiprocessing
 import time
@@ -18,13 +21,13 @@ def setup():
 
     session = db.core.internal_session
 
-    sim = db.Simulation("sim")
+    sim = halo_db.core.simulation.Simulation("sim")
     session.add(sim)
 
-    ts1 = db.TimeStep(sim,"ts1",False)
+    ts1 = halo_db.core.timestep.TimeStep(sim, "ts1", False)
     session.add(ts1)
 
-    halo_1 = db.core.Halo(ts1,1,0,0,0,0)
+    halo_1 = halo_db.core.halo.Halo(ts1, 1, 0, 0, 0, 0)
     session.add_all([halo_1])
 
     session.commit()
@@ -41,7 +44,7 @@ def _multiprocess_block():
     session = db.core.internal_session
 
     ts = db.get_timestep("sim/ts1")
-    new_halo = db.core.Halo(ts,5,0,0,0,0)
+    new_halo = halo_db.core.halo.Halo(ts, 5, 0, 0, 0, 0)
 
     session.merge(new_halo)
     session.flush()
@@ -60,7 +63,7 @@ def _multiprocess_test():
 
 
 
-    new_halo = db.core.Halo(ts,6,0,0,0,0)
+    new_halo = halo_db.core.halo.Halo(ts, 6, 0, 0, 0, 0)
 
     db.core.internal_session.merge(new_halo)
 

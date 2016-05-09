@@ -2,6 +2,8 @@ import time
 import warnings
 import importlib
 import sys
+
+import halo_db.core.creator
 from .. import core
 import traceback
 
@@ -113,7 +115,7 @@ def mpi_sync_db(session):
     if _backend_name!='null':
         backend.send(None, destination=0, tag=MESSAGE_REQUEST_CREATOR_ID)
         id = backend.receive(0,tag=MESSAGE_DELIVER_CREATOR_ID)
-        core.current_creator = session.query(core.Creator).filter_by(id=id).first()
+        core.current_creator = session.query(halo_db.core.creator.Creator).filter_by(id=id).first()
 
 
 

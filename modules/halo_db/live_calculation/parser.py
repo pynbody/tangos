@@ -18,9 +18,13 @@ IN_OPS = [("**", "power"),
           ("-", "subtract")]
 
 IN_OPS_PYPARSING = []
+
+def generate_property_from_inop(opFunctionName, tokens):
+    return LiveProperty(opFunctionName, tokens[0][0], tokens[0][1])
+
 for opSymbol, opFunctionName in IN_OPS:
-    opGeneration = lambda tokens, opFn = opFunctionName: LiveProperty(opFn, tokens[0][0], tokens[0][1])
-    IN_OPS_PYPARSING.append((pp.Literal(opSymbol).suppress(), 2, pp.opAssoc.LEFT, opGeneration))
+    opGeneration = functools.partial(generate_property_from_inop, opFunctionName)
+    IN_OPS_PYPARSING.append((pp.Literal(opSymbol).suppress(), 2, pp.opAssoc.RIGHT, opGeneration))
 
 property_name = pp.Word(pp.alphas,pp.alphanums+"_")
 stored_property = property_name.setParseAction(pack_args(StoredProperty))
