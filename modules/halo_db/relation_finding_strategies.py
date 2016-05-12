@@ -594,8 +594,10 @@ class MultiHopAllProgenitorsStrategy(MultiHopStrategy):
 
     def _supplement_halolink_query_with_filter(self, query, table):
         query = super(MultiHopAllProgenitorsStrategy, self)._supplement_halolink_query_with_filter(query, table)
-        return query
-        # return query.filter(self.timestep_new.simulation_id == self.sim_id)
+        if self._target is None:
+            return query
+        else:
+            return query.filter(self.timestep_new.simulation_id == self.sim_id)
 
 
 class MultiHopMajorProgenitorsStrategy(MultiHopAllProgenitorsStrategy):
