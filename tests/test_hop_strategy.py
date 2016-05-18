@@ -42,21 +42,25 @@ def setup():
     ts1_h3 = halo_db.core.halo.Halo(ts1, 3, 800, 0, 0, 0)
     ts1_h4 = halo_db.core.halo.Halo(ts1, 4, 300, 0, 0, 0)
     ts1_h5 = halo_db.core.halo.Halo(ts1, 5, 10, 0, 0, 0) # intentional "orphan" halo with no progenitors for test_multisource
+    ts1_h6 = halo_db.core.halo.Halo(ts1, 6, 100, 0, 0, 0)
+    ts1_h7 = halo_db.core.halo.Halo(ts1, 7, 100, 0, 0, 0)
 
-    session.add_all([ts1_h1,ts1_h2,ts1_h3,ts1_h4])
+    session.add_all([ts1_h1,ts1_h2,ts1_h3,ts1_h4,ts1_h5,ts1_h6,ts1_h7])
 
     ts2_h1 = halo_db.core.halo.Halo(ts2, 1, 1000, 0, 0, 0)
     ts2_h2 = halo_db.core.halo.Halo(ts2, 2, 900, 0, 0, 0)
     ts2_h3 = halo_db.core.halo.Halo(ts2, 3, 800, 0, 0, 0)
     ts2_h4 = halo_db.core.halo.Halo(ts2, 4, 300, 0, 0, 0)
+    ts2_h5 = halo_db.core.halo.Halo(ts2, 5, 200, 0, 0, 0)
 
-    session.add_all([ts2_h1,ts2_h2,ts2_h3,ts2_h4])
+    session.add_all([ts2_h1,ts2_h2,ts2_h3,ts2_h4,ts2_h5])
 
     ts3_h1 = halo_db.core.halo.Halo(ts3, 1, 2000, 0, 0, 0)
     ts3_h2 = halo_db.core.halo.Halo(ts3, 2, 800, 0, 0, 0)
     ts3_h3 = halo_db.core.halo.Halo(ts3, 3, 300, 0, 0, 0)
+    ts3_h4 = halo_db.core.halo.Halo(ts3, 4, 200, 0, 0, 0)
 
-    session.add_all([ts3_h1,ts3_h2,ts3_h3])
+    session.add_all([ts3_h1,ts3_h2,ts3_h3,ts3_h4])
 
     rel = halo_db.core.dictionary.get_or_create_dictionary_item(session, "ptcls_in_common")
 
@@ -64,35 +68,45 @@ def setup():
     # ts1_h2 becomes ts2_h1
     # ts1_h3 becomes ts2_h3
     # ts1_h4 becomes ts2_h4 but loses 1% of its mass to ts2_h3
+    # ts1_h6 and ts1_h7 merge into ts2_h5
+    # ts1_h5 is ORPHANED, i.e has no counterpart in ts2
     session.add_all([halo_db.core.halo_data.HaloLink(ts1_h1, ts2_h2, rel, 0.90),
                      halo_db.core.halo_data.HaloLink(ts1_h1, ts2_h1, rel, 0.10),
                      halo_db.core.halo_data.HaloLink(ts1_h2, ts2_h1, rel, 1.00),
                      halo_db.core.halo_data.HaloLink(ts1_h3, ts2_h3, rel, 1.00),
                      halo_db.core.halo_data.HaloLink(ts1_h4, ts2_h4, rel, 0.99),
-                     halo_db.core.halo_data.HaloLink(ts1_h4, ts2_h3, rel, 0.01)])
+                     halo_db.core.halo_data.HaloLink(ts1_h4, ts2_h3, rel, 0.01),
+                     halo_db.core.halo_data.HaloLink(ts1_h6, ts2_h5, rel, 1.0),
+                     halo_db.core.halo_data.HaloLink(ts1_h7, ts2_h5, rel, 1.0)])
 
     session.add_all([halo_db.core.halo_data.HaloLink(ts2_h2, ts1_h1, rel, 1.00),
                      halo_db.core.halo_data.HaloLink(ts2_h1, ts1_h1, rel, 0.10),
                      halo_db.core.halo_data.HaloLink(ts2_h1, ts1_h2, rel, 0.90),
                      halo_db.core.halo_data.HaloLink(ts2_h3, ts1_h3, rel, 0.99),
                      halo_db.core.halo_data.HaloLink(ts2_h4, ts1_h4, rel, 1.00),
-                     halo_db.core.halo_data.HaloLink(ts2_h3, ts1_h4, rel, 0.01)])
+                     halo_db.core.halo_data.HaloLink(ts2_h3, ts1_h4, rel, 0.01),
+                     halo_db.core.halo_data.HaloLink(ts2_h5, ts1_h6, rel, 0.6),
+                     halo_db.core.halo_data.HaloLink(ts2_h5, ts1_h7, rel, 0.4)
+                     ])
 
     # ts2_h1 and ts2_h2 merge to ts3_h1
     # ts2_h3 becomes ts3_h2
-    # ts2_h4 becomes ts3_h3 but loses 5% of its mass to ts2_h2
+    # ts2_h4 becomes ts3_h3 but loses 5% of its mass to ts3_h2
+    # ts2_h5 becomes ts3_h4
 
     session.add_all([halo_db.core.halo_data.HaloLink(ts2_h1, ts3_h1, rel, 1.00),
                      halo_db.core.halo_data.HaloLink(ts2_h2, ts3_h1, rel, 1.00),
                      halo_db.core.halo_data.HaloLink(ts2_h3, ts3_h2, rel, 1.00),
                      halo_db.core.halo_data.HaloLink(ts2_h4, ts3_h3, rel, 0.9),
-                     halo_db.core.halo_data.HaloLink(ts2_h4, ts3_h2, rel, 0.1)])
+                     halo_db.core.halo_data.HaloLink(ts2_h4, ts3_h2, rel, 0.1),
+                     halo_db.core.halo_data.HaloLink(ts2_h5, ts3_h4, rel, 1.0)])
 
     session.add_all([halo_db.core.halo_data.HaloLink(ts3_h1, ts2_h1, rel, 950. / (950 + 940)),
                      halo_db.core.halo_data.HaloLink(ts3_h1, ts2_h2, rel, 940. / (950 + 940)),
                      halo_db.core.halo_data.HaloLink(ts3_h3, ts2_h4, rel, 1.00),
                      halo_db.core.halo_data.HaloLink(ts3_h2, ts2_h4, rel, 0.05),
-                     halo_db.core.halo_data.HaloLink(ts3_h2, ts2_h3, rel, 0.95)])
+                     halo_db.core.halo_data.HaloLink(ts3_h2, ts2_h3, rel, 0.95),
+                     halo_db.core.halo_data.HaloLink(ts3_h4, ts2_h5, rel, 1.0)])
 
 
 
@@ -279,3 +293,13 @@ def test_multisource_across():
     results = strategy.all()
     testing.assert_halolists_equal(results, ["sim2/ts2/2", "sim2/ts2/1", None])
     assert strategy._nhops_taken==1
+
+
+def test_find_merger():
+    strategy = halo_finding.MultiHopMostRecentMergerStrategy(halo_db.get_item("sim/ts3/1"))
+    results = strategy.all()
+    testing.assert_halolists_equal(results, ["sim/ts2/1","sim/ts2/2"] )
+
+    strategy = halo_finding.MultiHopMostRecentMergerStrategy(halo_db.get_item("sim/ts3/4"))
+    results = strategy.all()
+    testing.assert_halolists_equal(results, ["sim/ts1/6", "sim/ts1/7"])

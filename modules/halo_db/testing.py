@@ -22,7 +22,10 @@ def _as_halos(hlist, session=None):
     return rvals
 
 def _halos_to_strings(hlist):
-    return [hx.path for hx in _as_halos(hlist)]
+    if len(hlist)==0:
+        return "(empty list)"
+    else:
+        return str([hx.path for hx in _as_halos(hlist)])
 
 def halolists_equal(hl1, hl2, session=None):
     """Return True if hl1 and hl2 are equivalent lists of halos"""
