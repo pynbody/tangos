@@ -4,11 +4,10 @@ import numpy as np
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime, LargeBinary
 from sqlalchemy.orm import relationship, backref
 
+from . import data_attribute_mapper
 from . import Base
-from .creator import Creator
+from . import creator
 from .dictionary import DictionaryItem, get_dict_id, get_or_create_dictionary_item
-from .. import data_attribute_mapper
-from . import current_creator
 
 
 class Simulation(Base):
@@ -18,12 +17,12 @@ class Simulation(Base):
     id = Column(Integer, primary_key=True)
     basename = Column(String)
     creator = relationship(
-        Creator, backref=backref('simulations', cascade='all'), cascade='save-update')
+        creator.Creator, backref=backref('simulations', cascade='all'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
 
     def __init__(self, basename):
         self.basename = basename
-        self.creator = current_creator
+        self.creator_id = creator.get_creator().id
 
     def __repr__(self):
         return "<Simulation(\"" + self.basename + "\")>"
@@ -78,7 +77,7 @@ class SimulationProperty(Base):
                                                           lazy='dynamic', order_by=name_id), cascade='save-update')
 
     creator_id = Column(Integer, ForeignKey('creators.id'))
-    creator = relationship(Creator, backref=backref(
+    creator = relationship(creator.Creator, backref=backref(
         'simproperties', cascade='all, delete', lazy='dynamic'), cascade='save-update')
 
     data_float = Column(Float)
@@ -92,7 +91,7 @@ class SimulationProperty(Base):
         self.simulation = sim
         self.name = name
         self.data = data
-        self.creator = current_creator
+        self.creator_id = creator.get_creator().id
 
     def data_repr(self):
         f = self.data

@@ -10,7 +10,7 @@ def get_halo_entry(ts, halo_number):
 
 
 def need_crosslink_ts(ts1,ts2,session=None):
-    session = session or core.internal_session
+    session = session or core.get_default_session()
     same_d_id = core.dictionary.get_or_create_dictionary_item(session, "ptcls_in_common").id
     sources = [h.id for h in ts1.halos.all()]
     targets = [h.id for h in ts2.halos.all()]
@@ -31,7 +31,7 @@ def need_crosslink_ts(ts1,ts2,session=None):
 
 
 def create_db_objects_from_catalog(cat, ts1, ts2, session=None):
-    session = session or core.internal_session
+    session = session or core.get_default_session()
     same_d_id = core.dictionary.get_or_create_dictionary_item(session, "ptcls_in_common")
     items = []
     for i, possibilities in enumerate(cat):

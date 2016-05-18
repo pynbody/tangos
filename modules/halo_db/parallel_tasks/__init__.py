@@ -115,7 +115,7 @@ def mpi_sync_db(session):
     if _backend_name!='null':
         backend.send(None, destination=0, tag=MESSAGE_REQUEST_CREATOR_ID)
         id = backend.receive(0,tag=MESSAGE_DELIVER_CREATOR_ID)
-        core.current_creator = session.query(halo_db.core.creator.Creator).filter_by(id=id).first()
+        core.creator.set_creator(session.query(halo_db.core.creator.Creator).filter_by(id=id).first())
 
 
 
@@ -171,11 +171,12 @@ def _server_thread():
     print "Manager --> All jobs done and all processors>0 notified; exiting thread"
 
 def _get_current_creator_id():
-    if core.current_creator.id is None:
-        core.current_creator = core.internal_session.merge(core.current_creator)
-        core.internal_session.commit()
+    creator = core.creator.get_creator()
+    if creator.id is None:
+        core.creator.set_creator(core.get_default_session().merge(creator))
+        core.get_default_session().commit()
 
-    return core.current_creator.id
+    return creator.id
 
 
 

@@ -212,7 +212,8 @@ class MultiHopStrategy(HopStrategy):
 
     def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, directed=None, target=None,
                  order_by=None, combine_routes=True, min_aggregated_weight=0.0,
-                 min_onehop_weight=0.0, store_full_paths=False,
+                 min_onehop_weight=0.0, min_onehop_reverse_weight=None,
+                 store_full_paths=False,
                  include_startpoint=False):
         """Construct the MultiHopStrategy (without actually executing the strategy)
 
@@ -247,6 +248,11 @@ class MultiHopStrategy(HopStrategy):
 
         :param min_onehop_weight:     Threshold individual weight below which a route will be discarded.
 
+        :param min_onehop_reverse_weight: Threshold individual weight for the link pointing in the opposite
+                                          direction to that being followed, or None for no restriction.
+                                          Note that this requires an extra join (if not None) and if there
+                                          is no reverse link at all, the result will be dropped.
+
         :param store_full_paths:      Store full path of hops for debug purposes (default False; can slow down the
               calculation significantly)
 
@@ -257,6 +263,7 @@ class MultiHopStrategy(HopStrategy):
         self.directed = directed
         self._min_aggregated_weight = min_aggregated_weight
         self._min_onehop_weight = min_onehop_weight
+        self._min_onehop_reverse_weight = min_onehop_reverse_weight
         self._store_full_paths = store_full_paths
         self._include_startpoint = include_startpoint
         self._connection = self.session.connection()
@@ -282,8 +289,8 @@ class MultiHopStrategy(HopStrategy):
 
     def _prepare_query(self):
         self._generate_query()
-        self._filter_query_for_target(self._target)
         self._seed_temp_table()
+        self._filter_query_for_target(self._target)
         self._make_hops()
 
     def _execute_query(self):
@@ -409,12 +416,17 @@ class MultiHopStrategy(HopStrategy):
     def _make_hops(self):
         for i in xrange(0, self.nhops_max):
             generated_count = self._generate_next_level_prelim_links(i)
-            if generated_count == 0:
+            if generated_count != 0:
+                filtered_count = self._filter_prelim_links_into_final()
+            else:
+                filtered_count = 0
+
+            if self._hopping_finished(filtered_count):
                 break
-            filtered_count = self._filter_prelim_links_into_final()
-            if filtered_count == 0:
-                break
-        self._nhops_taken = i # stored for debug/testing purposes
+        self._nhops_taken = i
+
+    def _hopping_finished(self, filtered_count):
+        return filtered_count==0
 
     def _generate_next_level_prelim_links(self, from_nhops=0):
 
@@ -476,7 +488,9 @@ class MultiHopStrategy(HopStrategy):
                                self._prelim_table.c.nodes,
                                self._prelim_table.c.source_id)
 
+        q = self._supplement_halolink_query_with_reverse_hop_filter(q, self._prelim_table)
         q = self._supplement_halolink_query_with_filter(q, self._prelim_table)
+
 
         added_rows = self._connection.execute(
             self._table.insert().from_select(['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'links', 'nodes', 'source_id'],
@@ -484,6 +498,24 @@ class MultiHopStrategy(HopStrategy):
 
         self._connection.execute(self._prelim_table.delete())
         return added_rows
+
+    def _supplement_halolink_query_with_reverse_hop_filter(self, query, table=None):
+        if self._min_onehop_reverse_weight is None:
+            return query
+
+        if table is None:
+            table = core.halo_data.HaloLink.__table__
+
+        hl_alias = sqlalchemy.orm.aliased(core.HaloLink)
+
+        query = query. \
+                join(hl_alias,
+                     and_(hl_alias.halo_from_id==table.c.halo_to_id,
+                     hl_alias.halo_to_id==table.c.halo_from_id)).\
+                filter(hl_alias.weight>self._min_onehop_reverse_weight)
+
+
+        return query
 
     def _generate_query(self):
 
@@ -581,19 +613,24 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
 
 class MultiHopAllProgenitorsStrategy(MultiHopStrategy):
     """A hop strategy that suggests all progenitors for a halo at every step"""
-    def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False, target=None, combine_routes=True):
+    def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False, target='auto', combine_routes=True):
         self.sim_id = halo_from.timestep.simulation_id
-        target = target or halo_from.timestep.simulation
+        if target=='auto':
+            target = halo_from.timestep.simulation
         super(MultiHopAllProgenitorsStrategy, self).__init__(halo_from, nhops_max,
                                                                directed='backwards',
                                                                include_startpoint=include_startpoint,
                                                                target=target,
                                                                order_by=['time_desc', 'halo_number_asc'],
-                                                               combine_routes=combine_routes)
+                                                               combine_routes=combine_routes,
+                                                             min_onehop_reverse_weight=0.5)
 
     def _supplement_halolink_query_with_filter(self, query, table):
         query = super(MultiHopAllProgenitorsStrategy, self)._supplement_halolink_query_with_filter(query, table)
-        return query.filter(self.timestep_new.simulation_id == self.sim_id)
+        if self._target is None:
+            return query
+        else:
+            return query.filter(self.timestep_new.simulation_id == self.sim_id)
 
 
 class MultiHopMajorProgenitorsStrategy(MultiHopAllProgenitorsStrategy):
@@ -603,6 +640,19 @@ class MultiHopMajorProgenitorsStrategy(MultiHopAllProgenitorsStrategy):
         query = super(MultiHopMajorProgenitorsStrategy, self)._supplement_halolink_query_with_filter(query, table)
         return query.order_by(self.timestep_new.time_gyr.desc(), table.c.weight.desc(), self.halo_new.halo_number). \
             limit(1)
+
+class MultiHopMostRecentMergerStrategy(MultiHopAllProgenitorsStrategy):
+    def _hopping_finished(self, filtered_count):
+        self._last_filtered_count = filtered_count
+        return filtered_count != 1
+
+    def _make_hops(self):
+        super(MultiHopMostRecentMergerStrategy, self)._make_hops()
+        if self._last_filtered_count>1:
+            self.query = self.query.filter(self._table.c.nhops==self._nhops_taken+1)
+        else:
+            # no merger was found
+            self.query = self.query.filter(0==1)
 
 
 

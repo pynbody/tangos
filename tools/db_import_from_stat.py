@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 import argparse
+
 import halo_db as db
 import halo_db.core.timestep
-from halo_db import halo_stat_files as hsf, cached_writer as cw, parallel_tasks as pt
-from terminalcontroller import term
+from halo_db import halo_stat_files as hsf
+from halo_db.tools.terminalcontroller import term
+
 
 def run():
 
@@ -31,7 +33,7 @@ def run():
     names = args.properties
 
     for x in base_sim:
-        timesteps = db.core.internal_session.query(halo_db.core.timestep.TimeStep).filter_by(
+        timesteps = db.core.get_default_session().query(halo_db.core.timestep.TimeStep).filter_by(
             simulation_id=x.id, available=True).order_by(halo_db.core.timestep.TimeStep.redshift.desc()).all()
 
         if args.backwards:
@@ -40,7 +42,7 @@ def run():
         for ts in timesteps:
             print term.GREEN, "Processing ",ts, term.NORMAL
             hsf.HaloStatFile(ts).add_halo_properties(*names)
-            db.core.internal_session.commit()
+            db.core.get_default_session().commit()
 
 if __name__=="__main__":
     run()

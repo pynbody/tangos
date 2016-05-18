@@ -70,10 +70,10 @@ def generate_halolinks(sim, session):
 
 def run():
     #db.use_blocking_session()
-    session = db.core.internal_session
+    session = db.core.get_default_session()
     query = db.sim_query_from_args(sys.argv, session)
 
-    files = db.core.internal_session.query(halo_db.core.timestep.TimeStep).filter(
+    files = db.core.get_default_session().query(halo_db.core.timestep.TimeStep).filter(
         halo_db.core.timestep.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
         order_by(halo_db.core.timestep.TimeStep.time_gyr).all()
 

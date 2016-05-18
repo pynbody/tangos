@@ -1,6 +1,7 @@
+from halo_db.core import extraction_patterns
 from . import BuiltinFunction
-from ... import halo_data_extraction_patterns
 from .. import StoredProperty, FixedInput
+
 
 @BuiltinFunction.register
 def raw(halos, values):
@@ -9,7 +10,7 @@ raw.set_input_options(0, assert_class=StoredProperty)
 
 @raw.set_initialisation
 def raw_initialisation(input):
-    input.set_extraction_pattern(halo_data_extraction_patterns.halo_property_raw_value_getter)
+    input.set_extraction_pattern(extraction_patterns.halo_property_raw_value_getter)
 
 
 @BuiltinFunction.register
@@ -26,4 +27,5 @@ def reassemble_initialisation(input, *options):
         else:
             raise TypeError, "Options to 'reassemble' must be fixed numbers or strings"
 
-    input.set_extraction_pattern(halo_data_extraction_patterns.HaloPropertyValueWithReassemblyOptionsGetter(*options_values))
+    input.set_extraction_pattern(
+        extraction_patterns.HaloPropertyValueWithReassemblyOptionsGetter(*options_values))

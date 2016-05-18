@@ -1,11 +1,10 @@
 #!/usr/bin/env python2.7
-import halo_db as db
+import halo_db
 import halo_db.core.simulation
 import halo_db.core.timestep
 from halo_db import parallel_tasks
 from halo_db.crosslink import need_crosslink_ts, crosslink_ts
-
-import terminalcontroller
+from halo_db.tools import terminalcontroller
 
 
 def crosslink_sim(sim1, sim2, force=False):
@@ -29,11 +28,11 @@ def run():
     import sys
     import halo_db as db
 
-    session = db.core.internal_session
+    session = db.core.get_default_session()
     parallel_tasks.mpi_sync_db(session)
 
-    ts1 = db.get_item(sys.argv[1])
-    ts2 = db.get_item(sys.argv[2])
+    ts1 = halo_db.get_item(sys.argv[1])
+    ts2 = halo_db.get_item(sys.argv[2])
 
     if isinstance(ts1, halo_db.core.simulation.Simulation) and isinstance(ts2, halo_db.core.simulation.Simulation):
         crosslink_sim(ts1, ts2)

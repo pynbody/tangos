@@ -47,7 +47,7 @@ class TimeStep(Base):
         return f
 
     def __init__(self, simulation, extension, autoload=True):
-        from . import current_creator
+        from . import creator
         import pynbody.analysis.cosmology
         ext = str(extension)
         while ext[0] == "/":
@@ -66,7 +66,7 @@ class TimeStep(Base):
         else:
             self.available = False
 
-        self.creator = current_creator
+        self.creator_id = creator.get_creator_id()
 
     def __repr__(self):
         extra = ""

@@ -120,40 +120,40 @@ class HaloProperties(object):
                 return False
         return True
 
-    def calculate(self, pynbody_halo_data, db_halo_entry):
+    def calculate(self, pynbody_halo_data, halo_entry):
         """Calculate the properties using the given data
 
         :param pynbody_halo_data: The halo data, if available
         :type pynbody_halo_data: pynbody.snapshot.SimSnap
 
-        :param db_halo_entry: The database object associated with the halo, if available
-        :type db_halo_entry: halo_db.core.halo.Halo
+        :param halo_entry: The database object associated with the halo, if available
+        :type halo_entry: halo_db.core.halo.Halo
         :return: All properties as named by names()
         """
         raise NotImplementedError
 
-    def live_calculate(self, db_halo_entry, *input_values):
+    def live_calculate(self, halo_entry, *input_values):
         """Calculate the result of a function, using the existing data in the database alone
 
-        :param db_halo_entry: The database object associated with the halo
-        :type db_halo_entry: halo_db.core.halo.Halo
+        :param halo_entry: The database object associated with the halo
+        :type halo_entry: halo_db.core.halo.Halo
 
         :param input_values: Input values for the function
         :return: All function values as named by self.name()
         """
-        return self.calculate(None, db_halo_entry)
+        return self.calculate(None, halo_entry)
 
-    def live_calculate_named(self, name, db_halo_entry, *input_values):
+    def live_calculate_named(self, name, halo_entry, *input_values):
         """Calculate the result of a function, using the existing data in the database alone
 
         :param name: The name of the one property to return (which must be one of the values specified by self.name())
-        :param db_halo_entry: The database object associated with the halo
-        :type db_halo_entry: halo_db.core.halo.Halo
+        :param halo_entry: The database object associated with the halo
+        :type halo_entry: halo_db.core.halo.Halo
 
         :param input_values: Input values for the function
         :return: The single named value
         """
-        values = self.live_calculate(db_halo_entry, *input_values)
+        values = self.live_calculate(halo_entry, *input_values)
         names = self.name()
         if isinstance(names, basestring):
             return values
@@ -263,6 +263,9 @@ class TimeChunkedProperty(HaloProperties):
 
         if reassembly_type=='major':
             return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy)
+        elif reassembly_type=='major_across_simulations':
+            return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy,
+                                                          strategy_kwargs = {'target': None})
         elif reassembly_type=='sum':
             return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopAllProgenitorsStrategy)
         elif reassembly_type=='place':
@@ -281,10 +284,10 @@ class TimeChunkedProperty(HaloProperties):
         return final
 
     @classmethod
-    def _reassemble_using_finding_strategy(cls, property, strategy):
+    def _reassemble_using_finding_strategy(cls, property, strategy, strategy_kwargs={}):
         name = property.name.text
         halo = property.halo
-        t, stack = halo.property_cascade("t()", "raw(" + name + ")", strategy=strategy)
+        t, stack = halo.property_cascade("t()", "raw(" + name + ")", strategy=strategy, strategy_kwargs=strategy_kwargs)
         final = np.zeros(cls.bin_index(t[0]))
         previous_end = -1
         for t_i, hist_i in zip(t, stack):
@@ -321,8 +324,8 @@ class LiveHaloProperties(HaloProperties):
     def requires_simdata(self):
         return False
 
-    def calculate(self, _, db_halo):
-        return self.live_calculate(db_halo, *([None]*self._nargs))
+    def calculate(self, _, halo):
+        return self.live_calculate(halo, *([None]*self._nargs))
 
 
 class LiveHaloPropertiesInheritingMetaProperties(LiveHaloProperties):
@@ -416,24 +419,6 @@ def providing_classes(property_name_list, silent_fail=False):
 
     return classes
 
-def _make_numeric_if_possible(s):
-    if "." in s:
-        try:
-            return float(s)
-        except ValueError:
-            return s
-    else:
-        try:
-            return int(s)
-        except ValueError:
-            return s
-
-def _process_numerical_value(s,l,t):
-    if "." in t[0] or "e" in t[0] or "E" in t[0]:
-        return float(t[0])
-    else:
-        return int(t[0])
-
 def instantiate_classes(simulation, property_name_list, silent_fail=False):
     instances = []
     for property_identifier in property_name_list:
@@ -451,17 +436,17 @@ def instantiate_class(simulation, property_name, silent_fail=False):
 def get_required_properties(property_name):
     return providing_class(property_name).requires_property()
 
-def live_calculate(property_name, db_halo, *args, **kwargs):
+def live_calculate(property_name, halo, *args, **kwargs):
     inputs_names = kwargs.pop('names',[None]*100)
     C = providing_class(property_name)
     I = C(*args)
     names = I.name()
     if hasattr(I, 'live_calculate'):
         # new-style context-aware calculation
-        results = I.live_calculate(db_halo, inputs_names)
+        results = I.live_calculate(halo, inputs_names)
     else:
         # old-style calculation that happens to have no simulation data loaded
-        results = I.calculate(None, db_halo)
+        results = I.calculate(None, halo)
     if not isinstance(names, str):
         results = results[names.index(property_name)]
     return results

@@ -1,7 +1,11 @@
-import sqlalchemy
+import sqlalchemy, sqlalchemy.exc
 from sqlalchemy import Column, Integer, String
 
-from . import Base
+from . import Base, get_default_session
+
+_dict_id = {}  # maps dictionary text -> database ID
+_dict_obj = {} # maps session, dictionary text -> database object
+
 
 class DictionaryItem(Base):
     __tablename__ = 'dictionary'
@@ -19,26 +23,15 @@ class DictionaryItem(Base):
         import properties
         return properties.providing_class(self.text)
 
-
-_dict_id = {}
-_dict_obj = {}
-
-
-def _get_dict_cache_for_session(session):
-    session_dict = _dict_id.get(session, {})
-    _dict_id[session] = session_dict
-    return session_dict
-
-
 def get_dict_id(text, default=None, session=None):
     """Get a DictionaryItem id for text (possibly cached). Raises KeyError if
     no dictionary object exists for the specified text"""
 
-    from . import Session, internal_session
+    from . import Session
 
     if session is None:
         session = Session()
-        _dict_id = _get_dict_cache_for_session(internal_session)
+        _dict_id = _get_dict_cache_for_session(get_default_session())
         close_session=True
     else:
         _dict_id = _get_dict_cache_for_session(session)
@@ -96,7 +89,6 @@ def get_or_create_dictionary_item(session, name):
             obj = session.merge(obj)
             session.commit()
         except sqlalchemy.exc.IntegrityError:
-            print " -> failed dictionary creation attempt"
             session.rollback()
             obj = session.query(DictionaryItem).filter_by(text=name).first()
             if obj is None:
@@ -104,3 +96,8 @@ def get_or_create_dictionary_item(session, name):
 
     _dict_obj[session][name] = obj
     return obj
+
+def _get_dict_cache_for_session(session):
+    session_dict = _dict_id.get(session, {})
+    _dict_id[session] = session_dict
+    return session_dict
