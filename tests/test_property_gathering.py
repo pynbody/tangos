@@ -16,89 +16,27 @@ def setup():
     # created to a RAM database)
     db.init_db("sqlite:///temporary_testing.db")
 
-    session = db.core.get_default_session()
+    creator = halo_db.testing.TestDatabaseGenerator()
 
-    sim = halo_db.core.simulation.Simulation("sim")
+    halo_offset = 0
+    for ts in range(1,4):
+        num_halos = 4 if ts<3 else 3
+        creator.add_timestep()
+        creator.add_halos_to_timestep(num_halos)
+        creator.add_properties_to_halos(Mvir=lambda i: i+halo_offset)
+        creator.add_properties_to_halos(Rvir=lambda i: (i+halo_offset)*0.1)
+        halo_offset+=num_halos
 
-    session.add(sim)
+        creator.add_bhs_to_timestep(4)
+        creator.add_properties_to_bhs(hole_mass = lambda i: float(i*100))
+        creator.add_properties_to_bhs(hole_spin = lambda i: 1000-float(i)*100)
 
-    ts1 = halo_db.core.timestep.TimeStep(sim, "ts1", False)
-    ts2 = halo_db.core.timestep.TimeStep(sim, "ts2", False)
-    ts3 = halo_db.core.timestep.TimeStep(sim, "ts3", False)
-
-    session.add_all([ts1,ts2,ts3])
-
-    ts1.time_gyr = 1
-    ts2.time_gyr = 2
-    ts3.time_gyr = 3
-
-    ts1.redshift = 10
-    ts2.redshift = 5
-    ts3.redshift = 0
-
-    ts1_h1 = halo_db.core.halo.Halo(ts1, 1, 1000, 0, 0, 0)
-    ts1_h2 = halo_db.core.halo.Halo(ts1, 2, 900, 0, 0, 0)
-    ts1_h3 = halo_db.core.halo.Halo(ts1, 3, 800, 0, 0, 0)
-    ts1_h4 = halo_db.core.halo.Halo(ts1, 4, 300, 0, 0, 0)
-
-    session.add_all([ts1_h1,ts1_h2,ts1_h3,ts1_h4])
-
-    ts2_h1 = halo_db.core.halo.Halo(ts2, 1, 1000, 0, 0, 0)
-    ts2_h2 = halo_db.core.halo.Halo(ts2, 2, 900, 0, 0, 0)
-    ts2_h3 = halo_db.core.halo.Halo(ts2, 3, 800, 0, 0, 0)
-    ts2_h4 = halo_db.core.halo.Halo(ts2, 4, 300, 0, 0, 0)
+        creator.assign_bhs_to_halos({1:1, 2:2, 3:3, 4:3})
 
 
-
-    session.add_all([ts2_h1,ts2_h2,ts2_h3,ts2_h4])
-
-
-
-    ts3_h1 = halo_db.core.halo.Halo(ts3, 1, 2000, 0, 0, 0)
-    ts3_h2 = halo_db.core.halo.Halo(ts3, 2, 800, 0, 0, 0)
-    ts3_h3 = halo_db.core.halo.Halo(ts3, 3, 300, 0, 0, 0)
-
-    session.add_all([ts3_h1,ts3_h2,ts3_h3])
-
-
-    add_symmetric_link(ts1_h1, ts2_h1)
-    add_symmetric_link(ts1_h2, ts2_h2)
-    add_symmetric_link(ts1_h3, ts2_h3)
-    add_symmetric_link(ts1_h4, ts2_h4)
-
-    add_symmetric_link(ts2_h1, ts3_h1)
-    add_symmetric_link(ts2_h2, ts3_h2)
-    add_symmetric_link(ts2_h3, ts3_h3)
-
-    for i,h in enumerate([ts1_h1,ts1_h2,ts1_h3,ts1_h4,ts2_h1,ts2_h2,ts2_h3,ts2_h4,ts3_h1,ts3_h2,ts3_h3]):
-        h['Mvir'] = float(i+1)
-        h['Rvir'] = float(i+1)*0.1
-
-    for ts in ts1, ts2, ts3:
-        ts1_h1_bh = halo_db.core.halo.BH(ts, 1)
-        ts1_h2_bh = halo_db.core.halo.BH(ts, 2)
-        ts1_h3_bh = halo_db.core.halo.BH(ts, 3)
-        ts1_h3_bh2 = halo_db.core.halo.BH(ts, 4)
-
-
-        session.add_all([ts1_h1_bh, ts1_h2_bh, ts1_h3_bh, ts1_h3_bh2])
-
-        for i,h in enumerate([ts1_h1_bh, ts1_h2_bh, ts1_h3_bh, ts1_h3_bh2]):
-            h['hole_mass'] = float(i+1)*100
-            h['hole_spin'] = 1000-float(i+1)*100
-
-
-        ts.halos.filter_by(halo_number=1).first()["BH"] = ts1_h1_bh
-        ts.halos.filter_by(halo_number=2).first()["BH"] = ts1_h2_bh
-        ts.halos.filter_by(halo_number=3).first()["BH"] = ts1_h3_bh, ts1_h3_bh2
-
-    for ts_a, ts_b in (ts1, ts2), (ts2, ts3):
-        assert isinstance(ts_a, halo_db.core.timestep.TimeStep)
-        assert isinstance(ts_b, halo_db.core.timestep.TimeStep)
-        add_symmetric_link(ts_a.halos.filter_by(halo_type=1).first(), ts_b.halos.filter_by(halo_type=1).first())
-
-
-    db.core.get_default_session().commit()
+        if ts>1:
+            creator.link_last_halos()
+            creator.link_last_bhs_using_mapping({1:1})
 
 def teardown():
     os.remove("temporary_testing.db")
