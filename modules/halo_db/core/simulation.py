@@ -2,7 +2,7 @@ import datetime
 
 import numpy as np
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime, LargeBinary
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, Session
 
 from . import data_attribute_mapper
 from . import Base
@@ -89,6 +89,8 @@ class SimulationProperty(Base):
 
     def __init__(self, sim, name, data):
         self.simulation = sim
+        if not isinstance(name, DictionaryItem):
+            name = get_or_create_dictionary_item(Session.object_session(self), name)
         self.name = name
         self.data = data
         self.creator_id = creator.get_creator().id

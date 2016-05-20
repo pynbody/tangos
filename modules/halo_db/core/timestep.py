@@ -1,4 +1,5 @@
 import weakref
+import os, os.path
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, Boolean, and_
 from sqlalchemy.orm import relationship, backref
@@ -30,7 +31,7 @@ class TimeStep(Base):
 
     @property
     def filename(self):
-        return str(config.base + self.simulation.basename + "/" + self.extension)
+        return os.path.join(config.base, self.simulation.basename, self.extension)
 
     @property
     def relative_filename(self):
@@ -46,26 +47,10 @@ class TimeStep(Base):
             _loaded_timesteps[self.relative_filename] = weakref.ref(f)
         return f
 
-    def __init__(self, simulation, extension, autoload=True):
+    def __init__(self, simulation, extension):
         from . import creator
-        import pynbody.analysis.cosmology
-        ext = str(extension)
-        while ext[0] == "/":
-            ext = ext[1:]
         self.extension = str(extension)
         self.simulation = simulation
-        if autoload:
-            #f = pynbody.load(self.filename, only_header=True)
-            f = pynbody.load(self.filename)
-            self.redshift = f.properties['z']
-            try:
-                self.time_gyr = f.properties['time'].in_units("Gyr")
-            except:
-                self.time_gyr = -1
-            self.available = True
-        else:
-            self.available = False
-
         self.creator_id = creator.get_creator_id()
 
     def __repr__(self):
