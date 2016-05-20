@@ -5,12 +5,7 @@ import contextlib
 import gc
 import traceback
 
-def add_symmetric_link(h1, h2, weight=1.0):
-    """Add a bidirectional link between h1 and h2 with the specified weight"""
-    rel = core.dictionary.get_or_create_dictionary_item(core.get_default_session(), "ptcls_in_common")
-    core.get_default_session().add_all([core.halo_data.HaloLink(h1, h2, rel, weight), core.halo_data.HaloLink(h2, h1, rel, weight)])
-
-class TestDatabaseGenerator(object):
+class TestSimulationGenerator(object):
     def __init__(self, sim_name="sim", session=None):
         if not session:
             session = core.get_default_session()

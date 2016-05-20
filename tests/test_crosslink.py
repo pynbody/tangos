@@ -10,7 +10,7 @@ def setup():
 
     db.init_db("sqlite://")
 
-    generator = db.testing.TestDatabaseGenerator()
+    generator = db.testing.TestSimulationGenerator()
 
     for i in range(3):
         generator.add_timestep()

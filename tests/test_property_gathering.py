@@ -8,7 +8,6 @@ import halo_db.core.timestep
 import halo_db
 import properties
 from halo_db import testing
-from halo_db.testing import add_symmetric_link
 import os
 
 def setup():
@@ -16,7 +15,7 @@ def setup():
     # created to a RAM database)
     db.init_db("sqlite:///temporary_testing.db")
 
-    creator = halo_db.testing.TestDatabaseGenerator()
+    creator = halo_db.testing.TestSimulationGenerator()
 
     halo_offset = 0
     for ts in range(1,4):

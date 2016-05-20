@@ -13,7 +13,7 @@ import numpy.testing as npt
 def setup():
     db.init_db("sqlite://")
 
-    generator = testing.TestDatabaseGenerator()
+    generator = testing.TestSimulationGenerator()
 
     ts1 = generator.add_timestep()
     generator.add_halos_to_timestep(2)

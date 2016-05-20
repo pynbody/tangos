@@ -16,9 +16,9 @@ from nose.tools import assert_raises
 def setup():
     db.init_db("sqlite://")
 
-    generator = testing.TestDatabaseGenerator()
+    generator = testing.TestSimulationGenerator()
     # A second simulation to test linking across
-    generator_2 = testing.TestDatabaseGenerator("sim2")
+    generator_2 = testing.TestSimulationGenerator("sim2")
 
     generator.add_timestep()
     generator_2.add_timestep()
