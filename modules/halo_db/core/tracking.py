@@ -25,7 +25,7 @@ class TrackData(Base):
 
     def __init__(self, sim, halo_num=None):
         self.simulation = sim
-        self.creator = creator.get_creator_id()
+        self.creator_id = creator.get_creator_id()
         if halo_num is None:
             hs = []
             for h in sim.trackers.all():
