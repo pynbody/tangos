@@ -88,7 +88,6 @@ def run():
 
     for f in files:
         print f
-        print f.simulation
         sim = f.simulation
         
         try:
