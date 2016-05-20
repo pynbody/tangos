@@ -12,8 +12,8 @@ import warnings
 import pynbody
 import numpy as np
 import properties
-import terminalcontroller
-from terminalcontroller import heading, term
+from halo_db.tools import terminalcontroller
+from halo_db.tools.terminalcontroller import heading, term
 import sys
 import sqlalchemy
 import sqlalchemy.exc
@@ -144,7 +144,7 @@ class DbWriter(object):
                 except IndexError:
                     pass
         else:
-            files = db.core.internal_session.query(halo_db.core.timestep.TimeStep).filter(
+            files = db.core.get_default_session().query(halo_db.core.timestep.TimeStep).filter(
                 halo_db.core.timestep.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
                 order_by(halo_db.core.timestep.TimeStep.time_gyr).all()
 
@@ -185,7 +185,7 @@ class DbWriter(object):
         if self.options.htype is not None:
             query = db.and_(query, halo_db.core.halo.Halo.halo_type == self.options.htype)
 
-        halos = db.core.internal_session.query(halo_db.core.halo.Halo).filter(query).all()
+        halos = db.core.get_default_session().query(halo_db.core.halo.Halo).filter(query).all()
 
         halos = halos[self.options.hmin:]
 
@@ -248,7 +248,7 @@ class DbWriter(object):
         for n, r in zip(names, results):
             if isinstance(r, properties.ProxyHalo):
                 # resolve halo
-                r = db.core.internal_session.query(halo_db.core.halo.Halo).filter_by(
+                r = db.core.get_default_session().query(halo_db.core.halo.Halo).filter_by(
                     halo_number=int(r), timestep=db_halo.timestep).first()
             if self.options.force or (n not in existing_properties_data.keys()):
                 existing_properties_data[n] = r
@@ -483,7 +483,7 @@ class DbWriter(object):
 
 
 def run_dbwriter(argv):
-    parallel_tasks.mpi_sync_db(db.core.internal_session)
+    parallel_tasks.mpi_sync_db(db.core.get_default_session())
     writer = DbWriter()
     writer.parse_command_line(argv)
     writer.run_calculation_loop()

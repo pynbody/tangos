@@ -70,10 +70,10 @@ class HaloPropertyGetter(object):
         :type halo: Halo
         :type property_id: int
         :type session: sqlalchemy.orm.session.Session"""
-        from . import core
-        query_properties = session.query(core.halo_data.HaloProperty).filter_by(name_id=property_id, halo_id=halo.id,
+        from . import halo_data
+        query_properties = session.query(halo_data.HaloProperty).filter_by(name_id=property_id, halo_id=halo.id,
                                                                                         deprecated=False).order_by(
-            core.halo_data.HaloProperty.id.desc())
+            halo_data.HaloProperty.id.desc())
 
         return self._postprocess(query_properties.all())
 
@@ -82,8 +82,8 @@ class HaloPropertyGetter(object):
         return [x.name.text for x in halo.all_properties]
 
     def keys_from_session(self, halo, session):
-        from . import core
-        query_properties = session.query(core.halo_data.HaloProperty).filter_by(halo_id=halo.id,
+        from . import halo_data
+        query_properties = session.query(halo_data.HaloProperty).filter_by(halo_id=halo.id,
                                                                                         deprecated=False)
         return [x.name.text for x in query_properties.all()]
 
@@ -138,8 +138,8 @@ class HaloLinkGetter(HaloPropertyGetter):
         return self._postprocess(return_vals)
 
     def get_from_session(self, halo, property_id, session):
-        from . import core
-        query_links = session.query(core.halo_data.HaloLink).filter_by(relation_id=property_id, halo_from_id=halo.id)
+        from . import halo_data
+        query_links = session.query(halo_data.HaloLink).filter_by(relation_id=property_id, halo_from_id=halo.id)
         return self._postprocess(query_links.all())
 
     def cache_contains(self, halo, property_id):
@@ -154,8 +154,8 @@ class HaloLinkGetter(HaloPropertyGetter):
         return [x.relation.text for x in halo.all_links]
 
     def keys_from_session(self, halo, session):
-        from . import core
-        query_properties = session.query(core.halo_data.HaloLink).filter_by(halo_from_id=halo.id)
+        from . import halo_data
+        query_properties = session.query(halo_data.HaloLink).filter_by(halo_from_id=halo.id)
         return [x.relation.text for x in query_properties.all()]
     
 halo_link_getter = HaloLinkGetter()
@@ -179,8 +179,8 @@ class ReverseHaloLinkGetter(HaloLinkGetter):
         return self._postprocess(return_vals)
 
     def get_from_session(self, halo, property_id, session):
-        from . import core
-        query_links = session.query(core.halo_data.HaloLink).filter_by(relation_id=property_id,
+        from . import halo_data
+        query_links = session.query(halo_data.HaloLink).filter_by(relation_id=property_id,
                                                                                halo_to_id=halo.id)
         return self._postprocess(query_links.all())
 

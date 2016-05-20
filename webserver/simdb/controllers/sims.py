@@ -9,6 +9,7 @@ import halo_db.core.halo
 import halo_db.core.halo_data
 import halo_db.core.simulation
 import halo_db.core.timestep
+import halo_db
 from simdb.lib.base import BaseController, render
 
 import simdb.lib.helpers as h
@@ -26,7 +27,10 @@ log = logging.getLogger(__name__)
 MAXHOPS_FIND_HALO = 3
 
 def creator_link(creator) :
-    return h.link_to(repr(creator), url(controller="creator", action="more", id=creator.id))
+    if creator:
+        return h.link_to(repr(creator), url(controller="creator", action="more", id=creator.id))
+    else:
+        return "(No creator information)"
 
 class SimsController(BaseController):
 
@@ -448,7 +452,7 @@ class SimsController(BaseController):
                 id = new_halo.id
 
         c.name = "Halo "+str(halo.halo_number)+" of "+halo.timestep.extension
-        all_sims = db.all_simulations(Session)
+        all_sims = halo_db.all_simulations(Session)
 
         c.sims = [(sim.basename, sim.id, sim.id==halo.timestep.simulation_id) for sim in all_sims]
 

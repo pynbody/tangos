@@ -1,3 +1,4 @@
+import halo_db
 from .. import BuiltinFunction, FixedInput, FixedNumericInput, StoredProperty
 from ... import consistent_collection
 from ... import core
@@ -10,7 +11,7 @@ import numpy as np
 def match(source_halos, target):
     from ... import relation_finding_strategies
     if not isinstance(target, core.Base):
-        target = core.get_item(target)
+        target = halo_db.get_item(target)
     results = relation_finding_strategies.MultiSourceMultiHopStrategy(source_halos, target).all()
     assert len(results) == len(source_halos)
     return np.array(results, dtype=object)

@@ -2,9 +2,10 @@ import numpy as np
 from sqlalchemy import Column, Integer, LargeBinary, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-from .creator import Creator
-from .simulation import Simulation
 from . import Base
+from . import creator
+from .simulation import Simulation
+
 
 class TrackData(Base):
     __tablename__ = 'trackdata'
@@ -14,7 +15,7 @@ class TrackData(Base):
 
     use_iord = Column(Boolean, default=True, nullable=False)
     halo_number = Column(Integer, nullable=False, default=0)
-    creator = relationship(Creator, backref=backref(
+    creator = relationship(creator.Creator, backref=backref(
         'trackdata', cascade='delete', lazy='dynamic'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
 
@@ -23,9 +24,8 @@ class TrackData(Base):
                                                           lazy='dynamic', order_by=halo_number), cascade='save-update')
 
     def __init__(self, sim, halo_num=None):
-        from . import current_creator
         self.simulation = sim
-        self.creator = current_creator
+        self.creator = creator.get_creator_id()
         if halo_num is None:
             hs = []
             for h in sim.trackers.all():
@@ -133,8 +133,9 @@ class TrackerHaloCatalogue(object):
 
 
 def update_tracker_halos(sim=None):
-    from . import internal_session, get_simulation
-    from terminalcontroller import heading
+    from . import internal_session
+    from halo_db import get_simulation
+    from halo_db.tools.terminalcontroller import heading
 
     if sim is None:
         x = internal_session.query(TrackData).all()

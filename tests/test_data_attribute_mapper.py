@@ -1,11 +1,14 @@
-import halo_db.data_attribute_mapper as dam
-import numpy as np
 import datetime
 import pickle
-import zlib
-import pynbody
 import time
+import zlib
+
+import numpy as np
+import pynbody
 from nose.tools import assert_raises
+
+import halo_db.core.data_attribute_mapper as dam
+
 
 class TestTarget(object):
     all_types = "time","string","float","int","array"
