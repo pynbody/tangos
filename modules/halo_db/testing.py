@@ -75,7 +75,7 @@ class TestSimulationGenerator(object):
         """Add a sequentially-numbered timestep to the specified simulation"""
 
         timestep_num = len(self.sim.timesteps)+1
-        ts = halo_db.core.timestep.TimeStep(self.sim, "ts%d"%timestep_num, False)
+        ts = halo_db.core.timestep.TimeStep(self.sim, "ts%d"%timestep_num)
         ts.redshift = 9 - timestep_num
         ts.time_gyr = 0.9*timestep_num
         self.session.add(ts)

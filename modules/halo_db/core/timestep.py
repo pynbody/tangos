@@ -9,7 +9,7 @@ from .creator import Creator
 from .simulation import Simulation
 from .. import config
 
-_loaded_timesteps = {}
+
 
 class TimeStep(Base):
     __tablename__ = 'timesteps'
@@ -38,14 +38,8 @@ class TimeStep(Base):
         return str(self.simulation.basename + "/" + self.extension)
 
     def load(self):
-        f = _loaded_timesteps.get(self.relative_filename, lambda: None)()
-        if f is None:
-            import pynbody
-            f = pynbody.load(self.filename)
-            if isinstance(f, pynbody.snapshot.gadget.GadgetSnap):
-                f.wrap()
-            _loaded_timesteps[self.relative_filename] = weakref.ref(f)
-        return f
+        handler = self.simulation.get_output_set_handler()
+        return handler.load_timestep(self.extension)
 
     def __init__(self, simulation, extension):
         from . import creator

@@ -6,16 +6,26 @@ import numpy as np
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import halo_db
 import halo_db as db
+
 from halo_db import all_simulations, get_simulation, get_halo
-from halo_db import core
+from halo_db import core, config
 from halo_db.core import Base, get_or_create_dictionary_item, \
     Creator, Simulation, TimeStep, Halo, HaloProperty, HaloLink
 from halo_db.query import get_simulation, get_halo
 from halo_db.core.simulation import SimulationProperty
 from halo_db.core.tracking import TrackData
-from halo_db.tools.add_simulation import add_simulation_timesteps
+from halo_db.tools.add_simulation import SimulationAdderUpdater
+from halo_db.simulation_output_handlers import get_named_handler_class
+
+
+def add_simulation_timesteps(options):
+    handler=options.handler
+    output_class = get_named_handler_class(handler)
+    adder = SimulationAdderUpdater(output_class(options.sim))
+    adder.scan_simulation_and_add_all_descendants()
+
+
 
 
 def db_import(options):
@@ -329,6 +339,10 @@ if __name__ == "__main__":
                                        help="Add new simulations to the database, or update existing simulations")
     subparse_add.add_argument("sim",action="store",
                               help="The path to the simulation folders relative to the database folder")
+    subparse_add.add_argument("--handler", action="store", nargs='?',
+                              help="The handler to use from the simulation_outputs subpackage",
+                              default=config.default_fileset_handler_class)
+
     subparse_add.set_defaults(func=add_simulation_timesteps)
 
     subparse_recentruns = subparse.add_parser("recent-runs",

@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship, backref, Session
 from . import data_attribute_mapper
 from . import Base
 from . import creator
+from .. import simulation_output_handlers, config
 from .dictionary import DictionaryItem, get_dict_id, get_or_create_dictionary_item
 
 
@@ -32,6 +33,19 @@ class Simulation(Base):
             return self[key]
         except KeyError:
             return default
+
+    def get_output_set_handler(self):
+        """Get a SimulationOutputSetHandler object, pre-configured suitably for this simulation
+
+        :rtype simulation_outputs.SimulationOutputSetHandler"""
+        handler = simulation_output_handlers.get_named_handler_class(self.get("handler", config.default_fileset_handler_class))
+        return handler(self.basename)
+
+    def keys(self):
+        return [prop.name.text for prop in self.properties.all()]
+
+    def __contains__(self, item):
+        return item in self.keys()
 
     def __getitem__(self, i):
         from . import Session
