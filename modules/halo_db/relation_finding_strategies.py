@@ -612,7 +612,7 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
 
 
 class MultiHopAllProgenitorsStrategy(MultiHopStrategy):
-    """A hop strategy that suggests all progenitors for a halo at every step"""
+    """Finds all progenitors for a halo at every step"""
     def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False, target='auto', combine_routes=True):
         self.sim_id = halo_from.timestep.simulation_id
         if target=='auto':
@@ -634,7 +634,7 @@ class MultiHopAllProgenitorsStrategy(MultiHopStrategy):
 
 
 class MultiHopMajorProgenitorsStrategy(MultiHopAllProgenitorsStrategy):
-    """A hop strategy that suggests the major progenitor for a halo at every step"""
+    """Finds the major progenitor for a halo at every step"""
 
     def _supplement_halolink_query_with_filter(self, query, table):
         query = super(MultiHopMajorProgenitorsStrategy, self)._supplement_halolink_query_with_filter(query, table)
@@ -642,6 +642,8 @@ class MultiHopMajorProgenitorsStrategy(MultiHopAllProgenitorsStrategy):
             limit(1)
 
 class MultiHopMostRecentMergerStrategy(MultiHopAllProgenitorsStrategy):
+    """Finds the halos involved in the most recent merger into the major progenitor branch of the halo"""
+
     def _hopping_finished(self, filtered_count):
         self._last_filtered_count = filtered_count
         return filtered_count != 1
@@ -657,7 +659,7 @@ class MultiHopMostRecentMergerStrategy(MultiHopAllProgenitorsStrategy):
 
 
 class MultiHopMajorDescendantsStrategy(MultiHopStrategy):
-    """A hop strategy that suggests the major descendant for a halo at every step"""
+    """Suggests the major descendant for a halo at every step"""
 
     def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False):
         self.sim_id = halo_from.timestep.simulation_id
