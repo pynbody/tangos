@@ -175,21 +175,26 @@ term = TerminalController()
 
 class RedirectStdStreams(object):
 
+    def __init__(self):
+        self.enabled = True
+
     def __enter__(self):
-        self.strio = cStringIO.StringIO()
-        self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
-        self.old_stdout.flush()
-        self.old_stderr.flush()
-        sys.stdout, sys.stderr = self.strio, self.strio
+        if self.enabled:
+            self.strio = cStringIO.StringIO()
+            self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
+            self.old_stdout.flush()
+            self.old_stderr.flush()
+            sys.stdout, sys.stderr = self.strio, self.strio
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.strio.flush()
-        if exc_type is not None:
-            print self.strio.getvalue()
+        if self.enabled:
+            self.strio.flush()
+            if exc_type is not None:
+                print self.strio.getvalue()
 
-        sys.stdout = self.old_stdout
-        sys.stderr = self.old_stderr
-        self.strio.close()
-        del self.strio
+            sys.stdout = self.old_stdout
+            sys.stderr = self.old_stderr
+            self.strio.close()
+            del self.strio
 
 redirect = RedirectStdStreams()

@@ -89,7 +89,9 @@ class SimulationOutputSetHandler(object):
         return name
 
     def _extension_to_filename(self, ts_extension):
-        return os.path.join(config.base, self.basename, ts_extension)
+        """Given the timestep extension, form the path to the actual file"""
+        # Explicit str cast - pynbody seems inconsistent about how it responds to unicode filenames
+        return str(os.path.join(config.base, self.basename, ts_extension))
 
 
 def get_named_handler_class(handler):
