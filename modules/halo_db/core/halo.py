@@ -67,11 +67,13 @@ class Halo(Base):
 
         By default, the entire simulation is loaded and a subview with this halo is returned. If partial=True,
         pynbody's partial loading system is used to only load the data for the one halo, saving memory."""
-        h = construct_halo_cat(self.timestep, self.halo_type)
-        if partial:
-            return h.load_copy(self.halo_number)
+
+        handler = self.timestep.simulation.get_output_set_handler()
+        if self.halo_type==0:
+            return handler.load_halo(self.timestep.extension, self.halo_number, partial=partial)
         else:
-            return h[self.halo_number]
+            return handler.load_tracked_region(self.timestep.extension, self.tracker, partial=partial)
+
 
     def calculate(self, name):
         """Use the live-calculation system to calculate a user-specified function of the stored data.
@@ -311,15 +313,3 @@ class BH(Halo):
 
 
 _loaded_halocats = {}
-
-def construct_halo_cat(timestep_db, type_id):
-    f = timestep_db.load()
-    if type_id == 0 or type_id is None:
-        # amiga grp halo
-        h = _loaded_halocats.get(id(f), lambda: None)()
-        if h is None:
-            h = f.halos()
-            _loaded_halocats[id(f)] = weakref.ref(h)
-        return h  # pynbody.halo.AmigaGrpCatalogue(f)
-    elif type_id == 1:
-        return TrackerHaloCatalogue(f,timestep_db.simulation.trackers)

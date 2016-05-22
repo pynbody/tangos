@@ -1,0 +1,110 @@
+nTreePieces =    4096
+bPeriodic       = 1
+bParaRead       = 1
+bParaWrite      = 1
+dTheta          = 0.65
+dTheta2         = 0.9
+nReplicas       = 1
+achInFile = /u/apontzen/scratch/ICs/pioneer50h128.1536.con1/pioneer50h128.1536gs.con1.tipsy
+achOutName = tiny
+##iStartStep	= 2048
+dHubble0        = 2.89265
+dOmega0         = 0.3156
+dLambda         = 0.6844
+dKpcUnit = 50000
+dMsolUnit = 1.57138e+16
+dRedTo          = 0.0
+iCheckInterval  = 8
+dExtraStore     = 0.05
+bKDK            = 1
+#iMaxRung        = 22
+dEta            = 0.19
+dEtaCourant     = 0.4
+bStandard       = 1
+bDoGravity      = 1
+bComove         = 1
+bCannonical     = 1
+bGeometric      = 0
+iGasModel       = 2
+dxPeriod        = 1.0
+dyPeriod        = 1.0
+dzPeriod        = 1.0
+dConstGamma     = 1.666667
+dMeanMolWeight  = 0.59259
+nSteps          = 4096
+iOutInterval    = 64
+iLogInterval    = 1
+bOverwrite      = 0
+bVDetails       = 1
+bDoDensity      = 0
+nSmooth         = 32
+bViscosityLimiter = 1
+bFastGas        = 1
+dFracNoDomainDecomp = 0.1
+nTruncateRung = 256
+bViscosityLimitdt = 1
+#options for physical softening
+bPhysicalSoft   = 1
+bSoftMaxMul     = 1
+dSoftMax        = 9
+#star formation parameters
+bStarForm = 1
+bUV       = 1
+bFeedBack = 1
+dOverDenMin = 2.63
+dPhysDenMin = 0.2
+#dStarEff = 0. #disabled by InitStarMass
+dInitStarMass   = 3.99434e-12  #0.3 Original Gas Mass
+dMinGasMass     = 2.66289e-12  #0.2 Original Gas Mass
+bDoIOrderOutput = 1 # writes .iord, .igasorder, .rhoform, .Tform
+iBinaryOutput   = 1
+#next two are coupled
+dCStar = 0.15
+#more parameters
+dTempMax = 1.e4
+dESN = 0.75e51
+dDeltaStarForm = 1e6
+iNSNIIQuantum          = 0
+#director requirement
+iDirector = 4
+dDumpFrameStep  = 1.
+#no metal cooling   features ####################
+# low T metal cooling
+bLowTCool = 1
+# self shielding on
+bSelfShield     = 1
+###############################################
+# new SPH diffusion parameters
+# MT: we will need to test these three at some point.
+dMetalDiffusionCoeff=0.03
+dThermalDiffusionCoeff=0.03
+dhMinOverSoft = 0.2
+#######################
+dMaxGasMass = 1.33145e-10   #10 times gas particle
+dExtraCoolShutoff=4.
+#for speed
+nBucket = 64
+#dNoncoolConvTime=1e6
+### CHANGA
+achIMF = Kroupa01
+######BH Parameters############################
+iOrbitOutInterval     = 1            #Number of timsteps between orbit outputs
+bDoSinks              = 0            #Enable sinks
+bBHSink               = 0            #Bondi-Hoyle type sink
+dBHSinkEddEff         = 0.1         #BHSink Eddington Efficiency
+dBHSinkFeedbackEff = 0.02        #BHSink Feedback Efficiency
+dBHSinkAlpha          = 1.            #BHSink Alpha
+dBHSinkBeta = 2.0
+dBHSinkColdDen 	      = 0.2
+bBHDynFrict	      = 1
+bBHAdvect	      = 0
+bBHAngMom	      = 1
+bBHMindv              = 1            #Enable use of mindeltav for BH accretion
+dBHFormDen	      = 3.0
+dBHFormTemp 	      = 9500
+dBHFormMaxZ	      = 3e-4
+dBHFormProb           = -1          #Seed BH formation probability
+bBHForm               = 0            #Enable seed BH formation
+bDoBHKick             = 0            #Turn on grav recoil for mergers
+bBHAccreteAll	      = 1
+dInitBHMass           = 6.27792e-11  #RES  Inital BH mass = gas particle mass 10^5

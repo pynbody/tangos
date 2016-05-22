@@ -15,6 +15,9 @@ class CoreSize(HaloProperties):
     def requires_simdata(self):
         return False
 
+    def requires_property(self):
+        return "dm_density_profile",
+
     def calculate(self, halo, properties):
         import core_fit
         # return core_fit.get_bestfit(properties)[2]

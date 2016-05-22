@@ -7,7 +7,9 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm.session import Session
 
 
-import core
+
+
+from . import core, log
 from .core import *
 from .query import *
 

@@ -15,6 +15,8 @@ if sys.platform=='darwin' :
 db = os.environ.get("HALODB_DEFAULT_DB", home+"/sim_analysis/data.db")
 base = os.environ.get("HALODB_ROOT", home+"/db_galaxies/")
 
+default_fileset_handler_class = "pynbody.ChangaOutputSetHandler"
+
 file_ignore_pattern = []
 
 #############################

@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship, backref
 from . import Base
 from . import creator
 from .simulation import Simulation
-
+import weakref
 
 class TrackData(Base):
     __tablename__ = 'trackdata'
@@ -49,40 +49,7 @@ class TrackData(Base):
     def particles(self, to):
         self.particle_array = str(np.asarray(to, dtype=int).data)
 
-    def get_indices_for_snapshot(self, f):
-        pt = self.particles
-        if self.use_iord is True:
 
-            dm_part = f.dm[np.in1d(f.dm['iord'], pt)]
-
-            try:
-                star_part = f.star[np.in1d(f.star['iord'], pt)]
-            except KeyError:
-                star_part = f[0:0]
-
-            try:
-                gas_part = f.gas[np.in1d(f.gas['iord'], pt)]
-            except KeyError:
-                gas_part = f[0:0]
-
-            #fx = dm_part.union(star_part)
-            #fx = fx.union(gas_part)
-            # return fx
-            ilist = np.hstack((dm_part.get_index_list(f),
-                               star_part.get_index_list(f),
-                               gas_part.get_index_list(f)))
-            ilist = np.sort(ilist)
-            return ilist
-        else:
-            return pt
-
-    def extract(self, f):
-        return f[self.get_indices_for_snapshot(f)]
-
-    def extract_as_copy(self, f):
-        import pynbody
-        indices = self.get_indices_for_snapshot(f)
-        return pynbody.load(f.filename, take=indices)
 
     def select(self, f, use_iord=True):
         self.use_iord = use_iord
@@ -133,12 +100,12 @@ class TrackerHaloCatalogue(object):
 
 
 def update_tracker_halos(sim=None):
-    from . import internal_session
+    from halo_db.core import get_default_session
     from halo_db import get_simulation
     from halo_db.tools.terminalcontroller import heading
 
     if sim is None:
-        x = internal_session.query(TrackData).all()
+        x = get_default_session().query(TrackData).all()
     else:
         x = get_simulation(sim).trackers.all()
 
