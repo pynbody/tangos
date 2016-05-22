@@ -33,12 +33,16 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         return results
 
     def load_timestep_without_caching(self, ts_extension):
-        return pynbody.load(self._extension_to_filename(ts_extension))
+        f = pynbody.load(self._extension_to_filename(ts_extension))
+        f.physical_units()
+        return f
 
     def load_halo(self, ts_extension, halo_number, partial=False):
         h = self._construct_halo_cat(ts_extension)
         if partial:
-            return h.load_copy(halo_number)
+            h_file = h.load_copy(halo_number)
+            h_file.physical_units()
+            return h_file
         else:
             return h[halo_number]
 

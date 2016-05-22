@@ -18,8 +18,7 @@ from ..tools import terminalcontroller
 from terminalcontroller import heading, term
 from ..cached_writer import insert_list
 
-import logging
-logger = logging.getLogger(__name__)
+from ..log import logger
 
 @contextlib.contextmanager
 def check_deleted(a):
@@ -46,7 +45,7 @@ class AttributableDict(dict):
 
 
 def summarise_timing(timing_details):
-    logger.info("Current timing details")
+    logger.info("CUMULATIVE RUNNING TIMES (just this node)")
     v_tot = 1e-10
     for k, v in timing_details.iteritems():
         if hasattr(v, "__len__"):
@@ -57,16 +56,17 @@ def summarise_timing(timing_details):
     for k, v in timing_details.iteritems():
         name = str(k)[:-2]
         name = name.split(".")[-1]
-        name = "%20s" % (name[-20:])
+        name = "%20s " % (name[-20:])
         if hasattr(v, "__len__"):
-            logger.info(term.BLUE + name + term.NORMAL, "%.1fs / %.1f%%" % (sum(v), 100 * sum(v) / v_tot))
+            logger.info(term.BLUE + " " + name + term.NORMAL + "%.1fs | %.1f%%" % (sum(v), 100 * sum(v) / v_tot))
             logger.info(term.GREEN + "  ------ INTERNAL BREAKDOWN ------" + term.NORMAL)
             for i, this_v in enumerate(v):
-                logger.info(" "+term.GREEN, "%8s %8s" % (k._time_marks_info[i], k._time_marks_info[i + 1]))
-                logger.info(term.NORMAL+" %.1fs / %.1f%% / %.1f%%" % (this_v, 100 * this_v / sum(v), 100 * this_v / v_tot))
+                logger.info((" "+term.GREEN+"%8s %8s"+term.NORMAL+" %.1fs | %.1f%% | %.1f%%") %
+                            (k._time_marks_info[i], k._time_marks_info[i + 1],
+                             this_v, 100 * this_v / sum(v), 100 * this_v / v_tot))
             logger.info(term.GREEN+"  --------------------------------"+term.NORMAL)
         else:
-            logger.info(term.BLUE + name + term.NORMAL+ "%.1fs / %.1f%%" % (v, 100 * v / v_tot))
+            logger.info(term.BLUE + name + term.NORMAL+ "%.1fs | %.1f%%" % (v, 100 * v / v_tot))
 
 
 
@@ -165,7 +165,7 @@ class PropertyWriter(object):
         if self.options.verbose:
             self.redirect.enabled = False
 
-        self.classes = properties.providing_classes(self.options.properties[1:])
+        self.classes = properties.providing_classes(self.options.properties)
 
         self.timing_details = dict([(c, 0.0) for c in self.classes])
 
@@ -183,10 +183,6 @@ class PropertyWriter(object):
 
         if self.options.hmax is not None:
             halos = halos[:self.options.hmax]
-
-        print
-        heading(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()))
-        heading("Processing %s: %d halos" % (repr(db_timestep), len(halos)))
 
         return halos
 
@@ -227,11 +223,9 @@ class PropertyWriter(object):
     def _commit_results_if_needed(self, end_of_timestep=False, end_of_simulation=False):
 
         if self._is_commit_needed(end_of_timestep, end_of_simulation):
-            print >>sys.stderr, term.GREEN, "Commit", term.NORMAL,
-            sys.stderr.flush()
+            logger.info("Attempting to commit %d halo properties...", len(self._pending_properties))
             insert_list(self._pending_properties)
-            print >>sys.stderr, term.BLUE, "OK", term.NORMAL
-            sys.stderr.flush()
+            logger.info("%d properties were committed", len(self._pending_properties))
             self._pending_properties = []
             self._start_time = time.time()
             summarise_timing(self.timing_details)
@@ -245,7 +239,7 @@ class PropertyWriter(object):
             if self.options.force or (n not in existing_properties_data.keys()):
                 existing_properties_data[n] = r
                 if self.options.debug:
-                    print term.WHITE, "Would create_property ", db_halo, n, r, term.NORMAL
+                    logger.info("Debug mode - not creating property %r for %r with value %r", n, db_halo, r)
                 else:
                     self._pending_properties.append((db_halo, n, r))
 
@@ -275,7 +269,6 @@ class PropertyWriter(object):
 
         if self._should_load_timestep_particles():
             self._loaded_timestep = db_timestep.load()
-            self._loaded_timestep.physical_units()
             self._run_preloop(self._loaded_timestep, db_timestep.filename,
                               self._property_calculator_instances, self._existing_properties_all_halos)
 
@@ -305,7 +298,6 @@ class PropertyWriter(object):
 
         if self._should_load_halo_particles():
             self._loaded_halo  = db_halo.load(partial=self.options.partial_load)
-            self._loaded_halo.physical_units()
 
         if self.options.partial_load:
             self._run_preloop(self._loaded_halo, db_halo.timestep.filename,
@@ -358,8 +350,8 @@ class PropertyWriter(object):
         try:
             snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, property_calculator)
         except IOError:
-            print >>sys.stderr, term.RED + "F" + term.NORMAL,
-            sys.stderr.flush()
+            logger.warn("Failed to load snapshot data for %r; skipping",db_halo)
+            self.tracker.register_loading_error()
             return result
 
         property_calculator.start_timer()
@@ -367,21 +359,19 @@ class PropertyWriter(object):
         try:
             with self.redirect:
                 result = property_calculator.calculate(snapshot_data, db_data)
+                self.tracker.register_success()
         except Exception, e:
-            print>>sys.stderr, term.RED, ">> ERROR", type(
-                e), e, term.NORMAL
-            print>>sys.stderr, "=" * 60
-            traceback.print_exc(file=sys.stderr)
-            print>>sys.stderr, "-" * 60
-            print>>sys.stderr, "=" * 60
+            self.tracker.register_error()
+
+            if self.tracker.should_log_error(property_calculator):
+                logger.exception("Uncaught exception during property calculation %r applied to %r"%(property_calculator, db_halo))
+                logger.info("Further errors from this calculation on this timestep will be counted but not individually reported.")
 
             if self.options.catch:
                 tbtype, value, tb = sys.exc_info()
                 pdb.post_mortem(tb)
 
         self.timing_details[type(property_calculator)] += property_calculator.end_timer()
-        print >>sys.stderr, term.BLUE + "C" + term.NORMAL,
-        sys.stderr.flush()
 
         return result
 
@@ -389,19 +379,17 @@ class PropertyWriter(object):
     def _run_preloop(self, f, filename, cinstances, existing_properties_all_halos):
         for x in cinstances:
             try:
-                print >> sys.stderr, term.BLUE + \
-                                     "Pre" + term.NORMAL,
-                sys.stderr.flush()
                 with self.redirect:
                     x.preloop(f, filename,
                               existing_properties_all_halos)
             except RuntimeError, e:
-                print >> sys.stderr, term.RED, ">> ERROR (in preloop)", term.YELLOW, e, term.NORMAL
-                if catch:
+                logger.exception(
+                    "Uncaught exception during property preloop %r applied to %r" % (x, filename))
+                if self.options.catch:
                     traceback.print_exc()
                     tbtype, value, tb = sys.exc_info()
                     pdb.post_mortem(tb)
-                norun.append(x)
+
 
     def run_property_calculation(self, db_halo, property_calculator, existing_properties):
         names = property_calculator.name()
@@ -412,13 +400,11 @@ class PropertyWriter(object):
             listize = False
 
         if all([name in existing_properties.keys() for name in names]) and not self.options.force:
-            print >>sys.stderr, term.YELLOW + "D" + term.NORMAL,
-            sys.stderr.flush()
+            self.tracker.register_already_exists()
             return
 
         if not property_calculator.accept(existing_properties):
-            print >>sys.stderr, term.YELLOW + "X" + term.NORMAL,
-            sys.stderr.flush()
+            self.tracker.register_missing_prerequisite()
             return
 
         results = self._get_property_value(db_halo, property_calculator, existing_properties)
@@ -449,16 +435,24 @@ class PropertyWriter(object):
 
 
     def run_timestep_calculation(self, db_timestep):
-        self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties[1:])
-        db_halos = self._build_halo_list(db_timestep)
-        self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
+        self.tracker = CalculationSuccessTracker()
 
+        self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
+        db_halos = self._build_halo_list(db_timestep)
+
+        logger.info("Processing %r", db_timestep)
+        logger.info("  %d halos to consider; %d property calculations for each of them",
+                    len(db_halos), len(self._property_calculator_instances))
+
+        self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
 
         for db_halo, existing_properties in zip(db_halos, self._existing_properties_all_halos) :
             self._existing_properties_this_halo = existing_properties
             self.run_halo_calculation(db_halo, existing_properties)
 
-        print >>sys.stderr, term.BLUE, "done", term.NORMAL,
+        logger.info("Done with %r",db_timestep)
+
+        self.tracker.report_to_log(logger)
         sys.stderr.flush()
 
         self._commit_results_if_needed(True)
@@ -473,4 +467,44 @@ class PropertyWriter(object):
             self.run_timestep_calculation(f_obj)
 
         self._commit_results_if_needed(True,True)
+
+
+class CalculationSuccessTracker(object):
+    def __init__(self):
+        self._skipped_existing = 0
+        self._skipped_missing_prerequisite = 0
+        self._skipped_error = 0
+        self._skipped_loading_error = 0
+        self._succeeded = 0
+
+        self._posted_errors = set()
+
+    def should_log_error(self, from_module):
+        if from_module not in self._posted_errors:
+            self._posted_errors.add(from_module)
+            return True
+        else:
+            return False
+
+    def report_to_log(self, logger):
+        logger.info("            Succeeded: %d property calculations", self._succeeded)
+        logger.info("              Errored: %d property calculations", self._skipped_error)
+        logger.info("  Errored during load: %d property calculations", self._skipped_loading_error)
+        logger.info("       Already exists: %d property calculations", self._skipped_existing)
+        logger.info("Missing pre-requisite: %d property calculations", self._skipped_missing_prerequisite)
+
+    def register_error(self):
+        self._skipped_error+=1
+
+    def register_loading_error(self):
+        self._skipped_loading_error+=1
+
+    def register_success(self):
+        self._succeeded+=1
+
+    def register_missing_prerequisite(self):
+        self._skipped_missing_prerequisite+=1
+
+    def register_already_exists(self):
+        self._skipped_existing+=1
 

@@ -4,8 +4,10 @@ from .. import config
 from . import SimulationOutputSetHandler
 
 class DummyTimestepData(object):
-    def __init__(self, message):
+    def __init__(self, message, time, halo=None):
         self.message = message
+        self.halo = halo
+        self.time = time
 
     def __str__(self):
         return self.message
@@ -38,7 +40,13 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
             yield i+1, 2000, 0, 0
 
     def load_timestep(self, ts_extension):
-        return DummyTimestepData("Test string - this would contain the data for "+ts_extension)
+        return DummyTimestepData("Test string - this would contain the data for "+ts_extension,
+                                 float(self._get_ts_property(ts_extension, 'time')))
+
+    def load_halo(self, ts_extension, halo_number, partial=False):
+        return DummyTimestepData("Test string - this would contain the data for %s halo %d"%(ts_extension ,halo_number),
+                                 float(self._get_ts_property(ts_extension, 'time')),
+                                 halo_number)
 
     def _get_ts_property(self, ts_extension, property):
         ts_filename = self._extension_to_filename(ts_extension)

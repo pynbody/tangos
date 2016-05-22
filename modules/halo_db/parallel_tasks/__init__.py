@@ -9,6 +9,9 @@ import traceback
 
 backend = None
 _backend_name = 'pypar'
+from .. import log
+
+from ..log import logger
 
 if "--backend" in sys.argv:
     index = sys.argv.index("--backend")
@@ -40,7 +43,7 @@ SLEEP_BEFORE_ALLOWING_NEXT_LOCK = 1.0
 def use(name):
     global backend, _backend_name
     if backend is not None:
-        warnings.warn(RuntimeWarning, "Attempt to specify backend but parallelism is already initialised. This call had no effect.")
+        warnings.warn("Attempt to specify backend but parallelism is already initialised. This call had no effect.", RuntimeWarning)
     else:
         _backend_name = name
 
@@ -49,6 +52,10 @@ def init_backend():
     if backend is None:
         backend = importlib.import_module('.backend_'+_backend_name, package='halo_db.parallel_tasks')
 
+def deinit_backend():
+    global backend
+    backend = None
+
 def launch(function, num_procs=None, args=[]):
     init_backend()
 
@@ -56,6 +63,8 @@ def launch(function, num_procs=None, args=[]):
         backend.launch(_exec_function_or_server, num_procs, [function, args])
     else:
         function(*args)
+
+    deinit_backend()
 
 def distributed(file_list, proc=None, of=None):
     """Distribute a list of tasks between all nodes"""
@@ -72,7 +81,6 @@ def distributed(file_list, proc=None, of=None):
         assert proc <= of and proc > 0
         if proc == of:
             j += 1
-        print proc, "processing", i, j, "(inclusive)"
         return file_list[i:j + 1]
     else:
         return _mpi_iterate(file_list)
@@ -90,7 +98,7 @@ class RLock(object):
             backend.send(self.name, destination=0, tag=MESSAGE_REQUEST_LOCK)
             start = time.time()
             backend.receive(0,tag=_get_tag_for_lock(self.name))
-            print "Lock %r acquired in %.1fs"%(self.name, time.time()-start)
+            log.logger.info("Lock %r acquired in %.1fs",self.name, time.time()-start)
         self._count+=1
 
     def release(self):
@@ -121,12 +129,14 @@ def mpi_sync_db(session):
 
 
 def _exec_function_or_server(function, args):
+    log.set_identity_string("[%3d] " % backend.rank())
     if backend.rank()==0:
         _server_thread()
     else:
         function(*args)
         backend.send(None, destination=0, tag=MESSAGE_EXIT)
     _shutdown_mpi()
+    log.set_identity_string("")
 
 def _server_thread():
     # Sit idle until request for a job comes in, then assign first
@@ -149,9 +159,9 @@ def _server_thread():
                     raise RuntimeError, "Number of jobs expected by rank %d is inconsistent with %d"%(source, num_jobs)
         elif tag==MESSAGE_REQUEST_JOB:
             if current_job is not None:
-                print "Manager --> send job %d to node %d"%(current_job, source)
+                log.logger.info("Send job %d to node %d",current_job, source)
             else:
-                print "Manager --> end of jobs to node %d"%source
+                log.logger.info("Out of jobs; notify node %d", source)
             backend.send(current_job, destination=source, tag=MESSAGE_DELIVER_JOB)
             if current_job is not None:
                 current_job+=1
@@ -168,7 +178,7 @@ def _server_thread():
             backend.send(_get_current_creator_id(), destination=source, tag=MESSAGE_DELIVER_CREATOR_ID)
 
 
-    print "Manager --> All jobs done and all processors>0 notified; exiting thread"
+    log.logger.info("Out of jobs and all nodes notified; terminating manager.")
 
 def _get_current_creator_id():
     creator = core.creator.get_creator()
@@ -187,7 +197,7 @@ def _get_lock_queue(lock_id):
     return lock_queue
 
 def _append_to_lock_queue(lock_id, proc):
-    print "Manager --> received request for lock %r for proc %d"%(lock_id, proc)
+    log.logger.info("Received request for lock %r for proc %d",lock_id, proc)
     queue = _get_lock_queue(lock_id)
     queue.append(proc)
     if len(queue)==1:
@@ -197,14 +207,14 @@ def _remove_from_lock_queue(lock_id, proc):
     queue = _get_lock_queue(lock_id)
     assert queue[0]==proc
     queue.pop(0)
-    print "Manager --> finished with lock %r for proc %d"%(lock_id, proc)
+    log.logger.info("Finished with lock %r for proc %d",lock_id, proc)
     if len(queue)>0:
         time.sleep(SLEEP_BEFORE_ALLOWING_NEXT_LOCK)
         _issue_next_lock(lock_id)
 
 def _issue_next_lock(lock_id):
     queue = _get_lock_queue(lock_id)
-    print "Manager --> issue lock %r to proc %d"%(lock_id, queue[0])
+    log.logger.info("Issue lock %r to proc %d",lock_id, queue[0])
     backend.send(lock_id, destination=queue[0], tag=_get_tag_for_lock(lock_id))
 
 def _get_tag_for_lock(lock_id):
@@ -239,7 +249,7 @@ def _mpi_iterate(task_list):
 
 def _shutdown_mpi():
     global backend
-    print backend.rank() + 1, " of ", backend.size(), ": waiting for tasks on other CPUs to complete"
+    log.logger.info("Waiting for tasks on other nodes to complete")
     backend.barrier()
     backend.finalize()
     backend = None
