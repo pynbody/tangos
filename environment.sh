@@ -8,7 +8,7 @@
 
 RELATIVEDIR=$( dirname ${BASH_SOURCE:-$0} )
 DIR=$( cd $RELATIVEDIR && pwd )
-export PYTHONPATH=$DIR/modules/:$PYTHONPATH
+export PYTHONPATH=$DIR/tools/:$DIR/modules/:$PYTHONPATH
 export PATH=$DIR/tools/:$PATH
 
 if [ -z "$HALODB_ROOT" ]; then

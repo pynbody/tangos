@@ -18,9 +18,9 @@ endif
 
 
 if(! $?PYTHONPATH) then
-  setenv PYTHONPATH "$DIR/modules/"
+  setenv PYTHONPATH "$DIR/tools/:$DIR/modules/"
 else
-  setenv PYTHONPATH "$DIR/modules/:$PYTHONPATH"
+  setenv PYTHONPATH "$DIR/tools/:$DIR/modules/:$PYTHONPATH"
 endif
 
 setenv PATH $DIR/tools/:$PATH
