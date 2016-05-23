@@ -14,5 +14,5 @@ def run_dbwriter(argv):
 
 if __name__ == "__main__":
     matplotlib.use('agg')
-    parallel_tasks.launch(run_dbwriter, 2, [sys.argv])
+    parallel_tasks.launch(run_dbwriter, 2, [sys.argv[1:]])
 
