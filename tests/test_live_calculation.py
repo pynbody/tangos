@@ -17,23 +17,10 @@ from halo_db.core import extraction_patterns
 def setup():
     db.init_db("sqlite://")
 
-    session = db.core.get_default_session()
+    generator = testing.TestSimulationGenerator()
+    ts1 = generator.add_timestep()
+    ts1_h1, ts2_h2 = generator.add_halos_to_timestep(2)
 
-    sim = halo_db.core.simulation.Simulation("sim")
-
-    session.add(sim)
-
-    ts1 = halo_db.core.timestep.TimeStep(sim, "ts1", False)
-
-
-    session.add(ts1)
-
-    ts1.time_gyr = 1
-    ts1.redshift = 10
-
-
-    ts1_h1 = halo_db.core.halo.Halo(ts1, 1, 1000, 0, 0, 0)
-    ts1_h2 = halo_db.core.halo.Halo(ts1, 2, 900, 0, 0, 0)
 
     ts1_h1['dummy_property_1'] = np.arange(0,100.0)
 
@@ -50,15 +37,10 @@ def setup():
     ts1_h1["BH"] = ts1_h1_bh1, ts1_h1_bh2
 
 
-    ts2 = halo_db.core.timestep.TimeStep(sim, "ts2", False)
-    session.add(ts2)
-    ts2.time_gyr = 2
-    ts2.redshift = 9
+    generator.add_timestep()
+    generator.add_halos_to_timestep(1)
+    generator.link_last_halos()
 
-    ts2_h1 = halo_db.core.halo.Halo(ts2, 1, 10000, 0, 0, 0)
-    testing.add_symmetric_link(ts2_h1, ts1_h1)
-
-    db.core.get_default_session().commit()
 
 
 class DummyProperty1(properties.HaloProperties):

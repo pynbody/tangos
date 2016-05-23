@@ -28,7 +28,7 @@ def setup():
     sim = halo_db.core.simulation.Simulation("sim")
     session.add(sim)
 
-    ts1 = halo_db.core.timestep.TimeStep(sim, "ts1", False)
+    ts1 = halo_db.core.timestep.TimeStep(sim, "ts1")
     session.add(ts1)
 
     halo_1 = halo_db.core.halo.Halo(ts1, 1, 0, 0, 0, 0)

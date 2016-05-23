@@ -15,9 +15,9 @@ def setup():
 
     sim1 = halo_db.core.simulation.Simulation("sim1")
     sim2 = halo_db.core.simulation.Simulation("sim2")
-    ts1 = halo_db.core.timestep.TimeStep(sim1, "ts", autoload=False)
+    ts1 = halo_db.core.timestep.TimeStep(sim1, "ts")
     h1  = halo_db.core.halo.Halo(ts1, 1, 1000, 0, 0, 0)
-    ts2 = halo_db.core.timestep.TimeStep(sim2, "ts", autoload=False)
+    ts2 = halo_db.core.timestep.TimeStep(sim2, "ts")
     h2  = halo_db.core.halo.Halo(ts2, 1, 1000, 0, 0, 0)
 
     session.add_all([sim1,sim2,ts1,ts2,h1,h2])

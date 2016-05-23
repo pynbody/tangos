@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 import numpy as np
-from .core import Halo, HaloLink
-from halo_db.core import get_or_create_dictionary_item, Halo, HaloLink
+from .core import get_or_create_dictionary_item, Halo, HaloLink
 
 def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, weight=1.0):
     assert isinstance(halo_1, Halo)

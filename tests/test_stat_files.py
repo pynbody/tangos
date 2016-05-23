@@ -17,11 +17,11 @@ def setup():
     sim = halo_db.core.simulation.Simulation("test_stat_files")
     session.add(sim)
 
-    ts1 = halo_db.core.timestep.TimeStep(sim, "pioneer50h128.1536gst1.bwK1.000832", False)
+    ts1 = halo_db.core.timestep.TimeStep(sim, "pioneer50h128.1536gst1.bwK1.000832")
     ts1.time_gyr = 6  # unimportant
     ts1.redshift = 2.323  # matters for AHF filename
 
-    ts2 = halo_db.core.timestep.TimeStep(sim, "h242.cosmo50PLK.1536g1bwK1C52.004096", False)
+    ts2 = halo_db.core.timestep.TimeStep(sim, "h242.cosmo50PLK.1536g1bwK1C52.004096")
     ts2.time_gyr = 10
     ts2.redshift = 0
 
