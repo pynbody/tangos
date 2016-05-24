@@ -517,16 +517,21 @@ class MultiHopStrategy(HopStrategy):
 
         return query
 
+    def _construct_orm_class(self):
+        rstr = ''.join(random.choice(string.ascii_lowercase) for _ in range(4))
+        rstr = ''
+        class_name = "MultiHopHaloLink_"+rstr
+        class_base = (core.Base,)
+        class_attrs = {"__table__": self._table,
+                       "halo_from": relationship(core.halo.Halo, primaryjoin=self._table.c.halo_from_id == core.halo.Halo.id),
+                       "halo_to"  : relationship(core.halo.Halo, primaryjoin=(self._table.c.halo_to_id == core.halo.Halo.id))}
+
+        return type(class_name,class_base,class_attrs)
+
+
     def _generate_query(self):
-
-        class MultiHopHaloLink(core.Base):
-            __table__ = self._table
-            halo_from = relationship(core.halo.Halo, primaryjoin=self._table.c.halo_from_id == core.halo.Halo.id)
-            halo_to = relationship(core.halo.Halo, primaryjoin=(self._table.c.halo_to_id == core.halo.Halo.id))
-
-        self._link_orm_class = MultiHopHaloLink
-
-        self.query = self.session.query(MultiHopHaloLink)
+        self._link_orm_class = self._construct_orm_class()
+        self.query = self.session.query(self._link_orm_class)
 
         if not self._include_startpoint:
             self.query = self.query.filter(self._table.c.nhops>0)
