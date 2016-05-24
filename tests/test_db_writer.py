@@ -4,7 +4,7 @@ import os
 from halo_db.tools import add_simulation
 from halo_db.tools import property_writer
 from halo_db.simulation_output_handlers import testing
-from halo_db import parallel_tasks
+from halo_db import parallel_tasks, log
 import properties
 
 def setup():
@@ -33,7 +33,8 @@ def init_blank_simulation():
     db.init_db("sqlite://")
     db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
     manager = add_simulation.SimulationAdderUpdater(testing.TestOutputSetHandler("dummy_sim_1"))
-    manager.scan_simulation_and_add_all_descendants()
+    with log.LogCapturer():
+        manager.scan_simulation_and_add_all_descendants()
 
 
 def test_basic_writing():
