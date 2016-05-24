@@ -1,5 +1,6 @@
 import logging
 import cStringIO
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -19,16 +20,16 @@ class LogCapturer(object):
         self._suspended_handlers = []
 
     def __enter__(self):
-        logger.addHandler(self.handler_buffer)
-        self._suspended_handlers = logger.handlers
+        self._suspended_handlers = copy.copy(logger.handlers)
         for x_handler in self._suspended_handlers:
             logger.removeHandler(x_handler)
+        logger.addHandler(self.handler_buffer)
 
     def __exit__(self, *exc_info):
         for x_handler in self._suspended_handlers:
             logger.addHandler(x_handler)
         self._suspended_handlers = []
-        logger.removeHandler(handler_stderr)
+        logger.removeHandler(self.handler_buffer)
 
     def get_output(self):
         return self.buffer.getvalue()

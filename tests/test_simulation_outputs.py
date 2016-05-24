@@ -1,6 +1,7 @@
 import halo_db as db
 import halo_db.simulation_output_handlers.pynbody as pynbody_outputs
 import halo_db.tools.add_simulation as add
+from halo_db import log
 import os
 import numpy.testing as npt
 import pynbody
@@ -100,7 +101,8 @@ def add_test_simulation_to_db():
     global _added_to_db
 
     if not _added_to_db:
-        add.SimulationAdderUpdater(output_manager).scan_simulation_and_add_all_descendants()
+        with log.LogCapturer():
+            add.SimulationAdderUpdater(output_manager).scan_simulation_and_add_all_descendants()
         tx = db.core.tracking.TrackData(db.get_simulation("test_tipsy"))
         tx.particles = tracked_particles
         tx.use_iord = False

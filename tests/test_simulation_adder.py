@@ -1,5 +1,6 @@
 import halo_db as db
 import halo_db.config
+from halo_db import log
 import os
 from halo_db.tools import add_simulation
 from halo_db.simulation_output_handlers import testing
@@ -8,7 +9,8 @@ def setup():
     db.init_db("sqlite://")
     db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
     manager = add_simulation.SimulationAdderUpdater(testing.TestOutputSetHandler("dummy_sim_1"))
-    manager.scan_simulation_and_add_all_descendants()
+    with log.LogCapturer():
+        manager.scan_simulation_and_add_all_descendants()
 
 def test_simulation_exists():
     manager = add_simulation.SimulationAdderUpdater(testing.TestOutputSetHandler("dummy_sim_2"))
@@ -31,7 +33,8 @@ def test_simulation_properties():
 
 def test_readd_simulation():
     manager = add_simulation.SimulationAdderUpdater(testing.TestOutputSetHandler("dummy_sim_1"))
-    manager.scan_simulation_and_add_all_descendants()
+    with log.LogCapturer():
+        manager.scan_simulation_and_add_all_descendants()
 
     assert db.core.get_default_session().query(db.core.Simulation).count()==1
     assert len(db.get_simulation("dummy_sim_1").timesteps)==2
