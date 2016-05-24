@@ -138,7 +138,13 @@ class Calculation(object):
         when evaluating the first halo."""
         out = self.values(halos)
 
-        keep_rows = np.all(np.not_equal(out,None), axis=0)
+        keep_rows = np.all([[data is not None for data in row] for row in out], axis=0)
+        # The obvious way of doing this:
+        #   keep_rows = np.all(np.not_equal(out,None), axis=0)
+        # generates a scary FutureWarning that it will stop working in future. This is because
+        # it can end up doing a comparison of an array to None (effectively data!=None),
+        # which will not be the same as "is not None" in future versions of numpy.
+
         out = out[:,keep_rows]
 
         return [self._make_final_array(x) for x in out]
