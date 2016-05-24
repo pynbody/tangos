@@ -519,7 +519,6 @@ class MultiHopStrategy(HopStrategy):
 
     def _construct_orm_class(self):
         rstr = ''.join(random.choice(string.ascii_lowercase) for _ in range(4))
-        rstr = ''
         class_name = "MultiHopHaloLink_"+rstr
         class_base = (core.Base,)
         class_attrs = {"__table__": self._table,
