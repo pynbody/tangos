@@ -42,3 +42,19 @@ def test_readd_simulation():
 
 def test_appropriate_loader():
     assert str(db.get_timestep("dummy_sim_1/step.1").load())=="Test string - this would contain the data for step.1"
+
+def _perform_simulation_update():
+    db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations_mock_update")
+    manager = add_simulation.SimulationAdderUpdater(testing.TestOutputSetHandler("dummy_sim_1"))
+    with log.LogCapturer():
+        manager.scan_simulation_and_add_all_descendants()
+
+
+def test_update_simulation():
+    assert db.get_simulation("dummy_sim_1")['dummy_sim_property_2'] == 'banana'
+    _perform_simulation_update()
+    assert db.get_simulation("dummy_sim_1").properties.count() == 4
+    assert db.get_simulation("dummy_sim_1")['dummy_sim_property_2']=='orange'
+    assert db.get_simulation("dummy_sim_1")['dummy_sim_property_new'] == 'fruits'
+    assert len(db.get_simulation("dummy_sim_1").timesteps) == 3
+    assert db.get_timestep("dummy_sim_1/step.3").halos.count()==7
