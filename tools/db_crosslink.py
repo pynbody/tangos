@@ -4,7 +4,7 @@ import halo_db.core.simulation
 import halo_db.core.timestep
 from halo_db import parallel_tasks
 from halo_db.crosslink import need_crosslink_ts, crosslink_ts
-from halo_db.tools import terminalcontroller
+from halo_db.util import terminalcontroller
 
 
 def crosslink_sim(sim1, sim2, force=False):

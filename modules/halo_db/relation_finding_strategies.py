@@ -1,16 +1,18 @@
-import core
-import sqlalchemy, sqlalchemy.orm, sqlalchemy.orm.dynamic, sqlalchemy.orm.query, sqlalchemy.exc
-from sqlalchemy.orm import Session, relationship
-from sqlalchemy import and_, Table, Column, String, Integer, Float, MetaData, ForeignKey, Index
-import string
-import random
 import contextlib
+import random
+import string
 import sys
 
-from . import consistent_collection
-import time
-import logging
-import pyparsing as pp
+import sqlalchemy
+import sqlalchemy.exc
+import sqlalchemy.orm
+import sqlalchemy.orm.dynamic
+import sqlalchemy.orm.query
+from sqlalchemy import and_, Table, Column, String, Integer, Float, ForeignKey
+from sqlalchemy.orm import Session, relationship
+
+import core
+from halo_db.util import consistent_collection
 
 NHOPS_MAX_DEFAULT = 100
 

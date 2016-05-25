@@ -11,7 +11,7 @@ import halo_db.core.dictionary
 import halo_db.core.halo
 import halo_db.core.halo_data
 from halo_db.core import extraction_patterns
-from .. import consistent_collection
+from halo_db.util import consistent_collection
 from .. import core
 from .. import temporary_halolist as thl
 

@@ -3,6 +3,7 @@ import math
 import time
 import inspect
 import pyparsing as pp
+from halo_db.util import timing_monitor
 
 
 class HaloProperties(object):
@@ -27,6 +28,7 @@ class HaloProperties(object):
         :type simulation: halo_db.core.simulation.Simulation
         """
         self._simulation = simulation
+        self.timing_monitor = timing_monitor.TimingMonitor()
 
     def requires_array(self):
         """Returns a list of loaded arrays required to
@@ -85,34 +87,11 @@ class HaloProperties(object):
         subhalos for instance)."""
         return False
 
-    def start_timer(self):
-        """Start a timer. Can be overriden by subclasses to provide
-        more useful timing details"""
-
-        self._time_marks_info = ["start"]
-        self._time_start = time.time()
-        self._time_marks = [time.time()]
-
-    def end_timer(self):
-        """End the timer and return the intervening time."""
-
-        if len(self._time_marks) == 1:
-            return time.time() - self._time_start
-        else:
-            self._time_marks_info.append("end")
-            type(self)._time_marks_info = self._time_marks_info
-            self._time_marks.append(time.time())
-            return np.diff(self._time_marks)
 
     def mark_timer(self, label=None):
         """Called by subfunctions to mark a time"""
+        self.timing_monitor.mark(label)
 
-        self._time_marks.append(time.time())
-        if label is None:
-            self._time_marks_info.append(
-                inspect.currentframe().f_back.f_lineno)
-        else:
-            self._time_marks_info.append(label)
 
     def accept(self, db_entry):
         for x in self.requires_property():
@@ -176,7 +155,6 @@ class HaloProperties(object):
                 gp_sp = h
         else:
             gp_sp = None
-        self.start_timer()
         return self.calculate(gp_sp, db)
 
     def plot_x_values(self, for_data):

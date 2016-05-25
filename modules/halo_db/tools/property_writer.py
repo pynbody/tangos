@@ -1,24 +1,25 @@
-import warnings
-import numpy as np
-import properties
-import sys
-import sqlalchemy, sqlalchemy.orm, sqlalchemy.exc
-import gc
-import weakref
-import contextlib
 import argparse
+import contextlib
+import gc
 import pdb
-import traceback
-import time
 import random
+import sys
+import time
+import traceback
+import warnings
+import weakref
 
+import numpy as np
+import sqlalchemy
+import sqlalchemy.exc
+import sqlalchemy.orm
 
+import properties
+from ..util import terminalcontroller, timing_monitor
 from .. import parallel_tasks, core
-from ..tools import terminalcontroller
-from terminalcontroller import heading, term
 from ..cached_writer import insert_list
-
 from ..log import logger
+
 
 @contextlib.contextmanager
 def check_deleted(a):
@@ -41,32 +42,6 @@ np.seterr(all='ignore')
 
 class AttributableDict(dict):
     pass
-
-
-
-def summarise_timing(timing_details):
-    logger.info("CUMULATIVE RUNNING TIMES (just this node)")
-    v_tot = 1e-10
-    for k, v in timing_details.iteritems():
-        if hasattr(v, "__len__"):
-            v_tot += sum(v)
-        else:
-            v_tot += v
-
-    for k, v in timing_details.iteritems():
-        name = str(k)[:-2]
-        name = name.split(".")[-1]
-        name = "%20s " % (name[-20:])
-        if hasattr(v, "__len__"):
-            logger.info(term.BLUE + " " + name + term.NORMAL + "%.1fs | %.1f%%" % (sum(v), 100 * sum(v) / v_tot))
-            logger.info(term.GREEN + "  ------ INTERNAL BREAKDOWN ------" + term.NORMAL)
-            for i, this_v in enumerate(v):
-                logger.info((" "+term.GREEN+"%8s %8s"+term.NORMAL+" %.1fs | %.1f%% | %.1f%%") %
-                            (k._time_marks_info[i], k._time_marks_info[i + 1],
-                             this_v, 100 * this_v / sum(v), 100 * this_v / v_tot))
-            logger.info(term.GREEN+"  --------------------------------"+term.NORMAL)
-        else:
-            logger.info(term.BLUE + name + term.NORMAL+ "%.1fs | %.1f%%" % (v, 100 * v / v_tot))
 
 
 
@@ -166,8 +141,7 @@ class PropertyWriter(object):
             self.redirect.enabled = False
 
         self.classes = properties.providing_classes(self.options.properties)
-
-        self.timing_details = dict([(c, 0.0) for c in self.classes])
+        self.timing_monitor = timing_monitor.TimingMonitor()
 
 
     def _build_halo_list(self, db_timestep):
@@ -228,7 +202,7 @@ class PropertyWriter(object):
             logger.info("%d properties were committed", len(self._pending_properties))
             self._pending_properties = []
             self._start_time = time.time()
-            summarise_timing(self.timing_details)
+            self.timing_monitor.summarise_timing(logger)
 
     def _queue_results_for_later_commit(self, db_halo, names, results, existing_properties_data):
         for n, r in zip(names, results):
@@ -354,24 +328,22 @@ class PropertyWriter(object):
             self.tracker.register_loading_error()
             return result
 
-        property_calculator.start_timer()
+        with self.timing_monitor(property_calculator):
+            try:
+                with self.redirect:
+                    result = property_calculator.calculate(snapshot_data, db_data)
+                    self.tracker.register_success()
+            except Exception, e:
+                self.tracker.register_error()
 
-        try:
-            with self.redirect:
-                result = property_calculator.calculate(snapshot_data, db_data)
-                self.tracker.register_success()
-        except Exception, e:
-            self.tracker.register_error()
+                if self.tracker.should_log_error(property_calculator):
+                    logger.exception("Uncaught exception during property calculation %r applied to %r"%(property_calculator, db_halo))
+                    logger.info("Further errors from this calculation on this timestep will be counted but not individually reported.")
 
-            if self.tracker.should_log_error(property_calculator):
-                logger.exception("Uncaught exception during property calculation %r applied to %r"%(property_calculator, db_halo))
-                logger.info("Further errors from this calculation on this timestep will be counted but not individually reported.")
+                if self.options.catch:
+                    tbtype, value, tb = sys.exc_info()
+                    pdb.post_mortem(tb)
 
-            if self.options.catch:
-                tbtype, value, tb = sys.exc_info()
-                pdb.post_mortem(tb)
-
-        self.timing_details[type(property_calculator)] += property_calculator.end_timer()
 
         return result
 

@@ -1,10 +1,9 @@
-import halo_db
-from .. import BuiltinFunction, FixedInput, FixedNumericInput, StoredProperty
-from ... import consistent_collection
-from ... import core
-
 import numpy as np
 
+import halo_db
+from halo_db.util import consistent_collection
+from .. import BuiltinFunction, FixedInput, FixedNumericInput
+from ... import core
 
 
 @BuiltinFunction.register
