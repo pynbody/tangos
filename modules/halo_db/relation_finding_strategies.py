@@ -126,15 +126,6 @@ class HopStrategy(object):
         halos = [x.halo_to for x in all]
         return halos, weights
 
-    def all_weights_and_routes(self):
-        """Return all possible hops matching the conditions, along with
-        the weights and routes"""
-        all = self._get_query_all()
-        weights = [x.weight for x in all]
-        halos = [x.halo_to for x in all]
-        routes = [x.nodes for x in all]
-        return halos, weights, routes
-
     def first(self):
         """Return the suggested hop."""
         link = self._get_query_all()
@@ -215,7 +206,6 @@ class MultiHopStrategy(HopStrategy):
     def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, directed=None, target=None,
                  order_by=None, combine_routes=True, min_aggregated_weight=0.0,
                  min_onehop_weight=0.0, min_onehop_reverse_weight=None,
-                 store_full_paths=False,
                  include_startpoint=False):
         """Construct the MultiHopStrategy (without actually executing the strategy)
 
@@ -255,9 +245,6 @@ class MultiHopStrategy(HopStrategy):
                                           Note that this requires an extra join (if not None) and if there
                                           is no reverse link at all, the result will be dropped.
 
-        :param store_full_paths:      Store full path of hops for debug purposes (default False; can slow down the
-              calculation significantly)
-
         :param include_startpoint:    Return the starting halo in the results (default False)
         """
         super(MultiHopStrategy, self).__init__(halo_from, target, order_by)
@@ -266,7 +253,6 @@ class MultiHopStrategy(HopStrategy):
         self._min_aggregated_weight = min_aggregated_weight
         self._min_onehop_weight = min_onehop_weight
         self._min_onehop_reverse_weight = min_onehop_reverse_weight
-        self._store_full_paths = store_full_paths
         self._include_startpoint = include_startpoint
         self._connection = self.session.connection()
         self._combine_routes = combine_routes
@@ -305,22 +291,6 @@ class MultiHopStrategy(HopStrategy):
 
         self._all = results
 
-    def link_ids(self):
-        """Return the links for the possible hops, in the form of a list of HaloLink IDs for
-        each path"""
-        raise NotImplementedError
-        return [[int(y) for y in x.links.split(",")] for x in self._get_query_all()]
-
-    def node_ids(self):
-        """Return the nodes, i.e. halo IDs visited, for each path"""
-        raise NotImplementedError
-        return [[int(y) for y in x.nodes.split(",")] for x in self._get_query_all()]
-
-    def nodes(self):
-        return _recursive_map_ids_to_objects(self.node_ids(), core.halo.Halo, self.session)
-
-    def links(self):
-        return _recursive_map_ids_to_objects(self.link_ids(), core.halo_data.HaloLink, self.session)
 
     def _supplement_halolink_query_with_filter(self, query, table=None):
 
@@ -378,8 +348,6 @@ class MultiHopStrategy(HopStrategy):
             Column('halo_to_id', Integer, ForeignKey('halos.id')),
             Column('weight', Float),
             Column('nhops', Integer),
-            Column('links', String),
-            Column('nodes', String),
             prefixes=['TEMPORARY']
         )
 
@@ -392,8 +360,6 @@ class MultiHopStrategy(HopStrategy):
             Column('halo_to_id', Integer, ForeignKey('halos.id')),
             Column('weight', Float),
             Column('nhops', Integer),
-            Column('links', String),
-            Column('nodes', String),
             prefixes=['TEMPORARY']
         )
 
@@ -411,7 +377,7 @@ class MultiHopStrategy(HopStrategy):
 
     def _seed_temp_table(self):
         insert_statement = self._table.insert().values(halo_from_id=self.halo_from.id, halo_to_id=self.halo_from.id,
-                                    weight=1.0, nhops=0, links="", nodes=str(self.halo_from.id))
+                                    weight=1.0, nhops=0)
 
         self._connection.execute(insert_statement)
 
@@ -432,25 +398,6 @@ class MultiHopStrategy(HopStrategy):
 
     def _generate_next_level_prelim_links(self, from_nhops=0):
 
-        if self._store_full_paths:
-            links = self._table.c.links + \
-                    sqlalchemy.literal(",") + \
-                    sqlalchemy.cast(core.halo_data.HaloLink.id, sqlalchemy.String)
-
-            nodes = self._table.c.nodes + \
-                    sqlalchemy.literal(",") + \
-                    sqlalchemy.cast(core.halo_data.HaloLink.halo_to_id, sqlalchemy.String)
-
-            links = sqlalchemy.literal("(") + links + sqlalchemy.literal(")")
-            nodes = sqlalchemy.literal("(") + nodes + sqlalchemy.literal(")")
-
-            if self._combine_routes:
-                links = sqlalchemy.func.group_concat(links, "+")
-                nodes = sqlalchemy.func.group_concat(nodes, "+")
-        else:
-            links = sqlalchemy.literal("")
-            nodes = sqlalchemy.literal("")
-
         new_weight = self._table.c.weight * core.halo_data.HaloLink.weight
 
         if self._combine_routes:
@@ -462,7 +409,7 @@ class MultiHopStrategy(HopStrategy):
                 core.halo_data.HaloLink.halo_to_id.label("halo_to_id"),
                 new_weight,
                 (self._table.c.nhops + sqlalchemy.literal(1)).label("nhops"),
-                links, nodes, self._table.c.source_id). \
+                self._table.c.source_id). \
                 select_from(self._table). \
                 join(core.halo_data.HaloLink, and_(self._table.c.nhops == from_nhops,
                                                            self._table.c.halo_to_id == core.halo_data.HaloLink.halo_from_id)). \
@@ -473,7 +420,7 @@ class MultiHopStrategy(HopStrategy):
             recursion_query = recursion_query.group_by(core.halo_data.HaloLink.halo_to_id, self._table.c.source_id)
 
         insert = self._prelim_table.insert().from_select(
-            ['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'links', 'nodes', 'source_id'],
+            ['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'source_id'],
             recursion_query)
 
         result = self._connection.execute(insert)
@@ -486,8 +433,6 @@ class MultiHopStrategy(HopStrategy):
                                self._prelim_table.c.halo_to_id,
                                self._prelim_table.c.weight,
                                self._prelim_table.c.nhops,
-                               self._prelim_table.c.links,
-                               self._prelim_table.c.nodes,
                                self._prelim_table.c.source_id)
 
         q = self._supplement_halolink_query_with_reverse_hop_filter(q, self._prelim_table)
@@ -495,7 +440,7 @@ class MultiHopStrategy(HopStrategy):
 
 
         added_rows = self._connection.execute(
-            self._table.insert().from_select(['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'links', 'nodes', 'source_id'],
+            self._table.insert().from_select(['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'source_id'],
                                              q)).rowcount
 
         self._connection.execute(self._prelim_table.delete())
@@ -580,7 +525,7 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
     def _seed_temp_table(self):
         for i,halo_from in enumerate(self._all_halo_from):
             insert_statement = self._table.insert().values(halo_from_id=halo_from.id, halo_to_id=halo_from.id,
-                                        weight=1.0, nhops=0, links="", nodes=str(halo_from.id), source_id=i)
+                                        weight=1.0, nhops=0, source_id=i)
             self._connection.execute(insert_statement)
 
     def _generate_next_level_prelim_links(self, from_nhops=0):
