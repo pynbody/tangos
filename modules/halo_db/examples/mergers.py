@@ -1,5 +1,5 @@
 import halo_db as db
-import halo_db.relation_finding_strategies
+import halo_db.relation_finding
 import numpy as np
 
 
@@ -15,7 +15,7 @@ def get_mergers_of_major_progenitor(input_halo):
     ratio = []
     halo  = []
     while input_halo is not None:
-        mergers = db.relation_finding_strategies.MultiHopMostRecentMergerStrategy(input_halo).all()
+        mergers = db.relation_finding.MultiHopMostRecentMergerStrategy(input_halo).all()
         if len(mergers)>0 :
             for m in mergers[1:]:
                 redshift.append(mergers[0].timestep.next.redshift)

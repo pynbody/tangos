@@ -8,10 +8,10 @@ from ... import core
 
 @BuiltinFunction.register
 def match(source_halos, target):
-    from ... import relation_finding_strategies
+    from ... import relation_finding
     if not isinstance(target, core.Base):
         target = halo_db.get_item(target)
-    results = relation_finding_strategies.MultiSourceMultiHopStrategy(source_halos, target).all()
+    results = relation_finding.MultiSourceMultiHopStrategy(source_halos, target).all()
     assert len(results) == len(source_halos)
     return np.array(results, dtype=object)
 match.set_input_options(0, provide_proxy=True, assert_class = FixedInput)

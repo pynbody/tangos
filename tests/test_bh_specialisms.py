@@ -4,7 +4,7 @@ import halo_db.core.simulation
 import halo_db.core.timestep
 import halo_db
 import halo_db.testing
-import halo_db.relation_finding_strategies as relation_finding_strategies
+import halo_db.relation_finding as relation_finding_strategies
 
 def setup():
     db.init_db("sqlite://")

@@ -237,7 +237,7 @@ class TimeChunkedProperty(HaloProperties):
                                 - if 'raw', return the raw data
         """
 
-        from halo_db import relation_finding_strategies as rfs
+        from halo_db import relation_finding as rfs
 
         if reassembly_type=='major':
             return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy)
