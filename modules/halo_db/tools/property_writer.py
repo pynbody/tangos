@@ -36,10 +36,6 @@ def check_deleted(a):
             logger.error("check_deleted failed")
             logger.error("gc reports hanging references: %s", gc.get_referrers(a_s()))
 
-
-np.seterr(all='ignore')
-
-
 class AttributableDict(dict):
     pass
 
@@ -176,10 +172,6 @@ class PropertyWriter(object):
 
     def _build_existing_properties_all_halos(self, halos):
         return [self._build_existing_properties(h) for h in halos]
-
-
-    def _perform_property_calculation(self, db_halo, property_calculator, existing_properties):
-        pass
 
     def _is_commit_needed(self, end_of_timestep, end_of_simulation):
         if len(self._pending_properties)==0:
@@ -333,7 +325,7 @@ class PropertyWriter(object):
                 with self.redirect:
                     result = property_calculator.calculate(snapshot_data, db_data)
                     self.tracker.register_success()
-            except Exception, e:
+            except Exception:
                 self.tracker.register_error()
 
                 if self.tracker.should_log_error(property_calculator):
@@ -354,7 +346,7 @@ class PropertyWriter(object):
                 with self.redirect:
                     x.preloop(f, filename,
                               existing_properties_all_halos)
-            except RuntimeError, e:
+            except Exception:
                 logger.exception(
                     "Uncaught exception during property preloop %r applied to %r" % (x, filename))
                 if self.options.catch:
