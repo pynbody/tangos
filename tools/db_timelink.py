@@ -4,6 +4,7 @@
 from halo_db import core
 from halo_db import parallel_tasks
 from halo_db.tools.crosslink import TimeLinker
+import sys
 
 
 def run_dbwriter(argv):
