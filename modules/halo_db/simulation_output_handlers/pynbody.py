@@ -7,7 +7,7 @@ import os, os.path
 import pynbody
 import time
 import logging
-import magic_amiga
+import glob
 import sim_output_finder
 import weakref
 import numpy as np
@@ -151,7 +151,7 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
         else:
             logger.info("Param file is %s", pfile)
 
-        pfile_dict = magic_amiga.param_file_to_dict(pfile)
+        pfile_dict = self._param_file_to_dict(pfile)
         log_path, prop_dict = self._get_log_path(pfile, pfile_dict)
 
         if log_path:
@@ -163,7 +163,7 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
 
     def _get_paramfile_path(self):
         try:
-            pfile = magic_amiga.get_param_file(self._extension_to_filename(""))
+            pfile = self._get_param_file_for_output(self._extension_to_filename(""))
         except RuntimeError:
             pfile = None
         return pfile
@@ -199,3 +199,54 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
                     prop_dict["macros"] = l.split(": ")[1].strip()
                     break
         return prop_dict
+
+    @staticmethod
+    def _get_param_file_for_output(output_file):
+        """Work out the param file corresponding to the
+        specified output"""
+
+        q = "/".join(output_file.split("/")[:-1])
+        if len(q) != 0:
+            path = "/".join(output_file.split("/")[:-1]) + "/"
+        else:
+            path = ""
+
+        candidates = glob.glob(path + "*.param")
+
+        if len(candidates) == 0:
+            candidates = glob.glob(path + "../*.param")
+
+        if len(candidates) == 0:
+            raise RuntimeError, "No .param file in " + path + \
+                                " (or parent) -- please supply or create tipsy.info manually"
+
+        candidates = filter(lambda x: "direct" not in x and "mpeg_encode" not in x,
+                            candidates)
+
+        if len(candidates) > 1:
+            raise RuntimeError, "Can't resolve ambiguity -- too many param files matching " + \
+                                path
+
+        return candidates[0]
+
+    @staticmethod
+    def _param_file_to_dict(param_file):
+        f = file(param_file)
+        out = {}
+
+        for line in f:
+            try:
+                s = line.split()
+                if s[1] == "=" and "#" not in s[0]:
+                    key = s[0]
+                    v = s[2]
+
+                    if key[0] == "d":
+                        v = float(v)
+                    elif key[0] == "i" or key[0] == "n" or key[0] == "b":
+                        v = int(v)
+
+                    out[key] = v
+            except (IndexError, ValueError):
+                pass
+        return out
