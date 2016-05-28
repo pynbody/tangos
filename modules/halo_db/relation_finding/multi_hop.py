@@ -145,6 +145,9 @@ class MultiHopStrategy(HopStrategy):
             elif directed == 'forwards':
                 recursion_filter &= timestep_new.time_gyr > timestep_old.time_gyr
             elif directed == 'across':
+                existing_timestep_ids = self.session.query(core.Halo.timestep_id).\
+                    select_from(self._link_orm_class).join(self._link_orm_class.halo_to).distinct()
+                recursion_filter &= ~timestep_new.id.in_(existing_timestep_ids)
                 recursion_filter &= sqlalchemy.func.abs(timestep_new.time_gyr - timestep_old.time_gyr) < 1e-4
             else:
                 raise ValueError, "Unknown direction %r" % directed
