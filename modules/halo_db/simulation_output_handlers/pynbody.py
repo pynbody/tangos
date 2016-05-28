@@ -94,6 +94,13 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             _loaded_halocats[id(f)] = weakref.ref(h)
         return h  # pynbody.halo.AmigaGrpCatalogue(f)
 
+    def match_halos(self, f1, f2, halo_min, halo_max, dm_only=False, threshold=0.005):
+        if dm_only:
+            only_family='dark'
+        else:
+            only_family=None
+
+        return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold, only_family=only_family)
 
     def enumerate_halos(self, ts_extension):
         ts = DummyTimeStep()

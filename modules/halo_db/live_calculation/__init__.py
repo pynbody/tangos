@@ -19,6 +19,8 @@ class UnknownValue(object):
     """A dummy object returned by Calculation.proxy_value when the value of the calculation cannot be predicted"""
     pass
 
+class NoResultsError(ValueError):
+    pass
 
 class Calculation(object):
     """Represents a live-calculation to be performed on database objects.
@@ -151,7 +153,7 @@ class Calculation(object):
 
     def _make_final_array(self, x):
         if len(x)==0:
-            raise ValueError, "Calculation %s returned no results"%self
+            raise NoResultsError, "Calculation %s returned no results"%self
         if isinstance(x[0], np.ndarray):
             try:
                 return np.array(list(x), dtype=type(x[0][0]))
