@@ -14,7 +14,7 @@ class MultiHopAllProgenitorsStrategy(MultiHopStrategy):
                                                                target=target,
                                                                order_by=['time_desc', 'halo_number_asc'],
                                                                combine_routes=combine_routes,
-                                                             min_onehop_reverse_weight=0.5)
+                                                             min_onehop_reverse_weight=0.1)
 
     def _supplement_halolink_query_with_filter(self, query, table):
         query = super(MultiHopAllProgenitorsStrategy, self)._supplement_halolink_query_with_filter(query, table)
