@@ -56,6 +56,11 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
     def _order_by_clause(self, halo_alias, timestep_alias):
         return [self._link_orm_class.source_id, self._table.c.weight]
 
+    def _ordering_requires_join(self):
+        # Always return True, as our all() function will do post-processing based on halo_to
+        # Without the join, this leads to a large number of SELECTs being emitted (v slow)
+        return True
+
     def all(self):
         all = self._get_query_all()
         source_ids = [x.source_id for x in self._all]

@@ -295,7 +295,9 @@ class MultiHopStrategy(HopStrategy):
         class_base = (core.Base,)
         class_attrs = {"__table__": self._table,
                        "halo_from": relationship(core.halo.Halo, primaryjoin=self._table.c.halo_from_id == core.halo.Halo.id),
-                       "halo_to"  : relationship(core.halo.Halo, primaryjoin=(self._table.c.halo_to_id == core.halo.Halo.id))}
+                       "halo_to"  : relationship(core.halo.Halo, primaryjoin=(self._table.c.halo_to_id == core.halo.Halo.id)),
+                       "source_id" : self._table.c.source_id
+                       }
 
         return type(class_name,class_base,class_attrs)
 

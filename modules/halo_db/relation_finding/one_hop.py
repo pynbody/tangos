@@ -3,7 +3,7 @@ import sqlalchemy.exc
 import sqlalchemy.orm
 import sqlalchemy.orm.dynamic
 import sqlalchemy.orm.query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 from .. import core, temporary_halolist
 
 class HopStrategy(object):
@@ -149,6 +149,8 @@ class HopStrategy(object):
             timestep_alias = sqlalchemy.orm.aliased(core.timestep.TimeStep)
             halo_alias = sqlalchemy.orm.aliased(core.halo.Halo)
             query = query.join(halo_alias, self._link_orm_class.halo_to).join(timestep_alias)
+            query = query.options(contains_eager("halo_to", alias=halo_alias))
+            query = query.options(contains_eager("halo_to", "timestep", alias=timestep_alias))
 
         query = query.order_by(*self._order_by_clause(halo_alias, timestep_alias))
         return query
