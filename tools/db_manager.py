@@ -7,16 +7,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import halo_db as db
-
-from halo_db import all_simulations, get_simulation, get_halo
+from halo_db import all_simulations
 from halo_db import core, config
 from halo_db.core import Base, get_or_create_dictionary_item, \
     Creator, Simulation, TimeStep, Halo, HaloProperty, HaloLink
-from halo_db.query import get_simulation, get_halo
 from halo_db.core.simulation import SimulationProperty
 from halo_db.core.tracking import TrackData
-from halo_db.tools.add_simulation import SimulationAdderUpdater
+from halo_db.query import get_simulation, get_halo
 from halo_db.simulation_output_handlers import get_named_handler_class
+from halo_db.tools.add_simulation import SimulationAdderUpdater
 
 
 def add_simulation_timesteps(options):
@@ -62,7 +61,7 @@ def db_export(remote_db, *sims):
 
 
 def _db_import_export(target_session, from_session, *sims):
-    from halo_db.tools.terminalcontroller import heading
+    from halo_db.util.terminalcontroller import heading
     external_to_internal_halo_id = {}
     translated_halolink_ids = []
 
@@ -172,7 +171,7 @@ def remove_duplicates(opts):
 
 def rem_simulation_timesteps(options):
     basename = options.sims
-    from halo_db.tools.terminalcontroller import term
+    from halo_db.util.terminalcontroller import term
 
     sim = core.get_default_session().query(Simulation).filter_by(
         basename=basename).first()

@@ -5,7 +5,7 @@ import argparse
 import halo_db as db
 import halo_db.core.timestep
 from halo_db import halo_stat_files as hsf
-from halo_db.tools.terminalcontroller import term
+from halo_db.util.terminalcontroller import term
 
 
 def run():

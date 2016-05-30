@@ -241,16 +241,16 @@ class Halo(Base):
         *kwargs*:
 
         :param nmax: The maximum number of descendants to consider (default 1000)
-        :param strategy: The class to use to find the descendants (default relation_finding_strategies.MultiHopMajorDescendantsStrategy)
+        :param strategy: The class to use to find the descendants (default relation_finding.MultiHopMajorDescendantsStrategy)
         """
         from .. import live_calculation
-        from .. import relation_finding_strategies
+        from .. import relation_finding
         from .. import temporary_halolist as thl
         from . import Session
         from .. import query as db_query
 
         nmax = kwargs.get('nmax',1000)
-        strategy = kwargs.get('strategy', relation_finding_strategies.MultiHopMajorDescendantsStrategy)
+        strategy = kwargs.get('strategy', relation_finding.MultiHopMajorDescendantsStrategy)
         strategy_kwargs = kwargs.get('strategy_kwargs', {})
 
         if isinstance(plist[0], live_calculation.Calculation):
@@ -276,16 +276,16 @@ class Halo(Base):
 
         For more information see property_cascade.
         """
-        from .. import relation_finding_strategies
-        kwargs['strategy'] = relation_finding_strategies.MultiHopMajorProgenitorsStrategy
+        from .. import relation_finding
+        kwargs['strategy'] = relation_finding.MultiHopMajorProgenitorsStrategy
         return self.property_cascade(*plist, **kwargs)
 
 
     @property
     def next(self):
         if not hasattr(self, '_next'):
-            from .. import relation_finding_strategies
-            strategy = relation_finding_strategies.HopMajorDescendantStrategy(self)
+            from .. import relation_finding
+            strategy = relation_finding.HopMajorDescendantStrategy(self)
             self._next=strategy.first()
 
         return self._next
@@ -293,8 +293,8 @@ class Halo(Base):
     @property
     def previous(self):
         if not hasattr(self, '_previous'):
-            from .. import relation_finding_strategies
-            strategy = relation_finding_strategies.HopMajorProgenitorStrategy(self)
+            from .. import relation_finding
+            strategy = relation_finding.HopMajorProgenitorStrategy(self)
             self._previous=strategy.first()
 
         return self._previous

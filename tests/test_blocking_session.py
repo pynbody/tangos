@@ -6,6 +6,7 @@ import halo_db.core.simulation
 import halo_db.core.timestep
 import halo_db.parallel_tasks as pt
 import halo_db.parallel_tasks.backend_multiprocessing
+from halo_db import log
 import time
 from multiprocessing import Process, Condition
 import os
@@ -89,7 +90,8 @@ def _perform_test(use_blocking=True):
 def test_non_blocking_exception():
 
     with assert_raises(sqlalchemy.exc.OperationalError):
-        pt.launch(_perform_test,3, (False,))
+        with log.LogCapturer():
+            pt.launch(_perform_test,3, (False,))
 
     db.core.get_default_session().rollback()
 
@@ -100,6 +102,7 @@ def test_blocking_avoids_exception():
 
     assert halo_db.get_halo("sim/ts1/6") is None
 
-    pt.launch(_perform_test,3, (True,))
+    with log.LogCapturer():
+        pt.launch(_perform_test,3, (True,))
 
     assert halo_db.get_halo("sim/ts1/6") is not None

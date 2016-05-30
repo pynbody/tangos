@@ -1,10 +1,10 @@
 from nose.tools import assert_raises
 
 import halo_db as db
-import halo_db.consistent_collection as cc
 import halo_db.core.halo
 import halo_db.core.simulation
 import halo_db.core.timestep
+import halo_db.util.consistent_collection as cc
 
 
 def setup():

@@ -11,7 +11,7 @@ import halo_db.core.dictionary
 import halo_db.core.halo
 import halo_db.core.halo_data
 from halo_db.core import extraction_patterns
-from .. import consistent_collection
+from halo_db.util import consistent_collection
 from .. import core
 from .. import temporary_halolist as thl
 
@@ -19,6 +19,8 @@ class UnknownValue(object):
     """A dummy object returned by Calculation.proxy_value when the value of the calculation cannot be predicted"""
     pass
 
+class NoResultsError(ValueError):
+    pass
 
 class Calculation(object):
     """Represents a live-calculation to be performed on database objects.
@@ -138,14 +140,20 @@ class Calculation(object):
         when evaluating the first halo."""
         out = self.values(halos)
 
-        keep_rows = np.all(np.not_equal(out,None), axis=0)
+        keep_rows = np.all([[data is not None for data in row] for row in out], axis=0)
+        # The obvious way of doing this:
+        #   keep_rows = np.all(np.not_equal(out,None), axis=0)
+        # generates a scary FutureWarning that it will stop working in future. This is because
+        # it can end up doing a comparison of an array to None (effectively data!=None),
+        # which will not be the same as "is not None" in future versions of numpy.
+
         out = out[:,keep_rows]
 
         return [self._make_final_array(x) for x in out]
 
     def _make_final_array(self, x):
         if len(x)==0:
-            raise ValueError, "Calculation %s returned no results"%self
+            raise NoResultsError, "Calculation %s returned no results"%self
         if isinstance(x[0], np.ndarray):
             try:
                 return np.array(list(x), dtype=type(x[0][0]))
