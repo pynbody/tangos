@@ -85,6 +85,14 @@ class BasicHaloProperties(HaloProperties):
         else:
             return None, 0, 0, 0, 0
 
+class Vcom(HaloProperties):
+    @classmethod
+    def name(self):
+        return "Vcom"
+    def calculate(self, halo, properties):
+        return pynbody.analysis.halo.center_of_mass_velocity(halo)
+
+
 class SSCComoving(HaloProperties):
     @classmethod
     def name(self):
