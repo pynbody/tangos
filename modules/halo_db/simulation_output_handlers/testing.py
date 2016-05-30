@@ -4,9 +4,10 @@ from .. import config
 from . import SimulationOutputSetHandler
 
 class DummyTimestepData(object):
-    def __init__(self, message, time, halo=None):
+    def __init__(self, message, time, max_halos, halo=None):
         self.message = message
         self.halo = halo
+        self.max_halos = max_halos
         self.time = time
 
     def __str__(self):
@@ -39,13 +40,26 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
         for i in xrange(nhalos):
             yield i+1, 2000, 0, 0
 
+    def match_halos(self, f1, f2, halo_min, halo_max, dm_only=False, threshold=0.005):
+        """Test implementation of match halos always links halo i->i, and a 0.05 mass transfer from i->i+1"""
+        halo_max = min((halo_max,f1.max_halos,f2.max_halos))
+        return_matches = [tuple()]
+        for i in xrange(1,halo_max+1):
+            if i>=halo_min:
+                return_matches.append(((i, 1.0),(i+1,0.05),))
+            else:
+                return_matches.append(tuple())
+        return return_matches
+
     def load_timestep(self, ts_extension):
         return DummyTimestepData("Test string - this would contain the data for "+ts_extension,
-                                 float(self._get_ts_property(ts_extension, 'time')))
+                                 float(self._get_ts_property(ts_extension, 'time')),
+                                 int(self._get_ts_property(ts_extension, 'halos')))
 
     def load_halo(self, ts_extension, halo_number, partial=False):
         return DummyTimestepData("Test string - this would contain the data for %s halo %d"%(ts_extension ,halo_number),
                                  float(self._get_ts_property(ts_extension, 'time')),
+                                 int(self._get_ts_property(ts_extension, 'halos')),
                                  halo_number)
 
     def _get_ts_property(self, ts_extension, property):

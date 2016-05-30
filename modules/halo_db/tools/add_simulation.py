@@ -44,9 +44,6 @@ class SimulationAdderUpdater(object):
             extension=ts_extension).first()
         return ex is not None
 
-    def _convert_timestep_filename_to_extension(self, ts_filename):
-        return strip_slashes(ts_filename[len(self.basename):])
-
     def add_timestep(self, ts_extension):
         logger.info("Add timestep %s to simulation %s",ts_extension,self.basename)
         ex = TimeStep(self._get_simulation(), ts_extension)
@@ -91,24 +88,5 @@ class SimulationAdderUpdater(object):
 
     def _get_simulation(self):
         return self.session.query(Simulation).filter_by(basename=self.basename).first()
-
-
-
-
-
-
-
-
-
-def strip_slashes(name):
-    """Strip trailing and leading slashes from relative path"""
-    if len(name)==0: return name
-    while name[0] == "/":
-        name = name[1:]
-        if len(name)==0: return name
-    while name[-1] == "/":
-        name = name[:-1]
-        if len(name)==0: return name
-    return name
 
 

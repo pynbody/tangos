@@ -8,7 +8,7 @@ import halo_db
 __author__ = 'app'
 
 import halo_db as db
-import halo_db.relation_finding_strategies as halo_finding
+import halo_db.relation_finding as halo_finding
 import halo_db.temporary_halolist as thl
 import halo_db.testing as testing
 from nose.tools import assert_raises
@@ -197,6 +197,11 @@ def test_major_descendants():
     results = halo_finding.MultiHopMajorDescendantsStrategy(halo_db.get_item("sim/ts1/2"), include_startpoint=True).all()
     testing.assert_halolists_equal(results, ["sim/ts1/2","sim/ts2/1","sim/ts3/1"])
 
+
+def test_across():
+    results = halo_finding.MultiHopStrategy(halo_db.get_item("sim/ts2/2"),directed='across').all()
+    testing.assert_halolists_equal(results, ["sim2/ts2/1"])
+
 def test_multisource():
     results = halo_finding.MultiSourceMultiHopStrategy(halo_db.get_items(["sim/ts1/1", "sim/ts1/3"]),
                                                        halo_db.get_item("sim/ts3")).all()
@@ -235,7 +240,6 @@ def test_multisource_across():
     results = strategy.all()
     testing.assert_halolists_equal(results, ["sim2/ts2/2", "sim2/ts2/1", None])
     assert strategy._nhops_taken==1
-
 
 def test_find_merger():
     strategy = halo_finding.MultiHopMostRecentMergerStrategy(halo_db.get_item("sim/ts3/1"))

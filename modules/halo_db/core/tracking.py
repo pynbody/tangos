@@ -1,3 +1,5 @@
+import weakref
+
 import numpy as np
 from sqlalchemy import Column, Integer, LargeBinary, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, backref
@@ -5,7 +7,7 @@ from sqlalchemy.orm import relationship, backref
 from . import Base
 from . import creator
 from .simulation import Simulation
-import weakref
+
 
 class TrackData(Base):
     __tablename__ = 'trackdata'
@@ -102,7 +104,7 @@ class TrackerHaloCatalogue(object):
 def update_tracker_halos(sim=None):
     from halo_db.core import get_default_session
     from halo_db import get_simulation
-    from halo_db.tools.terminalcontroller import heading
+    from halo_db.util.terminalcontroller import heading
 
     if sim is None:
         x = get_default_session().query(TrackData).all()

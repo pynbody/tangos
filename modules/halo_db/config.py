@@ -17,6 +17,10 @@ base = os.environ.get("HALODB_ROOT", home+"/db_galaxies/")
 
 default_fileset_handler_class = "pynbody.ChangaOutputSetHandler"
 
+num_multihops_max_default = 100
+
+
+
 file_ignore_pattern = []
 
 #############################

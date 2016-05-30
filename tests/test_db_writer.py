@@ -4,7 +4,7 @@ import os
 from halo_db.tools import add_simulation
 from halo_db.tools import property_writer
 from halo_db.simulation_output_handlers import testing
-from halo_db import parallel_tasks
+from halo_db import parallel_tasks, log
 import properties
 
 def setup():
@@ -33,14 +33,20 @@ def init_blank_simulation():
     db.init_db("sqlite://")
     db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
     manager = add_simulation.SimulationAdderUpdater(testing.TestOutputSetHandler("dummy_sim_1"))
-    manager.scan_simulation_and_add_all_descendants()
+    with log.LogCapturer():
+        manager.scan_simulation_and_add_all_descendants()
 
+def run_writer_with_args(*args):
+    stored_log = log.LogCapturer()
+    writer = property_writer.PropertyWriter()
+    writer.parse_command_line(args)
+    with stored_log:
+        writer.run_calculation_loop()
+    return stored_log.get_output()
 
 def test_basic_writing():
     init_blank_simulation()
-    writer = property_writer.PropertyWriter()
-    writer.parse_command_line(["dummy_property"])
-    writer.run_calculation_loop()
+    run_writer_with_args("dummy_property")
 
     assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property'] == 1.0
     assert db.get_halo("dummy_sim_1/step.1/2")['dummy_property'] == 2.0
@@ -48,10 +54,13 @@ def test_basic_writing():
 
 def test_error_ignoring():
     init_blank_simulation()
-    writer = property_writer.PropertyWriter()
-    writer.parse_command_line(["dummy_property", "dummy_property_with_exception"])
-    writer.run_calculation_loop()
+    log = run_writer_with_args("dummy_property", "dummy_property_with_exception")
+    assert "Uncaught exception during property calculation" in log
 
     assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property'] == 1.0
     assert db.get_halo("dummy_sim_1/step.1/2")['dummy_property'] == 2.0
     assert db.get_halo("dummy_sim_1/step.2/1")['dummy_property'] == 2.0
+
+    assert 'dummy_property' in db.get_halo("dummy_sim_1/step.1/1").keys()
+    assert 'dummy_property_with_exception' not in db.get_halo("dummy_sim_1/step.1/1").keys()
+
