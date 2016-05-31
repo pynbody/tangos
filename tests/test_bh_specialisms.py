@@ -7,7 +7,7 @@ import halo_db.testing
 import halo_db.relation_finding as relation_finding_strategies
 
 def setup():
-    db.init_db("sqlite://")
+    halo_db.testing.init_blank_db_for_testing()
 
     generator = halo_db.testing.TestSimulationGenerator()
     generator.add_timestep()

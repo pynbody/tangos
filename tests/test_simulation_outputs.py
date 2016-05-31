@@ -1,7 +1,7 @@
 import halo_db as db
 import halo_db.simulation_output_handlers.pynbody as pynbody_outputs
 import halo_db.tools.add_simulation as add
-from halo_db import log
+from halo_db import log, testing
 import os
 import numpy.testing as npt
 import pynbody
@@ -9,7 +9,7 @@ import gc
 
 def setup():
     global output_manager
-    db.init_db("sqlite://")
+    testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
     output_manager = pynbody_outputs.ChangaOutputSetHandler("test_tipsy")
 

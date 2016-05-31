@@ -3,8 +3,8 @@ import halo_db.config
 import os
 from halo_db.tools import add_simulation
 from halo_db.tools import property_writer
-from halo_db.simulation_output_handlers import testing
-from halo_db import parallel_tasks, log
+from halo_db.simulation_output_handlers import output_testing
+from halo_db import parallel_tasks, log, testing
 import properties
 
 def setup():
@@ -30,9 +30,9 @@ class DummyPropertyCausingException(properties.HaloProperties):
         raise RuntimeError, "Test of exception handling"
 
 def init_blank_simulation():
-    db.init_db("sqlite://")
+    testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
-    manager = add_simulation.SimulationAdderUpdater(testing.TestOutputSetHandler("dummy_sim_1"))
+    manager = add_simulation.SimulationAdderUpdater(output_testing.TestOutputSetHandler("dummy_sim_1"))
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()
 

@@ -4,12 +4,13 @@ import os
 import halo_db.core.simulation
 import halo_db.core.timestep
 import halo_db.halo_stat_files as stat
+from halo_db import testing
 import numpy as np
 import numpy.testing as npt
 
 def setup():
     global ts1, ts2
-    db.init_db("sqlite://")
+    testing.init_blank_db_for_testing()
     db.config.base = os.getcwd()+"/"
 
     session = db.core.get_default_session()

@@ -1,11 +1,12 @@
 import halo_db.core.dictionary
+from halo_db import testing
 
 __author__ = 'app'
 
 import halo_db as db
 
 def setup():
-    db.init_db("sqlite://")
+    testing.init_blank_db_for_testing()
 
 
 def test_set():

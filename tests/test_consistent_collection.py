@@ -5,11 +5,12 @@ import halo_db.core.halo
 import halo_db.core.simulation
 import halo_db.core.timestep
 import halo_db.util.consistent_collection as cc
+from halo_db import testing
 
 
 def setup():
     global sim1, sim2, collection, h1, h2
-    db.init_db("sqlite://")
+    testing.init_blank_db_for_testing()
 
     session = db.core.get_default_session()
 

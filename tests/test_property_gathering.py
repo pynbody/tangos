@@ -11,9 +11,7 @@ from halo_db import testing
 import os
 
 def setup():
-    # This DB cannot be in RAM -- otherwise connections tests do not work (as only one connection is ever
-    # created to a RAM database)
-    db.init_db("sqlite:///temporary_testing.db")
+    testing.init_blank_db_for_testing()
 
     creator = halo_db.testing.TestSimulationGenerator()
 
@@ -36,9 +34,6 @@ def setup():
         if ts>1:
             creator.link_last_halos()
             creator.link_last_bhs_using_mapping({1:1})
-
-def teardown():
-    os.remove("temporary_testing.db")
 
 class TestProperty(properties.LiveHaloProperties):
     @classmethod

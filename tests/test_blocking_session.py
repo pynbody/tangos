@@ -5,12 +5,9 @@ import halo_db.core.halo
 import halo_db.core.simulation
 import halo_db.core.timestep
 import halo_db.parallel_tasks as pt
-import halo_db.parallel_tasks.backend_multiprocessing
-from halo_db import log
+from halo_db import log, testing
 import time
-from multiprocessing import Process, Condition
 import os
-import sys
 import sqlalchemy.exc
 
 import halo_db
@@ -18,11 +15,7 @@ import halo_db
 
 def setup():
     pt.use("multiprocessing")
-    try:
-        os.remove("test.db")
-    except OSError:
-        pass
-    db.init_db("sqlite:///test.db", timeout=0.1, verbose=False)
+    testing.init_blank_db_for_testing(timeout=0.1, verbose=False)
 
     session = db.core.get_default_session()
 
@@ -77,7 +70,7 @@ def _multiprocess_test():
 
 
 def _perform_test(use_blocking=True):
-    db.init_db("sqlite:///test.db", timeout=0.1, verbose=False)
+    db.init_db("sqlite:///test_dbs/test_blocking_session.db", timeout=0.1, verbose=False)
     if use_blocking:
         db.blocking.make_engine_blocking()
     print "hello",pt.backend.rank()
@@ -101,7 +94,7 @@ def test_non_blocking_exception():
 def test_blocking_avoids_exception():
 
     assert halo_db.get_halo("sim/ts1/6") is None
-
+    db.core.get_default_session().commit()
     with log.LogCapturer():
         pt.launch(_perform_test,3, (True,))
 

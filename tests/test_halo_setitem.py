@@ -1,14 +1,11 @@
 import halo_db as db
-import halo_db.core.halo
-import halo_db.core.simulation
-import halo_db.core.timestep
 import halo_db.testing
 import halo_db
 
 
 def setup():
 
-    db.init_db("sqlite://")
+    halo_db.testing.init_blank_db_for_testing()
 
     generator = db.testing.TestSimulationGenerator()
     for i in range(3):

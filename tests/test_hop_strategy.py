@@ -14,7 +14,7 @@ import halo_db.testing as testing
 from nose.tools import assert_raises
 
 def setup():
-    db.init_db("sqlite://")
+    testing.init_blank_db_for_testing()
 
     generator = testing.TestSimulationGenerator()
     # A second simulation to test linking across

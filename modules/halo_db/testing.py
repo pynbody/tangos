@@ -4,6 +4,8 @@ import sqlalchemy, sqlalchemy.event
 import contextlib
 import gc
 import traceback
+import os
+import inspect
 
 class TestSimulationGenerator(object):
     def __init__(self, sim_name="sim", session=None):
@@ -197,6 +199,19 @@ def assert_halolists_equal(hl1, hl2, session=None):
     equal = halolists_equal(hl1, hl2, session=None)
     assert equal, "Not equal: %s %s"%(_halos_to_strings(hl1),_halos_to_strings(hl2))
 
+@contextlib.contextmanager
+def autorevert():
+    old_session = core.get_default_session()
+    connection = core.get_default_engine().connect()
+    transaction = connection.begin()
+    isolated_session = core.Session(bind=connection)
+    core.set_default_session(isolated_session)
+    yield
+    transaction.rollback()
+    core.set_default_session(old_session)
+
+
+
 
 @contextlib.contextmanager
 def assert_connections_all_closed():
@@ -229,3 +244,23 @@ def assert_connections_all_closed():
             print "  ",line
 
     assert num_connections[0]==0, "%d (of %d) connections were not closed"%(num_connections[0], num_connections[1])
+
+
+def init_blank_db_for_testing(**init_kwargs):
+    try:
+        os.mkdir("test_dbs")
+    except OSError:
+        pass
+
+    caller_fname = os.path.basename(inspect.getframeinfo(inspect.currentframe().f_back)[0])[:-3]
+
+    print caller_fname
+    db_name = "test_dbs/%s.db"%caller_fname
+    try:
+
+        os.remove(db_name)
+    except OSError:
+        pass
+
+    core.init_db("sqlite:///"+db_name,**init_kwargs)
+

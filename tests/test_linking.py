@@ -1,16 +1,16 @@
 import halo_db as db
-from halo_db.simulation_output_handlers import testing
+from halo_db.simulation_output_handlers import output_testing
 from halo_db.tools import crosslink, add_simulation
-from halo_db import log, parallel_tasks, live_calculation
+from halo_db import log, parallel_tasks, live_calculation, testing
 from nose.tools import assert_raises
 import os, os.path
 
 def setup():
     parallel_tasks.use('null')
-    db.init_db("sqlite://")
+    testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
-    manager = add_simulation.SimulationAdderUpdater(testing.TestOutputSetHandler("dummy_sim_1"))
-    manager2 = add_simulation.SimulationAdderUpdater(testing.TestOutputSetHandler("dummy_sim_2"))
+    manager = add_simulation.SimulationAdderUpdater(output_testing.TestOutputSetHandler("dummy_sim_1"))
+    manager2 = add_simulation.SimulationAdderUpdater(output_testing.TestOutputSetHandler("dummy_sim_2"))
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()
         manager2.scan_simulation_and_add_all_descendants()

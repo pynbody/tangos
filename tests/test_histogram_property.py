@@ -1,7 +1,5 @@
 import halo_db as db
-import halo_db.core.halo
 import halo_db.core.simulation
-import halo_db.core.timestep
 import halo_db
 import halo_db.testing as testing
 import properties
@@ -11,7 +9,7 @@ import numpy.testing as npt
 
 
 def setup():
-    db.init_db("sqlite://")
+    testing.init_blank_db_for_testing()
 
     generator = testing.TestSimulationGenerator()
 

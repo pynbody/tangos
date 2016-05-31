@@ -15,7 +15,7 @@ from halo_db.core import extraction_patterns
 
 
 def setup():
-    db.init_db("sqlite://")
+    testing.init_blank_db_for_testing()
 
     generator = testing.TestSimulationGenerator()
     ts1 = generator.add_timestep()
