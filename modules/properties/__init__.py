@@ -267,18 +267,18 @@ class TimeChunkedProperty(HaloProperties):
         halo = property.halo
         t, stack = halo.property_cascade("t()", "raw(" + name + ")", strategy=strategy, strategy_kwargs=strategy_kwargs)
         final = np.zeros(cls.bin_index(t[0]))
-        previous_end = -1
+        previous_time = -1
         for t_i, hist_i in zip(t, stack):
             end = cls.bin_index(t_i)
             start = end - len(hist_i)
             valid = hist_i == hist_i
-            if end != previous_end:
+            if t_i != previous_time:
                 # new timestep; overwrite what was there previously
                 final[start:end][valid] = hist_i[valid]
             else:
                 # same timestep, multiple halos; accumulate
                 final[start:end][valid] += hist_i[valid]
-            previous_end = end
+            previous_time = t_i
         return final
 
 
