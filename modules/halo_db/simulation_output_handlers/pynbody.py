@@ -139,7 +139,16 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
         base = os.path.join(config.base, self.basename)
         extensions = sim_output_finder.find(basename=base+"/")
         for e in extensions:
-            yield e[len(base)+1:]
+            if self._pynbody_can_load_halos_for(e):
+                yield e[len(base)+1:]
+
+    def _pynbody_can_load_halos_for(self, filepath):
+        try:
+            f = pynbody.load(filepath)
+            h = f.halos()
+            return True
+        except SyntaxError:
+            return False
 
     def get_properties(self):
         pfile = self._get_paramfile_path()
