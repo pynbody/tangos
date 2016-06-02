@@ -147,7 +147,7 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
             f = pynbody.load(filepath)
             h = f.halos()
             return True
-        except SyntaxError:
+        except (IOError, RuntimeError):
             return False
 
     def get_properties(self):
