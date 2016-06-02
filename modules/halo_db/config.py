@@ -19,6 +19,7 @@ default_fileset_handler_class = "pynbody.ChangaOutputSetHandler"
 
 num_multihops_max_default = 100
 
+min_halo_particles = 1000
 
 
 file_ignore_pattern = []

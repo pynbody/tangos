@@ -1,6 +1,7 @@
 import halo_db as db
 import halo_db.simulation_output_handlers.pynbody as pynbody_outputs
 import halo_db.tools.add_simulation as add
+from halo_db import config
 from halo_db import log, testing
 import os
 import numpy.testing as npt
@@ -40,7 +41,16 @@ def test_properties():
     assert props['macros'].startswith("CHANGESOFT COOLING_COSMO") # from log file
     assert "dBHSinkAlpha" not in props # in the param file but not in the list of parameters we want to expose
 
+def test_enumerate_halos_using_statfile():
+    halos = list(output_manager.enumerate_halos("tiny.000640"))
+    assert halos[0]==[1,2041986,364232, 198355]
+    assert len(halos)==9
 
+def test_enumerate_halos_using_pynbody():
+    config.min_halo_particles = 400
+    halos = list(output_manager.enumerate_halos("tiny.000832"))
+    npt.assert_equal(halos[0], [1,477,80, 48])
+    assert len(halos)==1
 
 def test_load_timestep():
     add_test_simulation_to_db()

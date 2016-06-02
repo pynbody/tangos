@@ -3,16 +3,15 @@ from __future__ import absolute_import
 from . import SimulationOutputSetHandler
 from .. import halo_stat_files
 from .. import config
+from ..log import logger
 import os, os.path
 import pynbody
 import time
-import logging
 import glob
 import sim_output_finder
 import weakref
 import numpy as np
 
-logger = logging.getLogger(__name__)
 
 _loaded_halocats = {}
 
@@ -115,7 +114,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         except IOError:
             logger.warn("No halo statistics file found for timestep %r",ts)
             logger.warn("Reading halos directly using pynbody")
-            f = ts.load()
+            f = self.load_timestep_without_caching(ts_extension)
             h = f.halos()
             if hasattr(h, 'precalculate'):
                 h.precalculate()
@@ -127,7 +126,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             for i in xrange(istart, len(h)-istart):
                 try:
                     hi = h[i]
-                    if (not ts.halos.filter_by(halo_type=0, halo_number=i).count()>0) and len(hi.dm) > 1000:
+                    if len(hi.dm) > config.min_halo_particles:
                         yield i, len(hi.dm), len(hi.star), len(hi.gas)
                 except (ValueError, KeyError) as e:
                     pass
