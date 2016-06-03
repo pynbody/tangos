@@ -17,7 +17,7 @@ import re
 
 ##### YOU SHOULDN'T NEED TO CHANGE ANYTHING AFTER THIS LINE ######
 from halo_db.parallel_tasks import distributed
-from sim_output_finder import *
+from halo_db.simulation_output_handlers.sim_output_finding import *
 
 identifier = "magic_amiga.py v0.0"
 

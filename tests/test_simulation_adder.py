@@ -59,3 +59,4 @@ def test_update_simulation():
         assert db.get_simulation("dummy_sim_1")['dummy_sim_property_new'] == 'fruits'
         assert len(db.get_simulation("dummy_sim_1").timesteps) == 3
         assert db.get_timestep("dummy_sim_1/step.3").halos.count()==7
+    assert db.get_simulation("dummy_sim_1")['dummy_sim_property_2'] == 'banana'

@@ -2,16 +2,7 @@ import glob
 import math
 import fnmatch
 
-from halo_db.config import *
-
-
-def can_load(f):
-    import pynbody
-    try:
-        pynbody.load(f)
-        return True
-    except:
-        return False
+from ..config  import *
 
 
 def find(extension=None, mtd=None, ignore=None, basename=""):
@@ -31,10 +22,8 @@ def find(extension=None, mtd=None, ignore=None, basename=""):
             lambda f: not any([fnmatch.fnmatch(f, ipat) for ipat in ignore]), out)
     else:
         for d in xrange(mtd + 1):
-            out += filter(can_load,
-                          glob.glob(basename + ("*/" * d) + "*.00???"))
-            out += filter(can_load,
-                          glob.glob(basename + ("*/" * d) + "*.00????"))
+            out += glob.glob(basename + ("*/" * d) + "*.00???")
+            out += glob.glob(basename + ("*/" * d) + "*.00????")
 
     return set(out)
 

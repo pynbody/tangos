@@ -1,12 +1,13 @@
-import halo_db as db
 import os
 
+import numpy.testing as npt
+
+import halo_db as db
 import halo_db.core.simulation
 import halo_db.core.timestep
-import halo_db.halo_stat_files as stat
+import halo_db.simulation_output_handlers.halo_stat_files as stat
 from halo_db import testing
-import numpy as np
-import numpy.testing as npt
+
 
 def setup():
     global ts1, ts2

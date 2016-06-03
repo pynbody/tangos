@@ -9,7 +9,7 @@ def create_property(halo, name, prop, session):
     else:
         px = core.halo_data.HaloProperty(halo, name, prop)
 
-    px.creator = core.creator.get_creator()
+    px.creator_id = core.creator.get_creator().id
     return px
 
 

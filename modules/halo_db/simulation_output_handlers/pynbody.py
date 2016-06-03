@@ -1,16 +1,18 @@
 from __future__ import absolute_import
 
+import glob
+import os
+import os.path
+import time
+import weakref
+
+import numpy as np
+import pynbody
+
+from . import halo_stat_files, finding
 from . import SimulationOutputSetHandler
-from .. import halo_stat_files
 from .. import config
 from ..log import logger
-import os, os.path
-import pynbody
-import time
-import glob
-import sim_output_finder
-import weakref
-import numpy as np
 
 
 _loaded_halocats = {}
@@ -137,7 +139,7 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
 
     def enumerate_timestep_extensions(self):
         base = os.path.join(config.base, self.basename)
-        extensions = sim_output_finder.find(basename=base+"/")
+        extensions = finding.find(basename=base + "/")
         for e in extensions:
             if self._pynbody_can_load_halos_for(e):
                 yield e[len(base)+1:]

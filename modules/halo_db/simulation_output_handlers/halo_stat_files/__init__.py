@@ -1,12 +1,13 @@
 import os
+
 import numpy as np
 
 import halo_db.core.dictionary
 import halo_db.core.halo
 import halo_db.core.halo_data
+from halo_db import core
 from . import translations
-from .. import core
-import sqlalchemy
+
 
 class HaloStatFile(object):
     """Manages and reads a halo stat file of unspecified format."""
@@ -138,7 +139,7 @@ class HaloStatFile(object):
 class AHFStatFile(HaloStatFile):
     _id_offset = 1
 
-    _column_translations = {'n_dm': translations.Function(lambda ngas, nstar, npart: npart-ngas-nstar,
+    _column_translations = {'n_dm': translations.Function(lambda ngas, nstar, npart: npart - ngas - nstar,
                                                           'n_gas', 'n_star', 'npart')}
 
     @classmethod
@@ -152,7 +153,7 @@ class AmigaIDLStatFile(HaloStatFile):
     _column_translations = {'n_dm': translations.Rename('N_dark'),
                             'n_gas': translations.Rename('N_gas'),
                             'n_star': translations.Rename("N_star"),
-                            'npart': translations.Function(lambda ngas, nstar, ndark: ngas+nstar+ndark,
+                            'npart': translations.Function(lambda ngas, nstar, ndark: ngas + nstar + ndark,
                                                            "N_dark", "N_gas", "N_star")}
 
     @classmethod

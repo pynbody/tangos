@@ -1,5 +1,5 @@
-from .. import config, core, halo_stat_files
-from ..core import Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, Halo
+from .. import core
+from ..core import Simulation, TimeStep
 from ..log import logger
 
 class SimulationAdderUpdater(object):
