@@ -1,8 +1,4 @@
 import numpy as np
-import math
-import time
-import inspect
-import pyparsing as pp
 from halo_db.util import timing_monitor
 
 
