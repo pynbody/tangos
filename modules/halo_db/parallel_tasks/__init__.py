@@ -43,9 +43,8 @@ SLEEP_BEFORE_ALLOWING_NEXT_LOCK = 1.0
 def use(name):
     global backend, _backend_name
     if backend is not None:
-        warnings.warn("Attempt to specify backend but parallelism is already initialised. This call had no effect.", RuntimeWarning)
-    else:
-        _backend_name = name
+        warnings.warn("Attempt to specify backend but parallelism is already initialised. This call may have no effect, unless you know exactly what you're doing.", RuntimeWarning)
+    _backend_name = name
 
 def init_backend():
     global backend
@@ -124,6 +123,7 @@ def mpi_sync_db(session):
         backend.send(None, destination=0, tag=MESSAGE_REQUEST_CREATOR_ID)
         id = backend.receive(0,tag=MESSAGE_DELIVER_CREATOR_ID)
         core.creator.set_creator(session.query(halo_db.core.creator.Creator).filter_by(id=id).first())
+
 
 
 
