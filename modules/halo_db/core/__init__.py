@@ -108,15 +108,6 @@ def process_options(argparser_options):
         config.db = argparser_options.db_filename
     _verbose = argparser_options.db_verbose
 
-# see http://docs.sqlalchemy.org/en/rel_1_0/dialects/sqlite.html#serializable-isolation-savepoints-transactional-ddl
-def do_connect(dbapi_connection, connection_record):
-    # disable pysqlite's emitting of the BEGIN statement entirely.
-    # also stops it from emitting COMMIT before any DDL.
-    dbapi_connection.isolation_level = None
-
-# see http://docs.sqlalchemy.org/en/rel_1_0/dialects/sqlite.html#serializable-isolation-savepoints-transactional-ddl
-def do_begin(conn):
-    conn.execute("begin")
 
 def init_db(db_uri=None, timeout=30, verbose=None):
     global _verbose, _internal_session, _engine, Session
@@ -124,8 +115,6 @@ def init_db(db_uri=None, timeout=30, verbose=None):
         db_uri = 'sqlite:///' + config.db
     _engine = create_engine(db_uri, echo=verbose or _verbose,
                             isolation_level='READ UNCOMMITTED', connect_args={'timeout': timeout})
-    event.listens_for(_engine, "connect")(do_connect)
-    event.listens_for(_engine, "begin")(do_begin)
     Session = sessionmaker(bind=_engine)
     _internal_session=Session()
     Base.metadata.create_all(_engine)

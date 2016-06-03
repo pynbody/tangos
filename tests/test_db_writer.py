@@ -30,7 +30,7 @@ class DummyPropertyCausingException(properties.HaloProperties):
         raise RuntimeError, "Test of exception handling"
 
 def init_blank_simulation():
-    testing.init_blank_db_for_testing()
+    testing.init_blank_db_for_testing(timeout=0.0)
     db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
     manager = add_simulation.SimulationAdderUpdater(output_testing.TestOutputSetHandler("dummy_sim_1"))
     with log.LogCapturer():
@@ -47,7 +47,20 @@ def run_writer_with_args(*args):
 def test_basic_writing():
     init_blank_simulation()
     run_writer_with_args("dummy_property")
+    _assert_properties_as_expected()
 
+
+def test_parallel_writing():
+    init_blank_simulation()
+    parallel_tasks.use('multiprocessing')
+    try:
+        parallel_tasks.launch(run_writer_with_args,3,["dummy_property"])
+    finally:
+        parallel_tasks.use('null')
+    _assert_properties_as_expected()
+
+
+def _assert_properties_as_expected():
     assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property'] == 1.0
     assert db.get_halo("dummy_sim_1/step.1/2")['dummy_property'] == 2.0
     assert db.get_halo("dummy_sim_1/step.2/1")['dummy_property'] == 2.0
