@@ -36,7 +36,8 @@ class Images(HaloProperties):
         return self.render_projected(f.gas, size)
 
     def render_stars(self, f, size):
-        return pynbody.plot.stars.render(f.st[pynbody.filt.HighPass('tform',0) & pynbody.filt.BandPass('z', -size / 2, size / 2)], width=size, plot=False, ret_im=True)
+        return pynbody.plot.stars.render(f.st[pynbody.filt.HighPass('tform',0) & pynbody.filt.BandPass('z', -size / 2, size / 2)],
+                                         width=size, plot=False, ret_im=True, mag_range=(16,22))
 
     def calculate(self, halo, properties):
         import pynbody.plot
