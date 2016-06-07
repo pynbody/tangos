@@ -157,7 +157,7 @@ class CrossLinker(GenericLinker):
         obj1 = db.get_item(self.args.sims[0])
         obj2 = db.get_item(self.args.sims[1])
         if isinstance(obj1, core.TimeStep) and isinstance(obj2, core.TimeStep):
-            return [obj1, obj2]
+            return [[obj1, obj2]]
         elif isinstance(obj1, core.Simulation) and isinstance(obj2, core.Simulation):
             return self._generate_timestep_pairs_from_sims(obj1, obj2)
         else:
