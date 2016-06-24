@@ -29,6 +29,8 @@ If running on a remote server, you will need to forward the appropriate port usi
 
 1. Clone the repository
 2. Make sure you have an up-to-date version of python, then type `pip install pylons formalchemy` to install the required web frameworks
+    - If possible, use the latest version of sqlalchemy. Type `pip install --upgrade sqlalchemy` to get this.
+    - If you don't have permissions to install things into the python root folder, you might need to set up your own python plugins folder. Probably the easiest way to do this is to add `export PYTHONUSERBASE=$HOME` to your `.bash_profile` (or equivalent), then use `pip install --user pylons formalchemy` and `pip install --user --upgrade sqlalchemy`.
 3. Put your database file in the halo_database folder, named `data.db` - or create/edit a file called `environment_local.sh` to specify a different location and/or filename (see instructions above)
 4. Type `./webserver.sh` to run the web server
 5. Browse to <http://localhost:5000>
