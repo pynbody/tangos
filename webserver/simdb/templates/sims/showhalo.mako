@@ -175,8 +175,8 @@ You can also type + to extract the maximum, or - to extact the minimum.</p>
 
 <table>
 <tr class="collapsibletable"><th>x</th><th>y</th><th>Plot</th><th>Property</th><th>Creator</th></tr>
-<tr><td><input name="x" type="radio" value="t()" checked/></td><td><input name="y" type="radio" value="t"/></td><td> </td><td>time =${c.timestep_t}</td> <td class="smallinfo"></td></tr>
-<tr><td><input  name="x" type="radio" value="z()"/></td><td><input name="y" type="radio" value="z"/></td><td> </td><td>redshift =${c.timestep_z}</td> <td class="smallinfo"></td></tr>
+<tr><td><input name="x" type="radio" value="t()" checked/></td><td><input name="y" type="radio" value="t()"/></td><td> </td><td>time =${c.timestep_t}</td> <td class="smallinfo"></td></tr>
+<tr><td><input  name="x" type="radio" value="z()"/></td><td><input name="y" type="radio" value="z()"/></td><td> </td><td>redshift =${c.timestep_z}</td> <td class="smallinfo"></td></tr>
 ${c.props}
 </table>
 <div>
