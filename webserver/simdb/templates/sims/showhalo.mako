@@ -151,8 +151,7 @@ ${c.bh}
 
 <div class="popup_parent" id="popup_parent"></div>
 <div class="popup_box" id="interpret_box">
-<p>You have selected to plot quantities from an array. Which element (starting at 0) do you want to plot?
-You can also type + to extract the maximum, or - to extact the minimum.</p>
+<p>This quantity is an array, so you need to specify the radius that you want to sample at:</p>
 <form onsubmit="finishArrayInterpretationQuery(); return false;">
 <input id="whattoplot" name="whattoplot" type="text" size=4>
 <input type="submit" value="Continue">
