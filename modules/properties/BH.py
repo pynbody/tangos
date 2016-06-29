@@ -277,3 +277,10 @@ class BHGal(LiveHaloProperties):
         else:
             return halo[self._bhtype]
 
+class BHCentral(BHGal):
+    def __init__(self, simulation=None):
+        super(BHCentral, self).__init__(simulation, 'BH_central_distance', 'min', 'BH_central')
+
+    @classmethod
+    def name(cls):
+        return 'bhcenter'

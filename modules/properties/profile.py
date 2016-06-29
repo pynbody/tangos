@@ -71,7 +71,7 @@ class VmaxDM(HaloProperties):
         return "vmax_dm_local", "rmax_dm_local", "vmax_dm_global"
 
     def requires_property(self):
-        return ["dm_density_profile"]
+        return ["dm_mass_profile"]
 
     @classmethod
     def requires_simdata(self):
