@@ -1,4 +1,4 @@
-from halo_db.core import extraction_patterns
+from tangos.core import extraction_patterns
 from . import BuiltinFunction
 from .. import StoredProperty, FixedInput
 

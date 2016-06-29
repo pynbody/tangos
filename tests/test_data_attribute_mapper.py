@@ -7,7 +7,7 @@ import numpy as np
 import pynbody
 from nose.tools import assert_raises
 
-import halo_db.core.data_attribute_mapper as dam
+import tangos.core.data_attribute_mapper as dam
 
 
 class TestTarget(object):

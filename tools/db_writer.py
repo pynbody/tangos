@@ -1,8 +1,8 @@
 #!/usr/bin/env python2.7
 import matplotlib
 import sys
-from halo_db import parallel_tasks, core
-from halo_db.tools.property_writer import PropertyWriter
+from tangos import parallel_tasks, core
+from tangos.tools.property_writer import PropertyWriter
 
 
 def run_dbwriter(argv):

@@ -9,7 +9,7 @@ def create_property(halo, name, prop, session):
     else:
         px = core.halo_data.HaloProperty(halo, name, prop)
 
-    px.creator = core.creator.get_creator()
+    px.creator_id = core.creator.get_creator().id
     return px
 
 
@@ -24,7 +24,7 @@ def _insert_list_unlocked(property_list):
     session.commit()
 
 def insert_list(property_list):
-    from halo_db import parallel_tasks as pt
+    from tangos import parallel_tasks as pt
 
     if pt.backend!=None:
         with pt.RLock("insert_list"):

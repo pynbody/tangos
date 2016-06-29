@@ -1,24 +1,25 @@
 from nose.tools import assert_raises
 
-import halo_db as db
-import halo_db.core.halo
-import halo_db.core.simulation
-import halo_db.core.timestep
-import halo_db.util.consistent_collection as cc
+import tangos as db
+import tangos.core.halo
+import tangos.core.simulation
+import tangos.core.timestep
+import tangos.util.consistent_collection as cc
+from tangos import testing
 
 
 def setup():
     global sim1, sim2, collection, h1, h2
-    db.init_db("sqlite://")
+    testing.init_blank_db_for_testing()
 
     session = db.core.get_default_session()
 
-    sim1 = halo_db.core.simulation.Simulation("sim1")
-    sim2 = halo_db.core.simulation.Simulation("sim2")
-    ts1 = halo_db.core.timestep.TimeStep(sim1, "ts")
-    h1  = halo_db.core.halo.Halo(ts1, 1, 1000, 0, 0, 0)
-    ts2 = halo_db.core.timestep.TimeStep(sim2, "ts")
-    h2  = halo_db.core.halo.Halo(ts2, 1, 1000, 0, 0, 0)
+    sim1 = tangos.core.simulation.Simulation("sim1")
+    sim2 = tangos.core.simulation.Simulation("sim2")
+    ts1 = tangos.core.timestep.TimeStep(sim1, "ts")
+    h1  = tangos.core.halo.Halo(ts1, 1, 1000, 0, 0, 0)
+    ts2 = tangos.core.timestep.TimeStep(sim2, "ts")
+    h2  = tangos.core.halo.Halo(ts2, 1, 1000, 0, 0, 0)
 
     session.add_all([sim1,sim2,ts1,ts2,h1,h2])
 

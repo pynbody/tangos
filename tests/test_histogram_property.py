@@ -1,9 +1,7 @@
-import halo_db as db
-import halo_db.core.halo
-import halo_db.core.simulation
-import halo_db.core.timestep
-import halo_db
-import halo_db.testing as testing
+import tangos as db
+import tangos.core.simulation
+import tangos
+import tangos.testing as testing
 import properties
 import numpy as np
 
@@ -11,7 +9,7 @@ import numpy.testing as npt
 
 
 def setup():
-    db.init_db("sqlite://")
+    testing.init_blank_db_for_testing()
 
     generator = testing.TestSimulationGenerator()
 
@@ -54,7 +52,7 @@ def test_summed_reconstruction():
     reconstructed = ts2_h1.get_objects("dummy_histogram")[0].get_data_with_reassembly_options('sum')
 
     manual_reconstruction = ts2_h1['dummy_histogram']
-    added_bit = halo_db.get_halo("sim/ts1/2")['dummy_histogram']
+    added_bit = tangos.get_halo("sim/ts1/2")['dummy_histogram']
     manual_reconstruction[:len(added_bit)]+=added_bit
 
     npt.assert_almost_equal(reconstructed, manual_reconstruction)
@@ -77,7 +75,7 @@ def test_summed_reconstruction_across_simulations():
 
     ts2_h1 = db.get_halo("sim/ts2/1")
     session = db.core.get_default_session()
-    sim2 = halo_db.core.simulation.Simulation("sim2")
+    sim2 = tangos.core.simulation.Simulation("sim2")
     ts2 = db.query.get_timestep("sim/ts2")
     session.add(sim2)
 
@@ -97,7 +95,7 @@ def test_summed_reconstruction_across_simulations():
         reconstructed = ts2_h1.get_objects("dummy_histogram")[0].get_data_with_reassembly_options('major_across_simulations')
 
         manual_reconstruction = ts2_h1['dummy_histogram']
-        added_bit = halo_db.get_halo("sim/ts1/1")['dummy_histogram']
+        added_bit = tangos.get_halo("sim/ts1/1")['dummy_histogram']
         manual_reconstruction[:len(added_bit)]=added_bit
 
         npt.assert_almost_equal(reconstructed, manual_reconstruction)

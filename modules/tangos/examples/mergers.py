@@ -1,5 +1,5 @@
-import halo_db as db
-import halo_db.relation_finding
+import tangos as db
+import tangos.relation_finding
 import numpy as np
 
 
@@ -7,7 +7,7 @@ def get_mergers_of_major_progenitor(input_halo):
     """Given a halo, return the redshifts and ratios of all mergers on the major progenitor branch
 
     :parameter input_halo - the halo to consider the history of
-    :type input_halo halo_db.core.Halo
+    :type input_halo tangos.core.Halo
 
     :returns redshift, ratio, halo - arrays of the redshifts, ratios (1:X) and halo DB objects for the mergers
     """
@@ -34,7 +34,7 @@ def most_major_mergers_since(ts, Mvir_min=0.8e12, Mvir_max=2e12, z_merger_max=4.
     :parameter Mvir_min, Mvir_max - the minimum and maximum halo masses to consider
     :parameter z_merger_max - the maximum redshift to search for mergers
     :parameter no_merger_value - the value to insert for a halo if no merger was found (default None)
-    :type ts halo_db.core.TimeStep
+    :type ts tangos.core.TimeStep
 
     """
     dbid, Mvir = ts.gather_property("dbid()","Mvir")

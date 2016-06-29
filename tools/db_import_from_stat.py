@@ -2,10 +2,10 @@
 
 import argparse
 
-import halo_db as db
-import halo_db.core.timestep
-from halo_db import halo_stat_files as hsf
-from halo_db.util.terminalcontroller import term
+import tangos as db
+import tangos.core.timestep
+from tangos.simulation_output_handlers import halo_stat_files as hsf
+from tangos.util.terminalcontroller import term
 
 
 def run():
@@ -33,8 +33,8 @@ def run():
     names = args.properties
 
     for x in base_sim:
-        timesteps = db.core.get_default_session().query(halo_db.core.timestep.TimeStep).filter_by(
-            simulation_id=x.id, available=True).order_by(halo_db.core.timestep.TimeStep.redshift.desc()).all()
+        timesteps = db.core.get_default_session().query(tangos.core.timestep.TimeStep).filter_by(
+            simulation_id=x.id, available=True).order_by(tangos.core.timestep.TimeStep.redshift.desc()).all()
 
         if args.backwards:
             timesteps = timesteps[::-1]

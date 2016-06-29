@@ -7,11 +7,11 @@ import warnings
 import numpy as np
 from sqlalchemy.orm import contains_eager, aliased
 
-import halo_db.core.dictionary
-import halo_db.core.halo
-import halo_db.core.halo_data
-from halo_db.core import extraction_patterns
-from halo_db.util import consistent_collection
+import tangos.core.dictionary
+import tangos.core.halo
+import tangos.core.halo_data
+from tangos.core import extraction_patterns
+from tangos.util import consistent_collection
 from .. import core
 from .. import temporary_halolist as thl
 
@@ -104,9 +104,9 @@ class Calculation(object):
                 for r in retrieves:
                     r_split = r.split(".")
                     for w in r_split:
-                        self._r_dict_ids_cached.add(halo_db.core.dictionary.get_dict_id(w, session=session))
+                        self._r_dict_ids_cached.add(tangos.core.dictionary.get_dict_id(w, session=session))
                     self._r_dict_ids_essential_cached.add(
-                        halo_db.core.dictionary.get_dict_id(r_split[0], session=session))
+                        tangos.core.dictionary.get_dict_id(r_split[0], session=session))
             finally:
                 session.close()
 
@@ -171,16 +171,16 @@ class Calculation(object):
     def supplement_halo_query(self, halo_query):
         """Return a sqlalchemy query with a supplemental join to allow this calculation to run efficiently"""
         name_targets = self.retrieves_dict_ids()
-        halo_alias = halo_db.core.halo.Halo
+        halo_alias = tangos.core.halo.Halo
         augmented_query = halo_query
         for i in xrange(self.n_join_levels()):
-            halo_property_alias = aliased(halo_db.core.halo_data.HaloProperty)
-            halo_link_alias = aliased(halo_db.core.halo_data.HaloLink)
+            halo_property_alias = aliased(tangos.core.halo_data.HaloProperty)
+            halo_link_alias = aliased(tangos.core.halo_data.HaloLink)
 
-            path_to_properties = [halo_db.core.halo.Halo.all_links, halo_db.core.halo_data.HaloLink.halo_to] * i + [
-                halo_db.core.halo.Halo.all_properties]
-            path_to_links = [halo_db.core.halo.Halo.all_links, halo_db.core.halo_data.HaloLink.halo_to] * i + [
-                halo_db.core.halo.Halo.all_links]
+            path_to_properties = [tangos.core.halo.Halo.all_links, tangos.core.halo_data.HaloLink.halo_to] * i + [
+                tangos.core.halo.Halo.all_properties]
+            path_to_links = [tangos.core.halo.Halo.all_links, tangos.core.halo_data.HaloLink.halo_to] * i + [
+                tangos.core.halo.Halo.all_links]
 
 
             augmented_query =augmented_query.outerjoin(halo_property_alias,
@@ -193,8 +193,8 @@ class Calculation(object):
                                                 contains_eager(*path_to_links, alias=halo_link_alias))
 
             if i<self.n_join_levels()-1:
-                next_level_halo_alias = aliased(halo_db.core.halo.Halo)
-                path_to_new_halo = path_to_links + [halo_db.core.halo_data.HaloLink.halo_to]
+                next_level_halo_alias = aliased(tangos.core.halo.Halo)
+                path_to_new_halo = path_to_links + [tangos.core.halo_data.HaloLink.halo_to]
                 augmented_query = augmented_query.outerjoin(next_level_halo_alias,
                                                             (halo_link_alias.halo_to_id==next_level_halo_alias.id)).\
                                         options(contains_eager(*path_to_new_halo, alias=next_level_halo_alias))
@@ -536,7 +536,7 @@ class StoredProperty(Calculation):
         return {self._name}
 
     def values(self, halos):
-        self._name_id = halo_db.core.dictionary.get_dict_id(self._name)
+        self._name_id = tangos.core.dictionary.get_dict_id(self._name)
         ret = np.empty((1,len(halos)),dtype=object)
         for i, h in enumerate(halos):
             if self._extraction_pattern.cache_contains(h, self._name_id):

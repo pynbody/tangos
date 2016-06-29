@@ -95,44 +95,29 @@ class FlowProfile(HaloProperties):
     def plot_xdelta(cls):
         return 1.0
 
-    def generate_cells(self, halo):
-        nx = 3*self._xmax/self.plot_xdelta()
-        grid_vr = pynbody.sph.to_3d_grid(halo.ancestor.gas, 'vr', nx, x2=self._xmax,denoise=True)
-        grid_rho = pynbody.sph.to_3d_grid(halo.ancestor.gas, 'rho', nx, x2=self._xmax,denoise=True)
-        grid_r = pynbody.sph.to_3d_grid(halo.ancestor.gas, 'r', nx, x2=self._xmax,denoise=True)
-        grid_temp = pynbody.sph.to_3d_grid(halo.ancestor.gas, 'temp', nx, x2=self._xmax,denoise=True)
-        Mdot = ((grid_rho*grid_vr*4.0*np.pi*grid_r**2).in_units("Msol yr^-1")).flatten()
-        vr = grid_vr.flatten()
-        r = grid_r.flatten()
-
-        mask = (r==r)
-        return r[mask],vr[mask],Mdot[mask],grid_temp.flatten()[mask]
-
-    def cells_to_r_bins(self, r, vr, Mdot, T, vr_cut):
-        ar_length = int(self._xmax/self.plot_xdelta())
-        if vr_cut>0:
-            mask = vr>vr_cut
+    def profile_calculation(self, f_gas, vr_cut):
+        f_gas['Mdot'] = f_gas['mass'] * f_gas['vr'] / (pynbody.units.Unit("kpc")*self.plot_xdelta())
+        if vr_cut<0:
+            f_gas['Mdot']*=(f_gas['vr']<vr_cut).view(np.ndarray)
+            f_gas['Mdot'] *= -1
         else:
-            mask = vr<vr_cut
+            f_gas['Mdot']*=(f_gas['vr']>vr_cut).view(np.ndarray)
 
-        r_index = np.array((r-self.plot_x0())/self.plot_xdelta(),dtype=int)
 
-        bincount = np.bincount(r_index, minlength=ar_length)[:ar_length]
-        Mdot_tot = np.bincount(r_index[mask],Mdot[mask],minlength=ar_length)[:ar_length]
-        vr_tot = np.bincount(r_index[mask],vr[mask]*Mdot[mask],minlength=ar_length)[:ar_length]
-        vr2_tot = np.bincount(r_index[mask], vr[mask]**2 * Mdot[mask], minlength=ar_length)[:ar_length]
-        temp_tot = np.bincount(r_index[mask],T[mask]*Mdot[mask],minlength=ar_length)[:ar_length]
 
-        return Mdot_tot/bincount, vr_tot/Mdot_tot, vr2_tot/Mdot_tot, temp_tot/Mdot_tot
+        pro = pynbody.analysis.profile.Profile(f_gas, min=0.0,max=self._xmax,
+                                               nbins=int(self._xmax/self.plot_xdelta()),
+                                               ndim=3, weight_by='Mdot')
+        return pro['weight_fn'].in_units("Msol yr^-1"), pro['vr'], pro['vr2'], pro['temp']
 
 
     def calculate(self, halo, properties):
-        with pynbody.analysis.halo.center(halo.gas):
-            r,vr,Mdot,T = self.generate_cells(halo.gas)
-            inflow_Mdot, inflow_vel, inflow_vel2, inflow_temp = self.cells_to_r_bins(r,vr,Mdot,T,-self._threshold_vel)
-            outflow_Mdot, outflow_vel, outflow_vel2, outflow_temp = self.cells_to_r_bins(r,vr,Mdot,T,self._threshold_vel)
+        with pynbody.analysis.halo.center(halo):
+            halo.gas['vr2'] = halo.gas['vr'] ** 2
+            inflow_Mdot, inflow_vel, inflow_vel2, inflow_temp = self.profile_calculation(halo.ancestor.gas, -self._threshold_vel)
+            outflow_Mdot, outflow_vel, outflow_vel2, outflow_temp = self.profile_calculation(halo.ancestor.gas, self._threshold_vel)
 
-        return -inflow_Mdot, outflow_Mdot, -inflow_vel, outflow_vel,  inflow_vel2, outflow_vel2, inflow_temp, outflow_temp
+        return inflow_Mdot, outflow_Mdot, -inflow_vel, outflow_vel,  inflow_vel2, outflow_vel2, inflow_temp, outflow_temp
 
 
 

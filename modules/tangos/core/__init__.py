@@ -1,6 +1,7 @@
 from sqlalchemy import Index, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, clear_mappers
+from sqlalchemy import event
 
 from .. import config
 
@@ -106,6 +107,7 @@ def process_options(argparser_options):
     if argparser_options.db_filename is not None:
         config.db = argparser_options.db_filename
     _verbose = argparser_options.db_verbose
+
 
 def init_db(db_uri=None, timeout=30, verbose=None):
     global _verbose, _internal_session, _engine, Session

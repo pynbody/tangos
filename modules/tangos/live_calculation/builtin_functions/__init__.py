@@ -1,7 +1,7 @@
 import numpy as np
 
-import halo_db
-from halo_db.util import consistent_collection
+import tangos
+from tangos.util import consistent_collection
 from .. import BuiltinFunction, FixedInput, FixedNumericInput
 from ... import core
 
@@ -10,7 +10,7 @@ from ... import core
 def match(source_halos, target):
     from ... import relation_finding
     if not isinstance(target, core.Base):
-        target = halo_db.get_item(target)
+        target = tangos.get_item(target)
     results = relation_finding.MultiSourceMultiHopStrategy(source_halos, target).all()
     assert len(results) == len(source_halos)
     return np.array(results, dtype=object)
