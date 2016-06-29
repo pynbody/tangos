@@ -1,8 +1,8 @@
-import halo_db as db
-import halo_db.simulation_output_handlers.pynbody as pynbody_outputs
-import halo_db.tools.add_simulation as add
-from halo_db import config
-from halo_db import log, testing
+import tangos as db
+import tangos.simulation_output_handlers.pynbody as pynbody_outputs
+import tangos.tools.add_simulation as add
+from tangos import config
+from tangos import log, testing
 import os
 import numpy.testing as npt
 import pynbody

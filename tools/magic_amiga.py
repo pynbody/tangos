@@ -9,8 +9,8 @@ which contains the command line instructions to AMIGA etc."""
 
 
 import re
-from halo_db.parallel_tasks import distributed, launch
-from halo_db.simulation_output_handlers.finding import *
+from tangos.parallel_tasks import distributed, launch
+from tangos.simulation_output_handlers.finding import *
 
 
 identifier = "magic_amiga.py v0.0"

@@ -1,19 +1,19 @@
-import halo_db as db
+import tangos as db
 import numpy as np
 import numpy.testing as npt
 
-import halo_db.core.halo
-import halo_db.core.simulation
-import halo_db.core.timestep
-import halo_db
+import tangos.core.halo
+import tangos.core.simulation
+import tangos.core.timestep
+import tangos
 import properties
-from halo_db import testing
+from tangos import testing
 import os
 
 def setup():
     testing.init_blank_db_for_testing()
 
-    creator = halo_db.testing.TestSimulationGenerator()
+    creator = tangos.testing.TestSimulationGenerator()
 
     halo_offset = 0
     for ts in range(1,4):
@@ -98,19 +98,19 @@ class TestPathChoice(properties.LiveHaloProperties):
 
 
 def test_gather_property():
-    Mv,  = halo_db.get_timestep("sim/ts2").gather_property("Mvir")
+    Mv,  = tangos.get_timestep("sim/ts2").gather_property("Mvir")
     npt.assert_allclose(Mv,[5,6,7,8])
 
-    Mv, Rv  = halo_db.get_timestep("sim/ts1").gather_property("Mvir", "Rvir")
+    Mv, Rv  = tangos.get_timestep("sim/ts1").gather_property("Mvir", "Rvir")
     npt.assert_allclose(Mv,[1,2,3,4])
     npt.assert_allclose(Rv,[0.1,0.2,0.3,0.4])
 
 def test_gather_function():
 
-    Vv, = halo_db.get_timestep("sim/ts1").gather_property("RvirPlusMvir()")
+    Vv, = tangos.get_timestep("sim/ts1").gather_property("RvirPlusMvir()")
     npt.assert_allclose(Vv,[1.1,2.2,3.3,4.4])
 
-    Vv, = halo_db.get_timestep("sim/ts2").gather_property("RvirPlusMvir()")
+    Vv, = tangos.get_timestep("sim/ts2").gather_property("RvirPlusMvir()")
     npt.assert_allclose(Vv,[5.5,6.6,7.7,8.8])
 
 
@@ -119,27 +119,27 @@ def test_gather_function_fails():
         # The following should fail.
         # If it does not raise a keyerror, the live calculation has ignored the directive
         # to only load in the named properties.
-        Vv, = halo_db.get_timestep("sim/ts1").gather_property("RvirPlusMvirMiscoded()")
+        Vv, = tangos.get_timestep("sim/ts1").gather_property("RvirPlusMvirMiscoded()")
 
 def test_gather_function_with_parameter():
-    res, = halo_db.get_timestep("sim/ts1").gather_property("squared(Mvir)")
+    res, = tangos.get_timestep("sim/ts1").gather_property("squared(Mvir)")
     npt.assert_allclose(res, [1.0, 4.0, 9.0, 16.0])
 
 
 def test_gather_linked_property():
-    BH_mass, = halo_db.get_timestep("sim/ts1").gather_property("BH.hole_mass")
+    BH_mass, = tangos.get_timestep("sim/ts1").gather_property("BH.hole_mass")
     npt.assert_allclose(BH_mass, [100.,200.,300.])
 
-    BH_mass, Mv = halo_db.get_timestep("sim/ts1").gather_property("BH.hole_mass", "Mvir")
+    BH_mass, Mv = tangos.get_timestep("sim/ts1").gather_property("BH.hole_mass", "Mvir")
     npt.assert_allclose(BH_mass, [100.,200.,300.])
     npt.assert_allclose(Mv, [1.,2.,3.])
 
 def test_gather_linked_property_with_fn():
-    BH_mass, Mv = halo_db.get_timestep("sim/ts1").gather_property('my_BH().hole_mass', "Mvir")
+    BH_mass, Mv = tangos.get_timestep("sim/ts1").gather_property('my_BH().hole_mass', "Mvir")
     npt.assert_allclose(BH_mass, [100.,200.,400.])
     npt.assert_allclose(Mv, [1.,2.,3.]) 
 
-    BH_mass, Mv = halo_db.get_timestep("sim/ts1").gather_property('my_BH("hole_spin").hole_mass', "Mvir")
+    BH_mass, Mv = tangos.get_timestep("sim/ts1").gather_property('my_BH("hole_spin").hole_mass', "Mvir")
     npt.assert_allclose(BH_mass, [100.,200.,300.])
     npt.assert_allclose(Mv, [1.,2.,3.])
 
@@ -152,7 +152,7 @@ def test_path_factorisation():
     #    'my_BH("hole_spin").hole_spin',
     #    'Mvir')
 
-    BH_mass, BH_spin, Mv = halo_db.get_timestep("sim/ts1").gather_property('my_BH("hole_spin").(hole_mass, hole_spin)', 'Mvir')
+    BH_mass, BH_spin, Mv = tangos.get_timestep("sim/ts1").gather_property('my_BH("hole_spin").(hole_mass, hole_spin)', 'Mvir')
     npt.assert_allclose(BH_mass, [100.,200.,300.])
     npt.assert_allclose(BH_spin, [900.,800.,700.])
     npt.assert_allclose(Mv, [1.,2.,3.])
@@ -165,49 +165,49 @@ def test_path_factorisation():
 
 
 def test_single_quotes():
-    BH_mass, Mv = halo_db.get_timestep("sim/ts1").gather_property("my_BH('hole_spin').hole_mass", "Mvir")
+    BH_mass, Mv = tangos.get_timestep("sim/ts1").gather_property("my_BH('hole_spin').hole_mass", "Mvir")
     npt.assert_allclose(BH_mass, [100.,200.,300.])
     npt.assert_allclose(Mv, [1.,2.,3.])
 
 
 def test_property_cascade():
-    h = halo_db.get_halo("sim/ts1/1")
+    h = tangos.get_halo("sim/ts1/1")
     objs, = h.property_cascade("dbid()")
     assert len(objs)==3
-    assert all([objs[i] == halo_db.get_halo(x).id for i, x in enumerate(("sim/ts1/1", "sim/ts2/1", "sim/ts3/1"))])
+    assert all([objs[i] == tangos.get_halo(x).id for i, x in enumerate(("sim/ts1/1", "sim/ts2/1", "sim/ts3/1"))])
 
 def test_reverse_property_cascade():
-    h = halo_db.get_halo("sim/ts3/1")
+    h = tangos.get_halo("sim/ts3/1")
     objs, = h.reverse_property_cascade("dbid()")
     assert len(objs)==3
-    assert all([objs[i] == halo_db.get_halo(x).id for i, x in enumerate(("sim/ts3/1", "sim/ts2/1", "sim/ts1/1"))])
+    assert all([objs[i] == tangos.get_halo(x).id for i, x in enumerate(("sim/ts3/1", "sim/ts2/1", "sim/ts1/1"))])
 
 def test_match_gather():
-    ts1_halos, ts3_halos = halo_db.get_timestep("sim/ts1").gather_property('dbid()', 'match("sim/ts3").dbid()')
+    ts1_halos, ts3_halos = tangos.get_timestep("sim/ts1").gather_property('dbid()', 'match("sim/ts3").dbid()')
     testing.assert_halolists_equal(ts1_halos, ['sim/ts1/1','sim/ts1/2','sim/ts1/3', 'sim/ts1/1.1'])
     testing.assert_halolists_equal(ts3_halos, ['sim/ts3/1','sim/ts3/2','sim/ts3/3', 'sim/ts3/1.1'])
 
 def test_later():
-    ts1_halos, ts3_halos = halo_db.get_timestep("sim/ts1").gather_property('dbid()', 'later(2).dbid()')
+    ts1_halos, ts3_halos = tangos.get_timestep("sim/ts1").gather_property('dbid()', 'later(2).dbid()')
     testing.assert_halolists_equal(ts1_halos, ['sim/ts1/1', 'sim/ts1/2', 'sim/ts1/3', 'sim/ts1/1.1'])
     testing.assert_halolists_equal(ts3_halos, ['sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts3/1.1'])
 
 def test_earlier():
-    ts3_halos, ts1_halos = halo_db.get_timestep("sim/ts3").gather_property('dbid()', 'earlier(2).dbid()')
+    ts3_halos, ts1_halos = tangos.get_timestep("sim/ts3").gather_property('dbid()', 'earlier(2).dbid()')
     testing.assert_halolists_equal(ts1_halos, ['sim/ts1/1', 'sim/ts1/2', 'sim/ts1/3', 'sim/ts1/1.1'])
     testing.assert_halolists_equal(ts3_halos, ['sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts3/1.1'])
 
 
 def test_cascade_closes_connections():
-    h = halo_db.get_halo("sim/ts3/1")
+    h = tangos.get_halo("sim/ts3/1")
     with db.testing.assert_connections_all_closed():
         h.reverse_property_cascade("Mvir")
 
 def test_redirection_cascade_closes_connections():
-    h = halo_db.get_halo("sim/ts3/1")
+    h = tangos.get_halo("sim/ts3/1")
     with db.testing.assert_connections_all_closed():
         h.reverse_property_cascade("my_BH('hole_spin').hole_mass")
 
 def test_gather_closes_connections():
      with db.testing.assert_connections_all_closed():
-        halo_db.get_timestep("sim/ts1").gather_property('Mvir')
+        tangos.get_timestep("sim/ts1").gather_property('Mvir')

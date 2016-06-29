@@ -1,7 +1,7 @@
-import halo_db as db
-from halo_db.simulation_output_handlers import output_testing
-from halo_db.tools import crosslink, add_simulation
-from halo_db import log, parallel_tasks, live_calculation, testing
+import tangos as db
+from tangos.simulation_output_handlers import output_testing
+from tangos.tools import crosslink, add_simulation
+from tangos import log, parallel_tasks, live_calculation, testing
 from nose.tools import assert_raises
 import os, os.path
 

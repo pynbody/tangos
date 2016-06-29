@@ -1,10 +1,10 @@
-import halo_db as db
-import halo_db.config
+import tangos as db
+import tangos.config
 import os
-from halo_db.tools import add_simulation
-from halo_db.tools import property_writer
-from halo_db.simulation_output_handlers import output_testing
-from halo_db import parallel_tasks, log, testing
+from tangos.tools import add_simulation
+from tangos.tools import property_writer
+from tangos.simulation_output_handlers import output_testing
+from tangos import parallel_tasks, log, testing
 import properties
 
 def setup():

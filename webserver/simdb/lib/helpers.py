@@ -10,11 +10,11 @@ from webhelpers.html import literal, HTML
 from webhelpers.html.tags import *
 import webhelpers.util as util
 
-import halo_db.core.creator
-import halo_db.core.halo
-import halo_db.core.halo_data
-import halo_db.core.simulation
-import halo_db.core.timestep
+import tangos.core.creator
+import tangos.core.halo
+import tangos.core.halo_data
+import tangos.core.simulation
+import tangos.core.timestep
 import simdb.model.meta as meta
 from pylons import url
 
@@ -27,13 +27,13 @@ def breadcrumbs(from_object, with_link=False) :
     previous_item = None
     this = None
 
-    if type(from_object) is halo_db.core.simulation.Simulation:
+    if type(from_object) is tangos.core.simulation.Simulation:
 	if with_link :
 	    this = link_to(from_object.basename, url(controller='sims', action='showsim', id=from_object.id))
 	else :
 	    this = from_object.basename
 
-    elif type(from_object) is halo_db.core.timestep.TimeStep:
+    elif type(from_object) is tangos.core.timestep.TimeStep:
 	this = from_object.extension
 	if this[0]=="/" : this = this[1:]
 	if with_link :
@@ -41,13 +41,13 @@ def breadcrumbs(from_object, with_link=False) :
 	
 	previous_item = from_object.simulation
 
-    elif type(from_object) is halo_db.core.halo.Halo:
+    elif type(from_object) is tangos.core.halo.Halo:
 	this = "halo_"+str(from_object.halo_number)
 	if with_link :
 	    this = link_to(this, url(controller='sims', action='showhalo', id=from_object.id))
 	    
 	previous_item = from_object.timestep
-    elif type(from_object) is halo_db.core.halo_data.HaloProperty:
+    elif type(from_object) is tangos.core.halo_data.HaloProperty:
 
 	this = str(from_object.name.text)
 
@@ -55,14 +55,14 @@ def breadcrumbs(from_object, with_link=False) :
 	    this = link_to(this, url(controller='plot', action='time', id=from_object.id))
 
 	previous_item = from_object.halo
-    elif type(from_object) is halo_db.core.creator.Creator:
+    elif type(from_object) is tangos.core.creator.Creator:
         if with_link :
             this = link_to(str(from_object.id), url(controller="creator", action="more", id=from_object.id))
         else :
             this = str(from_object.id)
-        previous_item = halo_db.core.creator.Creator
+        previous_item = tangos.core.creator.Creator
         
-    elif from_object is halo_db.core.creator.Creator:
+    elif from_object is tangos.core.creator.Creator:
         if with_link :
             this = link_to("run", url(controller="creator", action="index"))
         else :

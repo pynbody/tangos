@@ -1,10 +1,10 @@
-import halo_db as db
-import halo_db.config
-from halo_db import log
+import tangos as db
+import tangos.config
+from tangos import log
 import os
-from halo_db.tools import add_simulation
-from halo_db.simulation_output_handlers import output_testing
-from halo_db import testing
+from tangos.tools import add_simulation
+from tangos.simulation_output_handlers import output_testing
+from tangos import testing
 
 def setup():
     testing.init_blank_db_for_testing(verbose=True)

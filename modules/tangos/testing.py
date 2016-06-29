@@ -1,4 +1,4 @@
-import halo_db
+import tangos
 from . import core
 import sqlalchemy, sqlalchemy.event
 import contextlib
@@ -13,7 +13,7 @@ class TestSimulationGenerator(object):
             session = core.get_default_session()
 
         self.session = session
-        self.sim = halo_db.core.simulation.Simulation(sim_name)
+        self.sim = tangos.core.simulation.Simulation(sim_name)
         self._ptcls_in_common_dict = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
         self._BH_dict = core.dictionary.get_or_create_dictionary_item(self.session, "BH")
         self.session.commit()
@@ -29,7 +29,7 @@ class TestSimulationGenerator(object):
                 NDM_halo = 1000-i*100
             else:
                 NDM_halo = NDM[i-1]
-            halo = halo_db.core.halo.Halo(ts, i, NDM_halo, 0, 0, 0)
+            halo = tangos.core.halo.Halo(ts, i, NDM_halo, 0, 0, 0)
             halo.halo_type = halo_type
             returned_halos.append(self.session.merge(halo))
 
@@ -77,7 +77,7 @@ class TestSimulationGenerator(object):
         """Add a sequentially-numbered timestep to the specified simulation"""
 
         timestep_num = len(self.sim.timesteps)+1
-        ts = halo_db.core.timestep.TimeStep(self.sim, "ts%d"%timestep_num)
+        ts = tangos.core.timestep.TimeStep(self.sim, "ts%d"%timestep_num)
         ts.redshift = 9 - timestep_num
         ts.time_gyr = 0.9*timestep_num
         self.session.add(ts)
@@ -178,7 +178,7 @@ def _as_halos(hlist, session=None):
         if isinstance(h, core.halo.Halo):
             rvals.append(h)
         else:
-            rvals.append(halo_db.get_halo(h, session))
+            rvals.append(tangos.get_halo(h, session))
     return rvals
 
 def _halos_to_strings(hlist):

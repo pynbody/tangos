@@ -24,7 +24,7 @@ def _insert_list_unlocked(property_list):
     session.commit()
 
 def insert_list(property_list):
-    from halo_db import parallel_tasks as pt
+    from tangos import parallel_tasks as pt
 
     if pt.backend!=None:
         with pt.RLock("insert_list"):

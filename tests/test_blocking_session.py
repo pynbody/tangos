@@ -1,16 +1,16 @@
 from nose.tools import assert_raises
-import halo_db as db
-import halo_db.blocking
-import halo_db.core.halo
-import halo_db.core.simulation
-import halo_db.core.timestep
-import halo_db.parallel_tasks as pt
-from halo_db import log, testing
+import tangos as db
+import tangos.blocking
+import tangos.core.halo
+import tangos.core.simulation
+import tangos.core.timestep
+import tangos.parallel_tasks as pt
+from tangos import log, testing
 import time
 import os
 import sqlalchemy.exc
 
-import halo_db
+import tangos
 
 
 def setup():
@@ -19,13 +19,13 @@ def setup():
 
     session = db.core.get_default_session()
 
-    sim = halo_db.core.simulation.Simulation("sim")
+    sim = tangos.core.simulation.Simulation("sim")
     session.add(sim)
 
-    ts1 = halo_db.core.timestep.TimeStep(sim, "ts1")
+    ts1 = tangos.core.timestep.TimeStep(sim, "ts1")
     session.add(ts1)
 
-    halo_1 = halo_db.core.halo.Halo(ts1, 1, 0, 0, 0, 0)
+    halo_1 = tangos.core.halo.Halo(ts1, 1, 0, 0, 0, 0)
     session.add_all([halo_1])
 
     session.commit()
@@ -41,8 +41,8 @@ def _multiprocess_block():
 
     session = db.core.get_default_session()
 
-    ts = halo_db.get_timestep("sim/ts1")
-    new_halo = halo_db.core.halo.Halo(ts, 5, 0, 0, 0, 0)
+    ts = tangos.get_timestep("sim/ts1")
+    new_halo = tangos.core.halo.Halo(ts, 5, 0, 0, 0, 0)
 
     session.merge(new_halo)
     session.flush()
@@ -57,11 +57,11 @@ def _multiprocess_test():
 
     time.sleep(0.5)
 
-    ts = halo_db.get_timestep("sim/ts1")
+    ts = tangos.get_timestep("sim/ts1")
 
 
 
-    new_halo = halo_db.core.halo.Halo(ts, 6, 0, 0, 0, 0)
+    new_halo = tangos.core.halo.Halo(ts, 6, 0, 0, 0, 0)
 
     db.core.get_default_session().merge(new_halo)
 
@@ -93,9 +93,9 @@ def test_non_blocking_exception():
 
 def test_blocking_avoids_exception():
 
-    assert halo_db.get_halo("sim/ts1/6") is None
+    assert tangos.get_halo("sim/ts1/6") is None
     db.core.get_default_session().commit()
     with log.LogCapturer():
         pt.launch(_perform_test,3, (True,))
 
-    assert halo_db.get_halo("sim/ts1/6") is not None
+    assert tangos.get_halo("sim/ts1/6") is not None

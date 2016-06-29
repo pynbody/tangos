@@ -153,7 +153,7 @@ First, you have to check to make sure you have the correct path to your simulati
 
 Now open up your python environment and load in your database.
 ```
->>> import halo_db as db
+>>> import tangos as db
 >>> sim = db.get_simulation('romulus8.256gst3.bwBH')         #get a target simulation from the repository
 >>> sim.timesteps                                            #list the available timesteps
 [<TimeStep(<Simulation("romulus8.256gst3.bwBH")>,"romulus8.256gst3.bwBH.000045") z=19.93 t=0.18 Gyr>,

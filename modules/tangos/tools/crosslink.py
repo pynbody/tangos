@@ -1,11 +1,11 @@
 import argparse
 
-import halo_db as db
-import halo_db.core
-from halo_db import parallel_tasks
-from halo_db import core
+import tangos as db
+import tangos.core
+from tangos import parallel_tasks
+from tangos import core
 import sqlalchemy, sqlalchemy.orm
-from halo_db.log import logger
+from tangos.log import logger
 
 
 class GenericLinker(object):
@@ -103,8 +103,8 @@ class GenericLinker(object):
     def crosslink_ts(self, ts1, ts2, halo_min=0, halo_max=100, dmonly=False, threshold=0.005):
         """Link the halos of two timesteps together
 
-        :type ts1 halo_db.core.TimeStep
-        :type ts2 halo_db.core.TimeStep"""
+        :type ts1 tangos.core.TimeStep
+        :type ts2 tangos.core.TimeStep"""
         output_handler_1 = ts1.simulation.get_output_set_handler()
         output_handler_2 = ts2.simulation.get_output_set_handler()
         if not isinstance(output_handler_1, type(output_handler_2)):
@@ -130,8 +130,8 @@ class TimeLinker(GenericLinker):
         base_sim = db.sim_query_from_name_list(self.args.sims)
         pairs = []
         for x in base_sim:
-            ts = self.session.query(halo_db.core.timestep.TimeStep).filter_by(
-                simulation_id=x.id, available=True).order_by(halo_db.core.timestep.TimeStep.redshift.desc()).all()
+            ts = self.session.query(tangos.core.timestep.TimeStep).filter_by(
+                simulation_id=x.id, available=True).order_by(tangos.core.timestep.TimeStep.redshift.desc()).all()
             for a, b in zip(ts[:-1], ts[1:]):
                 pairs.append((a, b))
         if self.args.backwards:

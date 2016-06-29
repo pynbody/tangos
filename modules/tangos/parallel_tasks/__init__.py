@@ -3,7 +3,7 @@ import warnings
 import importlib
 import sys
 
-import halo_db.core.creator
+import tangos.core.creator
 from .. import core
 import traceback
 
@@ -49,7 +49,7 @@ def use(name):
 def init_backend():
     global backend
     if backend is None:
-        backend = importlib.import_module('.backend_'+_backend_name, package='halo_db.parallel_tasks')
+        backend = importlib.import_module('.backend_'+_backend_name, package='tangos.parallel_tasks')
 
 def deinit_backend():
     global backend
@@ -114,7 +114,7 @@ class RLock(object):
         self.release()
 
 def mpi_sync_db(session):
-    """Causes the halo_db module to use the rank 0 processor's 'Creator' object"""
+    """Causes the tangos module to use the rank 0 processor's 'Creator' object"""
     if _backend_name=='null':
         return
     if backend.rank()==0:
@@ -122,7 +122,7 @@ def mpi_sync_db(session):
     if _backend_name!='null':
         backend.send(None, destination=0, tag=MESSAGE_REQUEST_CREATOR_ID)
         id = backend.receive(0,tag=MESSAGE_DELIVER_CREATOR_ID)
-        core.creator.set_creator(session.query(halo_db.core.creator.Creator).filter_by(id=id).first())
+        core.creator.set_creator(session.query(tangos.core.creator.Creator).filter_by(id=id).first())
 
 
 

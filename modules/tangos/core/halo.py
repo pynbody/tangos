@@ -3,7 +3,7 @@ import weakref
 from sqlalchemy import Column, Integer, ForeignKey, orm
 from sqlalchemy.orm import relationship, backref
 
-from halo_db.core import extraction_patterns
+from . import extraction_patterns
 from . import Base
 from . import creator
 from .dictionary import get_dict_id, get_or_create_dictionary_item

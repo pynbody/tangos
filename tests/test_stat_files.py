@@ -2,11 +2,11 @@ import os
 
 import numpy.testing as npt
 
-import halo_db as db
-import halo_db.core.simulation
-import halo_db.core.timestep
-import halo_db.simulation_output_handlers.halo_stat_files as stat
-from halo_db import testing
+import tangos as db
+import tangos.core.simulation
+import tangos.core.timestep
+import tangos.simulation_output_handlers.halo_stat_files as stat
+from tangos import testing
 
 
 def setup():
@@ -16,14 +16,14 @@ def setup():
 
     session = db.core.get_default_session()
 
-    sim = halo_db.core.simulation.Simulation("test_stat_files")
+    sim = tangos.core.simulation.Simulation("test_stat_files")
     session.add(sim)
 
-    ts1 = halo_db.core.timestep.TimeStep(sim, "pioneer50h128.1536gst1.bwK1.000832")
+    ts1 = tangos.core.timestep.TimeStep(sim, "pioneer50h128.1536gst1.bwK1.000832")
     ts1.time_gyr = 6  # unimportant
     ts1.redshift = 2.323  # matters for AHF filename
 
-    ts2 = halo_db.core.timestep.TimeStep(sim, "h242.cosmo50PLK.1536g1bwK1C52.004096")
+    ts2 = tangos.core.timestep.TimeStep(sim, "h242.cosmo50PLK.1536g1bwK1C52.004096")
     ts2.time_gyr = 10
     ts2.redshift = 0
 

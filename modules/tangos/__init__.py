@@ -1,3 +1,12 @@
+"""tangos - the amazing numerical galaxy organization system
+
+This package provides ways to create and interpret databases of numerical galaxy formation simulations for scientific
+analysis.
+
+For information on getting started, see README.md.
+
+"""
+
 import sqlalchemy
 import sqlalchemy.orm.session
 from sqlalchemy import Index, Column, Integer, String, Float, ForeignKey, DateTime, Boolean, LargeBinary, create_engine, orm

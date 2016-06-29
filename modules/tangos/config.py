@@ -1,4 +1,4 @@
-"""Configuration module for halo_db
+"""Configuration module for tangos
 
 Rather than change anything directly in this file, you can create a config_local.py with the variable you
 want to override and it will automatically take precedence.

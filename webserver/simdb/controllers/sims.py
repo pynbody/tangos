@@ -4,12 +4,12 @@ import time
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 
-import halo_db.core.dictionary
-import halo_db.core.halo
-import halo_db.core.halo_data
-import halo_db.core.simulation
-import halo_db.core.timestep
-import halo_db
+import tangos.core.dictionary
+import tangos.core.halo
+import tangos.core.halo_data
+import tangos.core.simulation
+import tangos.core.timestep
+import tangos
 from simdb.lib.base import BaseController, render
 
 import simdb.lib.helpers as h
@@ -17,8 +17,8 @@ import simdb.lib.helpers as h
 import simdb.model.meta as meta
 from simdb.model.meta import *
 
-import halo_db as db
-import halo_db.relation_finding
+import tangos as db
+import tangos.relation_finding
 import math
 import numpy as np
 
@@ -36,14 +36,14 @@ class SimsController(BaseController):
 
     def index(self):
 
-        cats = Session.query(meta.DictionaryItem).join(halo_db.core.simulation.SimulationProperty).all()
+        cats = Session.query(meta.DictionaryItem).join(tangos.core.simulation.SimulationProperty).all()
 
         c.titles = ["Name"]+[z.text for z in cats]
         ids = [z.id for z in cats]
 
 
 
-        sims = Session.query(halo_db.core.simulation.Simulation).all()
+        sims = Session.query(tangos.core.simulation.Simulation).all()
 
 
 
@@ -69,9 +69,9 @@ class SimsController(BaseController):
 
 
     def showsim(self, id) :
-        sim = Session.query(halo_db.core.simulation.Simulation).filter_by(id=id).first()
-        c.timesteps = Session.query(halo_db.core.timestep.TimeStep).filter_by(simulation_id=id).order_by(
-            halo_db.core.timestep.TimeStep.time_gyr.desc()).all()
+        sim = Session.query(tangos.core.simulation.Simulation).filter_by(id=id).first()
+        c.timesteps = Session.query(tangos.core.timestep.TimeStep).filter_by(simulation_id=id).order_by(
+            tangos.core.timestep.TimeStep.time_gyr.desc()).all()
         c.basename = sim.basename
         c.breadcrumbs = h.breadcrumbs(sim)
         c.creator = creator_link(sim.creator)
@@ -83,12 +83,12 @@ class SimsController(BaseController):
 
     def _apply_filters(self, query) :
         if session.get('nocontam',False) :
-            query = query.join(halo_db.core.halo_data.HaloProperty).filter(
-                halo_db.core.halo_data.HaloProperty.name_id == halo_db.core.dictionary.get_dict_id('contamination_fraction', -1, session=query.session),
-                halo_db.core.halo_data.HaloProperty.data_float < 1e-5)
+            query = query.join(tangos.core.halo_data.HaloProperty).filter(
+                tangos.core.halo_data.HaloProperty.name_id == tangos.core.dictionary.get_dict_id('contamination_fraction', -1, session=query.session),
+                tangos.core.halo_data.HaloProperty.data_float < 1e-5)
         if session.get('nosub',False) :
-            query = query.filter(~halo_db.core.halo.Halo.links.any(
-                halo_db.core.halo_data.HaloLink.relation_id == halo_db.core.dictionary.get_dict_id('Sub', -1, session=query.session)))
+            query = query.filter(~tangos.core.halo.Halo.links.any(
+                tangos.core.halo_data.HaloLink.relation_id == tangos.core.dictionary.get_dict_id('Sub', -1, session=query.session)))
         return query
 
     def showstep(self, id) :
@@ -97,17 +97,17 @@ class SimsController(BaseController):
             session['nocontam'] = 'nocontam' in request.GET
             session.save()
 
-        step = Session.query(halo_db.core.timestep.TimeStep).filter_by(id=id).first()
-        c.halos = self._apply_filters(step.halos.filter(meta.and_(halo_db.core.halo.Halo.halo_type == 0,
-                                                                  meta.or_(halo_db.core.halo.Halo.NDM > 5000,
-                                                                           halo_db.core.halo.Halo.NDM == 0)))).all()
+        step = Session.query(tangos.core.timestep.TimeStep).filter_by(id=id).first()
+        c.halos = self._apply_filters(step.halos.filter(meta.and_(tangos.core.halo.Halo.halo_type == 0,
+                                                                  meta.or_(tangos.core.halo.Halo.NDM > 5000,
+                                                                           tangos.core.halo.Halo.NDM == 0)))).all()
 
-        c.tinyhalos = self._apply_filters(step.halos.filter(meta.and_(halo_db.core.halo.Halo.halo_type == 0,
-                                                                      halo_db.core.halo.Halo.NDM <= 5000,
-                                                                      meta.or_(halo_db.core.halo.Halo.NDM > 100,
-                                                                               halo_db.core.halo.Halo.NDM == 0)))).all()
+        c.tinyhalos = self._apply_filters(step.halos.filter(meta.and_(tangos.core.halo.Halo.halo_type == 0,
+                                                                      tangos.core.halo.Halo.NDM <= 5000,
+                                                                      meta.or_(tangos.core.halo.Halo.NDM > 100,
+                                                                               tangos.core.halo.Halo.NDM == 0)))).all()
 
-        c.trackerhalos = step.halos.filter(halo_db.core.halo.Halo.halo_type == 1).all()
+        c.trackerhalos = step.halos.filter(tangos.core.halo.Halo.halo_type == 1).all()
         c.parent_id = step.simulation.id
         c.name = str(step.simulation.basename)+"/"+str(step.extension)
         c.breadcrumbs = h.breadcrumbs(step)
@@ -270,7 +270,7 @@ class SimsController(BaseController):
 
         timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr"%(halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
 
-        if isinstance(halo, halo_db.core.halo.BH):
+        if isinstance(halo, tangos.core.halo.BH):
             mass_name = "BH_mass"
             moreinfo = "BH %d"%halo.halo_number
         else:
@@ -281,7 +281,7 @@ class SimsController(BaseController):
             else:
                 moreinfo = "%s %d, NDM=%d"%(halo.__class__.__name__,halo.halo_number, halo.NDM)
 
-        Mvir = halo.properties.filter_by(name_id=halo_db.core.dictionary.get_dict_id(mass_name, session=Session.object_session(halo))).first()
+        Mvir = halo.properties.filter_by(name_id=tangos.core.dictionary.get_dict_id(mass_name, session=Session.object_session(halo))).first()
         if Mvir is not None:
             moreinfo+=", %s=%.2e"%(mass_name,Mvir.data)
             unscaled_size = math.log10(Mvir.data)
@@ -292,7 +292,7 @@ class SimsController(BaseController):
 
         name = str(halo.halo_number)
         start = time.time()
-        if halo.links.filter_by(relation_id=halo_db.core.dictionary.get_dict_id('Sub', -1)).count()>0:
+        if halo.links.filter_by(relation_id=tangos.core.dictionary.get_dict_id('Sub', -1)).count()>0:
             nodeclass = 'node-dot-sub'
         self.search_time+=time.time()-start
         if halo == base_halo:
@@ -428,14 +428,14 @@ class SimsController(BaseController):
         c.this_action = 'mergertree'
         c.alternative_action = 'showhalo'
         c.alternative_action_name = "&larr; halo properties"
-        halo = Session.query(halo_db.core.halo.Halo).filter_by(id=id).first()
+        halo = Session.query(tangos.core.halo.Halo).filter_by(id=id).first()
         c.tree = self._construct_mergertree(halo)
         c.breadcrumbs = h.breadcrumbs(halo)
         return render('/sims/mergertree.mako')
 
     def _showhalo_prepare(self, id, rel=None, num=1):
 
-        halo = Session.query(halo_db.core.halo.Halo).filter_by(id=id).first()
+        halo = Session.query(tangos.core.halo.Halo).filter_by(id=id).first()
         if not hasattr(c,'flash'):
             c.flash = []
 
@@ -452,7 +452,7 @@ class SimsController(BaseController):
                 id = new_halo.id
 
         c.name = "Halo "+str(halo.halo_number)+" of "+halo.timestep.extension
-        all_sims = halo_db.all_simulations(Session)
+        all_sims = tangos.all_simulations(Session)
 
         c.sims = [(sim.basename, sim.id, sim.id==halo.timestep.simulation_id) for sim in all_sims]
 
@@ -514,7 +514,7 @@ class SimsController(BaseController):
         elif rel == "other_in_ts":
             new_halo = halo.timestep.halos.filter_by(halo_number=num).first()
         elif rel == "insim":
-            targ = Session.query(halo_db.core.simulation.Simulation).filter_by(id=num).first()
+            targ = Session.query(tangos.core.simulation.Simulation).filter_by(id=num).first()
             strategy = db.relation_finding.MultiHopStrategy(halo, MAXHOPS_FIND_HALO, 'across', targ)
 
             targets, weights = strategy.all_and_weights()

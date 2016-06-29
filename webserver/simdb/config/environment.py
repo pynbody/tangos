@@ -45,7 +45,7 @@ def load_environment(global_conf, app_conf):
         imports=['from webhelpers.html import escape'])
 
     # Setup the SQLAlchemy database engine
-    import halo_db as db
+    import tangos as db
     engine = db.core._engine #engine_from_config(config, 'sqlalchemy.')
     init_model(engine)
 

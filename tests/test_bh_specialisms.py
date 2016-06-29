@@ -1,15 +1,15 @@
-import halo_db as db
-import halo_db.core.halo
-import halo_db.core.simulation
-import halo_db.core.timestep
-import halo_db
-import halo_db.testing
-import halo_db.relation_finding as relation_finding_strategies
+import tangos as db
+import tangos.core.halo
+import tangos.core.simulation
+import tangos.core.timestep
+import tangos
+import tangos.testing
+import tangos.relation_finding as relation_finding_strategies
 
 def setup():
-    halo_db.testing.init_blank_db_for_testing()
+    tangos.testing.init_blank_db_for_testing()
 
-    generator = halo_db.testing.TestSimulationGenerator()
+    generator = tangos.testing.TestSimulationGenerator()
     generator.add_timestep()
     halo_1, = generator.add_halos_to_timestep(1)
     bh_1, bh_2 = generator.add_bhs_to_timestep(2)
@@ -19,11 +19,11 @@ def setup():
     db.core.get_default_session().commit()
 
 def test_bh_identity():
-    assert isinstance(halo_db.get_halo(1), halo_db.core.halo.Halo)
-    assert not isinstance(halo_db.get_halo(1), halo_db.core.halo.BH)
-    assert isinstance(halo_db.get_halo(2), halo_db.core.halo.BH)
-    assert isinstance(halo_db.get_halo(3), halo_db.core.halo.BH)
+    assert isinstance(tangos.get_halo(1), tangos.core.halo.Halo)
+    assert not isinstance(tangos.get_halo(1), tangos.core.halo.BH)
+    assert isinstance(tangos.get_halo(2), tangos.core.halo.BH)
+    assert isinstance(tangos.get_halo(3), tangos.core.halo.BH)
 
 def test_bh_mapping():
-    assert halo_db.get_halo(2) in halo_db.get_halo(1)['BH']
-    assert halo_db.get_halo(3) in halo_db.get_halo(1)['BH']
+    assert tangos.get_halo(2) in tangos.get_halo(1)['BH']
+    assert tangos.get_halo(3) in tangos.get_halo(1)['BH']

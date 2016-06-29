@@ -6,7 +6,7 @@ class SimulationAdderUpdater(object):
     """This class contains the necessary tools to add a new simulation to the database"""
 
     def __init__(self, simulation_output, session=None):
-        """:type simulation_output halo_db.simulation_outputs.SimulationOutputSetHandler"""
+        """:type simulation_output tangos.simulation_outputs.SimulationOutputSetHandler"""
         self.simulation_output = simulation_output
         if session is None:
             session = core.get_default_session()
