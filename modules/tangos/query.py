@@ -1,7 +1,7 @@
 from sqlalchemy import and_
 
-from halo_db import get_default_session, Creator, Base
-from halo_db.core import Simulation, TimeStep, Halo, HaloProperty
+from tangos import get_default_session, Creator, Base
+from tangos.core import Simulation, TimeStep, Halo, HaloProperty
 
 
 def all_simulations(session=None):

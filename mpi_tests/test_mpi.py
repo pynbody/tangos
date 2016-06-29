@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys
-import halo_db.parallel_tasks as pt
+import tangos.parallel_tasks as pt
 import time
 
 

@@ -66,7 +66,7 @@ class TrackData(Base):
 
     def create_halos(self, first_ts=None, verbose=False):
         from . import Session
-        from halo_db.core import Halo
+        from tangos.core import Halo
         session = Session.object_session(self)
         if first_ts is None:
             create = True
@@ -102,9 +102,9 @@ class TrackerHaloCatalogue(object):
 
 
 def update_tracker_halos(sim=None):
-    from halo_db.core import get_default_session
-    from halo_db import get_simulation
-    from halo_db.util.terminalcontroller import heading
+    from tangos.core import get_default_session
+    from tangos import get_simulation
+    from tangos.util.terminalcontroller import heading
 
     if sim is None:
         x = get_default_session().query(TrackData).all()

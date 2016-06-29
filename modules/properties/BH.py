@@ -1,4 +1,4 @@
-import halo_db.core.halo
+import tangos.core.halo
 from . import HaloProperties, LiveHaloProperties, TimeChunkedProperty
 import numpy as np
 import math
@@ -124,8 +124,8 @@ class BH(HaloProperties):
         print self.log
 
     def calculate(self, halo, properties):
-        import halo_db as db
-        if not isinstance(properties, halo_db.core.halo.Halo):
+        import tangos as db
+        if not isinstance(properties, tangos.core.halo.Halo):
             raise RuntimeError("No proxies, please")
         boxsize = self.log.boxsize
 

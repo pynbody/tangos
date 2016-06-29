@@ -1,9 +1,9 @@
 #!/usr/bin/env python2.7
 
 
-from halo_db import core
-from halo_db import parallel_tasks
-from halo_db.tools.crosslink import TimeLinker
+from tangos import core
+from tangos import parallel_tasks
+from tangos.tools.crosslink import TimeLinker
 import sys
 
 

@@ -1,12 +1,12 @@
-from .. import config, core, halo_stat_files
-from ..core import Simulation, TimeStep, get_or_create_dictionary_item, SimulationProperty, Halo
+from .. import core
+from ..core import Simulation, TimeStep
 from ..log import logger
 
 class SimulationAdderUpdater(object):
     """This class contains the necessary tools to add a new simulation to the database"""
 
     def __init__(self, simulation_output, session=None):
-        """:type simulation_output halo_db.simulation_outputs.SimulationOutputSetHandler"""
+        """:type simulation_output tangos.simulation_outputs.SimulationOutputSetHandler"""
         self.simulation_output = simulation_output
         if session is None:
             session = core.get_default_session()

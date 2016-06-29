@@ -1,12 +1,13 @@
 import os
+
 import numpy as np
 
-import halo_db.core.dictionary
-import halo_db.core.halo
-import halo_db.core.halo_data
+import tangos.core.dictionary
+import tangos.core.halo
+import tangos.core.halo_data
+from tangos import core
 from . import translations
-from .. import core
-import sqlalchemy
+
 
 class HaloStatFile(object):
     """Manages and reads a halo stat file of unspecified format."""
@@ -107,7 +108,7 @@ class HaloStatFile(object):
         halos = []
         for num, NDM, Nstar, Ngas in self.iter_rows("n_dm", "n_star", "n_gas"):
             if NDM > min_NDM:
-                h = halo_db.core.halo.Halo(self._timestep, num, NDM, Nstar, Ngas)
+                h = tangos.core.halo.Halo(self._timestep, num, NDM, Nstar, Ngas)
                 halos.append(h)
         return halos
 
@@ -124,13 +125,13 @@ class HaloStatFile(object):
 
         session = core.Session.object_session(self._timestep)
 
-        property_db_names = [halo_db.core.dictionary.get_or_create_dictionary_item(session, name) for name in property_names]
+        property_db_names = [tangos.core.dictionary.get_or_create_dictionary_item(session, name) for name in property_names]
         property_objects = []
         for values in self.iter_rows(*property_names):
             halo = halos_map.get(values[0], None)
             if halo is not None:
                 for name_object, value in zip(property_db_names, values[1:]):
-                    property_objects.append(halo_db.core.halo_data.HaloProperty(halo, name_object, value))
+                    property_objects.append(tangos.core.halo_data.HaloProperty(halo, name_object, value))
 
         session.add_all(property_objects)
 
@@ -138,7 +139,7 @@ class HaloStatFile(object):
 class AHFStatFile(HaloStatFile):
     _id_offset = 1
 
-    _column_translations = {'n_dm': translations.Function(lambda ngas, nstar, npart: npart-ngas-nstar,
+    _column_translations = {'n_dm': translations.Function(lambda ngas, nstar, npart: npart - ngas - nstar,
                                                           'n_gas', 'n_star', 'npart')}
 
     @classmethod
@@ -152,7 +153,7 @@ class AmigaIDLStatFile(HaloStatFile):
     _column_translations = {'n_dm': translations.Rename('N_dark'),
                             'n_gas': translations.Rename('N_gas'),
                             'n_star': translations.Rename("N_star"),
-                            'npart': translations.Function(lambda ngas, nstar, ndark: ngas+nstar+ndark,
+                            'npart': translations.Function(lambda ngas, nstar, ndark: ngas + nstar + ndark,
                                                            "N_dark", "N_gas", "N_star")}
 
     @classmethod

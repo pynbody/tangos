@@ -151,8 +151,7 @@ ${c.bh}
 
 <div class="popup_parent" id="popup_parent"></div>
 <div class="popup_box" id="interpret_box">
-<p>You have selected to plot quantities from an array. Which element (starting at 0) do you want to plot?
-You can also type + to extract the maximum, or - to extact the minimum.</p>
+<p>This quantity is an array, so you need to specify the radius that you want to sample at:</p>
 <form onsubmit="finishArrayInterpretationQuery(); return false;">
 <input id="whattoplot" name="whattoplot" type="text" size=4>
 <input type="submit" value="Continue">
@@ -175,8 +174,8 @@ You can also type + to extract the maximum, or - to extact the minimum.</p>
 
 <table>
 <tr class="collapsibletable"><th>x</th><th>y</th><th>Plot</th><th>Property</th><th>Creator</th></tr>
-<tr><td><input name="x" type="radio" value="t()" checked/></td><td><input name="y" type="radio" value="t"/></td><td> </td><td>time =${c.timestep_t}</td> <td class="smallinfo"></td></tr>
-<tr><td><input  name="x" type="radio" value="z()"/></td><td><input name="y" type="radio" value="z"/></td><td> </td><td>redshift =${c.timestep_z}</td> <td class="smallinfo"></td></tr>
+<tr><td><input name="x" type="radio" value="t()" checked/></td><td><input name="y" type="radio" value="t()"/></td><td> </td><td>time =${c.timestep_t}</td> <td class="smallinfo"></td></tr>
+<tr><td><input  name="x" type="radio" value="z()"/></td><td><input name="y" type="radio" value="z()"/></td><td> </td><td>redshift =${c.timestep_z}</td> <td class="smallinfo"></td></tr>
 ${c.props}
 </table>
 <div>

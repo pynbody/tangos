@@ -1,4 +1,4 @@
-"""Configuration module for halo_db
+"""Configuration module for tangos
 
 Rather than change anything directly in this file, you can create a config_local.py with the variable you
 want to override and it will automatically take precedence.
@@ -19,6 +19,7 @@ default_fileset_handler_class = "pynbody.ChangaOutputSetHandler"
 
 num_multihops_max_default = 100
 
+min_halo_particles = 1000
 
 
 file_ignore_pattern = []

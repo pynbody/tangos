@@ -9,8 +9,9 @@ Examples
 Let's suppose you have an example timestep `ts` and halo `h`, e.g. by calling
 
 ```python
-ts = db.get_timestep(...)
-h  = db.get_halo(...)
+import tangos
+ts = tangos.get_timestep(...)
+h  = tangos.get_halo(...)
 ```
 
 One can gather properties that do not explicitly exist as properties within the database, but do not require a new calculation using simulation data. For example, the virial radius, "Vvir" is calculated using only the virial mass and virial radius already calculated. However, because it doesn't exist yet as a halo property, `h['Vvir']` will return an error. Instead, you must performa a "live-calculation" of "Vvir". `h.calculate('Vvir()')` will return the virial velocity of the halo. Since this is similar to calling a function, there are parenthesis associated with live calculated values.

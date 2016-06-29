@@ -6,18 +6,12 @@ This script is supposed to make it much easier to AMIGA all your gasoline output
 Before starting, you probably need to change some of the lines in localset.py
 which contains the command line instructions to AMIGA etc."""
 
-# Initial things:
+
 
 import re
+from tangos.parallel_tasks import distributed, launch
+from tangos.simulation_output_handlers.finding import *
 
-
-
-
-
-
-##### YOU SHOULDN'T NEED TO CHANGE ANYTHING AFTER THIS LINE ######
-from halo_db.parallel_tasks import distributed
-from sim_output_finder import *
 
 identifier = "magic_amiga.py v0.0"
 
@@ -27,8 +21,9 @@ import math
 import sys
 import time
 
-if __name__ == "__main__":
+def run():
     print "Scanning..."
+    global only_idl, no_idl
 
     if "idl" in sys.argv:
         only_idl = True
@@ -38,7 +33,9 @@ if __name__ == "__main__":
 
     if "par" in sys.argv:
         par = True
-        del sys.argv[sys.argv.index("par")]
+        index = sys.argv.index("par")
+        del sys.argv[index]
+        del sys.argv[index]
 
     restr = None
     if "only" in sys.argv:
@@ -61,11 +58,6 @@ if __name__ == "__main__":
             sys.argv.remove("no-idl")
         except:
             pass
-
-    if len(sys.argv) > 1:
-        max_traverse_depth = int(sys.argv[1])
-
-    print "Maximum number of folders deep = ", max_traverse_depth
 
     if not only_idl:
         outputs = find()
@@ -235,3 +227,18 @@ if __name__ == "__main__":
 
         if os.system(idl_command + " " + start_run) != 0 and not ignore_idl_error:
             raise RuntimeError, "Error reported from IDL"
+
+
+if __name__ == "__main__":
+    
+    par = False
+
+    if "par" in sys.argv:
+        par = True
+        num_proc = int(sys.argv[sys.argv.index("par")+1])
+
+    if par:
+        launch(run,num_proc)
+    else:
+        run()
+

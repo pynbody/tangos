@@ -1,9 +1,5 @@
 import numpy as np
-import math
-import time
-import inspect
-import pyparsing as pp
-from halo_db.util import timing_monitor
+from tangos.util import timing_monitor
 
 
 class HaloProperties(object):
@@ -25,7 +21,7 @@ class HaloProperties(object):
         """Initialise a HaloProperties calculation object
 
         :param simulation: The simulation from which the properties will be derived
-        :type simulation: halo_db.core.simulation.Simulation
+        :type simulation: tangos.core.simulation.Simulation
         """
         self._simulation = simulation
         self.timing_monitor = timing_monitor.TimingMonitor()
@@ -106,7 +102,7 @@ class HaloProperties(object):
         :type pynbody_halo_data: pynbody.snapshot.SimSnap
 
         :param halo_entry: The database object associated with the halo, if available
-        :type halo_entry: halo_db.core.halo.Halo
+        :type halo_entry: tangos.core.halo.Halo
         :return: All properties as named by names()
         """
         raise NotImplementedError
@@ -115,7 +111,7 @@ class HaloProperties(object):
         """Calculate the result of a function, using the existing data in the database alone
 
         :param halo_entry: The database object associated with the halo
-        :type halo_entry: halo_db.core.halo.Halo
+        :type halo_entry: tangos.core.halo.Halo
 
         :param input_values: Input values for the function
         :return: All function values as named by self.name()
@@ -127,7 +123,7 @@ class HaloProperties(object):
 
         :param name: The name of the one property to return (which must be one of the values specified by self.name())
         :param halo_entry: The database object associated with the halo
-        :type halo_entry: halo_db.core.halo.Halo
+        :type halo_entry: tangos.core.halo.Halo
 
         :param input_values: Input values for the function
         :return: The single named value
@@ -237,7 +233,7 @@ class TimeChunkedProperty(HaloProperties):
                                 - if 'raw', return the raw data
         """
 
-        from halo_db import relation_finding as rfs
+        from tangos import relation_finding as rfs
 
         if reassembly_type=='major':
             return cls._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy)
@@ -267,18 +263,18 @@ class TimeChunkedProperty(HaloProperties):
         halo = property.halo
         t, stack = halo.property_cascade("t()", "raw(" + name + ")", strategy=strategy, strategy_kwargs=strategy_kwargs)
         final = np.zeros(cls.bin_index(t[0]))
-        previous_end = -1
+        previous_time = -1
         for t_i, hist_i in zip(t, stack):
             end = cls.bin_index(t_i)
             start = end - len(hist_i)
             valid = hist_i == hist_i
-            if end != previous_end:
+            if t_i != previous_time:
                 # new timestep; overwrite what was there previously
                 final[start:end][valid] = hist_i[valid]
             else:
                 # same timestep, multiple halos; accumulate
                 final[start:end][valid] += hist_i[valid]
-            previous_end = end
+            previous_time = t_i
         return final
 
 
