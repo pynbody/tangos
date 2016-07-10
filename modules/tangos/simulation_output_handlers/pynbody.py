@@ -18,6 +18,13 @@ from ..log import logger
 _loaded_halocats = {}
 
 class DummyTimeStep(object):
+    def __init__(self, filename):
+        self.filename = filename
+
+
+    def __repr__(self):
+        return self.filename
+
     pass
 
 class PynbodyOutputSetHandler(SimulationOutputSetHandler):
@@ -104,8 +111,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold, only_family=only_family)
 
     def enumerate_halos(self, ts_extension):
-        ts = DummyTimeStep()
-        ts.filename = self._extension_to_filename(ts_extension)
+        ts = DummyTimeStep(self._extension_to_filename(ts_extension))
         ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
 
         try:
