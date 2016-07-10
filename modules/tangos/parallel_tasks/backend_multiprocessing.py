@@ -12,29 +12,41 @@ _pipe = None
 _recv_lock = None
 _recv_buffer = []
 
+class NoMatchingItem(Exception):
+    pass
+
+
 def send(data, destination, tag=0):
     _pipe.send((data, destination, tag))
 
 def receive_any(source=None):
     return receive(source,None,True)
 
+
 def receive(source=None, tag=0, return_tag=False):
-    waiting = True
-    while waiting:
-        for item in _recv_buffer:
-            if ((item[2]==tag or tag is None) and (item[1]==source or source is None)):
-                # consume item
-                _recv_buffer.remove(item)
-                if return_tag:
-                    return item
-                else:
-                    return item[0]
+    while True:
+        try:
+            item = _pop_first_match_from_reception_buffer(source, tag)
+            if return_tag:
+                return item
+            else:
+                return item[0]
+        except NoMatchingItem:
+            _receive_item_into_buffer()
 
-        with _recv_lock:
-            _recv_buffer.append(_pipe.recv())
 
-        # give other threads a chance if they are waiting too
-        time.sleep(0.05)
+def _pop_first_match_from_reception_buffer(source, tag):
+    for item in _recv_buffer:
+        if ((item[2] == tag or tag is None) and (item[1] == source or source is None)):
+            # consume item
+            _recv_buffer.remove(item)
+            return item
+
+    raise NoMatchingItem()
+
+def _receive_item_into_buffer():
+    with _recv_lock:
+        _recv_buffer.append(_pipe.recv())
 
 
 def rank():
@@ -58,7 +70,7 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
     try:
         target_fn(*args_in)
         finalize()
-    except Exception, e:
+    except Exception as e:
         _pipe.send(("error", e))
 
     _pipe.close()
@@ -67,7 +79,7 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
 def launch_functions(functions, args):
     global _slave
     if _slave:
-        raise RuntimeError, "Multiprocessing session is already underway"
+        raise RuntimeError("Multiprocessing session is already underway")
 
     num_procs = len(functions)
 
@@ -115,7 +127,7 @@ def launch_functions(functions, args):
 
 def launch(function, num_procs, args):
     if num_procs is None:
-        raise RuntimeError, "To launch a parallel session using multiprocessing backend, you need to specify the number of processors"
+        raise RuntimeError("To launch a parallel session using multiprocessing backend, you need to specify the number of processors")
 
     launch_functions([function]*num_procs, [args]*num_procs)
 

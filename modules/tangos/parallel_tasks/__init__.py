@@ -32,6 +32,8 @@ MESSAGE_REQUEST_CREATOR_ID = 9
 MESSAGE_DELIVER_CREATOR_ID = 10
 MESSAGE_CHECK_LOCK = 11
 MESSAGE_LOCK_CLEAR = 12
+MESSAGE_BARRIER = 13
+MESSAGE_BARRIER_PASS = 14
 
 MESSAGE_GRANT_LOCK_OFFSET = 100
 
@@ -145,23 +147,25 @@ def _server_thread():
 
     j = -1
     num_jobs = None
-    current_job = 0
-
+    current_job = None
     alive = [True for i in xrange(backend.size())]
+    awaiting_barrier = [False for i in xrange(backend.size())]
 
     while any(alive[1:]):
         message, source, tag = backend.receive_any(source=None)
         if tag==MESSAGE_START_ITERATION:
             if num_jobs is None:
                 num_jobs = message
+                current_job = 0
             else:
                 if num_jobs!=message:
-                    raise RuntimeError, "Number of jobs expected by rank %d is inconsistent with %d"%(source, num_jobs)
+                    raise RuntimeError, "Number of jobs (%d) expected by rank %d is inconsistent with %d"%(message, source, num_jobs)
+
         elif tag==MESSAGE_REQUEST_JOB:
             if current_job is not None:
-                log.logger.info("Send job %d to node %d",current_job, source)
+                log.logger.info("Send job %d of %d to node %d",current_job, num_jobs, source)
             else:
-                log.logger.info("Out of jobs; notify node %d", source)
+                log.logger.info("Finished jobs; notify node %d", source)
             backend.send(current_job, destination=source, tag=MESSAGE_DELIVER_JOB)
             if current_job is not None:
                 current_job+=1
@@ -176,9 +180,14 @@ def _server_thread():
             alive[source]=False
         elif tag==MESSAGE_REQUEST_CREATOR_ID:
             backend.send(_get_current_creator_id(), destination=source, tag=MESSAGE_DELIVER_CREATOR_ID)
+        elif tag==MESSAGE_BARRIER:
+            awaiting_barrier[source]=True
+            if all(awaiting_barrier[1:]):
+                for i in xrange(1,backend.size()):
+                    backend.send(None, destination=i, tag=MESSAGE_BARRIER_PASS)
 
 
-    log.logger.info("Out of jobs and all nodes notified; terminating manager.")
+    log.logger.info("Terminating manager")
 
 def _get_current_creator_id():
     creator = core.creator.get_creator()
@@ -242,6 +251,7 @@ def _mpi_iterate(task_list):
         job = backend.receive(0, tag=MESSAGE_DELIVER_JOB)
 
         if job is None:
+            barrier()
             return
         else:
             yield task_list[job]
@@ -249,9 +259,14 @@ def _mpi_iterate(task_list):
 
 def _shutdown_mpi():
     global backend
-    log.logger.info("Waiting for tasks on other nodes to complete")
+    log.logger.info("Shutting down parallel_tasks")
     backend.barrier()
     backend.finalize()
     backend = None
     _bankend_name = 'null'
 
+
+def barrier():
+    assert backend.rank()!=0, "The server process cannot take part in a barrier"
+    backend.send(None, destination=0, tag=MESSAGE_BARRIER)
+    backend.receive(0, tag=MESSAGE_BARRIER_PASS)
