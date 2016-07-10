@@ -45,8 +45,16 @@ def _pop_first_match_from_reception_buffer(source, tag):
     raise NoMatchingItem()
 
 def _receive_item_into_buffer():
-    with _recv_lock:
-        _recv_buffer.append(_pipe.recv())
+    if _recv_lock.acquire(False):
+        try:
+            _recv_buffer.append(_pipe.recv())
+        finally:
+            _recv_lock.release()
+    else:
+        # block until a data item has been received by another thread
+        _recv_lock.acquire()
+        _recv_lock.release()
+
 
 
 def rank():
