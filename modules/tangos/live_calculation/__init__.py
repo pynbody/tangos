@@ -11,6 +11,7 @@ import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data
 from tangos.core import extraction_patterns
+from tangos.live_calculation.query_masking import QueryMask
 from tangos.util import consistent_collection
 from .. import core
 from .. import temporary_halolist as thl
@@ -226,12 +227,18 @@ class MultiCalculation(Calculation):
     def values_and_description(self, halos):
         results = np.empty((self.n_columns(),len(halos)), dtype=object)
         c_column = 0
+        halos = np.asarray(halos, dtype=object)
+        mask = QueryMask()
+        mask.mark_nones_as_masked(halos)
         for c in self.calculations:
-            values, description = c.values_and_description(halos)
-            results[c_column:c_column+c.n_columns()] = values
+            values, description = c.values_and_description(mask.mask(halos))
+            results[c_column:c_column+c.n_columns()] = mask.unmask(values)
+            # TODO: in principle this masking should _not_ occur unless we know the user has called values_sanitized
+            # - other calls should not cross-contaminate columns in this way
+            mask.mark_nones_as_masked(values)
             c_column+=c.n_columns()
 
-        # problem: there is no good description of multiple properties
+        # TODO - problem: there is no good description of multiple properties
         return results, description
 
     def n_columns(self):
@@ -473,35 +480,36 @@ class Link(Calculation):
         target_halos = self._get_target_halos(halos)
         results = np.empty((self.n_columns(),len(halos)),dtype=object)
 
-        results_target = np.where(np.not_equal(target_halos, None))
-        target_halo_ids_weeded = target_halos[results_target]
+        mask = QueryMask()
+        mask.mark_nones_as_masked(target_halos)
+        target_halo_masked = mask.mask(target_halos)
 
 
-        for i in xrange(len(target_halo_ids_weeded)):
-            if isinstance(target_halo_ids_weeded[i], list):
+        for i in xrange(len(target_halo_masked)):
+            if isinstance(target_halo_masked[i], list):
                 warnings.warn("More than one relation for target %r has been found. Picking the first."%str(self.locator))
-                target_halo_ids_weeded[i] = target_halo_ids_weeded[i][0].id
+                target_halo_masked[i] = target_halo_masked[i][0].id
             else:
-                target_halo_ids_weeded[i] = target_halo_ids_weeded[i].id
+                target_halo_masked[i] = target_halo_masked[i].id
 
         # need a new session for the subqueries, because we might have cached copies of objects where
         # a different set of properties has been loaded into all_properties
         new_session = core.Session()
 
         try:
-            with thl.temporary_halolist_table(new_session, target_halo_ids_weeded) as tab:
+            with thl.temporary_halolist_table(new_session, target_halo_masked) as tab:
                 target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
 
                 # sqlalchemy's deduplication means we are now missing any halos that appear more than once in
                 # target_halos_ids_weeded. But we actually want the duplication.
                 target_halos_supplemented_with_duplicates = \
-                    self._add_entries_for_duplicates(target_halos_supplemented, target_halo_ids_weeded)
+                    self._add_entries_for_duplicates(target_halos_supplemented, target_halo_masked)
 
                 values, description = self.property.values_and_description(target_halos_supplemented_with_duplicates)
         finally:
             new_session.connection().close()
 
-        results[:,results_target[0]] = values
+        results[:] = mask.unmask(values)
 
         return results, description
 
