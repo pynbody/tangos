@@ -95,9 +95,8 @@ class GenericLinker(object):
         if missing_db_object > 0:
             logger.warn("%d other link(s) could not be identified because the halo objects do not exist in the DB",
                         missing_db_object)
-        with parallel_tasks.RLock("create_db_objects_from_catalog"):
-            self.session.add_all(items)
-            self.session.commit()
+        self.session.add_all(items)
+        self.session.commit()
         logger.info("Finished committing %d links", len(items))
 
     def crosslink_ts(self, ts1, ts2, halo_min=0, halo_max=100, dmonly=False, threshold=0.005):
@@ -121,9 +120,9 @@ class GenericLinker(object):
         except:
             logger.exception("Exception during attempt to crosslink timesteps %r and %r", ts1, ts2)
             return
-
-        self.create_db_objects_from_catalog(cat, ts1, ts2)
-        self.create_db_objects_from_catalog(back_cat, ts2, ts1)
+        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+            self.create_db_objects_from_catalog(cat, ts1, ts2)
+            self.create_db_objects_from_catalog(back_cat, ts2, ts1)
 
 class TimeLinker(GenericLinker):
     def _generate_timestep_pairs(self):
