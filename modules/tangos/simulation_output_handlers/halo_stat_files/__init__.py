@@ -152,7 +152,9 @@ class AHFStatFile(HaloStatFile):
 
     @classmethod
     def filename(cls, timestep):
-        return timestep.filename + '.z%.3f.AHF_halos' % (timestep.redshift)
+        import glob
+        file = glob.glob(timestep.filename+'.z*.???.AHF_halos')[0]
+        return file
 
 
 class AmigaIDLStatFile(HaloStatFile):
