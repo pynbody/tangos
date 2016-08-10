@@ -77,8 +77,7 @@ class SimulationAdderUpdater(object):
         for num, NDM, Nstar, Ngas in self.simulation_output.enumerate_halos(ts.extension):
             n_tot.append(NDM+Nstar+Ngas)
         ids = np.zeros(len(n_tot))
-        ids[np.argsort(np.array(n_tot))[::-1]] = np.arange(len(n_tot))
-        ids += 1
+        ids[np.argsort(np.array(n_tot))[::-1]] = np.arange(len(n_tot)) + 1
         cnt = 1
         for num, NDM, Nstar, Ngas in self.simulation_output.enumerate_halos(ts.extension):
             if NDM > min_NDM:
