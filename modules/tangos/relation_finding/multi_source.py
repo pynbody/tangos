@@ -39,10 +39,12 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
 
 
     def _seed_temp_table(self):
+        insert_dictionaries = []
         for i,halo_from in enumerate(self._all_halo_from):
-            insert_statement = self._table.insert().values(halo_from_id=halo_from.id, halo_to_id=halo_from.id,
-                                        weight=1.0, nhops=0, source_id=i)
-            self._connection.execute(insert_statement)
+            insert_dictionaries.append({'halo_from_id': halo_from.id, 'halo_to_id': halo_from.id, 'weight': 1.0,
+                                        'nhops': 0, 'source_id': i})
+
+        self._connection.execute(self._table.insert(), insert_dictionaries)
 
     def _generate_next_level_prelim_links(self, from_nhops=0):
         if self._should_halt():
