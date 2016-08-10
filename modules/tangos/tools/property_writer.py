@@ -168,6 +168,7 @@ class PropertyWriter(object):
         existing_properties_data.NGas = db_halo.NGas
         existing_properties_data.NStar = db_halo.NStar
         existing_properties_data['halo_number'] = db_halo.halo_number
+        existing_properties_data['finder_id'] = db_halo.finder_id
         return existing_properties_data
 
     def _build_existing_properties_all_halos(self, halos):

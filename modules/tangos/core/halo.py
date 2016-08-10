@@ -71,7 +71,7 @@ class Halo(Base):
 
         handler = self.timestep.simulation.get_output_set_handler()
         if self.halo_type==0:
-            return handler.load_halo(self.timestep.extension, self.halo_number, partial=partial)
+            return handler.load_halo(self.timestep.extension, self.finder_id, partial=partial)
         else:
             return handler.load_tracked_region(self.timestep.extension, self.tracker, partial=partial)
 
