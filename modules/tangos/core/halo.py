@@ -33,9 +33,10 @@ class Halo(Base):
         'polymorphic_on':halo_type
     }
 
-    def __init__(self, timestep, halo_number, NDM, NStar, NGas, halo_type=0):
+    def __init__(self, timestep, halo_number, finder_id, NDM, NStar, NGas, halo_type=0):
         self.timestep = timestep
         self.halo_number = halo_number
+        self.finder_id = finder_id
         self.NDM = NDM
         self.NStar = NStar
         self.NGas = NGas
