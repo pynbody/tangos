@@ -126,12 +126,9 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             h = f.halos()
             if hasattr(h, 'precalculate'):
                 h.precalculate()
-            if type(h)==pynbody.halo.RockstarIntermediateCatalogue:
-                istart = 0
-            else:
-                istart = 1
+            istart = 1
 
-            for i in xrange(istart, len(h)-istart):
+            for i in xrange(istart, len(h)+istart):
                 try:
                     hi = h[i]
                     if len(hi.dm) > config.min_halo_particles:

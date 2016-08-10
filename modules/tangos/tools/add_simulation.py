@@ -72,10 +72,19 @@ class SimulationAdderUpdater(object):
 
     def add_halos_to_timestep(self, ts, min_NDM=1000):
         halos = []
+        import numpy as np
+        n_tot = []
+        for num, NDM, Nstar, Ngas in self.simulation_output.enumerate_halos(ts.extension):
+            n_tot.append(NDM+Nstar+Ngas)
+        ids = np.zeros(len(n_tot))
+        ids[np.argsort(np.array(n_tot))[::-1]] = np.arange(len(n_tot))
+        ids += 1
+        cnt = 1
         for num, NDM, Nstar, Ngas in self.simulation_output.enumerate_halos(ts.extension):
             if NDM > min_NDM:
-                h = core.halo.Halo(ts, num, NDM, Nstar, Ngas)
+                h = core.halo.Halo(ts, ids[cnt-1], cnt, NDM, Nstar, Ngas)
                 halos.append(h)
+                cnt += 1
         logger.info("Add %d halos to timestep %r", len(halos),ts)
         self.session.add_all(halos)
         self.session.commit()
