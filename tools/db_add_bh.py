@@ -68,6 +68,69 @@ def generate_halolinks(sim, session):
         session.commit()
 
 
+def collect_bhs(bh_iord,sim,f):
+    track = []
+    halo = []
+    for bhi in bh_iord:
+        bhi = int(bhi)
+        if sim.trackers.filter_by(halo_number=bhi).count()==0 :
+            print "ADD ",bhi
+            tx = tangos.core.tracking.TrackData(sim, bhi)
+            tx.particles = [bhi]
+            tx.use_iord = True
+            print " ->",tx
+            track.append(tx)
+        else:
+            tx = sim.trackers.filter_by(halo_number=bhi).first()
+
+        if f.halos.filter_by(halo_number=tx.halo_number, halo_type = 1).count()==0:
+                halo.append(tangos.core.halo.Halo(f, tx.halo_number, tx.halo_number, 0, 0, 0, 1))
+
+    return track, halo
+
+
+def bh_halo_assign(f_pb):
+    f_pbh = f_pb.halos()
+    bh_cen_halos=None
+    bh_halos = None
+    if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
+        bh_cen_halos = f_pbh.get_group_array(family = 'BH')
+    if type(f_pbh) == pynbody.halo.AHFCatalogue:
+        bh_cen_halos = f_pbh.get_group_array(top_level=False, family = 'BH')
+        bh_halos = f_pbh.get_group_array(top_level=True, family='BH')
+    if type(f_pbh) != pynbody.halo.AHFCatalogue and type(f_pbh) != pynbody.halo.RockstarIntermediateCatalogue:
+        f_pb['gp'] = f_pbh.get_group_array()
+        bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
+    del f_pbh
+    gc.collect()
+    return bh_cen_halos, bh_halos
+
+
+def collect_bh_links(bh_iord, bh_halos, bh_relation, host_relation=None):
+    links = []
+    for bhi, haloi in zip(bh_iord, bh_halos):
+        haloi = int(haloi)
+        bhi = int(bhi)
+        halo = f.halos.filter_by(halo_type=0, finder_id=haloi).first()
+        bh_obj = f.halos.filter_by(halo_type=1, finder_id=bhi).first()
+        if halo is None:
+            print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
+            continue
+        if bh_obj is None:
+            print "WARNING: can't find the db object for BH ",bh_iord,"?"
+            continue
+        existing = halo.links.filter_by(relation_id=bh_relation.id,halo_to_id=bh_obj.id).count()
+        if existing==0:
+            links.append(tangos.core.halo_data.HaloLink(halo, bh_obj, bh_relation))
+            if host_relation is not None:
+                links.append(tangos.core.halo_data.HaloLink(bh_obj, halo, host_relation))
+        else:
+            print "NOTE: skipping BH in halo",haloi,"as link already exists"
+    return links
+
+
+
+
 def run():
     #db.use_blocking_session()
     session = db.core.get_default_session()
@@ -106,93 +169,39 @@ def run():
 
         bh_objs = []
 
-        for bhi in bh_iord:
-            bhi = int(bhi)
-            if sim.trackers.filter_by(halo_number=bhi).count()==0 :
-                print "ADD ",bhi
-                tx = tangos.core.tracking.TrackData(sim, bhi)
-                tx = session.merge(tx)
-                tx.particles = [bhi]
-                tx.use_iord = True
-                print " ->",tx
-            else:
-                tx = sim.trackers.filter_by(halo_number=bhi).first()
+        tracker_to_add, halo_to_add = collect_bhs(bh_iord,sim,f)
+        with parallel_tasks.RLock("bh"):
+            session.add_all(tracker_to_add)
+            session.add_all(halo_to_add)
+            session.commit()
 
-            if f.halos.filter_by(halo_number=tx.halo_number, halo_type = 1).count()==0:
-                session.merge(tangos.core.halo.Halo(f, tx.halo_number, 0, 0, 0, 1))
+        bh_cen_halos, bh_halos = bh_halo_assign(f_pb)
 
-
-        session.commit()
-
-        f_pbh = f_pb.halos()
-        bh_cen_halos=None
-        bh_halos = None
-        if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
-            bh_cen_halos = f_pbh.get_fam_group_array(family = 'BH')
-        if type(f_pbh) == pynbody.halo.AHFCatalogue:
-            bh_cen_halos = f_pbh.get_group_array(top_level=False, family = 'BH')
-            bh_halos = f_pbh.get_group_array(top_level=True, family='BH')
-        if type(f_pbh) != pynbody.halo.AHFCatalogue and type(f_pbh) != pynbody.halo.RockstarIntermediateCatalogue:
-            f_pb['gp'] = f_pbh.get_group_array()
-            bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
-
-        del(f_pbh)
+        del(f_pb)
         gc.collect()
 
         if bh_halos is not None:
             bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
             print "Associated halos: ",bh_halos
-            bh_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH")
-
-            for bhi, haloi in zip(bh_iord, bh_halos):
-                haloi = int(haloi)
-                bhi = int(bhi)
-                halo = f.halos.filter_by(halo_type=0, finder_id=haloi).first()
-                bh_obj = f.halos.filter_by(halo_type=1, finder_id=bhi).first()
-                if halo is None:
-                    print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
-                    continue
-                if bh_obj is None:
-                    print "WARNING: can't find the db object for BH ",bh_iord,"?"
-                    continue
-                existing = halo.links.filter_by(relation_id=bh_dict_id.id,halo_to_id=bh_obj.id).count()
-
-                if existing==0:
-
-                    session.merge(tangos.core.halo_data.HaloLink(halo, bh_obj, bh_dict_id))
-                else:
-                    print "NOTE: skipping BH in halo",haloi,"as link already exists"
+            with parallel_tasks.RLock("bh"):
+                bh_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH")
+                session.commit()
+            bh_links = collect_bh_links(bh_iord, bh_halos, bh_dict_id, None)
+            with parallel_tasks.RLock("bh"):
+                session.add_all(bh_links)
+                session.commit()
 
         if bh_cen_halos is not None:
             bh_cen_halos = bh_cen_halos[np.argsort(bh_mass)[::-1]]
-            bh_dict_cen_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH_central")
-            host_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "host_halo")
-
-            for bhi, haloi in zip(bh_iord, bh_cen_halos):
-                haloi = int(haloi)
-                bhi = int(bhi)
-                halo = f.halos.filter_by(halo_type=0, finder_id=haloi).first()
-                bh_obj = f.halos.filter_by(halo_type=1, finder_id=bhi).first()
-                if halo is None:
-                    print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
-                    continue
-                if bh_obj is None:
-                    print "WARNING: can't find the db object for BH ",bh_iord,"?"
-                    continue
-                existing = halo.links.filter_by(relation_id=bh_dict_cen_id.id,halo_to_id=bh_obj.id).count()
-
-                if existing==0:
-
-                    session.merge(tangos.core.halo_data.HaloLink(halo, bh_obj, bh_dict_cen_id))
-                    session.merge(tangos.core.halo_data.HaloLink(bh_obj, halo, host_dict_id))
-                else:
-                    print "NOTE: skipping central BH ", bhi,"in halo",haloi,"as link already exists"
-
-        session.commit()
-
-
-        del f_pb
-        gc.collect()
+            print "Associated Central halos: ",bh_cen_halos
+            with parallel_tasks.RLock("bh"):
+                bh_dict_cen_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH_central")
+                host_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "host_halo")
+                session.commit()
+            bh_cen_links = collect_bh_links(bh_iord, bh_cen_halos, bh_dict_cen_id, host_dict_id)
+            with parallel_tasks.RLock("bh"):
+                session.add_all(bh_cen_links)
+                session.commit()
 
     print "Generate merger trees...."
     for sim in query.all():
