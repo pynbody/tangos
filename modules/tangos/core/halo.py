@@ -17,6 +17,7 @@ class Halo(Base):
 
     id = Column(Integer, primary_key=True)
     halo_number = Column(Integer)
+    finder_id = Column(Integer)
     timestep_id = Column(Integer, ForeignKey('timesteps.id'))
     timestep = relationship(TimeStep, backref=backref(
         'halos', order_by=halo_number, cascade='all', lazy='dynamic'), cascade='save-update, merge')
@@ -310,7 +311,7 @@ class BH(Halo):
     }
 
     def __init__(self, timestep, halo_number):
-        super(BH, self).__init__(timestep, halo_number, 0,0,0,1)
+        super(BH, self).__init__(timestep, halo_number, halo_number, 0,0,0,1)
 
 
 _loaded_halocats = {}

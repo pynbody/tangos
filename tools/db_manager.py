@@ -94,7 +94,7 @@ def _db_import_export(target_session, from_session, *sims):
             ts.available = True
             ts = target_session.merge(ts)
             for h_ext in ts_ext.halos:
-                h = Halo(ts, h_ext.halo_number, h_ext.NDM,
+                h = Halo(ts, h_ext.halo_number, h_ext.finder_id, h_ext.NDM,
                          h_ext.NStar, h_ext.NGas, h_ext.halo_type)
                 h = target_session.merge(h)
                 assert h.id is not None and h.id > 0
