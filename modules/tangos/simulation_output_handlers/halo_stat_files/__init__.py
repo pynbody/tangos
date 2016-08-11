@@ -117,7 +117,7 @@ class HaloStatFile(object):
             if NDM > min_NDM:
                 h = tangos.core.halo.Halo(self._timestep, ids[cnt-1],cnt, NDM, Nstar, Ngas)
                 halos.append(h)
-                cnt += 1
+            cnt += 1
         return halos
 
     def add_halos(self, min_NDM=1000):

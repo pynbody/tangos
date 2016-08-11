@@ -83,7 +83,7 @@ class SimulationAdderUpdater(object):
             if NDM > min_NDM:
                 h = core.halo.Halo(ts, ids[cnt-1], cnt, NDM, Nstar, Ngas)
                 halos.append(h)
-                cnt += 1
+            cnt += 1
         logger.info("Add %d halos to timestep %r", len(halos),ts)
         self.session.add_all(halos)
         self.session.commit()
