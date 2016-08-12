@@ -167,8 +167,6 @@ def run():
         bh_iord = bh_iord[np.argsort(bh_mass)[::-1]]
         print "Found black holes:", bh_iord
 
-        bh_objs = []
-
         tracker_to_add, halo_to_add = collect_bhs(bh_iord,sim,f)
         with parallel_tasks.RLock("bh"):
             session.add_all(tracker_to_add)
