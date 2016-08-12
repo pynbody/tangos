@@ -26,7 +26,10 @@ def resolve_multiple_mergers(bh_map):
             return
 
 def generate_halolinks(sim, session):
-    db.tracker.generate_tracker_halo_links(sim, session)
+    with parallel_tasks.RLock("bh"):
+        dict_obj_next = db.core.get_or_create_dictionary_item(session, "BH_merger_next")
+        dict_obj_prev = db.core.get_or_create_dictionary_item(session, "BH_merger_prev")
+        db.tracker.generate_tracker_halo_links(sim, session)
     fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
     if len(fname)==0:
         print "No merger file for "+sim.basename
@@ -35,14 +38,8 @@ def generate_halolinks(sim, session):
         print "Can't work out which is the merger file for "+sim.basename
         print "Found: ",fname
         return
-
-
-    timestep_numbers = np.array([int(ts.extension[-6:]) for ts in sim.timesteps])
-    dict_obj_next = db.core.get_or_create_dictionary_item(session, "BH_merger_next")
-    dict_obj_prev = db.core.get_or_create_dictionary_item(session, "BH_merger_prev")
-
-    for ts1, ts2 in zip(sim.timesteps[:-1],sim.timesteps[1:]):
-
+    mergers_links = []
+    for ts1, ts2 in parallel_tasks.distributed(zip(sim.timesteps[:-1],sim.timesteps[1:])):
         bh_map = {}
         print ts1, ts2
         for l in open(fname[0]):
@@ -62,9 +59,12 @@ def generate_halolinks(sim, session):
             bh_dest_after = ts2.halos.filter_by(halo_type=1,halo_number=dest).first()
 
             if bh_src_before is not None and bh_dest_after is not None:
-                db.tracker.generate_tracker_halo_link_if_not_present(bh_src_before,bh_dest_after,dict_obj_next,1.0)
-                db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj_prev,ratio)
+                if session.query(db.HaloLink).filter_by(halo_from_id=bh_src_before.id, halo_to_id=bh_dest_after.id).count()==0:
+                    mergers_links.append(db.HaloLink(bh_src_before,bh_dest_after,dict_obj_next,1.0))
+                    mergers_links.append(db.HaloLink(bh_dest_after,bh_src_before,dict_obj_prev,ratio))
 
+    with parallel_tasks.RLock("bh"):
+        session.add_all(mergers_links)
         session.commit()
 
 
@@ -106,7 +106,7 @@ def bh_halo_assign(f_pb):
     return bh_cen_halos, bh_halos
 
 
-def collect_bh_links(bh_iord, bh_halos, bh_relation, host_relation=None):
+def collect_bh_links(bh_iord, bh_halos, f, bh_relation, host_relation=None):
     links = []
     for bhi, haloi in zip(bh_iord, bh_halos):
         haloi = int(haloi)
@@ -186,7 +186,7 @@ def run():
             with parallel_tasks.RLock("bh"):
                 bh_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH")
                 session.commit()
-            bh_links = collect_bh_links(bh_iord, bh_halos, bh_dict_id, None)
+            bh_links = collect_bh_links(bh_iord, bh_halos, f, bh_dict_id, None)
             with parallel_tasks.RLock("bh"):
                 session.add_all(bh_links)
                 session.commit()
@@ -198,7 +198,7 @@ def run():
                 bh_dict_cen_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH_central")
                 host_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "host_halo")
                 session.commit()
-            bh_cen_links = collect_bh_links(bh_iord, bh_cen_halos, bh_dict_cen_id, host_dict_id)
+            bh_cen_links = collect_bh_links(bh_iord, bh_cen_halos, f, bh_dict_cen_id, host_dict_id)
             with parallel_tasks.RLock("bh"):
                 session.add_all(bh_cen_links)
                 session.commit()
