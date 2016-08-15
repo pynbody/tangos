@@ -24,7 +24,7 @@ class GenericLinker(object):
                             help="Print extra information")
         parser.add_argument("--force", action="store_true",
                             help="Generate links even if they already exist for those timesteps")
-        parser.add_argument("--hmax", action="store", type=int, default=200,
+        parser.add_argument("--hmax", action="store", type=int, default=None,
                             help="Specify the maximum number of halos per snapshot")
         parser.add_argument('--backwards', action='store_true',
                             help='Process in reverse order (low-z first)')
@@ -51,7 +51,7 @@ class GenericLinker(object):
         raise NotImplementedError, "No implementation found for generating the timestep pairs"
 
     def get_halo_entry(self, ts, halo_number):
-        h = ts.halos.filter_by(halo_number=halo_number).first()
+        h = ts.halos.filter_by(finder_id=halo_number).first()
         return h
 
     def need_crosslink_ts(self, ts1, ts2):
@@ -99,7 +99,7 @@ class GenericLinker(object):
         self.session.commit()
         logger.info("Finished committing %d links", len(items))
 
-    def crosslink_ts(self, ts1, ts2, halo_min=0, halo_max=100, dmonly=False, threshold=0.005):
+    def crosslink_ts(self, ts1, ts2, halo_min=0, halo_max=None, dmonly=False, threshold=0.005):
         """Link the halos of two timesteps together
 
         :type ts1 tangos.core.TimeStep
