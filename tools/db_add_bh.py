@@ -112,7 +112,7 @@ def collect_bh_links(bh_iord, bh_halos, f, bh_relation, host_relation=None):
         haloi = int(haloi)
         bhi = int(bhi)
         halo = f.halos.filter_by(halo_type=0, finder_id=haloi).first()
-        bh_obj = f.halos.filter_by(halo_type=1, finder_id=bhi).first()
+        bh_obj = f.halos.filter_by(halo_type=1, halo_number=bhi).first()
         if halo is None:
             print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
             continue
