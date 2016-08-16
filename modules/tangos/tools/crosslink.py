@@ -80,6 +80,7 @@ class GenericLinker(object):
     def create_db_objects_from_catalog(self, cat, ts1, ts2):
         with parallel_tasks.RLock("create_db_objects_from_catalog"):
             same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
+            self.session.commit()
         items = []
         missing_db_object = 0
         for i, possibilities in enumerate(cat):
