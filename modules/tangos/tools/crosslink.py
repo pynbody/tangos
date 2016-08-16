@@ -55,7 +55,9 @@ class GenericLinker(object):
         return h
 
     def need_crosslink_ts(self, ts1, ts2):
-        same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common").id
+        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+            same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common").id
+            self.session.commit()
         num_sources = ts1.halos.count()
         num_targets = ts2.halos.count()
         if num_targets == 0:
