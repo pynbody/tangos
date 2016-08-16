@@ -245,6 +245,7 @@ def _mpi_iterate(task_list):
     assert backend is not None, "Parallelism is not initialised"
 
     backend.send(len(task_list), tag=MESSAGE_START_ITERATION, destination=0)
+    barrier()
 
     while True:
         backend.send(None, tag=MESSAGE_REQUEST_JOB, destination=0)
