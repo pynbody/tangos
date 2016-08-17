@@ -6,6 +6,7 @@ from tangos import parallel_tasks
 from tangos import core
 import sqlalchemy, sqlalchemy.orm
 from tangos.log import logger
+import numpy as np
 
 
 class GenericLinker(object):
@@ -55,7 +56,9 @@ class GenericLinker(object):
         return h
 
     def need_crosslink_ts(self, ts1, ts2):
-        same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common").id
+        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+            same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common").id
+            self.session.commit()
         num_sources = ts1.halos.count()
         num_targets = ts2.halos.count()
         if num_targets == 0:
@@ -78,14 +81,33 @@ class GenericLinker(object):
         return True
 
     def create_db_objects_from_catalog(self, cat, ts1, ts2):
-
-        same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
+        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+            halos1 = ts1.halos.all()
+            halos2 = ts2.halos.all()
+            fid1 = []
+            fid2 = []
+            for h in halos1:
+                fid1.append(h.finder_id)
+            for h in halos2:
+                fid2.append(h.finder_id)
+            fid1 = np.array(fid1)
+            fid2 = np.array(fid2)
+            same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
+            self.session.commit()
         items = []
         missing_db_object = 0
         for i, possibilities in enumerate(cat):
-            h1 = self.get_halo_entry(ts1, i)
+            o1 = np.where(fid1==i)[0]
+            if len(o1)>0:
+                h1 = halos1[o1[0]]
+            else:
+                h1 = None
             for cat_i, weight in possibilities:
-                h2 = self.get_halo_entry(ts2, cat_i)
+                o2 = np.where(fid2==cat_i)[0]
+                if len(o2)>0:
+                    h2 = halos2[o2[0]]
+                else:
+                    h2 = None
                 if h1 is not None and h2 is not None:
                     items.append(core.halo_data.HaloLink(h1, h2, same_d_id, weight))
                 else:
@@ -95,8 +117,9 @@ class GenericLinker(object):
         if missing_db_object > 0:
             logger.warn("%d other link(s) could not be identified because the halo objects do not exist in the DB",
                         missing_db_object)
-        self.session.add_all(items)
-        self.session.commit()
+        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+            self.session.add_all(items)
+            self.session.commit()
         logger.info("Finished committing %d links", len(items))
 
     def crosslink_ts(self, ts1, ts2, halo_min=0, halo_max=None, dmonly=False, threshold=0.005):
@@ -120,7 +143,7 @@ class GenericLinker(object):
         except:
             logger.exception("Exception during attempt to crosslink timesteps %r and %r", ts1, ts2)
             return
-        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+        with self.session.no_autoflush:
             self.create_db_objects_from_catalog(cat, ts1, ts2)
             self.create_db_objects_from_catalog(back_cat, ts2, ts1)
 
