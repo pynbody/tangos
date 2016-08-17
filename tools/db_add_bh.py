@@ -26,10 +26,7 @@ def resolve_multiple_mergers(bh_map):
             return
 
 def generate_halolinks(sim, session):
-    with parallel_tasks.RLock("bh"):
-        dict_obj_next = db.core.get_or_create_dictionary_item(session, "BH_merger_next")
-        dict_obj_prev = db.core.get_or_create_dictionary_item(session, "BH_merger_prev")
-        db.tracker.generate_tracker_halo_links(sim, session)
+
     fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
     if len(fname)==0:
         print "No merger file for "+sim.basename
@@ -38,10 +35,34 @@ def generate_halolinks(sim, session):
         print "Can't work out which is the merger file for "+sim.basename
         print "Found: ",fname
         return
+    links = []
     mergers_links = []
     for ts1, ts2 in parallel_tasks.distributed(zip(sim.timesteps[:-1],sim.timesteps[1:])):
         bh_map = {}
         print ts1, ts2
+        with parallel_tasks.RLock("bh"):
+            dict_obj = db.core.get_or_create_dictionary_item(session, "tracker")
+            dict_obj_next = db.core.get_or_create_dictionary_item(session, "BH_merger_next")
+            dict_obj_prev = db.core.get_or_create_dictionary_item(session, "BH_merger_prev")
+            track_links_n, idf_n, idt_n = db.tracker.get_tracker_links(session, dict_obj_next)
+            halos_1, nums1, id1 = db.tracker.get_tracker_halos(ts1)
+            halos_2, nums2, id2 = db.tracker.get_tracker_halos(ts2)
+            tracker_links, idf, idt = db.tracker.get_tracker_links(session,dict_obj)
+
+        if len(nums1) == 0 or len(nums2) == 0:
+            continue
+
+        o1 = np.where(np.in1d(nums1,nums2))[0]
+        o2 = np.where(np.in1d(nums2,nums1))[0]
+        if len(o1) == 0 or len(o2) == 0:
+            continue
+        for ii, jj in zip(o1,o2):
+            if nums1[ii] != nums2[jj]:
+                raise RuntimeError("ERROR mismatch of BH iords")
+            exists = np.where((idf==id1[ii])&(idt==id2[jj]))[0]
+            if len(exists) == 0:
+                links.append(db.HaloLink(halos_1[ii],halos_2[jj],dict_obj,1.0))
+
         for l in open(fname[0]):
             l_split = l.split()
             t = float(l_split[0])
@@ -55,15 +76,19 @@ def generate_halolinks(sim, session):
         resolve_multiple_mergers(bh_map)
 
         for src,(dest,ratio) in bh_map.iteritems():
-            bh_src_before = ts1.halos.filter_by(halo_type=1,halo_number=src).first()
-            bh_dest_after = ts2.halos.filter_by(halo_type=1,halo_number=dest).first()
+            ob = np.where(nums1 == src)[0]
+            oa = np.where(nums2 == dest)[0]
+            if len(oa) == 0 or len(ob) == 0:
+                continue
+            bh_src_before = halos_1[ob[0]]
+            bh_dest_after = halos_1[oa[0]]
 
-            if bh_src_before is not None and bh_dest_after is not None:
-                if session.query(db.HaloLink).filter_by(halo_from_id=bh_src_before.id, halo_to_id=bh_dest_after.id).count()==0:
-                    mergers_links.append(db.HaloLink(bh_src_before,bh_dest_after,dict_obj_next,1.0))
-                    mergers_links.append(db.HaloLink(bh_dest_after,bh_src_before,dict_obj_prev,ratio))
+            if len(np.where((idf_n==id1[ob[0]])&(idt_n==id2[oa[0]]))[0]) == 0:
+                mergers_links.append(db.HaloLink(bh_src_before,bh_dest_after,dict_obj_next,1.0))
+                mergers_links.append(db.HaloLink(bh_dest_after,bh_src_before,dict_obj_prev,ratio))
 
     with parallel_tasks.RLock("bh"):
+        session.add_all(links)
         session.add_all(mergers_links)
         session.commit()
 
@@ -165,6 +190,7 @@ def run():
         bh_iord = f_pb.star['iord'][np.where(f_pb.star['tform']<0)[0]]
         bh_mass = f_pb.star['mass'][np.where(f_pb.star['tform']<0)[0]]
         bh_iord = bh_iord[np.argsort(bh_mass)[::-1]]
+        existing, existing_id = db.tracker.get_tracker_halos(f)
         print "Found black holes:", bh_iord
 
         tracker_to_add, halo_to_add = collect_bhs(bh_iord,sim,f)
@@ -203,7 +229,8 @@ def run():
 
     print "Generate merger trees...."
     for sim in query.all():
-        generate_halolinks(sim, session)
+        with session.no_autoflush:
+            generate_halolinks(sim, session)
 
     session.commit()
 
