@@ -143,8 +143,9 @@ class GenericLinker(object):
         except:
             logger.exception("Exception during attempt to crosslink timesteps %r and %r", ts1, ts2)
             return
-        self.create_db_objects_from_catalog(cat, ts1, ts2)
-        self.create_db_objects_from_catalog(back_cat, ts2, ts1)
+        with self.session.no_autoflush:
+            self.create_db_objects_from_catalog(cat, ts1, ts2)
+            self.create_db_objects_from_catalog(back_cat, ts2, ts1)
 
 class TimeLinker(GenericLinker):
     def _generate_timestep_pairs(self):
