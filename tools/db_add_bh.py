@@ -8,6 +8,7 @@ import tangos.core.timestep
 import tangos.core.tracking
 import tangos.parallel_tasks as parallel_tasks
 import tangos.tracker
+from tangos.log import logger
 import sys
 import numpy as np
 import gc
@@ -39,7 +40,7 @@ def generate_halolinks(sim, session):
         links = []
         mergers_links = []
         bh_map = {}
-        print ts1, ts2
+        logger.info("getting BH tracking between steps %r and %r", ts1, ts2)
         with parallel_tasks.RLock("bh"):
             dict_obj = db.core.get_or_create_dictionary_item(session, "tracker")
             dict_obj_next = db.core.get_or_create_dictionary_item(session, "BH_merger_next")
@@ -92,6 +93,8 @@ def generate_halolinks(sim, session):
             session.add_all(mergers_links)
             session.commit()
 
+        logger.info("Done committing %d BH tracking links between steps %r and %r", len(links)+len(mergers_links), ts1, ts2)
+
 
 def collect_bhs(bh_iord,sim,f,existing_track_num, existing_obj_num):
     track = []
@@ -125,7 +128,7 @@ def bh_halo_assign(f_pb):
         bh_halos = f_pbh.get_group_array(top_level=True, family='BH')
     if type(f_pbh) != pynbody.halo.AHFCatalogue and type(f_pbh) != pynbody.halo.RockstarIntermediateCatalogue:
         f_pb['gp'] = f_pbh.get_group_array()
-        bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
+        bh_cen_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
     del f_pbh
     gc.collect()
     return bh_cen_halos, bh_halos
@@ -164,7 +167,7 @@ def run():
         bh_iord = f_pb.star['iord'][np.where(f_pb.star['tform']<0)[0]]
         bh_mass = f_pb.star['mass'][np.where(f_pb.star['tform']<0)[0]]
         bh_iord = bh_iord[np.argsort(bh_mass)[::-1]]
-        print "Found black holes:", bh_iord
+        logger.info("Found %d black holes for %r", len(bh_iord), f)
 
         with parallel_tasks.RLock("bh"):
             track, track_nums = db.tracker.get_trackers(sim)
@@ -182,14 +185,17 @@ def run():
 
             session.commit()
 
+        logger.info("gathering and committing BHs into step %r", f)
         with session.no_autoflush:
             tracker_to_add, halo_to_add = collect_bhs(bh_iord,sim,track_nums,bhobj_nums)
         with parallel_tasks.RLock("bh"):
             session.add_all(tracker_to_add)
             session.add_all(halo_to_add)
             session.commit()
+        logger.info("Done committing BH objects into %r", f)
 
         bh_cen_halos, bh_halos = bh_halo_assign(f_pb)
+        logger.info("Found associated halos for BHs in %r", f)
 
         del(f_pb)
         gc.collect()
@@ -205,10 +211,10 @@ def run():
                     oh = np.where(halo_nums==haloi)[0]
                     obh = np.where(bhobj_nums==bhi)[0]
                     if len(oh)==0:
-                        print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
+                        logger.warn("NOTE: skipping BH in halo %d as no corresponding DB object found", haloi)
                         continue
                     if len(obh)==0:
-                        print "WARNING: can't find the db object for BH ",bh_iord,"?"
+                        logger.warn("WARNING: can't find the db object for BH %d", bhi)
                         continue
                     bhobj_i = bhobjs[obh[0]]
                     h_i = halos[(oh[0])]
@@ -221,6 +227,8 @@ def run():
                 session.add_all(bh_links)
                 session.commit()
 
+            logger.info("Done committing BH halo links into %r", f)
+
         if bh_cen_halos is not None:
             bh_cen_links = []
             bh_cen_halos = bh_cen_halos[np.argsort(bh_mass)[::-1]]
@@ -232,10 +240,10 @@ def run():
                     oh = np.where(halo_nums==haloi)[0]
                     obh = np.where(bhobj_nums==bhi)[0]
                     if len(oh)==0:
-                        print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
+                        logger.warn("NOTE: skipping BH in halo %d as no corresponding DB object found", haloi)
                         continue
                     if len(obh)==0:
-                        print "WARNING: can't find the db object for BH ",bh_iord,"?"
+                        logger.warn("WARNING: can't find the db object for BH %d", bhi)
                         continue
                     bhobj_i = bhobjs[obh[0]]
                     h_i = halos[(oh[0])]
@@ -249,7 +257,8 @@ def run():
                 session.add_all(bh_cen_links)
                 session.commit()
 
-    print "Generate merger trees...."
+            logger.info("Done committing central BH objects into %r", f)
+
     for sim in query.all():
         with session.no_autoflush:
             generate_halolinks(sim, session)
