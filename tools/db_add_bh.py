@@ -187,7 +187,7 @@ def run():
 
         logger.info("gathering and committing BHs into step %r", f)
         with session.no_autoflush:
-            tracker_to_add, halo_to_add = collect_bhs(bh_iord,sim,track_nums,bhobj_nums)
+            tracker_to_add, halo_to_add = collect_bhs(bh_iord,sim,f,track_nums,bhobj_nums)
         with parallel_tasks.RLock("bh"):
             session.add_all(tracker_to_add)
             session.add_all(halo_to_add)
@@ -219,7 +219,7 @@ def run():
                     bhobj_i = bhobjs[obh[0]]
                     h_i = halos[(oh[0])]
 
-                    exists = np.where((idf==halo_ids[oh[0]])&(idt==bhobj_ids[obh[0]]))
+                    exists = np.where((idf==halo_ids[oh[0]])&(idt==bhobj_ids[obh[0]]))[0]
                     if len(exists)==0:
                         bh_links.append(tangos.core.halo_data.HaloLink(h_i, bhobj_i, bh_dict_id))
 
@@ -248,7 +248,7 @@ def run():
                     bhobj_i = bhobjs[obh[0]]
                     h_i = halos[(oh[0])]
 
-                    exists = np.where((idf_c==halo_ids[oh[0]])&(idt_c==bhobj_ids[obh[0]]))
+                    exists = np.where((idf_c==halo_ids[oh[0]])&(idt_c==bhobj_ids[obh[0]]))[0]
                     if len(exists)==0:
                         bh_cen_links.append(tangos.core.halo_data.HaloLink(h_i, bhobj_i, bh_dict_cen_id))
                         bh_cen_links.append(tangos.core.halo_data.HaloLink(bhobj_i, h_i, host_dict_id))
