@@ -80,20 +80,7 @@ class GenericLinker(object):
             return False
         return True
 
-    def create_db_objects_from_catalog(self, cat, ts1, ts2):
-        with parallel_tasks.RLock("create_db_objects_from_catalog"):
-            halos1 = ts1.halos.all()
-            halos2 = ts2.halos.all()
-            fid1 = []
-            fid2 = []
-            for h in halos1:
-                fid1.append(h.finder_id)
-            for h in halos2:
-                fid2.append(h.finder_id)
-            fid1 = np.array(fid1)
-            fid2 = np.array(fid2)
-            same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
-            self.session.commit()
+    def create_db_objects_from_catalog(self, cat, halos1, halos2, fid1, fid2, same_d_id):
         items = []
         missing_db_object = 0
         for i, possibilities in enumerate(cat):
@@ -113,14 +100,10 @@ class GenericLinker(object):
                 else:
                     missing_db_object += 1
 
-        logger.info("Identified %d links between %r and %r, now committing...", len(items), ts1, ts2)
         if missing_db_object > 0:
-            logger.warn("%d other link(s) could not be identified because the halo objects do not exist in the DB",
+            logger.warn("%d link(s) could not be identified because the halo objects do not exist in the DB",
                         missing_db_object)
-        with parallel_tasks.RLock("create_db_objects_from_catalog"):
-            self.session.add_all(items)
-            self.session.commit()
-        logger.info("Finished committing %d links", len(items))
+        return items
 
     def crosslink_ts(self, ts1, ts2, halo_min=0, halo_max=None, dmonly=False, threshold=0.005):
         """Link the halos of two timesteps together
@@ -143,9 +126,25 @@ class GenericLinker(object):
         except:
             logger.exception("Exception during attempt to crosslink timesteps %r and %r", ts1, ts2)
             return
+        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+            halos1 = ts1.halos.all()
+            halos2 = ts2.halos.all()
+            fid1 = np.array([h.finder_id for h in halos1])
+            fid2 = np.array([h.finder_id for h in halos2])
+            same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
+            self.session.commit()
+
         with self.session.no_autoflush:
-            self.create_db_objects_from_catalog(cat, ts1, ts2)
-            self.create_db_objects_from_catalog(back_cat, ts2, ts1)
+            items = self.create_db_objects_from_catalog(cat, halos1, halos2, fid1, fid2, same_d_id)
+            logger.info("Identified %d links between %r and %r", len(items), ts1, ts2)
+            items_back = self.create_db_objects_from_catalog(back_cat, halos2, halos1, fid2, fid1, same_d_id)
+            logger.info("Identified %d links between %r and %r", len(items_back), ts2, ts1)
+
+        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+            self.session.add_all(items)
+            self.session.add_all(items_back)
+            self.session.commit()
+        logger.info("Finished committing total of %d links", len(items)+len(items_back))
 
 class TimeLinker(GenericLinker):
     def _generate_timestep_pairs(self):
