@@ -35,9 +35,9 @@ def generate_halolinks(sim, session):
         print "Can't work out which is the merger file for "+sim.basename
         print "Found: ",fname
         return
-    links = []
-    mergers_links = []
     for ts1, ts2 in parallel_tasks.distributed(zip(sim.timesteps[:-1],sim.timesteps[1:])):
+        links = []
+        mergers_links = []
         bh_map = {}
         print ts1, ts2
         with parallel_tasks.RLock("bh"):
