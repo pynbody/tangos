@@ -15,6 +15,11 @@ def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, wei
     #print halo_1.id,"->",halo_2.id
     session.merge(HaloLink(halo_1,halo_2,dict_obj,weight))
 
+def get_trackers(sim):
+    trackers = sim.trackers.all()
+    nums = [tx.halo_number for tx in trackers]
+    return trackers, nums
+
 def get_tracker_halos(ts):
     halos = ts.halos.filter_by(halo_type=1).order_by(Halo.halo_number).all()
     hid = [h.id for h in halos]
