@@ -87,10 +87,10 @@ def generate_halolinks(sim, session):
                 mergers_links.append(db.HaloLink(bh_src_before,bh_dest_after,dict_obj_next,1.0))
                 mergers_links.append(db.HaloLink(bh_dest_after,bh_src_before,dict_obj_prev,ratio))
 
-    with parallel_tasks.RLock("bh"):
-        session.add_all(links)
-        session.add_all(mergers_links)
-        session.commit()
+        with parallel_tasks.RLock("bh"):
+            session.add_all(links)
+            session.add_all(mergers_links)
+            session.commit()
 
 
 def collect_bhs(bh_iord,sim,f):
