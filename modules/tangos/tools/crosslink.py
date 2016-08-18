@@ -56,9 +56,6 @@ class GenericLinker(object):
         return h
 
     def need_crosslink_ts(self, ts1, ts2):
-        with parallel_tasks.RLock("create_db_objects_from_catalog"):
-            same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common").id
-            self.session.commit()
         num_sources = ts1.halos.count()
         num_targets = ts2.halos.count()
         if num_targets == 0:
@@ -70,7 +67,10 @@ class GenericLinker(object):
 
         halo_source = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_source")
         halo_target = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_target")
-        exists = self.session.query(core.halo_data.HaloLink).join(halo_source, core.halo_data.HaloLink.halo_from). \
+        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+            same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common").id
+            self.session.commit()
+            exists = self.session.query(core.halo_data.HaloLink).join(halo_source, core.halo_data.HaloLink.halo_from). \
                      join(halo_target, core.halo_data.HaloLink.halo_to). \
                      filter(halo_source.timestep_id == ts1.id, halo_target.timestep_id == ts2.id,
                             core.halo_data.HaloLink.relation_id == same_d_id).count() > 0
@@ -111,15 +111,6 @@ class GenericLinker(object):
         :type ts1 tangos.core.TimeStep
         :type ts2 tangos.core.TimeStep"""
 
-        with parallel_tasks.RLock("create_db_objects_from_catalog"):
-            same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
-            self.session.commit()
-
-        halos1 = ts1.halos.all()
-        halos2 = ts2.halos.all()
-        fid1 = np.array([h.finder_id for h in halos1])
-        fid2 = np.array([h.finder_id for h in halos2])
-
         output_handler_1 = ts1.simulation.get_output_set_handler()
         output_handler_2 = ts2.simulation.get_output_set_handler()
         if not isinstance(output_handler_1, type(output_handler_2)):
@@ -136,6 +127,14 @@ class GenericLinker(object):
         except:
             logger.exception("Exception during attempt to crosslink timesteps %r and %r", ts1, ts2)
             return
+
+        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+            same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
+            self.session.commit()
+            halos1 = ts1.halos.all()
+            halos2 = ts2.halos.all()
+            fid1 = np.array([h.finder_id for h in halos1])
+            fid2 = np.array([h.finder_id for h in halos2])
 
         with self.session.no_autoflush:
             items = self.create_db_objects_from_catalog(cat, halos1, halos2, fid1, fid2, same_d_id)
