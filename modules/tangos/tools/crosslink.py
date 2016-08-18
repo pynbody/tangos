@@ -130,11 +130,11 @@ class GenericLinker(object):
 
         with parallel_tasks.RLock("create_db_objects_from_catalog"):
             same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
-            self.session.commit()
             halos1 = ts1.halos.all()
             halos2 = ts2.halos.all()
             fid1 = np.array([h.finder_id for h in halos1])
             fid2 = np.array([h.finder_id for h in halos2])
+            self.session.commit()
 
         with self.session.no_autoflush:
             items = self.create_db_objects_from_catalog(cat, halos1, halos2, fid1, fid2, same_d_id)
