@@ -109,7 +109,7 @@ class GenericLinker(object):
 
         :type ts1 tangos.core.TimeStep
         :type ts2 tangos.core.TimeStep"""
-
+        logger.info("Gathering halo information for %r and %r", ts1, ts2)
         halos1 = ts1.halos.all()
         halos2 = ts2.halos.all()
         fid1 = np.array([h.finder_id for h in halos1])
@@ -137,12 +137,14 @@ class GenericLinker(object):
             return
 
         with self.session.no_autoflush:
+            logger.info("Gathering links for %r and %r", ts1, ts2)
             items = self.create_db_objects_from_catalog(cat, halos1, halos2, fid1, fid2, same_d_id)
             logger.info("Identified %d links between %r and %r", len(items), ts1, ts2)
             items_back = self.create_db_objects_from_catalog(back_cat, halos2, halos1, fid2, fid1, same_d_id)
             logger.info("Identified %d links between %r and %r", len(items_back), ts2, ts1)
 
         with parallel_tasks.RLock("create_db_objects_from_catalog"):
+            logger.info("Preparing to commit links for %r and %r", ts1, ts2)
             self.session.add_all(items)
             self.session.add_all(items_back)
             self.session.commit()
@@ -150,6 +152,7 @@ class GenericLinker(object):
 
 class TimeLinker(GenericLinker):
     def _generate_timestep_pairs(self):
+        logger.info("generating pairs of timesteps")
         base_sim = db.sim_query_from_name_list(self.args.sims)
         pairs = []
         for x in base_sim:
