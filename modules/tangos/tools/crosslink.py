@@ -144,7 +144,7 @@ class GenericLinker(object):
             self.session.add_all(items)
             self.session.add_all(items_back)
             self.session.commit()
-        logger.info("Finished committing total of %d links", len(items)+len(items_back))
+        logger.info("Finished committing total of %d links for %r and %r", len(items)+len(items_back), ts1, ts2)
 
 class TimeLinker(GenericLinker):
     def _generate_timestep_pairs(self):
