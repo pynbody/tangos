@@ -56,24 +56,24 @@ class GenericLinker(object):
         return h
 
     def need_crosslink_ts(self, ts1, ts2):
-        num_sources = ts1.halos.count()
-        num_targets = ts2.halos.count()
-        if num_targets == 0:
-            logger.warn("Will not link: no halos in target timestep %r", ts2)
-            return False
-        if num_sources == 0:
-            logger.warn("Will not link: no halos in source timestep %r", ts1)
-            return False
-
-        halo_source = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_source")
-        halo_target = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_target")
         with parallel_tasks.RLock("create_db_objects_from_catalog"):
+            num_sources = ts1.halos.count()
+            num_targets = ts2.halos.count()
+            if num_targets == 0:
+                logger.warn("Will not link: no halos in target timestep %r", ts2)
+                return False
+            if num_sources == 0:
+                logger.warn("Will not link: no halos in source timestep %r", ts1)
+                return False
+
+            halo_source = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_source")
+            halo_target = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_target")
             same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common").id
-            self.session.commit()
             exists = self.session.query(core.halo_data.HaloLink).join(halo_source, core.halo_data.HaloLink.halo_from). \
                      join(halo_target, core.halo_data.HaloLink.halo_to). \
                      filter(halo_source.timestep_id == ts1.id, halo_target.timestep_id == ts2.id,
                             core.halo_data.HaloLink.relation_id == same_d_id).count() > 0
+            self.session.commit()
 
         if exists:
             logger.warn("Will not link: links already exist between %r and %r", ts1, ts2)
