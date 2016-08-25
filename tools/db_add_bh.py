@@ -40,30 +40,36 @@ def generate_halolinks(sim, session):
         links = []
         mergers_links = []
         bh_map = {}
-        logger.info("getting BH tracking between steps %r and %r", ts1, ts2)
+        logger.info("Gathering BH tracking information for steps %r and %r", ts1, ts2)
         with parallel_tasks.RLock("bh"):
             dict_obj = db.core.get_or_create_dictionary_item(session, "tracker")
             dict_obj_next = db.core.get_or_create_dictionary_item(session, "BH_merger_next")
             dict_obj_prev = db.core.get_or_create_dictionary_item(session, "BH_merger_prev")
-            track_links_n, idf_n, idt_n = db.tracker.get_tracker_links(session, dict_obj_next)
-            halos_1, nums1, id1 = db.tracker.get_tracker_halos(ts1)
-            halos_2, nums2, id2 = db.tracker.get_tracker_halos(ts2)
-            tracker_links, idf, idt = db.tracker.get_tracker_links(session,dict_obj)
+
+        track_links_n, idf_n, idt_n = db.tracker.get_tracker_links(session, dict_obj_next)
+        halos_1, nums1, id1 = db.tracker.get_tracker_halos(ts1)
+        halos_2, nums2, id2 = db.tracker.get_tracker_halos(ts2)
+        tracker_links, idf, idt = db.tracker.get_tracker_links(session,dict_obj)
 
         if len(nums1) == 0 or len(nums2) == 0:
+            logger.info("No Tracker Halos found in either step %r or %r... moving on", ts1, ts2)
             continue
 
+        logger.info("Collecting BH tracker links between steps %r and %r", ts1, ts2)
         o1 = np.where(np.in1d(nums1,nums2))[0]
         o2 = np.where(np.in1d(nums2,nums1))[0]
         if len(o1) == 0 or len(o2) == 0:
             continue
-        for ii, jj in zip(o1,o2):
-            if nums1[ii] != nums2[jj]:
-                raise RuntimeError("ERROR mismatch of BH iords")
-            exists = np.where((idf==id1[ii])&(idt==id2[jj]))[0]
-            if len(exists) == 0:
-                links.append(db.HaloLink(halos_1[ii],halos_2[jj],dict_obj,1.0))
+        with session.no_autoflush:
+            for ii, jj in zip(o1,o2):
+                if nums1[ii] != nums2[jj]:
+                    raise RuntimeError("ERROR mismatch of BH iords")
+                exists = np.where((idf==id1[ii])&(idt==id2[jj]))[0]
+                if len(exists) == 0:
+                    links.append(db.HaloLink(halos_1[ii],halos_2[jj],dict_obj,1.0))
+        logger.info("Found %d tracker links between steps %r and %r", len(links), ts1, ts2)
 
+        logger.info("Gathering BH Merger information for steps %r and %r", ts1, ts2)
         for l in open(fname[0]):
             l_split = l.split()
             t = float(l_split[0])
@@ -75,25 +81,27 @@ def generate_halolinks(sim, session):
                 bh_map[bh_src_id] = (bh_dest_id, ratio)
 
         resolve_multiple_mergers(bh_map)
+        logger.info("Gathering BH Merger links for steps %r and %r", ts1, ts2)
+        with session.no_autoflush:
+            for src,(dest,ratio) in bh_map.iteritems():
+                ob = np.where(nums1 == src)[0]
+                oa = np.where(nums2 == dest)[0]
+                if len(oa) == 0 or len(ob) == 0:
+                    continue
+                bh_src_before = halos_1[ob[0]]
+                bh_dest_after = halos_1[oa[0]]
 
-        for src,(dest,ratio) in bh_map.iteritems():
-            ob = np.where(nums1 == src)[0]
-            oa = np.where(nums2 == dest)[0]
-            if len(oa) == 0 or len(ob) == 0:
-                continue
-            bh_src_before = halos_1[ob[0]]
-            bh_dest_after = halos_1[oa[0]]
-
-            if len(np.where((idf_n==id1[ob[0]])&(idt_n==id2[oa[0]]))[0]) == 0:
-                mergers_links.append(db.HaloLink(bh_src_before,bh_dest_after,dict_obj_next,1.0))
-                mergers_links.append(db.HaloLink(bh_dest_after,bh_src_before,dict_obj_prev,ratio))
+                if len(np.where((idf_n==id1[ob[0]])&(idt_n==id2[oa[0]]))[0]) == 0:
+                    mergers_links.append(db.HaloLink(bh_src_before,bh_dest_after,dict_obj_next,1.0))
+                    mergers_links.append(db.HaloLink(bh_dest_after,bh_src_before,dict_obj_prev,ratio))
+        logger.info("Found %d BH Merger links for steps %r and %r", len(mergers_links), ts1, ts2)
 
         with parallel_tasks.RLock("bh"):
+            logger.info("Committing total %d BH links for steps %r and %r", len(mergers_links)+len(links), ts1, ts2)
             session.add_all(links)
             session.add_all(mergers_links)
             session.commit()
-
-        logger.info("Done committing %d BH tracking links between steps %r and %r", len(links)+len(mergers_links), ts1, ts2)
+            logger.info("Finished Committing BH links for steps %r and %r", ts1, ts2)
 
 
 def collect_bhs(bh_iord,sim,f,existing_track_num, existing_obj_num):
@@ -164,26 +172,27 @@ def run():
         if len(f_pb.star)<1:
             print "No stars - continuing"
             continue
+
+        logger.info("Gathering tracker and halo information for step %r", f)
+        track, track_nums = db.tracker.get_trackers(sim)
+        bhobjs, bhobj_nums, bhobj_ids = db.tracker.get_tracker_halos(f)
+        halos = f.halos.all()
+        halo_nums = np.array([h.finder_id for h in halos])
+        halo_ids = np.array([h.id for h in halos])
+        logger.info("Gathering BH - halo link information for step %r", f)
+        with parallel_tasks.RLock("bh"):
+            bh_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH")
+            bh_dict_cen_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH_central")
+            host_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "host_halo")
+            session.commit()
+        links_c, idf_c, idt_c = db.tracker.get_tracker_links(session, bh_dict_cen_id)
+        links, idf, idt = db.tracker.get_tracker_links(session, bh_dict_id)
+
+        logger.info("Gathering BH info from simulation for step %r", f)
         bh_iord = f_pb.star['iord'][np.where(f_pb.star['tform']<0)[0]]
         bh_mass = f_pb.star['mass'][np.where(f_pb.star['tform']<0)[0]]
         bh_iord = bh_iord[np.argsort(bh_mass)[::-1]]
         logger.info("Found %d black holes for %r", len(bh_iord), f)
-
-        with parallel_tasks.RLock("bh"):
-            track, track_nums = db.tracker.get_trackers(sim)
-            bhobjs, bhobj_nums, bhobj_ids = db.tracker.get_tracker_halos(f)
-            halos = f.halos.all()
-            halo_nums = np.array([h.finder_id for h in halos])
-            halo_ids = np.array([h.id for h in halos])
-
-            bh_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH")
-            bh_dict_cen_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH_central")
-            host_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "host_halo")
-
-            links_c, idf_c, idt_c = db.tracker.get_tracker_links(session, bh_dict_cen_id)
-            links, idf, idt = db.tracker.get_tracker_links(session, bh_dict_id)
-
-            session.commit()
 
         logger.info("gathering and committing BHs into step %r", f)
         with session.no_autoflush:
@@ -194,16 +203,18 @@ def run():
             session.commit()
         logger.info("Done committing BH objects into %r", f)
 
+        logger.info("Getting halo information for BHs from simulation for step %r", f)
         bh_cen_halos, bh_halos = bh_halo_assign(f_pb)
         logger.info("Found associated halos for BHs in %r", f)
 
         del(f_pb)
         gc.collect()
 
+        logger.info("Gathering BH-Halo links (all) for step %r", f)
         if bh_halos is not None:
             bh_links = []
             bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
-            print "Associated halos: ",bh_halos
+            #print "Associated halos: ",bh_halos
             with session.no_autoflush:
                 for bhi, haloi in zip(bh_iord, bh_halos):
                     haloi = int(haloi)
@@ -223,12 +234,13 @@ def run():
                     if len(exists)==0:
                         bh_links.append(tangos.core.halo_data.HaloLink(h_i, bhobj_i, bh_dict_id))
 
+            logger.info("Committing %d HaloLinks for All BHs in each halo for step %r", len(bh_links),f)
             with parallel_tasks.RLock("bh"):
                 session.add_all(bh_links)
                 session.commit()
+            logger.info("Done committing %d links for step %r", len(bh_links), f)
 
-            logger.info("Done committing BH halo links into %r", f)
-
+        logger.info("Gathering BH-Halo links (central) for step %r")
         if bh_cen_halos is not None:
             bh_cen_links = []
             bh_cen_halos = bh_cen_halos[np.argsort(bh_mass)[::-1]]
@@ -253,11 +265,11 @@ def run():
                         bh_cen_links.append(tangos.core.halo_data.HaloLink(h_i, bhobj_i, bh_dict_cen_id))
                         bh_cen_links.append(tangos.core.halo_data.HaloLink(bhobj_i, h_i, host_dict_id))
 
+            logger.info("Committing %d HaloLinks for Central BHs in each halo for step %r", len(bh_cen_links),f)
             with parallel_tasks.RLock("bh"):
                 session.add_all(bh_cen_links)
                 session.commit()
-
-            logger.info("Done committing central BH objects into %r", f)
+            logger.info("Done committing %d links for step %r", len(bh_cen_links), f)
 
     for sim in query.all():
         with session.no_autoflush:
