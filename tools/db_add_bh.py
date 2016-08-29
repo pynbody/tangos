@@ -271,9 +271,9 @@ def run():
                 session.commit()
             logger.info("Done committing %d links for step %r", len(bh_cen_links), f)
 
-    for sim in query.all():
-        with session.no_autoflush:
-            generate_halolinks(sim, session)
+    #for sim in query.all():
+    #    with session.no_autoflush:
+    #        generate_halolinks(sim, session)
 
 
 if __name__=="__main__":
