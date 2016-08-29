@@ -201,7 +201,7 @@ def run():
             session.add_all(tracker_to_add)
             session.add_all(halo_to_add)
             session.commit()
-        logger.info("Done committing BH objects into %r", f)
+        logger.info("Done committing BH %d trackers and %d halos into %r", len(tracker_to_add), len(halo_to_add), f)
 
         logger.info("Getting halo information for BHs from simulation for step %r", f)
         bh_cen_halos, bh_halos = bh_halo_assign(f_pb)
