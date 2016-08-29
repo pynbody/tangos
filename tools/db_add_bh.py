@@ -66,7 +66,7 @@ def generate_halolinks(sim, session):
                     raise RuntimeError("ERROR mismatch of BH iords")
                 exists = np.where((idf==id1[ii])&(idt==id2[jj]))[0]
                 if len(exists) == 0:
-                    links.append(db.HaloLink(halos_1[ii],halos_2[jj],dict_obj,1.0))
+                    links.append(tangos.core.halo_data.HaloLink(halos_1[ii],halos_2[jj],dict_obj,1.0))
         logger.info("Found %d tracker links between steps %r and %r", len(links), ts1, ts2)
 
         logger.info("Gathering BH Merger information for steps %r and %r", ts1, ts2)
@@ -92,8 +92,8 @@ def generate_halolinks(sim, session):
                 bh_dest_after = halos_1[oa[0]]
 
                 if len(np.where((idf_n==id1[ob[0]])&(idt_n==id2[oa[0]]))[0]) == 0:
-                    mergers_links.append(db.HaloLink(bh_src_before,bh_dest_after,dict_obj_next,1.0))
-                    mergers_links.append(db.HaloLink(bh_dest_after,bh_src_before,dict_obj_prev,ratio))
+                    mergers_links.append(tangos.core.halo_data.HaloLink(bh_src_before,bh_dest_after,dict_obj_next,1.0))
+                    mergers_links.append(tangos.core.halo_data.HaloLink(bh_dest_after,bh_src_before,dict_obj_prev,ratio))
         logger.info("Found %d BH Merger links for steps %r and %r", len(mergers_links), ts1, ts2)
 
         with parallel_tasks.RLock("bh"):
