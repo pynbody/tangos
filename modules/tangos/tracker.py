@@ -18,7 +18,7 @@ def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, wei
 def get_trackers(sim):
     trackers = sim.trackers.all()
     nums = [tx.halo_number for tx in trackers]
-    return trackers, nums
+    return trackers, np.array(nums)
 
 def get_tracker_halos(ts):
     halos = ts.halos.filter_by(halo_type=1).order_by(Halo.halo_number).all()
