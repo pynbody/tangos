@@ -176,7 +176,7 @@ def run():
         logger.info("Gathering tracker and halo information for step %r", f)
         track, track_nums = db.tracker.get_trackers(sim)
         bhobjs, bhobj_nums, bhobj_ids = db.tracker.get_tracker_halos(f)
-        halos = f.halos.all()
+        halos = f.halos.filter_by(halo_type=0).all()
         halo_nums = np.array([h.finder_id for h in halos])
         halo_ids = np.array([h.id for h in halos])
         logger.info("Gathering BH - halo link information for step %r", f)
@@ -198,10 +198,22 @@ def run():
         with session.no_autoflush:
             tracker_to_add, halo_to_add = collect_bhs(bh_iord,sim,f,track_nums,bhobj_nums)
         with parallel_tasks.RLock("bh"):
-            session.add_all(tracker_to_add)
+            track, track_nums = db.tracker.get_trackers(sim)
+            track_num_to_add = np.array([tr.halo_number for tr in tracker_to_add])
+            ok_to_add = np.where(np.in1d(track_num_to_add,track_nums)==False)[0]
+            tracker_to_really_add = [tracker_to_add[i] for i in ok_to_add]
+            session.add_all(tracker_to_really_add)
             session.add_all(halo_to_add)
             session.commit()
         logger.info("Done committing BH %d trackers and %d halos into %r", len(tracker_to_add), len(halo_to_add), f)
+        for bhadd in halo_to_add:
+            bhobjs.append(bhadd)
+
+
+        logger.info("re-gathering bh halo information for %r", f)
+        with parallel_tasks.RLock("bh"):
+            bhobjs, bhobj_nums, bhobj_ids = db.tracker.get_tracker_halos(f)
+        logger.info("Done re-gathering halo information for %r", f)
 
         logger.info("Getting halo information for BHs from simulation for step %r", f)
         bh_cen_halos, bh_halos = bh_halo_assign(f_pb)
