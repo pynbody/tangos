@@ -113,7 +113,6 @@ def collect_bhs(bh_iord,sim,f, existing_obj_num):
         tx = tangos.core.tracking.TrackData(sim, bhi)
         tx.particles = [bhi]
         tx.use_iord = True
-        print " ->",tx
         track.append(tx)
 
         eh = np.where(existing_obj_num == bhi)[0]
