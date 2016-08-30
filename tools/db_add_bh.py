@@ -104,19 +104,17 @@ def generate_halolinks(sim, session):
             logger.info("Finished Committing BH links for steps %r and %r", ts1, ts2)
 
 
-def collect_bhs(bh_iord,sim,f, existing_track_num,existing_obj_num):
+def collect_bhs(bh_iord,sim,f, existing_obj_num):
     track = []
     halo = []
     for bhi in bh_iord:
         bhi = int(bhi)
 
-        et = np.where(existing_track_num == bhi)[0]
-        if len(et) == 0:
-            tx = tangos.core.tracking.TrackData(sim, bhi)
-            tx.particles = [bhi]
-            tx.use_iord = True
-            print " ->",tx
-            track.append(tx)
+        tx = tangos.core.tracking.TrackData(sim, bhi)
+        tx.particles = [bhi]
+        tx.use_iord = True
+        print " ->",tx
+        track.append(tx)
 
         eh = np.where(existing_obj_num == bhi)[0]
         if len(eh)==0:
