@@ -104,17 +104,19 @@ def generate_halolinks(sim, session):
             logger.info("Finished Committing BH links for steps %r and %r", ts1, ts2)
 
 
-def collect_bhs(bh_iord,sim,f, existing_obj_num):
+def collect_bhs(bh_iord,sim,f, existing_track_num,existing_obj_num):
     track = []
     halo = []
     for bhi in bh_iord:
         bhi = int(bhi)
 
-        tx = tangos.core.tracking.TrackData(sim, bhi)
-        tx.particles = [bhi]
-        tx.use_iord = True
-        print " ->",tx
-        track.append(tx)
+        et = np.where(existing_track_num == bhi)[0]
+        if len(et) == 0:
+            tx = tangos.core.tracking.TrackData(sim, bhi)
+            tx.particles = [bhi]
+            tx.use_iord = True
+            print " ->",tx
+            track.append(tx)
 
         eh = np.where(existing_obj_num == bhi)[0]
         if len(eh)==0:
@@ -195,7 +197,9 @@ def run():
         with session.no_autoflush:
             tracker_to_add, halo_to_add = collect_bhs(bh_iord,sim,f,bhobj_nums)
         with parallel_tasks.RLock("bh"):
-            track, track_nums = db.tracker.get_trackers(sim)
+            session2 = db.core.Session()
+            sim2 = db.get_simulation(sim.id,session2)
+            track, track_nums = db.tracker.get_trackers(sim2)
             track_num_to_add = np.array([tr.halo_number for tr in tracker_to_add])
             ok_to_add = np.where(np.in1d(track_num_to_add,track_nums)==False)[0]
             tracker_to_really_add = [tracker_to_add[jj] for jj in ok_to_add]
