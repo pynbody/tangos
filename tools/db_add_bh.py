@@ -104,22 +104,29 @@ def generate_halolinks(sim, session):
             logger.info("Finished Committing BH links for steps %r and %r", ts1, ts2)
 
 
-def collect_bhs(bh_iord,sim,f, existing_obj_num):
+def collect_bh_halos(bh_iord,f, existing_obj_num):
     track = []
     halo = []
     for bhi in bh_iord:
         bhi = int(bhi)
 
-        tx = tangos.core.tracking.TrackData(sim, bhi)
-        tx.particles = [bhi]
-        tx.use_iord = True
-        track.append(tx)
-
         eh = np.where(existing_obj_num == bhi)[0]
         if len(eh)==0:
             halo.append(tangos.core.halo.Halo(f, bhi, bhi, 0, 0, 0, 1))
 
-    return track, halo
+    return halo
+
+def collect_bh_trackers(bh_iord,sim,existing_trackers):
+    track = []
+    for bhi in bh_iord:
+        bhi = int(bhi)
+        et = np.where(existing_trackers == bhi)[0]
+        if len(et)==0:
+            tx = tangos.core.tracking.TrackData(sim, bhi)
+            tx.particles = [bhi]
+            tx.use_iord = True
+            track.append(tx)
+    return track
 
 
 def bh_halo_assign(f_pb):
@@ -170,7 +177,7 @@ def run():
             print "No stars - continuing"
             continue
 
-        logger.info("Gathering tracker and halo information for step %r", f)
+        logger.info("Gathering BH halo information for step %r", f)
         bhobjs, bhobj_nums, bhobj_ids = db.tracker.get_tracker_halos(f)
         halos = f.halos.filter_by(halo_type=0).all()
         halo_nums = np.array([h.finder_id for h in halos])
@@ -192,21 +199,19 @@ def run():
 
         logger.info("gathering and committing BHs into step %r", f)
         with session.no_autoflush:
-            tracker_to_add, halo_to_add = collect_bhs(bh_iord,sim,f,bhobj_nums)
+            halo_to_add = collect_bh_halos(bh_iord,f,bhobj_nums)
         with parallel_tasks.RLock("bh"):
             session2 = db.core.Session()
             sim2 = db.get_simulation(sim.id,session2)
             track, track_nums = db.tracker.get_trackers(sim2)
-            track_num_to_add = np.array([tr.halo_number for tr in tracker_to_add])
-            ok_to_add = np.where(np.in1d(track_num_to_add,track_nums)==False)[0]
-            tracker_to_really_add = [tracker_to_add[jj] for jj in ok_to_add]
-            session.add_all(tracker_to_really_add)
+            tracker_to_add = collect_bh_trackers(bh_iord,sim,track_nums)
+            #track_num_to_add = np.array([tr.halo_number for tr in tracker_to_add])
+            #ok_to_add = np.where(np.in1d(track_num_to_add,track_nums)==False)[0]
+            #tracker_to_really_add = [tracker_to_add[jj] for jj in ok_to_add]
+            session.add_all(tracker_to_add)
             session.add_all(halo_to_add)
             session.commit()
-        logger.info("Done committing BH %d trackers and %d halos into %r", len(tracker_to_really_add), len(halo_to_add), f)
-        for bhadd in halo_to_add:
-            bhobjs.append(bhadd)
-
+        logger.info("Done committing BH %d trackers and %d halos into %r", len(tracker_to_add), len(halo_to_add), f)
 
         logger.info("re-gathering bh halo information for %r", f)
         with parallel_tasks.RLock("bh"):
