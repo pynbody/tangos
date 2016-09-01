@@ -97,6 +97,7 @@ def generate_halolinks(session, fname, pairs):
 def run():
     session = db.core.get_default_session()
     query = db.sim_query_from_args(sys.argv, session)
+    parallel_tasks.mpi_sync_db(session)
     for sim in query.all():
         pairs = parallel_tasks.distributed(zip(sim.timesteps[:-1],sim.timesteps[1:]))
         fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
