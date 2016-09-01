@@ -155,14 +155,18 @@ class MassEnclosed(HaloProperties):
     def calculate(self,halo,properties):
         com = properties['SSC']
         rad = properties['Rvir']
-        halo["pos"] -= com
-        halo.wrap()
+        halo.s["pos"] -= com
+        halo.g["pos"] -= com
+        halo.s.wrap()
+        halo.g.wrap()
         delta = properties.get('delta',0.1)
 
         starM, gasM, HIM, coldM = self.rstat(halo,rad,delta)
 
-        halo["pos"] += com
-        halo.wrap()
+        halo.s["pos"] += com
+        halo.g["pos"] += com
+        halo.s.wrap()
+        halo.g.wrap()
 
         return starM, gasM, HIM, coldM
 
