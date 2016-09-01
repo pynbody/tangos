@@ -57,6 +57,7 @@ def generate_halolinks(session, fname, pairs):
                 exists = np.where((idf==id1[ii])&(idt==id2[jj]))[0]
                 if len(exists) == 0:
                     links.append(tangos.core.halo_data.HaloLink(halos_1[ii],halos_2[jj],dict_obj,1.0))
+                    links.append(tangos.core.halo_data.HaloLink(halos_2[jj],halos_1[ii],dict_obj,1.0))
         logger.info("Found %d tracker links between steps %r and %r", len(links), ts1, ts2)
 
         logger.info("Gathering BH Merger information for steps %r and %r", ts1, ts2)

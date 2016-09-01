@@ -53,5 +53,6 @@ def generate_tracker_halo_links(sim, session):
             exists = np.where((idf==halos_1[ii].id)&(idt==halos_2[jj].id))[0]
             if len(exists) == 0:
                 links.append(HaloLink(halos_1[ii],halos_2[jj],dict_obj,1.0))
+                links.append(HaloLink(halos_2[jj],halos_1[ii],dict_obj,1.0))
     session.add_all(links)
     session.commit()
