@@ -105,7 +105,6 @@ def generate_halolinks(sim, session):
 
 
 def collect_bh_halos(bh_iord,f, existing_obj_num):
-    track = []
     halo = []
     for bhi in bh_iord:
         bhi = int(bhi)
