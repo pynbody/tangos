@@ -147,8 +147,11 @@ class MassEnclosed(HaloProperties):
         maxrad = delta * (nbins + 1)
         proS = pynbody.analysis.profile.Profile(halo.s, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
         proG = pynbody.analysis.profile.Profile(halo.g, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
-        proCG = pynbody.analysis.profile.Profile(halo.g[pynbody.filt.LowPass("temp", 2.e4)],
+        if len(halo.g)>0:
+            proCG = pynbody.analysis.profile.Profile(halo.g[pynbody.filt.LowPass("temp", 2.e4)],
                                                  type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+        else:
+            proCG = proG
 
         return proS['mass_enc'],proG['mass_enc'], np.cumsum(proG['mass']*proG['HI']), proCG['mass_enc']
 
