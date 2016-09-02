@@ -136,12 +136,17 @@ class BH(HaloProperties):
             raise RuntimeError("Can't find BH in .orbit file")
 
         # work out who's the main halo
-        main_halo = None
-        for i in properties.reverse_links:
-            if i.relation.text.startswith("BH"):
-                main_halo = i.halo_from
-                break
-        if main_halo is None:
+        #main_halo = None
+        #for i in properties.reverse_links:
+        #    if i.relation.text.startswith("BH"):
+        #        main_halo = i.halo_from
+        #        break
+        #if main_halo is None:
+        #    raise RuntimeError("Can't relate BH to its parent halo")
+
+        try:
+            main_halo = properties['host_halo']
+        except KeyError:
             raise RuntimeError("Can't relate BH to its parent halo")
 
         main_halo_ssc = main_halo['SSC']
