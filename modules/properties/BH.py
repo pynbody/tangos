@@ -147,12 +147,15 @@ class BH(HaloProperties):
         try:
             main_halo = properties['host_halo']
         except KeyError:
-            raise RuntimeError("Can't relate BH to its parent halo")
+            main_halo=None
 
-        try:
-            main_halo_ssc = main_halo['SSC']
-        except KeyError:
+        if main_halo is None:
             main_halo_ssc = None
+        else:
+            try:
+                main_halo_ssc = main_halo['SSC']
+            except KeyError:
+                main_halo_ssc = None
 
         entry = np.where(mask)[0]
 
