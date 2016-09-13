@@ -9,6 +9,8 @@ def pack_args(for_function):
     return lambda t: for_function(*t)
 
 
+pp.ParserElement.enablePackrat()
+
 numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]-?\d+)?').setParseAction(pack_args(FixedNumericInput))
 
 IN_OPS = [("**", "power"),
