@@ -408,8 +408,8 @@ class PropertyWriter(object):
         logger.info("Processing %r", db_timestep)
         logger.info("  %d halos to consider; %d property calculations for each of them",
                     len(db_halos), len(self._property_calculator_instances))
-
-        self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
+        with parallel_tasks.RLock("insert_list"):
+            self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
 
         for db_halo, existing_properties in zip(db_halos, self._existing_properties_all_halos) :
             self._existing_properties_this_halo = existing_properties
