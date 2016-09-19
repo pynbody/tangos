@@ -149,7 +149,7 @@ class PropertyWriter(object):
 
         #halos = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query).all()
         halos = \
-            core.get_default_session().query(core.halo.Halo).options(sqlalchemy.orm.joinedload('all_properties')).filter(query).all()
+            core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).options(sqlalchemy.orm.joinedload('all_properties')).filter(query).all()
         halos = halos[self.options.hmin:]
 
         if self.options.hmax is not None:
