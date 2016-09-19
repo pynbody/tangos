@@ -147,8 +147,9 @@ class PropertyWriter(object):
         if self.options.htype is not None:
             query = sqlalchemy.and_(query, core.halo.Halo.halo_type == self.options.htype)
 
-        halos = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query).all()
-
+        #halos = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query).all()
+        halos = \
+            core.get_default_session().query(core.halo.Halo).options(sqlalchemy.orm.joinedload('all_properties')).filter(query).all()
         halos = halos[self.options.hmin:]
 
         if self.options.hmax is not None:
@@ -158,7 +159,7 @@ class PropertyWriter(object):
 
 
     def _build_existing_properties(self, db_halo):
-        existing_properties = db_halo.properties
+        existing_properties = db_halo.all_properties
         existing_properties_data = AttributableDict(
                 [(x.name.text, x.data) for x in existing_properties])
         existing_properties_data.update(
@@ -408,8 +409,8 @@ class PropertyWriter(object):
         logger.info("Processing %r", db_timestep)
         logger.info("  %d halos to consider; %d property calculations for each of them",
                     len(db_halos), len(self._property_calculator_instances))
-        with parallel_tasks.RLock("insert_list"):
-            self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
+
+        self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
 
         for db_halo, existing_properties in zip(db_halos, self._existing_properties_all_halos) :
             self._existing_properties_this_halo = existing_properties
