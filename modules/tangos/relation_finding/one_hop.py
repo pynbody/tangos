@@ -81,7 +81,7 @@ class HopStrategy(object):
         results = filter(lambda x: x is not None, results)
 
         self._all = results
-        print self._query_ordered.all()
+        print self._query_ordered
 
     def _get_query_all(self):
         if self._all is None:
