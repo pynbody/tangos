@@ -80,7 +80,7 @@ def generate_halolinks(session, fname, pairs):
                 if len(oa) == 0 or len(ob) == 0:
                     continue
                 bh_src_before = halos_1[ob[0]]
-                bh_dest_after = halos_1[oa[0]]
+                bh_dest_after = halos_2[oa[0]]
 
                 if len(np.where((idf_n==id1[ob[0]])&(idt_n==id2[oa[0]]))[0]) == 0:
                     mergers_links.append(tangos.core.halo_data.HaloLink(bh_src_before,bh_dest_after,dict_obj_next,1.0))
