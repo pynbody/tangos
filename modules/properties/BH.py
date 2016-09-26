@@ -183,7 +183,7 @@ class BHAccHistogram(TimeChunkedProperty):
 
 
     def preloop(self, f, filename, pa):
-        self.log = BHShortenedLog.get_existing_or_new(f,filename)
+        self.log = BHShortenedLog.get_existing_or_new(filename)
 
     @classmethod
     def no_proxies(self):
