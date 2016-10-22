@@ -147,7 +147,7 @@ class PropertyWriter(object):
         if self.options.htype is not None:
             query = sqlalchemy.and_(query, core.halo.Halo.halo_type == self.options.htype)
 
-        halos = core.get_default_session().query(core.halo.Halo).filter(query).all()
+        halos = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query).all()
 
         halos = halos[self.options.hmin:]
 
@@ -168,6 +168,7 @@ class PropertyWriter(object):
         existing_properties_data.NGas = db_halo.NGas
         existing_properties_data.NStar = db_halo.NStar
         existing_properties_data['halo_number'] = db_halo.halo_number
+        existing_properties_data['finder_id'] = db_halo.finder_id
         return existing_properties_data
 
     def _build_existing_properties_all_halos(self, halos):

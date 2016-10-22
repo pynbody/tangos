@@ -106,10 +106,18 @@ class HaloStatFile(object):
 
     def make_halo_objects(self, min_NDM=1000):
         halos = []
+        import numpy as np
+        n_tot = []
+        for num, NDM, Nstar, Ngas in self.iter_rows("n_dm", "n_star", "n_gas"):
+            n_tot.append(NDM+Nstar+Ngas)
+        ids = np.zeros(len(n_tot))
+        ids[np.argsort(np.array(n_tot))[::-1]] = np.arange(len(n_tot)) + 1
+        cnt = 1
         for num, NDM, Nstar, Ngas in self.iter_rows("n_dm", "n_star", "n_gas"):
             if NDM > min_NDM:
-                h = tangos.core.halo.Halo(self._timestep, num, NDM, Nstar, Ngas)
+                h = tangos.core.halo.Halo(self._timestep, ids[cnt-1],cnt, NDM, Nstar, Ngas)
                 halos.append(h)
+            cnt += 1
         return halos
 
     def add_halos(self, min_NDM=1000):
@@ -144,7 +152,9 @@ class AHFStatFile(HaloStatFile):
 
     @classmethod
     def filename(cls, timestep):
-        return timestep.filename + '.z%.3f.AHF_halos' % (timestep.redshift)
+        import glob
+        file = glob.glob(timestep.filename+'.z*.???.AHF_halos')[0]
+        return file
 
 
 class AmigaIDLStatFile(HaloStatFile):

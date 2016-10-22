@@ -130,10 +130,8 @@ def run():
         if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
             bh_cen_halos = f_pbh.get_fam_group_array(family = 'BH')
         if type(f_pbh) == pynbody.halo.AHFCatalogue:
-            f_pb['gpc'] = f_pbh.get_group_array(top_level=False)
-            f_pb['gpall'] = f_pbh.get_group_array(top_level=True)
-            bh_halos = f_pb.star['gpall'][np.where(f_pb.star['tform']<0)[0]]
-            bh_cen_halos = f_pb.star['gpc'][np.where(f_pb.star['tform']<0)[0]]
+            bh_cen_halos = f_pbh.get_group_array(top_level=False, family = 'BH')
+            bh_halos = f_pbh.get_group_array(top_level=True, family='BH')
         if type(f_pbh) != pynbody.halo.AHFCatalogue and type(f_pbh) != pynbody.halo.RockstarIntermediateCatalogue:
             f_pb['gp'] = f_pbh.get_group_array()
             bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
@@ -149,8 +147,8 @@ def run():
             for bhi, haloi in zip(bh_iord, bh_halos):
                 haloi = int(haloi)
                 bhi = int(bhi)
-                halo = f.halos.filter_by(halo_type=0, halo_number=haloi).first()
-                bh_obj = f.halos.filter_by(halo_type=1, halo_number=bhi).first()
+                halo = f.halos.filter_by(halo_type=0, finder_id=haloi).first()
+                bh_obj = f.halos.filter_by(halo_type=1, finder_id=bhi).first()
                 if halo is None:
                     print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
                     continue
@@ -173,8 +171,8 @@ def run():
             for bhi, haloi in zip(bh_iord, bh_cen_halos):
                 haloi = int(haloi)
                 bhi = int(bhi)
-                halo = f.halos.filter_by(halo_type=0, halo_number=haloi).first()
-                bh_obj = f.halos.filter_by(halo_type=1, halo_number=bhi).first()
+                halo = f.halos.filter_by(halo_type=0, finder_id=haloi).first()
+                bh_obj = f.halos.filter_by(halo_type=1, finder_id=bhi).first()
                 if halo is None:
                     print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
                     continue

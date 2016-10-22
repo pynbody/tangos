@@ -17,6 +17,7 @@ class Halo(Base):
 
     id = Column(Integer, primary_key=True)
     halo_number = Column(Integer)
+    finder_id = Column(Integer)
     timestep_id = Column(Integer, ForeignKey('timesteps.id'))
     timestep = relationship(TimeStep, backref=backref(
         'halos', order_by=halo_number, cascade='all', lazy='dynamic'), cascade='save-update, merge')
@@ -33,9 +34,10 @@ class Halo(Base):
         'polymorphic_on':halo_type
     }
 
-    def __init__(self, timestep, halo_number, NDM, NStar, NGas, halo_type=0):
+    def __init__(self, timestep, halo_number, finder_id, NDM, NStar, NGas, halo_type=0):
         self.timestep = timestep
         self.halo_number = halo_number
+        self.finder_id = finder_id
         self.NDM = NDM
         self.NStar = NStar
         self.NGas = NGas
@@ -70,7 +72,7 @@ class Halo(Base):
 
         handler = self.timestep.simulation.get_output_set_handler()
         if self.halo_type==0:
-            return handler.load_halo(self.timestep.extension, self.halo_number, partial=partial)
+            return handler.load_halo(self.timestep.extension, self.finder_id, partial=partial)
         else:
             return handler.load_tracked_region(self.timestep.extension, self.tracker, partial=partial)
 
@@ -309,7 +311,7 @@ class BH(Halo):
     }
 
     def __init__(self, timestep, halo_number):
-        super(BH, self).__init__(timestep, halo_number, 0,0,0,1)
+        super(BH, self).__init__(timestep, halo_number, halo_number, 0,0,0,1)
 
 
 _loaded_halocats = {}
