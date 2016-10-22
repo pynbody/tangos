@@ -116,9 +116,6 @@ def run():
             sim2 = db.get_simulation(sim.id,session2)
             track, track_nums = db.tracker.get_trackers(sim2)
             tracker_to_add = collect_bh_trackers(bh_iord,sim,track_nums)
-            #track_num_to_add = np.array([tr.halo_number for tr in tracker_to_add])
-            #ok_to_add = np.where(np.in1d(track_num_to_add,track_nums)==False)[0]
-            #tracker_to_really_add = [tracker_to_add[jj] for jj in ok_to_add]
             session.add_all(tracker_to_add)
             session.add_all(halo_to_add)
             session.commit()
@@ -140,7 +137,6 @@ def run():
         if bh_halos is not None:
             bh_links = []
             bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
-            #print "Associated halos: ",bh_halos
             with session.no_autoflush:
                 for bhi, haloi in zip(bh_iord, bh_halos):
                     haloi = int(haloi)
@@ -196,10 +192,6 @@ def run():
                 session.add_all(bh_cen_links)
                 session.commit()
             logger.info("Done committing %d links for step %r", len(bh_cen_links), f)
-
-    #for sim in query.all():
-    #    with session.no_autoflush:
-    #        generate_halolinks(sim, session)
 
 
 if __name__=="__main__":
