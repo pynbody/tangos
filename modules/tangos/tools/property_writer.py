@@ -173,6 +173,7 @@ class PropertyWriter(object):
         return existing_properties_data
 
     def _build_existing_properties_all_halos(self, halos):
+        logger.info("Gathering existing properties...")
         return [self._build_existing_properties(h) for h in halos]
 
     def _is_commit_needed(self, end_of_timestep, end_of_simulation):
@@ -412,8 +413,10 @@ class PropertyWriter(object):
 
         with parallel_tasks.RLock("insert_list"):
             self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
+            core.get_default_session().commit()
 
-        for db_halo, existing_properties in zip(db_halos, self._existing_properties_all_halos) :
+        logger.info("Done Gathering existing properties... calculating halo properties now...")
+        for db_halo, existing_properties in zip(db_halos, self._existing_properties_all_halos):
             self._existing_properties_this_halo = existing_properties
             self.run_halo_calculation(db_halo, existing_properties)
 
