@@ -104,7 +104,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
 
     def match_halos(self, f1, f2, halo_min, halo_max, dm_only=False, threshold=0.005):
         if dm_only:
-            only_family='dark'
+            only_family='dm'
         else:
             only_family=None
 
