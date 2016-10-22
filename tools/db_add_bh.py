@@ -135,8 +135,8 @@ def bh_halo_assign(f_pb):
     if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
         bh_cen_halos = f_pbh.get_group_array(family = 'BH')
     if type(f_pbh) == pynbody.halo.AHFCatalogue:
-        bh_cen_halos = f_pbh.get_group_array(top_level=False, family = 'BH')
-        bh_halos = f_pbh.get_group_array(top_level=True, family='BH')
+        bh_cen_halos = f_pbh.get_group_array(top_level=False, family = 'bh')
+        bh_halos = f_pbh.get_group_array(top_level=True, family='bh')
     if type(f_pbh) != pynbody.halo.AHFCatalogue and type(f_pbh) != pynbody.halo.RockstarIntermediateCatalogue:
         f_pb['gp'] = f_pbh.get_group_array()
         bh_cen_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
