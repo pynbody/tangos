@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 import numpy as np
 from .core import get_or_create_dictionary_item, Halo, HaloLink
+import tangos.parallel_tasks as parallel_tasks
 
 def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, weight=1.0):
     assert isinstance(halo_1, Halo)
@@ -14,15 +15,32 @@ def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, wei
     #print halo_1.id,"->",halo_2.id
     session.merge(HaloLink(halo_1,halo_2,dict_obj,weight))
 
+def get_trackers(sim):
+    trackers = sim.trackers.all()
+    nums = [tx.halo_number for tx in trackers]
+    return trackers, np.array(nums)
 
-def generate_tracker_halo_links(sim, session=None):
-    for ts1, ts2 in zip(sim.timesteps[1:],sim.timesteps[:-1]):
+def get_tracker_halos(ts):
+    halos = ts.halos.filter_by(halo_type=1).order_by(Halo.halo_number).all()
+    hid = [h.id for h in halos]
+    num = [h.halo_number for h in halos]
+    return halos, np.array(num), np.array(hid)
+
+def get_tracker_links(session, relation):
+    links = session.query(HaloLink).filter_by(relation=relation).all()
+    idf = [tl.halo_from_id for tl in links]
+    idt = [tl.halo_to_id for tl in links]
+    return links, np.array(idf), np.array(idt)
+
+def generate_tracker_halo_links(sim, session):
+    dict_obj = get_or_create_dictionary_item(session, "tracker")
+    links = []
+    for ts1, ts2 in parallel_tasks.distributed(zip(sim.timesteps[1:],sim.timesteps[:-1])):
         print "generating links for", ts1, ts2
-        halos_1 = ts1.halos.filter_by(halo_type=1).order_by(Halo.halo_number).all()
-        halos_2 = ts2.halos.filter_by(halo_type=1).order_by(Halo.halo_number).all()
+        halos_1, nums1, id = get_tracker_halos(ts1)
+        halos_2, nums2, id = get_tracker_halos(ts2)
+        tracker_links, idf, idt = get_tracker_links(session,dict_obj)
 
-        nums1 = [h.halo_number for h in halos_1]
-        nums2 = [h.halo_number for h in halos_2]
         if len(nums1) == 0 or len(nums2) == 0:
             continue
         o1 = np.where(np.in1d(nums1,nums2))[0]
@@ -32,7 +50,9 @@ def generate_tracker_halo_links(sim, session=None):
         for ii, jj in zip(o1,o2):
             if halos_1[ii].halo_number != halos_2[jj].halo_number:
                 raise RuntimeError("ERROR mismatch of BH iords")
-            generate_tracker_halo_link_if_not_present(halos_1[ii],halos_2[jj])
-            generate_tracker_halo_link_if_not_present(halos_2[jj], halos_1[ii])
-        if session:
-            session.commit()
+            exists = np.where((idf==halos_1[ii].id)&(idt==halos_2[jj].id))[0]
+            if len(exists) == 0:
+                links.append(HaloLink(halos_1[ii],halos_2[jj],dict_obj,1.0))
+                links.append(HaloLink(halos_2[jj],halos_1[ii],dict_obj,1.0))
+    session.add_all(links)
+    session.commit()

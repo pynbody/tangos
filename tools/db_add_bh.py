@@ -8,6 +8,7 @@ import tangos.core.timestep
 import tangos.core.tracking
 import tangos.parallel_tasks as parallel_tasks
 import tangos.tracker
+from tangos.log import logger
 import sys
 import numpy as np
 import gc
@@ -15,61 +16,48 @@ import glob
 import pynbody
 
 
-def resolve_multiple_mergers(bh_map):
-    for k,v in bh_map.iteritems():
-        if v[0] in bh_map:
-            old_target = v[0]
-            old_weight = v[1]
-            bh_map[k] = bh_map[old_target][0],v[1]*bh_map[old_target][1]
-            print "Reassignment:",k,old_target,bh_map[k]
-            resolve_multiple_mergers(bh_map)
-            return
+def collect_bh_halos(bh_iord,f, existing_obj_num):
+    halo = []
+    for bhi in bh_iord:
+        bhi = int(bhi)
 
-def generate_halolinks(sim, session):
-    db.tracker.generate_tracker_halo_links(sim, session)
-    fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
-    if len(fname)==0:
-        print "No merger file for "+sim.basename
-        return
-    elif len(fname)>1:
-        print "Can't work out which is the merger file for "+sim.basename
-        print "Found: ",fname
-        return
+        eh = np.where(existing_obj_num == bhi)[0]
+        if len(eh)==0:
+            halo.append(tangos.core.halo.Halo(f, bhi, bhi, 0, 0, 0, 1))
+
+    return halo
+
+def collect_bh_trackers(bh_iord,sim,existing_trackers):
+    track = []
+    for bhi in bh_iord:
+        bhi = int(bhi)
+        et = np.where(existing_trackers == bhi)[0]
+        if len(et)==0:
+            tx = tangos.core.tracking.TrackData(sim, bhi)
+            tx.particles = [bhi]
+            tx.use_iord = True
+            track.append(tx)
+    return track
 
 
-    timestep_numbers = np.array([int(ts.extension[-6:]) for ts in sim.timesteps])
-    dict_obj_next = db.core.get_or_create_dictionary_item(session, "BH_merger_next")
-    dict_obj_prev = db.core.get_or_create_dictionary_item(session, "BH_merger_prev")
-
-    for ts1, ts2 in zip(sim.timesteps[:-1],sim.timesteps[1:]):
-
-        bh_map = {}
-        print ts1, ts2
-        for l in open(fname[0]):
-            l_split = l.split()
-            t = float(l_split[0])
-            bh_dest_id = int(l_split[2])
-            bh_src_id = int(l_split[3])
-            ratio = float(l_split[4])
-
-            if t>ts1.time_gyr and t<=ts2.time_gyr:
-                bh_map[bh_src_id] = (bh_dest_id, ratio)
-
-        resolve_multiple_mergers(bh_map)
-
-        for src,(dest,ratio) in bh_map.iteritems():
-            bh_src_before = ts1.halos.filter_by(halo_type=1,halo_number=src).first()
-            bh_dest_after = ts2.halos.filter_by(halo_type=1,halo_number=dest).first()
-
-            if bh_src_before is not None and bh_dest_after is not None:
-                db.tracker.generate_tracker_halo_link_if_not_present(bh_src_before,bh_dest_after,dict_obj_next,1.0)
-                db.tracker.generate_tracker_halo_link_if_not_present(bh_dest_after,bh_src_before,dict_obj_prev,ratio)
-
-        session.commit()
+def bh_halo_assign(f_pb):
+    f_pbh = f_pb.halos()
+    bh_cen_halos=None
+    bh_halos = None
+    if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
+        bh_cen_halos = f_pbh.get_group_array(family = 'BH')
+    if type(f_pbh) == pynbody.halo.AHFCatalogue:
+        bh_cen_halos = f_pbh.get_group_array(top_level=False, family = 'bh')
+        bh_halos = f_pbh.get_group_array(top_level=True, family='bh')
+    if type(f_pbh) != pynbody.halo.AHFCatalogue and type(f_pbh) != pynbody.halo.RockstarIntermediateCatalogue:
+        f_pb['gp'] = f_pbh.get_group_array()
+        bh_cen_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
+    del f_pbh
+    gc.collect()
+    return bh_cen_halos, bh_halos
 
 
 def run():
-    #db.use_blocking_session()
     session = db.core.get_default_session()
     query = db.sim_query_from_args(sys.argv, session)
 
@@ -99,107 +87,111 @@ def run():
         if len(f_pb.star)<1:
             print "No stars - continuing"
             continue
+
+        logger.info("Gathering BH halo information for step %r", f)
+        bhobjs, bhobj_nums, bhobj_ids = db.tracker.get_tracker_halos(f)
+        halos = f.halos.filter_by(halo_type=0).all()
+        halo_nums = np.array([h.finder_id for h in halos])
+        halo_ids = np.array([h.id for h in halos])
+        logger.info("Gathering BH - halo link information for step %r", f)
+        with parallel_tasks.RLock("bh"):
+            bh_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH")
+            bh_dict_cen_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH_central")
+            host_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "host_halo")
+            session.commit()
+        links_c, idf_c, idt_c = db.tracker.get_tracker_links(session, bh_dict_cen_id)
+        links, idf, idt = db.tracker.get_tracker_links(session, bh_dict_id)
+
+        logger.info("Gathering BH info from simulation for step %r", f)
         bh_iord = f_pb.star['iord'][np.where(f_pb.star['tform']<0)[0]]
         bh_mass = f_pb.star['mass'][np.where(f_pb.star['tform']<0)[0]]
         bh_iord = bh_iord[np.argsort(bh_mass)[::-1]]
-        print "Found black holes:", bh_iord
+        logger.info("Found %d black holes for %r", len(bh_iord), f)
 
-        bh_objs = []
+        logger.info("gathering and committing BHs into step %r", f)
+        with session.no_autoflush:
+            halo_to_add = collect_bh_halos(bh_iord,f,bhobj_nums)
+        with parallel_tasks.RLock("bh"):
+            session2 = db.core.Session()
+            sim2 = db.get_simulation(sim.id,session2)
+            track, track_nums = db.tracker.get_trackers(sim2)
+            tracker_to_add = collect_bh_trackers(bh_iord,sim,track_nums)
+            session.add_all(tracker_to_add)
+            session.add_all(halo_to_add)
+            session.commit()
+        logger.info("Done committing BH %d trackers and %d halos into %r", len(tracker_to_add), len(halo_to_add), f)
 
-        for bhi in bh_iord:
-            bhi = int(bhi)
-            if sim.trackers.filter_by(halo_number=bhi).count()==0 :
-                print "ADD ",bhi
-                tx = tangos.core.tracking.TrackData(sim, bhi)
-                tx = session.merge(tx)
-                tx.particles = [bhi]
-                tx.use_iord = True
-                print " ->",tx
-            else:
-                tx = sim.trackers.filter_by(halo_number=bhi).first()
+        logger.info("re-gathering bh halo information for %r", f)
+        with parallel_tasks.RLock("bh"):
+            bhobjs, bhobj_nums, bhobj_ids = db.tracker.get_tracker_halos(f)
+        logger.info("Done re-gathering halo information for %r", f)
 
-            if f.halos.filter_by(halo_number=tx.halo_number, halo_type = 1).count()==0:
-                session.merge(tangos.core.halo.Halo(f, tx.halo_number, 0, 0, 0, 1))
+        logger.info("Getting halo information for BHs from simulation for step %r", f)
+        bh_cen_halos, bh_halos = bh_halo_assign(f_pb)
+        logger.info("Found associated halos for BHs in %r", f)
 
-
-        session.commit()
-
-        f_pbh = f_pb.halos()
-        bh_cen_halos=None
-        bh_halos = None
-        if type(f_pbh) == pynbody.halo.RockstarIntermediateCatalogue:
-            bh_cen_halos = f_pbh.get_fam_group_array(family = 'BH')
-        if type(f_pbh) == pynbody.halo.AHFCatalogue:
-            bh_cen_halos = f_pbh.get_group_array(top_level=False, family = 'BH')
-            bh_halos = f_pbh.get_group_array(top_level=True, family='BH')
-        if type(f_pbh) != pynbody.halo.AHFCatalogue and type(f_pbh) != pynbody.halo.RockstarIntermediateCatalogue:
-            f_pb['gp'] = f_pbh.get_group_array()
-            bh_halos = f_pb.star['gp'][np.where(f_pb.star['tform']<0)[0]]
-
-        del(f_pbh)
+        del(f_pb)
         gc.collect()
 
+        logger.info("Gathering BH-Halo links (all) for step %r", f)
         if bh_halos is not None:
+            bh_links = []
             bh_halos = bh_halos[np.argsort(bh_mass)[::-1]]
-            print "Associated halos: ",bh_halos
-            bh_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH")
+            with session.no_autoflush:
+                for bhi, haloi in zip(bh_iord, bh_halos):
+                    haloi = int(haloi)
+                    bhi = int(bhi)
+                    oh = np.where(halo_nums==haloi)[0]
+                    obh = np.where(bhobj_nums==bhi)[0]
+                    if len(oh)==0:
+                        logger.warn("NOTE: skipping BH in halo %d as no corresponding DB object found", haloi)
+                        continue
+                    if len(obh)==0:
+                        logger.warn("WARNING: can't find the db object for BH %d", bhi)
+                        continue
+                    bhobj_i = bhobjs[obh[0]]
+                    h_i = halos[(oh[0])]
 
-            for bhi, haloi in zip(bh_iord, bh_halos):
-                haloi = int(haloi)
-                bhi = int(bhi)
-                halo = f.halos.filter_by(halo_type=0, finder_id=haloi).first()
-                bh_obj = f.halos.filter_by(halo_type=1, finder_id=bhi).first()
-                if halo is None:
-                    print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
-                    continue
-                if bh_obj is None:
-                    print "WARNING: can't find the db object for BH ",bh_iord,"?"
-                    continue
-                existing = halo.links.filter_by(relation_id=bh_dict_id.id,halo_to_id=bh_obj.id).count()
+                    exists = np.where((idf==halo_ids[oh[0]])&(idt==bhobj_ids[obh[0]]))[0]
+                    if len(exists)==0:
+                        bh_links.append(tangos.core.halo_data.HaloLink(h_i, bhobj_i, bh_dict_id))
 
-                if existing==0:
+            logger.info("Committing %d HaloLinks for All BHs in each halo for step %r", len(bh_links),f)
+            with parallel_tasks.RLock("bh"):
+                session.add_all(bh_links)
+                session.commit()
+            logger.info("Done committing %d links for step %r", len(bh_links), f)
 
-                    session.merge(tangos.core.halo_data.HaloLink(halo, bh_obj, bh_dict_id))
-                else:
-                    print "NOTE: skipping BH in halo",haloi,"as link already exists"
-
+        logger.info("Gathering BH-Halo links (central) for step %r")
         if bh_cen_halos is not None:
+            bh_cen_links = []
             bh_cen_halos = bh_cen_halos[np.argsort(bh_mass)[::-1]]
-            bh_dict_cen_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "BH_central")
-            host_dict_id = tangos.core.dictionary.get_or_create_dictionary_item(session, "host_halo")
+            print "Associated halos: ",bh_cen_halos
+            with session.no_autoflush:
+                for bhi, haloi in zip(bh_iord, bh_cen_halos):
+                    haloi = int(haloi)
+                    bhi = int(bhi)
+                    oh = np.where(halo_nums==haloi)[0]
+                    obh = np.where(bhobj_nums==bhi)[0]
+                    if len(oh)==0:
+                        logger.warn("NOTE: skipping BH in halo %d as no corresponding DB object found", haloi)
+                        continue
+                    if len(obh)==0:
+                        logger.warn("WARNING: can't find the db object for BH %d", bhi)
+                        continue
+                    bhobj_i = bhobjs[obh[0]]
+                    h_i = halos[(oh[0])]
 
-            for bhi, haloi in zip(bh_iord, bh_cen_halos):
-                haloi = int(haloi)
-                bhi = int(bhi)
-                halo = f.halos.filter_by(halo_type=0, finder_id=haloi).first()
-                bh_obj = f.halos.filter_by(halo_type=1, finder_id=bhi).first()
-                if halo is None:
-                    print "NOTE: skipping BH in halo",haloi,"as no corresponding DB object found"
-                    continue
-                if bh_obj is None:
-                    print "WARNING: can't find the db object for BH ",bh_iord,"?"
-                    continue
-                existing = halo.links.filter_by(relation_id=bh_dict_cen_id.id,halo_to_id=bh_obj.id).count()
+                    exists = np.where((idf_c==halo_ids[oh[0]])&(idt_c==bhobj_ids[obh[0]]))[0]
+                    if len(exists)==0:
+                        bh_cen_links.append(tangos.core.halo_data.HaloLink(h_i, bhobj_i, bh_dict_cen_id))
+                        bh_cen_links.append(tangos.core.halo_data.HaloLink(bhobj_i, h_i, host_dict_id))
 
-                if existing==0:
-
-                    session.merge(tangos.core.halo_data.HaloLink(halo, bh_obj, bh_dict_cen_id))
-                    session.merge(tangos.core.halo_data.HaloLink(bh_obj, halo, host_dict_id))
-                else:
-                    print "NOTE: skipping central BH ", bhi,"in halo",haloi,"as link already exists"
-
-        session.commit()
-
-
-        del f_pb
-        gc.collect()
-
-    print "Generate merger trees...."
-    for sim in query.all():
-        generate_halolinks(sim, session)
-
-    session.commit()
-
+            logger.info("Committing %d HaloLinks for Central BHs in each halo for step %r", len(bh_cen_links),f)
+            with parallel_tasks.RLock("bh"):
+                session.add_all(bh_cen_links)
+                session.commit()
+            logger.info("Done committing %d links for step %r", len(bh_cen_links), f)
 
 
 if __name__=="__main__":

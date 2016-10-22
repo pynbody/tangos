@@ -124,7 +124,6 @@ class BH(HaloProperties):
         print self.log
 
     def calculate(self, halo, properties):
-        import tangos as db
         if not isinstance(properties, tangos.core.halo.Halo):
             raise RuntimeError("No proxies, please")
         boxsize = self.log.boxsize
@@ -136,15 +135,26 @@ class BH(HaloProperties):
             raise RuntimeError("Can't find BH in .orbit file")
 
         # work out who's the main halo
-        main_halo = None
-        for i in properties.reverse_links:
-            if i.relation.text.startswith("BH"):
-                main_halo = i.halo_from
-                break
-        if main_halo is None:
-            raise RuntimeError("Can't relate BH to its parent halo")
+        #main_halo = None
+        #for i in properties.reverse_links:
+        #    if i.relation.text.startswith("BH"):
+        #        main_halo = i.halo_from
+        #        break
+        #if main_halo is None:
+        #    raise RuntimeError("Can't relate BH to its parent halo")
 
-        main_halo_ssc = main_halo['SSC']
+        try:
+            main_halo = properties['host_halo']
+        except KeyError:
+            main_halo=None
+
+        if main_halo is None:
+            main_halo_ssc = None
+        else:
+            try:
+                main_halo_ssc = main_halo['SSC']
+            except KeyError:
+                main_halo_ssc = None
 
         entry = np.where(mask)[0]
 
@@ -153,9 +163,12 @@ class BH(HaloProperties):
         for t in 'x','y','z','vx','vy','vz','mdot', 'mass', 'mdotmean','mdotsig':
             final[t] = float(vars[t][entry])
 
-        offset = np.array((final['x'],final['y'],final['z']))-main_halo_ssc
-        bad, = np.where(np.abs(offset) > boxsize/2.)
-        offset[bad] = -1.0 * (offset[bad]/np.abs(offset[bad])) * (boxsize - np.abs(offset[bad]))
+        if main_halo_ssc is None:
+            offset = np.array((0,0,0))
+        else:
+            offset = np.array((final['x'],final['y'],final['z']))-main_halo_ssc
+            bad, = np.where(np.abs(offset) > boxsize/2.)
+            offset[bad] = -1.0 * (offset[bad]/np.abs(offset[bad])) * np.abs(boxsize - np.abs(offset[bad]))
 
         return final['mdot'], final['mdotmean'], final['mdotsig'], offset, np.linalg.norm(offset), final['mass']
 
