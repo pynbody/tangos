@@ -148,6 +148,7 @@ class PropertyWriter(object):
             query = sqlalchemy.and_(query, core.halo.Halo.halo_type == self.options.htype)
 
         needed_properties = self._needed_properties()
+        logger.info("building halo list with properties %r", needed_properties)
         pid_list = [core.dictionary.get_dict_id(p) for p in needed_properties]
 
         halo_query = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query)
