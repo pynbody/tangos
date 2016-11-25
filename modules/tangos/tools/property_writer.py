@@ -227,7 +227,10 @@ class PropertyWriter(object):
     def _needed_properties(self):
         needed = []
         for x in self._property_calculator_instances:
-            needed.extend([name for name in x.name()])
+            if type(x.name()) == str:
+                needed.extend(x.name())
+            else:
+                needed.extend([name for name in list(x.name())])
             needed.extend([name for name in x.requires_property()])
         return list(np.unique(needed))
 
