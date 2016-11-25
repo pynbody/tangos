@@ -155,6 +155,8 @@ class PropertyWriter(object):
             except:
                 continue
 
+        logger.info('gathering properties %r with ids %r', needed_properties, pid_list)
+
         halo_query = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query)
         if len(pid_list)>0:
             halo_property_alias = sqlalchemy.orm.aliased(core.halo_data.HaloProperty)
