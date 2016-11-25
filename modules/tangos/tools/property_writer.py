@@ -177,9 +177,12 @@ class PropertyWriter(object):
                 [(x.relation.text, x.halo_to) if x.relation.text in need_data
                  else (x.relation.text, None) for x in db_halo.links])
         existing_properties_data.halo_number = db_halo.halo_number
-        existing_properties_data.NDM = db_halo.NDM
-        existing_properties_data.NGas = db_halo.NGas
-        existing_properties_data.NStar = db_halo.NStar
+        if 'NDM' in need_data:
+            existing_properties_data.NDM = db_halo.NDM
+        if 'Ngas' in need_data:
+            existing_properties_data.NGas = db_halo.NGas
+        if 'Nstar' in need_data:
+            existing_properties_data.NStar = db_halo.NStar
         existing_properties_data['halo_number'] = db_halo.halo_number
         existing_properties_data['finder_id'] = db_halo.finder_id
         return existing_properties_data
