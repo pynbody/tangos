@@ -227,13 +227,13 @@ class PropertyWriter(object):
         needed = []
         for x in self._property_calculator_instances:
             needed.extend([name for name in x.name()])
-            needed.extend([name for name in x.requires_property])
+            needed.extend([name for name in x.requires_property()])
         return list(np.unique(needed))
 
     def _needed_property_data(self):
         needed = []
         for x in self._property_calculator_instances:
-            needed.extend([name for name in x.requires_property])
+            needed.extend([name for name in x.requires_property()])
         return list(np.unique(needed))
 
 
