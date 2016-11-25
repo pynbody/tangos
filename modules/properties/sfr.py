@@ -95,6 +95,9 @@ class StarForm_encl(HaloProperties):
     def name(self):
         return "SFR_encl_25Myr", "SFR_encl_250Myr"
 
+    def requires_property(self):
+        return ["SSC", "Rvir"]
+
     def rstat(self, halo, rad, delta=0.1):
         nbins = int(rad / delta)
         maxrad = delta * (nbins + 1)

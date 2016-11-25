@@ -39,6 +39,9 @@ class Images(HaloProperties):
         return pynbody.plot.stars.render(f.st[pynbody.filt.HighPass('tform',0) & pynbody.filt.BandPass('z', -size / 2, size / 2)],
                                          width=size, plot=False, ret_im=True, mag_range=(16,22))
 
+    def requires_property(self):
+        return ["SSC"]
+
     def calculate(self, halo, properties):
         import pynbody.plot
         size = 15.0
@@ -92,6 +95,9 @@ class InflowOutflowImg(HaloProperties):
     @classmethod
     def name(self):
         return "virial_rho", "virial_vr", "virial_rho_Z"
+
+    def requires_property(self):
+        return "SSC", "Rvir"
 
     def calc_imgs(self, f, radius):
         import pynbody.sph

@@ -20,6 +20,9 @@ class DPot2(HaloProperties):
     def name(self):
         return "dphi_pb", "dphi_pb_3kpc"
 
+    def requires_property(self):
+        return ["SSC"]
+
 
 class DPotDM(HaloProperties):
 
@@ -35,6 +38,9 @@ class DPotDM(HaloProperties):
     @classmethod
     def name(self):
         return "dphi_dm", "dphi_dm_3kpc"
+
+    def requires_property(self):
+        return ["SSC"]
 
 
 class SphericalPotential(HaloProperties):

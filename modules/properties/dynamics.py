@@ -14,6 +14,9 @@ class AngMom(HaloProperties):
     def spherical_region(self):
         return True
 
+    def requires_property(self):
+        return ["SSC"]
+
     def calculate(self, halo, exist):
         f = halo
         f['pos'] -= exist['SSC']
@@ -56,6 +59,9 @@ class MeanJr(HaloProperties):
     def name(self):
         return "Jr_dm", "Jr_dm_std"
 
+    def requires_property(self):
+        return "SSC"
+
     def calculate(self, f, exist):
         ptcl = f
         f = f.ancestor
@@ -87,6 +93,9 @@ class MeanESpher(HaloProperties):
     def name(self):
         return "E_spherical_dm", "E_spherical_dm_std"
 
+    def requires_property(self):
+        return "SSC"
+
     def calculate(self, f, exist):
         ptcl = f
         f = f.ancestor
@@ -116,6 +125,9 @@ class MeanR(HaloProperties):
     def name(self):
         return "r_dm"
 
+    def requires_property(self):
+        return "SSC"
+
     def calculate(self, f, exist):
         f['pos'] -= exist['SSC']
         rm = f.dm['r'].mean()
@@ -136,6 +148,9 @@ class AngMomVecVsScalar(HaloProperties):
         jvec = np.asarray(f_cen['j'].mean(axis=0))
         jscal = np.sqrt(f_cen['j2']).mean()
         return jscal, jvec
+
+    def requires_property(self):
+        return "SSC"
 
     def calculate(self, f, exist):
         import scipy
@@ -404,6 +419,9 @@ class RotCurve(HaloProperties):
 
     def spherical_region(self):
         return True
+
+    def requires_property(self):
+        return "Rmax", "SSC"
 
     def calculate(self, halo, existing_properties):
         import copy

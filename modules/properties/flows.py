@@ -15,6 +15,9 @@ class OutflowEnergy(HaloProperties):
     def requires_simdata(self):
         return False
 
+    def requires_property(self):
+        return "outflow_1", "vel_out_1", "SFR_250Myr"
+
     def calculate(self, halo, properties):
         # ergs per year
         return (1.98e43 * properties["outflow_1"] * properties["vel_out_1"] ** 2) / 2,  \
@@ -49,6 +52,9 @@ class TestInflowOutflow(HaloProperties):
 
     def preloop(self, f, filename, pa):
         self.f = f
+
+    def requires_property(self):
+        return "SSC", "Rvir",
 
     def calculate(self, halo, properties):
         cen, radius = properties["SSC"], properties["Rvir"]
@@ -162,6 +168,9 @@ class InflowOutflow(HaloProperties):
 
     def preloop(self, f, filename, pa):
         self.f = f
+
+    def requires_property(self):
+        return "SSC", "Rvir"
 
     def pre_offset(self, halo, properties):
         cen = properties["SSC"]
