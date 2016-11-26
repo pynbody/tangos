@@ -151,7 +151,7 @@ class PropertyWriter(object):
         pid_list = []
         for p in needed_properties:
             try:
-                pid_list.extend(core.dictionary.get_dict_id(p))
+                pid_list.append(core.dictionary.get_dict_id(p))
             except:
                 continue
 
