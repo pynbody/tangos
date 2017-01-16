@@ -439,18 +439,22 @@ class PropertyWriter(object):
     def run_timestep_calculation(self, db_timestep):
         self.tracker = CalculationSuccessTracker()
 
-        self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
-        db_halos = self._build_halo_list(db_timestep)
-
         logger.info("Processing %r", db_timestep)
-        logger.info("  %d halos to consider; %d property calculations for each of them",
-                    len(db_halos), len(self._property_calculator_instances))
-
         with parallel_tasks.RLock("insert_list"):
+            self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
+            db_halos = self._build_halo_list(db_timestep)
             self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
             core.get_default_session().commit()
 
         logger.info("Done Gathering existing properties... calculating halo properties now...")
+
+        logger.info("  %d halos to consider; %d property calculations for each of them",
+                    len(db_halos), len(self._property_calculator_instances))
+
+        #with parallel_tasks.RLock("insert_list"):
+        #    self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
+        #    core.get_default_session().commit()
+
         for db_halo, existing_properties in zip(db_halos, self._existing_properties_all_halos):
             self._existing_properties_this_halo = existing_properties
             self.run_halo_calculation(db_halo, existing_properties)
