@@ -109,7 +109,7 @@ class BH(HaloProperties):
         return "BH_mdot", "BH_mdot_ave", "BH_mdot_std", "BH_central_offset", "BH_central_distance", "BH_mass"
 
     def requires_property(self):
-        return []
+        return ['host_halo']
 
     @classmethod
     def no_proxies(self):
@@ -231,6 +231,9 @@ class BHAccHistogramMerged(HaloProperties):
     @classmethod
     def requires_simdata(self):
         return False
+
+    def requires_property(self):
+        return ["BH_mdot_histogram"]
 
     @classmethod
     def accumulate_on_mergers(cls,array, bh):

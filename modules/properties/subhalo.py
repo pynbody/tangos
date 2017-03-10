@@ -10,6 +10,9 @@ class Subhalo(HaloProperties):
     def name(self):
         return "Sub"
 
+    def requires_property(self):
+        return ["SSC", "Rvir"]
+
     @classmethod
     def requires_simdata(self):
         return False

@@ -9,6 +9,9 @@ class Ellipsoids(HaloProperties):
     def spherical_region(self):
         return True
 
+    def requires_property(self):
+        return ["SSC"]
+
     def preloop(self, f, name, ar):
         f.dm['smooth']
         f.dm['rho']

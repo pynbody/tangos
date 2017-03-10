@@ -50,7 +50,7 @@ class VcircSpherical(HaloProperties):
         return "vcirc_spherical"
 
     def requires_property(self):
-        return ["dm_density_profile"]
+        return ["dm_density_profile", "tot_mass_profile"]
 
     @classmethod
     def requires_simdata(self):
@@ -200,6 +200,9 @@ class HaloDensityProfile(HaloProperties):
         star_a, star_b = self.rstat(
             halo.star, existing_properties["Rvir"], existing_properties["SSC"],delta)
         return dm_a, dm_b, tot_a, tot_b, gas_a, gas_b, star_a, star_b
+
+    def requires_property(self):
+        return ["SSC", "Rvir"]
 
 
 

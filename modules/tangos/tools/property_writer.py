@@ -147,9 +147,24 @@ class PropertyWriter(object):
         if self.options.htype is not None:
             query = sqlalchemy.and_(query, core.halo.Halo.halo_type == self.options.htype)
 
-        #halos = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query).all()
-        halos = \
-            core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).options(sqlalchemy.orm.joinedload('all_properties')).filter(query).all()
+        needed_properties = self._needed_properties()
+        pid_list = []
+        for p in needed_properties:
+            try:
+                pid_list.append(core.dictionary.get_dict_id(p))
+            except:
+                continue
+
+        logger.info('gathering properties %r with ids %r', needed_properties, pid_list)
+
+        halo_query = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query)
+        if len(pid_list)>0:
+            halo_property_alias = sqlalchemy.orm.aliased(core.halo_data.HaloProperty)
+            halo_alias = core.halo.Halo
+            halo_query = halo_query.\
+                outerjoin(halo_property_alias,(halo_alias.id==halo_property_alias.halo_id) & (halo_property_alias.name_id.in_(pid_list))).\
+                options(sqlalchemy.orm.contains_eager(core.halo.Halo.all_properties, alias=halo_property_alias))
+        halos = halo_query.all()
         halos = halos[self.options.hmin:]
 
         if self.options.hmax is not None:
@@ -160,10 +175,13 @@ class PropertyWriter(object):
 
     def _build_existing_properties(self, db_halo):
         existing_properties = db_halo.all_properties
+        need_data = self._needed_property_data()
         existing_properties_data = AttributableDict(
-                [(x.name.text, x.data) for x in existing_properties])
+                [(x.name.text, x.data) if x.name.text in need_data
+                 else (x.name.text, None) for x in existing_properties])
         existing_properties_data.update(
-                [(x.relation.text, x.halo_to) for x in db_halo.links])
+                [(x.relation.text, x.halo_to) if x.relation.text in need_data
+                 else (x.relation.text, None) for x in db_halo.links])
         existing_properties_data.halo_number = db_halo.halo_number
         existing_properties_data.NDM = db_halo.NDM
         existing_properties_data.NGas = db_halo.NGas
@@ -211,6 +229,23 @@ class PropertyWriter(object):
                     logger.info("Debug mode - not creating property %r for %r with value %r", n, db_halo, r)
                 else:
                     self._pending_properties.append((db_halo, n, r))
+
+    def _needed_properties(self):
+        needed = []
+        for x in self._property_calculator_instances:
+            if type(x.name()) == str:
+                needed.extend([x.name()])
+            else:
+                needed.extend([name for name in x.name()])
+            needed.extend([name for name in x.requires_property()])
+        return list(np.unique(needed))
+
+    def _needed_property_data(self):
+        needed = []
+        for x in self._property_calculator_instances:
+            needed.extend([name for name in x.requires_property()])
+        return list(np.unique(needed))
+
 
     def _should_load_halo_particles(self):
         return any([x.requires_simdata() for x in self._property_calculator_instances])
@@ -404,18 +439,22 @@ class PropertyWriter(object):
     def run_timestep_calculation(self, db_timestep):
         self.tracker = CalculationSuccessTracker()
 
-        self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
-        db_halos = self._build_halo_list(db_timestep)
-
         logger.info("Processing %r", db_timestep)
-        logger.info("  %d halos to consider; %d property calculations for each of them",
-                    len(db_halos), len(self._property_calculator_instances))
-
         with parallel_tasks.RLock("insert_list"):
+            self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
+            db_halos = self._build_halo_list(db_timestep)
             self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
             core.get_default_session().commit()
 
         logger.info("Done Gathering existing properties... calculating halo properties now...")
+
+        logger.info("  %d halos to consider; %d property calculations for each of them",
+                    len(db_halos), len(self._property_calculator_instances))
+
+        #with parallel_tasks.RLock("insert_list"):
+        #    self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
+        #    core.get_default_session().commit()
+
         for db_halo, existing_properties in zip(db_halos, self._existing_properties_all_halos):
             self._existing_properties_this_halo = existing_properties
             self.run_halo_calculation(db_halo, existing_properties)

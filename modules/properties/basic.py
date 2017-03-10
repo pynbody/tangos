@@ -142,6 +142,9 @@ class MassEnclosed(HaloProperties):
     def name(self):
         return "StarMass_encl", "GasMass_encl", "HIMass_encl", "ColdGasMass_encl"
 
+    def requires_property(self):
+        return "SSC", "Rvir"
+
     def rstat(self, halo, maxrad, delta=0.1):
         nbins = int(maxrad / delta)
         maxrad = delta * (nbins + 1)
@@ -226,6 +229,9 @@ class HaloRmax(HaloProperties):
     @classmethod
     def name(self):
         return "Rmax"
+
+    def requires_property(self):
+        return ["SSC"]
 
     def calculate(self, halo, properties):
         halo["pos"] -= properties["SSC"]
@@ -315,6 +321,9 @@ class ABMagnitudes_encl(HaloProperties):
     def name(self):
         return "AB_V_encl", "AB_B_encl", "AB_K_encl", "AB_U_encl", "AB_J_encl", "AB_I_encl", "AB_R_encl"
 
+    def requires_property(self):
+        return "SSC", "Rvir"
+
     def rstat(self, halo, maxrad, delta=0.1):
         nbins = int(maxrad / delta)
         maxrad = delta * (nbins + 1)
@@ -346,6 +355,9 @@ class HalfLight(HaloProperties):
     @classmethod
     def name(self):
         return "Rhalf_V", "Rhalf_B", "Rhalf_K", "Rhalf_U", "Rhalf_J", "Rhalf_I", "Rhalf_R"
+
+    def requires_property(self):
+        return ["SSC"]
 
     def calculate(self, halo, properties):
         com = properties['SSC']

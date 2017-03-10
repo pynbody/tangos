@@ -109,11 +109,14 @@ class GasProfilePhi(HaloProperties):
 
     @classmethod
     def name(self):
-        return "gas_profile_phi"
+        return ["gas_profile_phi"]
 
     @classmethod
     def requires_simdata(self):
         return False
+
+    def requires_property(self):
+        return ["gas_mass_profile"]
 
     def calculate(self, halo, existing_properties):
         mass = existing_properties['gas_mass_profile']
@@ -132,6 +135,9 @@ class ProfilePhi(HaloProperties):
     @classmethod
     def requires_simdata(self):
         return False
+
+    def requires_property(self):
+        return ["tot_mass_profile"]
 
     def calculate(self, halo, existing_properties):
         mass = existing_properties['tot_mass_profile']
