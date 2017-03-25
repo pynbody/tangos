@@ -310,11 +310,12 @@ def rollback(options):
 def dump_id(options):
     import pynbody
 
-    h = tangos.get_halo(options.halo).load()
+    h = db.get_halo(options.halo).load()
 
-    if options.sphere:
+    if options.size:
         pynbody.analysis.halo.center(h,vel=False)
-        h = h.ancestor[pynbody.filt.Sphere(str(options.sphere)+" kpc")]
+        print "Size=",options.size
+        h = h.ancestor[pynbody.filt.Sphere(str(options.size)+" kpc")]
 
     if options.family!="":
         h = getattr(h,options.family)
