@@ -33,11 +33,17 @@ class Images(HaloProperties):
         return im
 
     def render_gas(self, f, size):
-        return self.render_projected(f.gas, size)
+        if len(f.gas)>0:
+            return self.render_projected(f.gas, size)
+        else:
+            return None
 
     def render_stars(self, f, size):
-        return pynbody.plot.stars.render(f.st[pynbody.filt.HighPass('tform',0) & pynbody.filt.BandPass('z', -size / 2, size / 2)],
+        if len(f.st)>0:
+            return pynbody.plot.stars.render(f.st[pynbody.filt.HighPass('tform',0) & pynbody.filt.BandPass('z', -size / 2, size / 2)],
                                          width=size, plot=False, ret_im=True, mag_range=(16,22))
+        else:
+            return None
 
     def requires_property(self):
         return ["SSC"]
@@ -47,13 +53,24 @@ class Images(HaloProperties):
         size = 15.0
         f = halo.ancestor
         f['pos'] -= properties['SSC']
-        tx = pynbody.analysis.angmom.sideon(halo, return_transform=True)
-        g_side, s_side = self.render_gas(f, size), self.render_stars(f, size)
-        f.rotate_x(90)
-        g_face, s_face = self.render_gas(f, size), self.render_stars(f, size)
-        f.rotate_x(-90)
-        tx.revert()
+
         g, s = self.render_gas(f, size), self.render_stars(f, size)
+        try:
+            tx = pynbody.analysis.angmom.sideon(halo, return_transform=True)
+        except ValueError:
+            tx = None
+        if tx is not None:
+            g_side, s_side = self.render_gas(f, size), self.render_stars(f, size)
+            f.rotate_x(90)
+            g_face, s_face = self.render_gas(f, size), self.render_stars(f, size)
+            f.rotate_x(-90)
+            tx.revert()
+        else:
+            g_side = None
+            s_side = None
+            g_face = None
+            s_face = None
+        #g, s = self.render_gas(f, size), self.render_stars(f, size)
         f['pos'] += properties['SSC']
         return g_side, s_side, g_face, s_face, g, s
 
