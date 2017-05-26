@@ -7,7 +7,6 @@ sudo: false
 
 # specify different versions of python and numpy
 env:
-  - PYTHON=2.7  NUMPY_VERSION=1.7.1 CYTHON="cython>=0.20" IPYTHON="ipython=3"
   - PYTHON=2.7  NUMPY_VERSION=1.9.2 CYTHON="cython>=0.20" IPYTHON="ipython>=3"
 
 before_install:
@@ -18,7 +17,7 @@ before_install:
   - conda update --yes conda
 
 install:
-  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip sphinx pygments pandas $IPYTHON $CYTHON
+  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip sphinx pygments pandas sqlalchemy $IPYTHON $CYTHON
   - source activate ${PYTHON}_${NUMPY_VERSION}
   - pip install git+git://github.com/pynbody/pynbody.git
 
