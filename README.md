@@ -1,4 +1,9 @@
-This repository contains the complete code for the halo database, which ingests runs and calculates various properties of the halos (including profiles, images etc) then exposes them through a python interface and webserver.
+TANGOS - The Amazing Numerical Galaxy Organisation System
+---------------------------------------------------------
+
+[![Build Status](https://travis-ci.com/N-BodyShop/halo_database.svg?token=Kwgna3AKWpdHTHRrmaYX&branch=master)](https://travis-ci.com/N-BodyShop/halo_database)
+
+This repository contains the complete code for TANGOS, which ingests runs and calculates various properties of the halos (including profiles, images etc) then exposes them through a python interface and webserver.
 
 Before you start
 ----------------
