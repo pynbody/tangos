@@ -309,7 +309,7 @@ class DynamicalDensityProfile(HaloProperties):
 class JofE(HaloProperties):
     @classmethod
     def name(self):
-        return "Evals","<j>(Evals)", "Evals_theory","<j>(Evals)_theory"
+        return "Evals","<j>_Evals", "Evals_theory","<j>_Evals_theory"
 
     def requires_property(self):
         return []

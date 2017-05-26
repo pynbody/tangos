@@ -468,6 +468,7 @@ class PropertyWriter(object):
 
 
     def run_calculation_loop(self):
+        parallel_tasks.mpi_sync_db(core.get_default_session())
 
         self._start_time = time.time()
         self._pending_properties = []

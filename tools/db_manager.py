@@ -322,6 +322,16 @@ def dump_id(options):
 
     np.savetxt(options.filename,h['iord'],"%d")
 
+
+def list_available_properties(options):
+    import properties
+    all_properties = sorted(properties.all_properties())
+
+    print "%s | %s" % ("name".rjust(30), "from class")
+    for p in all_properties:
+        cl = properties.providing_class(p)
+        print "%s | %s"%(p.rjust(30),str(cl))
+
 if __name__ == "__main__":
 
     #db.core.get_default_session() = tangos.blocking_session.BlockingSession(bind = db.core.engine)
@@ -381,6 +391,9 @@ if __name__ == "__main__":
     subparse_dump_id.add_argument("family",type=str,help="The family of particles to extract",default="")
 
     subparse_dump_id.set_defaults(func=dump_id)
+
+    subparse_list_available_properties = subparse.add_parser("list-possible-haloproperties", help = "List all the halo properties that can be calculated by the current properties modules")
+    subparse_list_available_properties.set_defaults(func=list_available_properties)
 
 
     args = parser.parse_args()
