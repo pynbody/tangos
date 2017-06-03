@@ -38,10 +38,12 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
     def enumerate_halos(self, ts_extension):
         nhalos = int(self._get_ts_property(ts_extension, 'halos'))
         for i in xrange(nhalos):
-            yield i+1, 2000, 0, 0
+            yield i+1, 2000-i, 0, 0
 
     def match_halos(self, f1, f2, halo_min, halo_max, dm_only=False, threshold=0.005):
         """Test implementation of match halos always links halo i->i, and a 0.05 mass transfer from i->i+1"""
+        if halo_max is None:
+            halo_max = f1.max_halos
         halo_max = min((halo_max,f1.max_halos,f2.max_halos))
         return_matches = [tuple()]
         for i in xrange(1,halo_max+1):

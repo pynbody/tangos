@@ -79,21 +79,14 @@ class GenericLinker(object):
             return False
         return True
 
-    def create_db_objects_from_catalog(self, cat, halos1, halos2, fid1, fid2, same_d_id):
+    def create_db_objects_from_catalog(self, cat, finder_id_to_halos_1, finder_id_to_halos_2, same_d_id):
         items = []
         missing_db_object = 0
         for i, possibilities in enumerate(cat):
-            o1 = np.where(fid1==i)[0]
-            if len(o1)>0:
-                h1 = halos1[o1[0]]
-            else:
-                h1 = None
+            h1 = finder_id_to_halos_1.get(i, None)
             for cat_i, weight in possibilities:
-                o2 = np.where(fid2==cat_i)[0]
-                if len(o2)>0:
-                    h2 = halos2[o2[0]]
-                else:
-                    h2 = None
+                h2 = finder_id_to_halos_2.get(cat_i, None)
+
                 if h1 is not None and h2 is not None:
                     items.append(core.halo_data.HaloLink(h1, h2, same_d_id, weight))
                 else:
@@ -104,16 +97,19 @@ class GenericLinker(object):
                         missing_db_object)
         return items
 
+    def make_finder_id_to_halo_map(self, ts):
+        halos = ts.halos.all()
+        halos_map = {h.finder_id: h for h in halos}
+        return halos_map
+
     def crosslink_ts(self, ts1, ts2, halo_min=0, halo_max=None, dmonly=False, threshold=0.005):
         """Link the halos of two timesteps together
 
         :type ts1 tangos.core.TimeStep
         :type ts2 tangos.core.TimeStep"""
         logger.info("Gathering halo information for %r and %r", ts1, ts2)
-        halos1 = ts1.halos.all()
-        halos2 = ts2.halos.all()
-        fid1 = np.array([h.finder_id for h in halos1])
-        fid2 = np.array([h.finder_id for h in halos2])
+        halos1 = self.make_finder_id_to_halo_map(ts1)
+        halos2 = self.make_finder_id_to_halo_map(ts2)
 
         with parallel_tasks.RLock("create_db_objects_from_catalog"):
             same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
@@ -138,9 +134,9 @@ class GenericLinker(object):
 
         with self.session.no_autoflush:
             logger.info("Gathering links for %r and %r", ts1, ts2)
-            items = self.create_db_objects_from_catalog(cat, halos1, halos2, fid1, fid2, same_d_id)
+            items = self.create_db_objects_from_catalog(cat, halos1, halos2, same_d_id)
             logger.info("Identified %d links between %r and %r", len(items), ts1, ts2)
-            items_back = self.create_db_objects_from_catalog(back_cat, halos2, halos1, fid2, fid1, same_d_id)
+            items_back = self.create_db_objects_from_catalog(back_cat, halos2, halos1, same_d_id)
             logger.info("Identified %d links between %r and %r", len(items_back), ts2, ts1)
 
         with parallel_tasks.RLock("create_db_objects_from_catalog"):

@@ -153,7 +153,11 @@ class AHFStatFile(HaloStatFile):
     @classmethod
     def filename(cls, timestep):
         import glob
-        file = glob.glob(timestep.filename+'.z*.???.AHF_halos')[0]
+        file_list = glob.glob(timestep.filename+'.z*.???.AHF_halos')
+        if len(file_list)==0:
+            return "CannotFindAHFHaloFilename"
+        else:
+            return file_list[0]
         return file
 
 

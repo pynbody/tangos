@@ -79,7 +79,7 @@ class TrackData(Base):
                 if verbose:
                     print ts, "-> precursor, don't create"
             elif ts.halos.filter_by(halo_number=self.halo_number, halo_type=1).count() == 0:
-                h = Halo(ts, self.halo_number, 0, 0, 0, 1)
+                h = Halo(ts, self.halo_number, self.halo_number, 0, 0, 0, 1)
                 session.add(h)
                 if verbose:
                     print ts, "-> add"
