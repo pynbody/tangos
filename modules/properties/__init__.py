@@ -345,7 +345,7 @@ def all_property_classes():
 
 def _check_class_provided_name(name):
     if "(" in name or ")" in name:
-        raise ValueError, "Property names must not include brackets"
+        raise ValueError, "Property names must not include brackets; %s not suitable"%name
 
 def all_properties():
     """Return list of all properties which can be calculated using
@@ -353,7 +353,10 @@ def all_properties():
     classes = all_property_classes()
     pr = []
     for c in classes:
-        i = c()
+        try:
+            i = c(None)
+        except TypeError:
+            continue
         name = i.name()
         if type(name) == str:
             _check_class_provided_name(name)
