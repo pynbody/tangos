@@ -249,3 +249,36 @@ def test_find_merger():
     strategy = halo_finding.MultiHopMostRecentMergerStrategy(tangos.get_item("sim/ts3/4"))
     results = strategy.all()
     testing.assert_halolists_equal(results, ["sim/ts1/6", "sim/ts1/7"])
+
+def test_major_progenitor_from_minor_progenitor():
+    generator = testing.TestSimulationGenerator("sim3")
+    ts1 = generator.add_timestep()
+    generator.add_halos_to_timestep(3)
+    ts2 = generator.add_timestep()
+    generator.add_halos_to_timestep(3)
+    generator.link_last_halos_using_mapping({1:2, 2:1, 3:3}, consistent_masses=False)
+    # ts1->ts2: most massive and second most massive halos swap rank ordering by mass
+    ts3 = generator.add_timestep()
+    generator.add_halos_to_timestep(2)
+    # ts2->ts3: there is a major merger of the most massive halos
+    generator.link_last_halos_using_mapping({1:1, 2:1}, consistent_masses=False)
+
+    progen_in_ts2 = halo_finding.MultiSourceMultiHopStrategy(
+        tangos.get_items(["sim3/ts3/1"]),
+        tangos.get_item("sim3/ts2")).all()
+
+    testing.assert_halolists_equal(progen_in_ts2,['sim3/ts2/1'])
+
+    all_progenitors = halo_finding.MultiHopMajorProgenitorsStrategy(tangos.get_item("sim3/ts3/1")).all()
+
+    testing.assert_halolists_equal(all_progenitors, ['sim3/ts2/1','sim3/ts1/2'])
+
+    progen_in_ts1 = halo_finding.MultiSourceMultiHopStrategy(
+        tangos.get_items(["sim3/ts3/1"]),
+        tangos.get_item("sim3/ts1")).all()
+
+    testing.assert_halolists_equal(progen_in_ts1, ['sim3/ts1/2'])
+
+
+
+
