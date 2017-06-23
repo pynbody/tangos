@@ -48,4 +48,5 @@ class HaloLink(Base):
         self.creator_id = creator.get_creator_id()
 
     def __repr__(self):
-        return "<HaloLink " + str(self.relation.text) + " " + str(self.halo_from) + " " + str(self.halo_to) + ">"
+        return "<HaloLink " + str(self.relation.text) + " " + str(self.halo_from.path) + " to " + str(self.halo_to.path) \
+               + " weight=%.2f>"%self.weight

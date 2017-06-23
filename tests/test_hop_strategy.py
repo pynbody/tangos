@@ -253,25 +253,44 @@ def test_find_merger():
 def test_major_progenitor_from_minor_progenitor():
     generator = testing.TestSimulationGenerator("sim3")
     ts1 = generator.add_timestep()
-    generator.add_halos_to_timestep(3)
+    generator.add_halos_to_timestep(4)
     ts2 = generator.add_timestep()
     generator.add_halos_to_timestep(3)
-    generator.link_last_halos_using_mapping({1:2, 2:1, 3:3}, consistent_masses=False)
-    # ts1->ts2: most massive and second most massive halos swap rank ordering by mass
+    generator.link_last_halos_using_mapping({1:2, 2:1, 3:3, 4:1}, consistent_masses=True)
+    # ts1->ts2: most massive and second most massive halos swap rank ordering by mass because of the
+    #           merger with ts1/h4.
     ts3 = generator.add_timestep()
     generator.add_halos_to_timestep(2)
-    # ts2->ts3: there is a major merger of the most massive halos
-    generator.link_last_halos_using_mapping({1:1, 2:1}, consistent_masses=False)
+    # ts2->ts3: there is a major merger of the most massive halos (ts2/h1+ts2/h2)->ts3/h1
+    generator.link_last_halos_using_mapping({1:1, 2:1, 3:2}, consistent_masses=True)
 
+    # Check major progenitor correctly reported one step back by MultiSourceMultiHopStrategy
     progen_in_ts2 = halo_finding.MultiSourceMultiHopStrategy(
         tangos.get_items(["sim3/ts3/1"]),
         tangos.get_item("sim3/ts2")).all()
 
     testing.assert_halolists_equal(progen_in_ts2,['sim3/ts2/1'])
 
-    all_progenitors = halo_finding.MultiHopMajorProgenitorsStrategy(tangos.get_item("sim3/ts3/1")).all()
+    # Check major progenitor correctly reported two steps back by MultiHopMajorProgenitorsStrategy
+
+    all_progenitors, weights = halo_finding.MultiHopMajorProgenitorsStrategy(tangos.get_item("sim3/ts3/1")).all_and_weights()
 
     testing.assert_halolists_equal(all_progenitors, ['sim3/ts2/1','sim3/ts1/2'])
+
+    # Check major progenitor correctly reported two steps back by MultiSourceMultiHopStrategy
+    # This is where a failure occurred in the past -- the behaviour was inequivalent to always choosing
+    # the highest weight branch (which is what MultiHopMajorProgenitorsStrategy does).
+    #
+    # In the example constructed above, the mapping from ts3 halo 1 reaches:
+    #  ts1, h4 (weight 0.26)
+    #  ts1, h2 (weight 0.35)
+    #  ts1, h1 (weight 0.39)
+    #
+    # It looks from these weights like we ought to be picking ts1/h1.
+    #
+    # However the correct major progenitor is h2, because one identifies a major progenitor at each step.
+    # In step ts2, h1 has weight 0.61 and h2 has weight 0.39. So ts2/h1 is the major progenitor. And then,
+    # going back to ts3, ts1/h2 (weight 0.57) is the major progenitor to ts2/h1.
 
     progen_in_ts1 = halo_finding.MultiSourceMultiHopStrategy(
         tangos.get_items(["sim3/ts3/1"]),

@@ -47,6 +47,10 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         self._connection.execute(self._table.insert(), insert_dictionaries)
 
     def _generate_next_level_prelim_links(self, from_nhops=0):
+        all = self.session.query(self._link_orm_class).filter(self._link_orm_class.halo_to_id!=self._link_orm_class.halo_from_id).all()
+        source_ids = [x.source_id for x in all]
+        num_sources = len(self._all_halo_from)
+        print len(source_ids), source_ids
         if self._should_halt():
             return 0
         else:
