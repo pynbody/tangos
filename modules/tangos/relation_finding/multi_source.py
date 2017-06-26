@@ -4,6 +4,9 @@ from ..util import consistent_collection
 from .multi_hop import MultiHopStrategy
 from .one_hop import HopStrategy
 
+import sqlalchemy
+from sqlalchemy import func
+
 class MultiSourceMultiHopStrategy(MultiHopStrategy):
     """A variant of MultiHopStrategy that finds halos corresponding to multiple start points.
 
@@ -22,6 +25,15 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         directed = self._infer_direction(halos_from, target)
         kwargs["target"] = target
         kwargs["directed"] = directed
+
+        # For 'backwards' or 'forwards' searches (basically major progenitors or descendants), keep only the
+        # strongest link at each _step_ rather than waiting to the end to select the highest weight.
+        # This makes sure one never "hops" from one branch to another (see
+        # test_hop_strategy.test_major_progenitor_from_minor_progenitor for an example that exposes
+        # this former bug). The actual implementation of the per-step restriction is in the override to
+        # _supplement_halolink_query_with_filter, below.
+        self._keep_only_highest_weights = (directed=="forwards" or directed=="backwards")
+
         super(MultiSourceMultiHopStrategy, self).__init__(halos_from[0], **kwargs)
         self._all_halo_from = halos_from
 
@@ -51,6 +63,24 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
             return 0
         else:
             return super(MultiSourceMultiHopStrategy, self)._generate_next_level_prelim_links(from_nhops)
+
+    def _supplement_halolink_query_with_filter(self, query, table=None):
+        query = super(MultiSourceMultiHopStrategy, self)._supplement_halolink_query_with_filter(query,table)
+
+        if self._keep_only_highest_weights:
+
+            if table is None:
+                table = core.halo_data.HaloLink.__table__
+
+            # return only the highest weight link from each halo
+            # (the following join is basically a work-around for the lack of an 'argmax' type functionality in sql)
+
+            subq = query.add_columns(func.max(table.c.weight).label("max_weight")).\
+                group_by(table.c.halo_from_id).subquery()
+
+            query = query.join(subq, sqlalchemy.and_(table.c.halo_from_id==subq.c.halo_from_id,
+                                                     table.c.weight==subq.c.max_weight))
+        return query
 
     def _should_halt(self):
         return self.query.count()>0

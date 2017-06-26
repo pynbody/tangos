@@ -231,7 +231,9 @@ def test_multisource_with_nones_as_temptable():
 def test_multisource_backwards():
     results = halo_finding.MultiSourceMultiHopStrategy(tangos.get_items(["sim/ts3/1", "sim/ts3/2", "sim/ts3/3"]),
                                                        tangos.get_item("sim/ts1")).all()
-    testing.assert_halolists_equal(results,["sim/ts1/1","sim/ts1/3","sim/ts1/4"])
+    correct = tangos.get_items(["sim/ts3/1", "sim/ts3/2", "sim/ts3/3"])
+    correct = [i.earliest for i in correct]
+    testing.assert_halolists_equal(results,["sim/ts1/2","sim/ts1/3","sim/ts1/4"])
 
 def test_multisource_across():
     strategy = halo_finding.MultiSourceMultiHopStrategy(
