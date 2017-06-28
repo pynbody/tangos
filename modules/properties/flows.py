@@ -93,8 +93,7 @@ class FlowProfile(HaloProperties):
                "inflow_temp", "outflow_temp", \
                "inflow_Mdot_dm", "outflow_Mdot_dm", \
                "inflow_vel_dm", "outflow_vel_dm", \
-               "inflow_vel2_dm", "outflow_vel2_dm", \
-               "inflow_temp_dm", "outflow_temp_dm"
+               "inflow_vel2_dm", "outflow_vel2_dm"
 
 
     @classmethod
@@ -126,9 +125,9 @@ class FlowProfile(HaloProperties):
             halo.gas['vr2'] = halo.gas['vr'] ** 2
             inflow_Mdot, inflow_vel, inflow_vel2, inflow_temp = self.profile_calculation(halo.ancestor.gas, -self._threshold_vel)
             outflow_Mdot, outflow_vel, outflow_vel2, outflow_temp = self.profile_calculation(halo.ancestor.gas, self._threshold_vel)
-            inflow_Mdot_dm, inflow_vel_dm, inflow_vel2_dm, inflow_temp_dm = self.profile_calculation(halo.ancestor.dm, -self._threshold_vel)
-            outflow_Mdot_dm, outflow_vel_dm, outflow_vel2_dm, outflow_temp_dm = self.profile_calculation(halo.ancestor.dm, self._threshold_vel)
-        return inflow_Mdot, outflow_Mdot, -inflow_vel, outflow_vel,  inflow_vel2, outflow_vel2, inflow_temp, outflow_temp, inflow_Mdot_dm, outflow_Mdot_dm, -inflow_vel_dm, outflow_vel_dm,  inflow_vel2_dm, outflow_vel2_dm, inflow_temp_dm, outflow_temp_dm
+            inflow_Mdot_dm, inflow_vel_dm, inflow_vel2_dm, _ = self.profile_calculation(halo.ancestor.dm, -self._threshold_vel)
+            outflow_Mdot_dm, outflow_vel_dm, outflow_vel2_dm, _ = self.profile_calculation(halo.ancestor.dm, self._threshold_vel)
+        return inflow_Mdot, outflow_Mdot, -inflow_vel, outflow_vel,  inflow_vel2, outflow_vel2, inflow_temp, outflow_temp, inflow_Mdot_dm, outflow_Mdot_dm, -inflow_vel_dm, outflow_vel_dm,  inflow_vel2_dm, outflow_vel2_dm
 
 
 
