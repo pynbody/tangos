@@ -45,6 +45,10 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         f.physical_units()
         return f
 
+    def load_timestep_region(self, ts_extension, region_specification):
+        timestep = self.load_timestep(ts_extension)
+        return timestep[region_specification]
+
     def load_halo(self, ts_extension, halo_number, partial=False):
         h = self._construct_halo_cat(ts_extension)
         if partial:

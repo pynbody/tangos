@@ -2,16 +2,14 @@ from . import HaloProperties
 import numpy as np
 import math
 import pynbody
+from .spherical_region import SphericalRegionHaloProperties
 
 
-class REnergy(HaloProperties):
+class REnergy(SphericalRegionHaloProperties):
 
     @classmethod
     def name(self):
         return "ramses_pe", "ramses_ke", "ramses_te"
-
-    def spherical_region(self):
-        return True
 
     def calculate(self, halo, existing_properties):
         f = halo.ancestor

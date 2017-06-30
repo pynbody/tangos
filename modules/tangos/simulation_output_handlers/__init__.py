@@ -50,6 +50,13 @@ class SimulationOutputSetHandler(object):
             _loaded_timesteps[ts_filename] = weakref.ref(data)
             return data
 
+    def load_timestep_region(self, ts_extension, region_specification):
+        """Returns an object that connects to the data for a timestep on disk, filtered using the
+        specified region specification. Acceptable region specifications are output handler dependent.
+
+        The returned object may be a sub-view of a cached in-memory timestep."""
+        raise NotImplementedError
+
     def load_timestep_without_caching(self, ts_extension):
         """Creates and returns an object that connects to the data for a timestep on disk"""
         raise NotImplementedError

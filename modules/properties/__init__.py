@@ -75,13 +75,13 @@ class HaloProperties(object):
         given entire simulation SimSnap, filename
         and existing property array"""
 
-    def spherical_region(self):
-        """Returns a boolean specifying
-        whether the host is to provide a spherical, virial, centred
-        region (if True) based on the halo; or (if False) the
-        actual group file defining the halo (which may exclude
-        subhalos for instance)."""
-        return False
+    def region_specification(self, db_data):
+        """Returns an abstract specification of the region that this halo property is to be calculated on,
+        or None if we want the halo particles as defined by the finder.
+
+        See spherical_region.SphericalRegionHaloProperties for an example and useful base class for returning
+        everything within the virial radius."""
+        return None
 
 
     def mark_timer(self, label=None):

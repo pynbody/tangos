@@ -1,7 +1,8 @@
 import numpy as np
 from . import HaloProperties
+from .spherical_region import SphericalRegionHaloProperties
 
-class DiskDynamicsProperties(HaloProperties):
+class DiskDynamicsProperties(SphericalRegionHaloProperties):
     # include
 
     @classmethod
@@ -9,9 +10,6 @@ class DiskDynamicsProperties(HaloProperties):
         return "disk_vcirc", "disk_omega", "disk_kappa", \
                "disk_vcirc_st","disk_vR_st","disk_vR_disp_st","disk_vT_st","disk_vT_disp_st","disk_quad_amp_st","disk_pattern_freq_st",\
                "disk_vcirc_gas","disk_vR_gas","disk_vR_disp_gas","disk_vT_gas","disk_vT_disp_gas","disk_quad_amp_gas","disk_pattern_freq_gas"
-
-    def spherical_region(self):
-        return True
 
     def plot_x0(self):
         return self.plot_xdelta()/2

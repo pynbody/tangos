@@ -55,7 +55,6 @@ class PropertyWriter(object):
         self._current_timestep_id = None
         self._loaded_timestep = None
         self._loaded_halo_id = None
-        self._loaded_halo_spherical = None
         self._loaded_halo = None
 
     def _get_parser_obj(self):
@@ -251,7 +250,7 @@ class PropertyWriter(object):
         return any([x.requires_simdata() for x in self._property_calculator_instances])
 
     def _should_load_halo_sphere_particles(self):
-        return any([(x.requires_simdata() and x.spherical_region()) for x in self._property_calculator_instances])
+        return any([(x.requires_simdata() and (x.region_specification() is not None)) for x in self._property_calculator_instances])
 
     def _should_load_timestep_particles(self):
         return self._should_load_halo_particles() and not self.options.partial_load
@@ -262,7 +261,6 @@ class PropertyWriter(object):
 
         self._loaded_halo_id=None
         self._loaded_halo=None
-        self._loaded_halo_spherical=None
 
         if self._current_timestep_id is not None:
             with check_deleted(self._loaded_timestep):
@@ -277,7 +275,7 @@ class PropertyWriter(object):
                               self._property_calculator_instances, self._existing_properties_all_halos)
 
         else:
-            # Keep a pynbody snapshot alive for this timestep, even if should_load_timestep_particles is False,
+            # Keep a snapshot alive for this timestep, even if should_load_timestep_particles is False,
             # because it might be needed for the iord's if we are in partial-load mode.
             try:
                 self._loaded_timestep = db_timestep.load()
@@ -298,7 +296,6 @@ class PropertyWriter(object):
 
         self._loaded_halo_id=db_halo.id
         self._loaded_halo = None
-        self._loaded_halo_spherical = None
 
         if self._should_load_halo_particles():
             self._loaded_halo  = db_halo.load(partial=self.options.partial_load)
@@ -308,31 +305,19 @@ class PropertyWriter(object):
                              self._property_calculator_instances, self._existing_properties_all_halos)
 
 
-    def _get_current_halo_spherical_region_particles(self, db_halo):
-        if self._loaded_halo_spherical is None:
-            if self.options.partial_load:
-                self._loaded_halo_spherical = self._loaded_halo
-            else:
-                if 'Rvir' in self._existing_properties_this_halo and \
-                   'SSC' in self._existing_properties_this_halo:
-                    # TODO: This pynbody dependence should be factored out --
-                    import pynbody
-                    self._loaded_halo_spherical = self._loaded_halo.ancestor[pynbody.filt.Sphere(
-                                                                             self._existing_properties_this_halo['Rvir'],
-                                                                             self._existing_properties_this_halo['SSC'])]
-                else:
-                    warnings.warn("Using halo particles in place of requested spherical cut-out, "
-                                  "since required halo properties are unavailable", RuntimeWarning)
-                    return self._loaded_halo
+    def _get_current_halo_specified_region_particles(self, db_halo, region_spec):
+        if self.options.partial_load:
+            raise NotImplementedError, "Partial loading and region specifications are not yet implemented"
+        else:
+            return db_halo.timestep.load_region(region_spec)
 
-        return self._loaded_halo_spherical
 
-    def _get_halo_snapshot_data_if_appropriate(self, db_halo, property_calculator):
+    def _get_halo_snapshot_data_if_appropriate(self, db_halo, db_data, property_calculator):
 
         self._set_current_halo(db_halo)
 
-        if property_calculator.spherical_region():
-            return self._get_current_halo_spherical_region_particles(db_halo)
+        if property_calculator.region_specification(db_data) is not None:
+            return self._get_current_halo_specified_region_particles(db_halo, property_calculator.region_specification(db_data))
         else:
             return self._loaded_halo
 
@@ -352,7 +337,7 @@ class PropertyWriter(object):
         result = self._get_standin_property_value(property_calculator)
 
         try:
-            snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, property_calculator)
+            snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, db_data, property_calculator)
         except IOError:
             logger.warn("Failed to load snapshot data for %r; skipping",db_halo)
             self.tracker.register_loading_error()
