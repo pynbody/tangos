@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import multiprocessing
 import threading
 import warnings
@@ -79,6 +81,11 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
         target_fn(*args_in)
         finalize()
     except Exception as e:
+        import sys, traceback
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print>>sys.stderr, "Error on a sub-process:"
+        traceback.print_exception(exc_type, exc_value, exc_traceback,
+                                  file=sys.stderr)
         _pipe.send(("error", e))
 
     _pipe.close()

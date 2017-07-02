@@ -17,6 +17,7 @@ import sqlalchemy.orm
 import properties
 from ..util import terminalcontroller, timing_monitor
 from .. import parallel_tasks, core
+from ..parallel_tasks import database
 from ..cached_writer import insert_list
 from ..log import logger
 
@@ -302,7 +303,7 @@ class PropertyWriter(object):
 
         if self.options.partial_load:
             self._run_preloop(self._loaded_halo, db_halo.timestep.filename,
-                             self._property_calculator_instances, self._existing_properties_all_halos)
+                              self._property_calculator_instances, self._existing_properties_all_halos)
 
 
     def _get_current_halo_specified_region_particles(self, db_halo, region_spec):
@@ -453,7 +454,7 @@ class PropertyWriter(object):
 
 
     def run_calculation_loop(self):
-        parallel_tasks.mpi_sync_db(core.get_default_session())
+        parallel_tasks.database.synchronize_creator_object()
 
         self._start_time = time.time()
         self._pending_properties = []

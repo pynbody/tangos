@@ -3,12 +3,13 @@
 
 from tangos import core
 from tangos import parallel_tasks
+from tangos.parallel_tasks import database
 from tangos.tools.crosslink import CrossLinker
 import sys
 
 
 def run_dbwriter(argv):
-    parallel_tasks.mpi_sync_db(core.get_default_session())
+    database.synchronize_creator_object()
     writer = CrossLinker()
     writer.parse_command_line(argv)
     writer.run_calculation_loop()
