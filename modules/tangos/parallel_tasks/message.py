@@ -39,6 +39,7 @@ class Message(object):
 
     def __init__(self, contents=None):
         self.contents = contents
+        self.source = None
 
     @classmethod
     def deserialize(cls, message):
@@ -49,7 +50,7 @@ class Message(object):
 
     @staticmethod
     def interpret_and_deserialize(tag, source, message):
-        obj = MessageMetaClass.hash_to_class(tag)(message)
+        obj = MessageMetaClass.hash_to_class(tag).deserialize(message)
         obj.source = source
         return obj
 
@@ -65,29 +66,23 @@ class Message(object):
     @classmethod
     def receive(cls, source=None):
         from . import backend
-        if cls is Message:
-            msg, source, tag = backend.receive_any(source=None)
-            obj = Message.interpret_and_deserialize(tag, source, msg)
-        else:
-            message = backend.receive(source, tag=cls._tag)
-            obj = cls.deserialize(message)
-            obj.source = source
+
+        msg, source, tag = backend.receive_any(source=None)
+        obj = Message.interpret_and_deserialize(tag, source, msg)
+
+        if not isinstance(obj, cls):
+            if hasattr(obj, "_is_exception"):
+                raise obj.contents
+            else:
+                raise RuntimeError, "Unexpected message of type %r received"%type(obj)
         return obj
 
     def process(self):
-        if self.__class__._handler:
-            self.__class__._handler(self)
-        else:
-            raise RuntimeError, "Unable to dispatch message %s as no handler is registered"%self.__class__
+        raise NotImplementedError, "No process implemented for this message"
 
-    @classmethod
-    def register_handler(cls, fn):
-        if cls._handler is None:
-            cls._handler = fn
-        else:
-            raise RuntimeError, "A handler is already registered for this message"
 
-    @classmethod
-    def unregister_handler(cls, fn):
-        assert cls._handler is fn
-        cls._handler = None
+class ExceptionMessage(Message):
+    _is_exception = True
+
+    def process(self):
+        raise self.contents

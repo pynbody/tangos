@@ -64,17 +64,17 @@ class Halo(Base):
         return self.timestep.path+"/"+name
 
 
-    def load(self, partial=False):
+    def load(self, mode=None):
         """Use pynbody to load the data for this halo, if it is present on this computer's filesystem.
 
-        By default, the entire simulation is loaded and a subview with this halo is returned. If partial=True,
+        By default, the entire simulation is loaded and a subview with this halo is returned. If mode='partial',
         pynbody's partial loading system is used to only load the data for the one halo, saving memory."""
 
         handler = self.timestep.simulation.get_output_set_handler()
         if self.halo_type==0:
-            return handler.load_halo(self.timestep.extension, self.finder_id, partial=partial)
+            return handler.load_halo(self.timestep.extension, self.finder_id, mode=mode)
         else:
-            return handler.load_tracked_region(self.timestep.extension, self.tracker, partial=partial)
+            return handler.load_tracked_region(self.timestep.extension, self.tracker, mode=mode)
 
 
     def calculate(self, name):

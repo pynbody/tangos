@@ -37,13 +37,13 @@ class TimeStep(Base):
     def relative_filename(self):
         return str(self.simulation.basename + "/" + self.extension)
 
-    def load(self):
+    def load(self, mode=None):
         handler = self.simulation.get_output_set_handler()
-        return handler.load_timestep(self.extension)
+        return handler.load_timestep(self.extension, mode=mode)
 
-    def load_region(self, region_specification):
+    def load_region(self, region_specification, mode=None):
         handler = self.simulation.get_output_set_handler()
-        return handler.load_timestep_region(self.extension, region_specification)
+        return handler.load_region(self.extension, region_specification, mode=mode)
 
     def __init__(self, simulation, extension):
         from . import creator

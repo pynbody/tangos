@@ -26,15 +26,15 @@ class YtOutputSetHandler(SimulationOutputSetHandler):
                    'available': True}
         return results
 
-    def load_timestep_without_caching(self, ts_extension):
+    def load_timestep_without_caching(self, ts_extension, mode=None):
         f = yt.load(self._extension_to_filename(ts_extension))
         return f
 
-    def load_halo(self, ts_extension, halo_number, partial=False):
+    def load_halo(self, ts_extension, halo_number, mode=None):
         raise NotImplementedError, "Halos not yet implemented for yt"
 
 
-    def load_tracked_region(self, ts_extension, track_data, partial=False):
+    def load_tracked_region(self, ts_extension, track_data, mode=None):
         raise NotImplementedError, "Tracked regions not implemented for yt"
 
 

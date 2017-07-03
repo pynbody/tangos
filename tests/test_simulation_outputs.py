@@ -75,7 +75,7 @@ def test_load_tracker_halo():
 
 def test_partial_load_tracker_halo():
     add_test_simulation_to_db()
-    pynbody_h = db.get_halo("test_tipsy/tiny.000640/1.1").load(partial=True)
+    pynbody_h = db.get_halo("test_tipsy/tiny.000640/1.1").load(mode='partial')
     assert len(pynbody_h)==4
     assert pynbody_h.ancestor is pynbody_h
 
@@ -98,8 +98,8 @@ def test_load_persistence():
 
 def test_load_tracker_iord_halo():
     add_test_simulation_to_db()
-    h_direct = db.get_halo("test_tipsy/tiny.000640/1.1").load(partial=True)
-    h_iord = db.get_halo("test_tipsy/tiny.000640/1.2").load(partial=True)
+    h_direct = db.get_halo("test_tipsy/tiny.000640/1.1").load(mode='partial')
+    h_iord = db.get_halo("test_tipsy/tiny.000640/1.2").load(mode='partial')
     assert (h_direct['iord']==h_iord['iord']).all()
 
 

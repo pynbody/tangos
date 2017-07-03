@@ -129,3 +129,4 @@ def _shutdown_parallelism():
 
 from .lock import RLock
 from .barrier import barrier
+from . import remote_import
