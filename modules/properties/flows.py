@@ -1,4 +1,5 @@
 from . import HaloProperties
+from .spherical_region import SphericalRegionHaloProperties
 import numpy as np
 import math
 import pynbody
@@ -81,7 +82,7 @@ class TestInflowOutflow(HaloProperties):
         return i, vi, o, vo
 
 
-class FlowProfile(HaloProperties):
+class FlowProfile(SphericalRegionHaloProperties):
     _xmax = 100.0
     _threshold_vel = 20.0
 
