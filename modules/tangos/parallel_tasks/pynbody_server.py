@@ -16,6 +16,7 @@ class PynbodySnapshotQueue(object):
         self.load_requester_queue = []
         self.current_snapshot_filename = None
         self.current_snapshot = None
+        self.current_subsnap_cache = {}
         self.current_halocat = None
         self.in_use_by = []
 
@@ -26,7 +27,10 @@ class PynbodySnapshotQueue(object):
 
     def add(self, filename, requester):
         log.logger.info("Pynbody server: client %d requests access to %r", requester, filename)
-        if filename in self.load_file_queue:
+        if filename==self.current_snapshot_filename:
+            self._notify_available(requester)
+            self.in_use_by.append(requester)
+        elif filename in self.load_file_queue:
             self.load_requester_queue[self.load_file_queue.index(filename)].append(requester)
         else:
             self.load_file_queue.append(filename)
@@ -39,6 +43,30 @@ class PynbodySnapshotQueue(object):
         self._free_if_unused()
         self._load_next_if_free()
 
+    def get_subsnap(self, filter_, fam):
+        if (filter_,fam) in self.current_subsnap_cache:
+            return self.current_subsnap_cache[(filter_, fam)]
+        else:
+            subsnap = self.get_subsnap_uncached(filter_, fam)
+            self.current_subsnap_cache[(filter_, fam)] = subsnap
+            return subsnap
+
+    def get_subsnap_uncached(self, filter_, fam):
+
+        snap = self.current_snapshot
+
+        if isinstance(filter_, pynbody.filt.Filter):
+            snap = snap[filter_]
+        else:
+            snap = self.halos()[filter_]
+
+        if fam is not None:
+            snap = snap[fam]
+
+        return snap
+
+
+
     def _free_if_unused(self):
         if len(self.in_use_by)==0:
             log.logger.info("Pynbody server: all clients are finished with the current snapshot; freeing.")
@@ -46,6 +74,11 @@ class PynbodySnapshotQueue(object):
                 self.current_snapshot = None
                 self.current_snapshot_filename = None
                 self.current_halocat = None
+                self.current_subsnap_cache = {}
+
+    def _notify_available(self, node):
+        log.logger.info("Pynbody server: notify %d that snapshot is now available", node)
+        ConfirmLoadPynbodySnapshot().send(node)
 
     def _load_next_if_free(self):
         if len(self.load_file_queue)==0:
@@ -61,9 +94,7 @@ class PynbodySnapshotQueue(object):
             notify = self.load_requester_queue.pop(0)
             self.in_use_by = notify
             for n in notify:
-                log.logger.info("Pynbody server: notify %d that snapshot is now available", n)
-
-                ConfirmLoadPynbodySnapshot().send(n)
+                self._notify_available(n)
         else:
             log.logger.info("The currently loaded snapshot is still required and so other clients will have to wait")
             log.logger.info("(Currently %d snapshots are in the queue to be loaded later)", len(self.load_file_queue))
@@ -99,17 +130,10 @@ class RequestPynbodyArray(Message):
     def process(self):
         with _server_queue.current_snapshot.immediate_mode:
             try:
-                snap = _server_queue.current_snapshot
-
-                if isinstance(self.filter_, pynbody.filt.Filter):
-                    snap = snap[self.filter_]
-                else:
-                    snap = _server_queue.halos()[self.filter_]
-
-                if self.fam is not None:
-                    snap = snap[self.fam]
-
-                array_result = ReturnPynbodyArray(snap[self.filter_][self.array])
+                subsnap = _server_queue.get_subsnap(self.filter_, self.fam)
+                subarray = subsnap[self.array]
+                assert isinstance(subarray, pynbody.array.SimArray)
+                array_result = ReturnPynbodyArray(subarray)
             except Exception, e:
                 log.logger.info("Pynbody server: there was an error while constructing a region -- exception will be sent back to node %d", self.source)
                 array_result = ExceptionMessage(e)

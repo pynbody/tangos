@@ -106,10 +106,29 @@ class PropertyWriter(object):
 
     def _get_parallel_timestep_iterator(self):
         if self.options.part is not None:
+            # In the case of a null backend with manual parallelism, pass the specified part specification
             ma_files = parallel_tasks.distributed(self.files, proc=self.options.part[0], of=self.options.part[1])
+        elif self.options.load_mode=='server':
+            # In the case of loading from a centralised server, each node works on the _same_ timestep --
+            # parallelism is then implemented at the halo level
+            ma_files = self.files
         else:
+            # In all other cases, different timesteps are distributed to different nodes
             ma_files = parallel_tasks.distributed(self.files)
         return ma_files
+
+    def _get_parallel_halo_iterator(self, items):
+        if self.options.load_mode=='server':
+            # Only in 'server' mode is parallelism undertaken at the halo level. See also
+            # _get_parallel_timestep_iterator.
+
+            # First, we need to make a barrier because we can't start writing to the database
+            # before all nodes have generated their local work lists
+            parallel_tasks.barrier()
+
+            return parallel_tasks.distributed(items)
+        else:
+            return items
 
     def parse_command_line(self, argv=None):
         parser = self._get_parser_obj()
@@ -418,11 +437,8 @@ class PropertyWriter(object):
         logger.info("  %d halos to consider; %d property calculations for each of them",
                     len(db_halos), len(self._property_calculator_instances))
 
-        #with parallel_tasks.RLock("insert_list"):
-        #    self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
-        #    core.get_default_session().commit()
-
-        for db_halo, existing_properties in zip(db_halos, self._existing_properties_all_halos):
+        for db_halo, existing_properties in \
+                self._get_parallel_halo_iterator(zip(db_halos, self._existing_properties_all_halos)):
             self._existing_properties_this_halo = existing_properties
             self.run_halo_calculation(db_halo, existing_properties)
 

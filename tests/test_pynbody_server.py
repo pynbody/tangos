@@ -72,9 +72,9 @@ def _test_halo_array():
     conn = ps.RemoteSnapshotConnection("test_simulations/test_tipsy/tiny.000640")
     f = conn.get_view(1)
     f_local = pynbody.load("test_simulations/test_tipsy/tiny.000640").halos()[1]
-
-
     assert len(f)==len(f_local)
+    assert (f['x'] == f_local['x']).all()
+    assert (f.gas['temp'] == f_local.gas['temp']).all()
 
 def test_halo_array():
     pt.launch(_test_halo_array, 2)
