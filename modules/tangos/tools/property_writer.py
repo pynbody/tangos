@@ -60,11 +60,12 @@ class PropertyWriter(object):
                             help='Process low-z timesteps first')
         parser.add_argument('--random', action='store_true',
                             help='Process timesteps in random order')
-        parser.add_argument('--load-mode', action='store', choices=['all', 'partial', 'server'], required=False, default=None,
+        parser.add_argument('--load-mode', action='store', choices=['all', 'partial', 'server', 'server-partial'], required=False, default=None,
                             help="Select a load-mode: " \
-                                 "  --load-mode partial: each node attempts to load only the data it needs; " \
-                                 "  --load-mode server:  a server process manages the data;" \
-                                 "  --load-mode all:    each node loads all the data (default, and often fine for zoom simulations).")
+                                 "  --load-mode partial:        each node attempts to load only the data it needs; " \
+                                 "  --load-mode server:         a server process manages the data;"
+                                 "  --load-mode server-partial: a server process figures out the indices to load, which are then passed to the partial loader" \
+                                 "  --load-mode all:            each node loads all the data (default, and often fine for zoom simulations).")
         parser.add_argument('--htype', action='store', type=int,
                             help="Secify the halo class to run on. 0=standard, 1=tracker (e.g. black holes)")
         parser.add_argument('--hmin', action='store', type=int, default=0,
@@ -108,7 +109,7 @@ class PropertyWriter(object):
         if self.options.part is not None:
             # In the case of a null backend with manual parallelism, pass the specified part specification
             ma_files = parallel_tasks.distributed(self.files, proc=self.options.part[0], of=self.options.part[1])
-        elif self.options.load_mode=='server':
+        elif self.options.load_mode is not None and self.options.load_mode.startswith('server'):
             # In the case of loading from a centralised server, each node works on the _same_ timestep --
             # parallelism is then implemented at the halo level
             ma_files = self.files
@@ -118,7 +119,7 @@ class PropertyWriter(object):
         return ma_files
 
     def _get_parallel_halo_iterator(self, items):
-        if self.options.load_mode=='server':
+        if self.options.load_mode is not None and self.options.load_mode.startswith('server'):
             # Only in 'server' mode is parallelism undertaken at the halo level. See also
             # _get_parallel_timestep_iterator.
 
@@ -309,11 +310,7 @@ class PropertyWriter(object):
 
 
     def _get_current_halo_specified_region_particles(self, db_halo, region_spec):
-        if self.options.load_mode is not None:
-            raise NotImplementedError, "Partial loading and region specifications are not yet implemented"
-        else:
-            return db_halo.timestep.load_region(region_spec)
-
+        return db_halo.timestep.load_region(region_spec,self.options.load_mode)
 
     def _get_halo_snapshot_data_if_appropriate(self, db_halo, db_data, property_calculator):
 

@@ -131,8 +131,11 @@ class RequestPynbodyArray(Message):
         with _server_queue.current_snapshot.immediate_mode:
             try:
                 subsnap = _server_queue.get_subsnap(self.filter_, self.fam)
-                subarray = subsnap[self.array]
-                assert isinstance(subarray, pynbody.array.SimArray)
+                if self.array=='remote-index-list':
+                    subarray = subsnap.get_index_list(subsnap.ancestor)
+                else:
+                    subarray = subsnap[self.array]
+                    assert isinstance(subarray, pynbody.array.SimArray)
                 array_result = ReturnPynbodyArray(subarray)
             except Exception, e:
                 log.logger.info("Pynbody server: there was an error while constructing a region -- exception will be sent back to node %d", self.source)

@@ -78,3 +78,15 @@ def _test_halo_array():
 
 def test_halo_array():
     pt.launch(_test_halo_array, 2)
+
+
+def _test_remote_file_index():
+    conn = ps.RemoteSnapshotConnection("test_simulations/test_tipsy/tiny.000640")
+    f = conn.get_view(1)
+    f_local = pynbody.load("test_simulations/test_tipsy/tiny.000640").halos()[1]
+    local_index_list = f_local.get_index_list(f_local.ancestor)
+    index_list = f['remote-index-list']
+    assert (index_list==local_index_list).all()
+
+def test_remote_file_index():
+    pt.launch(_test_remote_file_index, 2)

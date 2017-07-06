@@ -46,7 +46,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             f = pynbody.load(self._extension_to_filename(ts_extension))
             f.physical_units()
             return f
-        elif mode=='server':
+        elif mode=='server' or mode=='server-partial':
             return ps.RemoteSnapshotConnection(self._extension_to_filename(ts_extension))
         else:
             raise NotImplementedError, "Load mode %r is not implemented"%mode
@@ -58,6 +58,15 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         elif mode=='server':
             timestep = self.load_timestep(ts_extension)
             return timestep.get_view(region_specification)
+        elif mode=='server-partial':
+            timestep = self.load_timestep(ts_extension)
+            view = timestep.get_view(region_specification)
+            load_index = view['remote-index-list']
+            f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
+            f.physical_units()
+            return f
+        elif mode=='partial':
+            raise NotImplementedError, "For partial loading to work with custom regions, you need load-mode=server-partial (instead of load-mode=partial)"
         else:
             raise NotImplementedError, "Load mode %r is not implemented"%mode
 
@@ -70,6 +79,13 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         elif mode=='server':
             timestep = self.load_timestep(ts_extension)
             return timestep.get_view(halo_number)
+        elif mode=='server-partial':
+            timestep = self.load_timestep(ts_extension)
+            view = timestep.get_view(halo_number)
+            load_index = view['remote-index-list']
+            f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
+            f.physical_units()
+            return f
         elif mode is None:
             h = self._construct_halo_cat(ts_extension)
             return h[halo_number]
