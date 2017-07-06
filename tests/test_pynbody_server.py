@@ -13,12 +13,12 @@ def _get_array():
         ps.RequestLoadPynbodySnapshot(fname).send(0)
         ps.ConfirmLoadPynbodySnapshot.receive(0)
 
-        ps.RequestPynbodyArray(test_filter, "x").send(0)
+        ps.RequestPynbodyArray(test_filter, "pos").send(0)
 
         f_local = pynbody.load(fname)
         f_local.physical_units()
         remote_result =  ps.ReturnPynbodyArray.receive(0).contents
-        assert (f_local[test_filter]['x']==remote_result).all()
+        assert (f_local[test_filter]['pos']==remote_result).all()
 
         ps.ReleasePynbodySnapshot().send(0)
 
@@ -90,3 +90,19 @@ def _test_remote_file_index():
 
 def test_remote_file_index():
     pt.launch(_test_remote_file_index, 2)
+
+def _test_lazy_evaluation_is_local():
+    conn = ps.RemoteSnapshotConnection("test_simulations/test_tipsy/tiny.000640")
+    f = conn.get_view(1)
+    f_local = pynbody.load("test_simulations/test_tipsy/tiny.000640").halos()[1]
+    f_local.physical_units()
+
+    pynbody.analysis.halo.center(f, vel=False)
+    pynbody.analysis.halo.center(f_local, vel=False)
+
+    npt.assert_almost_equal(f['x'], f_local['x'])
+    npt.assert_almost_equal(f['r'], f_local['r'])
+
+def test_lazy_evaluation_is_local():
+    pt.launch(_test_lazy_evaluation_is_local, 2)
+

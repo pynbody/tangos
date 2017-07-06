@@ -128,9 +128,11 @@ class RequestPynbodyArray(Message):
         return (self.filter_, self.array, self.fam)
 
     def process(self):
-        with _server_queue.current_snapshot.immediate_mode:
+        with _server_queue.current_snapshot.immediate_mode, _server_queue.current_snapshot.lazy_derive_off:
             try:
                 subsnap = _server_queue.get_subsnap(self.filter_, self.fam)
+                if subsnap._array_name_implies_ND_slice(self.array):
+                    raise KeyError("Not transferring a single slice %r of a ND array"%self.array)
                 if self.array=='remote-index-list':
                     subarray = subsnap.get_index_list(subsnap.ancestor)
                 else:
@@ -212,7 +214,10 @@ class RemoteSubSnap(pynbody.snapshot.SimSnap):
 
     def _load_array(self, array_name, fam=None):
         RequestPynbodyArray(self.filter_,array_name,fam).send(self._server_id)
-        data = ReturnPynbodyArray.receive(self._server_id).contents
+        try:
+            data = ReturnPynbodyArray.receive(self._server_id).contents
+        except KeyError:
+            raise IOError("No such array %r available from the remote"%array_name)
         if fam is None:
             self[array_name] = data
         else:
