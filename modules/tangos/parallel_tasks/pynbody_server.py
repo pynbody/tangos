@@ -140,7 +140,6 @@ class RequestPynbodyArray(Message):
                     assert isinstance(subarray, pynbody.array.SimArray)
                 array_result = ReturnPynbodyArray(subarray)
             except Exception, e:
-                log.logger.info("Pynbody server: there was an error while constructing a region -- exception will be sent back to node %d", self.source)
                 array_result = ExceptionMessage(e)
             array_result.send(self.source)
 
