@@ -64,3 +64,12 @@ def test_for_loop_is_not_run_twice():
     tangos.get_default_session().commit()
     pt.launch(_test_not_run_twice, 5)
     assert tangos.get_halo(1)['test_count']==3
+
+
+def _test_empty_loop():
+    for _ in pt.distributed([]):
+        assert False
+
+
+def test_empty_loop():
+    pt.launch(_test_empty_loop,3)
