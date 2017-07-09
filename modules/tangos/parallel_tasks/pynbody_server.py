@@ -3,6 +3,7 @@ from . import log, parallel_backend_loaded, remote_import
 from ..util.check_deleted import check_deleted
 import sys
 import pynbody
+import gc
 
 currently_loaded_snapshot = None
 
@@ -143,6 +144,8 @@ class RequestPynbodyArray(Message):
             except Exception, e:
                 array_result = ExceptionMessage(e)
             array_result.send(self.source)
+            del array_result
+            gc.collect()
 
 
 class ReturnPynbodySubsnapInfo(Message):
