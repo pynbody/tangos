@@ -140,6 +140,8 @@ class RequestPynbodyArray(Message):
                 else:
                     subarray = subsnap[self.array]
                     assert isinstance(subarray, pynbody.array.SimArray)
+                log.logger.info("keys=%r family_keys=%r",_server_queue.current_snapshot.keys(),
+                                _server_queue.current_snapshot.family_keys())
                 array_result = ReturnPynbodyArray(subarray)
             except Exception, e:
                 array_result = ExceptionMessage(e)

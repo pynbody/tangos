@@ -84,6 +84,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             timestep = self.load_timestep(ts_extension)
             view = timestep.get_view(halo_number)
             load_index = view['remote-index-list']
+            logger.info("Partial load %r, taking %d particles", ts_extension, len(load_index))
             f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
             f.physical_units()
             return f
