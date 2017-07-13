@@ -8,6 +8,9 @@ import pynbody
 class OutflowEnergy(HaloProperties):
     # include
 
+    def region_specification(self, db_data):
+        return pynbody.filt.Sphere(db_data['Rvir'], db_data['SSC']) & pynbody.filt.FamilyFilter(pynbody.family.gas)
+
     @classmethod
     def name(self):
         return "outflow_energy_1", "SFR_250Myr_energy"
