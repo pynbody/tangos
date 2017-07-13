@@ -122,11 +122,15 @@ again assuming you don't want to parallelise using MPI. But these steps can be s
 Do it with MPI
 --------------
 
-With MPI, you automatically distribute the tasks between nodes. This is far preferable. But it does mean you need to get python and MPI to understand each other. If you have an MPI compiler avaiable, this is pretty easy - you just type `pip install pypar` and it's all done. 
+With MPI, you automatically distribute the tasks between nodes. This is far preferable. But it does mean you need to get python and MPI to understand each other. If you have an MPI compiler avaiable, this is pretty easy - you just type `pip install mpi4py` and it's all done. 
 
 Now you can use `mpirun` on `db_writer.py` just like you would with any other parallel task. However be careful: *by default every processor will load its own copy of the data*. This is time-efficient but memory-wasteful. If you can get away with it (and you often can with zoom simulations), it's all fine. 
 
-If you can't get away with it, either you can reduce the number of processes per core in the normal way (using qsub directives etc), or alternatively the database can *partial load* data, i.e. just ingest one halo at a time. Partial loading is pretty efficient but be aware that  calculations that need the surroundings of the halo (e.g. for outflows etc) will fail.
+If you can't get away with it, you can reduce the number of processes per core in the normal way (using qsub directives etc)... or, you could try selecting an appropriate *load mode*. This is done by passing the argument `--load-mode=XXX` to `db_writer.py`, where `XXX` is one of the following:
+
+* `--load-mode=partial`: only the data for a single halo at a time is loaded. Partial loading is pretty efficient but be aware that  calculations that need the surroundings of the halo (e.g. for outflows etc) will fail.
+* `--load-mode=server`: rank 0 of your MPI processes will load a (single) entire snapshot at a time and pass only the bits of the data needed along to all other ranks. This has the advantage over `--load-mode=partial` of allowing the calculations to request the surroundings of the halo (see above). However it has the disadvantage that rank 0 must load an entire snapshot (all arrays that are required). For really big simulations that might be tricky.
+* `--load-mode=server-partial`: a hybrid approach where rank 0 loads only what is required to help the other ranks figure out what they need to load — for example, if a property requests a sphere surrounding the halo, the entire snapshot's position arrays will be loaded on rank 0, but no other data. The data on the individual ranks is loaded via partial loading (see `--load-mode=partial` above). 
 
 Here's an example qsub script from pleiades for processing a small uniform volume. Note this also shows you the use of `db_timelink.py` to generate the merger trees.
 
@@ -142,11 +146,11 @@ source ~/halo_database/environment.sh
 
 SIMS="romulus8.256gst3.bwBH"
 
-mpirun db_writer.py Mvir Vvir dm_density_profile dm_alpha_500pc Sub --for $SIMS --partial-load
-mpirun db_writer.py stellar_image_faceon --hmax 100 --backwards --for $SIMS --partial-load
+mpirun db_writer.py Mvir Vvir dm_density_profile dm_alpha_500pc Sub --for $SIMS --load-mode=partial
+mpirun db_writer.py stellar_image_faceon --hmax 100 --backwards --for $SIMS --load-mode=partial
 mpirun db_timelink.py --for $SIMS
 mpirun add_bh.py for $SIMS
-mpirun db_writer.py BH_mass --for $SIMS --htype 1 --partial-load
+mpirun db_writer.py BH_mass --for $SIMS --htype 1 --load-mode=partial
 # htype 1 in the line above means "do this for the black hole pseudo halos, not the regular halos". 
 ```
 The Python Interface for Analysis
