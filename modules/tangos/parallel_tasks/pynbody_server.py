@@ -131,7 +131,6 @@ class RequestPynbodyArray(Message):
     def process(self):
         with _server_queue.current_snapshot.immediate_mode, _server_queue.current_snapshot.lazy_derive_off:
             try:
-                log.logger.info("Received request for array %r, given filter/halo %r", self.array, self.filter_)
                 subsnap = _server_queue.get_subsnap(self.filter_, self.fam)
                 if subsnap._array_name_implies_ND_slice(self.array):
                     raise KeyError("Not transferring a single slice %r of a ND array"%self.array)
@@ -140,8 +139,6 @@ class RequestPynbodyArray(Message):
                 else:
                     subarray = subsnap[self.array]
                     assert isinstance(subarray, pynbody.array.SimArray)
-                log.logger.info("keys=%r family_keys=%r",_server_queue.current_snapshot.keys(),
-                                _server_queue.current_snapshot.family_keys())
                 array_result = ReturnPynbodyArray(subarray)
             except Exception, e:
                 array_result = ExceptionMessage(e)
