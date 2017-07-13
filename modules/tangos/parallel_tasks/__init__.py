@@ -8,7 +8,7 @@ from .. import core
 import traceback
 
 backend = None
-_backend_name = 'pypar'
+_backend_name = 'mpi4py'
 from .. import log
 from . import message, jobs, backends
 
