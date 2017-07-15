@@ -4,6 +4,9 @@ from ..util.check_deleted import check_deleted
 import sys
 import pynbody
 import gc
+import cPickle as pickle
+import numpy as np
+
 
 currently_loaded_snapshot = None
 
@@ -113,7 +116,36 @@ class ReleasePynbodySnapshot(Message):
         _server_queue.free(self.source)
 
 class ReturnPynbodyArray(Message):
-    pass
+    @classmethod
+    def deserialize(cls, source, message):
+        from . import backend
+        contents = backend.receive_numpy_array(source=source)
+
+        if message!="":
+            contents = contents.view(pynbody.array.SimArray)
+            contents.units = pickle.loads(message)
+
+        obj = ReturnPynbodyArray(contents)
+        obj.source = source
+
+        return obj
+
+    def serialize(self):
+        assert isinstance(self.contents, np.ndarray)
+        if hasattr(self.contents, 'units'):
+            serialized_info = pickle.dumps(self.contents.units)
+        else:
+            serialized_info = ""
+
+        return serialized_info
+
+    def send(self, destination):
+        # send envelope
+        super(ReturnPynbodyArray, self).send(destination)
+
+        # send contents
+        from . import backend
+        backend.send_numpy_array(self.contents.view(np.ndarray), destination)
 
 class RequestPynbodyArray(Message):
     def __init__(self, filter_, array, fam=None):
@@ -122,8 +154,10 @@ class RequestPynbodyArray(Message):
         self.fam = fam
 
     @classmethod
-    def deserialize(cls, message):
-        return RequestPynbodyArray(message[0], message[1], message[2])
+    def deserialize(cls, source, message):
+        obj = RequestPynbodyArray(*message)
+        obj.source = source
+        return obj
 
     def serialize(self):
         return (self.filter_, self.array, self.fam)
@@ -160,8 +194,10 @@ class ReturnPynbodySubsnapInfo(Message):
         return self.families, self.sizes, self.properties, self.loadable_keys, self.fam_loadable_keys
 
     @classmethod
-    def deserialize(cls, message):
-        return cls(*message)
+    def deserialize(cls, source, message):
+        obj = cls(*message)
+        obj.source = source
+        return obj
 
 
 
@@ -172,8 +208,10 @@ class RequestPynbodySubsnapInfo(Message):
         self.filter_ = filter_
 
     @classmethod
-    def deserialize(cls, message):
-        return RequestPynbodySubsnapInfo(*message)
+    def deserialize(cls, source, message):
+        obj = cls(*message)
+        obj.source = source
+        return obj
 
     def serialize(self):
         return (self.filename, self.filter_)

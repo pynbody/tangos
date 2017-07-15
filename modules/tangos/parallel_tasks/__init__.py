@@ -107,15 +107,6 @@ def _server_thread():
     log.logger.info("Terminating manager")
 
 
-
-def _get_current_creator_id():
-    creator = core.creator.get_creator()
-    if creator.id is None:
-        core.creator.set_creator(core.get_default_session().merge(creator))
-        core.get_default_session().commit()
-
-    return creator.id
-
 def _shutdown_parallelism():
     global backend
     log.logger.info("Shutting down parallel_tasks")

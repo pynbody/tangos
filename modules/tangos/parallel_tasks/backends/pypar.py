@@ -31,6 +31,17 @@ def finalize():
     pypar.finalize()
 
 
+
+NUMPY_SPECIAL_TAG = 1515
+
+def send_numpy_array(data, destination):
+    send(data,destination,tag=NUMPY_SPECIAL_TAG)
+
+def receive_numpy_array(source):
+    return receive(source,tag=NUMPY_SPECIAL_TAG)
+
+
+
 def launch(function, num_procs, args):
     if size()==1:
         raise RuntimeError, "MPI run needs minimum of 2 processors (one for manager, one for worker)"

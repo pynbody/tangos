@@ -42,16 +42,17 @@ class Message(object):
         self.source = None
 
     @classmethod
-    def deserialize(cls, message):
-        return cls(message)
+    def deserialize(cls, source, message):
+        obj = cls(message)
+        obj.source = source
+        return obj
 
     def serialize(self):
         return self.contents
 
     @staticmethod
     def interpret_and_deserialize(tag, source, message):
-        obj = MessageMetaClass.hash_to_class(tag).deserialize(message)
-        obj.source = source
+        obj = MessageMetaClass.hash_to_class(tag).deserialize(source, message)
         return obj
 
     @staticmethod
