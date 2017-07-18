@@ -45,7 +45,6 @@ def send_numpy_array(data, destination):
 def receive_numpy_array(source):
     return receive(source,tag=NUMPY_SPECIAL_TAG)
 
-
 def _pop_first_match_from_reception_buffer(source, tag):
     for item in _recv_buffer:
         if ((item[2] == tag or tag is None) and (item[1] == source or source is None)):
