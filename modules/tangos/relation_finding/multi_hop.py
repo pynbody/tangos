@@ -17,6 +17,10 @@ from .one_hop import HopStrategy
 
 from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
 
+# Fractional increase or decrease in time to represent future or past when making hops
+# (prevents numerical accuracy issues making the db misunderstand a contemporaneous step
+# as being in the future or past)
+SMALL_FRACTION = 1e-4
 
 class MultiHopStrategy(HopStrategy):
     """An extension of the HopStrategy class that takes multiple hops across
@@ -141,14 +145,14 @@ class MultiHopStrategy(HopStrategy):
         if self.directed is not None:
             directed = self.directed.lower()
             if directed == 'backwards':
-                recursion_filter &= timestep_new.time_gyr < timestep_old.time_gyr
+                recursion_filter &= timestep_new.time_gyr < timestep_old.time_gyr*(1.0-SMALL_FRACTION)
             elif directed == 'forwards':
-                recursion_filter &= timestep_new.time_gyr > timestep_old.time_gyr
+                recursion_filter &= timestep_new.time_gyr > timestep_old.time_gyr*(1.0+SMALL_FRACTION)
             elif directed == 'across':
                 existing_timestep_ids = self.session.query(core.Halo.timestep_id).\
                     select_from(self._link_orm_class).join(self._link_orm_class.halo_to).distinct()
                 recursion_filter &= ~timestep_new.id.in_(existing_timestep_ids)
-                recursion_filter &= sqlalchemy.func.abs(timestep_new.time_gyr - timestep_old.time_gyr) < 1e-4
+                recursion_filter &= sqlalchemy.func.abs(timestep_new.time_gyr - timestep_old.time_gyr) < SMALL_FRACTION
             else:
                 raise ValueError, "Unknown direction %r" % directed
 
@@ -262,7 +266,6 @@ class MultiHopStrategy(HopStrategy):
 
         q = self._supplement_halolink_query_with_reverse_hop_filter(q, self._prelim_table)
         q = self._supplement_halolink_query_with_filter(q, self._prelim_table)
-
 
         added_rows = self._connection.execute(
             self._table.insert().from_select(['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'source_id'],
