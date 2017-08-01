@@ -1,5 +1,7 @@
 from .. import core
 from . import message
+from . import remote_import
+import sys
 
 class MessageRequestCreatorId(message.Message):
     def process(self):
@@ -24,7 +26,7 @@ def synchronize_creator_object(session=None):
     if not parallel_backend_loaded():
         return
 
+    remote_import.ImportRequestMessage(__name__).send(0)
     MessageRequestCreatorId().send(0)
     id = MessageDeliverCreatorId.receive(0).contents
-
     core.creator.set_creator(session.query(core.creator.Creator).filter_by(id=id).first())
