@@ -136,22 +136,22 @@ class HaloProperties(object):
             return values[self.name().index(name)]
 
     def calculate_from_db(self, db):
-        import pynbody
         if self.requires_simdata():
-            h = db.load()
-            h.physical_units()
-            preloops_done = getattr(h.ancestor, "_did_preloop", [])
-            h.ancestor._did_preloop = preloops_done
-            if str(self.__class__) not in preloops_done:
-                self.preloop(h.ancestor, h.ancestor.filename, db)
-                preloops_done.append(str(self.__class__))
-            if self.spherical_region():
-                gp_sp = h.ancestor[pynbody.filt.Sphere(db['Rvir'], db['SSC'])]
+            region_spec =  self.region_specification(self)
+            if region_spec:
+                halo_particles = db.timestep.load_region(region_spec)
             else:
-                gp_sp = h
+                halo_particles = db.load()
+
+            preloops_done = getattr(halo_particles.ancestor, "_did_preloop", [])
+            halo_particles.ancestor._did_preloop = preloops_done
+
+            if str(self.__class__) not in preloops_done:
+                self.preloop(halo_particles.ancestor, halo_particles.ancestor.filename, db)
+                preloops_done.append(str(self.__class__))
         else:
-            gp_sp = None
-        return self.calculate(gp_sp, db)
+            halo_particles = None
+        return self.calculate(halo_particles, db)
 
     def plot_x_values(self, for_data):
         """Return a suitable array of x values to match the
@@ -412,22 +412,6 @@ def instantiate_class(simulation, property_name, silent_fail=False):
 
 def get_required_properties(property_name):
     return providing_class(property_name).requires_property()
-
-def live_calculate(property_name, halo, *args, **kwargs):
-    inputs_names = kwargs.pop('names',[None]*100)
-    C = providing_class(property_name)
-    I = C(*args)
-    names = I.name()
-    if hasattr(I, 'live_calculate'):
-        # new-style context-aware calculation
-        results = I.live_calculate(halo, inputs_names)
-    else:
-        # old-style calculation that happens to have no simulation data loaded
-        results = I.calculate(None, halo)
-    if not isinstance(names, str):
-        results = results[names.index(property_name)]
-    return results
-
 
 
 
