@@ -100,8 +100,8 @@ def _test_lazy_evaluation_is_local():
     pynbody.analysis.halo.center(f, vel=False)
     pynbody.analysis.halo.center(f_local, vel=False)
 
-    npt.assert_almost_equal(f['x'], f_local['x'])
-    npt.assert_almost_equal(f['r'], f_local['r'])
+    npt.assert_almost_equal(f['x'], f_local['x'], decimal=4)
+    npt.assert_almost_equal(f['r'], f_local['r'], decimal=4)
 
 def test_lazy_evaluation_is_local():
     pt.launch(_test_lazy_evaluation_is_local, 2)
