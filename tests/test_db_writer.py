@@ -21,6 +21,7 @@ class DummyProperty(properties.HaloProperties):
     def calculate(self, data, entry):
         return data.time*data.halo,
 
+
 class DummyPropertyCausingException(properties.HaloProperties):
     @classmethod
     def name(self):
@@ -77,3 +78,25 @@ def test_error_ignoring():
     assert 'dummy_property' in db.get_halo("dummy_sim_1/step.1/1").keys()
     assert 'dummy_property_with_exception' not in db.get_halo("dummy_sim_1/step.1/1").keys()
 
+
+class DummyRegionProperty(properties.HaloProperties):
+    @classmethod
+    def name(cls):
+        return "dummy_region_property",
+
+    def requires_property(self):
+        return "dummy_property",
+
+    def region_specification(self, db_data):
+        assert db_data.has_key('dummy_property')
+        return slice(1,5)
+
+    def calculate(self, data, entry):
+        assert data.message=="Test string"[1:5]
+        return 100.0,
+
+def test_region_property():
+    init_blank_simulation()
+    run_writer_with_args("dummy_property","dummy_region_property")
+    _assert_properties_as_expected()
+    assert db.get_halo("dummy_sim_1/step.2/1")['dummy_region_property']==100.0

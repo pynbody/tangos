@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import multiprocessing
 import threading
 import warnings
@@ -34,6 +36,14 @@ def receive(source=None, tag=0, return_tag=False):
         except NoMatchingItem:
             _receive_item_into_buffer()
 
+
+NUMPY_SPECIAL_TAG = 1515
+
+def send_numpy_array(data, destination):
+    send(data,destination,tag=NUMPY_SPECIAL_TAG)
+
+def receive_numpy_array(source):
+    return receive(source,tag=NUMPY_SPECIAL_TAG)
 
 def _pop_first_match_from_reception_buffer(source, tag):
     for item in _recv_buffer:
@@ -79,6 +89,11 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
         target_fn(*args_in)
         finalize()
     except Exception as e:
+        import sys, traceback
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print>>sys.stderr, "Error on a sub-process:"
+        traceback.print_exception(exc_type, exc_value, exc_traceback,
+                                  file=sys.stderr)
         _pipe.send(("error", e))
 
     _pipe.close()

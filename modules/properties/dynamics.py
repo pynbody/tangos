@@ -1,4 +1,5 @@
 from . import HaloProperties
+from .spherical_region import SphericalRegionHaloProperties
 import numpy as np
 import math
 import pynbody
@@ -9,10 +10,8 @@ except ImportError:
 
 
 
-class AngMom(HaloProperties):
+class AngMom(SphericalRegionHaloProperties):
 
-    def spherical_region(self):
-        return True
 
     def requires_property(self):
         return ["SSC"]
@@ -52,9 +51,6 @@ class AngMom(HaloProperties):
 
 class MeanJr(HaloProperties):
 
-    def spherical_region(self):
-        return False
-
     @classmethod
     def name(self):
         return "Jr_dm", "Jr_dm_std"
@@ -86,9 +82,6 @@ class MeanJr(HaloProperties):
 
 class MeanESpher(HaloProperties):
 
-    def spherical_region(self):
-        return False
-
     @classmethod
     def name(self):
         return "E_spherical_dm", "E_spherical_dm_std"
@@ -118,9 +111,6 @@ class MeanESpher(HaloProperties):
 
 class MeanR(HaloProperties):
 
-    def spherical_region(self):
-        return False
-
     @classmethod
     def name(self):
         return "r_dm"
@@ -136,9 +126,6 @@ class MeanR(HaloProperties):
 
 
 class AngMomVecVsScalar(HaloProperties):
-
-    def spherical_region(self):
-        return False
 
     @classmethod
     def name(self):
@@ -212,9 +199,7 @@ class Anisotropy(HaloProperties):
 
 
 
-class HaloVelDispersionProfile(HaloProperties):
-
-
+class HaloVelDispersionProfile(SphericalRegionHaloProperties):
     @classmethod
     def plot_x0(cls):
         return 0.05
@@ -238,9 +223,6 @@ class HaloVelDispersionProfile(HaloProperties):
     @classmethod
     def name(self):
         return "dm_mean_vel","dm_sigma_r", "dm_sigma_t", "dm_beta"
-
-    def spherical_region(self):
-        return True
 
     def rstat(self, halo, maxrad, cen, delta=0.1):
         halo['pos'] -= cen
@@ -279,14 +261,11 @@ class HaloStarVelDispersionProfile(HaloVelDispersionProfile):
         return self.rstat(halo.star, existing_properties["rmax_dm_local"]*5,
                           existing_properties["SSC"], existing_properties.get('delta',0.1))
 
-class DynamicalDensityProfile(HaloProperties):
+class DynamicalDensityProfile(SphericalRegionHaloProperties):
 
     @classmethod
     def name(self):
         return "dm_dynamical_density_profile"
-
-    def spherical_region(self):
-        return True
 
     def requires_property(self):
         return ["Sub"] + HaloProperties.requires_property(self)
@@ -410,15 +389,13 @@ class HaloSpin(HaloProperties):
         return self.lambda_prime(halo, existing_properties), self.lambda_prime(sub_sim_dm, existing_properties)
 
 
-class RotCurve(HaloProperties):
+class RotCurve(SphericalRegionHaloProperties):
     # include
 
     @classmethod
     def name(self):
         return "rotcurve", "rotcurve:range"
 
-    def spherical_region(self):
-        return True
 
     def requires_property(self):
         return "Rmax", "SSC"

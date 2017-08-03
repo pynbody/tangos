@@ -38,7 +38,7 @@ class SimulationOutputSetHandler(object):
         """Yield halo_number, NDM, NStar, Ngas for halos in the specified timestep"""
         raise NotImplementedError
 
-    def load_timestep(self, ts_extension):
+    def load_timestep(self, ts_extension, mode=None):
         """Returns an object that connects to the data for a timestep on disk -- possibly a version cached in
         memory"""
         ts_filename = self._extension_to_filename(ts_extension)
@@ -46,26 +46,37 @@ class SimulationOutputSetHandler(object):
         if stored_timestep is not None:
             return stored_timestep
         else:
-            data = self.load_timestep_without_caching(ts_extension)
+            data = self.load_timestep_without_caching(ts_extension, mode=mode)
             _loaded_timesteps[ts_filename] = weakref.ref(data)
             return data
 
-    def load_timestep_without_caching(self, ts_extension):
+    def load_region(self, ts_extension, region_specification, mode=None):
+        """Returns an object that connects to the data for a timestep on disk, filtered using the
+        specified region specification. Acceptable region specifications are output handler dependent.
+
+        The returned object may be a sub-view of a cached in-memory timestep."""
+        raise NotImplementedError
+
+    def load_timestep_without_caching(self, ts_extension, mode=None):
         """Creates and returns an object that connects to the data for a timestep on disk"""
         raise NotImplementedError
 
-    def load_halo(self, ts_extension, halo_number, partial=False):
+    def load_halo(self, ts_extension, halo_number, mode=None):
         """Creates and returns an object that connects to the data for a halo on disk.
 
-        :arg partial - if True, attempt to load *only* the data for the halo
-          (i.e. don't return a view of the parent timestep)"""
+        :arg mode - sets a method for loading the halo, which is dependent on being implemented by the underlying
+                    file manager. Current options (for the default pynbody handler) are
+
+                     * None: load entire snapshot from disk, then return halo particles
+                     * 'partial': load only the halo particles from disk
+                     * 'server': use a remote server model to retrieve the particles
+        """
         raise NotImplementedError
 
-    def load_tracked_region(self, ts_extension, track_data, partial=False):
+    def load_tracked_region(self, ts_extension, track_data, mode=None):
         """Creates and returns an object that connects to the on-disk data for the specified tracked region.
 
-        :arg partial - if True, attempt to load *only* the data for the region (i.e. don't return a view
-           of the parent timestep)"""
+        :arg mode - sets a method for loading the tracked region; see load_halo mode for more information"""
         raise NotImplementedError
 
 

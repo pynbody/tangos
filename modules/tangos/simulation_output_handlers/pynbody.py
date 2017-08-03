@@ -13,6 +13,7 @@ from . import halo_stat_files, finding
 from . import SimulationOutputSetHandler
 from .. import config
 from ..log import logger
+from ..parallel_tasks import pynbody_server as ps
 
 
 _loaded_halocats = {}
@@ -40,28 +41,68 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
                    'available': True}
         return results
 
-    def load_timestep_without_caching(self, ts_extension):
-        f = pynbody.load(self._extension_to_filename(ts_extension))
-        f.physical_units()
-        return f
+    def load_timestep_without_caching(self, ts_extension, mode=None):
+        if mode=='partial' or mode is None:
+            f = pynbody.load(self._extension_to_filename(ts_extension))
+            f.physical_units()
+            return f
+        elif mode=='server' or mode=='server-partial':
+            return ps.RemoteSnapshotConnection(self._extension_to_filename(ts_extension))
+        else:
+            raise NotImplementedError, "Load mode %r is not implemented"%mode
 
-    def load_halo(self, ts_extension, halo_number, partial=False):
-        h = self._construct_halo_cat(ts_extension)
-        if partial:
+    def load_region(self, ts_extension, region_specification, mode=None):
+        if mode is None:
+            timestep = self.load_timestep(ts_extension)
+            return timestep[region_specification]
+        elif mode=='server':
+            timestep = self.load_timestep(ts_extension)
+            return timestep.get_view(region_specification)
+        elif mode=='server-partial':
+            timestep = self.load_timestep(ts_extension)
+            view = timestep.get_view(region_specification)
+            load_index = view['remote-index-list']
+            logger.info("Partial load %r, taking %d particles",ts_extension,len(load_index))
+            f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
+            f.physical_units()
+            return f
+        elif mode=='partial':
+            raise NotImplementedError, "For partial loading to work with custom regions, you need load-mode=server-partial (instead of load-mode=partial)"
+        else:
+            raise NotImplementedError, "Load mode %r is not implemented"%mode
+
+    def load_halo(self, ts_extension, halo_number, mode=None):
+        if mode=='partial':
+            h = self._construct_halo_cat(ts_extension)
             h_file = h.load_copy(halo_number)
             h_file.physical_units()
             return h_file
-        else:
+        elif mode=='server':
+            timestep = self.load_timestep(ts_extension)
+            return timestep.get_view(halo_number)
+        elif mode=='server-partial':
+            timestep = self.load_timestep(ts_extension)
+            view = timestep.get_view(halo_number)
+            load_index = view['remote-index-list']
+            logger.info("Partial load %r, taking %d particles", ts_extension, len(load_index))
+            f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
+            f.physical_units()
+            return f
+        elif mode is None:
+            h = self._construct_halo_cat(ts_extension)
             return h[halo_number]
+        else:
+            raise NotImplementedError, "Load mode %r is not implemented"%mode
 
-
-    def load_tracked_region(self, ts_extension, track_data, partial=False):
+    def load_tracked_region(self, ts_extension, track_data, mode=None):
         f = self.load_timestep(ts_extension)
         indices = self._get_indices_for_snapshot(f, track_data)
-        if partial:
+        if mode=='partial':
             return pynbody.load(f.filename, take=indices)
-        else:
+        elif mode is None:
             return f[indices]
+        else:
+            raise NotImplementedError, "Load mode %r is not implemented"%mode
 
 
     def _get_indices_for_snapshot(self, f, track_data):

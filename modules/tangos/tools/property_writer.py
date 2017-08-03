@@ -17,33 +17,16 @@ import sqlalchemy.orm
 import properties
 from ..util import terminalcontroller, timing_monitor
 from .. import parallel_tasks, core
+from ..parallel_tasks import database
+from ..util.check_deleted import check_deleted
 from ..cached_writer import insert_list
 from ..log import logger
 
 
-@contextlib.contextmanager
-def check_deleted(a):
-    if a is None:
-        yield
-        return
-    else:
-        a_s = weakref.ref(a)
-        sys.exc_clear()
-        del a
-        yield
-        gc.collect()
-        if a_s() is not None:
-            logger.error("check_deleted failed")
-            logger.error("gc reports hanging references: %s", gc.get_referrers(a_s()))
+
 
 class AttributableDict(dict):
     pass
-
-
-
-
-
-
 
 
 class PropertyWriter(object):
@@ -55,7 +38,6 @@ class PropertyWriter(object):
         self._current_timestep_id = None
         self._loaded_timestep = None
         self._loaded_halo_id = None
-        self._loaded_halo_spherical = None
         self._loaded_halo = None
 
     def _get_parser_obj(self):
@@ -78,8 +60,12 @@ class PropertyWriter(object):
                             help='Process low-z timesteps first')
         parser.add_argument('--random', action='store_true',
                             help='Process timesteps in random order')
-        parser.add_argument('--partial-load', action='store_true',
-                            help="Load only one halo at a time - saves memory but some property calculations may prefer to see the whole simulation")
+        parser.add_argument('--load-mode', action='store', choices=['all', 'partial', 'server', 'server-partial'], required=False, default=None,
+                            help="Select a load-mode: " \
+                                 "  --load-mode partial:        each node attempts to load only the data it needs; " \
+                                 "  --load-mode server:         a server process manages the data;"
+                                 "  --load-mode server-partial: a server process figures out the indices to load, which are then passed to the partial loader" \
+                                 "  --load-mode all:            each node loads all the data (default, and often fine for zoom simulations).")
         parser.add_argument('--htype', action='store', type=int,
                             help="Secify the halo class to run on. 0=standard, 1=tracker (e.g. black holes)")
         parser.add_argument('--hmin', action='store', type=int, default=0,
@@ -121,10 +107,29 @@ class PropertyWriter(object):
 
     def _get_parallel_timestep_iterator(self):
         if self.options.part is not None:
+            # In the case of a null backend with manual parallelism, pass the specified part specification
             ma_files = parallel_tasks.distributed(self.files, proc=self.options.part[0], of=self.options.part[1])
+        elif self.options.load_mode is not None and self.options.load_mode.startswith('server'):
+            # In the case of loading from a centralised server, each node works on the _same_ timestep --
+            # parallelism is then implemented at the halo level
+            ma_files = self.files
         else:
+            # In all other cases, different timesteps are distributed to different nodes
             ma_files = parallel_tasks.distributed(self.files)
         return ma_files
+
+    def _get_parallel_halo_iterator(self, items):
+        if self.options.load_mode is not None and self.options.load_mode.startswith('server'):
+            # Only in 'server' mode is parallelism undertaken at the halo level. See also
+            # _get_parallel_timestep_iterator.
+
+            # First, we need to make a barrier because we can't start writing to the database
+            # before all nodes have generated their local work lists
+            parallel_tasks.barrier()
+
+            return parallel_tasks.distributed(items)
+        else:
+            return items
 
     def parse_command_line(self, argv=None):
         parser = self._get_parser_obj()
@@ -132,6 +137,8 @@ class PropertyWriter(object):
         core.process_options(self.options)
         self._build_file_list()
 
+        if self.options.load_mode=='all':
+            self.options.load_mode=None
 
         if self.options.verbose:
             self.redirect.enabled = False
@@ -250,11 +257,8 @@ class PropertyWriter(object):
     def _should_load_halo_particles(self):
         return any([x.requires_simdata() for x in self._property_calculator_instances])
 
-    def _should_load_halo_sphere_particles(self):
-        return any([(x.requires_simdata() and x.spherical_region()) for x in self._property_calculator_instances])
-
-    def _should_load_timestep_particles(self):
-        return self._should_load_halo_particles() and not self.options.partial_load
+    def _must_load_timestep_particles(self):
+        return self._should_load_halo_particles() and self.options.load_mode is None
 
     def _set_current_timestep(self, db_timestep):
         if self._current_timestep_id == db_timestep.id:
@@ -262,28 +266,26 @@ class PropertyWriter(object):
 
         self._loaded_halo_id=None
         self._loaded_halo=None
-        self._loaded_halo_spherical=None
 
         if self._current_timestep_id is not None:
             with check_deleted(self._loaded_timestep):
                 self._loaded_timestep=None
 
+        if self._must_load_timestep_particles():
+            self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
 
-
-
-        if self._should_load_timestep_particles():
-            self._loaded_timestep = db_timestep.load()
-            self._run_preloop(self._loaded_timestep, db_timestep.filename,
-                              self._property_calculator_instances, self._existing_properties_all_halos)
-
-        else:
-            # Keep a pynbody snapshot alive for this timestep, even if should_load_timestep_particles is False,
+        elif self._should_load_halo_particles():
+            # Keep a snapshot alive for this timestep, even if should_load_timestep_particles is False,
             # because it might be needed for the iord's if we are in partial-load mode.
             try:
-                self._loaded_timestep = db_timestep.load()
+                self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
             except IOError:
                 pass
 
+        if self.options.load_mode is None:
+            self._run_preloop(self._loaded_timestep, db_timestep.filename,
+                              self._property_calculator_instances, self._existing_properties_all_halos)
+        else:
             self._run_preloop(None, db_timestep.filename,
                               self._property_calculator_instances, self._existing_properties_all_halos)
 
@@ -298,41 +300,24 @@ class PropertyWriter(object):
 
         self._loaded_halo_id=db_halo.id
         self._loaded_halo = None
-        self._loaded_halo_spherical = None
 
         if self._should_load_halo_particles():
-            self._loaded_halo  = db_halo.load(partial=self.options.partial_load)
+            self._loaded_halo  = db_halo.load(mode=self.options.load_mode)
 
-        if self.options.partial_load:
+        if self.options.load_mode is not None:
             self._run_preloop(self._loaded_halo, db_halo.timestep.filename,
-                             self._property_calculator_instances, self._existing_properties_all_halos)
+                              self._property_calculator_instances, self._existing_properties_all_halos)
 
 
-    def _get_current_halo_spherical_region_particles(self, db_halo):
-        if self._loaded_halo_spherical is None:
-            if self.options.partial_load:
-                self._loaded_halo_spherical = self._loaded_halo
-            else:
-                if 'Rvir' in self._existing_properties_this_halo and \
-                   'SSC' in self._existing_properties_this_halo:
-                    # TODO: This pynbody dependence should be factored out --
-                    import pynbody
-                    self._loaded_halo_spherical = self._loaded_halo.ancestor[pynbody.filt.Sphere(
-                                                                             self._existing_properties_this_halo['Rvir'],
-                                                                             self._existing_properties_this_halo['SSC'])]
-                else:
-                    warnings.warn("Using halo particles in place of requested spherical cut-out, "
-                                  "since required halo properties are unavailable", RuntimeWarning)
-                    return self._loaded_halo
+    def _get_current_halo_specified_region_particles(self, db_halo, region_spec):
+        return db_halo.timestep.load_region(region_spec,self.options.load_mode)
 
-        return self._loaded_halo_spherical
-
-    def _get_halo_snapshot_data_if_appropriate(self, db_halo, property_calculator):
+    def _get_halo_snapshot_data_if_appropriate(self, db_halo, db_data, property_calculator):
 
         self._set_current_halo(db_halo)
 
-        if property_calculator.spherical_region():
-            return self._get_current_halo_spherical_region_particles(db_halo)
+        if property_calculator.region_specification(db_data) is not None:
+            return self._get_current_halo_specified_region_particles(db_halo, property_calculator.region_specification(db_data))
         else:
             return self._loaded_halo
 
@@ -352,7 +337,7 @@ class PropertyWriter(object):
         result = self._get_standin_property_value(property_calculator)
 
         try:
-            snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, property_calculator)
+            snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, db_data, property_calculator)
         except IOError:
             logger.warn("Failed to load snapshot data for %r; skipping",db_halo)
             self.tracker.register_loading_error()
@@ -417,8 +402,6 @@ class PropertyWriter(object):
         self._queue_results_for_later_commit(db_halo, names, results, existing_properties)
 
     def run_halo_calculation(self, db_halo, existing_properties):
-        #print >>sys.stderr, term.RED + "H%d"%db_halo.halo_number + term.NORMAL,
-        #sys.stderr.flush()
         for calculator in self._property_calculator_instances:
             busy = True
             nloops = 0
@@ -446,16 +429,13 @@ class PropertyWriter(object):
             self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
             core.get_default_session().commit()
 
-        logger.info("Done Gathering existing properties... calculating halo properties now...")
+        logger.info("Successfully gathered existing properties; calculating halo properties now...")
 
         logger.info("  %d halos to consider; %d property calculations for each of them",
                     len(db_halos), len(self._property_calculator_instances))
 
-        #with parallel_tasks.RLock("insert_list"):
-        #    self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
-        #    core.get_default_session().commit()
-
-        for db_halo, existing_properties in zip(db_halos, self._existing_properties_all_halos):
+        for db_halo, existing_properties in \
+                self._get_parallel_halo_iterator(zip(db_halos, self._existing_properties_all_halos)):
             self._existing_properties_this_halo = existing_properties
             self.run_halo_calculation(db_halo, existing_properties)
 
@@ -468,7 +448,7 @@ class PropertyWriter(object):
 
 
     def run_calculation_loop(self):
-        parallel_tasks.mpi_sync_db(core.get_default_session())
+        parallel_tasks.database.synchronize_creator_object()
 
         self._start_time = time.time()
         self._pending_properties = []

@@ -126,15 +126,14 @@ class HaloDensitySlope(HaloProperties):
             return np.NaN, np.NaN
 
 
-class HaloDensityProfile(HaloProperties):
+from .spherical_region import SphericalRegionHaloProperties
+
+class HaloDensityProfile(SphericalRegionHaloProperties):
     # include
 
     @classmethod
     def name(self):
         return "dm_density_profile", "dm_mass_profile", "tot_density_profile", "tot_mass_profile", "gas_density_profile", "gas_mass_profile", "star_density_profile", "star_mass_profile"
-
-    def spherical_region(self):
-        return True
 
     @classmethod
     def plot_x0(cls):

@@ -7,6 +7,7 @@ import tangos.core.halo_data
 import tangos.core.timestep
 import tangos.core.tracking
 import tangos.parallel_tasks as parallel_tasks
+import tangos.parallel_tasks.database
 import tangos.tracker
 from tangos.log import logger
 import sys
@@ -69,7 +70,7 @@ def run():
         files = files[::-1]
 
     files = parallel_tasks.distributed(files)
-    parallel_tasks.mpi_sync_db(session)
+    parallel_tasks.database.synchronize_creator_object(session)
 
     if "link-only" in sys.argv:
         files = []

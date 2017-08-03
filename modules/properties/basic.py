@@ -41,9 +41,9 @@ class BasicHaloProperties(HaloProperties):
             giX = gi.dm
 
             pmin = copy.copy(giX['pos'][0])
-            print "initial",self.f['pos'][0]
-            self.f['pos']-=pmin
-            self.f.wrap()
+            print "initial",halo.ancestor['pos'][0]
+            halo.ancestor['pos']-=pmin
+            halo.ancestor.wrap()
 
             self.mark_timer('ssc-S')
             com = pynbody.analysis.halo.shrink_sphere_center(
@@ -53,33 +53,33 @@ class BasicHaloProperties(HaloProperties):
             if any(com != com):
                 raise RuntimeError, "Something bizarre has happened with the centering"
 
-            self.f["pos"] -= com
+            halo.ancestor["pos"] -= com
 
-            self.f.gas['mass']
-            self.f.star['mass']
-            self.f.dm['mass']
+            halo.ancestor.gas['mass']
+            halo.ancestor.star['mass']
+            halo.ancestor.dm['mass']
 
             self.mark_timer('vrad-S')
             try:
-                rad = pynbody.analysis.halo.virial_radius(self.f, r_max=3500)
+                rad = pynbody.analysis.halo.virial_radius(halo.ancestor, r_max=3500)
             except ValueError:
                 # assume an isolated run
-                rad = self.f.properties['boxsize'].in_units('kpc') / 2
+                rad = halo.ancestor.properties['boxsize'].in_units('kpc') / 2
 
             self.mark_timer('vrad-F')
 
-            sub = self.f[pynbody.filt.Sphere(rad)]
+            sub = halo.ancestor[pynbody.filt.Sphere(rad)]
 
             mgas = sub.gas["mass"].sum()
             mstar = sub.star["mass"].sum()
 
             com+=pmin
 
-            self.f["pos"] += com
-            self.f.wrap()
+            halo.ancestor["pos"] += com
+            halo.ancestor.wrap()
 
 
-            print "x-check [matches above?]", self.f['pos'][0]
+            print "x-check [matches above?]", halo.ancestor['pos'][0]
             return com.view(np.ndarray), rad, sub["mass"].sum(), mgas, mgas + mstar, mstar
 
         else:

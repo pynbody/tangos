@@ -1,5 +1,9 @@
+from __future__ import absolute_import
+
 from mpi4py import MPI
 import warnings
+
+import numpy as np
 
 comm = MPI.COMM_WORLD
 
@@ -18,6 +22,16 @@ def receive(source=None, tag=0):
         source = MPI.ANY_SOURCE
     return comm.recv(source=source,tag=tag)
 
+
+def send_numpy_array(data, destination):
+    comm.send((data.shape, data.dtype), dest=destination, tag=1)
+    comm.Send(data, dest=destination, tag=2)
+
+def receive_numpy_array(source):
+    shape,dtype = comm.recv(source=source, tag=1)
+    ar = np.empty(shape,dtype=dtype)
+    comm.Recv(ar,source=source,tag=2)
+    return ar
 
 def rank():
     return comm.Get_rank()

@@ -55,7 +55,7 @@ class PlotController(BaseController):
             imageSize = self.canvas.get_width_height()
             imageRgb = self.canvas.tostring_rgb()
             buffer = StringIO.StringIO()
-            pilImage = PIL.Image.fromstring("RGB",imageSize, imageRgb)
+            pilImage = PIL.Image.frombytes("RGB",imageSize, imageRgb)
             pilImage.save(buffer, "PNG")
 
         p.close()

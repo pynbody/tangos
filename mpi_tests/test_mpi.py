@@ -12,13 +12,18 @@ def test_function():
     for i in pt.distributed(xrange(10)):
         with lock:
             print "Task",i
-            time.sleep(0.5)
+            time.sleep(0.1)
+
+    if pt.backend.rank()==1:
+        print
+        print "OK"
 
 if len(sys.argv)!=2:
     print "Syntax: test_mpi.py [backend name]"
 else:
     pt.use(sys.argv[1])
     pt.launch(test_function, 8)
+
 
 
 

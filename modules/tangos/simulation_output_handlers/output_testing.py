@@ -53,12 +53,17 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
                 return_matches.append(tuple())
         return return_matches
 
-    def load_timestep(self, ts_extension):
+    def load_timestep(self, ts_extension, mode=None):
         return DummyTimestepData("Test string - this would contain the data for "+ts_extension,
                                  float(self._get_ts_property(ts_extension, 'time')),
                                  int(self._get_ts_property(ts_extension, 'halos')))
 
-    def load_halo(self, ts_extension, halo_number, partial=False):
+    def load_region(self, ts_extension, region_specification, mode=None):
+        data = self.load_timestep(ts_extension)
+        data.message = data.message[region_specification]
+        return data
+
+    def load_halo(self, ts_extension, halo_number, mode=None):
         return DummyTimestepData("Test string - this would contain the data for %s halo %d"%(ts_extension ,halo_number),
                                  float(self._get_ts_property(ts_extension, 'time')),
                                  int(self._get_ts_property(ts_extension, 'halos')),

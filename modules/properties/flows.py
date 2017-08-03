@@ -1,4 +1,5 @@
 from . import HaloProperties
+from .spherical_region import SphericalRegionHaloProperties
 import numpy as np
 import math
 import pynbody
@@ -81,9 +82,12 @@ class TestInflowOutflow(HaloProperties):
         return i, vi, o, vo
 
 
-class FlowProfile(HaloProperties):
+class FlowProfile(SphericalRegionHaloProperties):
     _xmax = 100.0
     _threshold_vel = 20.0
+
+    def region_specification(self, db_data):
+        return pynbody.filt.Sphere(db_data['Rvir'], db_data['SSC']) & pynbody.filt.FamilyFilter(pynbody.family.gas)
 
     @classmethod
     def name(cls):

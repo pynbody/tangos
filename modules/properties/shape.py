@@ -1,16 +1,11 @@
 from . import HaloProperties
+from .spherical_region import SphericalRegionHaloProperties
 import numpy as np
 import math
 import pynbody
 
 
-class Ellipsoids(HaloProperties):
-
-    def spherical_region(self):
-        return True
-
-    def requires_property(self):
-        return ["SSC"]
+class Ellipsoids(SphericalRegionHaloProperties):
 
     def preloop(self, f, name, ar):
         f.dm['smooth']

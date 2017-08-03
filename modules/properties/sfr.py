@@ -1,8 +1,9 @@
 import numpy as np
 import pynbody
 from . import HaloProperties, TimeChunkedProperty
+from .spherical_region import SphericalRegionHaloProperties
 
-class StarForm(HaloProperties):
+class StarForm(SphericalRegionHaloProperties):
 
     """Properties relating to star formation"""
 
@@ -53,9 +54,6 @@ class StarForm(HaloProperties):
     def calculate(self, halo, existing_properties):
         return self.calcForHalo(halo),self.calcForHalo(halo, 2.5e8),\
             self.calcForHalo(halo, hard_period=True),
-
-    def spherical_region(self):
-        return True
 
 
 class StarFormHistogram(TimeChunkedProperty):

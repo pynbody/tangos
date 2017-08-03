@@ -240,6 +240,8 @@ class SimsController(BaseController):
 
     creator_cache = {}
     def creator_link_cache(self, creator) :
+        if creator is None:
+            return "(None)"
         if creator.id not in self.creator_cache :
             self.creator_cache[creator.id]=len(self.creator_cache)+1
         cid = str(self.creator_cache[creator.id])

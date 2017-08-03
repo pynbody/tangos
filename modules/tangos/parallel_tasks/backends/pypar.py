@@ -1,5 +1,9 @@
+from __future__ import absolute_import
+
 import pypar, pypar.mpiext
 import warnings
+import numpy as np
+from ..message import Message
 
 def send(data, destination, tag=0):
     pypar.send(data, destination=destination, tag = tag)
@@ -27,6 +31,23 @@ def barrier():
 
 def finalize():
     pypar.finalize()
+
+class NumpyMetadataMessage(Message):
+    pass
+
+class NumpyDataMessage(Message):
+    pass
+
+def send_numpy_array(data, destination):
+    pypar.send((data.shape, data.dtype),destination=destination,tag=NumpyMetadataMessage._tag)
+    pypar.send(data,destination=destination,tag=NumpyDataMessage._tag,use_buffer=True,bypass=True)
+
+def receive_numpy_array(source):
+    shape,dtype = pypar.receive(source=source, tag=NumpyMetadataMessage._tag)
+    ar = np.empty(shape,dtype=dtype)
+    pypar.receive(source=source,buffer=ar,tag=NumpyDataMessage._tag)
+    return ar
+
 
 
 def launch(function, num_procs, args):
