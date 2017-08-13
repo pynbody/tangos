@@ -91,6 +91,10 @@ def _test_remote_file_index():
 def test_remote_file_index():
     pt.launch(_test_remote_file_index, 2)
 
+def _debug_print_arrays(*arrays):
+    for vals in zip(*arrays):
+        print>>sys.stderr, vals
+
 def _test_lazy_evaluation_is_local():
     conn = ps.RemoteSnapshotConnection("test_simulations/test_tipsy/tiny.000640")
     f = conn.get_view(1)
@@ -100,6 +104,7 @@ def _test_lazy_evaluation_is_local():
     pynbody.analysis.halo.center(f, vel=False)
     pynbody.analysis.halo.center(f_local, vel=False)
 
+    _debug_print_arrays(f['x'],f_local['x'],f['r'],f_local['r'])
     npt.assert_almost_equal(f['x'], f_local['x'])
     npt.assert_almost_equal(f['r'], f_local['r'])
 
