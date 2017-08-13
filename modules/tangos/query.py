@@ -17,7 +17,7 @@ def all_creators():
 def get_simulation(id, session=None):
     if session is None:
         session = get_default_session()
-    if isinstance(id, str):
+    if isinstance(id, str) or isinstance(id, unicode):
         assert "/" not in id
         if "%" in id:
             match_clause = Simulation.basename.like(id)
@@ -36,12 +36,15 @@ def get_simulation(id, session=None):
         return session.query(Simulation).filter_by(id=id).first()
 
 
-def get_timestep(id, session=None):
+def get_timestep(id, session=None, sim=None):
     if session is None:
         session = get_default_session()
-    if isinstance(id, str):
-        sim, ts = id.split("/")
-        sim = get_simulation(sim)
+    if isinstance(id, str) or isinstance(id, unicode):
+        if sim is None:
+            sim, ts = id.split("/")
+            sim = get_simulation(sim)
+        else:
+            ts = id
         res = session.query(TimeStep).filter(
             and_(TimeStep.extension.like(ts), TimeStep.simulation_id == sim.id))
         num = res.count()

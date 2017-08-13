@@ -1,0 +1,26 @@
+{% extends "layout.jinja2" %}
+
+{% block content %}
+
+    <h1>Halo {{ halonumber }} of {{ timestep }}</h1>
+
+
+<div class="keeponscreen dynamic-update" id="navigation">
+    <p>At z={{ts_info.z}}, t={{ts_info.t}}, <span class="mono">dbid={{ this_id }}</span>;
+        show this halo in another step (if available):
+        {% for link, name in zip(time_links.urls, time_links.names) %}
+            <a href="{{ link }}">{{ name }}</a>
+        {% endfor %}
+
+
+    <form id="select-othersimulation">
+        In this timestep: jump to halo
+        PREV/NEXT
+        <label for="target_sim_id">Find the same halo in another simulation:</label>
+        <select name="target_sim_id" onchange="findInOtherSimulation();">
+            <option value="yada">Enchilada</option>
+        </select>
+    </form>
+
+</div>
+{% endblock content %}

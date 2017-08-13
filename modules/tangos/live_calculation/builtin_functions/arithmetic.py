@@ -11,6 +11,14 @@ def sqrt(halos, vals):
     return arithmetic_unary_op(vals, np.sqrt)
 
 @BuiltinFunction.register
+def log(halos, vals):
+    return arithmetic_unary_op(vals, np.log)
+
+@BuiltinFunction.register
+def log10(halos, vals):
+    return arithmetic_unary_op(vals, np.log10)
+
+@BuiltinFunction.register
 def subtract(halos, vals1, vals2):
     return arithmetic_binary_op(vals1, vals2, np.subtract)
 
