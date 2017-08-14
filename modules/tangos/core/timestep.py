@@ -2,7 +2,7 @@ import weakref
 import os, os.path
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, Boolean, and_
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, aliased
 
 from . import Base
 from .creator import Creator
@@ -88,20 +88,6 @@ class TimeStep(Base):
         else:
             return [self.time_gyr]
 
-    @property
-    def earliest(self):
-        if self.previous is not None:
-            return self.previous.earliest
-        else:
-            return self
-
-    @property
-    def latest(self):
-        if self.next is not None:
-            return self.next.latest
-        else:
-            return self
-
     def keys(self):
         """Return keys for which ALL halos have a data entry"""
         from . import Session
@@ -129,26 +115,82 @@ class TimeStep(Base):
         results = query.all()
         return property_description.values_sanitized(results)
 
+    @property
+    def earliest(self):
+        return self.get_final(-1)
+
+    @property
+    def latest(self):
+        return self.get_final(+1)
 
     @property
     def next(self):
-        from . import Session
-
         try:
             return self._next
-        except:
-            session = Session.object_session(self)
-            self._next = session.query(TimeStep).filter(and_(
-                TimeStep.time_gyr > self.time_gyr, TimeStep.simulation == self.simulation)).order_by(TimeStep.time_gyr).first()
+        except AttributeError:
+            self._next = self.get_next()
             return self._next
 
     @property
     def previous(self):
-        from . import Session
         try:
             return self._previous
-        except:
-            session = Session.object_session(self)
-            self._previous = session.query(TimeStep).filter(and_(
-                TimeStep.time_gyr < self.time_gyr, TimeStep.simulation == self.simulation)).order_by(TimeStep.time_gyr.desc()).first()
+        except AttributeError:
+            self._previous = self.get_next(-1)
             return self._previous
+
+    def get_next(self, steps=1):
+        """Returns the next timestep, or its successor after the specified number of steps.
+
+        If steps is negative, finds the previous timestep or predecessor by specified number of steps.
+
+        If no such step exists, returns None."""
+
+        if steps==0:
+            return self
+        from . import Session
+        session = Session.object_session(self)
+
+        if steps>0:
+            direction_comparison = TimeStep.time_gyr > self.time_gyr
+            first_order = TimeStep.time_gyr
+        else:
+            direction_comparison = TimeStep.time_gyr < self.time_gyr
+            first_order = TimeStep.time_gyr.desc()
+
+        successors_query = session.query(TimeStep).filter(
+               and_(direction_comparison, TimeStep.simulation == self.simulation)
+            ).order_by(first_order).limit(abs(steps))
+
+        if successors_query.count()<abs(steps):
+            return None
+
+        successors_subquery = aliased(TimeStep, alias=successors_query.subquery())
+
+        if steps>0:
+            second_order = successors_subquery.time_gyr.desc()
+        else:
+            second_order = successors_subquery.time_gyr
+
+        next = session.query(successors_subquery).order_by(second_order).first()
+
+        return next
+
+    def get_final(self, direction=1):
+        """Returns the final timestep of this simulation, either the latest (direction=+1) or first (direction=-1)"""
+
+        assert direction==1 or direction==-1
+
+        from . import Session
+        session = Session.object_session(self)
+
+        q = session.query(TimeStep).filter_by(simulation_id=self.simulation_id)
+
+        if direction==-1:
+            q = q.order_by(TimeStep.time_gyr)
+        else:
+            q = q.order_by(TimeStep.time_gyr.desc())
+
+        return q.first()
+
+
