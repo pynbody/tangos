@@ -6,16 +6,28 @@ def halo_later_earlier(request, rel='later'):
     sim = tangos.get_simulation(request.matchdict['simid'], request.dbsession)
     ts = tangos.get_timestep(request.matchdict['timestepid'], request.dbsession, sim)
     halo = ts.halos.filter_by(halo_number=request.matchdict['halonumber']).first()
-    steps = int(request.matchdict['n'])
+    if request.matchdict['n']=='inf':
+        rel = rel[:-1]+"st" # later->latest, earlier->earliest
+        try:
+            halo = halo.calculate("%s()"%(rel))
+        except tangos.live_calculation.NoResultsError:
+            pass
 
-    if steps==0:
-        return
+    else:
+        steps = int(request.matchdict['n'])
 
-    halo = halo.calculate("%s(%d)"%(rel,steps))
+        if steps==0:
+            return
+
+        try:
+            halo = halo.calculate("%s(%d)"%(rel,steps))
+        except tangos.live_calculation.NoResultsError:
+            pass
 
     raise exc.HTTPFound(request.route_url("halo_view", simid=halo.timestep.simulation.basename,
                                           timestepid=halo.timestep.extension,
                                           halonumber=halo.halo_number))
+
 
 
 @view_config(route_name='halo_later', renderer=None)

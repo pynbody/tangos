@@ -23,4 +23,26 @@
     </form>
 
 </div>
+
+<h2>Properties</h2>
+
+
+<form id="myform" class="dynamic-update" action="${url(controller='plot', action='xy_img', id='txt')}" target="_blank">
+<input type="hidden" name="timestep_id" value="${timestep_id}">
+<input type="hidden" name="halo_id" value="${this_id}" >
+
+<table>
+    <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
+    {%  for prop in properties %}
+        <tr>
+            {%  if prop.is_array %}
+                <td>Plot</td>
+            {% else %}
+                <td><input  name="x" type="radio" value="{{ prop.name }}"/><input name="y" type="radio" value="{{ prop.name }}"/></td>
+            {% endif %}
+            <td>{{ prop.name }}</td><td>{{ prop.value }}</td>
+        </tr>
+    {%  endfor %}
+</table>
+
 {% endblock content %}
