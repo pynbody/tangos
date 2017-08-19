@@ -5,44 +5,86 @@
     <h1>Halo {{ halonumber }} of {{ timestep }}</h1>
 
 
-<div class="keeponscreen dynamic-update" id="navigation">
-    <p>At z={{ts_info.z}}, t={{ts_info.t}}, <span class="mono">dbid={{ this_id }}</span>;
-        show this halo in another step (if available):
-        {% for link, name in zip(time_links.urls, time_links.names) %}
-            <a href="{{ link }}">{{ name }}</a>
-        {% endfor %}
+    <div class="keeponscreen dynamic-update" id="navigation">
+        <p>At z={{ts_info.z}}, t={{ts_info.t}}, <span class="mono">dbid={{ this_id }}</span>;
+            show this halo in another step (if available):
+            {% for link, name in zip(time_links.urls, time_links.names) %}
+                <a href="{{ link }}">{{ name }}</a>
+            {% endfor %}
 
 
-    <form id="select-othersimulation">
-        In this timestep: jump to halo
-        PREV/NEXT
-        <label for="target_sim_id">Find the same halo in another simulation:</label>
-        <select name="target_sim_id" onchange="findInOtherSimulation();">
-            <option value="yada">Enchilada</option>
-        </select>
-    </form>
+        <form id="select-othersimulation">
+            In this timestep: jump to halo
+            PREV/NEXT
+            <label for="target_sim_id">Find the same halo in another simulation:</label>
+            <select name="target_sim_id" onchange="findInOtherSimulation();">
+                <option value="yada">Enchilada</option>
+            </select>
+        </form>
 
-</div>
+    </div>
 
-<h2>Properties</h2>
+    <h2>Properties</h2>
 
 
-<form id="myform" class="dynamic-update" action="${url(controller='plot', action='xy_img', id='txt')}" target="_blank">
-<input type="hidden" name="timestep_id" value="${timestep_id}">
-<input type="hidden" name="halo_id" value="${this_id}" >
+    <!-- <form id="myform" class="dynamic-update" action="${url(controller='plot', action='xy_img', id='txt')}" target="_blank">-->
+    <input type="hidden" name="timestep_id" value="${timestep_id}">
+    <input type="hidden" name="halo_id" value="${this_id}" >
 
-<table>
-    <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
-    {%  for prop in properties %}
-        <tr>
-            {%  if prop.is_array %}
-                <td>Plot</td>
-            {% else %}
-                <td><input  name="x" type="radio" value="{{ prop.name }}"/><input name="y" type="radio" value="{{ prop.name }}"/></td>
-            {% endif %}
-            <td>{{ prop.name }}</td><td>{{ prop.value }}</td>
+    <table>
+        <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
+        {%  for prop in properties %}
+            <tr>
+                {%  if prop.is_array %}
+                    <td>Plot</td>
+                {% else %}
+                    <td><input  name="x" type="radio" value="{{ prop.name }}"/><input name="y" type="radio" value="{{ prop.name }}"/></td>
+                {% endif %}
+                <td>{{ prop.name }}</td><td>{{ prop.value }}</td>
+            </tr>
+        {%  endfor %}
+        <tr id="custom-row-1">
+            <td></td><td id="custom-row-1-namecl">Add +</td><td id="custom-row-1-value"></td>
         </tr>
-    {%  endfor %}
-</table>
+    </table>
+
+
+    <script language="JavaScript">
+
+        $.fn.markAsRowInsertPoint = function() {
+            return $(this).makeEditableTemplate(addBlankRow, removeRow, updateRowData);
+        }
+
+        function updateRowData(miniLanguageQuery, rowId) {
+            $.ajax({
+                type: "GET",
+                url: "{{ calculate_url }}"+uriEncodeQuery(miniLanguageQuery)+".json",
+                success: function (data) {
+                    var selected_row = $('#'+rowId);
+                    if(data.error) {
+                        $('#'+rowId+"-namecl").html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
+                        alert(data.error_class+": "+data.error);
+                    } else {
+                        $('#'+rowId+"-namecl").html(miniLanguageQuery);
+                        $('#'+rowId+"-contents").html(data.data_formatted);
+                    }
+                }
+            });
+        }
+
+        function addBlankRow(after) {
+            var new_name = "custom-row-"+Math.random().toString(36).substring(7);
+
+            $('#data-table tr').after("<tr id='"+new_name+"'><td></td><td id='"+new_name+"-namecl'>Add+</td><td></td>")
+            $('#'+new_name).markAsRowInsertPoint();
+        }
+
+        function removeRow(name) {
+            $("#"+name).remove()
+        }
+
+        $('#custom-row-1-namecl').markAsRowInsertPoint();
+
+    </script>
 
 {% endblock content %}

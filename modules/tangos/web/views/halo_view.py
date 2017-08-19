@@ -82,4 +82,8 @@ def halo_view(request):
             'halonumber': halo.halo_number,
             'timestep': ts.extension,
             'time_links': TimeLinks(request, halo),
-            'properties': default_properties(halo)}
+            'properties': default_properties(halo),
+            'calculate_url': request.route_url('get_property',simid=request.matchdict['simid'],
+                                            timestepid=request.matchdict['timestepid'],
+                                            halonumber=request.matchdict['halonumber'],
+                                            nameid="")[:-5]}

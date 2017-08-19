@@ -35,3 +35,12 @@ def gather_property(request):
 
     return {'timestep': ts.extension, 'data_formatted': format_data(halos),
            'db_id': list(db_id) }
+
+@view_config(route_name='get_property', renderer='json')
+def get_property(request):
+    sim = tangos.get_simulation(request.matchdict['simid'], request.dbsession)
+    ts = tangos.get_timestep(request.matchdict['timestepid'], request.dbsession, sim)
+    halo = ts.halos.filter_by(halo_number=request.matchdict['halonumber']).first()
+
+    result = halo.calculate(decode_property_name(request.matchdict['nameid']))
+    return {'result': result}

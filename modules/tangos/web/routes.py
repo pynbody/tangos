@@ -7,3 +7,5 @@ def includeme(config):
     config.add_route('halo_later', '/{simid}/{timestepid}/{halonumber}/later/{n}')
     config.add_route('halo_earlier', '/{simid}/{timestepid}/{halonumber}/earlier/{n}')
     config.add_route('gather_property', '/{simid}/{timestepid}/gather/{nameid}.json')
+    config.add_route('get_property', '/{simid}/{timestepid}/{halonumber}/{nameid}.json')
+    

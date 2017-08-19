@@ -24,94 +24,50 @@
 
 </table>
 
-    <script language="JavaScript">
+<script language="JavaScript">
 
-    $.fn.makeEditable = function() {
-        $(this).on('click',function(){
-            if($(this).find('input').is(':focus')) return this;
-            var cell = $(this);
-            var content = $(this).html();
-            var column_id = $(this).attr('id').substr(7);
-            $(this).html('<input type="text" value="" />')
-                .find('input')
-                .trigger('focus')
-                .on({
-                    'blur': function(){
-                        $(this).trigger('closeEditable');
-                    },
-                    'keyup':function(e){
-                        if(e.which == '13'){ // enter
-                            $(this).trigger('saveEditable');
-                        } else if(e.which == '27'){ // escape
-                            $(this).trigger('closeEditable');
-                        }
-                    },
-                    'closeEditable':function(){
-                        cell.html(content);
-                    },
-                    'saveEditable':function(){
-                        if(content==="Add +") {
-                            addBlankColumn(column_id);
-                        }
-                        content = $(this).val();
-                        $(this).trigger('closeEditable');
-                        if(content==="") {
-                            removeColumn(column_id);
-                        } else {
-                            cell.append("&nbsp;<img src='{{request.static_url('tangos.web:static/spinner.gif') }}'/>");
-                            $('.' + column_id).text("");
-                            updateColumnData(content, column_id);
-                        }
-                    }
-                });
-        });
-    return this;
-    }
+$.fn.markAsColumnInsertPoint = function() {
+    return $(this).makeEditableTemplate(addBlankColumn, removeColumn, updateColumnData);
+}
 
-    function encodePropertyName(name) {
-        name = name.replace("\/","_slash_")
-        name = encodeURIComponent(name);
-        return name;
-    }
-
-    function updateColumnData(miniLanguageQuery, columnId) {
-        $.ajax({
-            type: "GET",
-            url: "{{ gather_url }}"+encodePropertyName(miniLanguageQuery)+".json",
-            success: function (data) {
-                console.log(data);
-                if(data.error) {
-                     $('#header-'+columnId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
-                    alert(data.error_class+": "+data.error);
-                } else {
-                     $('#header-'+columnId).html(miniLanguageQuery);
-                    $.each(data.data_formatted, function(i, item) {
-                        var dbid = data.db_id[i];
-                        $('#dbid-'+dbid).find('.'+columnId).text(item);
-                    })
-                }
+function updateColumnData(miniLanguageQuery, columnId) {
+    $.ajax({
+        type: "GET",
+        url: "{{ gather_url }}"+uriEncodeQuery(miniLanguageQuery)+".json",
+        success: function (data) {
+            console.log(data);
+            if(data.error) {
+                 $('#header-'+columnId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
+                alert(data.error_class+": "+data.error);
+            } else {
+                 $('#header-'+columnId).html(miniLanguageQuery);
+                $.each(data.data_formatted, function(i, item) {
+                    var dbid = data.db_id[i];
+                    $('#dbid-'+dbid).find('.'+columnId).text(item);
+                })
             }
-        });
-    }
+        }
+    });
+}
 
-    function addBlankColumn(after) {
-        var new_name = "column-"+Math.random().toString(36).substring(7);
-        $('#data-table tr').each(function(index) {
-            $(this).find("#header-"+after).after("<th id='header-"+new_name+"'>Add +</th>");
-            $(this).find("."+after).after("<td class='"+new_name+"'></td>");
-        })
-        $('#header-'+new_name).makeEditable();
-    }
+function addBlankColumn(after) {
+    var new_name = "column-"+Math.random().toString(36).substring(7);
+    $('#data-table tr').each(function(index) {
+        $(this).find("#header-"+after).after("<th id='header-"+new_name+"'>Add +</th>");
+        $(this).find("."+after).after("<td class='"+new_name+"'></td>");
+    })
+    $('#header-'+new_name).markAsColumnInsertPoint();
+}
 
-    function removeColumn(name) {
-         $('#data-table tr').each(function(index) {
-            $(this).find("#header-"+name).remove();
-            $(this).find("."+name).remove();
-        })
-    }
+function removeColumn(name) {
+     $('#data-table tr').each(function(index) {
+        $(this).find("#header-"+name).remove();
+        $(this).find("."+name).remove();
+    })
+}
 
-    $('#header-colid-1').makeEditable();
+$('#header-colid-1').markAsColumnInsertPoint();
 
-    </script>
+</script>
 
 {% endblock content %}
