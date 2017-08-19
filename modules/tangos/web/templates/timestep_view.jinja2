@@ -8,8 +8,8 @@
 <table class="sortable draggable" id="data-table">
     <tr id="header-row">
         <th>Number</th>
-        <th>N_DM</th>
-        <th class="sorttable_nosort" id="header-colid-1" class="colid-1">Add +</th>
+        <th>NDM()</th>
+        <th class="sorttable_nosort editable" id="header-colid-1">Add +</th>
         <th>Go</th>
     </tr>
 
@@ -43,7 +43,7 @@ function updateColumnData(miniLanguageQuery, columnId) {
                  $('#header-'+columnId).html(miniLanguageQuery);
                 $.each(data.data_formatted, function(i, item) {
                     var dbid = data.db_id[i];
-                    $('#dbid-'+dbid).find('.'+columnId).text(item);
+                    $('#dbid-'+dbid).find('.'+columnId).html(item);
                 })
             }
         }
@@ -53,7 +53,7 @@ function updateColumnData(miniLanguageQuery, columnId) {
 function addBlankColumn(after) {
     var new_name = "column-"+Math.random().toString(36).substring(7);
     $('#data-table tr').each(function(index) {
-        $(this).find("#header-"+after).after("<th id='header-"+new_name+"'>Add +</th>");
+        $(this).find("#header-"+after).after("<th id='header-"+new_name+"' class='editable'>Add +</th>");
         $(this).find("."+after).after("<td class='"+new_name+"'></td>");
     })
     $('#header-'+new_name).markAsColumnInsertPoint();

@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, ForeignKey, Float, LargeBinary, Boolean
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, deferred
 
 from .. import data_attribute_mapper
 from .. import Base
@@ -17,7 +17,7 @@ class HaloProperty(Base):
     halo = relationship(Halo, cascade='none', backref=backref('all_properties'))
 
     data_float = Column(Float)
-    data_array = Column(LargeBinary)
+    data_array = deferred(Column(LargeBinary))
     data_int = Column(Integer)
 
     name_id = Column(Integer, ForeignKey('dictionary.id'))

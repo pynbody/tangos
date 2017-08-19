@@ -33,6 +33,9 @@
 
     <table>
         <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
+        <tr id="custom-row-1">
+            <td></td><td id="nametg-custom-row-1" class="editable">Add +</td><td id="contents-custom-row-1"></td>
+        </tr>
         {%  for prop in properties %}
             <tr>
                 {%  if prop.is_array %}
@@ -43,9 +46,6 @@
                 <td>{{ prop.name }}</td><td>{{ prop.value }}</td>
             </tr>
         {%  endfor %}
-        <tr id="custom-row-1">
-            <td></td><td id="custom-row-1-namecl">Add +</td><td id="custom-row-1-value"></td>
-        </tr>
     </table>
 
 
@@ -62,11 +62,11 @@
                 success: function (data) {
                     var selected_row = $('#'+rowId);
                     if(data.error) {
-                        $('#'+rowId+"-namecl").html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
+                        $('#nametg-'+rowId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
                         alert(data.error_class+": "+data.error);
                     } else {
-                        $('#'+rowId+"-namecl").html(miniLanguageQuery);
-                        $('#'+rowId+"-contents").html(data.data_formatted);
+                        $('#nametg-'+rowId).html(miniLanguageQuery);
+                        $('#contents-'+rowId).html(data.data_formatted);
                     }
                 }
             });
@@ -75,15 +75,15 @@
         function addBlankRow(after) {
             var new_name = "custom-row-"+Math.random().toString(36).substring(7);
 
-            $('#data-table tr').after("<tr id='"+new_name+"'><td></td><td id='"+new_name+"-namecl'>Add+</td><td></td>")
-            $('#'+new_name).markAsRowInsertPoint();
+            $('#'+after).after("<tr id='"+new_name+"'><td></td><td class='editable' id='nametg-"+new_name+"'>Add +</td><td id='contents-"+new_name+"'></td>")
+            $('#nametg-'+new_name).markAsRowInsertPoint();
         }
 
         function removeRow(name) {
             $("#"+name).remove()
         }
 
-        $('#custom-row-1-namecl').markAsRowInsertPoint();
+        $('#nametg-custom-row-1').markAsRowInsertPoint();
 
     </script>
 

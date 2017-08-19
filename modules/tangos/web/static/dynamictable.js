@@ -1,11 +1,17 @@
+var allEditables = []
 
 $.fn.makeEditableTemplate = function(add, remove, update) {
+    allEditables.push($(this))
     $(this).on('click',function(){
         if($(this).find('input').is(':focus')) return this;
         var cell = $(this);
-        var content = $(this).html();
+        var content = $(this).text();
+        var prefilled = content;
+        if(content==="Add +")
+            prefilled="";
+
         var column_id = $(this).attr('id').substr(7);
-        $(this).html('<input type="text" value="" />')
+        $(this).html('<input type="text" value="'+prefilled+'" />')
             .find('input')
             .trigger('focus')
             .on({
@@ -41,10 +47,36 @@ $.fn.makeEditableTemplate = function(add, remove, update) {
 return this;
 }
 
+function insertNewEditable(editable_name) {
+    allEditables[0].text(editable_name);
+    allEditables[0].trigger('click');
+}
+
 
 function uriEncodeQuery(name) {
-    name = name.replace("\/","_slash_")
+    name = name.replace(/\//g,"_slash_")
     name = encodeURIComponent(name);
     return name;
 }
 
+function persistEditables() {
+    var editables = []
+    forEach(allEditables, function(editable) {
+        if(editable.text()!="" && editable.text()!=="Add +")
+            editables.push(editable.text());
+    });
+    sessionStorage['editables'] = JSON.stringify(editables);
+}
+
+function restoreEditables() {
+    if(sessionStorage['editables']==undefined)
+        return;
+
+    var editables = JSON.parse(sessionStorage['editables'])
+
+
+    forEach(editables, function(editable) {
+        console.log(editable);
+        insertNewEditable(editable);
+    });
+}

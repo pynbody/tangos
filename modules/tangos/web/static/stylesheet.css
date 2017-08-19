@@ -45,6 +45,10 @@ td {
     color: #222;
 }
 
+td.editable, th.editable {
+    color: #1111bb;
+}
+
 a {
     color: #1111bb;
     text-decoration: none;

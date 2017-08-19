@@ -2,6 +2,7 @@ from pyramid.view import view_config
 import tangos
 from tangos import core
 import numpy as np
+from .halo_data import format_number
 
 class TimestepInfo(object):
     def __init__(self, ts):
@@ -34,13 +35,13 @@ class DisplayProperty(object):
 class TimeProperty(DisplayProperty):
     def __init__(self, halo):
         self.name = "t()"
-        self.value = _number_format(halo.timestep.time_gyr)+" Gyr"
+        self.value = format_number(halo.timestep.time_gyr) + " Gyr"
         self.is_array = False
 
 class RedshiftProperty(DisplayProperty):
     def __init__(self, halo):
         self.name = "z()"
-        self.value = _number_format(halo.timestep.redshift)
+        self.value = format_number(halo.timestep.redshift)
         self.is_array = False
 
 def default_properties(halo):
@@ -52,23 +53,19 @@ def default_properties(halo):
     return properties
 
 def format_property_data(property):
-    data = property.data_raw
     if property.data_is_array():
+        """
+        data = property.data_raw
         if len(data)>5 or len(data.shape)>1:
             return "size "+(" x ".join([str(s) for s in data.shape]))+" array"
         else:
             return "["+(",".join([_number_format(d) for d in data]))+"]"
+        """
+        return "Array"
     else:
-        return _number_format(data)
+        return format_number(property.data)
 
-def _number_format(data):
-    if np.issubdtype(type(data), np.integer):
-        return "%d" % data
-    elif np.issubdtype(type(data), np.float):
-        if abs(data) > 1e5 or abs(data) < 1e-2:
-            return "%.2e" % data
-        else:
-            return "%.2f" % data
+
 
 
 @view_config(route_name='halo_view', renderer='../templates/halo_view.jinja2')
