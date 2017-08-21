@@ -31,6 +31,7 @@ $.fn.markAsColumnInsertPoint = function() {
 }
 
 function updateColumnData(miniLanguageQuery, columnId) {
+    $('#header-'+columnId).html("<img src='/static/spinner.gif'/>"+miniLanguageQuery)
     $.ajax({
         type: "GET",
         url: "{{ gather_url }}"+uriEncodeQuery(miniLanguageQuery)+".json",
@@ -57,6 +58,7 @@ function addBlankColumn(after) {
         $(this).find("."+after).after("<td class='"+new_name+"'></td>");
     })
     $('#header-'+new_name).markAsColumnInsertPoint();
+    return new_name;
 }
 
 function removeColumn(name) {

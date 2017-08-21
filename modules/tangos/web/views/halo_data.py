@@ -65,6 +65,15 @@ def format_halo(halo, request, relative_to=None):
                                  halonumber=halo.halo_number)
         return "<a href='%s'>%s</a>"%(link, _relative_description(relative_to, halo))
 
+def can_use_in_plot(data):
+    return np.issubdtype(type(data), np.number)
+
+def can_use_elements_in_plot(data_array):
+    if len(data_array)==0:
+        return False
+    else:
+        return np.issubdtype(type(data_array[0]), np.number)
+
 @view_config(route_name='gather_property', renderer='json')
 def gather_property(request):
     sim = tangos.get_simulation(request.matchdict['simid'], request.dbsession)
@@ -76,7 +85,7 @@ def gather_property(request):
         return {'error': e.message, 'error_class': type(e).__name__}
 
     return {'timestep': ts.extension, 'data_formatted': [format_data(d, request) for d in data],
-           'db_id': list(db_id) }
+           'db_id': list(db_id), 'can_use_in_plot': can_use_elements_in_plot(data) }
 
 @view_config(route_name='get_property', renderer='json')
 def get_property(request):
@@ -89,4 +98,5 @@ def get_property(request):
     except Exception as e:
         return {'error': e.message, 'error_class': type(e).__name__}
 
-    return {'data_formatted': format_data(result, request, halo)}
+    return {'data_formatted': format_data(result, request, halo),
+            'can_use_in_plot': can_use_in_plot(result)}
