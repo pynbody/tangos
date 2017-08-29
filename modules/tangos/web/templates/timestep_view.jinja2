@@ -9,7 +9,7 @@
     <tr id="header-row">
         <th>Number</th>
         <th>NDM()</th>
-        <th class="sorttable_nosort editable" id="header-colid-1">Add +</th>
+        <th class="sorttable_nosort editable" id="header-colid-1"></th>
         <th>Go</th>
     </tr>
 
@@ -39,7 +39,7 @@ function updateColumnData(miniLanguageQuery, columnId) {
             console.log(data);
             if(data.error) {
                  $('#header-'+columnId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
-                alert(data.error_class+": "+data.error);
+                 // alert(data.error_class+": "+data.error);
             } else {
                  $('#header-'+columnId).html(miniLanguageQuery);
                 $.each(data.data_formatted, function(i, item) {
@@ -54,7 +54,7 @@ function updateColumnData(miniLanguageQuery, columnId) {
 function addBlankColumn(after) {
     var new_name = "column-"+Math.random().toString(36).substring(7);
     $('#data-table tr').each(function(index) {
-        $(this).find("#header-"+after).after("<th id='header-"+new_name+"' class='editable'>Add +</th>");
+        $(this).find("#header-"+after).after("<th id='header-"+new_name+"' class='editable'></th>");
         $(this).find("."+after).after("<td class='"+new_name+"'></td>");
     })
     $('#header-'+new_name).markAsColumnInsertPoint();
@@ -68,7 +68,12 @@ function removeColumn(name) {
     })
 }
 
-$('#header-colid-1').markAsColumnInsertPoint();
+function setupInsertionPoint() {
+    $('#header-colid-1').markAsColumnInsertPoint();
+}
+
+
+setupInsertionPoint();
 
 </script>
 

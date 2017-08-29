@@ -65,8 +65,16 @@ def format_property_data(property):
     else:
         return format_number(property.data)
 
+class SimulationInfo(object):
+    def __init__(self, sim, request):
+        self.name = sim.basename
+        self.url = request.route_url('halo_in',simid=request.matchdict['simid'],
+                                            timestepid=request.matchdict['timestepid'],
+                                            halonumber=request.matchdict['halonumber'],
+                                            n=sim.basename)
 
-
+def all_simulations(request):
+    return [SimulationInfo(x,request) for x in tangos.all_simulations(request.dbsession)]
 
 @view_config(route_name='halo_view', renderer='../templates/halo_view.jinja2')
 def halo_view(request):
@@ -76,11 +84,15 @@ def halo_view(request):
 
     return {'ts_info': TimestepInfo(ts),
             'this_id': halo.id,
-            'halonumber': halo.halo_number,
+            'halo_number': halo.halo_number,
             'timestep': ts.extension,
+            'simulation': sim.basename,
+            'all_simulations': all_simulations(request),
             'time_links': TimeLinks(request, halo),
             'properties': default_properties(halo),
             'calculate_url': request.route_url('get_property',simid=request.matchdict['simid'],
                                             timestepid=request.matchdict['timestepid'],
                                             halonumber=request.matchdict['halonumber'],
-                                            nameid="")[:-5]}
+                                            nameid="")[:-5],
+            'gather_url': "/%s/%s/"%(sim.basename,ts.extension),
+            'cascade_url': "/%s/%s/%d/"%(sim.basename,ts.extension,halo.halo_number)}

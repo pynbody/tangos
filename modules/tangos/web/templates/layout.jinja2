@@ -23,7 +23,10 @@
       <script type="text/javascript" src="{{ request.static_url('tangos.web:static/jquery-3.2.1.min.js') }}"></script>
       <script type="text/javascript" src="{{ request.static_url('tangos.web:static/dragtable.js') }}"></script>
       <script type="text/javascript" src="{{ request.static_url('tangos.web:static/dynamictable.js') }}"></script>
-
+        <script type="text/javascript" src="{{ request.static_url('tangos.web:static/keeponscreen.js') }}"></script>
+      <script type="text/javascript" src="{{ request.static_url('tangos.web:static/pageupdate.js') }}"></script>
+      <!-- NB formvalues.js must be included after dynamictable.js to make sure page elements are restored in correct order -->
+      <script type="text/javascript" src="{{ request.static_url('tangos.web:static/formvalues.js') }}"></script>
   </head>
 
   <body>

@@ -14,13 +14,18 @@ def halo_later_earlier(request, rel='later'):
             pass
 
     else:
-        steps = int(request.matchdict['n'])
+        try:
+            steps = int(request.matchdict['n'])
 
-        if steps==0:
-            return
+            if steps==0:
+                return
+
+            steps = str(steps)
+        except ValueError:
+            steps = "'%s'"%request.matchdict['n']
 
         try:
-            halo = halo.calculate("%s(%d)"%(rel,steps))
+            halo = halo.calculate("%s(%s)"%(rel,steps))
         except tangos.live_calculation.NoResultsError:
             pass
 
@@ -38,3 +43,7 @@ def halo_later(request):
 @view_config(route_name='halo_earlier', renderer=None)
 def halo_earlier(request):
     return halo_later_earlier(request, 'earlier')
+
+@view_config(route_name='halo_in', renderer=None)
+def halo_in(request):
+    return halo_later_earlier(request, 'match')

@@ -7,12 +7,13 @@ from ... import core
 
 @BuiltinFunction.register
 def match(source_halos, target):
+    timestep = consistent_collection.ConsistentCollection(source_halos).timestep
     if target is None:
         results = [None]*len(source_halos)
     else:
         from ... import relation_finding
         if not isinstance(target, core.Base):
-            target = tangos.get_item(target)
+            target = tangos.get_item(target, core.Session.object_session(timestep))
         results = relation_finding.MultiSourceMultiHopStrategy(source_halos, target).all()
     assert len(results) == len(source_halos)
     return np.array(results, dtype=object)
