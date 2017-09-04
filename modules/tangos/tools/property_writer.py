@@ -260,6 +260,13 @@ class PropertyWriter(object):
     def _must_load_timestep_particles(self):
         return self._should_load_halo_particles() and self.options.load_mode is None
 
+    def _unload_timestep(self):
+        if self._current_timestep_id is not None:
+            with check_deleted(self._loaded_timestep):
+                self._loaded_timestep=None
+                self._current_timestep_id = None
+
+
     def _set_current_timestep(self, db_timestep):
         if self._current_timestep_id == db_timestep.id:
             return
@@ -267,9 +274,7 @@ class PropertyWriter(object):
         self._loaded_halo_id=None
         self._loaded_halo=None
 
-        if self._current_timestep_id is not None:
-            with check_deleted(self._loaded_timestep):
-                self._loaded_timestep=None
+        self._unload_timestep()
 
         if self._must_load_timestep_particles():
             self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
@@ -440,6 +445,7 @@ class PropertyWriter(object):
             self.run_halo_calculation(db_halo, existing_properties)
 
         logger.info("Done with %r",db_timestep)
+        self._unload_timestep()
 
         self.tracker.report_to_log(logger)
         sys.stderr.flush()
