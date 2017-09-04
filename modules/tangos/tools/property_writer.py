@@ -261,18 +261,16 @@ class PropertyWriter(object):
         return self._should_load_halo_particles() and self.options.load_mode is None
 
     def _unload_timestep(self):
-        if self._current_timestep_id is not None:
-            with check_deleted(self._loaded_timestep):
-                self._loaded_timestep=None
-                self._current_timestep_id = None
+        self._loaded_halo = None
+        self._current_halo_id = None
+        with check_deleted(self._loaded_timestep):
+            self._loaded_timestep=None
+            self._current_timestep_id = None
 
 
     def _set_current_timestep(self, db_timestep):
         if self._current_timestep_id == db_timestep.id:
             return
-
-        self._loaded_halo_id=None
-        self._loaded_halo=None
 
         self._unload_timestep()
 
