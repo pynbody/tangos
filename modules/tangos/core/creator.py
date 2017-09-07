@@ -58,18 +58,23 @@ def get_creator(session=None):
     """Get a Creator object for this process, for the specified session.
 
     If session is None, return the object for the default session."""
+    from sqlalchemy import inspect
     global _current_creator
 
-    if _current_creator is not None:
-        if session is None:
-            return _current_creator
-        else:
-            return session.query(Creator).filter_by(id=_current_creator.id).first()
-    else:
-        if session is None:
-            session = get_default_session()
-        _current_creator = session.merge(Creator())
+    if session is None:
+        session = get_default_session()
+
+    if _current_creator is None:
+        _current_creator = get_default_session().merge(Creator())
+    if not inspect(_current_creator).persistent:
+        get_default_session().commit()
+    assert inspect(_current_creator).persistent
+    
+    if session is get_default_session():
         return _current_creator
+    else:
+        return session.query(Creator).filter_by(id=_current_creator.id).first()
+
 
 def get_creator_id():
     return get_creator().id
