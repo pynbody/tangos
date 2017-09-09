@@ -9,23 +9,24 @@ Before you start
 ----------------
 **The database is experimental technology. Please offer Andrew and Michael coauthorship on papers where you find it useful, in recognition of the very substantial development effort. The plan is to ultimately make it open source and citable, but until then we'd appreciate your support.**
 
-For the database to function properly, you must first source the `environment.sh` (or environment.csh, if working in a cshell) files, which specify the appropriate paths. Sourcing the environment file also reads the user-made file called `environment_local.sh` (or csh). This file doesn't exist by default, but should be created/edited whenever you wish to analyze a new database file.
+For _tangos_ to function properly, you must first install it. This is accomplished using the standard python setuptools – i.e. type `python setup.py install` from your command prompt. Or if you are developing, you probably instead want `python setup.py develop` which links (instead of copying) the python source files into your distribution. Both variants should check (and if necessary install) the minimum pre-requisites.
 
-The `environment_local.sh` file should only include the following lines
+Once installed, you should check that _tangos_ is functioning correctly by entering the `tests` folder and typing `nosetests`. You should see a bunch of text scrolling by, ultimately finishing with the simple message `OK`. If you get a failure message instead of `OK`, report it (with as much detail of your setup as possible) in the github issue tracker.
+
+By default tangos will look for raw simulation data in your home folder and create its database file there as well. If you don't want it to do this, you can set the environment variables `TANGOS_SIMULATION_FOLDER` (for the simulation folder) and `TANGOS_DB_CONNECTION` (for the database file). For example, in bash:
+
 ```
-export HALODB_ROOT=~/scratch/Romulus/ 
-export HALODB_DEFAULT_DB=~/scratch/Romulus/DatabaseFiles/cosmo25/data_romulus25.db 
+export TANGOS_SIMULATION_FOLDER=~/scratch/Romulus/ 
+export TANGOS_DB_CONNECTION=~/scratch/Romulus/DatabaseFiles/cosmo25/data_romulus25.db 
 ```
-or, if you are working in cshell, the `environment_local.csh` file should have the following lines
+or, in cshell:
 ```
-setenv HALODB_ROOT /nobackupp8/mtremmel/Romulus/
-setenv HALODB_DEFAULT_DB /nobackupp8/mtremmel/DataBaseFiles/romulus8/data_romulus8.db
+setenv TANGOS_SIMULATION_FOLDER /nobackupp8/mtremmel/Romulus/
+setenv TANGOS_DB_CONNECTION /nobackupp8/mtremmel/DataBaseFiles/romulus8/data_romulus8.db
 ```
 The top line in each example points to the parent directory for all of your simulation data directories. If you don't have any simulations (i.e. you are just using a database object already created) then you should not have to worry about this variable. The second line points to the database object you wish to analyze.
 
-Any edits you make to this file will require you to again source the `environment.sh` file.
-
-Remember, you *must* source `environment.sh` *every* time you start a new session on your computer prior to booting up the database, either with the webserver or the python interface (see below)
+Remember, you will need to set these environment variables *every* time you start a new session on your computer prior to booting up the database, either with the webserver or the python interface (see below).
 
 Quick-start: if you already have a .db file and want to run the webserver
 -------------------------------------------------------------------------
@@ -33,19 +34,17 @@ Quick-start: if you already have a .db file and want to run the webserver
 If running on a remote server, you will need to forward the appropriate port using `ssh address.of.remote.server -L5000:localhost:5000`. Then follow these instructions:
 
 1. Clone the repository
-2. Make sure you have an up-to-date version of python, then type `pip install pylons formalchemy` to install the required web frameworks
-    - If possible, use the latest version of sqlalchemy. Type `pip install --upgrade sqlalchemy` to get this.
-    - If you don't have permissions to install things into the python root folder, you might need to set up your own python plugins folder. Probably the easiest way to do this is to add `export PYTHONUSERBASE=$HOME` to your `.bash_profile` (or equivalent), then use `pip install --user pylons formalchemy` and `pip install --user --upgrade sqlalchemy`.
-3. Put your database file in the halo_database folder, named `data.db` - or create/edit a file called `environment_local.sh` to specify a different location and/or filename (see instructions above)
-4. Type `./webserver.sh` to run the web server
-5. Browse to <http://localhost:5000>
+2. Type `python setup.py install`
+3. Put your database file in your home folder, named `data.db` - or point the environment variable `TANGOS_DB_CONNECTION` to an alternate path (see above)
+4. Type `cd web` and then `pserve development.ini`
+5. Browse to <http://localhost:6543>
 
 Making your own database from scratch
 -------------------------------------
 
-1. You need to gather all the simulations that you are going to process in one root folder. This is likely to be some sort of scratch folder on a supercomputer somewhere. The path to this folder needs to be in the environment variable `HALODB_ROOT`. You can either specify this yourself somehow, or edit the `environment.sh`. 
-2. Type `source environment.sh` (or get the environment variables `HALODB_ROOT`, `HALODB_DEFAULT_DB`, `PYTHONPATH` and `PATH` set up appropriately in some other way if you prefer)
-3. Now add your first simulation. Type `tangos_manager add <simulation_path>` where `<simulation_path>` is the path to the folder containing simulation snapshots *relative to `HALODB_ROOT`* (regardless of what your working directory is)
+1. You need to gather all the simulations that you are going to process in one root folder. This is likely to be some sort of scratch folder on a supercomputer somewhere. If it's not your home folder, the path to this folder needs to be in the environment variable `TANGOS_SIMULATION_FOLDER`.
+2. If you don't want the database to be created in your home folder, set the environment variable `TANGOS_DB_CONNECTION` to the path you want created, e.g. `~/databases/my_db.sqlite`
+3. Now add your first simulation. Type `tangos_manager add <simulation_path>` where `<simulation_path>` is the path to the folder containing simulation snapshots *relative to `TANGOS_SIMULATION_FOLDER`* (regardless of what your working directory is)
 
 If everything works OK, you should see some text scroll up the screen (possibly in red) about things being created. Normally this process is reasonably quick, but it can slow down depending on the format of halo files etc. The database is being created with empty slots for every timestep and halo.
 
@@ -53,7 +52,7 @@ To check what's happened type `tangos_manager recent-runs 1`. Here, `recent-runs
 
 ```
 Run ID =  140
-Command line =  /Users/app/Science/halo_database/tools//tangos_manager add h516.cosmo25cmb.3072g1MbwK1C52
+Command line =  tangos_manager add h516.cosmo25cmb.3072g1MbwK1C52
 Host =  Rhododendron.local
 Username =  app
 Time =  03/09/15 18:42
@@ -74,7 +73,7 @@ Mvir and Rvir columns from the `.AHF_halos` file. Then you simply type: `tangos_
 
 ```
 Run ID =  141
-Command line =  /Users/app/Science/halo_database/tools//tangos_import_from_stat Mvir Rvir
+Command line =  tangos_import_from_stat Mvir Rvir
 Host =  Rhododendron.local
 Username =  app
 Time =  03/09/15 18:50
