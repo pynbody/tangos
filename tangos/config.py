@@ -24,6 +24,7 @@ min_halo_particles = 1000
 
 file_ignore_pattern = []
 
+max_traverse_depth = 3
 
 try:
     from .config_local import *
