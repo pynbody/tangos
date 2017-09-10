@@ -101,6 +101,7 @@ span.step_unavailable a {
     right: 0px;
     top: 200px;
     padding: 10px;
+    overflow: scroll;
 }
 
 #imgspace {
