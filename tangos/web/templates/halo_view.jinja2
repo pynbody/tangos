@@ -1,0 +1,321 @@
+{% extends "layout.jinja2" %}
+
+{% block content %}
+    <!-- Following are hidden elements to allow scripts to fetch new information -->
+    <div id="calculate_url" class="dynamic-update hidden">{{ calculate_url }}</div>
+    <div id="gather_url" class="dynamic-update hidden">{{ gather_url }}</div>
+    <div id="cascade_url" class="dynamic-update hidden">{{ cascade_url }}</div>
+    <div id="tree_url" class="dynamic-update hidden">{{ tree_url }}</div>
+
+    <h1 class="dynamic-update" id="halo-title">Halo {{ halo_number }} of {{ timestep }}</h1>
+
+
+    <div class="keeponscreen dynamic-update" id="navigation">
+
+        <form id="select-othersimulation">
+            <span class="mono"><strong>{{ simulation }}/{{ timestep }}/{{ halo_number }}</strong></span>
+            <table>
+                <tr><td>Find in a different timestep</td>
+                    <td>
+                    {% for link, name in zip(time_links.urls, time_links.names) %}
+                        <a href="{{ link }}" class="ajaxenabled">{{ name }}</a>
+                    {% endfor %}
+                  </td>
+                </tr>
+               <tr><td>Look at another halo:</td>
+               <td>
+                    {% if halo_number>1 %}
+                       <a href="{{ gather_url }}{{ halo_number-1 }}" class="ajaxenabled">{{ halo_number-1 }}</a> |
+                    {% endif %} {{ halo_number }} |
+                    <a href="{{ gather_url }}{{ halo_number+1 }}" class="ajaxenabled">{{ halo_number+1 }}</a>
+               </td></tr>
+            <tr><td><label for="target_sim_id">Find in another simulation:</label></td>
+            <td><select name="target_sim_id" id="target_sim_id" onchange="findInOtherSimulation();">
+                        {% for sim in all_simulations %}
+                            {% if sim.name==simulation %}
+                                <option value="{{ sim.url }}" selected="selected">{{ sim.name }}</option>
+                            {% else %}
+                               <option value="{{ sim.url }}" >{{ sim.name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select></td></tr>
+                <tr><td><label for="target_sim_id">Raw links to other halos:</label></td>
+                <td><select name="halo_link" id="halo_link" onchange="followHaloLink();">
+                        {% for sim in halo_links %}
+                               <option value="{{ sim.url }}" >{{ sim.name }}</option>
+                        {% endfor %}
+                    </select></td></tr>
+                <tr><td>Unique ID in database</td>
+                <td><span class="mono">{{ this_id }}</span></td></tr>
+            </table>
+        </form>
+
+    </div>
+
+    <div id="imgbox_container" class="keeponscreen">
+        <div>
+        <form id="image_form" onsubmit="fetchPlot(); return false;" onchange="fetchPlot();" class="autorestore">
+            <input name="type" value="tree" type="radio" id="type-tree"><label for="type-tree">Merger tree</label>;
+            or plot for: <input name="type" value="gather" type="radio" id="type-gather"><label for="type-gather">This timestep</label>
+            <input name="type" value="cascade" type="radio" id="type-cascade" checked><label for="type-cascade">This halo</label><br/>
+            <input name="logx" type="checkbox" id="logx"/><label for="logx">log x</label>
+            <input name="logy" type="checkbox" id="logy"/><label for="logy">log y</label>
+            <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>
+        </form>
+        </div>
+        <div id="imgbox">Images appear here</div>
+    </div>
+
+
+
+    <h2>Properties</h2>
+
+
+    <form id="properties_form" onsubmit="return false;" class="dynamic-update autorestore" onchange="fetchPlot();" >
+
+    <table>
+        <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
+        <tr id="custom-row-1">
+            <td id="plotctl-custom-row-1" class="plotcontrols"></td><td id="nametg-custom-row-1" class="editable"></td><td id="contents-custom-row-1"></td>
+        </tr>
+        {%  for prop in properties %}
+            <tr>
+                {%  if prop.is_array %}
+                    <td class="plotcontrols">
+                        <input name="justthis" type="radio" value="{{ prop.name }}" onclick="resetRadio('x'); resetRadio('y');"/>
+                    </td>
+                {% else %}
+                    <td class="plotcontrols">
+                        <input  name="x" type="radio" value="{{ prop.name }}" onclick="resetRadio('justthis');"/>
+                        <input name="y" type="radio" value="{{ prop.name }}" onclick="resetRadio('justthis');"/>
+                    </td>
+                {% endif %}
+                <td>{{ prop.name }}</td><td>{{ prop.value }}</td>
+            </tr>
+        {%  endfor %}
+    </table>
+
+    </form>
+
+
+    <script language="JavaScript">
+
+        function resetRadio(nameToReset) {
+            var resetDict = {};
+            resetDict[nameToReset]='--------';
+            $("#properties_form").values(resetDict);
+        }
+
+        $.fn.markAsRowInsertPoint = function() {
+            return $(this).makeEditableTemplate(addBlankRow, removeRow, updateRowData);
+        }
+
+        function updateRowData(miniLanguageQuery, rowId) {
+            plotFetchingDisabled=true;
+            $('#nametg-'+rowId).html("<img src='/static/spinner.gif'/>"+miniLanguageQuery)
+
+            // Plot controls need to be in DOM immediately, then rejigged later if they are not appropriate.
+            // This is so that the correct radio buttons get ticked after a page update (otherwise the
+            // update happens while the DOM elements are not yet available). It also allows the state of the
+            // radio buttons to be carried over when a query is updated.
+            updatePlotControlElements('#plotctl-'+rowId,miniLanguageQuery, true);
+
+            $.ajax({
+                type: "GET",
+                url: $('#calculate_url').text()+uriEncodeQuery(miniLanguageQuery)+".json",
+                success: function (data) {
+                    var selected_row = $('#'+rowId);
+                    if(data.error) {
+                        $('#nametg-'+rowId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
+                        // alert(data.error_class+": "+data.error);
+                    } else {
+                        $('#nametg-'+rowId).html(miniLanguageQuery);
+                        $('#contents-'+rowId).html(data.data_formatted);
+
+                        // See above for why the plot controls are put in place then updated
+                        updatePlotControlElements('#plotctl-'+rowId,miniLanguageQuery,
+                            data.can_use_in_plot, data.can_use_as_filter);
+                        plotFetchingDisabled=false;
+                        fetchPlot(true);
+                    }
+                    plotFetchingDisabled=false;
+                }
+            });
+        }
+
+        function addBlankRow(after) {
+            var new_name = "custom-row-"+Math.random().toString(36).substring(7);
+
+            $('#'+after).after("<tr id='"+new_name+"'><td class='plotcontrols' id='plotctl-"+new_name+"'></td><td class='editable' id='nametg-"+new_name+"'></td><td id='contents-"+new_name+"'></td>")
+            $('#nametg-'+new_name).markAsRowInsertPoint();
+            return new_name;
+        }
+
+        function removeRow(name) {
+            $("#"+name).remove()
+        }
+
+
+
+        function findInOtherSimulation() {
+            ajaxNavigate(document.forms['select-othersimulation']['target_sim_id'].value);
+        }
+
+        function followHaloLink() {
+            ajaxNavigate(document.forms['select-othersimulation']['halo_link'].value);
+        }
+
+
+
+
+        var objImg;
+
+        function getFilterUri() {
+            var vals = $('#properties_form').values();
+            var filters = [];
+            for(var k in vals) {
+                if(k.startsWith('filter-')) {
+                    filters.push("("+k.substr(7)+")");
+                }
+            }
+            filters = filters.join(encodeURIComponent("&"));
+            if(filters.length>0)
+                filters = "filter="+filters;
+            return filters;
+        }
+
+        function getPlotUriOneVariable(name) {
+            uri = $('#cascade_url').text()+name+".png";
+            var plotformvals = $('#image_form').values();
+            if(plotformvals['logimage'])
+                uri+='?logimage=1';
+            return uri;
+        }
+
+        function getPlotUriTwoVariables(name1, name2) {
+            var uri;
+            var plotformvals = $('#image_form').values();
+            var plotType = plotformvals['type'];
+            if (plotType === 'gather')
+                uri = $('#gather_url').text() + name1 + "/vs/" + name2 + ".png";
+            else if (plotType === 'cascade')
+                uri = $('#cascade_url').text() +
+                    name1 + "/vs/" + name2 + ".png";
+
+            return uri+"?"+$('#image_form').serialize()+"&"+getFilterUri();
+        }
+
+        var plotFetchingDisabled = false;
+        var existingImgSrc;
+
+        function fetchTree(isUpdate) {
+            if(!isUpdate)
+                $('#imgbox').empty().html("<img src='/static/spinner.gif' />&nbsp;Generating tree...");
+            var url = $('#tree_url').text();
+
+            $.ajax({
+                type: "GET",
+                url: url,
+                success: function (data) {
+                    $('#imgbox').empty();
+                    buildTree("#imgbox", data['tree']);
+                },
+                failure: function() {
+                    placeImgError(url);
+                }
+            });
+
+        }
+
+        function fetchPlot(isUpdate)
+        {
+
+            if (plotFetchingDisabled)
+                return;
+
+            if ($('#image_form').values()['type']==='tree')
+                return fetchTree(isUpdate);
+
+            var formvals = $('#properties_form').values()
+
+            var name1 = formvals['x'];
+            var name2 = formvals['y'];
+            var namethis = formvals['justthis'];
+            var uri;
+            if(namethis!==undefined)
+                uri = getPlotUriOneVariable(namethis);
+            else {
+                if(name1===undefined || name2===undefined)
+                    return;
+
+                uri = getPlotUriTwoVariables(name1, name2);
+
+                if(uri===undefined) {
+                    alert("Unknown plot type");
+                    return false;
+                }
+            }
+
+
+
+            if(existingImgSrc===uri)
+                    return;
+
+            console.log("load",uri,existingImgSrc);
+
+            loadImage(uri);
+            if(isUpdate===undefined || isUpdate===false)
+                $('#imgbox').empty().html("<img src='/static/spinner.gif' />&nbsp;Generating plot...");
+            else
+                $('#imgbox').append("<img src='/static/spinner.gif' />&nbsp;Updating...");
+            return true;
+        }
+
+        function loadImage(url) {
+            objImg = new Image();
+            existingImgSrc = url;
+            objImg.src = url;
+            objImg.onload = placeImage;
+            objImg.onerror = placeImageError;
+        }
+
+        function placeImageError(url) {
+            if(url===undefined)
+                url=objImg.src;
+            errorlink = '<a href="'+url+'" target="_blank">';
+            $('#imgbox').empty().html("<h2>Sorry, there was an error generating your plot.</h2><p>Click "+errorlink+"here</a> for more information (opens in a new window)");
+        }
+
+        function placeImage() {
+            $('#imgbox').empty()
+            $('#imgbox').append(objImg);
+            $('#imgbox').css('width',objImg.width);
+        }
+
+        $('#nametg-custom-row-1').markAsRowInsertPoint();
+        ajaxEnableLinks();
+
+        $(function() {
+            prePageUpdate(function() {
+                persistEditables();
+                persistFormStates();
+            });
+
+            postPageUpdate(function() {
+                allEditables = [];
+                $('#nametg-custom-row-1').markAsRowInsertPoint();
+                restoreEditables();
+                restoreFormStates();
+                fetchPlot(true);
+                ajaxEnableLinks();
+                updatePositionsAfterScroll();
+            });
+
+            fetchPlot();
+        });
+
+
+
+    </script>
+
+{% endblock content %}
