@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 
 import numpy as np
@@ -7,6 +8,8 @@ import tangos.core.halo
 import tangos.core.halo_data
 from tangos import core
 from . import translations
+from six.moves import range
+from six.moves import zip
 
 
 class HaloStatFile(object):
@@ -17,9 +20,9 @@ class HaloStatFile(object):
     def __new__(cls, timestep):
         for subclass in cls.__subclasses__():
             if subclass.can_load(timestep):
-                return object.__new__(subclass, timestep)
+                return object.__new__(subclass)
         else:
-            raise IOError, "No stat file found for this timestep"
+            raise IOError("No stat file found for this timestep")
 
     @classmethod
     def can_load(cls, timestep):
@@ -27,7 +30,7 @@ class HaloStatFile(object):
 
     @classmethod
     def filename(cls, timestep):
-        raise ValueError, "Unknown path to stat file"
+        raise ValueError("Unknown path to stat file")
 
     def __init__(self, timestep):
         self._timestep = timestep
@@ -75,7 +78,7 @@ class HaloStatFile(object):
 
     def read(self, *args):
         """Read the halo ID and requested columns from the entire file, returning each column as a separate array"""
-        return_values = [[] for _ in xrange(len(args)+1)]
+        return_values = [[] for _ in range(len(args)+1)]
         for row in self.iter_rows(*args):
             for return_array, value in zip(return_values, row):
                 return_array.append(value)

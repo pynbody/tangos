@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from sqlalchemy import Column, Integer, ForeignKey, Float, LargeBinary, Boolean
 from sqlalchemy.orm import relationship, backref
 

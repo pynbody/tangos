@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import tangos.parallel_tasks as pt
 import time
 import numpy as np
+from six.moves import zip
 
 
 def test_function():
@@ -24,12 +27,12 @@ def test_function():
             assert all(received==data_to_send)
 
     if rank==2:
-        print
-        print "OK"
+        print()
+        print("OK")
 
 
 if len(sys.argv)!=2:
-    print "Syntax: test_numpy_mpi.py [backend name]"
+    print("Syntax: test_numpy_mpi.py [backend name]")
 else:
     pt.use(sys.argv[1])
     pt.launch(test_function, 8)

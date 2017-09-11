@@ -3,13 +3,13 @@ from __future__ import absolute_import
 import warnings
 
 def send(data, destination, tag=0):
-    raise RuntimeError, "Cannot send data to another CPU: parallelism is disabled"
+    raise RuntimeError("Cannot send data to another CPU: parallelism is disabled")
 
 def receive(source=None, tag=0):
-    raise RuntimeError, "Cannot receive data from another CPU: parallelism is disabled"
+    raise RuntimeError("Cannot receive data from another CPU: parallelism is disabled")
 
 def receive_any(source=None):
-    raise RuntimeError, "Cannot receive data from another CPU: parallelism is disabled"
+    raise RuntimeError("Cannot receive data from another CPU: parallelism is disabled")
 
 def rank():
     return 0

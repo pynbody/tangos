@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import tangos as db
 import tangos.simulation_output_handlers.pynbody as pynbody_outputs
 import tangos.tools.add_simulation as add

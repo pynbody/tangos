@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import tangos as db
 import numpy as np
 import numpy.testing as npt
@@ -9,6 +11,8 @@ import tangos
 import properties
 from tangos import testing
 import os
+import six
+from six.moves import range
 
 def setup():
     testing.init_blank_db_for_testing()
@@ -75,7 +79,7 @@ class TestPathChoice(properties.LiveHaloProperties):
 
     def __init__(self, simulation, criterion="hole_mass"):
         super(TestPathChoice, self).__init__(simulation, criterion)
-        assert isinstance(criterion, basestring), "Criterion must be a named BH property"
+        assert isinstance(criterion, six.string_types), "Criterion must be a named BH property"
         self.criterion = criterion
 
     @classmethod
@@ -90,7 +94,7 @@ class TestPathChoice(properties.LiveHaloProperties):
         bh_links = halo["BH"]
         if isinstance(bh_links,list):
             for lk in bh_links:
-                print lk.keys()
+                print(list(lk.keys()))
             vals = [lk[criterion] if criterion in lk else self.default_val for lk in bh_links]
             return bh_links[np.argmax(vals)]
         else:

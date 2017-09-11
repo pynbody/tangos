@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import tangos as db
 import tangos.relation_finding
 import numpy as np

@@ -1,11 +1,14 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from . import HaloProperties
 from .spherical_region import SphericalRegionHaloProperties
 import numpy as np
 import math
 import pynbody
+from six.moves import range
 try:
     import dyn_profile as dp
-except ImportError:
+except (ImportError, SyntaxError):
     dp = None
 
 
@@ -21,18 +24,18 @@ class AngMom(SphericalRegionHaloProperties):
         f['pos'] -= exist['SSC']
 
         velmean = f.dm[pynbody.filt.Sphere('1 kpc')]['vel'].mean(axis=0)
-        print "velmean=", velmean
+        print("velmean=", velmean)
         f['vel'] -= velmean
 
         vec = pynbody.analysis.angmom.ang_mom_vec(
             f.star[pynbody.filt.Sphere('2 kpc')])
-        print vec
+        print(vec)
         assert np.linalg.norm(vec) > 0
         vec /= np.linalg.norm(vec)
-        print vec
+        print(vec)
         vecdm = pynbody.analysis.angmom.ang_mom_vec(
             f.dm[pynbody.filt.Sphere('2 kpc') & pynbody.filt.HighPass('mass', 0)])
-        print vecdm
+        print(vecdm)
         vecdm /= np.linalg.norm(vecdm)
 
         vecgas = pynbody.analysis.angmom.ang_mom_vec(
@@ -276,7 +279,7 @@ class DynamicalDensityProfile(SphericalRegionHaloProperties):
     def calculate(self, halo, existing_properties):
         import dyn_profile
         import copy
-        print existing_properties["Sub"], existing_properties.NDM
+        print(existing_properties["Sub"], existing_properties.NDM)
         # if len(halo.dm)<10000 or existing_properties["Sub"]!=0 :
         # don't bother me with these small-fry
         #    raise ValueError, "Only interested in big halos"
@@ -409,7 +412,7 @@ class RotCurve(SphericalRegionHaloProperties):
         halo = copy.deepcopy(halo)
         halo['pos'] -= existing_properties['SSC']
 
-        print "Center"
+        print("Center")
         pynbody.analysis.angmom.faceon(halo, top=halo, cen=(0, 0, 0))
 
         HX = halo
@@ -418,16 +421,16 @@ class RotCurve(SphericalRegionHaloProperties):
         if len(halo) > targ_part:
             skip = len(halo) / targ_part + 1
 
-            print "Take every", skip, "th particle"
+            print("Take every", skip, "th particle")
             halo = halo[::skip]
         else:
             skip = 1
 
-        print "Mkprofile"
+        print("Mkprofile")
         pro = pynbody.analysis.profile.Profile(halo, type='log',
                                                nbins=100,
                                                min=0.05, max=maxr)
-        print "V_circ"
+        print("V_circ")
         v = pro['v_circ'].in_units("km s^-1") * math.sqrt(skip)
 
         return np.array(list(v)), np.array([0.05, maxr])

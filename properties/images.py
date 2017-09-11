@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from . import HaloProperties
 import numpy as np
 import math
@@ -134,17 +136,17 @@ class InflowOutflowImg(HaloProperties):
     def pre_offset(self, halo, properties):
         cen = properties["SSC"]
 
-        print "p-min is at ", pynbody.analysis.halo.potential_minimum(halo.dm)
+        print("p-min is at ", pynbody.analysis.halo.potential_minimum(halo.dm))
 
-        print "x-check (check below)", self.f["pos"][0]
-        print "offsetting to", cen
+        print("x-check (check below)", self.f["pos"][0])
+        print("offsetting to", cen)
         self.f["pos"] -= cen
-        print "p-min is now at ", pynbody.analysis.halo.potential_minimum(halo.dm)
-        print "Rvir is ", properties["Rvir"]
+        print("p-min is now at ", pynbody.analysis.halo.potential_minimum(halo.dm))
+        print("Rvir is ", properties["Rvir"])
         vcen = self.f.dm[pynbody.filt.Sphere(1.0)].mean_by_mass("vel")
         if vcen[0] != vcen[0]:
-            raise RuntimeError, "Can't velocity centre"
-        print "vel cen is ", vcen
+            raise RuntimeError("Can't velocity centre")
+        print("vel cen is ", vcen)
         self.f["vel"] -= vcen
         self.vcen = vcen
         self.cen = cen

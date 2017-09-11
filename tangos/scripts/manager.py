@@ -1,5 +1,7 @@
 #!/usr/bin/env python2.7
 
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 
 import numpy as np
@@ -16,6 +18,7 @@ from tangos.core.tracking import TrackData
 from tangos.query import get_simulation, get_halo
 from tangos.simulation_output_handlers import get_named_handler_class
 from tangos.tools.add_simulation import SimulationAdderUpdater
+from six.moves import input
 
 
 def add_simulation_timesteps(options):
@@ -86,7 +89,7 @@ def _db_import_export(target_session, from_session, *sims):
             tk.use_iord = tk_ext.use_iord
 
         for ts_ext in ext_sim.timesteps:
-            print ".",
+            print(".", end=' ')
             sys.stdout.flush()
             ts = TimeStep(sim, ts_ext.extension, False)
             ts.redshift = ts_ext.redshift
@@ -107,16 +110,16 @@ def _db_import_export(target_session, from_session, *sims):
                         p = HaloProperty(h, dic, dat)
                         p = target_session.merge(p)
 
-        print "Translate halolinks",
+        print("Translate halolinks", end=' ')
         for ts_ext in ext_sim.timesteps:
-            print ".",
+            print(".", end=' ')
             sys.stdout.flush()
             _translate_halolinks(
                 target_session, ts_ext.links_from, external_to_internal_halo_id, translated_halolink_ids)
             _translate_halolinks(
                 target_session, ts_ext.links_to, external_to_internal_halo_id, translated_halolink_ids)
 
-        print "Done"
+        print("Done")
         target_session.commit()
 
 
@@ -147,8 +150,8 @@ def flag_duplicates_deprecated(opts):
 
     session = db.core.get_default_session()
 
-    print "unmark all:",session.execute("update haloproperties set deprecated=0").rowcount
-    print "      mark:",session.execute("update haloproperties set deprecated=1 where id in (SELECT min(id) FROM haloproperties GROUP BY halo_id, name_id HAVING COUNT(*)>1 ORDER BY halo_id, name_id)").rowcount
+    print("unmark all:",session.execute("update haloproperties set deprecated=0").rowcount)
+    print("      mark:",session.execute("update haloproperties set deprecated=1 where id in (SELECT min(id) FROM haloproperties GROUP BY halo_id, name_id HAVING COUNT(*)>1 ORDER BY halo_id, name_id)").rowcount)
 
     session.commit()
 
@@ -162,9 +165,9 @@ def remove_duplicates(opts):
                                                  "(SELECT min(id) FROM haloproperties "
                                                  "    GROUP BY name_id, halo_id HAVING COUNT(halo_id)>1);").rowcount
         if count>0 :
-            print "Deleted %d rows"%count
-            print "  checking for further duplicates..."
-    print "Done"
+            print("Deleted %d rows"%count)
+            print("  checking for further duplicates...")
+    print("Done")
     db.core.get_default_session().commit()
 
 
@@ -177,9 +180,9 @@ def rem_simulation_timesteps(options):
         basename=basename).first()
 
     if sim == None:
-        print term.GREEN + "Simulation does not exist", term.NORMAL
+        print(term.GREEN + "Simulation does not exist", term.NORMAL)
     else:
-        print term.RED + "Delete simulation", sim, term.NORMAL
+        print(term.RED + "Delete simulation", sim, term.NORMAL)
         core.get_default_session().delete(sim)
 
 
@@ -192,7 +195,7 @@ def add_tracker(halo, size=None):
     except:
 
         sim = get_simulation(halo)
-        print "Adding tracker for isolated run", sim
+        print("Adding tracker for isolated run", sim)
         halo = None
 
     if halo is not None:
@@ -226,22 +229,22 @@ def add_tracker(halo, size=None):
             size = str(size.in_units("kpc km s^-1")) + "_kks"
 
         if len(X) < 2:
-            print "Alert! Track data is too short"
+            print("Alert! Track data is too short")
             import pdb
             pdb.set_trace()
         # setup the tracker
         tx = TrackData(halo.timestep.simulation)
-        print "Tracker halo ID is", tx.halo_number
-        print "Length of track data is", len(X)
+        print("Tracker halo ID is", tx.halo_number)
+        print("Length of track data is", len(X))
         tx.select(X, use_iord)
         ts_trigger = halo.timestep
     else:
         f = sim.timesteps[0].load()
         tx = TrackData(sim)
         if tx.halo_number != 1:
-            print "Already have a tracker for this simulation -> abort"
+            print("Already have a tracker for this simulation -> abort")
             return
-        print "Tracker halo ID is", tx.halo_number
+        print("Tracker halo ID is", tx.halo_number)
         tx.particles = np.array(
             np.arange(0, len(f.dm) - 1, 1), dtype=int)
         tx.use_iord = False
@@ -254,7 +257,7 @@ def add_tracker(halo, size=None):
             halo_type=1, halo_number=tx.halo_number).first()
         size = str(size).replace(" ", "")
         halo["dm_central_" + size] = targ
-        print "Copying SSC...",
+        print("Copying SSC...", end=' ')
         sys.stdout.flush()
         while halo is not None:
             try:
@@ -263,7 +266,7 @@ def add_tracker(halo, size=None):
                 pass
             halo = halo.next
             targ = targ.next
-        print "done"
+        print("done")
     core.get_default_session().commit()
 
 
@@ -271,7 +274,7 @@ def grep_run(st):
     run = core.get_default_session().query(Creator).filter(
         Creator.command_line.like("%" + st + "%")).all()
     for r in run:
-        print r.id,
+        print(r.id, end=' ')
 
 
 def list_recent_runs(opts):
@@ -284,13 +287,13 @@ def list_recent_runs(opts):
 
 def rem_run(id, confirm=True):
     run = core.get_default_session().query(Creator).filter_by(id=id).first()
-    print "You want to delete everything created by the following run:"
+    print("You want to delete everything created by the following run:")
     run.print_info()
 
     if confirm:
-        print """>>> type "yes" to continue"""
+        print(""">>> type "yes" to continue""")
 
-    if (not confirm) or raw_input(":").lower() == "yes":
+    if (not confirm) or input(":").lower() == "yes":
         #for y in run.halolinks:
         #    core.get_default_session().delete(y)
         run.halolinks.delete()
@@ -299,9 +302,9 @@ def rem_run(id, confirm=True):
         core.get_default_session().commit()
         core.get_default_session().delete(run)
         core.get_default_session().commit()
-        print "OK"
+        print("OK")
     else:
-        print "aborted"
+        print("aborted")
 
 def rollback(options):
     for run_id in options.ids:
@@ -314,7 +317,7 @@ def dump_id(options):
 
     if options.size:
         pynbody.analysis.halo.center(h,vel=False)
-        print "Size=",options.size
+        print("Size=",options.size)
         h = h.ancestor[pynbody.filt.Sphere(str(options.size)+" kpc")]
 
     if options.family!="":
@@ -327,10 +330,10 @@ def list_available_properties(options):
     import properties
     all_properties = sorted(properties.all_properties())
 
-    print "%s | %s" % ("name".rjust(30), "from class")
+    print("%s | %s" % ("name".rjust(30), "from class"))
     for p in all_properties:
         cl = properties.providing_class(p)
-        print "%s | %s"%(p.rjust(30),str(cl))
+        print("%s | %s"%(p.rjust(30),str(cl)))
 
 def main():
 

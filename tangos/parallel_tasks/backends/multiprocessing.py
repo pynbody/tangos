@@ -1,11 +1,14 @@
 from __future__ import absolute_import
 
+from __future__ import print_function
 import multiprocessing
 import threading
 import warnings
 import time
 import os
 import signal
+from six.moves import range
+from six.moves import zip
 
 _slave = False
 _rank = None
@@ -91,7 +94,7 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
     except Exception as e:
         import sys, traceback
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        print>>sys.stderr, "Error on a sub-process:"
+        print("Error on a sub-process:", file=sys.stderr)
         traceback.print_exception(exc_type, exc_value, exc_traceback,
                                   file=sys.stderr)
         _pipe.send(("error", e))
@@ -106,7 +109,7 @@ def launch_functions(functions, args):
 
     num_procs = len(functions)
 
-    child_connections, parent_connections = zip(*[multiprocessing.Pipe() for rank in range(num_procs)])
+    child_connections, parent_connections = list(zip(*[multiprocessing.Pipe() for rank in range(num_procs)]))
     processes = [multiprocessing.Process(target=launch_wrapper, args=(function, rank, num_procs, pipe, args_i))
                  for rank, (pipe, function, args_i) in
                  enumerate(zip(child_connections, functions, args))]

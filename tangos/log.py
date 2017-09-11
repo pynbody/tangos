@@ -1,5 +1,6 @@
+from __future__ import absolute_import
 import logging
-import cStringIO
+from six import StringIO
 import copy
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ logger.addHandler(handler_stderr)
 
 class LogCapturer(object):
     def __init__(self):
-        self.buffer = cStringIO.StringIO()
+        self.buffer = StringIO()
         self.handler_buffer = logging.StreamHandler(self.buffer)
         self.handler_buffer.setLevel(logging.INFO)
         self._suspended_handlers = []

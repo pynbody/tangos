@@ -1,7 +1,11 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from sqlalchemy import and_
 
 from tangos import get_default_session, Creator, Base
 from tangos.core import Simulation, TimeStep, Halo, HaloProperty
+from six.moves import map
+import six
 
 
 def all_simulations(session=None):
@@ -17,7 +21,7 @@ def all_creators():
 def get_simulation(id, session=None):
     if session is None:
         session = get_default_session()
-    if isinstance(id, str) or isinstance(id, unicode):
+    if isinstance(id, str) or isinstance(id, six.text_type):
         assert "/" not in id
         if "%" in id:
             match_clause = Simulation.basename.like(id)
@@ -26,20 +30,20 @@ def get_simulation(id, session=None):
         res = session.query(Simulation).filter(match_clause)
         num = res.count()
         if num == 0:
-            raise RuntimeError, "No simulation matches %r" % id
+            raise RuntimeError("No simulation matches %r" % id)
         elif num > 1:
-            raise RuntimeError, "Multiple (%d) matches for %r" % (num, id)
+            raise RuntimeError("Multiple (%d) matches for %r" % (num, id))
         else:
             return res.first()
 
     else:
-        return session.query(Simulation).filter_by(id=id).first()
+        return session.query(Simulation).filter_by(id=int(id)).first()
 
 
 def get_timestep(id, session=None, sim=None):
     if session is None:
         session = get_default_session()
-    if isinstance(id, str) or isinstance(id, unicode):
+    if isinstance(id, str) or isinstance(id, six.text_type):
         if sim is None:
             sim, ts = id.split("/")
             sim = get_simulation(sim)
@@ -49,14 +53,14 @@ def get_timestep(id, session=None, sim=None):
             and_(TimeStep.extension.like(ts), TimeStep.simulation_id == sim.id))
         num = res.count()
         if num == 0:
-            raise RuntimeError, "No timestep matches for %r" % id
+            raise RuntimeError("No timestep matches for %r" % id)
         elif num > 1:
-            raise RuntimeError, "Multiple (%d) matches for timestep %r of simulation %r" % (
-                num, ts, sim)
+            raise RuntimeError("Multiple (%d) matches for timestep %r of simulation %r" % (
+                num, ts, sim))
         else:
             return res.first()
     else:
-        return session.query(TimeStep).filter_by(id=id).first()
+        return session.query(TimeStep).filter_by(id=int(id)).first()
 
 
 def get_halo(id, session=None):
@@ -72,11 +76,11 @@ def get_halo(id, session=None):
         sim, ts, halo = id.split("/")
         ts = get_timestep(sim + "/" + ts)
         if "." in halo:
-            halo_type, halo_number = map(int, halo.split("."))
+            halo_type, halo_number = list(map(int, halo.split(".")))
         else:
             halo_type, halo_number = 0, int(halo)
         return session.query(Halo).filter_by(timestep_id=ts.id, halo_number=halo_number, halo_type=halo_type).first()
-    return session.query(Halo).filter_by(id=id).first()
+    return session.query(Halo).filter_by(id=int(id)).first()
 
 
 def get_item(path, session=None):
@@ -110,10 +114,10 @@ def getdb(cl) :
                     item = get_item(args[0])
                 if not isinstance(item, cl) :
                     if isinstance(item, Simulation) and cl is Halo:
-                        print "Picking first timestep and first halo"
+                        print("Picking first timestep and first halo")
                         item = item.timesteps[0].halos[0]
                     else :
-                        raise RuntimeError, "Path points to wrong type of db object %r"%item
+                        raise RuntimeError("Path points to wrong type of db object %r"%item)
                 args[0] = item
             return f(*args,**kwargs)
         return wrapped

@@ -1,7 +1,11 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
 import re
 import math
-import cStringIO
+from six import StringIO
+from six.moves import range
+from six.moves import zip
 
 
 class TerminalController:
@@ -119,19 +123,19 @@ class TerminalController:
         # Colors
         set_fg = self._tigetstr('setf')
         if set_fg:
-            for i, color in zip(range(len(self._COLORS)), self._COLORS):
+            for i, color in zip(list(range(len(self._COLORS))), self._COLORS):
                 setattr(self, color, curses.tparm(set_fg, i) or '')
         set_fg_ansi = self._tigetstr('setaf')
         if set_fg_ansi:
-            for i, color in zip(range(len(self._ANSICOLORS)), self._ANSICOLORS):
+            for i, color in zip(list(range(len(self._ANSICOLORS))), self._ANSICOLORS):
                 setattr(self, color, curses.tparm(set_fg_ansi, i) or '')
         set_bg = self._tigetstr('setb')
         if set_bg:
-            for i, color in zip(range(len(self._COLORS)), self._COLORS):
+            for i, color in zip(list(range(len(self._COLORS))), self._COLORS):
                 setattr(self, 'BG_' + color, curses.tparm(set_bg, i) or '')
         set_bg_ansi = self._tigetstr('setab')
         if set_bg_ansi:
-            for i, color in zip(range(len(self._ANSICOLORS)), self._ANSICOLORS):
+            for i, color in zip(list(range(len(self._ANSICOLORS))), self._ANSICOLORS):
                 setattr(
                     self, 'BG_' + color, curses.tparm(set_bg_ansi, i) or '')
 
@@ -140,8 +144,8 @@ class TerminalController:
         # For any modern terminal, we should be able to just ignore
         # these, so strip them out.
         import curses
-        cap = curses.tigetstr(cap_name) or ''
-        return re.sub(r'\$<\d+>[/*]?', '', cap)
+        cap = curses.tigetstr(cap_name) or b''
+        return re.sub(b'\$<\d+>[/*]?', b'', cap)
 
     def render(self, template):
         """
@@ -149,7 +153,7 @@ class TerminalController:
         the corresponding terminal control string (if it's defined) or
         '' (if it's not).
         """
-        return re.sub(r'\$\$|\${\w+}', self._render_sub, template)
+        return re.sub(b'\$\$|\${\w+}', self._render_sub, template)
 
     def _render_sub(self, match):
         s = match.group()
@@ -166,9 +170,9 @@ def heading(s):
         padl = "*" * int(math.floor(pad / 2))
         padr = "*" * int(math.ceil(pad / 2))
 
-        print term.YELLOW + padl + term.WHITE + s + term.YELLOW + padr + term.NORMAL
+        print(term.YELLOW + padl + term.WHITE + s + term.YELLOW + padr + term.NORMAL)
     else:
-        print "*" * 20 + s + ("*" * 20)
+        print("*" * 20 + s + ("*" * 20))
 
 term = TerminalController()
 
@@ -180,7 +184,7 @@ class RedirectStdStreams(object):
 
     def __enter__(self):
         if self.enabled:
-            self.strio = cStringIO.StringIO()
+            self.strio = StringIO()
             self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
             self.old_stdout.flush()
             self.old_stderr.flush()
@@ -190,7 +194,7 @@ class RedirectStdStreams(object):
         if self.enabled:
             self.strio.flush()
             if exc_type is not None:
-                print self.strio.getvalue()
+                print(self.strio.getvalue())
 
             sys.stdout = self.old_stdout
             sys.stderr = self.old_stderr

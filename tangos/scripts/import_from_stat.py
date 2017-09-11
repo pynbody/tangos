@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
 import argparse
 
 import tangos as db
@@ -40,6 +42,6 @@ def main():
             timesteps = timesteps[::-1]
 
         for ts in timesteps:
-            print term.GREEN, "Processing ",ts, term.NORMAL
+            print(term.GREEN, "Processing ",ts, term.NORMAL)
             hsf.HaloStatFile(ts).add_halo_properties(*names)
             db.core.get_default_session().commit()

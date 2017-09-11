@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 import tangos as db
 import tangos.testing
 import tangos
+from six.moves import range
 
 
 def setup():

@@ -5,6 +5,7 @@ At the moment, the views are always pynbody views, but adaptors for other framew
 overriding the functionality.
 """
 
+from __future__ import absolute_import
 import os, os.path
 from .. import config
 import importlib

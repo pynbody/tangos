@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import argparse
 
 import tangos as db
@@ -7,6 +8,7 @@ from tangos import core
 import sqlalchemy, sqlalchemy.orm
 from tangos.log import logger
 import numpy as np
+from six.moves import zip
 
 
 class GenericLinker(object):
@@ -49,7 +51,7 @@ class GenericLinker(object):
                 self.crosslink_ts(s_x, s, 0, self.args.hmax, self.args.dmonly)
 
     def _generate_timestep_pairs(self):
-        raise NotImplementedError, "No implementation found for generating the timestep pairs"
+        raise NotImplementedError("No implementation found for generating the timestep pairs")
 
     def get_halo_entry(self, ts, halo_number):
         h = ts.halos.filter_by(finder_id=halo_number).first()
@@ -183,7 +185,7 @@ class CrossLinker(GenericLinker):
         elif isinstance(obj1, core.Simulation) and isinstance(obj2, core.Simulation):
             return self._generate_timestep_pairs_from_sims(obj1, obj2)
         else:
-            raise ValueError, "No way to link %r to %r"%(obj1, obj2)
+            raise ValueError("No way to link %r to %r"%(obj1, obj2))
 
     def _generate_timestep_pairs_from_sims(self, sim1, sim2):
         assert sim1 != sim2, "Can't link simulation to itself"

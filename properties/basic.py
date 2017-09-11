@@ -1,9 +1,12 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from . import HaloProperties
 import numpy as np
 import math
 import pynbody
 import time
 import copy
+from six.moves import range
 
 class BasicHaloProperties(HaloProperties):
 
@@ -14,7 +17,7 @@ class BasicHaloProperties(HaloProperties):
     def determine_sub(self, current_sc, maxi):
         q = 0
         for i in self.proplist[:maxi]:
-            if i.has_key("SSC") and i["SSC"] != None:
+            if "SSC" in i and i["SSC"] != None:
                 q += 1
                 diff = (
                     (np.subtract(i["SSC"], current_sc) ** 2).sum() ** 0.5) / i["Rvir"]
@@ -41,7 +44,7 @@ class BasicHaloProperties(HaloProperties):
             giX = gi.dm
 
             pmin = copy.copy(giX['pos'][0])
-            print "initial",halo.ancestor['pos'][0]
+            print("initial",halo.ancestor['pos'][0])
             halo.ancestor['pos']-=pmin
             halo.ancestor.wrap()
 
@@ -51,7 +54,7 @@ class BasicHaloProperties(HaloProperties):
             self.mark_timer('ssc-F')
 
             if any(com != com):
-                raise RuntimeError, "Something bizarre has happened with the centering"
+                raise RuntimeError("Something bizarre has happened with the centering")
 
             halo.ancestor["pos"] -= com
 
@@ -79,7 +82,7 @@ class BasicHaloProperties(HaloProperties):
             halo.ancestor.wrap()
 
 
-            print "x-check [matches above?]", halo.ancestor['pos'][0]
+            print("x-check [matches above?]", halo.ancestor['pos'][0])
             return com.view(np.ndarray), rad, sub["mass"].sum(), mgas, mgas + mstar, mstar
 
         else:

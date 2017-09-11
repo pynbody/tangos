@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import tangos
 
 def halo_from_request(request):

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import tangos as db
 import sqlalchemy
 
@@ -20,7 +22,7 @@ def fix_reverse_links(session, name_forwards, name_reverse):
     insert = tangos.core.halo_data.HaloLink.__table__.insert().\
                        from_select(['halo_from_id','halo_to_id','relation_id','weight'],
                                    query)
-    print insert
+    print(insert)
     connection.execute(insert)
     session.commit()
 

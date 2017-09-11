@@ -2,6 +2,7 @@
 
 For more overview information, see live_calculation.md. """
 
+from __future__ import absolute_import
 import warnings
 
 import numpy as np
@@ -15,6 +16,8 @@ from tangos.live_calculation.query_masking import QueryMask
 from tangos.util import consistent_collection
 from .. import core
 from .. import temporary_halolist as thl
+from six.moves import range
+from six.moves import zip
 
 class UnknownValue(object):
     """A dummy object returned by Calculation.proxy_value when the value of the calculation cannot be predicted"""
@@ -165,7 +168,7 @@ class Calculation(object):
 
     def _make_final_array(self, x):
         if len(x)==0:
-            raise NoResultsError, "Calculation %s returned no results"%self
+            raise NoResultsError("Calculation %s returned no results"%self)
         if isinstance(x[0], np.ndarray):
             try:
                 return np.array(list(x), dtype=type(x[0][0]))
@@ -185,7 +188,7 @@ class Calculation(object):
         name_targets = self.retrieves_dict_ids()
         halo_alias = tangos.core.halo.Halo
         augmented_query = halo_query
-        for i in xrange(self.n_join_levels()):
+        for i in range(self.n_join_levels()):
             halo_property_alias = aliased(tangos.core.halo_data.HaloProperty)
             halo_link_alias = aliased(tangos.core.halo_data.HaloLink)
 
@@ -296,9 +299,9 @@ class LiveProperty(Calculation):
     """Represents a calculation that is achieved by executing the live_calculate method of a Properties instance"""
     def __new__(cls, *tokens):
         if BuiltinFunction.has_function(str(tokens[0])):
-            return object.__new__(BuiltinFunction, *tokens)
+            return object.__new__(BuiltinFunction)
         else:
-            return object.__new__(LiveProperty, *tokens)
+            return object.__new__(LiveProperty)
 
 
     def __init__(self, *tokens):
@@ -334,7 +337,7 @@ class LiveProperty(Calculation):
     def values_and_description(self, halos):
         input_values = []
         input_descriptions = []
-        for input in xrange(len(self._inputs)):
+        for input in range(len(self._inputs)):
             iv, id = self._input_value_and_description(input, halos)
             input_values.append(iv)
             input_descriptions.append(id)
@@ -347,7 +350,7 @@ class LiveProperty(Calculation):
         input = self._inputs[input_id]
         val, desc = input.values_and_description(halos)
         if len(val) != 1:
-            raise ValueError, "Functions cannot receive more than one value per input"
+            raise ValueError("Functions cannot receive more than one value per input")
         return val[0], desc
 
     def _evaluate_function(self, halos, input_descriptions, input_values):
@@ -404,8 +407,8 @@ class BuiltinFunction(LiveProperty):
         :param assert_class: If not None, the input must be an instance of the provided class
         """
         for k in kwargs.keys():
-            if k not in cls.__default_args.keys():
-                raise ValueError, "Unknown input option %s"%k
+            if k not in list(cls.__default_args.keys()):
+                raise ValueError("Unknown input option %s"%k)
         cls.__registered_functions[func.__name__][argument_id] = kwargs
 
     @classmethod
@@ -415,17 +418,17 @@ class BuiltinFunction(LiveProperty):
 
     @classmethod
     def has_function(cls, func_name):
-        return func_name in cls.__registered_functions.keys()
+        return func_name in list(cls.__registered_functions.keys())
 
     def __init__(self, *tokens):
         super(BuiltinFunction, self).__init__(*tokens)
         self._func = self.__registered_functions[self._name]['function']
         self._info = self.__registered_functions[self._name]
-        for i in xrange(len(self._inputs)):
+        for i in range(len(self._inputs)):
             assert_class = self._get_input_option(i, 'assert_class')
             if assert_class is not None and not isinstance(self._inputs[i], assert_class):
-                raise ValueError, "Input %d to function %s must be of type %s (received %s)"%\
-                                  (i,self._name,assert_class,type(self._inputs[i]))
+                raise ValueError("Input %d to function %s must be of type %s (received %s)"%\
+                                  (i,self._name,assert_class,type(self._inputs[i])))
         if 'initialisation' in self._info:
             self._info['initialisation'](*self._inputs)
 
@@ -486,7 +489,7 @@ class Link(Calculation):
 
     def values_and_description(self, halos):
         if self.locator.n_columns()!=1:
-            raise ValueError, "Cannot use property %r, which returns more than one column, as a halo locator"%(str(self.locator))
+            raise ValueError("Cannot use property %r, which returns more than one column, as a halo locator"%(str(self.locator)))
 
         target_halos = self._get_target_halos(halos)
         results = np.empty((self.n_columns(),len(halos)),dtype=object)
@@ -496,7 +499,7 @@ class Link(Calculation):
         target_halo_masked = mask.mask(target_halos)
 
 
-        for i in xrange(len(target_halo_masked)):
+        for i in range(len(target_halo_masked)):
             if isinstance(target_halo_masked[i], list):
                 warnings.warn("More than one relation for target %r has been found. Picking the first."%str(self.locator))
                 target_halo_masked[i] = target_halo_masked[i][0].id

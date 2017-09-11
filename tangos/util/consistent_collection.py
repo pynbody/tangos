@@ -22,7 +22,7 @@ class ConsistentCollection(object):
 
     def _ensure_consistent(self, values, item_name):
         if any([v!=values[0] for v in values]):
-            raise ValueError, "Item %r is not consistent between members of the collection"%item_name
+            raise ValueError("Item %r is not consistent between members of the collection"%item_name)
         return values[0]
 
 def consistent_simulation_from_halos(halos):

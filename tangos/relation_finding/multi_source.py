@@ -1,8 +1,11 @@
+from __future__ import absolute_import
 from .. import core
 from ..util import consistent_collection
 
 from .multi_hop import MultiHopStrategy
 from .one_hop import HopStrategy
+from six.moves import range
+from six.moves import zip
 
 class MultiSourceMultiHopStrategy(MultiHopStrategy):
     """A variant of MultiHopStrategy that finds halos corresponding to multiple start points.
@@ -68,7 +71,7 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         source_ids = [x.source_id for x in self._all]
         num_sources = len(self._all_halo_from)
         matches = dict([(source, destination.halo_to) for source,destination in zip(source_ids, all)])
-        return [matches.get(i,None) for i in xrange(num_sources)]
+        return [matches.get(i,None) for i in range(num_sources)]
 
     def temp_table(self):
         # because of the custom manipulation performed above, the MultiHopStrategy implementation of

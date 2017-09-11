@@ -15,6 +15,7 @@ not possible. So the HaloPropertyValueWithReassemblyOptionsGetter has no "defaul
 instantiated when required.
 """
 
+from __future__ import absolute_import
 import sqlalchemy
 
 

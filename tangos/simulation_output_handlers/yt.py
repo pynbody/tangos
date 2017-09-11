@@ -31,15 +31,15 @@ class YtOutputSetHandler(SimulationOutputSetHandler):
         return f
 
     def load_halo(self, ts_extension, halo_number, mode=None):
-        raise NotImplementedError, "Halos not yet implemented for yt"
+        raise NotImplementedError("Halos not yet implemented for yt")
 
 
     def load_tracked_region(self, ts_extension, track_data, mode=None):
-        raise NotImplementedError, "Tracked regions not implemented for yt"
+        raise NotImplementedError("Tracked regions not implemented for yt")
 
 
     def match_halos(self, f1, f2, halo_min, halo_max, dm_only=False, threshold=0.005):
-        raise NotImplementedError, "Matching halos still needs to be implemented for yt"
+        raise NotImplementedError("Matching halos still needs to be implemented for yt")
 
     def enumerate_halos(self, ts_extension):
         # TODO: clean this up - it's a direct copy of something in the pynbody simulation output handler
@@ -55,7 +55,7 @@ class YtOutputSetHandler(SimulationOutputSetHandler):
             for X in statfile.iter_rows("n_dm", "n_star", "n_gas"):
                 yield X
         except IOError:
-            raise NotImplementedError, "Direct enumeration of halos still needs to be implemented for yt"
+            raise NotImplementedError("Direct enumeration of halos still needs to be implemented for yt")
 
     def get_properties(self):
         return {}

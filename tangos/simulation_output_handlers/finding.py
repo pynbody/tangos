@@ -1,8 +1,11 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import glob
 import math
 import fnmatch
 
 from ..config  import *
+from six.moves import range
 
 
 def find(extension=None, mtd=None, ignore=None, basename=""):
@@ -13,15 +16,14 @@ def find(extension=None, mtd=None, ignore=None, basename=""):
     out = []
 
     if extension is not None:
-        for d in xrange(mtd + 1):
+        for d in range(mtd + 1):
             out += glob.glob(basename + ("*/" * d) + "*." + extension)
 
         out = [f[:-(len(extension) + 1)] for f in out]
 
-        out = filter(
-            lambda f: not any([fnmatch.fnmatch(f, ipat) for ipat in ignore]), out)
+        out = [f for f in out if not any([fnmatch.fnmatch(f, ipat) for ipat in ignore])]
     else:
-        for d in xrange(mtd + 1):
+        for d in range(mtd + 1):
             out += glob.glob(basename + ("*/" * d) + "*.00???")
             out += glob.glob(basename + ("*/" * d) + "*.00????")
 
@@ -44,21 +46,20 @@ def get_param_file(output_file):
         candidates = glob.glob(path + "../*.param")
 
     if len(candidates) == 0:
-        raise RuntimeError, "No .param file in " + path + \
-            " (or parent) -- please supply or create tipsy.info manually"
+        raise RuntimeError("No .param file in " + path + \
+            " (or parent) -- please supply or create tipsy.info manually")
 
-    candidates = filter(lambda x: "direct" not in x and "mpeg_encode" not in x,
-                        candidates)
+    candidates = [x for x in candidates if "direct" not in x and "mpeg_encode" not in x]
 
     if len(candidates) > 1:
-        raise RuntimeError, "Can't resolve ambiguity -- too many param files matching " + \
-            path
+        raise RuntimeError("Can't resolve ambiguity -- too many param files matching " + \
+            path)
 
     return candidates[0]
 
 
 def param_file_to_dict(param_file):
-    f = file(param_file)
+    f = open(param_file)
     out = {}
 
     for line in f:
@@ -80,7 +81,7 @@ def param_file_to_dict(param_file):
 
 
 def info_from_params(param_file, tipsy_info_file, return_hubble=False):
-    f = file(param_file)
+    f = open(param_file)
 
     munit = dunit = hub = None
     for line in f:
@@ -97,7 +98,7 @@ def info_from_params(param_file, tipsy_info_file, return_hubble=False):
             elif s[0] == "dLambda":
                 om_lam0 = s[2]
 
-        except IndexError, ValueError:
+        except IndexError as ValueError:
             pass
 
     if munit == None or dunit == None or hub == None:
@@ -113,15 +114,15 @@ def info_from_params(param_file, tipsy_info_file, return_hubble=False):
         return hub
 
     if tipsy_info_file is not None:
-        tu = file(tipsy_info_file, "w")
-        print >>tu, om_m0
-        print >>tu, om_lam0
-        print >>tu, 1.e-3 * dunit * hub
+        tu = open(tipsy_info_file, "w")
+        print(om_m0, file=tu)
+        print(om_lam0, file=tu)
+        print(1.e-3 * dunit * hub, file=tu)
 
-        print >>tu, velunit
-        print >>tu, munit * hub
-        print >>tu, " "
-        print >>tu, "# Auto-created from " + param_file + " by " + identifier
+        print(velunit, file=tu)
+        print(munit * hub, file=tu)
+        print(" ", file=tu)
+        print("# Auto-created from " + param_file + " by " + identifier, file=tu)
     else:
         return [1.e-3 * dunit * hub, munit * hub, velunit, 0.025, om_m0, om_lam0]
 
@@ -159,6 +160,6 @@ def ahf_getjunk(t):
 def failmsg(m):
     """Pretty-print a failure message"""
     msg = "* FAIL " + m + " *"
-    print "*" * len(msg)
-    print msg
-    print "*" * len(msg)
+    print("*" * len(msg))
+    print(msg)
+    print("*" * len(msg))

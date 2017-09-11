@@ -1,5 +1,7 @@
 #!/usr/bin/env python2.7
 
+from __future__ import absolute_import
+from __future__ import print_function
 import tangos as db
 import tangos.core.dictionary
 import tangos.core.halo
@@ -13,15 +15,17 @@ from tangos.log import logger
 import numpy as np
 import glob
 import sys
+import six
+from six.moves import zip
 
 
 def resolve_multiple_mergers(bh_map):
-    for k,v in bh_map.iteritems():
+    for k,v in six.iteritems(bh_map):
         if v[0] in bh_map:
             old_target = v[0]
             old_weight = v[1]
             bh_map[k] = bh_map[old_target][0],v[1]*bh_map[old_target][1]
-            print "Reassignment:",k,old_target,bh_map[k]
+            print("Reassignment:",k,old_target,bh_map[k])
             resolve_multiple_mergers(bh_map)
             return
 
@@ -75,7 +79,7 @@ def generate_halolinks(session, fname, pairs):
         resolve_multiple_mergers(bh_map)
         logger.info("Gathering BH Merger links for steps %r and %r", ts1, ts2)
         with session.no_autoflush:
-            for src,(dest,ratio) in bh_map.iteritems():
+            for src,(dest,ratio) in six.iteritems(bh_map):
                 ob = np.where(nums1 == src)[0]
                 oa = np.where(nums2 == dest)[0]
                 if len(oa) == 0 or len(ob) == 0:
@@ -100,14 +104,14 @@ def run():
     session = db.core.get_default_session()
     query = db.sim_query_from_args(sys.argv, session)
     for sim in query.all():
-        pairs = parallel_tasks.distributed(zip(sim.timesteps[:-1],sim.timesteps[1:]))
+        pairs = parallel_tasks.distributed(list(zip(sim.timesteps[:-1],sim.timesteps[1:])))
         fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
         if len(fname)==0:
-            print "No merger file for "+sim.basename
+            print("No merger file for "+sim.basename)
             return
         elif len(fname)>1:
-            print "Can't work out which is the merger file for "+sim.basename
-            print "Found: ",fname
+            print("Can't work out which is the merger file for "+sim.basename)
+            print("Found: ",fname)
             return
         with session.no_autoflush:
             generate_halolinks(session, fname, pairs)

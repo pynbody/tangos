@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 from pyramid.view import view_config
 import tangos
 from tangos import core
 import numpy as np
 from .halo_data import format_number, _relative_description
 import sqlalchemy
+from six.moves import zip
 
 
 class TimestepInfo(object):

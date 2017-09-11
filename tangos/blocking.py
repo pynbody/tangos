@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import sqlalchemy, sqlalchemy.engine, sqlalchemy.event
 from . import parallel_tasks as pt
 from . import core

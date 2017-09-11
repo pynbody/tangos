@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 import contextlib
 import time
 import inspect
 import numpy as np
-from terminalcontroller import term
+from .terminalcontroller import term
+import six
 
 class TimingMonitor(object):
     """This class keeps track of how long a Property is taking to evaluate, and (if the Property is implemented
@@ -69,10 +71,10 @@ class TimingMonitor(object):
     def summarise_timing(self, logger):
         logger.info("CUMULATIVE RUNNING TIMES (just this node)")
         v_tot = 1e-10
-        for k, v in self.timings_by_class.iteritems():
+        for k, v in six.iteritems(self.timings_by_class):
             v_tot += sum(v)
 
-        for k, v in self.timings_by_class.iteritems():
+        for k, v in six.iteritems(self.timings_by_class):
             name = str(k)[:-2]
             name = name.split(".")[-1]
             name = "%20s " % (name[-20:])

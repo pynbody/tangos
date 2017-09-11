@@ -1,7 +1,9 @@
+from __future__ import absolute_import
 from tangos import parallel_tasks as pt
 from tangos import testing
 import tangos
 import sys
+from six.moves import range
 
 def setup():
     pt.use("multiprocessing")
@@ -15,7 +17,7 @@ def setup():
 
 
 def _add_property():
-    for i in pt.distributed(range(1,10)):
+    for i in pt.distributed(list(range(1,10))):
         tangos.get_halo(i)['my_test_property']=i
         tangos.core.get_default_session().commit()
 
@@ -27,11 +29,11 @@ def test_add_property():
 
 
 def _add_two_properties_different_ranges():
-    for i in pt.distributed(range(1,10)):
+    for i in pt.distributed(list(range(1,10))):
         tangos.get_halo(i)['my_test_property_2']=i
         tangos.core.get_default_session().commit()
 
-    for i in pt.distributed(range(1,8)):
+    for i in pt.distributed(list(range(1,8))):
         tangos.get_halo(i)['my_test_property_3'] = i
         tangos.core.get_default_session().commit()
 
@@ -52,7 +54,7 @@ def _test_not_run_twice():
     # For this test we want a staggered start
     time.sleep(pt.backend.rank()*0.05)
 
-    for i in pt.distributed(range(3)):
+    for i in pt.distributed(list(range(3))):
         with pt.RLock("lock"):
             tangos.get_halo(1)['test_count']+=1
             tangos.get_default_session().commit()
@@ -88,5 +90,5 @@ def test_synchronize_db_creator():
     pt.launch(_test_synchronize_db_creator,3)
     assert tangos.get_halo(1)['db_creator_test_property']==1.0
     assert tangos.get_halo(2)['db_creator_test_property'] == 1.0
-    creator_1, creator_2 = [tangos.get_halo(i).get_objects('db_creator_test_property')[0].creator for i in 1,2]
+    creator_1, creator_2 = [tangos.get_halo(i).get_objects('db_creator_test_property')[0].creator for i in (1,2)]
     assert creator_1==creator_2

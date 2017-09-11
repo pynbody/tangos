@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from . import HaloProperties
 from .spherical_region import SphericalRegionHaloProperties
 import numpy as np
@@ -26,7 +28,7 @@ class Ellipsoids(SphericalRegionHaloProperties):
         ready = False
 
         while not ready:
-            print "threshold=", phi_threshold
+            print("threshold=", phi_threshold)
             if im_name == "phi":
                 im_thresh = im < phi_threshold
             else:
@@ -41,7 +43,7 @@ class Ellipsoids(SphericalRegionHaloProperties):
         import scipy.ndimage.measurements
         im_lab, n = scipy.ndimage.measurements.label(im_thresh)
         r = im_lab[75, 75, 75]
-        print "Want region", r, "of", n
+        print("Want region", r, "of", n)
         im_thresh = im_lab == r
         qmom = aniso_oscillator.quadrumom(im_thresh)
         vals, vecs = np.linalg.eig(qmom)

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from pyramid.view import view_config
 from pyramid.compat import escape
 from sqlalchemy import func, and_, or_
@@ -197,7 +199,7 @@ def image_plot(request, val, property_info):
     else:
         data =val
 
-    print data.min(),data.max(),width
+    print(data.min(),data.max(),width)
     if width is not None :
         p.imshow(data,extent=(-width/2,width/2,-width/2,width/2))
     else :

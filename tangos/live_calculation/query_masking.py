@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as np
 
 
@@ -19,7 +20,7 @@ class QueryMask(object):
         elif len(to_mask.shape)==1:
             mask = np.not_equal(to_mask, None)
         else:
-            raise ValueError, "Not able to use an input of this shape to determine a query mask"
+            raise ValueError("Not able to use an input of this shape to determine a query mask")
 
         assert mask.shape==(self.N,)
         self.results_target = np.where(mask)
@@ -43,4 +44,4 @@ class QueryMask(object):
 
     def _check_ready(self):
         if self.N is None:
-            raise RuntimeError, "The query mask has not yet been configured"
+            raise RuntimeError("The query mask has not yet been configured")

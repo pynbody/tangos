@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 import contextlib
+import six
 
 class MessageMetaClass(type):
     _message_classes = {}
@@ -17,7 +19,7 @@ class MessageMetaClass(type):
     @staticmethod
     def hash_to_class(hash):
         if hash not in MessageMetaClass._message_classes:
-            raise RuntimeError, "Unknown message receieved"
+            raise RuntimeError("Unknown message receieved")
 
         return MessageMetaClass._message_classes[hash]
 
@@ -28,13 +30,12 @@ class MessageMetaClass(type):
     @staticmethod
     def register_class(cls):
         if MessageMetaClass.class_is_known(cls):
-            raise AttributeError, "Attempting to register duplicate message class"
+            raise AttributeError("Attempting to register duplicate message class")
         MessageMetaClass._message_classes[MessageMetaClass.class_to_hash(cls)] = cls
         cls._tag = MessageMetaClass.class_to_hash(cls)
 
 
-class Message(object):
-    __metaclass__ = MessageMetaClass
+class Message(six.with_metaclass(MessageMetaClass, object)):
     _handler = None
 
     def __init__(self, contents=None):
@@ -75,11 +76,11 @@ class Message(object):
             if hasattr(obj, "_is_exception"):
                 raise obj.contents
             else:
-                raise RuntimeError, "Unexpected message of type %r received"%type(obj)
+                raise RuntimeError("Unexpected message of type %r received"%type(obj))
         return obj
 
     def process(self):
-        raise NotImplementedError, "No process implemented for this message"
+        raise NotImplementedError("No process implemented for this message")
 
 
 class ExceptionMessage(Message):

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
@@ -78,7 +79,7 @@ class HopStrategy(object):
         except sqlalchemy.exc.ResourceClosedError:
             results = []
 
-        results = filter(lambda x: x is not None, results)
+        results = [x for x in results if x is not None]
 
         self._all = results
 
@@ -131,7 +132,7 @@ class HopStrategy(object):
         elif name == 'halo_number_desc':
             return halo_alias.halo_number.desc()
         else:
-            raise ValueError, "Unknown ordering method %r" % name
+            raise ValueError("Unknown ordering method %r" % name)
 
     def _ordering_requires_join(self):
         return 'time_asc' in self._order_by_names \

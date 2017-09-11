@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import tangos.core.halo
 from . import HaloProperties, LiveHaloProperties, TimeChunkedProperty
 import numpy as np
@@ -6,6 +8,8 @@ import pynbody
 import re
 import scipy, scipy.interpolate
 import weakref
+import six
+from six.moves import range
 
 class BHShortenedLog(object):
     _cache = {}
@@ -41,7 +45,7 @@ class BHShortenedLog(object):
         #bhid, time, step, mass, x, y, z, vx, vy, vz, pot, mdot, deltaM, E, dtEff, scalefac = wrapped_ars
         bhid, time, step, mass, x, y, z, vx, vy, vz, mdot, mdotmean, mdotsig, scalefac, dM = wrapped_ars
         bhid = np.array(bhid,dtype=int)
-        print len(time),"entries"
+        print(len(time),"entries")
 
         bhid[(bhid < 0)] = 2 * 2147483648 + bhid[(bhid < 0)]
 
@@ -94,7 +98,7 @@ class BHShortenedLog(object):
 
     def get_at_stepnum(self, stepnum):
         mask = self.vars['step']==stepnum
-        return dict((k,v[mask]) for k,v in self.vars.iteritems())
+        return dict((k,v[mask]) for k,v in six.iteritems(self.vars))
 
     def get_for_named_snapshot(self, filename):
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$",filename).groups()
@@ -121,7 +125,7 @@ class BH(HaloProperties):
     def preloop(self, f, filename, pa):
         self.log = BHShortenedLog.get_existing_or_new(filename)
         self.filename = filename
-        print self.log
+        print(self.log)
 
     def calculate(self, halo, properties):
         if not isinstance(properties, tangos.core.halo.Halo):
@@ -158,7 +162,7 @@ class BH(HaloProperties):
 
         entry = np.where(mask)[0]
 
-        print "target entry is",entry
+        print("target entry is",entry)
         final = {}
         for t in 'x','y','z','vx','vy','vz','mdot', 'mass', 'mdotmean','mdotsig':
             final[t] = float(vars[t][entry])
@@ -238,7 +242,7 @@ class BHAccHistogramMerged(HaloProperties):
     @classmethod
     def accumulate_on_mergers(cls,array, bh):
         while bh is not None:
-            if "BH_merger" in bh.keys():
+            if "BH_merger" in list(bh.keys()):
                 for targ_bh in bh.get_data("BH_merger",always_return_array=True):
                     if targ_bh.timestep.time_gyr < bh.timestep.time_gyr:
                         try:
@@ -275,7 +279,7 @@ class BHGal(LiveHaloProperties):
         if halo.halo_type != 0:
             return None
 
-        if self._bhtype not in halo.keys():
+        if self._bhtype not in list(halo.keys()):
             return None
 
         if type(halo[self._bhtype]) is list:

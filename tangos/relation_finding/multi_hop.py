@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import contextlib
 import random
 import string
@@ -16,6 +17,7 @@ from .. import temporary_halolist
 from .one_hop import HopStrategy
 
 from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
+from six.moves import range
 
 
 class MultiHopStrategy(HopStrategy):
@@ -150,7 +152,7 @@ class MultiHopStrategy(HopStrategy):
                 recursion_filter &= ~timestep_new.id.in_(existing_timestep_ids)
                 recursion_filter &= sqlalchemy.func.abs(timestep_new.time_gyr - timestep_old.time_gyr) < 1e-4
             else:
-                raise ValueError, "Unknown direction %r" % directed
+                raise ValueError("Unknown direction %r" % directed)
 
         return recursion_filter
 
@@ -207,7 +209,7 @@ class MultiHopStrategy(HopStrategy):
         self._connection.execute(insert_statement)
 
     def _make_hops(self):
-        for i in xrange(0, self.nhops_max):
+        for i in range(0, self.nhops_max):
             generated_count = self._generate_next_level_prelim_links(i)
             if generated_count != 0:
                 filtered_count = self._filter_prelim_links_into_final()

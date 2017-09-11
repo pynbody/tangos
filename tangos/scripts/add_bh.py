@@ -1,5 +1,7 @@
 #!/usr/bin/env python2.7
 
+from __future__ import absolute_import
+from __future__ import print_function
 import tangos as db
 import tangos.core.dictionary
 import tangos.core.halo
@@ -15,6 +17,7 @@ import numpy as np
 import gc
 import glob
 import pynbody
+from six.moves import zip
 
 
 def collect_bh_halos(bh_iord,f, existing_obj_num):
@@ -76,17 +79,17 @@ def run():
         files = []
 
     for f in files:
-        print f
+        print(f)
         sim = f.simulation
         
         try:
             f_pb = f.load()
         except:
-            print "File not found - continuing"
+            print("File not found - continuing")
             continue
         f_pb.physical_units()
         if len(f_pb.star)<1:
-            print "No stars - continuing"
+            print("No stars - continuing")
             continue
 
         logger.info("Gathering BH halo information for step %r", f)
@@ -167,7 +170,7 @@ def run():
         if bh_cen_halos is not None:
             bh_cen_links = []
             bh_cen_halos = bh_cen_halos[np.argsort(bh_mass)[::-1]]
-            print "Associated halos: ",bh_cen_halos
+            print("Associated halos: ",bh_cen_halos)
             with session.no_autoflush:
                 for bhi, haloi in zip(bh_iord, bh_cen_halos):
                     haloi = int(haloi)

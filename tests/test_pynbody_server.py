@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import tangos.parallel_tasks.pynbody_server as ps
 import tangos.parallel_tasks as pt
 import tangos
@@ -5,13 +7,14 @@ import numpy.testing as npt
 import pynbody
 import sys
 import os
+from six.moves import zip
 
 def setup():
     pt.use("multiprocessing")
     tangos.config.base = os.path.dirname(__file__)+"/"
 
 def _get_array():
-    print>>sys.stderr,"HERE:",tangos.config.base
+    print("HERE:",tangos.config.base, file=sys.stderr)
     test_filter = pynbody.filt.Sphere('5000 kpc')
     for fname in pt.distributed(["test_simulations/test_tipsy/tiny.000640", "test_simulations/test_tipsy/tiny.000832"]):
         ps.RequestLoadPynbodySnapshot(tangos.config.base+fname).send(0)
@@ -97,7 +100,7 @@ def test_remote_file_index():
 
 def _debug_print_arrays(*arrays):
     for vals in zip(*arrays):
-        print>>sys.stderr, vals
+        print(vals, file=sys.stderr)
 
 def _test_lazy_evaluation_is_local():
     conn = ps.RemoteSnapshotConnection(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")

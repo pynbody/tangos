@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import tangos
 from . import core
 import sqlalchemy, sqlalchemy.event
@@ -6,6 +8,9 @@ import gc
 import traceback
 import os
 import inspect
+import six
+from six.moves import range
+from six.moves import zip
 
 class TestSimulationGenerator(object):
     def __init__(self, sim_name="sim", session=None):
@@ -24,7 +29,7 @@ class TestSimulationGenerator(object):
         ts = self._most_recently_added_timestep()
         returned_halos = []
 
-        for i in xrange(1,num_halos+1):
+        for i in range(1,num_halos+1):
             if NDM is None:
                 NDM_halo = 1000-i*100
             else:
@@ -54,7 +59,7 @@ class TestSimulationGenerator(object):
         e.g. add_properties_to_halos(Mvir=lambda i: 100.*(10-i)) adds a Mvir value of 100*(10-halo_number)
          to each halo"""
 
-        for k, v in properties.iteritems():
+        for k, v in six.iteritems(properties):
             for halo in self._most_recently_added_timestep().halos.filter_by(halo_type=htype).all():
                 halo[k] = v(halo.halo_number)
 
@@ -116,7 +121,7 @@ class TestSimulationGenerator(object):
     def assign_bhs_to_halos(self, mapping):
         ts = self._most_recently_added_timestep()
 
-        for k,v in mapping.iteritems():
+        for k,v in six.iteritems(mapping):
             source_halo = ts.halos.filter_by(halo_number=v,halo_type=0).first()
             target_bh = ts.halos.filter_by(halo_number=k,halo_type=1).first()
 
@@ -147,7 +152,7 @@ class TestSimulationGenerator(object):
 
     def _generate_bidirectional_halolinks_for_mapping(self, mapping, ts_dest, ts_source, halo_type):
 
-        for source_num, target_num in mapping.iteritems():
+        for source_num, target_num in six.iteritems(mapping):
             source_halo = ts_source.halos.filter_by(halo_number=source_num, halo_type=halo_type).first()
             target_halo = ts_dest.halos.filter_by(halo_number=target_num, halo_type=halo_type).first()
 
@@ -159,13 +164,13 @@ class TestSimulationGenerator(object):
 
     def _adjust_halo_NDM_for_mapping(self, mapping, ts_dest, ts_source):
 
-        for source_num, target_num in mapping.iteritems():
+        for source_num, target_num in six.iteritems(mapping):
             target_halo = ts_dest.halos.filter_by(halo_number=target_num).first()
             target_halo.NDM = 0
-        for source_num, target_num in mapping.iteritems():
+        for source_num, target_num in six.iteritems(mapping):
             source_halo = ts_source.halos.filter_by(halo_number=source_num).first()
             target_halo = ts_dest.halos.filter_by(halo_number=target_num).first()
-            print source_num, ts_source
+            print(source_num, ts_source)
             target_halo.NDM += source_halo.NDM
 
 
@@ -175,7 +180,9 @@ def _as_halos(hlist, session=None):
         session = core.get_default_session()
     rvals = []
     for h in hlist:
-        if isinstance(h, core.halo.Halo):
+        if h is None:
+            rvals.append(None)
+        elif isinstance(h, core.halo.Halo):
             rvals.append(h)
         else:
             rvals.append(tangos.get_halo(h, session))
@@ -223,8 +230,9 @@ def assert_connections_all_closed():
         connection_details[id(connection_rec)] = traceback.extract_stack()
 
     def on_checkin(dbapi_conn, connection_rec):
-        num_connections[0]-=1
-        del connection_details[id(connection_rec)]
+        if id(connection_rec) in connection_details:
+            num_connections[0]-=1
+            del connection_details[id(connection_rec)]
 
     gc.collect()
 
@@ -233,15 +241,16 @@ def assert_connections_all_closed():
 
     yield
 
+
     gc.collect()
 
     sqlalchemy.event.remove(core.get_default_engine().pool, 'checkout', on_checkout)
     sqlalchemy.event.remove(core.get_default_engine().pool, 'checkin', on_checkin)
 
-    for k,v in connection_details.iteritems():
-        print "object id",k,"not checked in; was created here:"
+    for k,v in six.iteritems(connection_details):
+        print("object id",k,"not checked in; was created here:")
         for line in traceback.format_list(v):
-            print "  ",line
+            print("  ",line)
 
     assert num_connections[0]==0, "%d (of %d) connections were not closed"%(num_connections[0], num_connections[1])
 
@@ -254,7 +263,7 @@ def init_blank_db_for_testing(**init_kwargs):
 
     caller_fname = os.path.basename(inspect.getframeinfo(inspect.currentframe().f_back)[0])[:-3]
 
-    print caller_fname
+    print(caller_fname)
     db_name = "test_dbs/%s.db"%caller_fname
     try:
 

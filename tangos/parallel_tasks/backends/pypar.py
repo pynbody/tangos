@@ -52,7 +52,7 @@ def receive_numpy_array(source):
 
 def launch(function, num_procs, args):
     if size()==1:
-        raise RuntimeError, "MPI run needs minimum of 2 processors (one for manager, one for worker)"
+        raise RuntimeError("MPI run needs minimum of 2 processors (one for manager, one for worker)")
     if num_procs is not None:
         if rank()==0:
             warnings.warn("Number of processors requested (%d) will be ignored as this is an MPI run that has already selected %d processors"%(num_procs,size()))

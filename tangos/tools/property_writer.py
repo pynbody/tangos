@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import argparse
 import contextlib
 import gc
@@ -21,6 +22,7 @@ from ..parallel_tasks import database
 from ..util.check_deleted import check_deleted
 from ..cached_writer import insert_list
 from ..log import logger
+from six.moves import zip
 
 
 
@@ -230,7 +232,7 @@ class PropertyWriter(object):
                 # resolve halo
                 r = core.get_default_session().query(core.halo.Halo).filter_by(
                     halo_number=int(r), timestep=db_halo.timestep).first()
-            if self.options.force or (n not in existing_properties_data.keys()):
+            if self.options.force or (n not in list(existing_properties_data.keys())):
                 existing_properties_data[n] = r
                 if self.options.debug:
                     logger.info("Debug mode - not creating property %r for %r with value %r", n, db_halo, r)
@@ -386,7 +388,7 @@ class PropertyWriter(object):
         else:
             listize = False
 
-        if all([name in existing_properties.keys() for name in names]) and not self.options.force:
+        if all([name in list(existing_properties.keys()) for name in names]) and not self.options.force:
             self.tracker.register_already_exists()
             return
 
@@ -435,7 +437,7 @@ class PropertyWriter(object):
                     len(db_halos), len(self._property_calculator_instances))
 
         for db_halo, existing_properties in \
-                self._get_parallel_halo_iterator(zip(db_halos, self._existing_properties_all_halos)):
+                self._get_parallel_halo_iterator(list(zip(db_halos, self._existing_properties_all_halos))):
             self._existing_properties_this_halo = existing_properties
             self.run_halo_calculation(db_halo, existing_properties)
 

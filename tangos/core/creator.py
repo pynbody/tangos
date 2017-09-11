@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from sqlalchemy import Column, Integer, String, DateTime
 
 from . import Base, get_default_session
@@ -34,24 +36,24 @@ class Creator(Base):
 
     def print_info(self):
         run = self
-        print "*" * 60
-        print "Run ID = ", self.id
-        print "Command line = ", self.command_line
-        print "Host = ", self.host
-        print "Username = ", self.username
-        print "Time = ", self.dtime.strftime("%d/%m/%y %H:%M")
+        print("*" * 60)
+        print("Run ID = ", self.id)
+        print("Command line = ", self.command_line)
+        print("Host = ", self.host)
+        print("Username = ", self.username)
+        print("Time = ", self.dtime.strftime("%d/%m/%y %H:%M"))
         if len(run.simulations) > 0:
-            print ">>>   ", len(run.simulations), "simulations"
+            print(">>>   ", len(run.simulations), "simulations")
         if run.timesteps.count() > 0:
-            print ">>>   ", (run.timesteps).count(), "timesteps"
+            print(">>>   ", (run.timesteps).count(), "timesteps")
         if run.halos.count() > 0:
-            print ">>>   ", run.halos.count(), "halos"
+            print(">>>   ", run.halos.count(), "halos")
         if run.halolinks.count() > 0:
-            print ">>>   ", run.halolinks.count(), "halolinks"
+            print(">>>   ", run.halolinks.count(), "halolinks")
         if run.properties.count() > 0:
-            print ">>>   ", run.properties.count(), "halo properties"
+            print(">>>   ", run.properties.count(), "halo properties")
         if run.simproperties.count() > 0:
-            print ">>>   ", run.simproperties.count(), "simulation properties"
+            print(">>>   ", run.simproperties.count(), "simulation properties")
 
 
 def get_creator(session=None):

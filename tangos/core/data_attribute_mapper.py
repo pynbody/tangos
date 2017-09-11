@@ -2,11 +2,13 @@
 of different types has to be stored in different attributes.
 """
 
+from __future__ import absolute_import
 import numpy as np
 import pickle
 import zlib
 import time
 import datetime
+import six
 
 
 
@@ -60,7 +62,7 @@ class DataAttributeMapper(object):
         for subclass in cls.__all_nonabstract_subclasses():
             if subclass._handles_data(data):
                 return subclass
-        raise TypeError, "Don't know how to store data of type %r"%type(data)
+        raise TypeError("Don't know how to store data of type %r"%type(data))
 
     @classmethod
     def _handles_db_object(cls, db_object):
@@ -105,7 +107,7 @@ class TimeAttributeMapper(DataAttributeMapper):
 
 class StringAttributeMapper(DataAttributeMapper):
     _attribute_name = "data_string"
-    _handled_types = [str, unicode]
+    _handled_types = [str, six.text_type]
 
 class ArrayDowncastingAttributeMapper(DataAttributeMapper):
     @classmethod
@@ -151,9 +153,9 @@ class ArrayAttributeMapper(DataAttributeMapper):
     def unpack(self, packed):
         if len(packed)==0:
             return None
-        elif packed.startswith("ZX"):
+        elif packed.startswith(b"ZX"):
             return self._unpack_compressed(packed)
-        elif packed.startswith("PX"):
+        elif packed.startswith(b"PX"):
             return self._unpack_uncompressed(packed)
         else:
             return self._unpack_old_format(packed)
@@ -161,9 +163,9 @@ class ArrayAttributeMapper(DataAttributeMapper):
     def pack(self, data):
         dumped_st = pickle.dumps(data)
         if len(dumped_st) > _THRESHOLD_FOR_COMPRESSION:
-            dumped_st = "ZX" + zlib.compress(dumped_st)
+            dumped_st = b"ZX" + zlib.compress(dumped_st)
         else:
-            dumped_st = "PX" + dumped_st
+            dumped_st = b"PX" + dumped_st
         return dumped_st
 
 

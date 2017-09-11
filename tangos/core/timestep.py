@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 import weakref
 import os, os.path
-
+import sqlalchemy
 from sqlalchemy import Column, Integer, String, ForeignKey, Float, Boolean, and_
 from sqlalchemy.orm import relationship, backref, aliased
 
@@ -8,7 +9,6 @@ from . import Base
 from .creator import Creator
 from .simulation import Simulation
 from .. import config
-
 
 
 class TimeStep(Base):
@@ -92,7 +92,7 @@ class TimeStep(Base):
         """Return keys for which ALL halos have a data entry"""
         from . import Session
         session = Session.object_session(self)
-        raise RuntimeError, "Not implemented"
+        raise RuntimeError("Not implemented")
 
     def gather_property(self, *plist, **kwargs):
         """Gather up the specified properties from the child
@@ -109,10 +109,12 @@ class TimeStep(Base):
         # must be performed in its own session as we intentionally load in a lot of
         # objects with incomplete lazy-loaded properties
         session = Session()
+        assert isinstance(session, sqlalchemy.orm.Session)
         raw_query = session.query(Halo).filter_by(timestep_id=self.id)
 
         query = property_description.supplement_halo_query(raw_query)
         results = query.all()
+
         return property_description.values_sanitized(results)
 
     @property

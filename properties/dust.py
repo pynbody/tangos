@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from . import HaloProperties
 import numpy as np
 import pynbody
@@ -19,7 +20,7 @@ class DustAttenuation(HaloProperties):
         if lam >= 0.12 and lam < 0.63:
             return 2.659*(0.011/lam**3 - 0.198/lam**2 + 1.509/lam - 2.156) + Rv
         if lam < 0.12 or lam > 2.2:
-            raise ValueError, "wavelength not in acceptable range"
+            raise ValueError("wavelength not in acceptable range")
 
     def calculate(self, halo, properties):
         if len(halo.gas) < 5:

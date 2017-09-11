@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import contextlib, weakref, sys, gc
 from ..log import logger
 
@@ -8,7 +9,7 @@ def check_deleted(a):
         return
     else:
         a_s = weakref.ref(a)
-        sys.exc_clear()
+        #sys.exc_clear()
         del a
         yield
         gc.collect()

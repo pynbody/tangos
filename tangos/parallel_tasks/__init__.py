@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import time
 import warnings
 import importlib
@@ -6,6 +7,7 @@ import sys
 import tangos.core.creator
 from .. import core
 import traceback
+from six.moves import range
 
 backend = None
 _backend_name = 'mpi4py'
@@ -60,8 +62,8 @@ def distributed(file_list, proc=None, of=None):
         if proc is None:
             proc = 1
             of = 1
-        i = (len(file_list) * (proc - 1)) / of
-        j = (len(file_list) * proc) / of - 1
+        i = (len(file_list) * (proc - 1)) // of
+        j = (len(file_list) * proc) // of - 1
         assert proc <= of and proc > 0
         if proc == of:
             j += 1
@@ -93,8 +95,8 @@ def _server_thread():
     j = -1
     num_jobs = None
     current_job = None
-    alive = [True for i in xrange(backend.size())]
-    awaiting_barrier = [False for i in xrange(backend.size())]
+    alive = [True for i in range(backend.size())]
+    awaiting_barrier = [False for i in range(backend.size())]
 
     while any(alive[1:]):
         obj = message.Message.receive()

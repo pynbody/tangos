@@ -1,11 +1,13 @@
+from __future__ import absolute_import
 from .message import Message, ExceptionMessage
 from . import log, parallel_backend_loaded, remote_import
 from ..util.check_deleted import check_deleted
 import sys
 import pynbody
 import gc
-import cPickle as pickle
+import six.moves.cPickle as pickle
 import numpy as np
+from six.moves import zip
 
 
 currently_loaded_snapshot = None
@@ -174,7 +176,7 @@ class RequestPynbodyArray(Message):
                     subarray = subsnap[self.array]
                     assert isinstance(subarray, pynbody.array.SimArray)
                 array_result = ReturnPynbodyArray(subarray)
-            except Exception, e:
+            except Exception as e:
                 array_result = ExceptionMessage(e)
             array_result.send(self.source)
             del array_result
@@ -271,7 +273,7 @@ class RemoteSnapshotConnection(object):
         global _connection_active
 
         if _connection_active:
-            raise RuntimeError, "Each client can only have one remote snapshot connection at any time"
+            raise RuntimeError("Each client can only have one remote snapshot connection at any time")
 
         _connection_active = True
 

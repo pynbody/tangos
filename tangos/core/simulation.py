@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import datetime
 
 import numpy as np
@@ -9,6 +10,7 @@ from . import Base
 from . import creator
 from .. import simulation_output_handlers, config
 from .dictionary import DictionaryItem, get_dict_id, get_or_create_dictionary_item
+import six
 
 
 class Simulation(Base):
@@ -45,7 +47,7 @@ class Simulation(Base):
         return [prop.name.text for prop in self.properties.all()]
 
     def __contains__(self, item):
-        return item in self.keys()
+        return item in list(self.keys())
 
     def __getitem__(self, i):
         from . import Session
@@ -60,7 +62,7 @@ class Simulation(Base):
             except AttributeError:
                 pass
 
-        raise KeyError, i
+        raise KeyError(i)
 
     def __setitem__(self, st, data):
         from . import Session
@@ -115,7 +117,7 @@ class SimulationProperty(Base):
             x = "%.2g" % f
         elif type(f) is datetime.datetime:
             x = f.strftime('%H:%M %d/%m/%y')
-        elif type(f) is str or type(f) is unicode:
+        elif type(f) is str or type(f) is six.text_type:
             x = "'%s'" % f
         elif f is None:
             x = "None"

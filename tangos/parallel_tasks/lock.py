@@ -1,5 +1,7 @@
+from __future__ import absolute_import
 from . import message, log, parallel_backend_loaded
 import time
+import six
 
 SLEEP_BEFORE_ALLOWING_NEXT_LOCK = 1.0
 # number of seconds to sleep after a lock is released before reallocating it
@@ -45,7 +47,7 @@ def _issue_next_lock(lock_id):
     MessageGrantLock(lock_id).send(queue[0])
 
 def _any_locks_alive():
-    return any([len(v)>0 for v in _lock_queues.itervalues()])
+    return any([len(v)>0 for v in six.itervalues(_lock_queues)])
 
 
 class RLock(object):

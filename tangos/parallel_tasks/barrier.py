@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 from . import message
+from six.moves import range
 
 awaiting_barrier = None
 
@@ -11,13 +13,13 @@ class MessageBarrier(message.Message):
         from . import backend
         global awaiting_barrier
         if awaiting_barrier is None:
-            awaiting_barrier = [False for i in xrange(backend.size())]
+            awaiting_barrier = [False for i in range(backend.size())]
 
         awaiting_barrier[self.source] = True
         if all(awaiting_barrier[1:]):
-            for i in xrange(1, backend.size()):
+            for i in range(1, backend.size()):
                 MessageBarrierPass().send(i)
-                awaiting_barrier = [False for i in xrange(backend.size())]
+                awaiting_barrier = [False for i in range(backend.size())]
 
 
 def barrier():

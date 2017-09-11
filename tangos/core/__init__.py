@@ -1,8 +1,7 @@
+from __future__ import absolute_import
 from sqlalchemy import Index, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, clear_mappers
-from sqlalchemy import event
-
 from .. import config
 
 _verbose = False
@@ -122,6 +121,8 @@ def init_db(db_uri=None, timeout=30, verbose=None):
 
 
 from .dictionary import _get_dict_cache_for_session, get_dict_id, get_or_create_dictionary_item
+
+
 
 __all__ = ['DictionaryItem',
            'sim_query_from_name_list', 'sim_query_from_args',

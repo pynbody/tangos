@@ -1,21 +1,23 @@
+from __future__ import absolute_import
 import numpy as np
 from tangos.util import timing_monitor
+import six
+from six.moves import zip
 
+class HaloPropertiesMetaClass(type):
+    # Present to register new subclasses of HaloProperties, so that subclasses can be dynamically
+    # instantiated when required based on their cls.name() values. Stored as a dictionary so that
+    # reloaded classes overwrite their old versions.
+    def __init__(cls, name, bases, dict):
+        type.__init__(cls, name, bases, dict)
+        cls._all_classes[name] = cls
 
-class HaloProperties(object):
+class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
     _all_classes = {}
-
-    class __metaclass__(type):
-        # Present to register new subclasses of HaloProperties, so that subclasses can be dynamically
-        # instantiated when required based on their cls.name() values. Stored as a dictionary so that
-        # reloaded classes overwrite their old versions.
-        def __init__(cls, name, bases, dict):
-            type.__init__(cls, name, bases, dict)
-            cls._all_classes[name] = cls
 
     @classmethod
     def all_classes(cls):
-        return cls._all_classes.values()
+        return list(cls._all_classes.values())
 
     def __init__(self, simulation):
         """Initialise a HaloProperties calculation object
@@ -130,7 +132,7 @@ class HaloProperties(object):
         """
         values = self.live_calculate(halo_entry, *input_values)
         names = self.name()
-        if isinstance(names, basestring):
+        if isinstance(names, six.string_types):
             return values
         else:
             return values[self.name().index(name)]
@@ -247,7 +249,7 @@ class TimeChunkedProperty(HaloProperties):
         elif reassembly_type=='raw':
             return property.data_raw
         else:
-            raise ValueError, "Unknown reassembly type"
+            raise ValueError("Unknown reassembly type")
 
     @classmethod
     def _place_data(cls, time, raw_data):
@@ -345,7 +347,7 @@ def all_property_classes():
 
 def _check_class_provided_name(name):
     if "(" in name or ")" in name:
-        raise ValueError, "Property names must not include brackets; %s not suitable"%name
+        raise ValueError("Property names must not include brackets; %s not suitable"%name)
 
 def all_properties():
     """Return list of all properties which can be calculated using
@@ -375,7 +377,7 @@ def providing_class(property_name, silent_fail=False):
     property_name = property_name.lower().split("(")[0]
     for c in classes:
         name = c.name()
-        if type(name) != str:
+        if isinstance(name, tuple) or isinstance(name, list):
             for name_j in name:
                 if name_j.lower() == property_name:
                     return c
@@ -383,7 +385,7 @@ def providing_class(property_name, silent_fail=False):
             return c
     if silent_fail:
         return None
-    raise NameError, "No providing class for property " + property_name
+    raise NameError("No providing class for property " + property_name)
 
 
 def providing_classes(property_name_list, silent_fail=False):

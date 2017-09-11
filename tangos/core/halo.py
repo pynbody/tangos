@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import weakref
 
 from sqlalchemy import Column, Integer, ForeignKey, orm
@@ -36,12 +37,12 @@ class Halo(Base):
 
     def __init__(self, timestep, halo_number, finder_id, NDM, NStar, NGas, halo_type=0):
         self.timestep = timestep
-        self.halo_number = halo_number
-        self.finder_id = finder_id
-        self.NDM = NDM
-        self.NStar = NStar
-        self.NGas = NGas
-        self.halo_type = halo_type
+        self.halo_number = int(halo_number)
+        self.finder_id = int(finder_id)
+        self.NDM = int(NDM)
+        self.NStar = int(NStar)
+        self.NGas = int(NGas)
+        self.halo_type = int(halo_type)
         self.init_on_load()
         self.creator_id = creator.get_creator_id()
 
@@ -144,7 +145,7 @@ class Halo(Base):
             ret_values += g.get(self, key_id, session)
 
         if len(ret_values) == 0:
-            raise KeyError, "No such property %r" % key
+            raise KeyError("No such property %r" % key)
         return ret_values
 
 
@@ -203,7 +204,7 @@ class Halo(Base):
         return names
 
     def __contains__(self, item):
-        return item in self.keys()
+        return item in list(self.keys())
 
     @property
     def tracker(self):

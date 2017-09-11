@@ -1,8 +1,12 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from pyramid.view import view_config
 from . import halo_from_request
 import tangos
 import time
 import math
+from six.moves import range
+from six.moves import zip
 
 def _construct_preliminary_mergertree(halo, base_halo, must_include, request, visited=None, depth=0):
     if visited is None:
@@ -106,13 +110,13 @@ def _postprocess_mergertree(tree):
 
 
 def _postprocess_mergertree_layout_by_number(tree, key='halo_number'):
-    x_vals = [set() for i in xrange(tree['maxdepth'])]
+    x_vals = [set() for i in range(tree['maxdepth'])]
 
     for node in _visit_tree(tree):
         x_vals[node['depth']].add(node[key])
 
     max_entries = max([len(v) for v in x_vals])
-    x_map = [{} for i in xrange(tree['maxdepth'])]
+    x_map = [{} for i in range(tree['maxdepth'])]
     for this_vals, this_map in zip(x_vals, x_map):
         new_x = 15 * (max_entries - len(this_vals))
         for xv in sorted(this_vals):
@@ -125,7 +129,7 @@ def _postprocess_mergertree_layout_by_number(tree, key='halo_number'):
 
 def _postprocess_mergertree_layout_by_branch(tree):
     tree['space_range'] = (0.0, 1.0)
-    existing_ranges = [{} for i in xrange(tree['maxdepth'])]
+    existing_ranges = [{} for i in range(tree['maxdepth'])]
     for node in _visit_tree(tree):
         x_start, x_end = node['space_range']
         node['mid_range'] = (x_start + x_end) / 2
@@ -152,12 +156,12 @@ def _construct_mergertree(halo, request):
             base = base.next
 
     tree = _construct_preliminary_mergertree(base, halo, must_include, request)
-    print "Merger tree build time:    %.2fs" % (time.time() - start)
-    print "of which link search time: %.2fs" % (search_time)
+    print("Merger tree build time:    %.2fs" % (time.time() - start))
+    print("of which link search time: %.2fs" % (search_time))
 
     start = time.time()
     _postprocess_mergertree(tree)
-    print "Post-processing time: %.2fs" % (time.time() - start)
+    print("Post-processing time: %.2fs" % (time.time() - start))
 
 
     return tree

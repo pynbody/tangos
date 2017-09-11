@@ -14,6 +14,7 @@ from . import SimulationOutputSetHandler
 from .. import config
 from ..log import logger
 from ..parallel_tasks import pynbody_server as ps
+from six.moves import range
 
 
 _loaded_halocats = {}
@@ -49,7 +50,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         elif mode=='server' or mode=='server-partial':
             return ps.RemoteSnapshotConnection(self._extension_to_filename(ts_extension))
         else:
-            raise NotImplementedError, "Load mode %r is not implemented"%mode
+            raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def load_region(self, ts_extension, region_specification, mode=None):
         if mode is None:
@@ -67,9 +68,9 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             f.physical_units()
             return f
         elif mode=='partial':
-            raise NotImplementedError, "For partial loading to work with custom regions, you need load-mode=server-partial (instead of load-mode=partial)"
+            raise NotImplementedError("For partial loading to work with custom regions, you need load-mode=server-partial (instead of load-mode=partial)")
         else:
-            raise NotImplementedError, "Load mode %r is not implemented"%mode
+            raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def load_halo(self, ts_extension, halo_number, mode=None):
         if mode=='partial':
@@ -92,7 +93,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             h = self._construct_halo_cat(ts_extension)
             return h[halo_number]
         else:
-            raise NotImplementedError, "Load mode %r is not implemented"%mode
+            raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def load_tracked_region(self, ts_extension, track_data, mode=None):
         f = self.load_timestep(ts_extension)
@@ -102,7 +103,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         elif mode is None:
             return f[indices]
         else:
-            raise NotImplementedError, "Load mode %r is not implemented"%mode
+            raise NotImplementedError("Load mode %r is not implemented"%mode)
 
 
     def _get_indices_for_snapshot(self, f, track_data):
@@ -169,7 +170,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
                 h.precalculate()
             istart = 1
 
-            for i in xrange(istart, len(h)+istart):
+            for i in range(istart, len(h)+istart):
                 try:
                     hi = h[i]
                     if len(hi.dm) > config.min_halo_particles:
@@ -238,7 +239,7 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
     def _filter_paramfile_properties(self, pfile_dict):
         filtered_pfile_dict = {}
         for f in self.flags_include:
-            if pfile_dict.has_key(f):
+            if f in pfile_dict:
                 filtered_pfile_dict[f] = pfile_dict[f]
         return filtered_pfile_dict
 
@@ -271,21 +272,20 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
             candidates = glob.glob(path + "../*.param")
 
         if len(candidates) == 0:
-            raise RuntimeError, "No .param file in " + path + \
-                                " (or parent) -- please supply or create tipsy.info manually"
+            raise RuntimeError("No .param file in " + path + \
+                                " (or parent) -- please supply or create tipsy.info manually")
 
-        candidates = filter(lambda x: "direct" not in x and "mpeg_encode" not in x,
-                            candidates)
+        candidates = [x for x in candidates if "direct" not in x and "mpeg_encode" not in x]
 
         if len(candidates) > 1:
-            raise RuntimeError, "Can't resolve ambiguity -- too many param files matching " + \
-                                path
+            raise RuntimeError("Can't resolve ambiguity -- too many param files matching " + \
+                                path)
 
         return candidates[0]
 
     @staticmethod
     def _param_file_to_dict(param_file):
-        f = file(param_file)
+        f = open(param_file)
         out = {}
 
         for line in f:

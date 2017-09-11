@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from pyramid.view import view_config
 import pyramid.httpexceptions as exc
 import tangos

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 install_requires = [
     'setuptools',
     'numpy >= 1.10.0',

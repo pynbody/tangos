@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import tangos.core.dictionary
 from tangos import testing
 

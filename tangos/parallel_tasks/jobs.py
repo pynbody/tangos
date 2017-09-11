@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from . import message
 from .. import log
 
@@ -13,8 +14,8 @@ class MessageStartIteration(message.Message):
             current_job = 0
         else:
             if num_jobs != self.contents:
-                raise RuntimeError, "Number of jobs (%d) expected by rank %d is inconsistent with %d" % (
-                self.contents, self.source, num_jobs)
+                raise RuntimeError("Number of jobs (%d) expected by rank %d is inconsistent with %d" % (
+                self.contents, self.source, num_jobs))
 
 
 class MessageDeliverJob(message.Message):

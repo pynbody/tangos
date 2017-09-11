@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import weakref
 
 import numpy as np
@@ -49,7 +51,7 @@ class TrackData(Base):
 
     @particles.setter
     def particles(self, to):
-        self.particle_array = str(np.asarray(to, dtype=int).data)
+        self.particle_array = np.asarray(to, dtype=int).data
 
 
 
@@ -77,14 +79,14 @@ class TrackData(Base):
                 create = True
             if not create:
                 if verbose:
-                    print ts, "-> precursor, don't create"
+                    print(ts, "-> precursor, don't create")
             elif ts.halos.filter_by(halo_number=self.halo_number, halo_type=1).count() == 0:
                 h = Halo(ts, self.halo_number, self.halo_number, 0, 0, 0, 1)
                 session.add(h)
                 if verbose:
-                    print ts, "-> add"
+                    print(ts, "-> add")
             elif verbose:
-                print ts, "exists"
+                print(ts, "exists")
         session.commit()
 
 class TrackerHaloCatalogue(object):

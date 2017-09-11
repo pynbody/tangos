@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from . import HaloProperties, instantiate_class, providing_class, LiveHaloProperties, LiveHaloPropertiesInheritingMetaProperties
 import numpy as np
 import math
@@ -237,7 +238,7 @@ class StellarProfileFaceOn(HaloProperties):
     def calculate(self, halo, existing_properties):
         with pynbody.analysis.angmom.faceon(halo):
             ps = pynbody.analysis.profile.Profile(halo.s, type='lin', ndim=2, min=0, max=20, nbins=200)
-            vals = [ps['sb,'+x] for x in 'v','b','i']
+            vals = [ps['sb,'+x] for x in ('v','b','i')]
         return vals
 
 def sersic_surface_brightness(r, s0, r0, n) :

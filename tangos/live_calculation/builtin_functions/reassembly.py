@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from tangos.core import extraction_patterns
 from . import BuiltinFunction
 from .. import StoredProperty, FixedInput
@@ -25,7 +26,7 @@ def reassemble_initialisation(input, *options):
         if isinstance(option, FixedInput):
             options_values.append(option.proxy_value())
         else:
-            raise TypeError, "Options to 'reassemble' must be fixed numbers or strings"
+            raise TypeError("Options to 'reassemble' must be fixed numbers or strings")
 
     input.set_extraction_pattern(
         extraction_patterns.HaloPropertyValueWithReassemblyOptionsGetter(*options_values))

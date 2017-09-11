@@ -1,7 +1,10 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import glob
 import os, os.path
 from .. import config
 from . import SimulationOutputSetHandler
+from six.moves import range
 
 class DummyTimestepData(object):
     def __init__(self, message, time, max_halos, halo=None):
@@ -26,7 +29,7 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
         pre_extension_length = len(os.path.join(config.base, self.basename))
         steps = glob.glob(os.path.join(config.base, self.basename, "step.*"))
         for i in steps:
-            print i, i[pre_extension_length:], self.strip_slashes(i[pre_extension_length:])
+            print(i, i[pre_extension_length:], self.strip_slashes(i[pre_extension_length:]))
             yield self.strip_slashes(i[pre_extension_length:])
 
     def get_timestep_properties(self, ts_extension):
@@ -37,7 +40,7 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
 
     def enumerate_halos(self, ts_extension):
         nhalos = int(self._get_ts_property(ts_extension, 'halos'))
-        for i in xrange(nhalos):
+        for i in range(nhalos):
             yield i+1, 2000-i, 0, 0
 
     def match_halos(self, f1, f2, halo_min, halo_max, dm_only=False, threshold=0.005):
@@ -46,7 +49,7 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
             halo_max = f1.max_halos
         halo_max = min((halo_max,f1.max_halos,f2.max_halos))
         return_matches = [tuple()]
-        for i in xrange(1,halo_max+1):
+        for i in range(1,halo_max+1):
             if i>=halo_min:
                 return_matches.append(((i, 1.0),(i+1,0.05),))
             else:

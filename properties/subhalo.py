@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from . import HaloProperties, ProxyHalo
 import numpy as np
 import math
@@ -24,7 +25,7 @@ class Subhalo(HaloProperties):
         current_sc = existing_properties["SSC"]
         q = 0
         for i in self.proplist:
-            if i.has_key("SSC") and i["SSC"] != None:
+            if "SSC" in i and i["SSC"] != None:
                 q += 1
                 diff = (
                     (np.subtract(i["SSC"], current_sc) ** 2).sum() ** 0.5) / i["Rvir"]

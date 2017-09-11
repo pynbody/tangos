@@ -1,8 +1,11 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from . import HaloProperties
 from .spherical_region import SphericalRegionHaloProperties
 import numpy as np
 import math
 import pynbody
+from six.moves import zip
 
 
 class OutflowEnergy(HaloProperties):
@@ -64,7 +67,7 @@ class TestInflowOutflow(HaloProperties):
         self.f["pos"] -= cen
         vcen = self.f.dm[pynbody.filt.Sphere(1.0)].mean_by_mass("vel")
         if vcen[0] != vcen[0]:
-            print "DISASTER! Can't velocity centre"
+            print("DISASTER! Can't velocity centre")
             i, vi, o, vo = 0, 0, 0, 0
         else:
             self.f['vel'] -= vcen
@@ -164,7 +167,7 @@ class InflowOutflow(HaloProperties):
         velin = (massflow * vr)[np.where(massflow < 0)].sum() / inflow
         velout = (massflow * vr)[np.where(massflow > 0)].sum() / outflow
 
-        print vr.max(), -vr.min(), velin, velout
+        print(vr.max(), -vr.min(), velin, velout)
         if cen is not None:
             f["pos"] += cen
 
@@ -179,17 +182,17 @@ class InflowOutflow(HaloProperties):
     def pre_offset(self, halo, properties):
         cen = properties["SSC"]
 
-        print "p-min is at ", pynbody.analysis.halo.potential_minimum(halo.dm)
+        print("p-min is at ", pynbody.analysis.halo.potential_minimum(halo.dm))
 
-        print "x-check (check below)", self.f["pos"][0]
-        print "offsetting to", cen
+        print("x-check (check below)", self.f["pos"][0])
+        print("offsetting to", cen)
         self.f["pos"] -= cen
-        print "p-min is now at ", pynbody.analysis.halo.potential_minimum(halo.dm)
-        print "Rvir is ", properties["Rvir"]
+        print("p-min is now at ", pynbody.analysis.halo.potential_minimum(halo.dm))
+        print("Rvir is ", properties["Rvir"])
         vcen = self.f.dm[pynbody.filt.Sphere(5.0)].mean_by_mass("vel")
         if vcen[0] != vcen[0]:
-            raise RuntimeError, "Can't velocity centre"
-        print "vel cen is ", vcen
+            raise RuntimeError("Can't velocity centre")
+        print("vel cen is ", vcen)
         self.f["vel"] -= vcen
         self.vcen = vcen
         self.cen = cen
@@ -200,12 +203,12 @@ class InflowOutflow(HaloProperties):
 
     def calculate(self, halo, properties):
         import time
-        print "Doing inflow/outflow..."
+        print("Doing inflow/outflow...")
         s = time.time()
 
         self.pre_offset(halo, properties)
 
-        print self.f['vel'][0], self.f['pos'][0], self.f['vr'][0]
+        print(self.f['vel'][0], self.f['pos'][0], self.f['vr'][0])
 
         i1, o1, vi1, vo1 = self.calc_inflow_outflow(
             self.f.gas, properties["Rvir"] * 0.5)
@@ -216,9 +219,9 @@ class InflowOutflow(HaloProperties):
 
         self.post_offset()
 
-        print "x-check", self.f["pos"][0]
-        print "Done in %.1f s" % (time.time() - s)
-        print "At virial radius inflow, outflow = ", i2, o2, vi2, vo2
+        print("x-check", self.f["pos"][0])
+        print("Done in %.1f s" % (time.time() - s))
+        print("At virial radius inflow, outflow = ", i2, o2, vi2, vo2)
         return i1, o1, vi1, vo1, i2, o2, vi2, vo2, i3, o3, vi3, vo3
 
 

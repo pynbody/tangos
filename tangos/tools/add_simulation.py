@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 from .. import core
 from ..core import Simulation, TimeStep
 from ..log import logger
+import six
 
 class SimulationAdderUpdater(object):
     """This class contains the necessary tools to add a new simulation to the database"""
@@ -58,8 +60,8 @@ class SimulationAdderUpdater(object):
         sim = self._get_simulation()
         properties_dict = self.simulation_output.get_properties()
         properties_dict['handler'] = self.simulation_output.handler_class_name()
-        for k, v in properties_dict.iteritems():
-            if k not in sim.keys():
+        for k, v in six.iteritems(properties_dict):
+            if k not in list(sim.keys()):
                 logger.info("Add simulation property %r",k)
                 sim[k] = v
             elif sim[k]!=v:
@@ -89,7 +91,7 @@ class SimulationAdderUpdater(object):
         self.session.commit()
 
     def add_timestep_properties(self, ts):
-        for key, value in self.simulation_output.get_timestep_properties(ts.extension).iteritems():
+        for key, value in six.iteritems(self.simulation_output.get_timestep_properties(ts.extension)):
             setattr(ts, key, value)
 
 

@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 from . import core
 from sqlalchemy import Column, Table, String, Integer, Float, ForeignKey
 import sqlalchemy
 import random
 import string
 import contextlib
+from six.moves import range
 
 _temp_sessions = {}
 

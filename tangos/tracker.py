@@ -1,7 +1,10 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from sqlalchemy.orm import Session
 import numpy as np
 from .core import get_or_create_dictionary_item, Halo, HaloLink
 import tangos.parallel_tasks as parallel_tasks
+from six.moves import zip
 
 def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, weight=1.0):
     assert isinstance(halo_1, Halo)
@@ -35,8 +38,8 @@ def get_tracker_links(session, relation):
 def generate_tracker_halo_links(sim, session):
     dict_obj = get_or_create_dictionary_item(session, "tracker")
     links = []
-    for ts1, ts2 in parallel_tasks.distributed(zip(sim.timesteps[1:],sim.timesteps[:-1])):
-        print "generating links for", ts1, ts2
+    for ts1, ts2 in parallel_tasks.distributed(list(zip(sim.timesteps[1:],sim.timesteps[:-1]))):
+        print("generating links for", ts1, ts2)
         halos_1, nums1, id = get_tracker_halos(ts1)
         halos_2, nums2, id = get_tracker_halos(ts2)
         tracker_links, idf, idt = get_tracker_links(session,dict_obj)

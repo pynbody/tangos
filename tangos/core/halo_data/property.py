@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from sqlalchemy import Column, Integer, ForeignKey, Float, LargeBinary, Boolean
 from sqlalchemy.orm import relationship, backref, deferred
 
@@ -78,7 +79,7 @@ class HaloProperty(Base):
 
     def x_values(self):
         if not self.data_is_array():
-            raise ValueError, "The data is not an array"
+            raise ValueError("The data is not an array")
         return self.name.providing_class()(self.halo.timestep.simulation).plot_x_values(self.data)
 
     @data.setter
