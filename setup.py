@@ -1,6 +1,8 @@
 install_requires = [
     'setuptools',
     'numpy >= 1.10.0',
+    'sqlalchemy >= 1.0.10',
+    'pyparsing >= 2.1.0',
     'WebOb >= 1.7.0rc2', # Response.has_body
     'repoze.lru >= 0.4', # py3 compat
     'zope.interface >= 3.8.0',  # has zope.interface.registry
@@ -15,6 +17,7 @@ install_requires = [
 
 tests_require = [
     'nose >= 1.3.0',
+    'pynbody >= 0.40'
     ]
 
 from setuptools import setup, find_packages
@@ -54,5 +57,5 @@ setup(name='tangos',
       python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
       install_requires=install_requires,
       tests_require=tests_require,
-      test_suite="tangos.tests"
+      test_suite="nose.collector"
       )

@@ -32,7 +32,7 @@ class DummyPropertyCausingException(properties.HaloProperties):
 
 def init_blank_simulation():
     testing.init_blank_db_for_testing(timeout=0.0)
-    db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
+    db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
     manager = add_simulation.SimulationAdderUpdater(output_testing.TestOutputSetHandler("dummy_sim_1"))
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()

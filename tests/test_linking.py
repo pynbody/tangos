@@ -8,7 +8,7 @@ import os, os.path
 def setup():
     parallel_tasks.use('null')
     testing.init_blank_db_for_testing()
-    db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
+    db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
     manager = add_simulation.SimulationAdderUpdater(output_testing.TestOutputSetHandler("dummy_sim_1"))
     manager2 = add_simulation.SimulationAdderUpdater(output_testing.TestOutputSetHandler("dummy_sim_2"))
     with log.LogCapturer():
