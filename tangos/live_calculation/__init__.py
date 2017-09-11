@@ -116,6 +116,13 @@ class Calculation(object):
         properties of these values (if possible)"""
         raise NotImplementedError
 
+    def values_sanitized_and_description(self, halos):
+        """Return the 'sanitized' values of this calculation, as well as a HaloProperties object (if available).
+
+        See values_sanitized for the definition of sanitized"""
+        values, desc = self.values_and_description(halos)
+        return self._sanitize_values(values), desc
+
     def values(self, halos):
         """Return the values of this calculation applied to halos.
 
@@ -139,18 +146,22 @@ class Calculation(object):
         The return value is a self.n_columns()-length list, with each entry in the list being a numpy array of
         length len(halos). The dtype of the numpy array is chosen per-property to match the dtype result found
         when evaluating the first halo."""
-        out = self.values(halos)
+        unsanitized_values = self.values(halos)
+        return self._sanitize_values(unsanitized_values)
 
-        keep_rows = np.all([[data is not None for data in row] for row in out], axis=0)
+
+
+    def _sanitize_values(self, unsanitized_values):
+        """Convert the raw calculation result to a sanitized version. See values_sanitized."""
+        keep_rows = np.all([[data is not None for data in row] for row in unsanitized_values], axis=0)
         # The obvious way of doing this:
         #   keep_rows = np.all(np.not_equal(out,None), axis=0)
         # generates a scary FutureWarning that it will stop working in future. This is because
         # it can end up doing a comparison of an array to None (effectively data!=None),
         # which will not be the same as "is not None" in future versions of numpy.
 
-        out = out[:,keep_rows]
-
-        return [self._make_final_array(x) for x in out]
+        unsanitized_values = unsanitized_values[:, keep_rows]
+        return [self._make_final_array(x) for x in unsanitized_values]
 
     def _make_final_array(self, x):
         if len(x)==0:

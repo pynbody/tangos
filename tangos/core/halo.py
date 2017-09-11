@@ -83,7 +83,7 @@ class Halo(Base):
         See live_calculation.md for an introduction to this powerful functionality."""
         from .. import live_calculation
         calculation = live_calculation.parser.parse_property_name_if_required(name)
-        (value,), description = calculation.values_and_description([self])
+        (value,), description = calculation.values_sanitized_and_description([self])
         if len(value)==1:
             retval = value[0]
         else:
