@@ -7,7 +7,9 @@ sudo: false
 
 # specify different versions of python and numpy
 env:
-  - PYTHON=2.7  NUMPY_VERSION=1.9.2 CYTHON="cython>=0.20" IPYTHON="ipython>=3"
+  - PYTHON=2.7  NUMPY_VERSION=1.9.2
+  - PYTHON=2.7  NUMPY_VERSION=1.13.1
+  - PYTHON=3.6  NUMPY_VERSION=1.13.1
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -17,7 +19,7 @@ before_install:
   - conda update --yes conda
 
 install:
-  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip sphinx pygments pandas sqlalchemy $IPYTHON $CYTHON
+  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip sphinx pygments pandas sqlalchemy cyth ipython
   - source activate ${PYTHON}_${NUMPY_VERSION}
   - pip install git+git://github.com/pynbody/pynbody.git
   - python setup.py install
