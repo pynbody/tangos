@@ -10,7 +10,6 @@ from .creator import Creator
 from .simulation import Simulation
 from .. import config
 
-
 class TimeStep(Base):
     __tablename__ = 'timesteps'
 
@@ -109,13 +108,14 @@ class TimeStep(Base):
         # must be performed in its own session as we intentionally load in a lot of
         # objects with incomplete lazy-loaded properties
         session = Session()
-        assert isinstance(session, sqlalchemy.orm.Session)
-        raw_query = session.query(Halo).filter_by(timestep_id=self.id)
-
-        query = property_description.supplement_halo_query(raw_query)
-        results = query.all()
-
-        return property_description.values_sanitized(results)
+        try:
+            raw_query = session.query(Halo).filter_by(timestep_id=self.id)
+            query = property_description.supplement_halo_query(raw_query)
+            results = query.all()
+            results = property_description.values_sanitized(results)
+        finally:
+            session.close()
+        return results
 
     @property
     def earliest(self):

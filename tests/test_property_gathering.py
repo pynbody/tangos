@@ -213,5 +213,6 @@ def test_redirection_cascade_closes_connections():
         h.reverse_property_cascade("my_BH('hole_spin').hole_mass")
 
 def test_gather_closes_connections():
-     with db.testing.assert_connections_all_closed():
-        tangos.get_timestep("sim/ts1").gather_property('Mvir')
+    ts = tangos.get_timestep("sim/ts1")
+    with db.testing.assert_connections_all_closed():
+        ts.gather_property('Mvir')
