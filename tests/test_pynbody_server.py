@@ -108,11 +108,17 @@ def _test_lazy_evaluation_is_local():
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
     f_local.physical_units()
 
-    pynbody.analysis.halo.center(f, vel=False)
-    pynbody.analysis.halo.center(f_local, vel=False)
+    centre_offset = (-6017.0,-123.8,566.4)
+    f['pos']-=centre_offset
+    f_local['pos']-=centre_offset
 
-    _debug_print_arrays(f['x'],f_local['x'],f['r'],f_local['r'])
     npt.assert_almost_equal(f['x'], f_local['x'])
+
+    # This is the critical test: if the lazy-evaluation of 'r' takes place on the server, it will not be using
+    # the updated version of the position array. This is undesirable for two reasons: first, because the pynbody
+    # snapshot seen by the client is inconsistent in a way that would never happen with a normal snapshot. Second,
+    # because it means extra "derived" arrays are being calculated across the entire snapshot which we want to
+    # avoid in a memory-bound situation.
     npt.assert_almost_equal(f['r'], f_local['r'])
 
 def test_lazy_evaluation_is_local():
