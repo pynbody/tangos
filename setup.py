@@ -14,6 +14,7 @@ install_requires = [
     'plaster',
     'plaster_pastedeploy',
     'hupper',
+    'six',
     ]
 
 tests_require = [

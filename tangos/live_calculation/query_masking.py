@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import numpy as np
+from ..util import is_not_none
 
 
 class QueryMask(object):
@@ -16,9 +17,9 @@ class QueryMask(object):
             to_mask = self.unmask(input)
 
         if len(to_mask.shape)==2:
-            mask = np.any(np.not_equal(to_mask, None),axis=0).reshape(self.N)
+            mask = np.any(is_not_none(to_mask),axis=0).reshape(self.N)
         elif len(to_mask.shape)==1:
-            mask = np.not_equal(to_mask, None)
+            mask = is_not_none(to_mask)
         else:
             raise ValueError("Not able to use an input of this shape to determine a query mask")
 
