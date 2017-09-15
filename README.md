@@ -34,7 +34,7 @@ Quick-start: if you already have a .db file and want to run the webserver
 If running on a remote server, you will need to forward the appropriate port using `ssh address.of.remote.server -L5000:localhost:5000`. Then follow these instructions:
 
 1. Clone the repository
-2. Type `python setup.py install`
+2. Type `python setup.py install` (or `python setup.py develop`, see above)
 3. Put your database file in your home folder, named `data.db` - or point the environment variable `TANGOS_DB_CONNECTION` to an alternate path (see above)
 4. Type `cd web` and then `pserve development.ini`
 5. Browse to <http://localhost:6543>

@@ -19,7 +19,7 @@ before_install:
   - conda update --yes conda
 
 install:
-  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip sphinx pygments pandas sqlalchemy cyth ipython
+  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip sphinx pygments pandas sqlalchemy cython ipython
   - source activate ${PYTHON}_${NUMPY_VERSION}
   - pip install git+git://github.com/pynbody/pynbody.git
   - python setup.py install
