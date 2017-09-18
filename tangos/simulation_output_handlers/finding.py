@@ -26,6 +26,7 @@ def find(extension=None, mtd=None, ignore=None, basename=""):
         for d in range(mtd + 1):
             out += glob.glob(basename + ("*/" * d) + "*.00???")
             out += glob.glob(basename + ("*/" * d) + "*.00????")
+            out += glob.glob(basename + ("*/"*d) + "snapshot_???")
 
     return set(out)
 

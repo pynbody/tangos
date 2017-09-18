@@ -47,7 +47,7 @@ class SimulationAdderUpdater(object):
         return ex is not None
 
     def add_timestep(self, ts_extension):
-        logger.info("Add timestep %s to simulation %s",ts_extension,self.basename)
+        logger.info("Add timestep %r to simulation %r",ts_extension,self.basename)
         ex = TimeStep(self._get_simulation(), ts_extension)
         return self.session.merge(ex)
 

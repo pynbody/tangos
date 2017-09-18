@@ -34,7 +34,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         ts_filename =  self._extension_to_filename(ts_extension)
         f = pynbody.load(ts_filename)
         try:
-            time_gyr = f.properties['time'].in_units("Gyr")
+            time_gyr = f.properties['time'].in_units("Gyr",**f.conversion_context())
         except:
             time_gyr = -1
 
@@ -166,9 +166,17 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             logger.warn("Reading halos directly using pynbody")
             f = self.load_timestep_without_caching(ts_extension)
             h = f.halos()
+
+            istart = 1
+
+            if isinstance(h, pynbody.halo.SubfindCatalogue):
+                logger.warn("Detected a SubFind halo catalogue - enumerating the subhalos (rather than the groups)")
+                h =f.halos(subs=True) # Subfind's subs are our "halos"
+                istart = 0 # subfind indexes from zero
+
             if hasattr(h, 'precalculate'):
                 h.precalculate()
-            istart = 1
+
 
             for i in range(istart, len(h)+istart):
                 try:
@@ -177,6 +185,24 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
                         yield i, len(hi.dm), len(hi.star), len(hi.gas)
                 except (ValueError, KeyError) as e:
                     pass
+
+    def enumerate_groups(self, ts_extension):
+        return []
+
+class SubfindOutputSetHandler(PynbodyOutputSetHandler):
+    def enumerate_groups(self, ts_extension):
+        f = self.load_timestep_without_caching(ts_extension)
+        h = f.halos(subs=False)
+
+        for i in range(0, len(h)):
+            try:
+                hi = h[i]
+                if len(hi.dm) > config.min_halo_particles:
+                    yield i, len(hi.dm), len(hi.star), len(hi.gas)
+            except (ValueError, KeyError) as e:
+                pass
+
+
 
 class ChangaOutputSetHandler(PynbodyOutputSetHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",

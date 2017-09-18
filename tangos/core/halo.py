@@ -313,5 +313,9 @@ class BH(Halo):
     def __init__(self, timestep, halo_number):
         super(BH, self).__init__(timestep, halo_number, halo_number, 0,0,0,1)
 
+class Group(Halo):
+    __mapper_args__ = {
+        'polymorphic_identity':2
+    }
 
 _loaded_halocats = {}

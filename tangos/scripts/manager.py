@@ -297,8 +297,12 @@ def rem_run(id, confirm=True):
         #for y in run.halolinks:
         #    core.get_default_session().delete(y)
         run.halolinks.delete()
-        run.properties.delete()
         run.halos.delete()
+        run.properties.delete()
+        run.timesteps.delete()
+        for s in run.simulations:
+            print(s)
+            core.get_default_session().delete(s)
         core.get_default_session().commit()
         core.get_default_session().delete(run)
         core.get_default_session().commit()
