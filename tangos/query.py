@@ -72,15 +72,13 @@ def get_halo(id, session=None):
     """
     if session is None:
         session = get_default_session()
+
     if isinstance(id, str):
         sim, ts, halo = id.split("/")
         ts = get_timestep(sim + "/" + ts)
-        if "." in halo:
-            halo_type, halo_number = list(map(int, halo.split(".")))
-        else:
-            halo_type, halo_number = 0, int(halo)
-        return session.query(Halo).filter_by(timestep_id=ts.id, halo_number=halo_number, halo_type=halo_type).first()
-    return session.query(Halo).filter_by(id=int(id)).first()
+        return ts[halo]
+    else:
+        return session.query(Halo).filter_by(id=int(id)).first()
 
 
 def get_item(path, session=None):
