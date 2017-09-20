@@ -63,9 +63,20 @@ class TimeStep(Base):
     def short(self):
         return "<TimeStep(... z=%.2f ...)>" % self.redshift
 
-    def __getitem__(self, i):
-        return self.halos[i]
-
+    def __getitem__(self, halo_identifier):
+        from . import Session, Halo
+        session = Session.object_session(self)
+        if isinstance(halo_identifier, int):
+            halo_type, halo_number = 0, halo_identifier
+        elif "." in halo_identifier:
+            halo_type, halo_number = list(map(int, halo_identifier.split(".")))
+        elif "_" in halo_identifier:
+            halo_type, halo_number = halo_identifier.split("_")
+            halo_type = Halo.class_from_tag(halo_type).__mapper_args__['polymorphic_identity']
+            halo_number = int(halo_number)
+        else:
+            halo_type, halo_number = 0, int(halo_identifier)
+        return session.query(Halo).filter_by(timestep_id=self.id, halo_number=halo_number, halo_type=halo_type).first()
 
     @property
     def path(self):
