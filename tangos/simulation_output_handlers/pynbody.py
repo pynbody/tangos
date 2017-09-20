@@ -30,6 +30,23 @@ class DummyTimeStep(object):
     pass
 
 class PynbodyOutputSetHandler(SimulationOutputSetHandler):
+    patterns = [] # should be specified by child class
+
+    def enumerate_timestep_extensions(self):
+        base = os.path.join(config.base, self.basename)
+        extensions = finding.find(basename=base + "/", patterns=self.patterns)
+        for e in extensions:
+            if self._pynbody_can_load_halos_for(e):
+                yield e[len(base)+1:]
+
+    def _pynbody_can_load_halos_for(self, filepath):
+        try:
+            f = pynbody.load(filepath)
+            h = f.halos()
+            return True
+        except (IOError, RuntimeError):
+            return False
+
     def get_timestep_properties(self, ts_extension):
         ts_filename =  self._extension_to_filename(ts_extension)
         f = pynbody.load(ts_filename)
@@ -141,6 +158,8 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         h = _loaded_halocats.get(id(f), lambda: None)()
         if h is None:
             h = f.halos()
+            if isinstance(h, pynbody.halo.SubfindCatalogue):
+                h = f.halos(subs=True)
             _loaded_halocats[id(f)] = weakref.ref(h)
         return h  # pynbody.halo.AmigaGrpCatalogue(f)
 
@@ -170,8 +189,13 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             istart = 1
 
             if isinstance(h, pynbody.halo.SubfindCatalogue):
-                logger.warn("Detected a SubFind halo catalogue - enumerating the subhalos (rather than the groups)")
-                h =f.halos(subs=True) # Subfind's subs are our "halos"
+                try:
+                    h =f.halos(subs=True) # Subfind's subs are our "halos"
+                    logger.warn("Detected a SubFind halo catalogue - enumerating the subhalos (rather than the groups)")
+                except ValueError:
+                    logger.warn("Detected a SubFind halo catalogue - tried to enumerate the subhalos (rather than the groups) but none exist")
+                    raise StopIteration
+
                 istart = 0 # subfind indexes from zero
 
             if hasattr(h, 'precalculate'):
@@ -190,6 +214,8 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         return []
 
 class SubfindOutputSetHandler(PynbodyOutputSetHandler):
+    patterns = ["snapshot_???"]
+
     def enumerate_groups(self, ts_extension):
         f = self.load_timestep_without_caching(ts_extension)
         h = f.halos(subs=False)
@@ -202,26 +228,45 @@ class SubfindOutputSetHandler(PynbodyOutputSetHandler):
             except (ValueError, KeyError) as e:
                 pass
 
+    def enumerate_timestep_extensions(self):
+        base = os.path.join(config.base, self.basename)
+        extensions = finding.find(basename=base + "/", patterns=["snapshot_???"])
+        for e in extensions:
+            if self._pynbody_can_load_halos_for(e):
+                yield e[len(base)+1:]
+
+    def get_properties(self):
+        return {}
+
+    def _construct_group_cat(self, ts_extension):
+        f = self.load_timestep(ts_extension)
+        # amiga grp halo
+        h = _loaded_halocats.get(id(f)+1, lambda: None)()
+        if h is None:
+            h = f.halos()
+            assert isinstance(h, pynbody.halo.SubfindCatalogue)
+            _loaded_halocats[id(f)+1] = weakref.ref(h)
+        return h
+
+    def load_group(self, ts_extension, halo_number, mode=None):
+        if mode=='partial':
+            h = self._construct_group_cat(ts_extension)
+            h_file = h.load_copy(halo_number)
+            h_file.physical_units()
+            return h_file
+        elif mode is None:
+            h = self._construct_group_cat(ts_extension)
+            return h[halo_number]
+        else:
+            raise NotImplementedError("Load mode %r is not implemented"%mode)
 
 
 class ChangaOutputSetHandler(PynbodyOutputSetHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",
                      "dESN", "bLowTCool", "bSelfShield", "dExtraCoolShutoff"]
 
-    def enumerate_timestep_extensions(self):
-        base = os.path.join(config.base, self.basename)
-        extensions = finding.find(basename=base + "/")
-        for e in extensions:
-            if self._pynbody_can_load_halos_for(e):
-                yield e[len(base)+1:]
+    patterns = ["*.00???","*.0???"]
 
-    def _pynbody_can_load_halos_for(self, filepath):
-        try:
-            f = pynbody.load(filepath)
-            h = f.halos()
-            return True
-        except (IOError, RuntimeError):
-            return False
 
     def get_properties(self):
         pfile = self._get_paramfile_path()

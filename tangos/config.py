@@ -22,6 +22,7 @@ num_multihops_max_default = 100
 
 min_halo_particles = 1000
 
+default_backend = 'mpi4py'
 
 file_ignore_pattern = []
 

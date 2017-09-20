@@ -5,12 +5,12 @@ import importlib
 import sys
 
 import tangos.core.creator
-from .. import core
+from .. import core, config
 import traceback
 from six.moves import range
 
 backend = None
-_backend_name = 'mpi4py'
+_backend_name = config.default_backend
 from .. import log
 from . import message, jobs, backends
 

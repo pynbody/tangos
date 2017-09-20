@@ -8,7 +8,7 @@ from ..config  import *
 from six.moves import range
 
 
-def find(extension=None, mtd=None, ignore=None, basename=""):
+def find(extension=None, mtd=None, ignore=None, basename="", patterns=[]):
     if mtd == None:
         mtd = max_traverse_depth
     if ignore == None:
@@ -24,9 +24,9 @@ def find(extension=None, mtd=None, ignore=None, basename=""):
         out = [f for f in out if not any([fnmatch.fnmatch(f, ipat) for ipat in ignore])]
     else:
         for d in range(mtd + 1):
-            out += glob.glob(basename + ("*/" * d) + "*.00???")
-            out += glob.glob(basename + ("*/" * d) + "*.00????")
-            out += glob.glob(basename + ("*/"*d) + "snapshot_???")
+            for pattern in patterns:
+              out += glob.glob(basename + ("*/" * d) + pattern)
+
 
     return set(out)
 

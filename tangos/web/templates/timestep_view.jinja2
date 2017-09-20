@@ -1,28 +1,39 @@
 {% extends "layout.jinja2" %}
 
+{% macro make_table(halos) %}
+    <table id="data-table">
+        <tr id="header-row">
+            <th>Number</th>
+            <th>NDM()</th>
+            <th class="editable" id="header-colid-1"></th>
+            <th>Go</th>
+        </tr>
+
+        {% for h in halos %}
+            <tr class="{{ loop.cycle('odd','even') }}" id="dbid-{{ h.id }}">
+                <td>{{ h.halo_number }}</td>
+                <td>{{ h.NDM }}</td>
+                <td class="colid-1"></td>
+                <td><a href="{{ h.url }}">Go &rarr;</a></td>
+            </tr>
+        {% endfor %}
+
+    </table>
+{% endmacro %}
+
 {% block content %}
 
     <h1>Timestep: {{ timestep }}</h1>
 
+    {% if len(halos)>0 %}
+        <h2>Halos</h2>
+        {{ make_table(halos) }}
+    {% endif %}
 
-<table class="sortable draggable" id="data-table">
-    <tr id="header-row">
-        <th>Number</th>
-        <th>NDM()</th>
-        <th class="sorttable_nosort editable" id="header-colid-1"></th>
-        <th>Go</th>
-    </tr>
-
-    {% for h in halos %}
-        <tr class="{{ loop.cycle('odd','even') }}" id="dbid-{{ h.id }}">
-            <td>{{ h.halo_number }}</td>
-            <td>{{ h.NDM }}</td>
-            <td class="colid-1"></td>
-            <td><a href="{{ h.url }}">Go &rarr;</a></td>
-        </tr>
-    {% endfor %}
-
-</table>
+    {% if len(groups)>0 %}
+        <h2>Groups</h2>
+        {{ make_table(groups) }}
+    {% endif %}
 
 <script language="JavaScript">
 

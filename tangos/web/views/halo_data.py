@@ -55,15 +55,15 @@ def _relative_description(this_halo, other_halo) :
     elif this_halo and this_halo.id==other_halo.id:
         return "this"
     elif this_halo and this_halo.timestep_id == other_halo.timestep_id :
-        return "halo %d"%(other_halo.halo_number)
+        return "%s %d"%(other_halo.tag,other_halo.halo_number)
     elif this_halo and this_halo.timestep.simulation_id == other_halo.timestep.simulation_id :
-        return "halo %d at t=%.2e Gyr"%(other_halo.halo_number, other_halo.timestep.time_gyr)
+        return "%s %d at t=%.2e Gyr"%(other_halo.tag,other_halo.halo_number, other_halo.timestep.time_gyr)
     else :
         if (not this_halo) or abs(this_halo.timestep.time_gyr - other_halo.timestep.time_gyr)>0.001:
-            return "halo %d in %8s at t=%.2e Gyr"%(other_halo.halo_number, other_halo.timestep.simulation.basename,
+            return "%s %d in %8s at t=%.2e Gyr"%(other_halo.tag,other_halo.halo_number, other_halo.timestep.simulation.basename,
                                                    other_halo.timestep.time_gyr)
         else:
-            return "halo %d in %8s"%(other_halo.halo_number, other_halo.timestep.simulation.basename)
+            return "%s %d in %8s"%(other_halo.tag,other_halo.halo_number, other_halo.timestep.simulation.basename)
 
 
 def format_halo(halo, request, relative_to=None):

@@ -1,8 +1,9 @@
 from __future__ import absolute_import
-from .. import core
+from .. import core, config
 from ..core import Simulation, TimeStep
 from ..log import logger
 import six
+import numpy as np
 
 class SimulationAdderUpdater(object):
     """This class contains the necessary tools to add a new simulation to the database"""
@@ -32,6 +33,7 @@ class SimulationAdderUpdater(object):
                 ts = self.add_timestep(ts_filename)
                 self.add_timestep_properties(ts)
                 self.add_halos_to_timestep(ts)
+                self.add_groups_to_timestep(ts)
             else:
                 logger.warn("Timestep already exists %r", ts_filename)
 
@@ -72,23 +74,28 @@ class SimulationAdderUpdater(object):
 
         self.session.commit()
 
-    def add_halos_to_timestep(self, ts, min_NDM=1000):
+    def add_halos_to_timestep(self, ts, enumerator='enumerate_halos', create_class=core.halo.Halo):
         halos = []
-        import numpy as np
         n_tot = []
-        for num, NDM, Nstar, Ngas in self.simulation_output.enumerate_halos(ts.extension):
+        enumerator = getattr(self.simulation_output,enumerator)
+
+        for finder_id, NDM, Nstar, Ngas in enumerator(ts.extension):
             n_tot.append(NDM+Nstar+Ngas)
-        ids = np.zeros(len(n_tot), dtype=int)
-        ids[np.argsort(np.array(n_tot))[::-1]] = np.arange(len(n_tot)) + 1
-        cnt = 1
-        for num, NDM, Nstar, Ngas in self.simulation_output.enumerate_halos(ts.extension):
-            if NDM > min_NDM:
-                h = core.halo.Halo(ts, ids[cnt-1], cnt, NDM, Nstar, Ngas)
+        database_id = np.zeros(len(n_tot), dtype=int)
+        database_id[np.argsort(np.array(n_tot))[::-1]] = np.arange(len(n_tot)) + 1
+
+
+        for database_number,(finder_id, NDM, Nstar, Ngas) in zip(database_id,enumerator(ts.extension)):
+            if NDM > config.min_halo_particles:
+                h = create_class(ts, database_number, finder_id, NDM, Nstar, Ngas)
                 halos.append(h)
-            cnt += 1
-        logger.info("Add %d halos to timestep %r", len(halos),ts)
+
+        logger.info("Add %d %ss to timestep %r", len(halos), create_class.__name__, ts)
         self.session.add_all(halos)
         self.session.commit()
+
+    def add_groups_to_timestep(self, ts):
+        self.add_halos_to_timestep(ts, 'enumerate_groups', core.halo.Group)
 
     def add_timestep_properties(self, ts):
         for key, value in six.iteritems(self.simulation_output.get_timestep_properties(ts.extension)):

@@ -87,7 +87,7 @@ class HaloLinkInfo(object):
         self.name = "%s%s: %s"%(link.relation.text,weight_text,_relative_description(halo_source, halo_dest))
         self.url = request.route_url('halo_view', simid=halo_dest.timestep.simulation.basename,
                                      timestepid=halo_dest.timestep.extension,
-                                     halonumber=halo_dest.halo_number)
+                                     halonumber=halo_dest.basename)
 
 def all_simulations(request):
     return [SimulationInfo(x,request) for x in tangos.all_simulations(request.dbsession)]
@@ -103,7 +103,7 @@ def halo_links(halo, request):
 def halo_view(request):
     sim = tangos.get_simulation(request.matchdict['simid'], request.dbsession)
     ts = tangos.get_timestep(request.matchdict['timestepid'], request.dbsession, sim)
-    halo = ts.halos.filter_by(halo_number=request.matchdict['halonumber']).first()
+    halo = ts[request.matchdict['halonumber']]
 
     return {'ts_info': TimestepInfo(ts),
             'this_id': halo.id,
@@ -114,6 +114,8 @@ def halo_view(request):
             'halo_links': halo_links(halo, request),
             'time_links': TimeLinks(request, halo),
             'properties': default_properties(halo),
+            'halo_path': halo.path,
+            'finder_id': halo.finder_id,
             'calculate_url': request.route_url('get_property',simid=request.matchdict['simid'],
                                             timestepid=request.matchdict['timestepid'],
                                             halonumber=request.matchdict['halonumber'],
