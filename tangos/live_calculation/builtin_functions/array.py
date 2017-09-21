@@ -18,3 +18,8 @@ def single_array_smooth(ar_in, npix=5, one_tailed=False) :
 def array_smooth(halos, vals, smooth_npix):
     return [single_array_smooth(vals_i, smooth_npix) if vals_i is not None else None for vals_i in vals]
 array_smooth.set_input_options(1, provide_proxy=True, assert_class = FixedNumericInput)
+
+@BuiltinFunction.register
+def element(halos, arrays, index):
+    return [ar_i[index] if ar_i is not None else None for ar_i in arrays]
+element.set_input_options(1, provide_proxy=True, assert_class = FixedNumericInput)
