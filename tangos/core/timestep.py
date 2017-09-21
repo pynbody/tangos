@@ -120,7 +120,10 @@ class TimeStep(Base):
         from . import Session
         from .halo import Halo
 
-        object_typecode = kwargs.get('object_typecode',None)
+        object_typecode = None
+        object_typetag = kwargs.get('object_typetag',None)
+        if object_typetag:
+            object_typecode = Halo.object_typecode_from_tag(object_typetag)
 
         if isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]
@@ -132,6 +135,8 @@ class TimeStep(Base):
         session = Session()
         try:
             raw_query = session.query(Halo).filter_by(timestep_id=self.id)
+            if object_typecode is not None:
+                raw_query = raw_query.filter_by(object_typecode=object_typecode)
             query = property_description.supplement_halo_query(raw_query)
             results = query.all()
             results = property_description.values_sanitized(results)

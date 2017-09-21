@@ -91,7 +91,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
 
     def load_halo(self, ts_extension, halo_number, object_typetag='halo', mode=None):
         if mode=='partial':
-            h = self._construct_halo_cat(ts_extension, object_type)
+            h = self._construct_halo_cat(ts_extension, object_typetag)
             h_file = h.load_copy(halo_number)
             h_file.physical_units()
             return h_file
@@ -152,9 +152,9 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
 
 
 
-    def _construct_halo_cat(self, ts_extension, object_type):
-        if object_type!='halo':
-            raise ValueError("Unknown halo type %r"%object_type)
+    def _construct_halo_cat(self, ts_extension, object_typetag):
+        if object_typetag!= 'halo':
+            raise ValueError("Unknown object type %r" % object_typetag)
         f = self.load_timestep(ts_extension)
         # amiga grp halo
         h = _loaded_halocats.get(id(f), lambda: None)()
@@ -165,13 +165,21 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             _loaded_halocats[id(f)] = weakref.ref(h)
         return h  # pynbody.halo.AmigaGrpCatalogue(f)
 
-    def match_halos(self, f1, f2, halo_min, halo_max, dm_only=False, threshold=0.005):
+    def match_halos(self, ts1, ts2, halo_min, halo_max,
+                    dm_only=False, threshold=0.005, object_typetag='halo'):
         if dm_only:
             only_family='dm'
         else:
             only_family=None
 
-        return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold, only_family=only_family)
+        f1 = self.load_timestep(ts1)
+        f2 = self.load_timestep(ts2)
+
+        h1 = self._construct_halo_cat(ts1, object_typetag)
+        h2 = self._construct_halo_cat(ts2, object_typetag)
+
+        return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold,
+                                                 only_family=only_family, groups_1=h1, groups_2=h2)
 
     def enumerate_halos(self, ts_extension, object_typetag="halo"):
         ts = DummyTimeStep(self._extension_to_filename(ts_extension))
@@ -184,20 +192,18 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
                 yield X
         except IOError:
             logger.warn("No halo statistics file found for timestep %r",ts)
-            logger.warn("Reading halos directly using pynbody")
-            f = self.load_timestep_without_caching(ts_extension)
-            h = f.halos()
+
+            try:
+                h = self._construct_halo_cat(ts_extension, object_typetag)
+            except:
+                logger.warn("Unable to read %ss using pynbody, skipping step", object_typetag)
+                raise StopIteration
+
+            logger.info("Reading %ss directly using pynbody", object_typetag)
 
             istart = 1
 
             if isinstance(h, pynbody.halo.SubfindCatalogue):
-                try:
-                    h =f.halos(subs=True) # Subfind's subs are our "halos"
-                    logger.warn("Detected a SubFind halo catalogue - enumerating the subhalos (rather than the groups)")
-                except ValueError:
-                    logger.warn("Detected a SubFind halo catalogue - tried to enumerate the subhalos (rather than the groups) but none exist")
-                    raise StopIteration
-
                 istart = 0 # subfind indexes from zero
 
             if hasattr(h, 'precalculate'):
@@ -212,23 +218,9 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
                 except (ValueError, KeyError) as e:
                     pass
 
-    def enumerate_groups(self, ts_extension):
-        return []
 
 class SubfindOutputSetHandler(PynbodyOutputSetHandler):
     patterns = ["snapshot_???"]
-
-    def enumerate_groups(self, ts_extension):
-        f = self.load_timestep_without_caching(ts_extension)
-        h = f.halos(subs=False)
-
-        for i in range(0, len(h)):
-            try:
-                hi = h[i]
-                if len(hi.dm) > config.min_halo_particles:
-                    yield i, len(hi.dm), len(hi.star), len(hi.gas)
-            except (ValueError, KeyError) as e:
-                pass
 
     def enumerate_timestep_extensions(self):
         base = os.path.join(config.base, self.basename)
@@ -242,7 +234,6 @@ class SubfindOutputSetHandler(PynbodyOutputSetHandler):
 
     def _construct_group_cat(self, ts_extension):
         f = self.load_timestep(ts_extension)
-        # amiga grp halo
         h = _loaded_halocats.get(id(f)+1, lambda: None)()
         if h is None:
             h = f.halos()
@@ -250,13 +241,13 @@ class SubfindOutputSetHandler(PynbodyOutputSetHandler):
             _loaded_halocats[id(f)+1] = weakref.ref(h)
         return h
 
-    def _construct_halo_cat(self, ts_extension, object_type):
-        if object_type=='halo':
-            return super(SubfindOutputSetHandler, self)._construct_halo_cat(ts_extension, object_type)
-        elif object_type=='group':
+    def _construct_halo_cat(self, ts_extension, object_typetag):
+        if object_typetag== 'halo':
+            return super(SubfindOutputSetHandler, self)._construct_halo_cat(ts_extension, object_typetag)
+        elif object_typetag== 'group':
             return self._construct_group_cat(ts_extension)
         else:
-            raise ValueError("Unknown halo type %r"%object_type)
+            raise ValueError("Unknown halo type %r" % object_typetag)
 
 
 

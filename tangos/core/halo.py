@@ -56,6 +56,16 @@ class Halo(Base):
         else:
             return match_tag
 
+    @staticmethod
+    def object_typetag_from_code(typecode):
+        if typecode==0:
+            return Halo.tag
+        else:
+            for c in Halo.__subclasses__():
+                if c.__mapper_args__['polymorphic_identity'] == typecode:
+                    return c.tag
+        raise ValueError("Unknown object typecode %d",typecode)
+
     def __init__(self, timestep, halo_number, finder_id, NDM, NStar, NGas, object_typecode=0):
         self.timestep = timestep
         self.halo_number = int(halo_number)

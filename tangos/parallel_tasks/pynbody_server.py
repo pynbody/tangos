@@ -294,6 +294,7 @@ class RemoteSnapshotConnection(object):
         log.logger.info("Pynbody client: connected to remote snapshot %r", fname)
 
     def get_view(self, filter_):
+        # TODO: deal with different object types (rather than just halos)
         return RemoteSubSnap(self, filter_)
 
     def disconnect(self):

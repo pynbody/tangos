@@ -3,7 +3,7 @@ import tangos
 
 def halo_from_request(request):
     ts = timestep_from_request(request)
-    halo = ts.halos.filter_by(halo_number=request.matchdict['halonumber']).first()
+    halo = ts[request.matchdict['halonumber']]
     return halo
 
 def timestep_from_request(request):

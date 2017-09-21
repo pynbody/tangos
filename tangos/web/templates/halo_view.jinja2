@@ -7,7 +7,7 @@
     <div id="cascade_url" class="dynamic-update hidden">{{ cascade_url }}</div>
     <div id="tree_url" class="dynamic-update hidden">{{ tree_url }}</div>
 
-    <h1 class="dynamic-update" id="halo-title">{{ halo_tag  }} {{ halo_number }} of {{ timestep }}</h1>
+    <h1 class="dynamic-update" id="halo-title">{{ halo_typetag  }} {{ halo_number }} of {{ timestep }}</h1>
 
 
     <div class="keeponscreen dynamic-update" id="navigation">
@@ -22,12 +22,12 @@
                     {% endfor %}
                   </td>
                 </tr>
-               <tr><td>Look at another halo:</td>
+               <tr><td>Look at another {{ halo_typetag }}:</td>
                <td>
                     {% if halo_number>1 %}
-                       <a href="{{ gather_url }}{{ halo_number-1 }}" class="ajaxenabled">{{ halo_number-1 }}</a> |
+                       <a href="{{ gather_url }}{{ halo_typetag }}_{{ halo_number-1 }}" class="ajaxenabled">{{ halo_number-1 }}</a> |
                     {% endif %} {{ halo_number }} |
-                    <a href="{{ gather_url }}{{ halo_number+1 }}" class="ajaxenabled">{{ halo_number+1 }}</a>
+                    <a href="{{ gather_url }}{{ halo_typetag }}_{{ halo_number+1 }}" class="ajaxenabled">{{ halo_number+1 }}</a>
                </td></tr>
             <tr><td><label for="target_sim_id">Find in another simulation:</label></td>
             <td><select name="target_sim_id" id="target_sim_id" onchange="findInOtherSimulation();">
@@ -75,7 +75,7 @@
 
 
     <form id="properties_form" onsubmit="return false;" class="dynamic-update autorestore" onchange="fetchPlot();" >
-
+    <input type="hidden" name="object_typetag" value="{{ halo_typetag }}"/>
     <table>
         <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
         <tr id="custom-row-1">
@@ -195,7 +195,7 @@
             return uri;
         }
 
-        function getPlotUriTwoVariables(name1, name2) {
+        function getPlotUriTwoVariables(name1, name2, typetag) {
             var uri;
             var plotformvals = $('#image_form').values();
             var plotType = plotformvals['type'];
@@ -205,7 +205,7 @@
                 uri = $('#cascade_url').text() +
                     name1 + "/vs/" + name2 + ".png";
 
-            return uri+"?"+$('#image_form').serialize()+"&"+getFilterUri();
+            return uri+"?"+$('#image_form').serialize()+"&"+getFilterUri()+"&object_typetag="+typetag;
         }
 
         var plotFetchingDisabled = false;
@@ -251,7 +251,7 @@
                 if(name1===undefined || name2===undefined)
                     return;
 
-                uri = getPlotUriTwoVariables(name1, name2);
+                uri = getPlotUriTwoVariables(name1, name2, formvals['object_typetag']);
 
                 if(uri===undefined) {
                     alert("Unknown plot type");

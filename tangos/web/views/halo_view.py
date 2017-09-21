@@ -23,7 +23,7 @@ class TimeLinks(object):
         urls = [
             request.route_url(r, simid=halo.timestep.simulation.basename,
                               timestepid=halo.timestep.extension,
-                              halonumber=halo.halo_number,
+                              halonumber=halo.basename,
                               n=n)
             for r,n in zip(route_names, ns)
             ]
@@ -108,6 +108,7 @@ def halo_view(request):
     return {'ts_info': TimestepInfo(ts),
             'this_id': halo.id,
             'halo_number': halo.halo_number,
+            'halo_typetag': halo.tag,
             'timestep': ts.extension,
             'simulation': sim.basename,
             'all_simulations': all_simulations(request),

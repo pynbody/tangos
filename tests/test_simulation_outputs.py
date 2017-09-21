@@ -66,6 +66,12 @@ def test_load_halo():
     assert len(pynbody_h)==200
     assert_is_subview_of_full_file(pynbody_h)
 
+def test_partial_load_halo():
+    add_test_simulation_to_db()
+    pynbody_h = db.get_halo("test_tipsy/tiny.000640/1").load(mode='partial')
+    assert len(pynbody_h) == 200
+    assert pynbody_h.ancestor is pynbody_h
+
 def test_load_tracker_halo():
     add_test_simulation_to_db()
     pynbody_h = db.get_halo("test_tipsy/tiny.000640/1.1").load()

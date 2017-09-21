@@ -21,6 +21,7 @@ class TestSimulationGenerator(object):
         self.sim = tangos.core.simulation.Simulation(sim_name)
         self._ptcls_in_common_dict = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
         self._BH_dict = core.dictionary.get_or_create_dictionary_item(self.session, "BH")
+        self._host_dict = core.dictionary.get_or_create_dictionary_item(self.session, "host")
         self.session.commit()
 
     def add_objects_to_timestep(self, num_halos, object_typecode=0, NDM=None):
@@ -128,6 +129,10 @@ class TestSimulationGenerator(object):
             forward_link = core.halo_data.HaloLink(source_halo, target_bh, self._BH_dict,
                                                    1.0)
             self.session.add(forward_link)
+
+            reverse_link = core.halo_data.HaloLink(target_bh, source_halo, self._host_dict,
+                                                   1.0)
+            self.session.add(reverse_link)
 
         self.session.commit()
 

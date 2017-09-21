@@ -44,8 +44,11 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
         for i in range(nhalos):
             yield i+1, 2000-i, 0, 0
 
-    def match_halos(self, f1, f2, halo_min, halo_max, dm_only=False, threshold=0.005):
+    def match_halos(self, ts1, ts2, halo_min, halo_max, dm_only=False, threshold=0.005, object_typetag='halo'):
         """Test implementation of match halos always links halo i->i, and a 0.05 mass transfer from i->i+1"""
+        assert object_typetag=='halo' # currently only handle halos
+        f1 = self.load_timestep(ts1)
+        f2 = self.load_timestep(ts2)
         if halo_max is None:
             halo_max = f1.max_halos
         halo_max = min((halo_max,f1.max_halos,f2.max_halos))

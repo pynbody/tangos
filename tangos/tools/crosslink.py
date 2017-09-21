@@ -3,6 +3,7 @@ import argparse
 
 import tangos as db
 import tangos.core
+from .. import config
 from tangos import parallel_tasks
 from tangos import core
 import sqlalchemy, sqlalchemy.orm
@@ -27,6 +28,9 @@ class GenericLinker(object):
                             help="Print extra information")
         parser.add_argument("--force", action="store_true",
                             help="Generate links even if they already exist for those timesteps")
+        parser.add_argument('--type', action='store', type=str, dest='type_', default='halo',
+                            help="Secify the object type to run on by tag name (or integer). "
+                                 "Can be halo (default), group, or BH.")
         parser.add_argument("--hmax", action="store", type=int, default=None,
                             help="Specify the maximum number of halos per snapshot")
         parser.add_argument('--backwards', action='store_true',
@@ -45,10 +49,12 @@ class GenericLinker(object):
 
         pair_list = parallel_tasks.distributed(pair_list)
 
+        object_type = core.halo.Halo.object_typecode_from_tag(self.args.type_)
+
         for s_x, s in pair_list:
             logger.info("Linking %r and %r",s_x,s)
-            if self.args.force or self.need_crosslink_ts(s_x, s):
-                self.crosslink_ts(s_x, s, 0, self.args.hmax, self.args.dmonly)
+            if self.args.force or self.need_crosslink_ts(s_x, s, object_type):
+                self.crosslink_ts(s_x, s, 0, self.args.hmax, self.args.dmonly, object_typecode=object_type)
 
     def _generate_timestep_pairs(self):
         raise NotImplementedError("No implementation found for generating the timestep pairs")
@@ -57,7 +63,7 @@ class GenericLinker(object):
         h = ts.halos.filter_by(finder_id=halo_number).first()
         return h
 
-    def need_crosslink_ts(self, ts1, ts2):
+    def need_crosslink_ts(self, ts1, ts2, object_typecode=0):
         num_sources = ts1.halos.count()
         num_targets = ts2.halos.count()
         if num_targets == 0:
@@ -73,6 +79,8 @@ class GenericLinker(object):
         exists = self.session.query(core.halo_data.HaloLink).join(halo_source, core.halo_data.HaloLink.halo_from). \
                     join(halo_target, core.halo_data.HaloLink.halo_to). \
                     filter(halo_source.timestep_id == ts1.id, halo_target.timestep_id == ts2.id,
+                           halo_source.object_typecode == object_typecode,
+                           halo_target.object_typecode == object_typecode,
                         core.halo_data.HaloLink.relation_id == same_d_id).count() > 0
         self.session.commit()
 
@@ -99,19 +107,19 @@ class GenericLinker(object):
                         missing_db_object)
         return items
 
-    def make_finder_id_to_halo_map(self, ts):
-        halos = ts.halos.all()
+    def make_finder_id_to_halo_map(self, ts, object_typecode):
+        halos = ts.objects.filter_by(object_typecode=object_typecode).all()
         halos_map = {h.finder_id: h for h in halos}
         return halos_map
 
-    def crosslink_ts(self, ts1, ts2, halo_min=0, halo_max=None, dmonly=False, threshold=0.005):
+    def crosslink_ts(self, ts1, ts2, halo_min=0, halo_max=None, dmonly=False, threshold=config.default_linking_threshold, object_typecode=0):
         """Link the halos of two timesteps together
 
         :type ts1 tangos.core.TimeStep
         :type ts2 tangos.core.TimeStep"""
         logger.info("Gathering halo information for %r and %r", ts1, ts2)
-        halos1 = self.make_finder_id_to_halo_map(ts1)
-        halos2 = self.make_finder_id_to_halo_map(ts2)
+        halos1 = self.make_finder_id_to_halo_map(ts1, object_typecode)
+        halos2 = self.make_finder_id_to_halo_map(ts2, object_typecode)
 
         with parallel_tasks.RLock("create_db_objects_from_catalog"):
             same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
@@ -124,12 +132,15 @@ class GenericLinker(object):
                          ts1, ts2)
             return
 
+        # keep the files alive throughout (so they are not garbage-collected after the first match_halos):
         snap1 = ts1.load()
         snap2 = ts2.load()
 
         try:
-            cat = output_handler_1.match_halos(snap1, snap2, halo_min, halo_max, dmonly, threshold)
-            back_cat = output_handler_2.match_halos(snap2, snap1, halo_min, halo_max, dmonly, threshold)
+            cat = output_handler_1.match_halos(ts1.extension, ts2.extension, halo_min, halo_max, dmonly, threshold,
+                                               core.halo.Halo.object_typetag_from_code(object_typecode))
+            back_cat = output_handler_2.match_halos(ts2.extension, ts1.extension, halo_min, halo_max, dmonly, threshold,
+                                               core.halo.Halo.object_typetag_from_code(object_typecode))
         except:
             logger.exception("Exception during attempt to crosslink timesteps %r and %r", ts1, ts2)
             return

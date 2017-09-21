@@ -20,7 +20,11 @@ default_fileset_handler_class = "pynbody.ChangaOutputSetHandler"
 
 num_multihops_max_default = 100
 
+default_linking_threshold = 0.005
+# the percentage of particles in common between two objects before the database even bothers to store the relationship
+
 min_halo_particles = 1000
+# the minimum number of particles needed in an object before the database bothers to store it
 
 default_backend = 'mpi4py'
 

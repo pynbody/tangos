@@ -13,6 +13,8 @@ from tangos import testing
 import os
 import six
 from six.moves import range
+from nose.tools import assert_raises
+from tangos import live_calculation
 
 def setup():
     testing.init_blank_db_for_testing()
@@ -216,3 +218,14 @@ def test_gather_closes_connections():
     ts = tangos.get_timestep("sim/ts1")
     with db.testing.assert_connections_all_closed():
         ts.gather_property('Mvir')
+
+def test_gather_restricted_object_type():
+    ts = tangos.get_timestep("sim/ts1")
+    with assert_raises(live_calculation.NoResultsError):
+        non_existent = ts.gather_property("hole_mass", object_typetag='halo')
+    ok_1, = ts.gather_property("hole_mass",object_typetag='BH')
+    ok_2, = ts.gather_property("hole_mass")
+    npt.assert_allclose(ok_1, [100., 200., 300., 400.])
+    npt.assert_allclose(ok_2, [100., 200., 300., 400.])
+
+

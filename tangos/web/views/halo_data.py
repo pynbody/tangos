@@ -154,6 +154,7 @@ def gathered_plot(request):
     name1 = decode_property_name(request.matchdict['nameid1'])
     name2 = decode_property_name(request.matchdict['nameid2'])
     filter = decode_property_name(request.GET.get('filter', ""))
+    object_typetag = request.matchdict.get('object_typetag',None)
 
     if filter!="":
         v1, v2, f = ts.gather_property(name1, name2, filter)

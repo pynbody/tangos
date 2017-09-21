@@ -38,3 +38,6 @@ def test_tags():
     assert Halo.object_typecode_from_tag('BH')==1
     assert Halo.object_typecode_from_tag('group')==2
     assert Halo.object_typecode_from_tag(1)==1
+    assert Halo.object_typetag_from_code(0)=='halo'
+    assert Halo.object_typetag_from_code(1)=='BH'
+    assert Halo.object_typetag_from_code(2)=='group'

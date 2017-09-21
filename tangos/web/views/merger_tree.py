@@ -36,13 +36,17 @@ def _construct_preliminary_mergertree(halo, base_halo, must_include, request, vi
         else:
             moreinfo = "%s %d, NDM=%d" % (halo.__class__.__name__, halo.halo_number, halo.NDM)
 
-    Mvir = halo.properties.filter_by(
-        name_id=tangos.core.dictionary.get_dict_id(mass_name, session=tangos.core.Session.object_session(halo))).first()
+    try:
+        Mvir = halo.properties.filter_by(
+            name_id=tangos.core.dictionary.get_dict_id(mass_name, session=tangos.core.Session.object_session(halo))).first()
+    except KeyError:
+        Mvir = None
+
     if Mvir is not None:
         moreinfo += ", %s=%.2e" % (mass_name, Mvir.data)
         unscaled_size = math.log10(Mvir.data)
     else:
-        unscaled_size = 1.0
+        unscaled_size = math.log10(float(halo.NDM))
     nodeclass = 'node-dot-standard'
 
     name = str(halo.halo_number)
@@ -64,7 +68,7 @@ def _construct_preliminary_mergertree(halo, base_halo, must_include, request, vi
     output = {'name': name,
               'url': request.route_url('halo_view', simid=base_halo.timestep.simulation.basename,
                                      timestepid=halo.timestep.extension,
-                                     halonumber=halo.halo_number),
+                                     halonumber=halo.basename),
               'nodeclass': nodeclass,
               'moreinfo': moreinfo,
               'timeinfo': timeinfo,
