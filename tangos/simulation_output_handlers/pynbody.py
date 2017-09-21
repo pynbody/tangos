@@ -89,7 +89,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
-    def load_halo(self, ts_extension, halo_number, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, halo_number, object_typetag='halo', mode=None):
         if mode=='partial':
             h = self._construct_halo_cat(ts_extension, object_typetag)
             h_file = h.load_copy(halo_number)
@@ -181,7 +181,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold,
                                                  only_family=only_family, groups_1=h1, groups_2=h2)
 
-    def enumerate_halos(self, ts_extension, object_typetag="halo"):
+    def enumerate_objects(self, ts_extension, object_typetag="halo"):
         ts = DummyTimeStep(self._extension_to_filename(ts_extension))
         ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
 

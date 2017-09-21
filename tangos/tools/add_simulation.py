@@ -77,7 +77,7 @@ class SimulationAdderUpdater(object):
     def add_objects_to_timestep(self, ts, create_class=core.halo.Halo):
         halos = []
         n_tot = []
-        enumerator = self.simulation_output.enumerate_halos
+        enumerator = self.simulation_output.enumerate_objects
 
         for finder_id, NDM, Nstar, Ngas in enumerator(ts.extension, object_typetag=create_class.tag):
             n_tot.append(NDM+Nstar+Ngas)

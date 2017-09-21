@@ -103,7 +103,7 @@ class Halo(Base):
         pynbody's partial loading system is used to only load the data for the one halo, saving memory."""
 
         handler = self.timestep.simulation.get_output_set_handler()
-        return handler.load_halo(self.timestep.extension, self.finder_id, object_typetag=self.tag, mode=mode)
+        return handler.load_object(self.timestep.extension, self.finder_id, object_typetag=self.tag, mode=mode)
 
     def calculate(self, name, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.

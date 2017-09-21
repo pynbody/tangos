@@ -30,7 +30,7 @@ class YtOutputSetHandler(SimulationOutputSetHandler):
         f = yt.load(self._extension_to_filename(ts_extension))
         return f
 
-    def load_halo(self, ts_extension, object_number, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, object_number, object_typetag='halo', mode=None):
         raise NotImplementedError("Halos not yet implemented for yt")
 
 
@@ -41,7 +41,7 @@ class YtOutputSetHandler(SimulationOutputSetHandler):
     def match_halos(self, ts1, ts2, halo_min, halo_max, dm_only=False, threshold=0.005, object_typetag='halo'):
         raise NotImplementedError("Matching halos still needs to be implemented for yt")
 
-    def enumerate_halos(self, ts_extension, object_typetag="halo"):
+    def enumerate_objects(self, ts_extension, object_typetag="halo"):
         # TODO: clean this up - it's a direct copy of something in the pynbody simulation output handler
         #       and so the statfile handling needs to be factored out one way or another
 

@@ -35,7 +35,7 @@ class SimulationOutputSetHandler(object):
         """Returns a dictionary of properties of the timestep"""
         raise NotImplementedError
 
-    def enumerate_halos(self, ts_extension, object_typetag='halo'):
+    def enumerate_objects(self, ts_extension, object_typetag='halo'):
         """Yield halo_number, NDM, NStar, Ngas for halos in the specified timestep"""
         raise NotImplementedError
 
@@ -62,7 +62,7 @@ class SimulationOutputSetHandler(object):
         """Creates and returns an object that connects to the data for a timestep on disk"""
         raise NotImplementedError
 
-    def load_halo(self, ts_extension, halo_number, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, halo_number, object_typetag='halo', mode=None):
         """Creates and returns an object that connects to the data for a halo on disk.
 
         :arg ts_extension - the timestep path (relative to the simulation basename)
@@ -84,7 +84,7 @@ class SimulationOutputSetHandler(object):
     def load_tracked_region(self, ts_extension, track_data, mode=None):
         """Creates and returns an object that connects to the on-disk data for the specified tracked region.
 
-        :arg mode - sets a method for loading the tracked region; see load_halo mode for more information"""
+        :arg mode - sets a method for loading the tracked region; see load_object mode for more information"""
         raise NotImplementedError
 
 

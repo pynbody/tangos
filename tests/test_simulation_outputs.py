@@ -30,8 +30,8 @@ def test_timestep_properties():
     npt.assert_allclose(props['time_gyr'],2.17328504831)
     npt.assert_allclose(props['redshift'], 2.96382819878)
 
-def test_enumerate_halos():
-    halos = list(output_manager.enumerate_halos("tiny.000640"))
+def test_enumerate_objects():
+    halos = list(output_manager.enumerate_objects("tiny.000640"))
     assert len(halos)==9
     assert halos[0]==[1,2041986, 364232, 198355]
     assert halos[1]==[2, 421027, 30282, 57684]
@@ -42,14 +42,14 @@ def test_properties():
     assert props['macros'].startswith("CHANGESOFT COOLING_COSMO") # from log file
     assert "dBHSinkAlpha" not in props # in the param file but not in the list of parameters we want to expose
 
-def test_enumerate_halos_using_statfile():
-    halos = list(output_manager.enumerate_halos("tiny.000640"))
+def test_enumerate_objects_using_statfile():
+    halos = list(output_manager.enumerate_objects("tiny.000640"))
     assert halos[0]==[1,2041986,364232, 198355]
     assert len(halos)==9
 
-def test_enumerate_halos_using_pynbody():
+def test_enumerate_objects_using_pynbody():
     config.min_halo_particles = 400
-    halos = list(output_manager.enumerate_halos("tiny.000832"))
+    halos = list(output_manager.enumerate_objects("tiny.000832"))
     npt.assert_equal(halos[0], [1,477,80, 48])
     assert len(halos)==1
 
