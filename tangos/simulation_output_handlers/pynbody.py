@@ -89,9 +89,9 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
-    def load_halo(self, ts_extension, halo_number, mode=None):
+    def load_halo(self, ts_extension, halo_number, halo_type='halo', mode=None):
         if mode=='partial':
-            h = self._construct_halo_cat(ts_extension)
+            h = self._construct_halo_cat(ts_extension, halo_type)
             h_file = h.load_copy(halo_number)
             h_file.physical_units()
             return h_file
@@ -107,7 +107,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             f.physical_units()
             return f
         elif mode is None:
-            h = self._construct_halo_cat(ts_extension)
+            h = self._construct_halo_cat(ts_extension, halo_type)
             return h[halo_number]
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
@@ -152,7 +152,9 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
 
 
 
-    def _construct_halo_cat(self, ts_extension):
+    def _construct_halo_cat(self, ts_extension, halo_type):
+        if halo_type!='halo':
+            raise ValueError("Unknown halo type %r"%halo_type)
         f = self.load_timestep(ts_extension)
         # amiga grp halo
         h = _loaded_halocats.get(id(f), lambda: None)()
@@ -171,7 +173,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
 
         return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold, only_family=only_family)
 
-    def enumerate_halos(self, ts_extension):
+    def enumerate_halos(self, ts_extension, halo_type="halo"):
         ts = DummyTimeStep(self._extension_to_filename(ts_extension))
         ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
 
@@ -248,24 +250,22 @@ class SubfindOutputSetHandler(PynbodyOutputSetHandler):
             _loaded_halocats[id(f)+1] = weakref.ref(h)
         return h
 
-    def load_group(self, ts_extension, halo_number, mode=None):
-        if mode=='partial':
-            h = self._construct_group_cat(ts_extension)
-            h_file = h.load_copy(halo_number)
-            h_file.physical_units()
-            return h_file
-        elif mode is None:
-            h = self._construct_group_cat(ts_extension)
-            return h[halo_number]
+    def _construct_halo_cat(self, ts_extension, halo_type):
+        if halo_type=='halo':
+            return super(self, SubfindOutputSetHandler)._construct_halo_cat(ts_extension, halo_type)
+        elif halo_type=='group':
+            return self._construct_group_cat(ts_extension)
         else:
-            raise NotImplementedError("Load mode %r is not implemented"%mode)
+            raise ValueError("Unknown halo type %r"%halo_type)
+
+
 
 
 class ChangaOutputSetHandler(PynbodyOutputSetHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",
                      "dESN", "bLowTCool", "bSelfShield", "dExtraCoolShutoff"]
 
-    patterns = ["*.00???","*.0???"]
+    patterns = ["*.00???","*.00????"]
 
 
     def get_properties(self):
@@ -296,7 +296,7 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
 
     def _get_log_path(self, paramfile_name, paramfile_dict):
         prop_dict = {}
-        log_fn = paramfile_dict["achOutName"] + ".log"
+        log_fn = paramfile_dict.get("achOutName","") + ".log"
         log_path = paramfile_name.split("/")[:-1]
         log_path.append(log_fn)
         log_path = "/".join(log_path)

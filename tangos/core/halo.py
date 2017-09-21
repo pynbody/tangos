@@ -84,7 +84,7 @@ class Halo(Base):
         pynbody's partial loading system is used to only load the data for the one halo, saving memory."""
 
         handler = self.timestep.simulation.get_output_set_handler()
-        return handler.load_halo(self.timestep.extension, self.finder_id, mode=mode)
+        return handler.load_halo(self.timestep.extension, self.finder_id, halo_type=self.tag, mode=mode)
 
     def calculate(self, name, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.
@@ -315,7 +315,7 @@ class Halo(Base):
 TimeStep.halos = orm.relationship(Halo, cascade='all', lazy='dynamic',
                                   primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.halo_type==0)),
                                   foreign_keys=Halo.timestep_id,
-                                  order_by=Halo.NDM.desc())
+                                  order_by=Halo.halo_number)
 
 class BH(Halo):
     __mapper_args__ = {
@@ -348,13 +348,9 @@ class Group(Halo):
         super(Group, self).__init__(*args)
         self.halo_type = 2
 
-    def load(self, mode=None):
-        handler = self.timestep.simulation.get_output_set_handler()
-        return handler.load_group(self.timestep.extension, self.finder_id, mode=mode)
-
 
 TimeStep.groups = orm.relationship(Group, cascade='all', lazy='dynamic', primaryjoin=Group.timestep_id==TimeStep.id,
-                                   order_by=Group.NDM.desc())
+                                   order_by=Group.halo_number)
 
 
 _loaded_halocats = {}

@@ -74,18 +74,18 @@ class SimulationAdderUpdater(object):
 
         self.session.commit()
 
-    def add_halos_to_timestep(self, ts, enumerator='enumerate_halos', create_class=core.halo.Halo):
+    def add_halos_to_timestep(self, ts, create_class=core.halo.Halo):
         halos = []
         n_tot = []
-        enumerator = getattr(self.simulation_output,enumerator)
+        enumerator = self.simulation_output.enumerate_halos
 
-        for finder_id, NDM, Nstar, Ngas in enumerator(ts.extension):
+        for finder_id, NDM, Nstar, Ngas in enumerator(ts.extension, halo_type=create_class.tag):
             n_tot.append(NDM+Nstar+Ngas)
         database_id = np.zeros(len(n_tot), dtype=int)
         database_id[np.argsort(np.array(n_tot))[::-1]] = np.arange(len(n_tot)) + 1
 
 
-        for database_number,(finder_id, NDM, Nstar, Ngas) in zip(database_id,enumerator(ts.extension)):
+        for database_number,(finder_id, NDM, Nstar, Ngas) in zip(database_id,enumerator(ts.extension, halo_type=create_class.tag)):
             if NDM > config.min_halo_particles:
                 h = create_class(ts, database_number, finder_id, NDM, Nstar, Ngas)
                 halos.append(h)
@@ -95,7 +95,7 @@ class SimulationAdderUpdater(object):
         self.session.commit()
 
     def add_groups_to_timestep(self, ts):
-        self.add_halos_to_timestep(ts, 'enumerate_groups', core.halo.Group)
+        self.add_halos_to_timestep(ts, core.halo.Group)
 
     def add_timestep_properties(self, ts):
         for key, value in six.iteritems(self.simulation_output.get_timestep_properties(ts.extension)):
