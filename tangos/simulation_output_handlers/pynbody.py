@@ -89,9 +89,9 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
-    def load_halo(self, ts_extension, halo_number, halo_type='halo', mode=None):
+    def load_halo(self, ts_extension, halo_number, object_typetag='halo', mode=None):
         if mode=='partial':
-            h = self._construct_halo_cat(ts_extension, halo_type)
+            h = self._construct_halo_cat(ts_extension, object_type)
             h_file = h.load_copy(halo_number)
             h_file.physical_units()
             return h_file
@@ -107,7 +107,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             f.physical_units()
             return f
         elif mode is None:
-            h = self._construct_halo_cat(ts_extension, halo_type)
+            h = self._construct_halo_cat(ts_extension, object_typetag)
             return h[halo_number]
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
@@ -152,9 +152,9 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
 
 
 
-    def _construct_halo_cat(self, ts_extension, halo_type):
-        if halo_type!='halo':
-            raise ValueError("Unknown halo type %r"%halo_type)
+    def _construct_halo_cat(self, ts_extension, object_type):
+        if object_type!='halo':
+            raise ValueError("Unknown halo type %r"%object_type)
         f = self.load_timestep(ts_extension)
         # amiga grp halo
         h = _loaded_halocats.get(id(f), lambda: None)()
@@ -173,7 +173,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
 
         return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold, only_family=only_family)
 
-    def enumerate_halos(self, ts_extension, halo_type="halo"):
+    def enumerate_halos(self, ts_extension, object_typetag="halo"):
         ts = DummyTimeStep(self._extension_to_filename(ts_extension))
         ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
 
@@ -250,13 +250,13 @@ class SubfindOutputSetHandler(PynbodyOutputSetHandler):
             _loaded_halocats[id(f)+1] = weakref.ref(h)
         return h
 
-    def _construct_halo_cat(self, ts_extension, halo_type):
-        if halo_type=='halo':
-            return super(self, SubfindOutputSetHandler)._construct_halo_cat(ts_extension, halo_type)
-        elif halo_type=='group':
+    def _construct_halo_cat(self, ts_extension, object_type):
+        if object_type=='halo':
+            return super(SubfindOutputSetHandler, self)._construct_halo_cat(ts_extension, object_type)
+        elif object_type=='group':
             return self._construct_group_cat(ts_extension)
         else:
-            raise ValueError("Unknown halo type %r"%halo_type)
+            raise ValueError("Unknown halo type %r"%object_type)
 
 
 

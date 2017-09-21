@@ -276,7 +276,7 @@ class BHGal(LiveHaloProperties):
         return self._bhtype, self._bhtype+"."+self._choicep
 
     def live_calculate(self, halo, *args):
-        if halo.halo_type != 0:
+        if halo.object_typecode != 0:
             return None
 
         if self._bhtype not in list(halo.keys()):

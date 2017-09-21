@@ -35,7 +35,7 @@ class SimulationOutputSetHandler(object):
         """Returns a dictionary of properties of the timestep"""
         raise NotImplementedError
 
-    def enumerate_halos(self, ts_extension, halo_type='halo'):
+    def enumerate_halos(self, ts_extension, object_typetag='halo'):
         """Yield halo_number, NDM, NStar, Ngas for halos in the specified timestep"""
         raise NotImplementedError
 
@@ -62,14 +62,14 @@ class SimulationOutputSetHandler(object):
         """Creates and returns an object that connects to the data for a timestep on disk"""
         raise NotImplementedError
 
-    def load_halo(self, ts_extension, halo_number, halo_type='halo', mode=None):
+    def load_halo(self, ts_extension, halo_number, object_typetag='halo', mode=None):
         """Creates and returns an object that connects to the data for a halo on disk.
 
         :arg ts_extension - the timestep path (relative to the simulation basename)
 
         :arg halo_number - the halo number in the raw halo finder output
 
-        :arg halo_type - the type of halo catalogue (normally 'halo' or, for Subfind, might be 'group' to get
+        :arg object_typetag - the type of halo catalogue (normally 'halo' or, for Subfind, might be 'group' to get
                                                      the top-level groups)
 
         :arg mode - sets a method for loading the halo, which is dependent on being implemented by the underlying

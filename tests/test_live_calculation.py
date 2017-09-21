@@ -20,7 +20,7 @@ def setup():
 
     generator = testing.TestSimulationGenerator()
     ts1 = generator.add_timestep()
-    ts1_h1, ts2_h2 = generator.add_halos_to_timestep(2)
+    ts1_h1, ts2_h2 = generator.add_objects_to_timestep(2)
 
 
     ts1_h1['dummy_property_1'] = np.arange(0,100.0)
@@ -39,7 +39,7 @@ def setup():
 
 
     generator.add_timestep()
-    generator.add_halos_to_timestep(1)
+    generator.add_objects_to_timestep(1)
     generator.link_last_halos()
 
 

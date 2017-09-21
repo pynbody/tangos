@@ -12,7 +12,7 @@ def setup():
 
     generator = tangos.testing.TestSimulationGenerator()
     generator.add_timestep()
-    halo_1, = generator.add_halos_to_timestep(1)
+    halo_1, = generator.add_objects_to_timestep(1)
     bh_1, bh_2 = generator.add_bhs_to_timestep(2)
 
     halo_1['BH'] = bh_2, bh_1
@@ -28,3 +28,13 @@ def test_bh_identity():
 def test_bh_mapping():
     assert tangos.get_halo(2) in tangos.get_halo(1)['BH']
     assert tangos.get_halo(3) in tangos.get_halo(1)['BH']
+
+def test_tags():
+    from tangos.core.halo import Halo, BH, Group
+    assert Halo.class_from_tag('halo') is Halo
+    assert Halo.class_from_tag('BH') is BH
+    assert Halo.class_from_tag('group') is Group
+    assert Halo.object_typecode_from_tag('halo')==0
+    assert Halo.object_typecode_from_tag('BH')==1
+    assert Halo.object_typecode_from_tag('group')==2
+    assert Halo.object_typecode_from_tag(1)==1

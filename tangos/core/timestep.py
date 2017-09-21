@@ -67,16 +67,16 @@ class TimeStep(Base):
         from . import Session, Halo
         session = Session.object_session(self)
         if isinstance(halo_identifier, int):
-            halo_type, halo_number = 0, halo_identifier
+            object_typecode, halo_number = 0, halo_identifier
         elif "." in halo_identifier:
-            halo_type, halo_number = list(map(int, halo_identifier.split(".")))
+            object_typecode, halo_number = list(map(int, halo_identifier.split(".")))
         elif "_" in halo_identifier:
-            halo_type, halo_number = halo_identifier.split("_")
-            halo_type = Halo.class_from_tag(halo_type).__mapper_args__['polymorphic_identity']
+            object_typecode, halo_number = halo_identifier.split("_")
+            object_typecode = Halo.class_from_tag(object_typecode).__mapper_args__['polymorphic_identity']
             halo_number = int(halo_number)
         else:
-            halo_type, halo_number = 0, int(halo_identifier)
-        return session.query(Halo).filter_by(timestep_id=self.id, halo_number=halo_number, halo_type=halo_type).first()
+            object_typecode, halo_number = 0, int(halo_identifier)
+        return session.query(Halo).filter_by(timestep_id=self.id, halo_number=halo_number, object_typecode=object_typecode).first()
 
     @property
     def path(self):
@@ -105,11 +105,22 @@ class TimeStep(Base):
         raise RuntimeError("Not implemented")
 
     def gather_property(self, *plist, **kwargs):
-        """Gather up the specified properties from the child
-        halos."""
+        """Gather the specified properties from the child objects.
+
+        The parameters passed name the properties (or live-calculations) to return.
+        For example m,r = ts.gather_property("mass","radius") generates an array of mass and
+        radius for all objects in timestep ts.
+
+        :param object_type: integer or string representing the particular object type
+                            (e.g. 'halo', 'BH' or 'group'). If None (default), all
+                            types are included.
+        """
+
         from .. import live_calculation
         from . import Session
         from .halo import Halo
+
+        object_typecode = kwargs.get('object_typecode',None)
 
         if isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]

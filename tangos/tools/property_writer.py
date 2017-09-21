@@ -68,8 +68,8 @@ class PropertyWriter(object):
                                  "  --load-mode server:         a server process manages the data;"
                                  "  --load-mode server-partial: a server process figures out the indices to load, which are then passed to the partial loader" \
                                  "  --load-mode all:            each node loads all the data (default, and often fine for zoom simulations).")
-        parser.add_argument('--htype', action='store', type=int,
-                            help="Secify the halo class to run on. 0=standard, 1=tracker (e.g. black holes)")
+        parser.add_argument('--type', action='store', type=str, dest='htype',
+                            help="Secify the object type to run on by tag name (or integer). Can be halo, group, or BH.")
         parser.add_argument('--hmin', action='store', type=int, default=0,
                             help="Do not calculate halos below the specified halo")
         parser.add_argument('--hmax', action='store', type=int,
@@ -154,7 +154,8 @@ class PropertyWriter(object):
             core.halo.Halo.timestep == db_timestep,
             sqlalchemy.or_(core.halo.Halo.NDM > 1000, core.halo.Halo.NDM == 0))
         if self.options.htype is not None:
-            query = sqlalchemy.and_(query, core.halo.Halo.halo_type == self.options.htype)
+            query = sqlalchemy.and_(query, core.halo.Halo.object_typecode
+                                    == core.halo.Halo.object_typecode_from_tag(self.options.htype))
 
         needed_properties = self._needed_properties()
         pid_list = []

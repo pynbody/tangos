@@ -98,7 +98,7 @@ def _db_import_export(target_session, from_session, *sims):
             ts = target_session.merge(ts)
             for h_ext in ts_ext.halos:
                 h = Halo(ts, h_ext.halo_number, h_ext.finder_id, h_ext.NDM,
-                         h_ext.NStar, h_ext.NGas, h_ext.halo_type)
+                         h_ext.NStar, h_ext.NGas, h_ext.object_typecode)
                 h = target_session.merge(h)
                 assert h.id is not None and h.id > 0
                 external_to_internal_halo_id[h_ext.id] = h.id
@@ -254,7 +254,7 @@ def add_tracker(halo, size=None):
     tx.create_halos(ts_trigger)
     if halo is not None:
         targ = halo.timestep.halos.filter_by(
-            halo_type=1, halo_number=tx.halo_number).first()
+            object_typecode=1, halo_number=tx.halo_number).first()
         size = str(size).replace(" ", "")
         halo["dm_central_" + size] = targ
         print("Copying SSC...", end=' ')

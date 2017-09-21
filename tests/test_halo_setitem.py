@@ -12,7 +12,7 @@ def setup():
     generator = db.testing.TestSimulationGenerator()
     for i in range(3):
         generator.add_timestep()
-        generator.add_halos_to_timestep(3)
+        generator.add_objects_to_timestep(3)
 
 
 

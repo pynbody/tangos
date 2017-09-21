@@ -24,12 +24,12 @@ def setup():
 
     generator.add_timestep()
     generator_2.add_timestep()
-    generator.add_halos_to_timestep(7)
+    generator.add_objects_to_timestep(7)
 
     generator.add_timestep()
     generator_2.add_timestep()
-    generator.add_halos_to_timestep(5)
-    generator_2.add_halos_to_timestep(2)
+    generator.add_objects_to_timestep(5)
+    generator_2.add_objects_to_timestep(2)
 
     generator_2.link_last_halos_across_using_mapping(generator, {1:2, 2:1})
 
@@ -54,7 +54,7 @@ def setup():
     generator.add_mass_transfer(4,3,0.01)
 
     generator.add_timestep()
-    generator.add_halos_to_timestep(4)
+    generator.add_objects_to_timestep(4)
 
     # ts2_h1 and ts2_h2 merge to ts3_h1
     # ts2_h3 becomes ts3_h2

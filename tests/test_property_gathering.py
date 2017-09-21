@@ -23,7 +23,7 @@ def setup():
     for ts in range(1,4):
         num_halos = 4 if ts<3 else 3
         creator.add_timestep()
-        creator.add_halos_to_timestep(num_halos)
+        creator.add_objects_to_timestep(num_halos)
         creator.add_properties_to_halos(Mvir=lambda i: i+halo_offset)
         creator.add_properties_to_halos(Rvir=lambda i: (i+halo_offset)*0.1)
         halo_offset+=num_halos

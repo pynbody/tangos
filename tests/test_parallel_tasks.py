@@ -11,7 +11,7 @@ def setup():
 
     generator = testing.TestSimulationGenerator()
     generator.add_timestep()
-    generator.add_halos_to_timestep(9)
+    generator.add_objects_to_timestep(9)
 
     tangos.core.get_default_session().commit()
 

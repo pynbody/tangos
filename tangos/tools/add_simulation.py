@@ -32,8 +32,8 @@ class SimulationAdderUpdater(object):
             if not self.timestep_exists_for_extension(ts_filename):
                 ts = self.add_timestep(ts_filename)
                 self.add_timestep_properties(ts)
-                self.add_halos_to_timestep(ts)
-                self.add_groups_to_timestep(ts)
+                self.add_objects_to_timestep(ts, core.halo.Halo)
+                self.add_objects_to_timestep(ts, core.halo.Group)
             else:
                 logger.warn("Timestep already exists %r", ts_filename)
 
@@ -74,18 +74,18 @@ class SimulationAdderUpdater(object):
 
         self.session.commit()
 
-    def add_halos_to_timestep(self, ts, create_class=core.halo.Halo):
+    def add_objects_to_timestep(self, ts, create_class=core.halo.Halo):
         halos = []
         n_tot = []
         enumerator = self.simulation_output.enumerate_halos
 
-        for finder_id, NDM, Nstar, Ngas in enumerator(ts.extension, halo_type=create_class.tag):
+        for finder_id, NDM, Nstar, Ngas in enumerator(ts.extension, object_typetag=create_class.tag):
             n_tot.append(NDM+Nstar+Ngas)
         database_id = np.zeros(len(n_tot), dtype=int)
         database_id[np.argsort(np.array(n_tot))[::-1]] = np.arange(len(n_tot)) + 1
 
 
-        for database_number,(finder_id, NDM, Nstar, Ngas) in zip(database_id,enumerator(ts.extension, halo_type=create_class.tag)):
+        for database_number,(finder_id, NDM, Nstar, Ngas) in zip(database_id,enumerator(ts.extension, object_typetag=create_class.tag)):
             if NDM > config.min_halo_particles:
                 h = create_class(ts, database_number, finder_id, NDM, Nstar, Ngas)
                 halos.append(h)
@@ -93,9 +93,6 @@ class SimulationAdderUpdater(object):
         logger.info("Add %d %ss to timestep %r", len(halos), create_class.__name__, ts)
         self.session.add_all(halos)
         self.session.commit()
-
-    def add_groups_to_timestep(self, ts):
-        self.add_halos_to_timestep(ts, core.halo.Group)
 
     def add_timestep_properties(self, ts):
         for key, value in six.iteritems(self.simulation_output.get_timestep_properties(ts.extension)):

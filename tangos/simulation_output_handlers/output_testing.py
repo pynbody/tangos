@@ -38,8 +38,8 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
         result['redshift'] = float(self._get_ts_property(ts_extension, 'redshift'))
         return result
 
-    def enumerate_halos(self, ts_extension, halo_type='halo'):
-        nhalos_string = self._get_ts_property(ts_extension, halo_type+"s")
+    def enumerate_halos(self, ts_extension, object_typetag='halo'):
+        nhalos_string = self._get_ts_property(ts_extension, object_typetag+"s")
         nhalos = 0 if nhalos_string is None else int(nhalos_string)
         for i in range(nhalos):
             yield i+1, 2000-i, 0, 0
@@ -67,8 +67,8 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
         data.message = data.message[region_specification]
         return data
 
-    def load_halo(self, ts_extension, halo_number, halo_type='halo', mode=None):
-        assert halo_type=='halo'
+    def load_halo(self, ts_extension, halo_number, object_typetag='halo', mode=None):
+        assert object_typetag=='halo'
         return DummyTimestepData("Test string - this would contain the data for %s halo %d"%(ts_extension ,halo_number),
                                  float(self._get_ts_property(ts_extension, 'time')),
                                  int(self._get_ts_property(ts_extension, 'halos')),

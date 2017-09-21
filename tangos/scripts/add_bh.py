@@ -94,7 +94,7 @@ def run():
 
         logger.info("Gathering BH halo information for step %r", f)
         bhobjs, bhobj_nums, bhobj_ids = db.tracker.get_tracker_halos(f)
-        halos = f.halos.filter_by(halo_type=0).all()
+        halos = f.halos.filter_by(object_typecode=0).all()
         halo_nums = np.array([h.finder_id for h in halos])
         halo_ids = np.array([h.id for h in halos])
         logger.info("Gathering BH - halo link information for step %r", f)

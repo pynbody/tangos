@@ -10,7 +10,7 @@ from . import creator
 from .dictionary import get_dict_id, get_or_create_dictionary_item
 from .timestep import TimeStep
 from .tracking import TrackerHaloCatalogue
-
+import six
 
 class Halo(Base):
     __tablename__ = 'halos'
@@ -28,13 +28,15 @@ class Halo(Base):
     creator = relationship(creator.Creator, backref=backref(
         'halos', cascade='all', lazy='dynamic'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
-    halo_type = Column(Integer, nullable=False)
+    object_typecode = Column(Integer, nullable=False,
+                         name='halo_type') # name for backwards compatibility
 
-    tag = "halo" # used identifying this as opposed to other types, e.g. a group/BH defined below
+    tag = "halo" # used identifying this default object type, as opposed to other object types,
+                 # e.g. a group/BH defined below
 
     __mapper_args__ = {
         'polymorphic_identity':0,
-        'polymorphic_on':halo_type
+        'polymorphic_on':object_typecode
     }
 
     @staticmethod
@@ -47,14 +49,21 @@ class Halo(Base):
                 return c
         raise ValueError("Unknown object type %r"%match_tag)
 
-    def __init__(self, timestep, halo_number, finder_id, NDM, NStar, NGas, halo_type=0):
+    @staticmethod
+    def object_typecode_from_tag(match_tag):
+        if isinstance(match_tag, six.string_types):
+            return Halo.class_from_tag(match_tag).__mapper_args__['polymorphic_identity']
+        else:
+            return match_tag
+
+    def __init__(self, timestep, halo_number, finder_id, NDM, NStar, NGas, object_typecode=0):
         self.timestep = timestep
         self.halo_number = int(halo_number)
         self.finder_id = int(finder_id)
         self.NDM = int(NDM)
         self.NStar = int(NStar)
         self.NGas = int(NGas)
-        self.halo_type = int(halo_type)
+        self.object_typecode = int(object_typecode)
         self.init_on_load()
         self.creator_id = creator.get_creator_id()
 
@@ -84,7 +93,7 @@ class Halo(Base):
         pynbody's partial loading system is used to only load the data for the one halo, saving memory."""
 
         handler = self.timestep.simulation.get_output_set_handler()
-        return handler.load_halo(self.timestep.extension, self.finder_id, halo_type=self.tag, mode=mode)
+        return handler.load_halo(self.timestep.extension, self.finder_id, object_typetag=self.tag, mode=mode)
 
     def calculate(self, name, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.
@@ -216,7 +225,7 @@ class Halo(Base):
 
     @property
     def tracker(self):
-        if self.halo_type != 1:
+        if self.object_typecode != 1:
             return None
         else:
             return self.timestep.simulation.trackers.filter_by(halo_number=self.halo_number).first()
@@ -313,7 +322,7 @@ class Halo(Base):
         return "<Halo " + str(self.halo_number) + " of ...>"
 
 TimeStep.halos = orm.relationship(Halo, cascade='all', lazy='dynamic',
-                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.halo_type==0)),
+                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==0)),
                                   foreign_keys=Halo.timestep_id,
                                   order_by=Halo.halo_number)
 
@@ -346,7 +355,7 @@ class Group(Halo):
 
     def __init__(self, *args):
         super(Group, self).__init__(*args)
-        self.halo_type = 2
+        self.object_typecode = 2
 
 
 TimeStep.groups = orm.relationship(Group, cascade='all', lazy='dynamic', primaryjoin=Group.timestep_id==TimeStep.id,

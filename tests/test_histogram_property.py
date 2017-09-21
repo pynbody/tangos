@@ -15,9 +15,9 @@ def setup():
     generator = testing.TestSimulationGenerator()
 
     ts1 = generator.add_timestep()
-    generator.add_halos_to_timestep(2)
+    generator.add_objects_to_timestep(2)
     ts2 = generator.add_timestep()
-    generator.add_halos_to_timestep(1)
+    generator.add_objects_to_timestep(1)
     generator.link_last_halos_using_mapping({1:1, 2:1})
 
     _setup_dummy_histogram_data(ts1, ts2)
