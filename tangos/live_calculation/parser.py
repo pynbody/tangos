@@ -61,13 +61,13 @@ element_identifier = pp.Literal("[").suppress()+numerical_value+pp.Literal("]").
 
 multiple_properties = pp.Forward().setParseAction(pack_args(MultiCalculation))
 
-property_identifier = (redirection | live_calculation_property | array_element | stored_property | multiple_properties)
+property_identifier = (redirection | array_element | live_calculation_property | stored_property | multiple_properties)
 
 
 infix_operations = pp.infixNotation(numerical_value | property_identifier, IN_OPS_PYPARSING + UNARY_OPS_PYPARSING)
 
 
-value_or_property_name = infix_operations | string_value | numerical_value |  property_identifier | array_element
+value_or_property_name = infix_operations | string_value | numerical_value |  property_identifier
 
 multiple_properties << (pp.Literal("(").suppress()+value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name) +pp.Literal(")").suppress())
 
@@ -76,7 +76,7 @@ redirection << (live_calculation_property | stored_property ) + pp.Literal(".").
 parameters = pp.Literal("(").suppress()+pp.Optional(value_or_property_name+pp.ZeroOrMore(pp.Literal(",").suppress()+value_or_property_name))+pp.Literal(")").suppress()
 live_calculation_property << property_name+parameters
 
-array_element << (property_name + element_identifier)
+array_element << ((live_calculation_property | stored_property) + element_identifier)
 
 property_complete = pp.stringStart()+value_or_property_name+pp.stringEnd()
 

@@ -196,6 +196,14 @@ def test_calculate_array():
 
     assert (h.calculate("dummy_property_array()*2/(BH.dummy_property_array()*2)") == np.array([1,1,1])).all()
 
+def test_calculate_array_element():
+    h = tangos.get_halo("sim/ts1/1")
+    assert h.calculate("dummy_property_array()[0]")==1
+
+    h['test_array'] = [5,6,7]
+    assert h.calculate("test_array[1]")==6
+
+
 def test_reassembly():
     h = tangos.get_halo("sim/ts1/1")
     h['dummy_property_with_reassembly']=101
