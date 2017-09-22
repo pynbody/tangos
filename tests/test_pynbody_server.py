@@ -14,7 +14,6 @@ def setup():
     tangos.config.base = os.path.dirname(__file__)+"/"
 
 def _get_array():
-    print("HERE:",tangos.config.base, file=sys.stderr)
     test_filter = pynbody.filt.Sphere('5000 kpc')
     for fname in pt.distributed(["test_simulations/test_tipsy/tiny.000640", "test_simulations/test_tipsy/tiny.000832"]):
         ps.RequestLoadPynbodySnapshot(tangos.config.base+fname).send(0)
