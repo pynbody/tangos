@@ -50,6 +50,7 @@ Index("name_halo_index", HaloProperty.__table__.c.name_id,
       HaloProperty.__table__.c.halo_id)
 Index("halo_timestep_index", Halo.__table__.c.timestep_id)
 Index("halo_creator_index", Halo.__table__.c.creator_id)
+Index("halo_finder_index", Halo.__table__.c.finder_id)
 Index("haloproperties_creator_index", HaloProperty.__table__.c.creator_id)
 Index("halolink_index", HaloLink.__table__.c.halo_from_id)
 Index("named_halolink_index", HaloLink.__table__.c.relation_id, HaloLink.__table__.c.halo_from_id)

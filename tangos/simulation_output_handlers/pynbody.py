@@ -163,6 +163,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             if isinstance(h, pynbody.halo.SubfindCatalogue):
                 h = f.halos(subs=True)
             _loaded_halocats[id(f)] = weakref.ref(h)
+            f._db_current_halocat = h # keep alive for lifetime of simulation
         return h  # pynbody.halo.AmigaGrpCatalogue(f)
 
     def match_halos(self, ts1, ts2, halo_min, halo_max,
@@ -181,7 +182,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold,
                                                  only_family=only_family, groups_1=h1, groups_2=h2)
 
-    def enumerate_objects(self, ts_extension, object_typetag="halo"):
+    def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
         ts = DummyTimeStep(self._extension_to_filename(ts_extension))
         ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
 
@@ -213,7 +214,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             for i in range(istart, len(h)+istart):
                 try:
                     hi = h[i]
-                    if len(hi.dm) > config.min_halo_particles:
+                    if len(hi.dm) > min_halo_particles:
                         yield i, len(hi.dm), len(hi.star), len(hi.gas)
                 except (ValueError, KeyError) as e:
                     pass
@@ -221,6 +222,15 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
 
 class SubfindOutputSetHandler(PynbodyOutputSetHandler):
     patterns = ["snapshot_???"]
+
+    def load_object(self, ts_extension, halo_number, object_typetag='halo', mode=None):
+        if mode=='subfind_properties':
+            h = self._construct_halo_cat(ts_extension, object_typetag)
+            return h.get_halo_properties(halo_number,with_unit=False)
+        else:
+            return super(SubfindOutputSetHandler, self).load_object(ts_extension, halo_number, output_typetag, mode)
+
+
 
     def enumerate_timestep_extensions(self):
         base = os.path.join(config.base, self.basename)
@@ -239,6 +249,7 @@ class SubfindOutputSetHandler(PynbodyOutputSetHandler):
             h = f.halos()
             assert isinstance(h, pynbody.halo.SubfindCatalogue)
             _loaded_halocats[id(f)+1] = weakref.ref(h)
+            f._db_current_groupcat = h  # keep alive for lifetime of simulation
         return h
 
     def _construct_halo_cat(self, ts_extension, object_typetag):

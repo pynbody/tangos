@@ -17,8 +17,15 @@ def resolve_units(value):
 def process_halos_or_groups(halos_or_groups, use_properties, pynbody_prefix):
     session = db.core.get_default_session()
     objects = []
+
+    first = halos_or_groups.first()
+    if first:
+        ts_keep_alive = first.timestep.load()
+
     for h in halos_or_groups:
-        pynbody_properties = h.load().properties
+
+        pynbody_properties = h.load(mode='subfind_properties')
+
         for k in use_properties:
             if pynbody_prefix + k in pynbody_properties:
                 data = resolve_units(pynbody_properties[pynbody_prefix + k])
@@ -69,23 +76,25 @@ def main():
         use_properties=all_properties
 
 
+    with db.get_default_session().no_autoflush: # for performance
+        for x in base_sim:
+            if not isinstance(x.get_output_set_handler(), tangos.simulation_output_handlers.pynbody.SubfindOutputSetHandler):
+                raise ValueError("import_from_subfind requires the handler to be SubfindOutputSetHandler")
+            timesteps = db.core.get_default_session().query(tangos.core.timestep.TimeStep).filter_by(
+                simulation_id=x.id, available=True).order_by(tangos.core.timestep.TimeStep.redshift.desc()).all()
 
-    for x in base_sim:
-        timesteps = db.core.get_default_session().query(tangos.core.timestep.TimeStep).filter_by(
-            simulation_id=x.id, available=True).order_by(tangos.core.timestep.TimeStep.redshift.desc()).all()
-
-        if args.backwards:
-            timesteps = timesteps[::-1]
+            if args.backwards:
+                timesteps = timesteps[::-1]
 
 
-        for ts in timesteps:
-            tangos.log.logger.info("Processing timestep %r", ts)
+            for ts in timesteps:
+                tangos.log.logger.info("Processing timestep %r", ts)
 
-            num_added = process_halos_or_groups(ts.halos, use_properties, "sub_")
+                num_added = process_halos_or_groups(ts.halos, use_properties, "sub_")
 
-            tangos.log.logger.info("Added %d halo properties",num_added)
+                tangos.log.logger.info("Added %d halo properties",num_added)
 
-            num_added = process_halos_or_groups(ts.groups, use_properties, "")
-            tangos.log.logger.info("Added %d group properties", num_added)
+                num_added = process_halos_or_groups(ts.groups, use_properties, "")
+                tangos.log.logger.info("Added %d group properties", num_added)
 
-            db.core.get_default_session().commit()
+                db.core.get_default_session().commit()

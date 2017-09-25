@@ -25,6 +25,7 @@ def add_simulation_timesteps(options):
     handler=options.handler
     output_class = get_named_handler_class(handler)
     adder = SimulationAdderUpdater(output_class(options.sim))
+    adder.min_halo_particles = options.min_particles
     adder.scan_simulation_and_add_all_descendants()
 
 
@@ -356,9 +357,11 @@ def main():
                                        help="Add new simulations to the database, or update existing simulations")
     subparse_add.add_argument("sim",action="store",
                               help="The path to the simulation folders relative to the database folder")
-    subparse_add.add_argument("--handler", action="store", nargs='?',
+    subparse_add.add_argument("--handler", action="store",
                               help="The handler to use from the simulation_outputs subpackage",
                               default=config.default_fileset_handler_class)
+    subparse_add.add_argument("--min-particles", action="store", type=int, default=config.min_halo_particles,
+                              help="The minimum number of particles a halo must have before it is imported (default %d)"%config.min_halo_particles)
 
     subparse_add.set_defaults(func=add_simulation_timesteps)
 

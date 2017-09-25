@@ -14,6 +14,7 @@ class SimulationAdderUpdater(object):
         if session is None:
             session = core.get_default_session()
         self.session = session
+        self.min_halo_particles = config.min_halo_particles
 
     @property
     def basename(self):
@@ -79,14 +80,17 @@ class SimulationAdderUpdater(object):
         n_tot = []
         enumerator = self.simulation_output.enumerate_objects
 
-        for finder_id, NDM, Nstar, Ngas in enumerator(ts.extension, object_typetag=create_class.tag):
+        for finder_id, NDM, Nstar, Ngas in enumerator(ts.extension, object_typetag=create_class.tag,
+                                                      min_halo_particles=self.min_halo_particles):
             n_tot.append(NDM+Nstar+Ngas)
         database_id = np.zeros(len(n_tot), dtype=int)
         database_id[np.argsort(np.array(n_tot))[::-1]] = np.arange(len(n_tot)) + 1
 
 
-        for database_number,(finder_id, NDM, Nstar, Ngas) in zip(database_id,enumerator(ts.extension, object_typetag=create_class.tag)):
-            if NDM > config.min_halo_particles:
+        for database_number,(finder_id, NDM, Nstar, Ngas) in zip(database_id,
+                                                                 enumerator(ts.extension, object_typetag=create_class.tag,
+                                                                            min_halo_particles=self.min_halo_particles)):
+            if NDM > self.min_halo_particles:
                 h = create_class(ts, database_number, finder_id, NDM, Nstar, Ngas)
                 halos.append(h)
 

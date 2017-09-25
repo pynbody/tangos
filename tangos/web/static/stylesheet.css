@@ -253,3 +253,7 @@ rect.info {
   fill: white;
   stroke: gray;
 }
+
+table#halos-container tr td {
+    vertical-align: top;
+}

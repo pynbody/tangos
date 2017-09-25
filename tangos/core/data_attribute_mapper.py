@@ -4,12 +4,11 @@ of different types has to be stored in different attributes.
 
 from __future__ import absolute_import
 import numpy as np
-import pickle
 import zlib
 import time
 import datetime
 import six
-
+from six.moves import cPickle as pickle
 
 
 _THRESHOLD_FOR_COMPRESSION = 1000

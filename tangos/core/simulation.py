@@ -40,8 +40,10 @@ class Simulation(Base):
         """Get a SimulationOutputSetHandler object, pre-configured suitably for this simulation
 
         :rtype simulation_outputs.SimulationOutputSetHandler"""
-        handler = simulation_output_handlers.get_named_handler_class(self.get("handler", config.default_fileset_handler_class))
-        return handler(self.basename)
+        if not hasattr(self, "_handler"):
+            handler = simulation_output_handlers.get_named_handler_class(self.get("handler", config.default_fileset_handler_class))
+            self._handler = handler(self.basename)
+        return self._handler
 
     def keys(self):
         return [prop.name.text for prop in self.properties.all()]

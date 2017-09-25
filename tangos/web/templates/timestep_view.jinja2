@@ -25,15 +25,23 @@
 
     <h1>Timestep: {{ timestep }}</h1>
 
+    <table id="halos-container"><tr>
+
     {% if len(halos)>0 %}
-        <h2>Halos</h2>
-        {{ make_table(halos) }}
+        <td>
+            <h2>Halos</h2>
+            {{ make_table(halos) }}
+        </td>
     {% endif %}
 
+
     {% if len(groups)>0 %}
-        <h2>Groups</h2>
-        {{ make_table(groups) }}
+        <td>
+            <h2>Groups</h2>
+            {{ make_table(groups) }}
+        </td>
     {% endif %}
+    </tr></table>
 
 <script language="JavaScript">
 
