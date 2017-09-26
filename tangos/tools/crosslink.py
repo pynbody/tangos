@@ -141,7 +141,9 @@ class GenericLinker(object):
                                                core.halo.Halo.object_typetag_from_code(object_typecode))
             back_cat = output_handler_2.match_halos(ts2.extension, ts1.extension, halo_min, halo_max, dmonly, threshold,
                                                core.halo.Halo.object_typetag_from_code(object_typecode))
-        except:
+        except Exception as e:
+            if isinstance(e, KeyboardInterrupt):
+                raise
             logger.exception("Exception during attempt to crosslink timesteps %r and %r", ts1, ts2)
             return
 

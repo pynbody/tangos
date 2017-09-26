@@ -10,7 +10,8 @@ At the unix command line type:
 tangos_manager add tutorial --handler pynbody.SubfindOutputSetHandler --min-particles 100
 ```
 
-The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages scroll up the screen.
+The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
+scroll up the screen.
  
  Let's pick this command apart
  
@@ -26,8 +27,8 @@ Note that all _tangos_ command-line tools provide help. For example `tangos_mana
 At this point, the database knows about the existence of timesteps and their halos and groups in our simulation, but nothing about the properties of those halos or groups. We need to add more information before the database is useful.
 
 
-Load in subfind's properties
-----------------------------
+Import subfind's properties
+---------------------------
 
 At the unix command line type:
 
@@ -60,4 +61,4 @@ The construction of each merger tree should take a couple of minutes,  and again
 Now let's take a look at what we've created
 -------------------------------------------
 
-We're ready to explore the simulation. Depending on your preferences you might prefer to explore with the web service or direct from python.
+We're ready to explore the simulation. Depending on your preferences you might prefer to explore with the web service or direct from python. 
