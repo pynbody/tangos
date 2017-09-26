@@ -6,6 +6,7 @@
     <div id="gather_url" class="dynamic-update hidden">{{ gather_url }}</div>
     <div id="cascade_url" class="dynamic-update hidden">{{ cascade_url }}</div>
     <div id="tree_url" class="dynamic-update hidden">{{ tree_url }}</div>
+    <div id="object_typetag" class="dynamic-update hidden">{{ halo_typetag }}</div>
 
     <h1 class="dynamic-update" id="halo-title">{{ halo_typetag  }} {{ halo_number }} of {{ timestep }}</h1>
 
@@ -110,7 +111,7 @@
         }
 
         $.fn.markAsRowInsertPoint = function() {
-            return $(this).makeEditableTemplate(addBlankRow, removeRow, updateRowData);
+            return $(this).makeEditableTemplate(addBlankRow, removeRow, updateRowData, $('#object_typetag').text());
         }
 
         function updateRowData(miniLanguageQuery, rowId) {
@@ -300,14 +301,14 @@
 
         $(function() {
             prePageUpdate(function() {
-                persistEditables();
+                persistAllEditables();
                 persistFormStates();
             });
 
             postPageUpdate(function() {
                 allEditables = [];
                 $('#nametg-custom-row-1').markAsRowInsertPoint();
-                restoreEditables();
+                restoreAllEditables();
                 restoreFormStates();
                 fetchPlot(true);
                 ajaxEnableLinks();

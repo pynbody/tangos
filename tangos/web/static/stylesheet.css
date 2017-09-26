@@ -29,6 +29,15 @@ table {
     border-bottom: 1px solid #ddd;
 }
 
+table#objects-container {
+    margin: 0px;
+    border: none;
+}
+
+table#objects-container tr td {
+    vertical-align: top;
+}
+
 tr.odd {
     background-color: #eeeef3;
 }
@@ -183,16 +192,6 @@ pre {
 
 .load_table_failed {
     color: gray;
-    padding-left: 5px;
-}
-
-.load_table_failed:before {
-    content: "Failed: ";
-    z-index: 2;
-    right: 5px;
-    margin-top: -8px;
-    font-size: 14px;
-    color: #000;
 }
 
 .mono {

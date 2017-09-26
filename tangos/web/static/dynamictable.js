@@ -1,57 +1,73 @@
 var allEditables = [];
 
-var defaultAddFn, defaultRemoveFn, defaultUpdateFn;
-
 var addLabelText = "Add +";
 
-$.fn.makeEditableTemplate = function(add, remove, update) {
-    defaultAddFn = add;
-    defaultRemoveFn = remove;
-    defaultUpdateFn = update;
-    allEditables.push($(this))
-    $(this).html(addLabelText);
-    $(this)[0].contentEditable=true;
+$.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
+    /* Mark a DOM element as a place to
+
+    When a new editable element should be added, the add function is called.
+    When an existing element should be updated, the update function is called.
+    If the user asks for it to be removed, the remove function is called.
+
+    Editable elements are automatically restored when a page is reloaded; this is
+    accomplished by firing the add/update methods on the matching editable_tag.
+     */
+
+
+    var $this = $(this);
+
+    allEditables.push($this);
+
+
+    $this.data('editable_type_tag', editable_tag);
+    $this.data('editable_add', add);
+    $this.data('editable_remove', remove);
+    $this.data('editable_update', update);
+    
+    $this.html(addLabelText);
+    $this[0].contentEditable=true;
+
     var savedContent;
-    var column_id = $(this).attr('id').substr(7);
-    $(this).on({
+    var column_id = $this.attr('id').substr(7);
+
+    $this.on({
         'keydown': function(e) {
             if(e.which=='13') {
                 // enter
-                $(this).trigger('saveEditable');
+                $this.trigger('saveEditable');
                 savedContent = undefined;
-                $(this).blur();
+                $this.blur();
                 return false;
             } else if(e.which=='27') {
                 // escape
-                $(this).blur();
-                $(this).trigger('revertEditable');
+                $this.blur();
+                $this.trigger('revertEditable');
                 return false;
             }
         },
         'blur': function() {
             if(savedContent!==undefined)
-                $(this).trigger('revertEditable');
+                $this.trigger('revertEditable');
         },
         'focus': function() {
-            savedContent = $(this).text();
-            if($(this).text()===addLabelText)
-                $(this).text("");
+            savedContent = $this.text();
+            if($this.text()===addLabelText) {
+                $this.text("");
+            }
         },
         'revertEditable': function() {
-            console.log('revert',savedContent);
-            $(this).text(savedContent);
+            $this.text(savedContent);
         },
         'saveEditable': function() {
-            var content = $(this).text();
-            console.log('saveEditable',savedContent,content);
+            var content = $this.text();
             if(savedContent===addLabelText) {
-                add(column_id);
+                add(column_id, editable_tag);
             }
 
             if(content==="") {
                 remove(column_id);
+                allEditables.pop($this);
             } else {
-                console.log('-> update',content);
                 update(content, column_id);
             }
         }
@@ -60,11 +76,13 @@ $.fn.makeEditableTemplate = function(add, remove, update) {
     return this;
 }
 
+/*
 function insertNewEditable(editable_name) {
     var previous_id = allEditables[allEditables.length-1].attr('id').substr(7);
     var id = defaultAddFn(previous_id);
     defaultUpdateFn(editable_name, previous_id);
 }
+*/
 
 
 function uriEncodeQuery(name) {
@@ -73,27 +91,66 @@ function uriEncodeQuery(name) {
     return name;
 }
 
-function persistEditables() {
-    var editables = []
+function persistAllEditables() {
+    if(allEditables.length==0)
+        return; // don't waste time – there's nothing to be stored from this page
+
+    if(sessionStorage['editables']!==undefined)
+        var oldEditables = JSON.parse(sessionStorage['editables']);
+    else
+        var oldEditables = {};
+
+    var editables = {};
 
     forEach(allEditables, function(editable) {
-        if(editable.text()!="" && editable.text()!==addLabelText)
-            editables.push(editable.text());
+        if(editable.text()!="" && editable.text()!==addLabelText) {
+            var type_tag = editable.data('editable_type_tag');
+            if(!(type_tag in editables)) {
+                editables[type_tag] = [];
+            }
+            var editables_of_type = editables[type_tag];
+
+            editables_of_type.push(editable.text());
+        }
     });
+
+    // for any editable categories that do not appear on this page, but that have
+    // stored information, carry that stored information over.
+
+    for(var key in oldEditables) {
+        if(!(key in editables)) {
+            editables[key] = oldEditables[key];
+        }
+    }
+
     sessionStorage['editables'] = JSON.stringify(editables);
 
 }
 
-function restoreEditables() {
+function restoreAllEditables() {
     if(sessionStorage['editables']==undefined)
         return;
 
     var editables = JSON.parse(sessionStorage['editables'])
 
-    forEach(editables, function(editable) {
-        console.log(editable);
-        insertNewEditable(editable);
+    forEach(allEditables, function(editable) {
+        var type_tag = editable.data('editable_type_tag');
+        if(type_tag in editables) {
+            var editables_of_type = editables[type_tag];
+            var old_column_id = editable.attr('id').substr(7);
+            forEach(editables_of_type, function(name_to_add) {
+                var add_fn = editable.data('editable_add');
+                var update_fn = editable.data('editable_update');
+
+                update_fn(name_to_add, old_column_id);
+                old_column_id = add_fn(old_column_id, type_tag);
+
+            });
+
+        }
+
     });
+
 }
 
 function getPlotControlElements(query, isScalar) {
@@ -139,10 +196,9 @@ function updatePlotControlElements(element, query, isScalar, isFilter) {
 }
 
 $(function() {
-   restoreEditables();
+   restoreAllEditables();
 });
 
 $(window).on('beforeunload',function() {
-    if(defaultAddFn!==undefined)
-       persistEditables();
+    persistAllEditables();
 });

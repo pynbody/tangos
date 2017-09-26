@@ -1,19 +1,19 @@
 {% extends "layout.jinja2" %}
 
-{% macro make_table(halos) %}
-    <table id="data-table">
-        <tr id="header-row">
+{% macro make_table(objects, object_type) %}
+    <table class="data-table" id="table-{{ object_type }}">
+        <tr id="header-row-{{ object_type }}">
             <th>Number</th>
             <th>NDM()</th>
-            <th class="editable" id="header-colid-1"></th>
+            <th class="editable" id="header-colid-1-{{ object_type }}"></th>
             <th>Go</th>
         </tr>
 
-        {% for h in halos %}
+        {% for h in objects %}
             <tr class="{{ loop.cycle('odd','even') }}" id="dbid-{{ h.id }}">
                 <td>{{ h.halo_number }}</td>
                 <td>{{ h.NDM }}</td>
-                <td class="colid-1"></td>
+                <td class="colid-1-{{ object_type }}"></td>
                 <td><a href="{{ h.url }}">Go &rarr;</a></td>
             </tr>
         {% endfor %}
@@ -25,12 +25,12 @@
 
     <h1>Timestep: {{ timestep }}</h1>
 
-    <table id="halos-container"><tr>
+    <table id="objects-container"><tr>
 
     {% if len(halos)>0 %}
         <td>
             <h2>Halos</h2>
-            {{ make_table(halos) }}
+            {{ make_table(halos, 'halos') }}
         </td>
     {% endif %}
 
@@ -38,15 +38,15 @@
     {% if len(groups)>0 %}
         <td>
             <h2>Groups</h2>
-            {{ make_table(groups) }}
+            {{ make_table(groups, 'groups') }}
         </td>
     {% endif %}
     </tr></table>
 
 <script language="JavaScript">
 
-$.fn.markAsColumnInsertPoint = function() {
-    return $(this).makeEditableTemplate(addBlankColumn, removeColumn, updateColumnData);
+$.fn.markAsColumnInsertPoint = function(editable_tag) {
+    return $(this).makeEditableTemplate(addBlankColumn, removeColumn, updateColumnData, editable_tag);
 }
 
 function updateColumnData(miniLanguageQuery, columnId) {
@@ -70,25 +70,26 @@ function updateColumnData(miniLanguageQuery, columnId) {
     });
 }
 
-function addBlankColumn(after) {
+function addBlankColumn(after, object_tag) {
     var new_name = "column-"+Math.random().toString(36).substring(7);
-    $('#data-table tr').each(function(index) {
+    $('.data-table tr').each(function(index) {
         $(this).find("#header-"+after).after("<th id='header-"+new_name+"' class='editable'></th>");
         $(this).find("."+after).after("<td class='"+new_name+"'></td>");
     })
-    $('#header-'+new_name).markAsColumnInsertPoint();
+    $('#header-'+new_name).markAsColumnInsertPoint(object_tag);
     return new_name;
 }
 
 function removeColumn(name) {
-     $('#data-table tr').each(function(index) {
+     $('.data-table tr').each(function(index) {
         $(this).find("#header-"+name).remove();
         $(this).find("."+name).remove();
     })
 }
 
 function setupInsertionPoint() {
-    $('#header-colid-1').markAsColumnInsertPoint();
+    $('#header-colid-1-halos').markAsColumnInsertPoint('halo');
+    $('#header-colid-1-groups').markAsColumnInsertPoint('group');
 }
 
 
