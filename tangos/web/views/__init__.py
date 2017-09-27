@@ -8,6 +8,8 @@ def halo_from_request(request):
         halo = ts[request.matchdict['halonumber']]
     except (KeyError, ValueError):
         raise exc.HTTPNotFound()
+    if halo is None:
+        raise exc.HTTPNotFound()
     return halo
 
 def timestep_from_request(request):

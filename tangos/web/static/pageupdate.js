@@ -3,7 +3,6 @@ var nav_callbacks = [];
 
 
 function updateElementsFromResponse(data) {
-
     pre_nav_callbacks.forEach(function(fn) {
         fn();
     });
@@ -12,9 +11,7 @@ function updateElementsFromResponse(data) {
     $(".dynamic-update").each(function() {
         var elementId = '#'+this.id;
         var newData = $(data).find(elementId);
-        console.info(elementId,newData);
         if(newData.length>0) $(this).replaceWith(newData);
-        else console.info("(no action: was null)");
     })
 
 
@@ -42,18 +39,22 @@ function ajaxNavigate(rel, isPoppingFromHistory) {
 
     $("#navigation").html("<h2>Loading...</h2>");
 
-    $.ajax({
+    var request = $.ajax({
            type: "GET",
            url: rel,
            beforeSend: function(){ },
            dataType: "html",
-           success: updateElementsFromResponse
+           success: updateElementsFromResponse,
+
        });
+
+    request.fail(function(jq, status) {
+        window.location = rel;
+    });
 
 
     if(!isPoppingFromHistory) {
-        console.log("push:"+rel);
-        window.history.pushState(rel, "AJAX", rel);
+        window.history.pushState(rel, "Tangos", rel);
     }
 
     return false;
