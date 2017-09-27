@@ -72,7 +72,7 @@ def format_halo(halo, request, relative_to=None):
     else:
         link = request.route_url('halo_view', simid=halo.timestep.simulation.basename,
                                  timestepid=halo.timestep.extension,
-                                 halonumber=halo.halo_number)
+                                 halonumber=halo.basename)
         return "<a href='%s'>%s</a>"%(link, _relative_description(relative_to, halo))
 
 def can_use_in_plot(data):
