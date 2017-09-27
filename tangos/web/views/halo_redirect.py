@@ -2,11 +2,11 @@ from __future__ import absolute_import
 from pyramid.view import view_config
 import pyramid.httpexceptions as exc
 import tangos
+from . import halo_from_request
 
 def halo_later_earlier(request, rel='later'):
-    sim = tangos.get_simulation(request.matchdict['simid'], request.dbsession)
-    ts = tangos.get_timestep(request.matchdict['timestepid'], request.dbsession, sim)
-    halo = ts[request.matchdict['halonumber']]
+    halo = halo_from_request(request)
+
     if request.matchdict['n']=='inf':
         rel = rel[:-1]+"st" # later->latest, earlier->earliest
         try:

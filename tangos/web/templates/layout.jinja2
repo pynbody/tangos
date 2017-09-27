@@ -38,9 +38,8 @@
           {% block content %}
             <div>No content!</div>
         {% endblock content %}
-      <div id="breadcrumbs-bottom" class="dynamic-update">${c.breadcrumbs}</div>
+      <div id="breadcrumbs-bottom" class="dynamic-update">{{ request.breadcrumbs | safe }}</div>
     </div>
-    <div><small>TANGOS</small></div>
 
     <!-- Bootstrap core JavaScript
     ================================================== -->

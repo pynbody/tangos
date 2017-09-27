@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from pyramid.view import view_config
 from sqlalchemy import func, and_, or_
-
+from . import timestep_from_request
 
 import tangos
 from tangos import core
@@ -13,8 +13,8 @@ def add_urls(halos, request, sim, ts):
 
 @view_config(route_name='timestep_view', renderer='../templates/timestep_view.jinja2')
 def timestep_view(request):
-    sim = tangos.get_simulation(request.matchdict['simid'], request.dbsession)
-    ts = tangos.get_timestep(request.matchdict['timestepid'], request.dbsession, sim)
+    ts = timestep_from_request(request)
+    sim = ts.simulation
 
     halos = ts.halos.all()
     groups = ts.groups.all()

@@ -9,7 +9,11 @@ from tangos import core
 def simulation_view(request):
     session = request.dbsession
 
-    sim = tangos.get_simulation(request.matchdict['simid'], request.dbsession)
+    try:
+        sim = tangos.get_simulation(request.matchdict['simid'], request.dbsession)
+    except RuntimeError:
+        raise exc.HTTPNotFound()
+
     assert sim is not None
 
     timesteps = session.query(tangos.core.TimeStep).filter_by(simulation_id=sim.id).\

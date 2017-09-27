@@ -6,7 +6,7 @@ import numpy as np
 from .halo_data import format_number, _relative_description
 import sqlalchemy
 from six.moves import zip
-
+from . import halo_from_request
 
 class TimestepInfo(object):
     def __init__(self, ts):
@@ -101,9 +101,9 @@ def halo_links(halo, request):
 
 @view_config(route_name='halo_view', renderer='../templates/halo_view.jinja2')
 def halo_view(request):
-    sim = tangos.get_simulation(request.matchdict['simid'], request.dbsession)
-    ts = tangos.get_timestep(request.matchdict['timestepid'], request.dbsession, sim)
-    halo = ts[request.matchdict['halonumber']]
+    halo = halo_from_request(request)
+    ts = halo.timestep
+    sim = ts.simulation
 
     return {'ts_info': TimestepInfo(ts),
             'this_id': halo.id,
