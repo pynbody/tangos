@@ -2,6 +2,8 @@ from __future__ import absolute_import
 from pyramid.view import view_config
 from sqlalchemy import func
 
+from . import simulation_from_request
+
 import tangos
 from tangos import core
 
@@ -9,10 +11,7 @@ from tangos import core
 def simulation_view(request):
     session = request.dbsession
 
-    try:
-        sim = tangos.get_simulation(request.matchdict['simid'], request.dbsession)
-    except RuntimeError:
-        raise exc.HTTPNotFound()
+    sim = simulation_from_request(request)
 
     assert sim is not None
 

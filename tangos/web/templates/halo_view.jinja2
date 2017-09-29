@@ -131,6 +131,7 @@
                     var selected_row = $('#'+rowId);
                     if(data.error) {
                         $('#nametg-'+rowId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
+                        $('#contents-'+rowId).html("<span class='load_table_failed'>"+data.error_class+"</span>");
                         // alert(data.error_class+": "+data.error);
                     } else {
                         $('#nametg-'+rowId).html(miniLanguageQuery);
@@ -223,6 +224,7 @@
                 success: function (data) {
                     $('#imgbox').empty();
                     buildTree("#imgbox", data['tree']);
+                    ajaxEnableLinks();
                 },
                 failure: function() {
                     placeImgError(url);

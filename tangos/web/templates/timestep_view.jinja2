@@ -55,12 +55,11 @@ function updateColumnData(miniLanguageQuery, columnId) {
         type: "GET",
         url: "{{ gather_url }}"+uriEncodeQuery(miniLanguageQuery)+".json",
         success: function (data) {
-            console.log(data);
+            $("."+columnId).html("");
             if(data.error) {
                  $('#header-'+columnId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
-                 // alert(data.error_class+": "+data.error);
             } else {
-                 $('#header-'+columnId).html(miniLanguageQuery);
+                $('#header-'+columnId).html(miniLanguageQuery);
                 $.each(data.data_formatted, function(i, item) {
                     var dbid = data.db_id[i];
                     $('#dbid-'+dbid).find('.'+columnId).html(item);
