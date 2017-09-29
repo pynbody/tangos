@@ -151,7 +151,13 @@ function buildTree(containerName, treeData, customOptions)
             floatRoot.select('rect.info').remove();
           });
 
+    function ajaxNavigateFromSvg(d) {
+      ajaxNavigate(d.url);
+      d3.event.preventDefault();
+    };
+
     nodeGroup.append("svg:a")
+        .on('click', ajaxNavigateFromSvg)
         .attr("xlink:href", function(d)
         {
           return d.url;
@@ -165,7 +171,11 @@ function buildTree(containerName, treeData, customOptions)
                 return d.size;
             });
 
+
+
     nodeGroup.append("svg:a")
+        .on('click', ajaxNavigateFromSvg)
+        .attr('class', 'ajaxenabled')
         .attr("xlink:href", function(d)
         {
           return d.url;
@@ -183,7 +193,7 @@ function buildTree(containerName, treeData, customOptions)
             return gap;
         })
         .attr("dx", 0 )
-            .attr("fill","#aaa")
+        .attr("fill","#aaa")
         .text(function(d)
         {
             return d.name;

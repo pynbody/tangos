@@ -224,7 +224,6 @@
                 success: function (data) {
                     $('#imgbox').empty();
                     buildTree("#imgbox", data['tree']);
-                    ajaxEnableLinks();
                 },
                 failure: function() {
                     placeImgError(url);

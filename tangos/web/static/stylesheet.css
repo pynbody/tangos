@@ -103,6 +103,8 @@ th {
 }
 
 #imgbox {
+    width: 550px;
+    height: 550px;
     overflow: scroll;
 }
 
@@ -129,6 +131,7 @@ span.step_unavailable a {
 #imgbox_container {
     float: right;
     width: 550px;
+    height: 550px;
     position: absolute;
     right: 0px;
     top: 200px;
