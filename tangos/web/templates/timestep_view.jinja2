@@ -46,6 +46,8 @@
 <script language="JavaScript">
 
 $.fn.markAsColumnInsertPoint = function(editable_tag) {
+    if(this.length===0)
+        return;
     return $(this).makeEditableTemplate(addBlankColumn, removeColumn, updateColumnData, editable_tag);
 }
 

@@ -259,3 +259,7 @@ rect.info {
 table#halos-container tr td {
     vertical-align: top;
 }
+
+table.data-table tr th {
+    min-width: 30px;
+}
