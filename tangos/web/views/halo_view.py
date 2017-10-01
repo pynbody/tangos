@@ -4,7 +4,7 @@ import tangos
 from tangos import core
 import numpy as np
 from .halo_data import format_number, _relative_description
-import sqlalchemy
+import sqlalchemy, sqlalchemy.orm
 from six.moves import zip
 from . import halo_from_request
 
@@ -52,7 +52,7 @@ class RedshiftProperty(DisplayProperty):
 def default_properties(halo):
     properties = [TimeProperty(halo), RedshiftProperty(halo)]
 
-    for property in halo.properties:
+    for property in halo.properties.options(sqlalchemy.orm.joinedload(core.HaloProperty.name)):
         properties.append(DisplayProperty(property))
 
     return properties
@@ -94,8 +94,11 @@ def all_simulations(request):
 
 def halo_links(halo, request):
     links = []
-    for lk in request.dbsession.query(core.HaloLink).filter_by(halo_from_id=halo.id).\
-            order_by(core.HaloLink.weight.desc()).all():
+    links_query = request.dbsession.query(core.HaloLink).filter_by(halo_from_id=halo.id).\
+            order_by(core.HaloLink.weight.desc()).\
+            options(sqlalchemy.orm.joinedload(core.HaloLink.halo_to).joinedload(core.Halo.timestep).joinedload(core.TimeStep.simulation))
+
+    for lk in links_query.all():
         links.append(HaloLinkInfo(lk, request))
     return links
 

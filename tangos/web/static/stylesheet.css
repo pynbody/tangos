@@ -263,3 +263,10 @@ table#halos-container tr td {
 table.data-table tr th {
     min-width: 30px;
 }
+
+div.popup-controls {
+    background-color: #eeeeee;
+    font-size: large;
+    padding: 3px;
+    cursor: pointer;
+}

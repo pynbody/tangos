@@ -14,6 +14,31 @@ Array.prototype.removeItem = function() {
     return this;
 };
 
+jQuery.fn.positionDiv = function (divToPop) {
+    var pos=$(this).offset();
+    var h=$(this).height();
+    var w=$(this).width();
+    $(divToPop).css({ left: pos.left , top: pos.top + h + 5 , position: 'absolute', align: 'right' });
+
+};
+
+function popupControls(attachTo) {
+    unpopupControls(attachTo);
+    var id = attachTo.attr('id');
+    var popupDiv = $("<div/>", {id: 'popup-controls-'+id, class: 'popup-controls'});
+    popupDiv.html("&#x1F5D1;");
+    popupDiv.appendTo('#content-container');
+    attachTo.positionDiv(popupDiv);
+    popupDiv.on('mousedown', function() {
+        attachTo.trigger('deleteEditable');
+    }).on( 'click', function() {});
+}
+
+function unpopupControls(attachedTo) {
+    var id = attachedTo.attr('id');
+    $('#popup-controls-'+id).remove();
+}
+
 $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
     /* Mark a DOM element as a place to
 
@@ -60,21 +85,31 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
             }
         },
         'blur': function() {
-            if(savedContent!==undefined)
+            if(savedContent!==undefined) {
                 $this.trigger('revertEditable');
+            }
         },
         'focus': function() {
             $this.css('cursor','text');
             savedContent = $this.text();
+            if(savedContent!==addLabelText)
+                popupControls($this);
             if($this.text()===addLabelText) {
                 $this.text("");
             }
         },
+        'deleteEditable': function() {
+            unpopupControls($this);
+            remove(column_id);
+            allEditables.removeItem($this);
+        },
         'revertEditable': function() {
+            unpopupControls($this);
             $this.css('cursor','pointer');
             $this.text(savedContent);
         },
         'saveEditable': function() {
+            unpopupControls($this);
             $this.css('cursor','pointer');
             var content = $this.text();
             if(savedContent===addLabelText) {
@@ -82,8 +117,7 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
             }
 
             if(content==="") {
-                remove(column_id);
-                allEditables.removeItem($this);
+                $this.trigger('deleteEditable');
             } else {
                 update(content, column_id);
             }
