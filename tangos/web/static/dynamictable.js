@@ -2,6 +2,18 @@ var allEditables = [];
 
 var addLabelText = "Add +";
 
+Array.prototype.removeItem = function() {
+    // from https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
+    var what, a = arguments, L = a.length, ax;
+    while (L && this.length) {
+        what = a[--L];
+        while ((ax = this.indexOf(what)) !== -1) {
+            this.splice(ax, 1);
+        }
+    }
+    return this;
+};
+
 $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
     /* Mark a DOM element as a place to
 
@@ -30,6 +42,8 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
     var savedContent;
     var column_id = $this.attr('id').substr(7);
 
+    $this.css('cursor','pointer');
+
     $this.on({
         'keydown': function(e) {
             if(e.which=='13') {
@@ -50,15 +64,18 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
                 $this.trigger('revertEditable');
         },
         'focus': function() {
+            $this.css('cursor','text');
             savedContent = $this.text();
             if($this.text()===addLabelText) {
                 $this.text("");
             }
         },
         'revertEditable': function() {
+            $this.css('cursor','pointer');
             $this.text(savedContent);
         },
         'saveEditable': function() {
+            $this.css('cursor','pointer');
             var content = $this.text();
             if(savedContent===addLabelText) {
                 add(column_id, editable_tag);
@@ -66,7 +83,7 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
 
             if(content==="") {
                 remove(column_id);
-                allEditables.pop($this);
+                allEditables.removeItem($this);
             } else {
                 update(content, column_id);
             }
@@ -103,13 +120,12 @@ function persistAllEditables() {
     var editables = {};
 
     forEach(allEditables, function(editable) {
+        var type_tag = editable.data('editable_type_tag');
+        if(!(type_tag in editables)) {
+            editables[type_tag] = [];
+        }
+        var editables_of_type = editables[type_tag];
         if(editable.text()!="" && editable.text()!==addLabelText) {
-            var type_tag = editable.data('editable_type_tag');
-            if(!(type_tag in editables)) {
-                editables[type_tag] = [];
-            }
-            var editables_of_type = editables[type_tag];
-
             editables_of_type.push(editable.text());
         }
     });
