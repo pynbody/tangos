@@ -104,9 +104,10 @@ Note that string inputs *must* have quotes when used, but property names do not 
   Inputs:
      - *property* (halo property)
      
-* `reassemble(property, ...)`: controls the way the raw value is turned into a science-ready value. Currently only used for histogram properties; see discussion of these above.
+* `reassemble(property, reassembly_type)`: controls the way the raw value is turned into a science-ready value. Currently only used for histogram properties; see discussion of these above.
     Inputs:
      - *property* (halo property)
-     - *...* followed by zero or more string, float or integer arguments that get passed to python `reassemble` function for the appropriate property
-
+     - *reassembly_type*: the default choice is `'major'` which returns the
+     property evaluated over the major progenitor branch. The most useful alternative is
+     `'sum'` which instead sums over all progenitors.
 

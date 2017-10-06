@@ -1,0 +1,30 @@
+{% extends "layout.jinja2" %}
+
+{% block content %}
+<div class="content">
+  <h1>Simulations</h1>
+    <table class="draggable sortable">
+        <tr>
+            {% for x in titles %}
+                <th>{{ x }}</th>
+            {% endfor %}
+        </tr>
+        {% for this_sim, link in zip(simulations, links) %}
+
+            <tr class="{{ loop.cycle('odd','even') }}">
+
+                {% for this_property in this_sim %}
+
+                    <td>{% if loop.first %}
+                        <a href="{{ link }}">{{ this_property | safe }}</a>
+                    {% else %}
+                       <pre>{{ this_property | safe }}</pre>
+                    {% endif %}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </table>
+
+
+</div>
+{% endblock content %}

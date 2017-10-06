@@ -19,12 +19,12 @@ source $HOME/.bashrc                #note that if any of the following commands 
 module unload craype-hugepages8M    #make sure that craype-hugepages8M is off
 module load cray-mpich              #load in the mpi environment
 module load bwpy/0.2.0              #load in the python environment (version 0.1.0 does not work, but 0.2.0 should be default)
-export HALODB_ROOT=/u/sciteam/tremmel/scratch/Romulus/
-export HALODB_DEFAULT_DB=/u/sciteam/tremmel/scratch/Romulus/DatabaseFiles/cosmo25/data_romulus25.db
-####setenv HALODB_ROOT /u/sciteam/tremmel/scratch/Romulus
-####setenv HALODB_DEFAULT_DB  /u/sciteam/tremmel/scratch/Romulus/DatabaseFiles/cosmo25/data_romulus25.db
+export TANGOS_SIMULATION_FOLDER=/u/sciteam/tremmel/scratch/Romulus/
+export TANGOS_DB_CONNECTION=/u/sciteam/tremmel/scratch/Romulus/DatabaseFiles/cosmo25/data_romulus25.db
+####setenv TANGOS_SIMULATION_FOLDER /u/sciteam/tremmel/scratch/Romulus
+####setenv TANGOS_DB_CONNECTION  /u/sciteam/tremmel/scratch/Romulus/DatabaseFiles/cosmo25/data_romulus25.db
 SIMS="cosmo25"
-echo $HALODB_DEFAULT_DB
+echo $TANGOS_DB_CONNECTION
 
 #the following code is useful for automatically defining parameters for aprun.
 #Think of "procsPerNode" as "mpiprocs" on other computers.

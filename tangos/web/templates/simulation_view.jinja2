@@ -1,0 +1,53 @@
+{% extends "layout.jinja2" %}
+
+{% block content %}
+
+    <h1>Simulation: {{ simulation }}</h1>
+
+<div style="float: right;">
+<table>
+    <tr>
+        <th>Property</th>
+        <th>Value</th>
+    </tr>
+    {% for (p,v) in properties %}
+        <tr class="{{ loop.cycle('odd','even') }}">
+            <td>{{ p }}</td><td>{{ v }}</td>
+        </tr>
+    {% endfor %}
+</table>
+</div>
+
+
+<table class="sortable draggable">
+    <tr>
+        <th>Redshift</th>
+        <th>Time</th>
+        <th>n_halos</th>
+        <th>filename</th>
+        <th>Go</th>
+    </tr>
+    {% for t,c,l in zip(timesteps, counts, links) %}
+        <tr class="{{ loop.cycle('odd','even') }}">
+            <td>{{ "%.2f"%t.redshift }}</td>
+            <td sorttable_customkey="{{'%.3f'%t.time_gyr}}">
+                {% if t.time_gyr<1 %}
+                {{ '%.0f Myr'%(1000.0*t.time_gyr) }}
+                {% else %}
+                {{ '%.2f Gyr'%t.time_gyr }}
+                {% endif %}
+            </td>
+            <td>{{ c }} </td>
+            <td>{% if len(t.extension)>13 %}
+                ...{{ t.extension[-10:] }}
+                {% else %}
+                {{ t.extension }}
+                {% endif %}
+            </td>
+            <td><a href="{{ l }}">Go &rarr;</a></td>
+        </tr>
+    {% endfor %}
+</table>
+
+
+{% endblock content %}

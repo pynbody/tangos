@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data
@@ -22,12 +24,16 @@ def setup():
 
     generator.add_timestep()
     generator_2.add_timestep()
-    generator.add_halos_to_timestep(7)
+    generator.add_objects_to_timestep(7)
+    generator.add_bhs_to_timestep(2)
+    generator.assign_bhs_to_halos({1:1, 2:2})
 
     generator.add_timestep()
     generator_2.add_timestep()
-    generator.add_halos_to_timestep(5)
-    generator_2.add_halos_to_timestep(2)
+    generator.add_objects_to_timestep(5)
+    generator.add_bhs_to_timestep(2)
+    generator.assign_bhs_to_halos({1: 1, 2: 2})
+    generator_2.add_objects_to_timestep(2)
 
     generator_2.link_last_halos_across_using_mapping(generator, {1:2, 2:1})
 
@@ -52,7 +58,9 @@ def setup():
     generator.add_mass_transfer(4,3,0.01)
 
     generator.add_timestep()
-    generator.add_halos_to_timestep(4)
+    generator.add_objects_to_timestep(4)
+    generator.add_bhs_to_timestep(2)
+    generator.assign_bhs_to_halos({1: 1, 2: 2})
 
     # ts2_h1 and ts2_h2 merge to ts3_h1
     # ts2_h3 becomes ts3_h2
@@ -111,7 +119,7 @@ def test_twostep_ordering():
     strategy = halo_finding.MultiHopStrategy(tangos.get_item("sim/ts3/3"), 2, 'backwards', order_by="time_asc")
 
     all = strategy.all()
-    print all
+    print(all)
     assert tangos.get_item("sim/ts1/4") == all[0]
     assert tangos.get_item("sim/ts2/4") == all[1]
 

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as np
 from nose.tools import assert_raises
 
@@ -19,7 +20,7 @@ def setup():
 
     generator = testing.TestSimulationGenerator()
     ts1 = generator.add_timestep()
-    ts1_h1, ts2_h2 = generator.add_halos_to_timestep(2)
+    ts1_h1, ts2_h2 = generator.add_objects_to_timestep(2)
 
 
     ts1_h1['dummy_property_1'] = np.arange(0,100.0)
@@ -38,7 +39,7 @@ def setup():
 
 
     generator.add_timestep()
-    generator.add_halos_to_timestep(1)
+    generator.add_objects_to_timestep(1)
     generator.link_last_halos()
 
 
@@ -194,6 +195,14 @@ def test_calculate_array():
     assert (h.calculate("BH.dummy_property_array()") == [1, 2, 3]).all()
 
     assert (h.calculate("dummy_property_array()*2/(BH.dummy_property_array()*2)") == np.array([1,1,1])).all()
+
+def test_calculate_array_element():
+    h = tangos.get_halo("sim/ts1/1")
+    assert h.calculate("dummy_property_array()[0]")==1
+
+    h['test_array'] = [5,6,7]
+    assert h.calculate("test_array[1]")==6
+
 
 def test_reassembly():
     h = tangos.get_halo("sim/ts1/1")

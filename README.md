@@ -9,23 +9,24 @@ Before you start
 ----------------
 **The database is experimental technology. Please offer Andrew and Michael coauthorship on papers where you find it useful, in recognition of the very substantial development effort. The plan is to ultimately make it open source and citable, but until then we'd appreciate your support.**
 
-For the database to function properly, you must first source the `environment.sh` (or environment.csh, if working in a cshell) files, which specify the appropriate paths. Sourcing the environment file also reads the user-made file called `environment_local.sh` (or csh). This file doesn't exist by default, but should be created/edited whenever you wish to analyze a new database file.
+For _tangos_ to function properly, you must first install it. This is accomplished using the standard python setuptools – i.e. type `python setup.py install` from your command prompt. Or if you are developing, you probably instead want `python setup.py develop` which links (instead of copying) the python source files into your distribution. Both variants should check (and if necessary install) the minimum pre-requisites.
 
-The `environment_local.sh` file should only include the following lines
+Once installed, you should check that _tangos_ is functioning correctly by entering the `tests` folder and typing `nosetests`. You should see a bunch of text scrolling by, ultimately finishing with the simple message `OK`. If you get a failure message instead of `OK`, report it (with as much detail of your setup as possible) in the github issue tracker.
+
+By default tangos will look for raw simulation data in your home folder and create its database file there as well. If you don't want it to do this, you can set the environment variables `TANGOS_SIMULATION_FOLDER` (for the simulation folder) and `TANGOS_DB_CONNECTION` (for the database file). For example, in bash:
+
 ```
-export HALODB_ROOT=~/scratch/Romulus/ 
-export HALODB_DEFAULT_DB=~/scratch/Romulus/DatabaseFiles/cosmo25/data_romulus25.db 
+export TANGOS_SIMULATION_FOLDER=~/scratch/Romulus/ 
+export TANGOS_DB_CONNECTION=~/scratch/Romulus/DatabaseFiles/cosmo25/data_romulus25.db 
 ```
-or, if you are working in cshell, the `environment_local.csh` file should have the following lines
+or, in cshell:
 ```
-setenv HALODB_ROOT /nobackupp8/mtremmel/Romulus/
-setenv HALODB_DEFAULT_DB /nobackupp8/mtremmel/DataBaseFiles/romulus8/data_romulus8.db
+setenv TANGOS_SIMULATION_FOLDER /nobackupp8/mtremmel/Romulus/
+setenv TANGOS_DB_CONNECTION /nobackupp8/mtremmel/DataBaseFiles/romulus8/data_romulus8.db
 ```
 The top line in each example points to the parent directory for all of your simulation data directories. If you don't have any simulations (i.e. you are just using a database object already created) then you should not have to worry about this variable. The second line points to the database object you wish to analyze.
 
-Any edits you make to this file will require you to again source the `environment.sh` file.
-
-Remember, you *must* source `environment.sh` *every* time you start a new session on your computer prior to booting up the database, either with the webserver or the python interface (see below)
+Remember, you will need to set these environment variables *every* time you start a new session on your computer prior to booting up the database, either with the webserver or the python interface (see below).
 
 Quick-start: if you already have a .db file and want to run the webserver
 -------------------------------------------------------------------------
@@ -33,27 +34,25 @@ Quick-start: if you already have a .db file and want to run the webserver
 If running on a remote server, you will need to forward the appropriate port using `ssh address.of.remote.server -L5000:localhost:5000`. Then follow these instructions:
 
 1. Clone the repository
-2. Make sure you have an up-to-date version of python, then type `pip install pylons formalchemy` to install the required web frameworks
-    - If possible, use the latest version of sqlalchemy. Type `pip install --upgrade sqlalchemy` to get this.
-    - If you don't have permissions to install things into the python root folder, you might need to set up your own python plugins folder. Probably the easiest way to do this is to add `export PYTHONUSERBASE=$HOME` to your `.bash_profile` (or equivalent), then use `pip install --user pylons formalchemy` and `pip install --user --upgrade sqlalchemy`.
-3. Put your database file in the halo_database folder, named `data.db` - or create/edit a file called `environment_local.sh` to specify a different location and/or filename (see instructions above)
-4. Type `./webserver.sh` to run the web server
-5. Browse to <http://localhost:5000>
+2. Type `python setup.py install` (or `python setup.py develop`, see above)
+3. Put your database file in your home folder, named `data.db` - or point the environment variable `TANGOS_DB_CONNECTION` to an alternate path (see above)
+4. Type `cd web` and then `pserve development.ini`
+5. Browse to <http://localhost:6543>
 
 Making your own database from scratch
 -------------------------------------
 
-1. You need to gather all the simulations that you are going to process in one root folder. This is likely to be some sort of scratch folder on a supercomputer somewhere. The path to this folder needs to be in the environment variable `HALODB_ROOT`. You can either specify this yourself somehow, or edit the `environment.sh`. 
-2. Type `source environment.sh` (or get the environment variables `HALODB_ROOT`, `HALODB_DEFAULT_DB`, `PYTHONPATH` and `PATH` set up appropriately in some other way if you prefer)
-3. Now add your first simulation. Type `db_manager.py add <simulation_path>` where `<simulation_path>` is the path to the folder containing simulation snapshots *relative to `HALODB_ROOT`* (regardless of what your working directory is)
+1. You need to gather all the simulations that you are going to process in one root folder. This is likely to be some sort of scratch folder on a supercomputer somewhere. If it's not your home folder, the path to this folder needs to be in the environment variable `TANGOS_SIMULATION_FOLDER`.
+2. If you don't want the database to be created in your home folder, set the environment variable `TANGOS_DB_CONNECTION` to the path you want created, e.g. `~/databases/my_db.sqlite`
+3. Now add your first simulation. Type `tangos_manager add <simulation_path>` where `<simulation_path>` is the path to the folder containing simulation snapshots *relative to `TANGOS_SIMULATION_FOLDER`* (regardless of what your working directory is)
 
 If everything works OK, you should see some text scroll up the screen (possibly in red) about things being created. Normally this process is reasonably quick, but it can slow down depending on the format of halo files etc. The database is being created with empty slots for every timestep and halo.
 
-To check what's happened type `db_manager.py recent-runs 1`. Here, `recent-runs` refers to runs on the database, not runs of the simulation. You should see something like this:
+To check what's happened type `tangos_manager recent-runs 1`. Here, `recent-runs` refers to runs on the database, not runs of the simulation. You should see something like this:
 
 ```
 Run ID =  140
-Command line =  /Users/app/Science/halo_database/tools//db_manager.py add h516.cosmo25cmb.3072g1MbwK1C52
+Command line =  tangos_manager add h516.cosmo25cmb.3072g1MbwK1C52
 Host =  Rhododendron.local
 Username =  app
 Time =  03/09/15 18:42
@@ -69,12 +68,12 @@ Copying AHF properties into the database
 ----------------------------------------
 
 One of the quickest ways to populate the database is to use what AHF already calculated for you. Suppose you want to import the
-Mvir and Rvir columns from the `.AHF_halos` file. Then you simply type: `db_import_from_stat.py Mvir Rvir`. Now running
-`db_manager.py recent-runs 1` should show you what you just did:
+Mvir and Rvir columns from the `.AHF_halos` file. Then you simply type: `tangos_import_from_stat Mvir Rvir`. Now running
+`tangos_manager recent-runs 1` should show you what you just did:
 
 ```
 Run ID =  141
-Command line =  /Users/app/Science/halo_database/tools//db_import_from_stat.py Mvir Rvir
+Command line =  tangos_import_from_stat Mvir Rvir
 Host =  Rhododendron.local
 Username =  app
 Time =  03/09/15 18:50
@@ -89,22 +88,22 @@ So now you probably want to actually put some properties into your database? For
 
 You should be able to do this:
 ```
-db_writer.py SSC dm_density_profile --for <simulation_name> --backend null
+tangos_writer SSC dm_density_profile --for <simulation_name> --backend null
 ```
 Hopefully that's fairly self-explanatory except maybe the `--backend null` bit, which is inherited because the DB writer wants to be running in parallel. Instead, `--backend null` says "you have no parallelism, just use one core".
 
-The database checkpoints as it goes along (every few minutes or so). You can interrupt it when you feel like it and it'll automatically resume from where it got to. Once again, you can get a summary of progress with `db_manager.py recent-runs 1`, which will spit out something like this:
+The database checkpoints as it goes along (every few minutes or so). You can interrupt it when you feel like it and it'll automatically resume from where it got to. Once again, you can get a summary of progress with `tangos_manager recent-runs 1`, which will spit out something like this:
 
 ```
 Run ID =  142
-Command line =  /Users/app/Science/halo_database/tools//db_writer.py SSC dm_density_profile --for h516.cosmo25cmb.3072g1MbwK1C52 --backend null
+Command line =  /Users/app/Science/halo_database/tools//tangos_writer SSC dm_density_profile --for h516.cosmo25cmb.3072g1MbwK1C52 --backend null
 Host =  Rhododendron.local
 Username =  app
 Time =  03/09/15 18:56
 >>>    169 halo properties
 ```
 
-Note that `db_writer.py` has a lot of options to customize what it calculates and for which halos. Type `db_writer.py -h` for information.
+Note that `tangos_writer` has a lot of options to customize what it calculates and for which halos. Type `tangos_writer -h` for information.
 
 
 Generating halo merger trees
@@ -115,7 +114,7 @@ to link properties between timesteps.
 
 To do this you type:
 ```
-db_timelink.py --for <simulation_name> --backend null
+tangos_timelink --for <simulation_name> --backend null
 ```
 again assuming you don't want to parallelise using MPI. But these steps can be speeded up by distributing tasks, so read on...
 
@@ -124,15 +123,15 @@ Do it with MPI
 
 With MPI, you automatically distribute the tasks between nodes. This is far preferable. But it does mean you need to get python and MPI to understand each other. If you have an MPI compiler avaiable, this is pretty easy - you just type `pip install mpi4py` and it's all done. 
 
-Now you can use `mpirun` on `db_writer.py` just like you would with any other parallel task. However be careful: *by default every processor will load its own copy of the data*. This is time-efficient but memory-wasteful. If you can get away with it (and you often can with zoom simulations), it's all fine. 
+Now you can use `mpirun` on `tangos_writer` just like you would with any other parallel task. However be careful: *by default every processor will load its own copy of the data*. This is time-efficient but memory-wasteful. If you can get away with it (and you often can with zoom simulations), it's all fine. 
 
-If you can't get away with it, you can reduce the number of processes per core in the normal way (using qsub directives etc)... or, you could try selecting an appropriate *load mode*. This is done by passing the argument `--load-mode=XXX` to `db_writer.py`, where `XXX` is one of the following:
+If you can't get away with it, you can reduce the number of processes per core in the normal way (using qsub directives etc)... or, you could try selecting an appropriate *load mode*. This is done by passing the argument `--load-mode=XXX` to `tangos_writer`, where `XXX` is one of the following:
 
 * `--load-mode=partial`: only the data for a single halo at a time is loaded. Partial loading is pretty efficient but be aware that  calculations that need the surroundings of the halo (e.g. for outflows etc) will fail.
 * `--load-mode=server`: rank 0 of your MPI processes will load a (single) entire snapshot at a time and pass only the bits of the data needed along to all other ranks. This has the advantage over `--load-mode=partial` of allowing the calculations to request the surroundings of the halo (see above). However it has the disadvantage that rank 0 must load an entire snapshot (all arrays that are required). For really big simulations that might be tricky.
 * `--load-mode=server-partial`: a hybrid approach where rank 0 loads only what is required to help the other ranks figure out what they need to load — for example, if a property requests a sphere surrounding the halo, the entire snapshot's position arrays will be loaded on rank 0, but no other data. The data on the individual ranks is loaded via partial loading (see `--load-mode=partial` above). 
 
-Here's an example qsub script from pleiades for processing a small uniform volume. Note this also shows you the use of `db_timelink.py` to generate the merger trees.
+Here's an example qsub script from pleiades for processing a small uniform volume. Note this also shows you the use of `tangos_timelink` to generate the merger trees.
 
 ```
 #PBS -S /bin/bash
@@ -146,12 +145,12 @@ source ~/halo_database/environment.sh
 
 SIMS="romulus8.256gst3.bwBH"
 
-mpirun db_writer.py Mvir Vvir dm_density_profile dm_alpha_500pc Sub --for $SIMS --load-mode=partial
-mpirun db_writer.py stellar_image_faceon --hmax 100 --backwards --for $SIMS --load-mode=partial
-mpirun db_timelink.py --for $SIMS
-mpirun add_bh.py for $SIMS
-mpirun db_writer.py BH_mass --for $SIMS --htype 1 --load-mode=partial
-# htype 1 in the line above means "do this for the black hole pseudo halos, not the regular halos". 
+mpirun tangos_writer Mvir Vvir dm_density_profile dm_alpha_500pc Sub --for $SIMS --load-mode=partial
+mpirun tangos_writer stellar_image_faceon --hmax 100 --backwards --for $SIMS --load-mode=partial
+mpirun tangos_timelink --for $SIMS
+mpirun tangos_add_bh for $SIMS
+mpirun tangos_writer BH_mass --for $SIMS --type BH --load-mode=partial
+# type BH in the line above means "do this for the black holes, not the regular halos". 
 ```
 The Python Interface for Analysis
 -----------------------------------------

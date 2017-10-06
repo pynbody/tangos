@@ -1,0 +1,272 @@
+td.smallinfo {
+    font-size: 8px;
+}
+
+body {
+    font-family: Palatino Linotype, Book Antiqua, Palatino, serif
+}
+    
+h1 {
+    font-size: 20px;
+    font-family: arial;
+    background-color: #dde;
+    padding-top: 3px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid #ccc;
+    border-top: 1px solid #cce;
+    padding-left: 10px;
+}
+
+h2 {
+    font-size: 16px;
+    font-family: arial;
+    text-transform: uppercase;
+}
+
+table {
+    margin: 8px;
+    border-collapse: collapse;
+    border-bottom: 1px solid #ddd;
+}
+
+table#objects-container {
+    margin: 0px;
+    border: none;
+}
+
+table#objects-container tr td {
+    vertical-align: top;
+}
+
+tr.odd {
+    background-color: #eeeef3;
+}
+
+td, th {
+    padding: 2px;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+td {
+    font-family: 'Lucida Console', 'Lucida Sans Typewriter', monaco, 'Bitstream Vera Sans Mono', monospace;
+    font-size: small;
+    color: #222;
+}
+
+td.editable, th.editable {
+    color: #1111bb;
+}
+
+a {
+    color: #1111bb;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #8888bb;
+}
+
+a:visited {
+    color: #5544bb;
+}
+
+tr.even:hover {
+    background-color: #eaeaea;
+}
+
+tr.odd:hover {
+    background-color: #dadae1;
+}
+
+
+th {
+    border-bottom: 1px solid #ddd;
+    border-top: 1px solid #ddd;
+}
+
+#breadcrumbs-top {
+    padding-top: 10px;
+    padding-bottom: 4px;
+    font-size: 12px;
+}
+
+#breadcrumbs-bottom {
+    border-top: 1px solid #dde;
+    clear: both;
+    padding-top: 20px;
+    font-size: 12px;
+}
+
+#tree-json {
+    display: none;
+}
+
+#imgbox {
+    width: 550px;
+    height: 550px;
+    overflow: scroll;
+}
+
+img.plotimg {
+    float: right;
+}
+
+span.large {
+    font-size:30px;
+}
+
+span.small_big {
+    font-size:12px;
+}
+
+span.step_available a {
+    
+}
+
+span.step_unavailable a {
+    color: #f00;
+}
+
+#imgbox_container {
+    float: right;
+    width: 550px;
+    height: 550px;
+    position: absolute;
+    right: 0px;
+    top: 200px;
+    padding: 10px;
+}
+
+#imgspace {
+  
+	
+}
+
+#navigation {
+    width: 100%;
+    background-color: rgba(223, 223, 223, 0.9);
+    border-bottom: 1px solid gray;
+    padding-left: 10px;
+}
+
+#flash-message{
+    color: #500;
+}
+
+.hidden {
+    display: none;
+}
+
+code  {
+	font-size: 10px;
+}
+
+div.popup_parent {
+    top:0;
+    right:0;
+    bottom:0;
+    left:0;
+    background-color: #fff;
+    opacity: 0.5;
+    z-index: 2;
+    visibility: hidden;
+    position: fixed;
+}
+
+div.popup_box {
+
+    left: 20px;
+    top: 100px;
+    width: 300px;
+    padding: 10px;
+    font-size: 12px;
+    background-color: #dde;
+    z-index: 3;
+    position: fixed;
+    visibility: hidden;
+}
+
+pre {
+    font-family: 'Lucida Console', 'Lucida Sans Typewriter', monaco, 'Bitstream Vera Sans Mono', monospace;
+    white-space: pre-wrap;
+    font-size: small;
+}
+
+.load_table_failed {
+    color: gray;
+}
+
+.mono {
+    font-family: 'Lucida Console', 'Lucida Sans Typewriter', monaco, 'Bitstream Vera Sans Mono', monospace;
+    font-size: small;
+    color: #222;
+}
+
+td.plotcontrols {
+    text-align: center;
+}
+
+
+/* Merger tree */
+
+g.node {
+    font-family: Verdana, Helvetica;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+circle.node-dot-standard {
+    fill: red;
+    stroke: red;
+    stroke-width: 1px;
+}
+
+circle.node-dot-sub {
+    fill: lightsalmon;
+    stroke: red;
+    stroke-width: 1px;
+}
+
+circle.node-dot-selected {
+    fill: yellow;
+    stroke:black;
+    stroke-width: 3px;
+}
+
+circle.node-dot-continuation {
+    fill: white;
+    stroke: #bbb;
+    stroke-width: 1px;
+}
+
+path.link {
+    fill: none;
+    stroke: gray;
+}
+
+text.info {
+  font-family: Verdana, Helvetica;
+  font-size: 12px;
+  fill: gray;
+}
+
+rect.info {
+  fill: white;
+  stroke: gray;
+}
+
+table#halos-container tr td {
+    vertical-align: top;
+}
+
+table.data-table tr th {
+    min-width: 30px;
+}
+
+div.popup-controls {
+    background-color: #eeeeee;
+    font-size: large;
+    padding: 3px;
+    cursor: pointer;
+}

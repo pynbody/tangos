@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import tangos as db
 import tangos.config
 from tangos import log
@@ -8,7 +9,7 @@ from tangos import testing
 
 def setup():
     testing.init_blank_db_for_testing(verbose=True)
-    db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
+    db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
     manager = add_simulation.SimulationAdderUpdater(output_testing.TestOutputSetHandler("dummy_sim_1"))
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()
@@ -45,7 +46,7 @@ def test_appropriate_loader():
     assert str(db.get_timestep("dummy_sim_1/step.1").load())=="Test string - this would contain the data for step.1"
 
 def _perform_simulation_update():
-    db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations_mock_update")
+    db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations_mock_update")
     manager = add_simulation.SimulationAdderUpdater(output_testing.TestOutputSetHandler("dummy_sim_1"))
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()

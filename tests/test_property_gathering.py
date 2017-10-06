@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import tangos as db
 import numpy as np
 import numpy.testing as npt
@@ -9,6 +11,10 @@ import tangos
 import properties
 from tangos import testing
 import os
+import six
+from six.moves import range
+from nose.tools import assert_raises
+from tangos import live_calculation
 
 def setup():
     testing.init_blank_db_for_testing()
@@ -19,7 +25,7 @@ def setup():
     for ts in range(1,4):
         num_halos = 4 if ts<3 else 3
         creator.add_timestep()
-        creator.add_halos_to_timestep(num_halos)
+        creator.add_objects_to_timestep(num_halos)
         creator.add_properties_to_halos(Mvir=lambda i: i+halo_offset)
         creator.add_properties_to_halos(Rvir=lambda i: (i+halo_offset)*0.1)
         halo_offset+=num_halos
@@ -75,7 +81,7 @@ class TestPathChoice(properties.LiveHaloProperties):
 
     def __init__(self, simulation, criterion="hole_mass"):
         super(TestPathChoice, self).__init__(simulation, criterion)
-        assert isinstance(criterion, basestring), "Criterion must be a named BH property"
+        assert isinstance(criterion, six.string_types), "Criterion must be a named BH property"
         self.criterion = criterion
 
     @classmethod
@@ -90,7 +96,7 @@ class TestPathChoice(properties.LiveHaloProperties):
         bh_links = halo["BH"]
         if isinstance(bh_links,list):
             for lk in bh_links:
-                print lk.keys()
+                print(list(lk.keys()))
             vals = [lk[criterion] if criterion in lk else self.default_val for lk in bh_links]
             return bh_links[np.argmax(vals)]
         else:
@@ -209,5 +215,17 @@ def test_redirection_cascade_closes_connections():
         h.reverse_property_cascade("my_BH('hole_spin').hole_mass")
 
 def test_gather_closes_connections():
-     with db.testing.assert_connections_all_closed():
-        tangos.get_timestep("sim/ts1").gather_property('Mvir')
+    ts = tangos.get_timestep("sim/ts1")
+    with db.testing.assert_connections_all_closed():
+        ts.gather_property('Mvir')
+
+def test_gather_restricted_object_type():
+    ts = tangos.get_timestep("sim/ts1")
+    with assert_raises(live_calculation.NoResultsError):
+        non_existent = ts.gather_property("hole_mass", object_typetag='halo')
+    ok_1, = ts.gather_property("hole_mass",object_typetag='BH')
+    ok_2, = ts.gather_property("hole_mass")
+    npt.assert_allclose(ok_1, [100., 200., 300., 400.])
+    npt.assert_allclose(ok_2, [100., 200., 300., 400.])
+
+

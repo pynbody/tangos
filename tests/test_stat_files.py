@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 
 import numpy.testing as npt
@@ -12,7 +13,7 @@ from tangos import testing
 def setup():
     global ts1, ts2
     testing.init_blank_db_for_testing()
-    db.config.base = os.getcwd()+"/"
+    db.config.base = os.path.dirname(os.path.abspath(__file__))+"/"
 
     session = db.core.get_default_session()
 

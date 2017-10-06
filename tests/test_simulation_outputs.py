@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import tangos as db
 import tangos.simulation_output_handlers.pynbody as pynbody_outputs
 import tangos.tools.add_simulation as add
@@ -11,7 +12,7 @@ import gc
 def setup():
     global output_manager
     testing.init_blank_db_for_testing()
-    db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
+    db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
     output_manager = pynbody_outputs.ChangaOutputSetHandler("test_tipsy")
 
 
@@ -29,8 +30,8 @@ def test_timestep_properties():
     npt.assert_allclose(props['time_gyr'],2.17328504831)
     npt.assert_allclose(props['redshift'], 2.96382819878)
 
-def test_enumerate_halos():
-    halos = list(output_manager.enumerate_halos("tiny.000640"))
+def test_enumerate_objects():
+    halos = list(output_manager.enumerate_objects("tiny.000640"))
     assert len(halos)==9
     assert halos[0]==[1,2041986, 364232, 198355]
     assert halos[1]==[2, 421027, 30282, 57684]
@@ -41,14 +42,14 @@ def test_properties():
     assert props['macros'].startswith("CHANGESOFT COOLING_COSMO") # from log file
     assert "dBHSinkAlpha" not in props # in the param file but not in the list of parameters we want to expose
 
-def test_enumerate_halos_using_statfile():
-    halos = list(output_manager.enumerate_halos("tiny.000640"))
+def test_enumerate_objects_using_statfile():
+    halos = list(output_manager.enumerate_objects("tiny.000640"))
     assert halos[0]==[1,2041986,364232, 198355]
     assert len(halos)==9
 
-def test_enumerate_halos_using_pynbody():
+def test_enumerate_objects_using_pynbody():
     config.min_halo_particles = 400
-    halos = list(output_manager.enumerate_halos("tiny.000832"))
+    halos = list(output_manager.enumerate_objects("tiny.000832"))
     npt.assert_equal(halos[0], [1,477,80, 48])
     assert len(halos)==1
 
@@ -64,6 +65,12 @@ def test_load_halo():
     assert isinstance(pynbody_h, pynbody.snapshot.SubSnap)
     assert len(pynbody_h)==200
     assert_is_subview_of_full_file(pynbody_h)
+
+def test_partial_load_halo():
+    add_test_simulation_to_db()
+    pynbody_h = db.get_halo("test_tipsy/tiny.000640/1").load(mode='partial')
+    assert len(pynbody_h) == 200
+    assert pynbody_h.ancestor is pynbody_h
 
 def test_load_tracker_halo():
     add_test_simulation_to_db()

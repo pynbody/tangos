@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import tangos as db
 import tangos.config
 import os
@@ -28,11 +29,11 @@ class DummyPropertyCausingException(properties.HaloProperties):
         return "dummy_property_with_exception",
 
     def calculate(self, data, entry):
-        raise RuntimeError, "Test of exception handling"
+        raise RuntimeError("Test of exception handling")
 
 def init_blank_simulation():
     testing.init_blank_db_for_testing(timeout=0.0)
-    db.config.base = os.path.join(os.path.dirname(__name__), "test_simulations")
+    db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
     manager = add_simulation.SimulationAdderUpdater(output_testing.TestOutputSetHandler("dummy_sim_1"))
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()
@@ -75,8 +76,8 @@ def test_error_ignoring():
     assert db.get_halo("dummy_sim_1/step.1/2")['dummy_property'] == 2.0
     assert db.get_halo("dummy_sim_1/step.2/1")['dummy_property'] == 2.0
 
-    assert 'dummy_property' in db.get_halo("dummy_sim_1/step.1/1").keys()
-    assert 'dummy_property_with_exception' not in db.get_halo("dummy_sim_1/step.1/1").keys()
+    assert 'dummy_property' in list(db.get_halo("dummy_sim_1/step.1/1").keys())
+    assert 'dummy_property_with_exception' not in list(db.get_halo("dummy_sim_1/step.1/1").keys())
 
 
 class DummyRegionProperty(properties.HaloProperties):
@@ -88,7 +89,7 @@ class DummyRegionProperty(properties.HaloProperties):
         return "dummy_property",
 
     def region_specification(self, db_data):
-        assert db_data.has_key('dummy_property')
+        assert 'dummy_property' in db_data
         return slice(1,5)
 
     def calculate(self, data, entry):

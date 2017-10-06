@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import datetime
 import pickle
 import time
@@ -8,6 +9,7 @@ import pynbody
 from nose.tools import assert_raises
 
 import tangos.core.data_attribute_mapper as dam
+import six
 
 
 class TestTarget(object):
@@ -54,14 +56,14 @@ def assert_data_value(data, testval):
 
 def test_set_retrieve():
 
-    for typename,testval in test_values.iteritems():
+    for typename,testval in six.iteritems(test_values):
         target = TestTarget()
         target.data=testval
         target.assert_datatype(typename)
         assert_data_value(target.data,testval)
 
 def test_set_retrieve_no_strings():
-    for typename,testval in test_values.iteritems():
+    for typename,testval in six.iteritems(test_values):
         target = TestTargetNoStrings()
 
         if typename=="string":
@@ -74,12 +76,12 @@ def test_set_retrieve_no_strings():
 
 def test_set_reset_retrieve():
 
-    for typename,testval in test_values.iteritems():
+    for typename,testval in six.iteritems(test_values):
         target = TestTarget()
         target.data=testval
         target.assert_datatype(typename)
         assert_data_value(target.data,testval)
-        for typename2,testval2 in test_values.iteritems():
+        for typename2,testval2 in six.iteritems(test_values):
             target.data=testval2
             target.assert_datatype(typename2)
             assert_data_value(target.data,testval2)
@@ -108,12 +110,12 @@ def test_array_pack_format():
     target = TestTarget()
     test_data=np.array([1,2,3])
     target.data=test_data
-    assert target.data_array.startswith("PX")
+    assert target.data_array.startswith(b"PX")
     assert target.data_array.endswith(pickle.dumps(test_data))
 
     test_data=np.arange(2000)
     target.data=test_data
-    assert target.data_array.startswith("ZX")
+    assert target.data_array.startswith(b"ZX")
     assert target.data_array.endswith(zlib.compress(pickle.dumps(test_data)))
     assert np.allclose(target.data, test_data)
 
