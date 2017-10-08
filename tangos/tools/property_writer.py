@@ -15,7 +15,7 @@ import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
 
-import properties
+from .. import properties
 from ..util import terminalcontroller, timing_monitor
 from .. import parallel_tasks, core
 from ..parallel_tasks import database

@@ -6,7 +6,7 @@ from tangos.tools import add_simulation
 from tangos.tools import property_writer
 from tangos.simulation_output_handlers import output_testing
 from tangos import parallel_tasks, log, testing
-import properties
+from tangos import properties
 
 def setup():
     parallel_tasks.use('null')

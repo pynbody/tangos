@@ -3,6 +3,8 @@ import numpy as np
 from tangos.util import timing_monitor
 import six
 from six.moves import zip
+import importlib
+import warnings
 
 class HaloPropertiesMetaClass(type):
     # Present to register new subclasses of HaloProperties, so that subclasses can be dynamically
@@ -415,8 +417,15 @@ def instantiate_class(simulation, property_name, silent_fail=False):
 def get_required_properties(property_name):
     return providing_class(property_name).requires_property()
 
+def import_configured_property_modules():
+    from ..config import property_modules
+    for pm in property_modules:
+        if pm=="": continue
+        try:
+            importlib.import_module(pm)
+        except ImportError:
+            warnings.warn("Failed to import requested property module %r. Some properties may be unavailable."%pm,
+                          ImportWarning)
 
-
-
-from . import basic, potential, shape, dynamics, profile, flows, images, isolated, subhalo, BH, sfr, dust, intrinsic, disk_dynamics
-
+import_configured_property_modules()
+from . import live_profiles, intrinsic, BH

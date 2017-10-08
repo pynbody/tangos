@@ -332,7 +332,7 @@ def dump_id(options):
 
 
 def list_available_properties(options):
-    import properties
+    from .. import properties
     all_properties = sorted(properties.all_properties())
 
     print("%s | %s" % ("name".rjust(30), "from class"))

@@ -38,7 +38,7 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
         result['redshift'] = float(self._get_ts_property(ts_extension, 'redshift'))
         return result
 
-    def enumerate_objects(self, ts_extension, object_typetag='halo'):
+    def enumerate_objects(self, ts_extension, object_typetag='halo', min_halo_particles=config.min_halo_particles):
         nhalos_string = self._get_ts_property(ts_extension, object_typetag+"s")
         nhalos = 0 if nhalos_string is None else int(nhalos_string)
         for i in range(nhalos):

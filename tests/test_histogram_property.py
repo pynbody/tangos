@@ -3,7 +3,7 @@ import tangos as db
 import tangos.core.simulation
 import tangos
 import tangos.testing as testing
-import properties
+from tangos import properties
 import numpy as np
 
 import numpy.testing as npt

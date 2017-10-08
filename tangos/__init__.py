@@ -22,5 +22,6 @@ from sqlalchemy.orm.session import Session
 from . import core, log
 from .core import *
 from .query import *
+from . import properties
 
 core.init_db()

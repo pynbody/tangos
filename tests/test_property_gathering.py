@@ -8,7 +8,7 @@ import tangos.core.halo
 import tangos.core.simulation
 import tangos.core.timestep
 import tangos
-import properties
+from tangos import properties
 from tangos import testing
 import os
 import six

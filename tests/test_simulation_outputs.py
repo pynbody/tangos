@@ -49,7 +49,7 @@ def test_enumerate_objects_using_statfile():
 
 def test_enumerate_objects_using_pynbody():
     config.min_halo_particles = 400
-    halos = list(output_manager.enumerate_objects("tiny.000832"))
+    halos = list(output_manager.enumerate_objects("tiny.000832", min_halo_particles=200))
     npt.assert_equal(halos[0], [1,477,80, 48])
     assert len(halos)==1
 

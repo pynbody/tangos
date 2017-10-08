@@ -263,14 +263,14 @@ def test_find_merger():
 def test_major_progenitor_from_minor_progenitor():
     generator = testing.TestSimulationGenerator("sim3")
     ts1 = generator.add_timestep()
-    generator.add_halos_to_timestep(4)
+    generator.add_objects_to_timestep(4)
     ts2 = generator.add_timestep()
-    generator.add_halos_to_timestep(3)
+    generator.add_objects_to_timestep(3)
     generator.link_last_halos_using_mapping({1:2, 2:1, 3:3, 4:1}, consistent_masses=True)
     # ts1->ts2: most massive and second most massive halos swap rank ordering by mass because of the
     #           merger with ts1/h4.
     ts3 = generator.add_timestep()
-    generator.add_halos_to_timestep(2)
+    generator.add_objects_to_timestep(2)
     # ts2->ts3: there is a major merger of the most massive halos (ts2/h1+ts2/h2)->ts3/h1
     generator.link_last_halos_using_mapping({1:1, 2:1, 3:2}, consistent_masses=True)
 

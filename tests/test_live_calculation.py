@@ -11,7 +11,7 @@ import tangos.live_calculation as lc
 import tangos.live_calculation.parser
 import tangos
 import tangos.testing as testing
-import properties
+from tangos import properties
 from tangos.core import extraction_patterns
 
 

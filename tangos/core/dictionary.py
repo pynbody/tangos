@@ -21,7 +21,7 @@ class DictionaryItem(Base):
         self.text = text
 
     def providing_class(self):
-        import properties
+        from .. import properties
         return properties.providing_class(self.text)
 
 def get_dict_id(text, default=None, session=None):

@@ -327,7 +327,7 @@ class LiveProperty(Calculation):
         return result
 
     def _calculation_retrieves(self):
-        import properties
+        from .. import properties
         result = set()
         proxy_values = [i.proxy_value() for i in self._inputs]
         providing_instance = properties.providing_class(self._name)(None, *proxy_values)
@@ -354,7 +354,7 @@ class LiveProperty(Calculation):
         return val[0], desc
 
     def _evaluate_function(self, halos, input_descriptions, input_values):
-        import properties
+        from .. import properties
         sim = consistent_collection.consistent_simulation_from_halos(halos)
         results = []
         calculator = properties.providing_class(self.name())(sim, *input_descriptions)
@@ -566,7 +566,7 @@ class StoredProperty(Calculation):
         return ret
 
     def values_and_description(self, halos):
-        import properties
+        from .. import properties
         values = self.values(halos)
         sim = consistent_collection.consistent_simulation_from_halos(halos)
         description_class = properties.providing_class(self._name, silent_fail=True)

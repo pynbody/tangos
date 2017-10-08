@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import datetime
-import pickle
+from six.moves import cPickle as pickle
 import time
 import zlib
 
