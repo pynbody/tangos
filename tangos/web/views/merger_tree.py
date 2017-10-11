@@ -2,29 +2,70 @@ from __future__ import absolute_import
 from __future__ import print_function
 from pyramid.view import view_config
 from . import halo_from_request
-import tangos
+import tangos, tangos.relation_finding, tangos.util.consistent_collection as cc
 import time
 import math
 from six.moves import range
 from six.moves import zip
+from ...config import mergertree_min_fractional_NDM, mergertree_min_fractional_weight, mergertree_timeout
 
-def _construct_preliminary_mergertree(halo, base_halo, must_include, request, visited=None, depth=0):
-    if visited is None:
-        visited = []
-    start = time.time()
-    recurse = halo.id not in visited
-    visited.append(halo.id)
+def _construct_preliminary_mergertree(halos, base_halo, must_include, request, depth=0):
 
-    rl = tangos.relation_finding.HopStrategy(halo, target=halo.timestep.previous)
 
-    rl, weights = rl.all_and_weights()
+    if len(halos)==0:
+        return []
 
-    if len(rl) > 0:
-        rl = [rli for rli, wi in zip(rl, weights) if wi > weights[0] * 0.02 or rli.id in must_include]
+    visited = []
 
+    output = [_get_basic_halo_node(halo, base_halo, depth, request) for halo in halos]
+
+
+    rl = tangos.relation_finding.MultiSourceMultiHopStrategy(halos,
+                                                             target=cc.ConsistentCollection(halos).timestep.previous,
+                                                             nhops_max=1)
+    rl._keep_only_highest_weights = False
+    link_objs = rl._get_query_all()
+    pairings = []
+    next_level_halos = []
+    next_level_halos_link_from = []
+
+    maxdepth = 0
+
+    if len(link_objs)>0 and time.time()-request.start_time<mergertree_timeout:
+        max_weight = max([o.weight for o in link_objs])
+        max_NDM = max([o.halo_to.NDM for o in link_objs])
+        for obj in link_objs:
+            should_construct_onward_tree = obj.weight>max_weight*mergertree_min_fractional_weight
+            should_construct_onward_tree&= obj.halo_to.NDM>mergertree_min_fractional_weight*max_NDM
+            if obj.halo_to_id in must_include:
+                should_construct_onward_tree = True # override normal criteria
+            if obj.halo_to_id  in visited:
+                should_construct_onward_tree = False # already expanded via another link
+
+            if should_construct_onward_tree:
+                next_level_halos.append(obj.halo_to)
+                next_level_halos_link_from.append(halos.index(obj.halo_from))
+                visited.append(obj.halo_to_id)
+
+
+        next_level_items = _construct_preliminary_mergertree(next_level_halos, base_halo, must_include, request, depth+1)
+
+
+        for placement_id, item in zip(next_level_halos_link_from, next_level_items):
+            output[placement_id]['contents'].append(item)
+            if item['maxdepth']>maxdepth:
+                maxdepth = item['maxdepth']
+
+    for i in output:
+        i['maxdepth'] = maxdepth+1
+
+    return output
+
+
+
+def _get_basic_halo_node(halo, base_halo, depth,  request):
     timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr" % (
-    halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
-
+        halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
     if isinstance(halo, tangos.core.halo.BH):
         mass_name = "BH_mass"
         moreinfo = "BH %d" % halo.halo_number
@@ -35,25 +76,21 @@ def _construct_preliminary_mergertree(halo, base_halo, must_include, request, vi
             moreinfo = "%s %d, NDM=%.2e" % (halo.__class__.__name__, halo.halo_number, halo.NDM)
         else:
             moreinfo = "%s %d, NDM=%d" % (halo.__class__.__name__, halo.halo_number, halo.NDM)
-
     try:
         Mvir = halo.properties.filter_by(
-            name_id=tangos.core.dictionary.get_dict_id(mass_name, session=tangos.core.Session.object_session(halo))).first()
+            name_id=tangos.core.dictionary.get_dict_id(mass_name, session=tangos.core.Session.object_session(halo),
+                                                       allow_query=False)).first()
     except KeyError:
         Mvir = None
-
     if Mvir is not None:
         moreinfo += ", %s=%.2e" % (mass_name, Mvir.data)
         unscaled_size = math.log10(Mvir.data)
     else:
         unscaled_size = math.log10(float(halo.NDM))
     nodeclass = 'node-dot-standard'
-
     name = str(halo.halo_number)
-    start = time.time()
-    if halo.links.filter_by(relation_id=tangos.core.dictionary.get_dict_id('Sub', -1)).count() > 0:
-        nodeclass = 'node-dot-sub'
-    #self.search_time += time.time() - start
+    #if halo.links.filter_by(relation_id=tangos.core.dictionary.get_dict_id('Sub', -1, session=tangos.core.Session.object_session(halo), allow_query=False)).count() > 0:
+    #    nodeclass = 'node-dot-sub'
     if halo == base_halo:
         nodeclass = 'node-dot-selected'
     elif depth == 0:
@@ -61,14 +98,12 @@ def _construct_preliminary_mergertree(halo, base_halo, must_include, request, vi
             nodeclass = 'node-dot-continuation'
             name = '...'
             moreinfo = "Continues... " + moreinfo
-
     if len(name) > 4:
         name = ""
-
     output = {'name': name,
               'url': request.route_url('halo_view', simid=base_halo.timestep.simulation.basename,
-                                     timestepid=halo.timestep.extension,
-                                     halonumber=halo.basename),
+                                       timestepid=halo.timestep.extension,
+                                       halonumber=halo.basename),
               'nodeclass': nodeclass,
               'moreinfo': moreinfo,
               'timeinfo': timeinfo,
@@ -76,16 +111,6 @@ def _construct_preliminary_mergertree(halo, base_halo, must_include, request, vi
               'unscaled_size': unscaled_size,
               'contents': [],
               'depth': depth}
-
-    maxdepth = 0
-
-    if recurse:
-        for rli in rl:
-            nx = _construct_preliminary_mergertree(rli, base_halo, must_include, request, visited, depth + 1)
-            output['contents'].append(nx)
-            if nx['maxdepth'] > maxdepth: maxdepth = nx['maxdepth']
-
-    output['maxdepth'] = maxdepth + 1
     return output
 
 
@@ -151,7 +176,7 @@ def _postprocess_mergertree_layout_by_branch(tree):
 
 def _construct_mergertree(halo, request):
     search_time = 0
-    start = time.time()
+    request.start_time = time.time()
     base = halo
     must_include = []
     for i in range(5):
@@ -159,9 +184,8 @@ def _construct_mergertree(halo, request):
         if base.next is not None:
             base = base.next
 
-    tree = _construct_preliminary_mergertree(base, halo, must_include, request)
-    print("Merger tree build time:    %.2fs" % (time.time() - start))
-    print("of which link search time: %.2fs" % (search_time))
+    tree = _construct_preliminary_mergertree([base], halo, must_include, request)[0]
+    print("Merger tree build time:    %.2fs" % (time.time() - request.start_time))
 
     start = time.time()
     _postprocess_mergertree(tree)

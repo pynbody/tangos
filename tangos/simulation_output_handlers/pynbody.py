@@ -220,7 +220,14 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
                     pass
 
 
-class SubfindOutputSetHandler(PynbodyOutputSetHandler):
+class RamsesHOPOutputSetHandler(PynbodyOutputSetHandler):
+    patterns = ["output_0????"]
+
+    def get_properties(self):
+        return {}
+
+
+class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
     patterns = ["snapshot_???"]
 
     def load_object(self, ts_extension, halo_number, object_typetag='halo', mode=None):

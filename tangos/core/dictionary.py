@@ -24,7 +24,7 @@ class DictionaryItem(Base):
         from .. import properties
         return properties.providing_class(self.text)
 
-def get_dict_id(text, default=None, session=None):
+def get_dict_id(text, default=None, session=None, allow_query=True):
     """Get a DictionaryItem id for text (possibly cached). Raises KeyError if
     no dictionary object exists for the specified text"""
 
@@ -42,16 +42,19 @@ def get_dict_id(text, default=None, session=None):
         return _dict_id[text]
     except KeyError:
 
-        try:
-            obj = session.query(DictionaryItem).filter_by(text=text).first()
-        except:
-            if default is None:
-                raise
-            else:
-                return default
-        finally:
-            if close_session:
-                session.close()
+        if allow_query:
+            try:
+                obj = session.query(DictionaryItem).filter_by(text=text).first()
+            except:
+                if default is None:
+                    raise
+                else:
+                    return default
+            finally:
+                if close_session:
+                    session.close()
+        else:
+            obj = None
 
         if obj is None:
             if default is None:
@@ -98,6 +101,12 @@ def get_or_create_dictionary_item(session, name):
     return obj
 
 def _get_dict_cache_for_session(session):
-    session_dict = _dict_id.get(session, {})
-    _dict_id[session] = session_dict
+    session_dict = _dict_id.get(session, None)
+    if session_dict is None:
+        session_dict = {}
+        for dict_item in session.query(DictionaryItem):
+            session_dict[dict_item.text] = dict_item.id
+
+        _dict_id[session] = session_dict
+
     return session_dict
