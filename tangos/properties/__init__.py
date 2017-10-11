@@ -428,4 +428,4 @@ def import_configured_property_modules():
                           ImportWarning)
 
 import_configured_property_modules()
-from . import live_profiles, intrinsic, BH
+from . import live_profiles, intrinsic, BH, zoom
