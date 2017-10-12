@@ -1,5 +1,5 @@
-Tangos Tutorial
-===============
+Tangos Tutorial – Gadget+SubFind
+================================
 
 Import the simulation
 ---------------------
@@ -7,7 +7,7 @@ Import the simulation
 At the unix command line type:
 
 ```
-tangos_manager add tutorial --handler pynbody.SubfindOutputSetHandler --min-particles 100
+tangos_manager add tutorial --handler pynbody.GadgetSubfindOutputSetHandler --min-particles 100
 ```
 
 The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
@@ -18,7 +18,7 @@ scroll up the screen.
   * `tangos_manager` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial` identifies the simulation we're adding
-  * `--handler pynbody.SubfindOutputSetHandler` identifies the _handler_ for our simulation. A handler defines how to load a simulation and its associated halo catalogue. Here we'll use `pynbody`'s ability to load gadget and subfind files. 
+  * `--handler pynbody.GadgetSubfindOutputSetHandler` identifies the _handler_ for our simulation. A handler defines how to load a simulation and its associated halo catalogue. Here we'll use `pynbody`'s ability to load gadget and subfind files. 
   * `--min-particles 100` imports only halos/groups with at least 100 particles. 
 
  

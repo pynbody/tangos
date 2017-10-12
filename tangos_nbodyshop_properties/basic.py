@@ -186,17 +186,6 @@ class MassEnclosed(HaloProperties):
         return 0.1
 
 
-class Contamination(HaloProperties):
-
-    def calculate(self, halo, exist):
-        n_heavy = (halo.dm['mass'] > halo.ancestor.dm['mass'].min()).sum()
-        return float(n_heavy) / len(halo.dm)
-
-    @classmethod
-    def name(self):
-        return "contamination_fraction"
-
-
 class HaloVvir(HaloProperties):
 
     @classmethod

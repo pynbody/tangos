@@ -15,6 +15,26 @@ function visit(parent, visitFn, childrenFn)
     }
 }
 
+function ensureSelectedNodeIsVisible(containerName) {
+    var selectedNode = $(containerName+' .node-dot-selected')[0]
+    var container = $(containerName)[0]
+
+    var selectedNodeRect = selectedNode.getBoundingClientRect();
+    var containerRect = container.getBoundingClientRect();
+
+    if(selectedNodeRect.bottom>containerRect.bottom || selectedNodeRect.top<containerRect.top) {
+        // Move node to vertical centre of view
+        var moveTop = (containerRect.top + containerRect.bottom) / 2 - selectedNodeRect.top
+        container.scrollTop -= moveTop;
+    }
+
+    if(selectedNodeRect.left<containerRect.left || selectedNodeRect.right>containerRect.right) {
+        // Move node to left hand edge of view
+        var moveLeft = (containerRect.left)-selectedNodeRect.left;
+        container.scrollLeft-=moveLeft;
+    }
+}
+
 function buildTree(containerName, treeData, customOptions)
 {
     // build the options object
@@ -198,5 +218,8 @@ function buildTree(containerName, treeData, customOptions)
         {
             return d.name;
         });
+
+
+    ensureSelectedNodeIsVisible(containerName);
 
 }

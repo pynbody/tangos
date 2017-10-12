@@ -75,7 +75,7 @@
     <h2>Properties</h2>
 
 
-    <form id="properties_form" onsubmit="return false;" class="dynamic-update autorestore" onchange="fetchPlot();" >
+    <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="dynamic-update autorestore" onchange="fetchPlot();" >
     <input type="hidden" name="object_typetag" value="{{ halo_typetag }}"/>
     <table>
         <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
@@ -107,7 +107,7 @@
         function resetRadio(nameToReset) {
             var resetDict = {};
             resetDict[nameToReset]='--------';
-            $("#properties_form").values(resetDict);
+            getPropertiesFormJquery().values(resetDict);
         }
 
         $.fn.markAsRowInsertPoint = function() {
@@ -175,8 +175,13 @@
 
         var objImg;
 
+        function getPropertiesFormJquery() {
+            var currentType = $('#object_typetag').text()
+            return $('#properties_form_'+currentType)
+        }
+
         function getFilterUri() {
-            var vals = $('#properties_form').values();
+            var vals = getPropertiesFormJquery().values();
             var filters = [];
             for(var k in vals) {
                 if(k.startsWith('filter-')) {
@@ -241,7 +246,7 @@
             if ($('#image_form').values()['type']==='tree')
                 return fetchTree(isUpdate);
 
-            var formvals = $('#properties_form').values()
+            var formvals = getPropertiesFormJquery().values()
 
             var name1 = formvals['x'];
             var name2 = formvals['y'];

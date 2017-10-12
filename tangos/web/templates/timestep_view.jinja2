@@ -1,12 +1,19 @@
 {% extends "layout.jinja2" %}
 
 {% macro make_table(objects, object_type) %}
+    <form id="properties_form_{{ object_type }}" class="autorestore">
     <table class="data-table" id="table-{{ object_type }}">
         <tr id="header-row-{{ object_type }}">
             <th>Number</th>
             <th>NDM()</th>
             <th class="editable" id="header-colid-1-{{ object_type }}"></th>
             <th>Go</th>
+        </tr>
+        <tr>
+            <th></th>
+            <th></th>
+            <th id="plotctl-colid-1-{{ object_type }}"></th>
+            <th></th>
         </tr>
 
         {% for h in objects %}
@@ -19,6 +26,7 @@
         {% endfor %}
 
     </table>
+    </form>
 {% endmacro %}
 
 {% block content %}
@@ -30,7 +38,7 @@
     {% if len(halos)>0 %}
         <td>
             <h2>Halos</h2>
-            {{ make_table(halos, 'halos') }}
+            {{ make_table(halos, 'halo') }}
         </td>
     {% endif %}
 
@@ -38,7 +46,7 @@
     {% if len(groups)>0 %}
         <td>
             <h2>Groups</h2>
-            {{ make_table(groups, 'groups') }}
+            {{ make_table(groups, 'group') }}
         </td>
     {% endif %}
     </tr></table>
@@ -53,6 +61,7 @@ $.fn.markAsColumnInsertPoint = function(editable_tag) {
 
 function updateColumnData(miniLanguageQuery, columnId) {
     $('#header-'+columnId).html("<img src='/static/spinner.gif'/>"+miniLanguageQuery)
+    updatePlotControlElements('#plotctl-'+columnId,miniLanguageQuery, false, false);
     $.ajax({
         type: "GET",
         url: "{{ gather_url }}"+uriEncodeQuery(miniLanguageQuery)+".json",
@@ -62,6 +71,8 @@ function updateColumnData(miniLanguageQuery, columnId) {
                  $('#header-'+columnId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
             } else {
                 $('#header-'+columnId).html(miniLanguageQuery);
+                updatePlotControlElements('#plotctl-'+columnId,miniLanguageQuery,
+                            false, data.can_use_as_filter);
                 $.each(data.data_formatted, function(i, item) {
                     var dbid = data.db_id[i];
                     $('#dbid-'+dbid).find('.'+columnId).html(item);
@@ -75,6 +86,7 @@ function addBlankColumn(after, object_tag) {
     var new_name = "column-"+Math.random().toString(36).substring(7);
     $('.data-table tr').each(function(index) {
         $(this).find("#header-"+after).after("<th id='header-"+new_name+"' class='editable'></th>");
+        $(this).find("#plotctl-"+after).after("<th id='plotctl-"+new_name+"'></th>");
         $(this).find("."+after).after("<td class='"+new_name+"'></td>");
     })
     $('#header-'+new_name).markAsColumnInsertPoint(object_tag);
@@ -84,13 +96,19 @@ function addBlankColumn(after, object_tag) {
 function removeColumn(name) {
      $('.data-table tr').each(function(index) {
         $(this).find("#header-"+name).remove();
+        $(this).find("#plotctl-"+name).remove();
         $(this).find("."+name).remove();
     })
 }
 
 function setupInsertionPoint() {
-    $('#header-colid-1-halos').markAsColumnInsertPoint('halo');
-    $('#header-colid-1-groups').markAsColumnInsertPoint('group');
+    $('#header-colid-1-halo').markAsColumnInsertPoint('halo');
+    $('#header-colid-1-group').markAsColumnInsertPoint('group');
+}
+
+function filterTable() {
+    $('.data-table tr').css('display','table-row');
+    
 }
 
 

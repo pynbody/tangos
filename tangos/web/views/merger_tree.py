@@ -36,7 +36,7 @@ def _construct_preliminary_mergertree(halos, base_halo, must_include, request, d
         max_NDM = max([o.halo_to.NDM for o in link_objs])
         for obj in link_objs:
             should_construct_onward_tree = obj.weight>max_weight*mergertree_min_fractional_weight
-            should_construct_onward_tree&= obj.halo_to.NDM>mergertree_min_fractional_weight*max_NDM
+            should_construct_onward_tree&= obj.halo_to.NDM>mergertree_min_fractional_NDM*max_NDM
             if obj.halo_to_id in must_include:
                 should_construct_onward_tree = True # override normal criteria
             if obj.halo_to_id  in visited:
