@@ -56,7 +56,11 @@
 $.fn.markAsColumnInsertPoint = function(editable_tag) {
     if(this.length===0)
         return;
+    $(this).closest('form').on('change', function() {
+        filterTable(editable_tag);
+    });
     return $(this).makeEditableTemplate(addBlankColumn, removeColumn, updateColumnData, editable_tag);
+
 }
 
 function updateColumnData(miniLanguageQuery, columnId) {
@@ -106,9 +110,35 @@ function setupInsertionPoint() {
     $('#header-colid-1-group').markAsColumnInsertPoint('group');
 }
 
-function filterTable() {
-    $('.data-table tr').css('display','table-row');
-    
+function filterTable(object_tag) {
+    var allRows = $('#table-'+object_tag+' tr');
+    var columnsToFilterOn = [];
+    allRows.css('display','table-row');
+
+    var re = new RegExp("plotctl-(.*)");
+    $('#properties_form_'+object_tag+' input[type="checkbox"]').each(function() {
+        var $this = $(this);
+        if($this.prop('checked')) {
+            var control_id = $this.parent('th').attr('id');
+            var column_id = re.exec(control_id)[1];
+            columnsToFilterOn.push(column_id);
+        }
+    });
+
+    console.log(columnsToFilterOn);
+
+    allRows.each(function() {
+        var shouldDisplay = true;
+        var $this=$(this);
+        columnsToFilterOn.forEach(function(columnId) {
+            var cell = $this.find('td.' + columnId)
+            if(cell.text()!=='True' && cell[0]!==undefined)
+                shouldDisplay=false;
+        });
+        if(!shouldDisplay)
+            $this.css('display','none');
+    });
+
 }
 
 
