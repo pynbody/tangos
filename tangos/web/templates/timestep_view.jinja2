@@ -82,6 +82,7 @@ function updateColumnData(miniLanguageQuery, columnId) {
                     $('#dbid-'+dbid).find('.'+columnId).html(item);
                 })
             }
+            $("#header-"+columnId).closest('form').change();
         }
     });
 }
@@ -119,7 +120,7 @@ function filterTable(object_tag) {
     $('#properties_form_'+object_tag+' input[type="checkbox"]').each(function() {
         var $this = $(this);
         if($this.prop('checked')) {
-            var control_id = $this.parent('th').attr('id');
+            var control_id = $this.closest('th').attr('id');
             var column_id = re.exec(control_id)[1];
             columnsToFilterOn.push(column_id);
         }

@@ -214,7 +214,7 @@ function getPlotControlElements(query, isScalar) {
 
 function getFilterElements(query) {
     var uriQuery = uriEncodeQuery(query);
-    return 'Filter <input name="filter-'+uriQuery+'" type="checkbox"/>'
+    return '<label>Filter <input name="filter-'+uriQuery+'" type="checkbox"/></label>'
 }
 
 function updatePlotControlElements(element, query, isScalar, isFilter) {
