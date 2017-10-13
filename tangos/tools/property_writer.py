@@ -150,9 +150,7 @@ class PropertyWriter(object):
 
 
     def _build_halo_list(self, db_timestep):
-        query = sqlalchemy.and_(
-            core.halo.Halo.timestep == db_timestep,
-            sqlalchemy.or_(core.halo.Halo.NDM > 1000, core.halo.Halo.NDM == 0))
+        query = core.halo.Halo.timestep == db_timestep
         if self.options.htype is not None:
             query = sqlalchemy.and_(query, core.halo.Halo.object_typecode
                                     == core.halo.Halo.object_typecode_from_tag(self.options.htype))
