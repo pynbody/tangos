@@ -22,7 +22,8 @@ def _construct_preliminary_mergertree(halos, base_halo, must_include, request, d
 
     rl = tangos.relation_finding.MultiSourceMultiHopStrategy(halos,
                                                              target=cc.ConsistentCollection(halos).timestep.previous,
-                                                             nhops_max=1)
+                                                             nhops_max=1,
+                                                             order_by='halo_number_asc')
     rl._keep_only_highest_weights = False
     link_objs = rl._get_query_all()
     pairings = []
@@ -173,9 +174,16 @@ def _postprocess_mergertree_layout_by_branch(tree):
         node['mid_range'] = (x_start + x_end) / 2
         if len(node['contents']) > 0:
             delta = (x_end - x_start) / len(node['contents'])
+            total_nodes = len(node['contents'])
+            halo_numbers = [child['halo_number'] for child in node['contents']]
+            halo_numbers.sort()
             for i, child in enumerate(node['contents']):
+                # create an index that starts in the middle then works outwards
+                rank = halo_numbers.index(child['halo_number'])
+                sign = 2*((rank+1)%2)-1
+                i_shuffled = total_nodes//2 + sign*((rank+1)//2)
                 child_range = existing_ranges[child['depth']].get(child['halo_number'],
-                                                                  (x_start + i * delta, x_start + (i + 1) * delta))
+                                                                  (x_start + i_shuffled * delta, x_start + (i_shuffled + 1) * delta))
 
                 child['space_range'] = child_range
                 existing_ranges[child['depth']][child['halo_number']] = child_range

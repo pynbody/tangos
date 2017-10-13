@@ -152,7 +152,6 @@ class HopStrategy(object):
             query = query.join(halo_alias, self._link_orm_class.halo_to).join(timestep_alias)
             query = query.options(contains_eager("halo_to", alias=halo_alias))
             query = query.options(contains_eager("halo_to", "timestep", alias=timestep_alias))
-
         query = query.order_by(*self._order_by_clause(halo_alias, timestep_alias))
         return query
 
