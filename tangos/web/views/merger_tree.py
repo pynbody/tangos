@@ -7,7 +7,7 @@ import time
 import math
 from six.moves import range
 from six.moves import zip
-from ...config import mergertree_min_fractional_NDM, mergertree_min_fractional_weight, mergertree_timeout
+from ...config import mergertree_min_fractional_NDM, mergertree_min_fractional_weight, mergertree_timeout, mergertree_max_nhalos
 
 def _construct_preliminary_mergertree(halos, base_halo, must_include, request, depth=0):
 
@@ -33,10 +33,19 @@ def _construct_preliminary_mergertree(halos, base_halo, must_include, request, d
 
     if len(link_objs)>0 and time.time()-request.start_time<mergertree_timeout:
         max_weight = max([o.weight for o in link_objs])
-        max_NDM = max([o.halo_to.NDM for o in link_objs])
+        NDM_array = [o.halo_to.NDM for o in link_objs]
+        max_NDM = max(NDM_array)
+        if len(NDM_array)>mergertree_max_nhalos:
+            NDM_cut = sorted(NDM_array)[mergertree_max_nhalos]
+        else:
+            NDM_cut = None
+
         for obj in link_objs:
             should_construct_onward_tree = obj.weight>max_weight*mergertree_min_fractional_weight
             should_construct_onward_tree&= obj.halo_to.NDM>mergertree_min_fractional_NDM*max_NDM
+            if NDM_cut:
+                should_construct_onward_tree&=obj.halo_to.NDM>NDM_cut
+
             if obj.halo_to_id in must_include:
                 should_construct_onward_tree = True # override normal criteria
             if obj.halo_to_id  in visited:

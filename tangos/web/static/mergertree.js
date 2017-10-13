@@ -104,7 +104,10 @@ function buildTree(containerName, treeData, customOptions)
         .enter()
         .append("svg:path")
         .attr("class", "link")
-        .attr("d", link);
+        .attr("d", link)
+        .style("stroke-width", function(d) {
+                return Math.min(d.source.size, d.target.size)*1.3;
+            });
 
 
     /*

@@ -41,7 +41,8 @@ max_traverse_depth = 3
 
 # merger tree building thinning criteria
 mergertree_min_fractional_weight = 0.02 # as a fraction of the weight of the strongest link from each halo
-mergertree_min_fractional_NDM = 1e-4 # as a fraction of the most massive halo at each timestep
+mergertree_min_fractional_NDM = 0 # as a fraction of the most massive halo at each timestep - set to zero for no thinning
+mergertree_max_nhalos = 30 # maximum number of halos per step - discard the least massive ones
 mergertree_timeout = 15.0 # seconds before abandoning the construction of a merger tree in the web interface
 
 

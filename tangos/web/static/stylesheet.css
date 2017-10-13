@@ -242,7 +242,7 @@ circle.node-dot-continuation {
 
 path.link {
     fill: none;
-    stroke: gray;
+    stroke: #cccccc;
 }
 
 text.info {
