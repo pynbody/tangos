@@ -289,15 +289,14 @@
             objImg.onerror = placeImageError;
         }
 
-        function placeImageError(url) {
-            if(url===undefined)
-                url=objImg.src;
+        function placeImageError() {
+            var url=objImg.src;
             errorlink = '<a href="'+url+'" target="_blank">';
             $('#imgbox').empty().html("<h2>Sorry, there was an error generating your plot.</h2><p>Click "+errorlink+"here</a> for more information (opens in a new window)");
         }
 
         function placeImage() {
-            $('#imgbox').empty()
+            $('#imgbox').empty();
             $('#imgbox').append(objImg);
             $('#imgbox').css('width',objImg.width);
         }
