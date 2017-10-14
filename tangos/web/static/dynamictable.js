@@ -142,6 +142,16 @@ function uriEncodeQuery(name) {
     return name;
 }
 
+function getAllEditables() {
+    var editables = [];
+    forEach(allEditables, function(row) {
+        var text = row.text();
+        if(text!==addLabelText)
+           editables.push(text);
+    });
+    return editables;
+}
+
 function persistAllEditables() {
     if(allEditables.length==0)
         return; // don't waste time – there's nothing to be stored from this page
@@ -217,7 +227,7 @@ function getFilterElements(query) {
     return '<label>Filter <input name="filter-'+uriQuery+'" type="checkbox"/></label>'
 }
 
-function updatePlotControlElements(element, query, isScalar, isFilter) {
+function updatePlotControlElements(element, query, isScalar, isFilter, filterOnly) {
     var controls = {};
     $(element).find("input").each(function() {
        controls[this.name] = this.checked;
@@ -225,6 +235,10 @@ function updatePlotControlElements(element, query, isScalar, isFilter) {
     scalarControls = getPlotControlElements(query,true);
     arrayControls = getPlotControlElements(query,false);
     filterControls = getFilterElements(query)
+    if(filterOnly) {
+        scalarControls = "";
+        arrayControls = "";
+    }
     var buttonsHtml;
     if(isFilter) {
         hiddenHtml = arrayControls+scalarControls;

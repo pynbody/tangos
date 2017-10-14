@@ -76,7 +76,7 @@ function updateColumnData(miniLanguageQuery, columnId) {
             } else {
                 $('#header-'+columnId).html(miniLanguageQuery);
                 updatePlotControlElements('#plotctl-'+columnId,miniLanguageQuery,
-                            false, data.can_use_as_filter);
+                            false, data.can_use_as_filter, true);
                 $.each(data.data_formatted, function(i, item) {
                     var dbid = data.db_id[i];
                     $('#dbid-'+dbid).find('.'+columnId).html(item);
@@ -126,8 +126,8 @@ function filterTable(object_tag) {
         }
     });
 
-    console.log(columnsToFilterOn);
 
+    var nRows=0;
     allRows.each(function() {
         var shouldDisplay = true;
         var $this=$(this);
@@ -138,6 +138,13 @@ function filterTable(object_tag) {
         });
         if(!shouldDisplay)
             $this.css('display','none');
+        else {
+            nRows+=1;
+            var parity = ((nRows%2)===0)?"even":"odd";
+            if (nRows>2) {
+                $this.attr('class', parity);
+            }
+        }
     });
 
 }

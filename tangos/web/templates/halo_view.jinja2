@@ -67,7 +67,7 @@
             <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>
         </form>
         </div>
-        <div id="imgbox">Images appear here</div>
+        <div id="imgbox"></div>
     </div>
 
 
@@ -75,7 +75,7 @@
     <h2>Properties</h2>
 
 
-    <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="dynamic-update autorestore" onchange="fetchPlot();" >
+    <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="dynamic-update autorestore" onchange="plotSelectionUpdate();" >
     <input type="hidden" name="object_typetag" value="{{ halo_typetag }}"/>
     <table>
         <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
@@ -221,18 +221,22 @@
         function fetchTree(isUpdate) {
             if(!isUpdate)
                 $('#imgbox').empty().html("<img src='/static/spinner.gif' />&nbsp;Generating tree...");
+            else
+                $('#imgbox').append("<img src='/static/spinner.gif' />&nbsp;Updating tree...");
             var url = $('#tree_url').text();
 
             $.ajax({
-                type: "GET",
+                type: "POST",
+                data: {"evaluate": JSON.stringify(getAllEditables())},
                 url: url,
                 success: function (data) {
                     $('#imgbox').empty();
+                    if(data['tree']===undefined)
+                        treeError();
                     buildTree("#imgbox", data['tree']);
-                },
-                failure: function() {
-                    placeImgError(url);
                 }
+            }).fail(function() {
+                treeError();
             });
 
         }
@@ -271,8 +275,6 @@
             if(existingImgSrc===uri)
                     return;
 
-            console.log("load",uri,existingImgSrc);
-
             loadImage(uri);
             if(isUpdate===undefined || isUpdate===false)
                 $('#imgbox').empty().html("<img src='/static/spinner.gif' />&nbsp;Generating plot...");
@@ -295,10 +297,24 @@
             $('#imgbox').empty().html("<h2>Sorry, there was an error generating your plot.</h2><p>Click "+errorlink+"here</a> for more information (opens in a new window)");
         }
 
+        function treeError() {
+            $('#imgbox').empty().html("<h2>Sorry, there was an error generating the tree.</h2><p>Consult the server log for more information.</p>")
+        }
+
         function placeImage() {
             $('#imgbox').empty();
             $('#imgbox').append(objImg);
             $('#imgbox').css('width',objImg.width);
+        }
+
+        function ensurePlotTypeIsNotTree() {
+            if($('#image_form').values()['type']==='tree') {
+                $('#type-cascade').prop('checked',true);
+            }
+        }
+        function plotSelectionUpdate() {
+            ensurePlotTypeIsNotTree();
+            fetchPlot(true);
         }
 
         $('#nametg-custom-row-1').markAsRowInsertPoint();

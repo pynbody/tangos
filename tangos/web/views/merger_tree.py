@@ -22,8 +22,7 @@ def _construct_preliminary_mergertree(halos, base_halo, must_include, request, d
 
     rl = tangos.relation_finding.MultiSourceMultiHopStrategy(halos,
                                                              target=cc.ConsistentCollection(halos).timestep.previous,
-                                                             nhops_max=1,
-                                                             order_by='halo_number_asc')
+                                                             nhops_max=1)
     rl._keep_only_highest_weights = False
     link_objs = rl._get_query_all()
     pairings = []
@@ -76,27 +75,23 @@ def _construct_preliminary_mergertree(halos, base_halo, must_include, request, d
 def _get_basic_halo_node(halo, base_halo, depth,  request):
     timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr" % (
         halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
-    if isinstance(halo, tangos.core.halo.BH):
-        mass_name = "BH_mass"
-        moreinfo = "BH %d" % halo.halo_number
-    else:
-        mass_name = "Mvir"
 
-        if halo.NDM > 1e4:
-            moreinfo = "%s %d, NDM=%.2e" % (halo.__class__.__name__, halo.halo_number, halo.NDM)
-        else:
-            moreinfo = "%s %d, NDM=%d" % (halo.__class__.__name__, halo.halo_number, halo.NDM)
+    if halo.NDM > 0:
+        moreinfo = "%s %d, NDM=%.2e" % (halo.__class__.__name__, halo.halo_number, halo.NDM)
+        unscaled_size = math.log10(halo.NDM)
+    else:
+        moreinfo = "%s %d" % (halo.__class__.__name__, halo.halo_number, halo.NDM)
+        unscaled_size = 1
+
     try:
         Mvir = halo.properties.filter_by(
-            name_id=tangos.core.dictionary.get_dict_id(mass_name, session=tangos.core.Session.object_session(halo),
+            name_id=tangos.core.dictionary.get_dict_id("Mvir", session=tangos.core.Session.object_session(halo),
                                                        allow_query=False)).first()
     except KeyError:
         Mvir = None
     if Mvir is not None:
-        moreinfo += ", %s=%.2e" % (mass_name, Mvir.data)
-        unscaled_size = math.log10(Mvir.data)
-    else:
-        unscaled_size = math.log10(float(halo.NDM))
+        moreinfo += ", %s=%.2e" % ("Mvir", Mvir.data)
+
     nodeclass = 'node-dot-standard'
     name = str(halo.halo_number)
     #if halo.links.filter_by(relation_id=tangos.core.dictionary.get_dict_id('Sub', -1, session=tangos.core.Session.object_session(halo), allow_query=False)).count() > 0:
