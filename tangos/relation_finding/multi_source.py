@@ -132,14 +132,16 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
             # guaranteed to be in 1-1 correspondence with the input.
             #
             # We do this by joining to the initial seeds in the temp table
-            original_query_alias = query.subquery()
-            original_orm_alias = orm.aliased(self._link_orm_class, original_query_alias)
-            source_ids = orm.aliased(self._link_orm_class)
-
+            #
             # the query has to explicitly include the source_id, otherwise the sqlalchemy dedup
             # process removes duplicates rows (e.g. if there are several null results, only the
             # first will be returned!) resulting in a query result that is too short and unrecoverable
             # errors in functions that rely on getting back a 1-1 mapping
+
+            original_query_alias = query.subquery()
+            original_orm_alias = orm.aliased(self._link_orm_class, original_query_alias)
+            source_ids = orm.aliased(self._link_orm_class)
+
             sources_query = self.session.query(source_ids.source_id,original_orm_alias).\
                 select_from(source_ids).\
                 filter(source_ids.nhops==0).order_by(source_ids.source_id)
