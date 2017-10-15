@@ -270,3 +270,7 @@ div.popup-controls {
     padding: 3px;
     cursor: pointer;
 }
+
+div.properties-area {
+    min-height: 500px;
+}
