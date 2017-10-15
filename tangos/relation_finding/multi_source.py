@@ -8,7 +8,7 @@ from six.moves import range
 from six.moves import zip
 
 import sqlalchemy
-from sqlalchemy import func
+from sqlalchemy import func, orm
 
 class MultiSourceMultiHopStrategy(MultiHopStrategy):
     """A variant of MultiHopStrategy that finds halos corresponding to multiple start points.
@@ -18,16 +18,28 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
     from the nature of the target.
 
     Additionally, as soon as any halo is "matched" in the target, the entire query is stopped. In other words,
-    this class assumes that the number of hops is the same to reach all target halos.
-
-    In terms of implementation, the class could be significantly optimised in future. While the all() function
-    only retains the highest-weight final halos, this weeding could be done earlier - at the point of making the
-    underlying query (to save the ORM mapping) or even during the hops."""
+    this class assumes that the number of hops is the same to reach all target halos."""
 
     def __init__(self, halos_from, target, **kwargs):
+        """Construct a strategy for finding Halos via multiple "hops" along HaloLinks from multiple start-points
+
+        :param halos_from: a list of all halos to start from.
+        :param target: a TimeStep or Simulation object to target.
+        :param one_match_per_input: if True (default), return one halo per starting point in order.
+                                  The returned halo in each case should be the one with the
+                                  highest weight link (i.e. the major progenitor or similar)
+
+                                  if False, *all* linked halos are returned and the caller has to figure out
+                                  which one belongs to which starting halo
+
+        Other parameters are passed onto an underlying MultiHopStrategy. However note that the order_by parameter
+        has no effect unless one_match_per_input is False.
+        """
         directed = self._infer_direction(halos_from, target)
         kwargs["target"] = target
         kwargs["directed"] = directed
+
+        self._return_only_highest_weights = kwargs.pop('one_match_per_input', True)
 
         # For 'backwards' or 'forwards' searches (basically major progenitors or descendants), keep only the
         # strongest link at each _step_ rather than waiting to the end to select the highest weight.
@@ -35,7 +47,8 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         # test_hop_strategy.test_major_progenitor_from_minor_progenitor for an example that exposes
         # this former bug). The actual implementation of the per-step restriction is in the override to
         # _supplement_halolink_query_with_filter, below.
-        self._keep_only_highest_weights = (directed=="forwards" or directed=="backwards")
+        self._keep_only_highest_weights_per_hop = (directed == "forwards" or directed == "backwards")
+        self._keep_only_highest_weights_per_hop&=self._return_only_highest_weights
 
         super(MultiSourceMultiHopStrategy, self).__init__(halos_from[0], **kwargs)
         self._all_halo_from = halos_from
@@ -73,48 +86,68 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
     def _supplement_halolink_query_with_filter(self, query, table=None):
         query = super(MultiSourceMultiHopStrategy, self)._supplement_halolink_query_with_filter(query,table)
 
-        if self._keep_only_highest_weights:
+        if self._keep_only_highest_weights_per_hop:
 
-            if table is None:
-                table = core.halo_data.HaloLink.__table__
+            query = self._extract_max_weight_rows_from_query(query, table)
 
-            # return only the highest weight link from each halo
-            # (the following join is basically a work-around for the lack of an 'argmax' type functionality in sql)
+        return query
 
-            subq = query.add_columns(func.max(table.c.weight).label("max_weight")).\
-                group_by(table.c.halo_from_id).subquery()
+    def _extract_max_weight_rows_from_query(self, query, table):
+        if table is None:
+            table = core.halo_data.HaloLink.__table__
 
-            query = query.join(subq, sqlalchemy.and_(table.c.halo_from_id==subq.c.halo_from_id,
-                                                     table.c.weight==subq.c.max_weight))
-
+        # return only the highest weight link from each halo
+        # (the following join is basically a work-around for the lack of an 'argmax' type functionality in sql)
+        subq = query.add_columns(func.max(table.c.weight).label("max_weight")). \
+            group_by(table.c.halo_from_id).subquery()
+        query = query.join(subq, sqlalchemy.and_(table.c.halo_from_id == subq.c.halo_from_id,
+                                                 table.c.weight == subq.c.max_weight))
         return query
 
     def _should_halt(self):
         return self.query.count()>0
 
     def _order_by_clause(self, halo_alias, timestep_alias):
-        return [self._link_orm_class.source_id, self._table.c.weight]
-
-    def _ordering_requires_join(self):
-        # Always return True, as our all() function will do post-processing based on halo_to
-        # Without the join, this leads to a large number of SELECTs being emitted (v slow)
-        return True
+        return [self._link_orm_class.source_id] \
+               + super(MultiSourceMultiHopStrategy, self)._order_by_clause(halo_alias, timestep_alias)
 
     def all(self):
-        all = self._get_query_all()
-        source_ids = [x.source_id for x in self._all]
-        num_sources = len(self._all_halo_from)
-        matches = dict([(source, destination.halo_to) for source,destination in zip(source_ids, all)])
-        return [matches.get(i,None) for i in range(num_sources)]
+        results = self._get_query_all()
+        if self._return_only_highest_weights:
+            # query results include a source_id column which we now wish to ignore (see
+            # _query_ordered below for more information)
+            return [x[1].halo_to if x[1] is not None else None
+                    for x in results]
+        else:
+            return [x.halo_to for x in results]
 
-    def temp_table(self):
-        # because of the custom manipulation performed above, the MultiHopStrategy implementation of
-        # temp_table does not return the correct results. Ideally, we should fix this by implementing
-        # the custom manipulation in all() inside the actual query instead. For now, the fix is to
-        # use the clunky "get everything then put it back into the database as a new temp table" approach.
-        return HopStrategy.temp_table(self)
+    @property
+    def _query_ordered(self):
+        query = super(MultiSourceMultiHopStrategy, self)._query_ordered
+        if self._return_only_highest_weights:
+            query = self._extract_max_weight_rows_from_query(query, self._table)
 
-    def _execute_query(self):
-        super(MultiSourceMultiHopStrategy, self)._execute_query()
+            # we now need to restructure the results such that they appear in the same order as the input
+            # halo list, and a NULL result is returned for 'missing' halos. This way, the result is
+            # guaranteed to be in 1-1 correspondence with the input.
+            #
+            # We do this by joining to the initial seeds in the temp table
+            original_query_alias = query.subquery()
+            original_orm_alias = orm.aliased(self._link_orm_class, original_query_alias)
+            source_ids = orm.aliased(self._link_orm_class)
 
+            # the query has to explicitly include the source_id, otherwise the sqlalchemy dedup
+            # process removes duplicates rows (e.g. if there are several null results, only the
+            # first will be returned!) resulting in a query result that is too short and unrecoverable
+            # errors in functions that rely on getting back a 1-1 mapping
+            sources_query = self.session.query(source_ids.source_id,original_orm_alias).\
+                select_from(source_ids).\
+                filter(source_ids.nhops==0).order_by(source_ids.source_id)
+
+            query = sources_query.outerjoin(original_orm_alias,
+                                            source_ids.source_id==original_orm_alias.source_id)
+
+
+
+        return query
 

@@ -17,6 +17,8 @@ _pipe = None
 _recv_lock = None
 _recv_buffer = []
 
+_print_exceptions = True
+
 class NoMatchingItem(Exception):
     pass
 
@@ -94,9 +96,11 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
     except Exception as e:
         import sys, traceback
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        print("Error on a sub-process:", file=sys.stderr)
-        traceback.print_exception(exc_type, exc_value, exc_traceback,
-                                  file=sys.stderr)
+        global _print_exceptions
+        if _print_exceptions:
+            print("Error on a sub-process:", file=sys.stderr)
+            traceback.print_exception(exc_type, exc_value, exc_traceback,
+                                      file=sys.stderr)
         _pipe.send(("error", e))
 
     _pipe.close()

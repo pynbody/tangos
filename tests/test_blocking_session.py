@@ -11,7 +11,7 @@ from tangos import log, testing
 import time
 import os
 import sqlalchemy.exc
-
+import contextlib
 import tangos
 
 
@@ -81,12 +81,19 @@ def _perform_test(use_blocking=True):
     elif pt.backend.rank()==2:
         _multiprocess_test()
 
+@contextlib.contextmanager
+def _suppress_exception_report():
+    import tangos.parallel_tasks.backends.multiprocessing as backend
+    backend._print_exceptions = False  # to prevent confusing error appearing in stdout
+    yield
+    backend._print_exceptions = True
 
 def test_non_blocking_exception():
 
-    with assert_raises(sqlalchemy.exc.OperationalError):
-        with log.LogCapturer():
-            pt.launch(_perform_test,3, (False,))
+    with _suppress_exception_report():
+        with assert_raises(sqlalchemy.exc.OperationalError):
+            with log.LogCapturer():
+                pt.launch(_perform_test,3, (False,))
 
     db.core.get_default_session().rollback()
 

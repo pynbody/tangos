@@ -22,8 +22,9 @@ def _construct_preliminary_mergertree(halos, base_halo, must_include, request, d
 
     rl = tangos.relation_finding.MultiSourceMultiHopStrategy(halos,
                                                              target=cc.ConsistentCollection(halos).timestep.previous,
-                                                             nhops_max=1)
-    rl._keep_only_highest_weights = False
+                                                             nhops_max=1,
+                                                             one_match_per_input=False)
+    rl._keep_only_highest_weights_per_hop = False
     link_objs = rl._get_query_all()
     pairings = []
     next_level_halos = []
@@ -55,7 +56,6 @@ def _construct_preliminary_mergertree(halos, base_halo, must_include, request, d
                 next_level_halos.append(obj.halo_to)
                 next_level_halos_link_from.append(halos.index(obj.halo_from))
                 visited.append(obj.halo_to_id)
-
 
         next_level_items = _construct_preliminary_mergertree(next_level_halos, base_halo, must_include, request, depth+1)
 

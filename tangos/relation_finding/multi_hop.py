@@ -37,7 +37,7 @@ class MultiHopStrategy(HopStrategy):
                  order_by=None, combine_routes=True, min_aggregated_weight=0.0,
                  min_onehop_weight=0.0, min_onehop_reverse_weight=None,
                  include_startpoint=False):
-        """Construct the MultiHopStrategy (without actually executing the strategy)
+        """Construct a strategy for finding Halos via multiple "hops" along HaloLinks
 
         :param halo_from:   The halo to start hopping from
         :type halo_from:    core.Halo
@@ -301,7 +301,8 @@ class MultiHopStrategy(HopStrategy):
         class_attrs = {"__table__": self._table,
                        "halo_from": relationship(core.halo.Halo, primaryjoin=self._table.c.halo_from_id == core.halo.Halo.id),
                        "halo_to"  : relationship(core.halo.Halo, primaryjoin=(self._table.c.halo_to_id == core.halo.Halo.id)),
-                       "source_id" : self._table.c.source_id
+                       "source_id" : self._table.c.source_id,
+                       "nhops" : self._table.c.nhops
                        }
 
         return type(class_name,class_base,class_attrs)

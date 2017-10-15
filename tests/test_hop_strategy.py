@@ -236,6 +236,13 @@ def test_multisource_with_nones_as_temptable():
         results = thl.all_halos_with_duplicates(table)
     testing.assert_halolists_equal(results,["sim/ts3/1","sim/ts3/1","sim/ts3/2",None])
 
+def test_multisource_preserves_order():
+    strategy = halo_finding.MultiSourceMultiHopStrategy(
+        tangos.get_items([ "sim/ts1/3", "sim/ts1/2", "sim/ts1/1", "sim/ts1/5"]),
+        tangos.get_item("sim/ts3"))
+    results = strategy.all()
+    testing.assert_halolists_equal(results, ["sim/ts3/2", "sim/ts3/1", "sim/ts3/1",  None])
+
 def test_multisource_backwards():
     results = halo_finding.MultiSourceMultiHopStrategy(tangos.get_items(["sim/ts3/1", "sim/ts3/2", "sim/ts3/3"]),
                                                        tangos.get_item("sim/ts1")).all()
