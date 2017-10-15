@@ -164,11 +164,13 @@ class Calculation(object):
         # which will not be the same as "is not None" in future versions of numpy.
 
         unsanitized_values = unsanitized_values[:, keep_rows]
-        return [self._make_final_array(x) for x in unsanitized_values]
+        for x in unsanitized_values:
+            if len(x)==0:
+                raise NoResultsError("Calculation %s returned no results" % self)
+        return [self._make_numpy_array(x) for x in unsanitized_values]
 
-    def _make_final_array(self, x):
-        if len(x)==0:
-            raise NoResultsError("Calculation %s returned no results"%self)
+    @staticmethod
+    def _make_numpy_array(x):
         if isinstance(x[0], np.ndarray):
             try:
                 return np.array(list(x), dtype=type(x[0][0]))

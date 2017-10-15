@@ -24,7 +24,7 @@ def _construct_preliminary_mergertree(halos, base_halo, must_include, request, d
                                                              target=cc.ConsistentCollection(halos).timestep.previous,
                                                              nhops_max=1,
                                                              one_match_per_input=False)
-    rl._keep_only_highest_weights_per_hop = False
+
     link_objs = rl._get_query_all()
     pairings = []
     next_level_halos = []
