@@ -5,7 +5,7 @@ import os
 import os.path
 import time
 import weakref
-
+import re
 import numpy as np
 import pynbody
 
@@ -166,6 +166,9 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             f._db_current_halocat = h # keep alive for lifetime of simulation
         return h  # pynbody.halo.AmigaGrpCatalogue(f)
 
+
+
+
     def match_halos(self, ts1, ts2, halo_min, halo_max,
                     dm_only=False, threshold=0.005, object_typetag='halo'):
         if dm_only:
@@ -219,12 +222,27 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
                 except (ValueError, KeyError) as e:
                     pass
 
+    def get_properties(self):
+        timesteps = list(self.enumerate_timestep_extensions())
+        f = self.load_timestep_without_caching(timesteps[0])
+        return {'approx_resolution_kpc': self._estimate_resolution(f)}
+
+    def _estimate_resolution(self, f):
+        f.physical_units()
+        if "eps" in f.dm.loadable_keys():
+            return f.dm['eps'].min()
+        else:
+            tot_box_mass = f.dm['mass'].sum()
+            min_mass = f.dm['mass'].min()
+            frac_mass = min_mass/tot_box_mass
+            frac_length = frac_mass ** (1. / 3)
+            estimated_eps = 0.01 * frac_length * f.properties['boxsize'].in_units('kpc a', **f.conversion_context())
+            return estimated_eps
+
 
 class RamsesHOPOutputSetHandler(PynbodyOutputSetHandler):
     patterns = ["output_0????"]
 
-    def get_properties(self):
-        return {}
 
 
 class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
@@ -235,7 +253,7 @@ class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
             h = self._construct_halo_cat(ts_extension, object_typetag)
             return h.get_halo_properties(halo_number,with_unit=False)
         else:
-            return super(SubfindOutputSetHandler, self).load_object(ts_extension, halo_number, output_typetag, mode)
+            return super(GadgetSubfindOutputSetHandler, self).load_object(ts_extension, halo_number, output_typetag, mode)
 
 
 
@@ -246,8 +264,6 @@ class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
             if self._pynbody_can_load_halos_for(e):
                 yield e[len(base)+1:]
 
-    def get_properties(self):
-        return {}
 
     def _construct_group_cat(self, ts_extension):
         f = self.load_timestep(ts_extension)
@@ -261,7 +277,7 @@ class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
 
     def _construct_halo_cat(self, ts_extension, object_typetag):
         if object_typetag== 'halo':
-            return super(SubfindOutputSetHandler, self)._construct_halo_cat(ts_extension, object_typetag)
+            return super(GadgetSubfindOutputSetHandler, self)._construct_halo_cat(ts_extension, object_typetag)
         elif object_typetag== 'group':
             return self._construct_group_cat(ts_extension)
         else:
@@ -278,6 +294,8 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
 
 
     def get_properties(self):
+        parent_prop_dict = super(ChangaOutputSetHandler, self).get_properties()
+
         pfile = self._get_paramfile_path()
 
         if pfile is None:
@@ -293,6 +311,7 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
             prop_dict.update(self._get_properties_from_log(log_path))
 
         prop_dict.update(self._filter_paramfile_properties(pfile_dict))
+        prop_dict.update(parent_prop_dict)
 
         return prop_dict
 
