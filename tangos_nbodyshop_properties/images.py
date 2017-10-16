@@ -130,7 +130,7 @@ class InflowOutflowImg(HaloProperties):
             f.gas, "rho_Z", distance=radius, nside=32)
         return rho, vr, metal
 
-    def preloop(self, f, filename, pa):
+    def preloop(self, f, db_timestep):
         self.f = f
 
     def pre_offset(self, halo, properties):

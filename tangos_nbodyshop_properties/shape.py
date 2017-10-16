@@ -9,7 +9,7 @@ from tangos.properties.spherical_region import SphericalRegionHaloProperties
 
 class Ellipsoids(SphericalRegionHaloProperties):
 
-    def preloop(self, f, name, ar):
+    def preloop(self, f, db_timestep):
         f.dm['smooth']
         f.dm['rho']
         f.dm['smooth'] *= 5

@@ -10,7 +10,7 @@ from six.moves import range
 
 class BasicHaloProperties(HaloProperties):
 
-    def preloop(self, sim, filename, property_array):
+    def preloop(self, sim, db_timestep):
         self.f = sim
 
 

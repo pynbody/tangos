@@ -57,7 +57,7 @@ class TestInflowOutflow(HaloProperties):
 
         return inflow, velin, outflow, velout
 
-    def preloop(self, f, filename, pa):
+    def preloop(self, f, db_timestep):
         self.f = f
 
     def requires_property(self):
@@ -106,7 +106,6 @@ class FlowProfile(SphericalRegionHaloProperties):
                "inflow_vel2_dm", "outflow_vel2_dm"
 
 
-    @classmethod
     def plot_x0(cls):
         return 0.5
 
@@ -179,7 +178,7 @@ class InflowOutflow(HaloProperties):
 
         return inflow, outflow, velin, velout
 
-    def preloop(self, f, filename, pa):
+    def preloop(self, f, db_timestep):
         self.f = f
 
     def requires_property(self):

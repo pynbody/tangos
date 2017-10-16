@@ -303,10 +303,10 @@ class PropertyWriter(object):
                 pass
 
         if self.options.load_mode is None:
-            self._run_preloop(self._loaded_timestep, db_timestep.filename,
+            self._run_preloop(self._loaded_timestep, db_timestep,
                               self._property_calculator_instances, self._existing_properties_all_halos)
         else:
-            self._run_preloop(None, db_timestep.filename,
+            self._run_preloop(None, db_timestep,
                               self._property_calculator_instances, self._existing_properties_all_halos)
 
         self._current_timestep_id = db_timestep.id
@@ -325,7 +325,7 @@ class PropertyWriter(object):
             self._loaded_halo  = db_halo.load(mode=self.options.load_mode)
 
         if self.options.load_mode is not None:
-            self._run_preloop(self._loaded_halo, db_halo.timestep.filename,
+            self._run_preloop(self._loaded_halo, db_halo.timestep,
                               self._property_calculator_instances, self._existing_properties_all_halos)
 
 
@@ -383,15 +383,14 @@ class PropertyWriter(object):
         return result
 
 
-    def _run_preloop(self, f, filename, cinstances, existing_properties_all_halos):
+    def _run_preloop(self, f, db_timestep, cinstances, existing_properties_all_halos):
         for x in cinstances:
             try:
                 with self.redirect:
-                    x.preloop(f, filename,
-                              existing_properties_all_halos)
+                    x.preloop(f, db_timestep)
             except Exception:
                 logger.exception(
-                    "Uncaught exception during property preloop %r applied to %r" % (x, filename))
+                    "Uncaught exception during property preloop %r applied to %r" % (x, db_timestep))
                 if self.options.catch:
                     traceback.print_exc()
                     tbtype, value, tb = sys.exc_info()

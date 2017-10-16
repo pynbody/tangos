@@ -74,10 +74,9 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
         required to calculate this property"""
         return []
 
-    def preloop(self, sim, filename, property_array):
-        """Perform one-time pre-halo-loop calculations,
-        given entire simulation SimSnap, filename
-        and existing property array"""
+    def preloop(self, sim, db_timestep):
+        """Perform one-per-snapshot calculations, given the loaded simulation data and TimeStep object"""
+        pass
 
     def region_specification(self, db_data):
         """Returns an abstract specification of the region that this halo property is to be calculated on,
@@ -151,7 +150,7 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
             halo_particles.ancestor._did_preloop = preloops_done
 
             if str(self.__class__) not in preloops_done:
-                self.preloop(halo_particles.ancestor, halo_particles.ancestor.filename, db)
+                self.preloop(halo_particles.ancestor, db.timestep)
                 preloops_done.append(str(self.__class__))
         else:
             halo_particles = None
@@ -316,7 +315,7 @@ class LiveHaloPropertiesInheritingMetaProperties(LiveHaloProperties):
         :type inherits_from: HaloProperties
         """
         super(LiveHaloPropertiesInheritingMetaProperties, self).__init__(simulation)
-        self._inherits_from = inherits_from
+        self._inherits_from = inherits_from(simulation)
 
     def plot_x0(self):
         return self._inherits_from.plot_x0()

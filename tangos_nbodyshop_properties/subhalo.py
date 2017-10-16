@@ -18,8 +18,8 @@ class Subhalo(HaloProperties):
     def requires_simdata(self):
         return False
 
-    def preloop(self, sim, filename, property_array):
-        self.proplist = property_array
+    def preloop(self, sim, db_timestep):
+        self.proplist = db_timestep
 
     def calculate(self, halo, existing_properties):
         current_sc = existing_properties["SSC"]

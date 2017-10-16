@@ -49,10 +49,10 @@ class DummyProperty1(properties.HaloProperties):
     def name(self):
         return "dummy_property_1"
 
-    def plot_x0(cls):
+    def plot_x0(self):
         return 0.0
 
-    def plot_xdelta(cls):
+    def plot_xdelta(self):
         return 0.1
 
 class DummyProperty2(properties.HaloProperties):
@@ -60,10 +60,10 @@ class DummyProperty2(properties.HaloProperties):
     def name(self):
         return "dummy_property_2"
 
-    def plot_x0(cls):
+    def plot_x0(self):
         return 0.0
 
-    def plot_xdelta(cls):
+    def plot_xdelta(self):
         return 0.2
 
 class DummyPropertyArray(properties.LiveHaloProperties):

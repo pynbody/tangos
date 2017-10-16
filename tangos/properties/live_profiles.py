@@ -1,12 +1,13 @@
 # Live properties suitable for calculations on underlying profiles, e.g. density profiles, mass profiles etc
 
-from . import LiveHaloProperties
+from . import LiveHaloProperties, HaloProperties
 import numpy as np
 
 class AtPosition(LiveHaloProperties):
     def __init__(self, simulation, position, array):
         super(AtPosition, self).__init__(simulation)
         self._array_info = array
+
 
     @classmethod
     def name(cls):
@@ -23,6 +24,8 @@ class AtPosition(LiveHaloProperties):
         i0_loc = float(i0)*delta_x+x0
         i1_weight = (pos-i0_loc)/delta_x
         i0_weight = 1.0-i1_weight
+
+        print(i0,i1,i0_weight,i1_weight)
 
         if i1>=len(ar) or i0<0:
             return None

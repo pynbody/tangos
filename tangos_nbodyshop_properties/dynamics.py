@@ -206,7 +206,6 @@ class Anisotropy(HaloProperties):
 
 
 class HaloVelDispersionProfile(SphericalRegionHaloProperties):
-    @classmethod
     def plot_x0(cls):
         return 0.05
 
@@ -546,11 +545,9 @@ class AngMomEncl(HaloProperties):
         halo.wrap()
         return J_dm, J_gas, J_star, J_HI
 
-    @classmethod
     def plot_x0(cls):
         return 0.0
 
-    @classmethod
     def plot_xdelta(cls):
         return 0.1
 

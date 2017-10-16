@@ -28,7 +28,7 @@ class CoreSize(HaloProperties):
 
 
 class VcircSpherical(HaloProperties):
-    @classmethod
+
     def plot_x0(cls):
         return 0.05
 
@@ -138,7 +138,6 @@ class StellarProfileFaceOn(HaloProperties):
     def name(self):
         return "v_surface_brightness", "b_surface_brightness", "i_surface_brightness"
 
-    @classmethod
     def plot_x0(cls):
         return 0.05
 
@@ -197,7 +196,7 @@ def fit_sersic(r, surface_brightness, return_cov=False):
 class GenericPercentile(HaloProperties):
     def __init__(self, simulation, ratio, name):
         super(GenericPercentile, self).__init__(simulation)
-        self._name_info = name
+        self._name_info = name(simulation)
 
     @classmethod
     def name(self):

@@ -122,9 +122,9 @@ class BH(HaloProperties):
     def requires_simdata(self):
         return False
 
-    def preloop(self, f, filename, pa):
-        self.log = BHShortenedLog.get_existing_or_new(filename)
-        self.filename = filename
+    def preloop(self, f, db_timestep):
+        self.log = BHShortenedLog.get_existing_or_new(db_timestep.filename)
+        self.filename = db_timestep.filename
         print(self.log)
 
     def calculate(self, halo, properties):
@@ -186,8 +186,8 @@ class BHAccHistogram(TimeChunkedProperty):
         return []
 
 
-    def preloop(self, f, filename, pa):
-        self.log = BHShortenedLog.get_existing_or_new(filename)
+    def preloop(self, f, db_timestep):
+        self.log = BHShortenedLog.get_existing_or_new(db_timestep.filename)
 
     @classmethod
     def no_proxies(self):

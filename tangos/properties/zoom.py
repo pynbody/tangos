@@ -6,7 +6,7 @@ class Contamination(HaloProperties):
         n_heavy = (halo.dm['mass'] > self.min_dm_mass).sum()
         return float(n_heavy) / len(halo.dm)
 
-    def preloop(self, sim, filename, property_array):
+    def preloop(self, sim, db_timestep):
         self.min_dm_mass = sim.dm['mass'].min()
 
     @classmethod
