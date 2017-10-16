@@ -1,10 +1,10 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from . import HaloProperties
-from .spherical_region import SphericalRegionHaloProperties
+
 import numpy as np
-import math
 import pynbody
+
+from tangos.properties.spherical_region import SphericalRegionHaloProperties
 
 
 class Ellipsoids(SphericalRegionHaloProperties):

@@ -23,7 +23,7 @@ from ..util.check_deleted import check_deleted
 from ..cached_writer import insert_list
 from ..log import logger
 from six.moves import zip
-
+from tangos import live_calculation
 
 
 
@@ -62,6 +62,8 @@ class PropertyWriter(object):
                             help='Process low-z timesteps first')
         parser.add_argument('--random', action='store_true',
                             help='Process timesteps in random order')
+        parser.add_argument('--add-prerequisites', action='store_true',
+                            help='Automatically calculate any missing prerequisites for the properties')
         parser.add_argument('--load-mode', action='store', choices=['all', 'partial', 'server', 'server-partial'], required=False, default=None,
                             help="Select a load-mode: " \
                                  "  --load-mode partial:        each node attempts to load only the data it needs; " \
@@ -80,6 +82,7 @@ class PropertyWriter(object):
                             metavar=('N','M'),
                             help="Emulate MPI by handling slice N out of the total workload of M items. If absent, use real MPI.")
         parser.add_argument('--backend', action='store', type=str, help="Specify the paralellism backend (e.g. pypar, mpi4py)")
+        parser.add_argument('--include-only', action='store', type=str, help="Specify a filter that describes which halos the calculation should be executed for.")
         return parser
 
 
@@ -138,6 +141,7 @@ class PropertyWriter(object):
         self.options = parser.parse_args(argv)
         core.process_options(self.options)
         self._build_file_list()
+        self._compile_inclusion_criterion()
 
         if self.options.load_mode=='all':
             self.options.load_mode=None
@@ -148,6 +152,12 @@ class PropertyWriter(object):
         self.classes = properties.providing_classes(self.options.properties)
         self.timing_monitor = timing_monitor.TimingMonitor()
 
+    def _compile_inclusion_criterion(self):
+        if self.options.include_only:
+            self._include = live_calculation.parser.parse_property_name(self.options.include_only)
+        else:
+            self._include = None
+
 
     def _build_halo_list(self, db_timestep):
         query = core.halo.Halo.timestep == db_timestep
@@ -155,28 +165,34 @@ class PropertyWriter(object):
             query = sqlalchemy.and_(query, core.halo.Halo.object_typecode
                                     == core.halo.Halo.object_typecode_from_tag(self.options.htype))
 
-        needed_properties = self._needed_properties()
-        pid_list = []
-        for p in needed_properties:
-            try:
-                pid_list.append(core.dictionary.get_dict_id(p))
-            except:
-                continue
-
-        logger.info('gathering properties %r with ids %r', needed_properties, pid_list)
-
-        halo_query = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query)
-        if len(pid_list)>0:
-            halo_property_alias = sqlalchemy.orm.aliased(core.halo_data.HaloProperty)
-            halo_alias = core.halo.Halo
-            halo_query = halo_query.\
-                outerjoin(halo_property_alias,(halo_alias.id==halo_property_alias.halo_id) & (halo_property_alias.name_id.in_(pid_list))).\
-                options(sqlalchemy.orm.contains_eager(core.halo.Halo.all_properties, alias=halo_property_alias))
-        halos = halo_query.all()
-        halos = halos[self.options.hmin:]
+        if self.options.hmin is not None:
+            query = sqlalchemy.and_(query, core.halo.Halo.halo_number>=self.options.hmin)
 
         if self.options.hmax is not None:
-            halos = halos[:self.options.hmax]
+            query = sqlalchemy.and_(query, core.halo.Halo.halo_number<=self.options.hmax)
+
+        needed_properties = self._needed_properties()
+
+        halo_query = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query)
+        if self._include:
+            needed_properties.append(self._include)
+
+        logger.info('Gathering existing properties for all halos in timestep %r',db_timestep)
+        halo_query = live_calculation.MultiCalculation(*needed_properties).supplement_halo_query(halo_query)
+
+        halos = halo_query.all()
+
+        if self._include:
+            inclusion, = self._include.values(halos)
+            if any([not np.issubdtype(inc_i, np.bool) for inc_i in inclusion]):
+                raise ValueError("Specified inclusion criterion does not return a boolean")
+            if len(inclusion)!=len(halos):
+                raise ValueError("Inclusion criterion did not generate results for all the halos")
+
+            # perform filtering:
+            halos = [halo_i for halo_i, include_i in zip(halos, inclusion) if include_i]
+            logger.info("User-specified inclusion criterion excluded %d of %d halos",
+                        len(inclusion)-len(halos),len(inclusion))
 
         return halos
 
@@ -429,6 +445,8 @@ class PropertyWriter(object):
         logger.info("Processing %r", db_timestep)
         with parallel_tasks.RLock("insert_list"):
             self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
+            if self.options.add_prerequisites:
+                self._add_prerequisites_to_calculator_instances(db_timestep)
             db_halos = self._build_halo_list(db_timestep)
             self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
             core.get_default_session().commit()
@@ -451,6 +469,24 @@ class PropertyWriter(object):
 
         self._commit_results_if_needed(True)
 
+    def _add_prerequisites_to_calculator_instances(self, db_timestep):
+        will_calculate = []
+        requirements = []
+        for inst in self._property_calculator_instances:
+            will_calculate+=inst.name()
+            requirements+=inst.requires_property()
+
+        recurse = False
+        for r in requirements:
+            if r not in will_calculate:
+                new_instance = properties.instantiate_class(db_timestep.simulation, r)
+                logger.info("Missing prerequisites - added class %r",type(new_instance))
+                logger.info("                        providing properties %r",new_instance.name())
+                self._property_calculator_instances = [new_instance]+self._property_calculator_instances
+                recurse = True
+
+        if recurse:
+            self._add_prerequisites_to_calculator_instances(db_timestep)
 
     def run_calculation_loop(self):
         parallel_tasks.database.synchronize_creator_object()

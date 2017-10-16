@@ -1,7 +1,9 @@
 from __future__ import absolute_import
+
 import numpy as np
-from . import HaloProperties
-from .spherical_region import SphericalRegionHaloProperties
+
+from tangos.properties.spherical_region import SphericalRegionHaloProperties
+
 
 class DiskDynamicsProperties(SphericalRegionHaloProperties):
     # include

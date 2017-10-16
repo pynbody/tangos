@@ -103,7 +103,7 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
         """Calculate the properties using the given data
 
         :param pynbody_halo_data: The halo data, if available
-        :type pynbody_halo_data: pynbody.snapshot.SimSnap
+        :type pynbody_halo_data: pynbody.snapshot.SimSnap (when the pynbody backend is in use, otherwise could be a yt snapshot etc)
 
         :param halo_entry: The database object associated with the halo, if available
         :type halo_entry: tangos.core.halo.Halo
@@ -428,4 +428,4 @@ def import_configured_property_modules():
                           ImportWarning)
 
 import_configured_property_modules()
-from . import live_profiles, intrinsic, BH, zoom
+from . import live_profiles, intrinsic, BH, zoom, centring, profile

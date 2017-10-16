@@ -108,9 +108,12 @@ class Calculation(object):
                 for r in retrieves:
                     r_split = r.split(".")
                     for w in r_split:
-                        self._r_dict_ids_cached.add(tangos.core.dictionary.get_dict_id(w, session=session))
-                    self._r_dict_ids_essential_cached.add(
-                        tangos.core.dictionary.get_dict_id(r_split[0], session=session))
+                        w_dict_id = tangos.core.dictionary.get_dict_id(w, -1, session=session)
+                        if w_dict_id!=-1:
+                            self._r_dict_ids_cached.add(w_dict_id)
+                    r_dict_id = tangos.core.dictionary.get_dict_id(r_split[0], -1, session=session)
+                    if r_dict_id!=-1:
+                        self._r_dict_ids_essential_cached.add(r_dict_id)
             finally:
                 session.close()
 

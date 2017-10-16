@@ -1,11 +1,15 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from . import HaloProperties
-from .spherical_region import SphericalRegionHaloProperties
-import numpy as np
+
 import math
+
+import numpy as np
 import pynbody
 from six.moves import range
+
+from tangos.properties.spherical_region import SphericalRegionHaloProperties
+from . import HaloProperties
+
 try:
     import dyn_profile as dp
 except (ImportError, SyntaxError):
@@ -143,7 +147,6 @@ class AngMomVecVsScalar(HaloProperties):
         return "SSC"
 
     def calculate(self, f, exist):
-        import scipy
         f_marked = f
         f = f.ancestor.dm
         f['pos'] -= exist['SSC']

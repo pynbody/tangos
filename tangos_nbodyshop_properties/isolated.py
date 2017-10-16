@@ -1,9 +1,10 @@
 from __future__ import absolute_import
-from . import HaloProperties
+
 import numpy as np
-import math
 import pynbody
-from .spherical_region import SphericalRegionHaloProperties
+
+from tangos.properties.spherical_region import SphericalRegionHaloProperties
+from . import HaloProperties
 
 
 class REnergy(SphericalRegionHaloProperties):

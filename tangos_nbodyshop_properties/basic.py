@@ -216,20 +216,6 @@ class HaloMDM(HaloProperties):
         return properties['Mvir']-properties['Mbar']
 
 
-class HaloRmax(HaloProperties):
-
-    @classmethod
-    def name(self):
-        return "Rmax"
-
-    def requires_property(self):
-        return ["SSC"]
-
-    def calculate(self, halo, properties):
-        halo["pos"] -= properties["SSC"]
-        rmx = pynbody.derived.r(halo).max()
-        halo["pos"] += properties["SSC"]
-        return rmx
 
 
 class Softening(HaloProperties):

@@ -1,11 +1,14 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from . import HaloProperties
-from .spherical_region import SphericalRegionHaloProperties
-import numpy as np
+
 import math
+
+import numpy as np
 import pynbody
 from six.moves import zip
+
+from tangos.properties.spherical_region import SphericalRegionHaloProperties
+from . import HaloProperties
 
 
 class OutflowEnergy(HaloProperties):
@@ -151,7 +154,6 @@ class InflowOutflow(HaloProperties):
 
     def calc_inflow_outflow(self, f, radius, cen=None):
         import pynbody.sph
-        import healpy as hp
         if cen is not None:
             f["pos"] -= cen
 

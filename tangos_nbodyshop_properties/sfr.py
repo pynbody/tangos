@@ -1,9 +1,12 @@
 from __future__ import absolute_import
+
 import numpy as np
 import pynbody
-from . import HaloProperties, TimeChunkedProperty
-from .spherical_region import SphericalRegionHaloProperties
 from six.moves import range
+
+from tangos.properties.spherical_region import SphericalRegionHaloProperties
+from . import HaloProperties, TimeChunkedProperty
+
 
 class StarForm(SphericalRegionHaloProperties):
 

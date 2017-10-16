@@ -1,9 +1,11 @@
 from __future__ import absolute_import
-from . import HaloProperties, instantiate_class, providing_class, LiveHaloProperties, LiveHaloPropertiesInheritingMetaProperties
+
 import numpy as np
-import math
 import pynbody
 import scipy.optimize
+
+from . import HaloProperties, LiveHaloProperties
+
 
 class CoreSize(HaloProperties):
     # include
@@ -127,82 +129,7 @@ class HaloDensitySlope(HaloProperties):
             return np.NaN, np.NaN
 
 
-from .spherical_region import SphericalRegionHaloProperties
-
-class HaloDensityProfile(SphericalRegionHaloProperties):
-    # include
-
-    @classmethod
-    def name(self):
-        return "dm_density_profile", "dm_mass_profile", "tot_density_profile", "tot_mass_profile", "gas_density_profile", "gas_mass_profile", "star_density_profile", "star_mass_profile"
-
-    @classmethod
-    def plot_x0(cls):
-        return 0.05
-
-    @classmethod
-    def plot_xdelta(cls):
-        return 0.1
-
-    @classmethod
-    def plot_xlabel(cls):
-        return "r/kpc"
-
-    @staticmethod
-    def plot_ylabel():
-        return r"$\rho/M_{\odot}\,kpc^{-3}$", r"$M/M_{\odot}$", r"$\rho/M_{\odot}\,kpc^{-3}$", r"$M/M_{\odot}$", r"$\rho/M_{\odot}\,kpc^{-3}$", r"$M/M_{\odot}$", r"$\rho/M_{\odot}\,kpc^{-3}$", r"$M/M_{\odot}$"
-
-    def rstat(self, halo, maxrad, cen, delta=0.1):
-        mass_a = []
-        rho_a = []
-
-        mass_x = 0
-
-        V_x = 0
-        halo['pos'] -= cen
-        halo.wrap()
-
-        nbins = int(maxrad / delta)
-        maxrad = delta * (nbins + 1)
-
-        pro = pynbody.analysis.profile.Profile(halo, type='lin', ndim=3,
-                                               min=0, max=maxrad, nbins=nbins)
-
-        rho_a = pro['density']
-        mass_a = pro['mass_enc']
-
-        halo['pos'] += cen
-        halo.wrap()
-        rho_a = np.array(rho_a)
-        mass_a = np.array(mass_a)
-
-        return rho_a, mass_a
-
-    def calculate(self, halo, existing_properties):
-
-        halo.dm['mass']
-        try:
-            halo.gas['mass']
-            halo.star['mass']
-        except:
-            pass
-        delta = existing_properties.get('delta',0.1)
-        self.mark_timer('dm')
-        dm_a, dm_b = self.rstat(
-            halo.dm, existing_properties["Rvir"], existing_properties["SSC"],delta)
-        self.mark_timer('tot')
-        tot_a, tot_b = self.rstat(
-            halo, existing_properties["Rvir"], existing_properties["SSC"],delta)
-        self.mark_timer('gas')
-        gas_a, gas_b = self.rstat(
-            halo.gas, existing_properties["Rvir"], existing_properties["SSC"],delta)
-        self.mark_timer('star')
-        star_a, star_b = self.rstat(
-            halo.star, existing_properties["Rvir"], existing_properties["SSC"],delta)
-        return dm_a, dm_b, tot_a, tot_b, gas_a, gas_b, star_a, star_b
-
-    def requires_property(self):
-        return ["SSC", "Rvir"]
+from tangos.properties.spherical_region import SphericalRegionHaloProperties
 
 
 
