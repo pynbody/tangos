@@ -119,7 +119,7 @@ function filterTable(object_tag) {
     var re = new RegExp("plotctl-(.*)");
     $('#properties_form_'+object_tag+' input[type="checkbox"]').each(function() {
         var $this = $(this);
-        if($this.prop('checked')) {
+        if($this.prop('checked') && $this.is(":visible")) {
             var control_id = $this.closest('th').attr('id');
             var column_id = re.exec(control_id)[1];
             columnsToFilterOn.push(column_id);

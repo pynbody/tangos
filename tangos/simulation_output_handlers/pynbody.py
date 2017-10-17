@@ -37,6 +37,8 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         handler_names = []
         handler_timestep_lengths = []
         base = os.path.join(config.base, basename)
+        if len(cls.__subclasses__())==0:
+            return cls
         for possible_handler in cls.__subclasses__():
             timesteps_detected = finding.find(basename = base+"/", patterns = possible_handler.patterns)
             handler_names.append(possible_handler)
@@ -237,8 +239,11 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
 
     def get_properties(self):
         timesteps = list(self.enumerate_timestep_extensions())
-        f = self.load_timestep_without_caching(timesteps[0])
-        return {'approx_resolution_kpc': self._estimate_resolution(f)}
+        if len(timesteps)>0:
+            f = self.load_timestep_without_caching(timesteps[0])
+            return {'approx_resolution_kpc': self._estimate_resolution(f)}
+        else:
+            return {}
 
     def _estimate_resolution(self, f):
         f.physical_units()
