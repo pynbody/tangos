@@ -23,7 +23,7 @@ from six.moves import input
 
 def add_simulation_timesteps(options):
     handler=options.handler
-    output_class = get_named_handler_class(handler)
+    output_class = get_named_handler_class(handler).best_matching_handler(options.sim)
     adder = SimulationAdderUpdater(output_class(options.sim))
     adder.min_halo_particles = options.min_particles
     adder.scan_simulation_and_add_all_descendants()

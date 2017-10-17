@@ -23,6 +23,11 @@ class SimulationOutputSetHandler(object):
     def __init__(self, basename):
         self.basename = self.strip_slashes(basename)
 
+    @classmethod
+    def best_matching_handler(cls, basename):
+        """Find the best subclass to read in the specified folder of simulation timesteps"""
+        raise NotImplementedError
+
     def enumerate_timestep_extensions(self):
         """Yield the extension of each timestep available on disk"""
         raise NotImplementedError

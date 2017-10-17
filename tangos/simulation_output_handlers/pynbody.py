@@ -32,6 +32,19 @@ class DummyTimeStep(object):
 class PynbodyOutputSetHandler(SimulationOutputSetHandler):
     patterns = [] # should be specified by child class
 
+    @classmethod
+    def best_matching_handler(cls, basename):
+        handler_names = []
+        handler_timestep_lengths = []
+        base = os.path.join(config.base, basename)
+        for possible_handler in cls.__subclasses__():
+            timesteps_detected = finding.find(basename = base+"/", patterns = possible_handler.patterns)
+            handler_names.append(possible_handler)
+            handler_timestep_lengths.append(len(timesteps_detected))
+        return handler_names[np.argmax(handler_timestep_lengths)]
+
+
+
     def enumerate_timestep_extensions(self):
         base = os.path.join(config.base, self.basename)
         extensions = finding.find(basename=base + "/", patterns=self.patterns)
@@ -253,7 +266,7 @@ class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
             h = self._construct_halo_cat(ts_extension, object_typetag)
             return h.get_halo_properties(halo_number,with_unit=False)
         else:
-            return super(GadgetSubfindOutputSetHandler, self).load_object(ts_extension, halo_number, output_typetag, mode)
+            return super(GadgetSubfindOutputSetHandler, self).load_object(ts_extension, halo_number, object_typetag, mode)
 
 
 

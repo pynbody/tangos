@@ -16,7 +16,7 @@ if sys.platform=='darwin' :
 db = os.environ.get("TANGOS_DB_CONNECTION", home+"/tangos_data.db")
 base = os.environ.get("TANGOS_SIMULATION_FOLDER", home+"/")
 
-default_fileset_handler_class = "pynbody.ChangaOutputSetHandler"
+default_fileset_handler_class = "pynbody.PynbodyOutputSetHandler"
 
 num_multihops_max_default = 100
 # the maximum number of links to follow when searching for related halos

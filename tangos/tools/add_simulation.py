@@ -23,6 +23,7 @@ class SimulationAdderUpdater(object):
     def scan_simulation_and_add_all_descendants(self):
         if not self.simulation_exists():
             logger.info("Add new simulation %r", self.basename)
+            logger.info("... using the output handler %r", self.simulation_output.handler_class_name())
             self.add_simulation()
         else:
             logger.warn("Simulation already exists %r", self.basename)
