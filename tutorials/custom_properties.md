@@ -48,7 +48,7 @@ simulation data to be loaded you can use it in a live session. In the web interf
 in a property name you can write `myproperty()` and `42.0` will be returned. Or, within a python session, try
 the following:
 
-```
+```python
 halo = tangos.get_halo(1) # get the first halo in the database
 print(halo.calculate("myproperty()")) # -> 42.0
 ```
@@ -60,7 +60,7 @@ the function-like syntax (`myproperty()` rather than `myproperty`) is required.
 You can calculate the property for multiple halos. For example, from the web interface use the
 timestep view and add a column with heading `myproperty()`; equivalently, from python
 
-```
+```python
 timestep = tangos.get_timestep(1) # get the first timestep in the database
 print(timestep.calculate_all("myproperty()")) # -> array of 42.0s, one for each halo
 ```
@@ -95,14 +95,14 @@ web server front end, you will need to restart it.
 
 Now try calculating `my_x()` for a halo:
 
-```
+```python
 halo = tangos.get_halo(1)
 print(halo['shrink_center'][0])
 print(halo.calculate("my_x()")) # -> same value
 ```
 
 This should work successfully. However loading across multiple halos will, at this point, fail:
-```
+```python
 timestep = tangos.get_timestep(1) 
 print(timestep.calculate_all("my_x()"))  # -> error
 ```
@@ -116,7 +116,7 @@ underlying database. The query optimisation means it has to know in advance that
 a certain piece of data. 
 
 Add to the bottom of your class the following code:
-```
+```python
     def requires_property(self):
         return ["shrink_center"]
 ```
@@ -130,8 +130,8 @@ The method `requires_property` returns a list and can include multiple propertie
 Calculating multiple properties in one class
 --------------------------------------------
 
-It's often optimal to calculate multiple closely-related properties in one class. This is straight-forward; you
-just add the names:
+It's often desirable to calculate multiple closely-related properties in one class. This is straight-forward; you
+just add the names and return a list or tuple of values:
 
 ```python
 from tangos.properties import HaloProperties
@@ -178,7 +178,7 @@ to the original particle data associated with the halo. Accordingly if you try t
 standard `tangos` session you'll run into difficulties (specifically you'll see a `RuntimeError`).
 
 We instead need to use the `tangos_writer` which populates the database from the underlying particle data. Type
-`tangos_writer velocity_dispersion` from the UNIX command line to do so. Don't forget you can also run this in
+`tangos_writer velocity_dispersion` from your UNIX shell to do so. Don't forget you can also run this in
 parallel, or with various optimisations -- see the basic tutorials for more information on this. Your code does
 not need to be aware of the parallelisation mode or any other details; it's always handed a complete set of particles
 for the halo it's operating on.
@@ -265,7 +265,7 @@ is within the sphere carved out by another more massive halo -- in other words, 
 
 Here's an implementation for identifying such halos:
 
-```
+```python
 from tangos.properties import HaloProperties, ProxyHalo
 from tangos import get_halo
 import numpy as np
