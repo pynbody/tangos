@@ -192,19 +192,19 @@ The entire simulation step including all halos is loaded as `step1`. Note the sy
  u'stellar_image_original']
 ```
  
-You can also load in data for all halos at once using `gather_property`. This is *much* faster than accessing each halo in turn. Note that it returns a list even with one argument given. You can give it as many value key names as you want and it will return a list of arrays for each.
+You can also load in data for all halos at once using `calculate_all`. This is *much* faster than accessing each halo in turn. Note that it returns a list even with one argument given. You can give it as many value key names as you want and it will return a list of arrays for each.
 
 ```
->>> mvir, = step1.gather_property('Mvir')              #get the virial mass for every halo in the simulation
->>> mvir, cen = step1.gather_property('Mstar','SSC')   #get both the stellar mass AND the center of the halo
+>>> mvir, = step1.calculate_all('Mvir')              #get the virial mass for every halo in the simulation
+>>> mvir, cen = step1.calculate_all('Mstar','SSC')   #get both the stellar mass AND the center of the halo
 ```
 
 Calculations
 ------------
 
-Some properties are not inherently already saved in the database, but can be calculated on the fly from already stored properties (we call these "live calculations"). These are called a bit like functions and can be used with either `gather_property` or the `calculate` function for a single halo. 
+Some properties are not inherently already saved in the database, but can be calculated on the fly from already stored properties (we call these "live calculations"). These are called a bit like functions and can be used with either `calculate_all` or the `calculate` function for a single halo. 
 
-For example, the property `Vvir` is calculated using `Mvir` and `Rvir` that are already loaded into the database. To calculate for a single halo, `h`, one would type `h.calculate('Vvir()')`. Note the extra set of "()" in the attribute name, because this is a *function* that the database will call.  To do it for an entire step, you would do `step.gather_property('Vvir()')`. 
+For example, the property `Vvir` is calculated using `Mvir` and `Rvir` that are already loaded into the database. To calculate for a single halo, `h`, one would type `h.calculate('Vvir()')`. Note the extra set of "()" in the attribute name, because this is a *function* that the database will call.  To do it for an entire step, you would do `step.calculate_all('Vvir()')`. 
 
 Once again, the reason for using this approach is that the database is able to vastly optimise the calculation compared to the performance you'd get by manually going through each halo doing the calculation in your own code. 
 
@@ -218,10 +218,10 @@ Linking Halos Across Timesteps
 Two important live calculation built-in functions are the `earlier` and `later` functions. These take an integer argument and will return either the descendant halo or main progenitor halo. You can then easily retrieve information about that future/past halo. For example, `h.calculate('later(5).Mvir')` returns the virial mass of the descendant halo 5 snapshots later than the current snapshot that houses halo `h`. This strategy can also be useful in linking the properties of all halos in two different snapshots.
 
 ```
-step.gather_property('Mstar', 'earlier(10).Mstar')  #returns both the stellar mass of all halos in the current step and the stellar mass of each halo's descendant 10 snapshots earlier.
+step.calculate_all('Mstar', 'earlier(10).Mstar')  #returns both the stellar mass of all halos in the current step and the stellar mass of each halo's descendant 10 snapshots earlier.
 ```
 
-Note that there is another function, `property_cascade` to use if you to get a property for a single halo but at all timesteps. Again, please visit the [live calculations page](live_calculation.md) for more information and examples.
+Note that there is another function, `calculate_for_descendants` to use if you to get a property for a single halo but at all timesteps. Again, please visit the [live calculations page](live_calculation.md) for more information and examples.
 
 
 Profile properties

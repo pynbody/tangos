@@ -18,7 +18,6 @@ scroll up the screen.
   * `tangos_manager` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial` identifies the simulation we're adding
-  * `--handler pynbody.RamsesHOPOutputSetHandler` identifies the _handler_ for our simulation. A handler defines how to load a simulation and its associated halo catalogue. Here we'll use `pynbody`'s ability to load gadget and subfind files. 
   * `--min-particles 100` imports only halos/groups with at least 100 particles. 
 
  
@@ -51,4 +50,7 @@ Here,
  
   For large simulations, you may need to use a machine with lots of memory  and/or use fewer processes than you have cores available because, when time-linking, each process loads two timesteps at once.
   
-  
+ Add some properties
+ -------------------
+ 
+ Next, we will add some properties to the halos so that we can start to do some science. 

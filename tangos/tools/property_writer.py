@@ -245,8 +245,7 @@ class PropertyWriter(object):
         for n, r in zip(names, results):
             if isinstance(r, properties.ProxyHalo):
                 # resolve halo
-                r = core.get_default_session().query(core.halo.Halo).filter_by(
-                    halo_number=int(r), timestep=db_halo.timestep).first()
+                r = core.get_default_session().query(core.halo.Halo).filter_by(id=int(r)).first()
             if self.options.force or (n not in list(existing_properties_data.keys())):
                 existing_properties_data[n] = r
                 if self.options.debug:
@@ -272,7 +271,7 @@ class PropertyWriter(object):
 
 
     def _should_load_halo_particles(self):
-        return any([x.requires_simdata() for x in self._property_calculator_instances])
+        return any([x.requires_particle_data() for x in self._property_calculator_instances])
 
     def _must_load_timestep_particles(self):
         return self._should_load_halo_particles() and self.options.load_mode is None
