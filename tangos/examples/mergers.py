@@ -38,7 +38,7 @@ def most_major_mergers_since(ts, Mvir_min=0.8e12, Mvir_max=2e12, z_merger_max=4.
     :type ts tangos.core.TimeStep
 
     """
-    dbid, Mvir = ts.gather_property("dbid()","Mvir")
+    dbid, Mvir = ts.calculate_all("dbid()","Mvir")
     mask = (Mvir>Mvir_min)*(Mvir<Mvir_max)
 
     most_major = []

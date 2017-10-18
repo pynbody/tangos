@@ -104,11 +104,11 @@ class TimeStep(Base):
         session = Session.object_session(self)
         raise RuntimeError("Not implemented")
 
-    def gather_property(self, *plist, **kwargs):
+    def calculate_all(self, *plist, **kwargs):
         """Gather the specified properties from the child objects.
 
         The parameters passed name the properties (or live-calculations) to return.
-        For example m,r = ts.gather_property("mass","radius") generates an array of mass and
+        For example m,r = ts.calculate_all("mass","radius") generates an array of mass and
         radius for all objects in timestep ts.
 
         :param object_type: integer or string representing the particular object type
@@ -143,6 +143,10 @@ class TimeStep(Base):
         finally:
             session.close()
         return results
+
+    def gather_property(self, *args, **kwargs):
+        """The old alias for calculate_all, retained for compatibility"""
+        return self.calculate_all(*args, **kwargs)
 
     @property
     def earliest(self):

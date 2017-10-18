@@ -28,6 +28,6 @@ def timestep_view(request):
                                   halonumber=h.basename)
 
     return {'timestep': ts.extension, 'halos': halos, 'groups': groups,
-            'gather_url': request.route_url('gather_property',simid=request.matchdict['simid'],
+            'gather_url': request.route_url('calculate_all',simid=request.matchdict['simid'],
                                             timestepid=request.matchdict['timestepid'],
                                             nameid="")[:-5]}

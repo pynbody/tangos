@@ -87,5 +87,5 @@ class SphericalPotential(HaloProperties):
         return "dm_spherical_potential"
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False

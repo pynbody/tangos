@@ -15,7 +15,7 @@ class Subhalo(HaloProperties):
         return ["SSC", "Rvir"]
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def preloop(self, sim, db_timestep):

@@ -36,7 +36,7 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
         return []
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         """If this returns false, the class can do its
         calculation without any raw simulation data loaded
         (i.e. derived from other properties)"""
@@ -119,6 +119,8 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
         :param input_values: Input values for the function
         :return: All function values as named by self.name()
         """
+        if self.requires_particle_data():
+            raise(RuntimeError("Cannot live-calculate a property that requires particle data"))
         return self.calculate(None, halo_entry)
 
     def live_calculate_named(self, name, halo_entry, *input_values):
@@ -139,7 +141,7 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
             return values[self.name().index(name)]
 
     def calculate_from_db(self, db):
-        if self.requires_simdata():
+        if self.requires_particle_data():
             region_spec =  self.region_specification(self)
             if region_spec:
                 halo_particles = db.timestep.load_region(region_spec)
@@ -264,7 +266,7 @@ class TimeChunkedProperty(HaloProperties):
     def _reassemble_using_finding_strategy(cls, property, strategy, strategy_kwargs={}):
         name = property.name.text
         halo = property.halo
-        t, stack = halo.property_cascade("t()", "raw(" + name + ")", strategy=strategy, strategy_kwargs=strategy_kwargs)
+        t, stack = halo.calculate_for_descendants("t()", "raw(" + name + ")", strategy=strategy, strategy_kwargs=strategy_kwargs)
         final = np.zeros(cls.bin_index(t[0]))
         previous_time = -1
         for t_i, hist_i in zip(t, stack):
@@ -298,7 +300,7 @@ class LiveHaloProperties(HaloProperties):
         self._nargs = len(args)
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def calculate(self, _, halo):

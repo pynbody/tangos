@@ -93,12 +93,12 @@ def can_use_elements_as_filter(data_array):
     else:
         return can_use_as_filter(data_array[0])
 
-@view_config(route_name='gather_property', renderer='json')
-def gather_property(request):
+@view_config(route_name='calculate_all', renderer='json')
+def calculate_all(request):
     ts = timestep_from_request(request)
 
     try:
-        data, db_id = ts.gather_property(decode_property_name(request.matchdict['nameid']), 'dbid()')
+        data, db_id = ts.calculate_all(decode_property_name(request.matchdict['nameid']), 'dbid()')
     except Exception as e:
         return {'error': e.message, 'error_class': type(e).__name__}
 
@@ -158,11 +158,11 @@ def gathered_plot(request):
     object_typetag = request.matchdict.get('object_typetag',None)
 
     if filter!="":
-        v1, v2, f = ts.gather_property(name1, name2, filter)
+        v1, v2, f = ts.calculate_all(name1, name2, filter)
         v1 = v1[f]
         v2 = v2[f]
     else:
-        v1, v2 = ts.gather_property(name1, name2)
+        v1, v2 = ts.calculate_all(name1, name2)
     start(request)
     p.plot(v1,v2,'k.')
     p.xlabel(name1)
@@ -176,7 +176,7 @@ def cascade_plot(request):
     halo = halo_from_request(request)
     name1 = decode_property_name(request.matchdict['nameid1'])
     name2 = decode_property_name(request.matchdict['nameid2'])
-    v1, v2 = halo.reverse_property_cascade(name1, name2)
+    v1, v2 = halo.calculate_for_progenitors(name1, name2)
 
     start(request)
     p.plot(v1,v2,'k')

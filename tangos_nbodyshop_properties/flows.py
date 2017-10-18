@@ -19,7 +19,7 @@ class OutflowEnergy(HaloProperties):
         return "outflow_energy_1", "SFR_250Myr_energy"
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def requires_property(self):

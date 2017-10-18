@@ -15,7 +15,7 @@ class CoreSize(HaloProperties):
         return "coresize"
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def requires_property(self):
@@ -56,7 +56,7 @@ class VcircSpherical(HaloProperties):
         return ["dm_density_profile", "tot_mass_profile"]
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def calculate(self, halo, props) :
@@ -77,7 +77,7 @@ class VmaxDM(HaloProperties):
         return ["dm_mass_profile"]
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def calculate(self, halo, props) :
@@ -106,7 +106,7 @@ class HaloDensitySlope(HaloProperties):
         return ["dm_density_profile"]
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def calculate(self, halo, properties):
@@ -203,7 +203,7 @@ class GenericPercentile(HaloProperties):
         return "percentile"
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def live_calculate(self, halo, ratio, ar):
@@ -225,7 +225,7 @@ class StellarProfileDiagnosis(LiveHaloProperties):
         return "half_light","sersic_m0", "sersic_n", "sersic_r0"
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def requires_property(self):

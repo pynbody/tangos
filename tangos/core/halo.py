@@ -261,7 +261,7 @@ class Halo(Base):
         return data.plot(*args, **kwargs)
 
 
-    def property_cascade(self, *plist, **kwargs):
+    def calculate_for_descendants(self, *plist, **kwargs):
         """Run the specified calculations on this halo and its descendants
 
         Each argument is a string (or an instance of live_calculation.Calculation), following the syntax
@@ -300,14 +300,22 @@ class Halo(Base):
         finally:
             session.close()
 
-    def reverse_property_cascade(self, *plist, **kwargs):
+    def calculate_for_progenitors(self, *plist, **kwargs):
         """Run the specified calculations on the progenitors of this halo
 
-        For more information see property_cascade.
+        For more information see calculate_for_descendants.
         """
         from .. import relation_finding
         kwargs['strategy'] = relation_finding.MultiHopMajorProgenitorsStrategy
-        return self.property_cascade(*plist, **kwargs)
+        return self.calculate_for_descendants(*plist, **kwargs)
+
+    def reverse_property_cascade(self, *args, **kwargs):
+        """The old alias for calculate_for_progenitors, retained for compatibility"""
+        return self.calculate_for_progenitors(*args, **kwargs)
+
+    def property_cascade(self, *args, **kwargs):
+        """The old alias for calculate_for_descendants, retained for compatibility"""
+        return self.calculate_for_descendants(*args, **kwargs)
 
 
     @property

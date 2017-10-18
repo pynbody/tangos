@@ -102,7 +102,7 @@ class SSCComoving(HaloProperties):
         return "SSC_comoving"
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     @classmethod
@@ -193,7 +193,7 @@ class HaloVvir(HaloProperties):
         return "Vvir"
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def requires_property(self):
@@ -209,7 +209,7 @@ class HaloMDM(HaloProperties):
         return "MDM"
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def calculate(self, halo, properties):

@@ -112,7 +112,7 @@ class GasProfilePhi(HaloProperties):
         return ["gas_profile_phi"]
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def requires_property(self):
@@ -133,7 +133,7 @@ class ProfilePhi(HaloProperties):
         return "profile_phi"
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def requires_property(self):
@@ -154,7 +154,7 @@ class ProfileSelfEnergy(HaloProperties):
         return "dm_profile_pe", "dm_profile_selfenergy", "dm_profile_Ir2"
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def calculate(self, halo, existing_properties):

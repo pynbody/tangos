@@ -1,4 +1,4 @@
-"""The live calculation system, used by Halo.calculate, Halo.property_cascade and TimeStep.gather_property.
+"""The live calculation system, used by Halo.calculate, Halo.calculate_for_descendants and TimeStep.calculate_all.
 
 For more overview information, see live_calculation.md. """
 

@@ -224,5 +224,5 @@ def test_reassembly():
 def test_liveproperty_requiring_redirection():
     h = tangos.get_halo("sim/ts1/1")
     assert h.calculate("first_BHs_BH_mass()") == h['BH'][0]['BH_mass']
-    cascade_version = h.property_cascade("first_BHs_BH_mass()")
+    cascade_version = h.calculate_for_descendants("first_BHs_BH_mass()")
     assert cascade_version[0] == h['BH'][0]['BH_mass']

@@ -119,7 +119,7 @@ class BH(HaloProperties):
     def no_proxies(self):
         return True
 
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def preloop(self, f, db_timestep):
@@ -233,7 +233,7 @@ class BHAccHistogramMerged(HaloProperties):
         return True
 
     @classmethod
-    def requires_simdata(self):
+    def requires_particle_data(self):
         return False
 
     def requires_property(self):
