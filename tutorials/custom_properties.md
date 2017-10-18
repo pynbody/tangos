@@ -255,8 +255,8 @@ properties simultaneously) – you _must_ do it yourself, preferably even if you
 tools for these types of guarantee; in this case the `calculate` function uses the `with translate(...)` construction
 rather than manually recentering the particles as would otherwise be required for the virial radius calculation.
 
-Accessing other halos and returning them as the property
---------------------------------------------------------
+Accessing other halos and returning them as the result of a calculation
+-----------------------------------------------------------------------
 
 Sometimes the result of a calculation is, in fact, another halo. We might also need to know about other halos
 during the process of the calculation. For example we might want to know whether a halo
@@ -300,3 +300,8 @@ existing halos.
 
 Second, by returning a `Halo` object (retrieved from the database using `get_halo`), the framework automatically understands
 we are creating a link to another halo rather than a numerical property.
+
+After the `my_parent_halo` property has been written by `tangos_writer`, it will be available in link syntax within
+live calculations (for instance one could ask for `my_parent_halo.dm_density_profile` to get the density profile of the
+parent halo, if `dm_density_profile` has also been written to the database).
+
