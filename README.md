@@ -88,12 +88,12 @@ Copying AHF properties into the database
 ----------------------------------------
 
 One of the quickest ways to populate the database is to use what AHF already calculated for you. Suppose you want to import the
-Mvir and Rvir columns from the `.AHF_halos` file. Then you simply type: `tangos_import_from_stat Mvir Rvir`. Now running
+Mvir and Rvir columns from the `.AHF_halos` file. Then you simply type: `tangos_import_from_ahf Mvir Rvir`. Now running
 `tangos_manager recent-runs 1` should show you what you just did:
 
 ```
 Run ID =  141
-Command line =  tangos_import_from_stat Mvir Rvir
+Command line =  tangos_import_from_ahf Mvir Rvir
 Host =  Rhododendron.local
 Username =  app
 Time =  03/09/15 18:50
