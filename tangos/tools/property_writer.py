@@ -62,7 +62,7 @@ class PropertyWriter(object):
                             help='Process low-z timesteps first')
         parser.add_argument('--random', action='store_true',
                             help='Process timesteps in random order')
-        parser.add_argument('--add-prerequisites', action='store_true',
+        parser.add_argument('--with-prerequisites', action='store_true',
                             help='Automatically calculate any missing prerequisites for the properties')
         parser.add_argument('--load-mode', action='store', choices=['all', 'partial', 'server', 'server-partial'], required=False, default=None,
                             help="Select a load-mode: " \
@@ -443,7 +443,7 @@ class PropertyWriter(object):
         logger.info("Processing %r", db_timestep)
         with parallel_tasks.RLock("insert_list"):
             self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
-            if self.options.add_prerequisites:
+            if self.options.with_prerequisites:
                 self._add_prerequisites_to_calculator_instances(db_timestep)
             db_halos = self._build_halo_list(db_timestep)
             self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
@@ -474,17 +474,15 @@ class PropertyWriter(object):
             will_calculate+=inst.name()
             requirements+=inst.requires_property()
 
-        recurse = False
         for r in requirements:
             if r not in will_calculate:
                 new_instance = properties.instantiate_class(db_timestep.simulation, r)
                 logger.info("Missing prerequisites - added class %r",type(new_instance))
                 logger.info("                        providing properties %r",new_instance.name())
                 self._property_calculator_instances = [new_instance]+self._property_calculator_instances
-                recurse = True
+                self._add_prerequisites_to_calculator_instances(db_timestep) # everything has changed; start afresh
+                break
 
-        if recurse:
-            self._add_prerequisites_to_calculator_instances(db_timestep)
 
     def run_calculation_loop(self):
         parallel_tasks.database.synchronize_creator_object()

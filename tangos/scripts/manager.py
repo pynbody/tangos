@@ -402,7 +402,7 @@ def main():
 
     subparse_dump_id.set_defaults(func=dump_id)
 
-    subparse_list_available_properties = subparse.add_parser("list-possible-haloproperties", help = "List all the halo properties that can be calculated by the current properties modules")
+    subparse_list_available_properties = subparse.add_parser("list-possible-properties", help = "List all the object properties that can be calculated by the currently available modules")
     subparse_list_available_properties.set_defaults(func=list_available_properties)
 
 
