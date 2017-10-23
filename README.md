@@ -104,11 +104,11 @@ Time =  03/09/15 18:50
 Populating the database with other properties
 -----------------------
 
-So now you probably want to actually put some properties into your database? For a tiny simulation, you can do this on a single node. Let's say you want to add the `SSC` property (that means 'shrink sphere center') and the `dm_density_profile` (sorta what it says on the tin).
+So now you probably want to actually put some properties into your database? For a tiny simulation, you can do this on a single node. Let's say you want to add the `shrink_center` property (that means 'shrink sphere center') and the `dm_density_profile` (sorta what it says on the tin).
 
 You should be able to do this:
 ```
-tangos_writer SSC dm_density_profile --for <simulation_name> --backend null
+tangos_writer shrink_center dm_density_profile --for <simulation_name> --backend null
 ```
 Hopefully that's fairly self-explanatory except maybe the `--backend null` bit, which is inherited because the DB writer wants to be running in parallel. Instead, `--backend null` says "you have no parallelism, just use one core".
 
@@ -116,7 +116,7 @@ The database checkpoints as it goes along (every few minutes or so). You can int
 
 ```
 Run ID =  142
-Command line =  /Users/app/Science/halo_database/tools//tangos_writer SSC dm_density_profile --for h516.cosmo25cmb.3072g1MbwK1C52 --backend null
+Command line =  /Users/app/Science/halo_database/tools//tangos_writer shrink_center dm_density_profile --for h516.cosmo25cmb.3072g1MbwK1C52 --backend null
 Host =  Rhododendron.local
 Username =  app
 Time =  03/09/15 18:56
@@ -205,7 +205,7 @@ The entire simulation step including all halos is loaded as `step1`. Note the sy
 >>> step1.halos[0]['Mvir']                 #Look at the virial Mass of the largest halo
 1989033156003.6301
 >>> step1.halos[0].keys()                #see a list of the loaded properties for halo 1
-[u'SSC',
+[u'shrink_center',
  u'Rvir',
  ...
  u'gas_image_original',
@@ -216,7 +216,7 @@ You can also load in data for all halos at once using `calculate_all`. This is *
 
 ```
 >>> mvir, = step1.calculate_all('Mvir')              #get the virial mass for every halo in the simulation
->>> mvir, cen = step1.calculate_all('Mstar','SSC')   #get both the stellar mass AND the center of the halo
+>>> mvir, cen = step1.calculate_all('Mstar','shrink_center')   #get both the stellar mass AND the center of the halo
 ```
 
 Calculations
