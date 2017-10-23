@@ -203,9 +203,10 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
         ts = DummyTimeStep(self._extension_to_filename(ts_extension))
         ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
-
         try:
             statfile = halo_stat_files.HaloStatFile(ts)
+            if object_typetag != "halo":
+                raise StopIteration
             logger.info("Reading halos for timestep %r using a stat file",ts)
             for X in statfile.iter_rows("n_dm", "n_star", "n_gas"):
                 yield X
