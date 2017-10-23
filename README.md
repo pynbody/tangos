@@ -3,15 +3,35 @@ TANGOS - The Amazing Numerical Galaxy Organisation System
 
 [![Build Status](https://travis-ci.com/N-BodyShop/halo_database.svg?token=Kwgna3AKWpdHTHRrmaYX&branch=master)](https://travis-ci.com/N-BodyShop/halo_database)
 
-This repository contains the complete code for TANGOS, which ingests runs and calculates various properties of the halos (including profiles, images etc) then exposes them through a python interface and webserver.
+This repository contains the complete code for _tangos_, which ingests runs and calculates various properties of the halos (including profiles, images etc) then exposes them through a python interface and webserver.
 
 Before you start
 ----------------
 **The database is experimental technology. Please offer Andrew and Michael coauthorship on papers where you find it useful, in recognition of the very substantial development effort. The plan is to ultimately make it open source and citable, but until then we'd appreciate your support.**
 
-For _tangos_ to function properly, you must first install it. This is accomplished using the standard python setuptools – i.e. type `python setup.py install` from your command prompt. Or if you are developing, you probably instead want `python setup.py develop` which links (instead of copying) the python source files into your distribution. Both variants should check (and if necessary install) the minimum pre-requisites.
+Installation
+------------
+
+To install _tangos_, first clone the repository, then use the standard setuptools `install` command:
+
+```
+git clone git@github.com:N-BodyShop/halo_database.git 
+cd halo_database
+python setup.py install
+```
+
+This should check for and install the _minimum_ prerequisites, but doesn't install _pynbody_. That's because _tangos_ is
+written to be agnostic about how the underlying simulation snapshots are read so in principle you could use e.g. _yt_.
+For all current tutorials, _pynbody_ is the preferred reading system and so for an easy life you should install it:
+
+```
+pip install git+ssh://git@github.com:pynbody/pynbody.git
+```
 
 Once installed, you should check that _tangos_ is functioning correctly by entering the `tests` folder and typing `nosetests`. You should see a bunch of text scrolling by, ultimately finishing with the simple message `OK`. If you get a failure message instead of `OK`, report it (with as much detail of your setup as possible) in the github issue tracker.
+
+Setting up paths
+----------------
 
 By default tangos will look for raw simulation data in your home folder and create its database file there as well. If you don't want it to do this, you can set the environment variables `TANGOS_SIMULATION_FOLDER` (for the simulation folder) and `TANGOS_DB_CONNECTION` (for the database file). For example, in bash:
 
