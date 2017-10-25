@@ -25,7 +25,7 @@ written to be agnostic about how the underlying simulation snapshots are read so
 For all current tutorials, _pynbody_ is the preferred reading system and so for an easy life you should install it:
 
 ```
-pip install git+ssh://git@github.com:pynbody/pynbody.git
+pip install git+ssh://git@github.com/pynbody/pynbody.git
 ```
 
 Once installed, you should check that _tangos_ is functioning correctly by entering the `tests` folder and typing `nosetests`. You should see a bunch of text scrolling by, ultimately finishing with the simple message `OK`. If you get a failure message instead of `OK`, report it (with as much detail of your setup as possible) in the github issue tracker.
