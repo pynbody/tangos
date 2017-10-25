@@ -176,7 +176,7 @@ class Calculation(object):
     def _make_numpy_array(x):
         if isinstance(x[0], np.ndarray):
             try:
-                return np.array(list(x), dtype=type(x[0][0]))
+                return np.array(list(x), dtype=x[0].dtype)
             except ValueError:
                 return x
         else:

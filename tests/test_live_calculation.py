@@ -226,3 +226,9 @@ def test_liveproperty_requiring_redirection():
     assert h.calculate("first_BHs_BH_mass()") == h['BH'][0]['BH_mass']
     cascade_version = h.calculate_for_descendants("first_BHs_BH_mass()")
     assert cascade_version[0] == h['BH'][0]['BH_mass']
+
+
+def test_calculate_preserves_numpy_dtype():
+    h = tangos.get_halo("sim/ts1/1")
+    assert h.calculate("dummy_property_1").dtype == np.float64
+    assert h.calculate("dummy_property_2").dtype==np.float64

@@ -194,7 +194,7 @@ def image_plot(request, val, property_info):
     start(request)
 
     width = property_info.plot_extent()
-    if log:
+    if log and len(val.shape)==2:
         data = np.log10(val)
         data[data!=data]=data[data==data].min()
 

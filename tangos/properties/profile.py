@@ -24,7 +24,7 @@ class HaloDensityProfile(SphericalRegionHaloProperties):
     def plot_ylabel():
         return r"$\rho/M_{\odot}\,kpc^{-3}$", r"$M/M_{\odot}$"
 
-    def _get_profile(self, halo, maxrad, cen):
+    def _get_profile(self, halo, maxrad):
 
         delta = self.plot_xdelta()
         nbins = int(maxrad / delta)
@@ -42,10 +42,20 @@ class HaloDensityProfile(SphericalRegionHaloProperties):
         return rho_a, mass_a
 
     @centred_calculation
-    def calculate(self, halo, existing_properties):
+    def calculate(self, data, existing_properties):
 
-        dm_a, dm_b = self._get_profile(
-            halo.dm, existing_properties["max_radius"], existing_properties["shrink_center"])
+        dm_a, dm_b = self._get_profile(data.dm, existing_properties["max_radius"])
 
         return dm_a, dm_b
 
+
+class BaryonicHaloDensityProfile(HaloDensityProfile):
+    @centred_calculation
+    def calculate(self, data, existing_properties):
+        gas_a, gas_b = self._get_profile(data.gas, existing_properties["max_radius"])
+        star_a, star_b = self._get_profile(data.star, existing_properties["max_radius"])
+        return gas_a, gas_b, star_a, star_b
+
+    @classmethod
+    def name(cls):
+        return "gas_density_profile", "gas_mass_profile", "star_density_profile", "star_mass_profile"
