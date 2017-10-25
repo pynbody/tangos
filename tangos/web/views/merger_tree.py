@@ -19,13 +19,18 @@ def _construct_preliminary_mergertree(halos, base_halo, must_include, request, d
 
     output = [_get_basic_halo_node(halo, base_halo, depth, request) for halo in halos]
 
+    previous_timestep = cc.ConsistentCollection(halos).timestep.previous
+    if previous_timestep is not None:
 
-    rl = tangos.relation_finding.MultiSourceMultiHopStrategy(halos,
-                                                             target=cc.ConsistentCollection(halos).timestep.previous,
-                                                             nhops_max=1,
-                                                             one_match_per_input=False)
+        rl = tangos.relation_finding.MultiSourceMultiHopStrategy(halos,
+                                                                 target=previous_timestep,
+                                                                 nhops_max=1,
+                                                                 one_match_per_input=False)
 
-    link_objs = rl._get_query_all()
+        link_objs = rl._get_query_all()
+    else:
+        link_objs = []
+
     pairings = []
     next_level_halos = []
     next_level_halos_link_from = []
