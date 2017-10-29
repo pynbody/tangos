@@ -249,14 +249,20 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
     def _estimate_resolution(self, f):
         f.physical_units()
         if "eps" in f.dm.loadable_keys():
-            return f.dm['eps'].min()
+            # Interpret the eps array as a softening, and assume that it is not a comoving softening (as the
+            # pynbody units system might naively tell us) but actually already a physical softening. Note that
+            # whether or not this is a correct interpretation depends on the code in use, and the flags passed
+            # to that code.
+            return float(f.dm['eps'].in_units('kpc a').min())
         else:
+            # There is no softening information available, so take a best guess as to what a reasonable
+            # softening might be as 1/100th of the mean interparticle distance (in the deepest zoom level)
             tot_box_mass = f.dm['mass'].sum()
             min_mass = f.dm['mass'].min()
             frac_mass = min_mass/tot_box_mass
             frac_length = frac_mass ** (1. / 3)
             estimated_eps = 0.01 * frac_length * f.properties['boxsize'].in_units('kpc a', **f.conversion_context())
-            return estimated_eps
+            return float(estimated_eps)
 
 
 class RamsesHOPOutputSetHandler(PynbodyOutputSetHandler):
