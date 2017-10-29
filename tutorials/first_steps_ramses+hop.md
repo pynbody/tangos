@@ -36,19 +36,7 @@ tangos_timelink
 
 The construction of each merger tree should take a couple of minutes,  and again you'll see a log scroll up the screen while it happens.
 
-If you want to speed up this process, it can be MPI parallelised, if you have MPI and `mpi4py` on your machine. This is straight-forward with, for example, anaconda python distributions – just type `conda install mpi4py`. 
-
-Once this has successfully installed, you can instead run `tangos_timelink` within MPI with the following invocation:
-
-```
-mpirun -np 5 tangos_timelink --backend mpi4py
-```
-Here,
- * `mpirun -np 5` instructs MPI on your machine to run 5 processes. This would be appropriate for a 4-core machine because there is always one manager process and 4 worker processes. If you want to run across multiple nodes, only the first node should have one more process running than cores available. Consult your system administrator to figure this out. 
- * `tangos_timelink` is the script to run
- * `--backend mpi4py` crucially instructs tangos_timelink to parallelise using the mpi4py library. Alternatively you can use the `pypar` library. *If you specify no backend tangos will default to running in single-processor mode which means MPI will launch 5 processes that are not aware of each other's prescence. This is not what you want. However limitations in the MPI library mean it's not possible for tangos to auto-detect it has been MPI-launched.*
- 
-For large simulations, you may need to use a machine with lots of memory  and/or use fewer processes than you have cores available because, when time-linking, each process loads two timesteps at once.
+If you want to speed up this process, it can be [MPI parallelised](mpi.md).
 
 Add the first property
 ----------------------
@@ -65,13 +53,7 @@ Here,
  * `contamination_fraction` is the name of a built-in property which returns the fraction of dark matter particles
    which come from outside the high resolution region.
    
-Note that you can perform this calculation in parallel; the MPI version of the command would be something like
-```bash
-mpirun -np 5 tangos_writer contamination_fraction --backend mpi4py
-```
-
-This is the last time in the tutorial we'll directly mention MPI; all future commands can be parallelised by putting
-the appropriate `mpirun` invocation on the front and `--backend mpi4py` on the end.
+If you want to speed up this process, it can be [MPI parallelised](mpi.md).
 
 Once the command terminates, you can check that each halo now has a `contamination_fraction` associated with it, either
 in the web interface or from python, for example:
@@ -89,7 +71,8 @@ Let's finally do some science. We'll add dark matter density profiles; from your
  ```bash
 tangos_writer dm_density_profile --with-prerequisites --include-only="contamination_fraction<0.01"  
 ```
-or the MPI-parallelised equivalent.
+
+If you want to speed up this process, it can be [MPI parallelised](mpi.md).
 
 Here,
  * `tangos_writer` is the same script you called above to add properties to the database
@@ -102,3 +85,8 @@ Here,
    for. In the present case, we use that to insist that only "high resolution" halos are included (specifically, those
    with a fraction of low-res particles smaller than 1%)
  
+ Explore what's possible
+ -----------------------
+ 
+ Now that you have a minimal functioning _tangos_ database, proceed to the data exploration tutorial, either with the
+ [web server](data_exploration_python.md) or [python interface](data_exploration_python.md).
