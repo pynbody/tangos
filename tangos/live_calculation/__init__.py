@@ -203,12 +203,20 @@ class Calculation(object):
                 tangos.core.halo.Halo.all_links]
 
 
+            if len(name_targets)>0:
+                property_name_condition = halo_property_alias.name_id.in_(name_targets)
+                link_name_condition = (halo_link_alias.relation_id.in_(name_targets))
+            else:
+                # We know we're joining to a null list of properties; do this as efficiently as possible
+                property_name_condition = link_name_condition = False
+
+
             augmented_query =augmented_query.outerjoin(halo_property_alias,
                                                   (halo_alias.id==halo_property_alias.halo_id)
-                                                  & (halo_property_alias.name_id.in_(name_targets))).\
+                                                  & property_name_condition).\
                                         outerjoin(halo_link_alias,
                                                   (halo_alias.id==halo_link_alias.halo_from_id)
-                                                  & (halo_link_alias.relation_id.in_(name_targets))).\
+                                                  & link_name_condition).\
                                         options(contains_eager(*path_to_properties, alias=halo_property_alias),
                                                 contains_eager(*path_to_links, alias=halo_link_alias))
 
