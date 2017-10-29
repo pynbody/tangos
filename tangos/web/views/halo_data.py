@@ -13,8 +13,11 @@ import tangos
 import matplotlib
 matplotlib.use('agg')
 import pylab as p
-
+import threading
 from tangos import core
+import time
+
+_matplotlib_lock = threading.RLock()
 
 def decode_property_name(name):
     name = name.replace("_slash_","/")
@@ -121,17 +124,22 @@ def get_property(request):
 
 
 def start(request) :
+    p.ioff()
+    p.clf()
     request.canvas =  p.get_current_fig_manager().canvas
 
 def finish(request, getImage=True) :
-
-    if getImage :
+    if getImage:
+        enter_finish_time = time.time()
         request.canvas.draw()
+        draw_time = time.time()
         imageSize = request.canvas.get_width_height()
         imageRgb = request.canvas.tostring_rgb()
         buffer = StringIO.StringIO()
         pilImage = PIL.Image.frombytes("RGB",imageSize, imageRgb)
         pilImage.save(buffer, "PNG")
+        end_time = time.time()
+        print("Image rendering: matplotlib %.2fs; PNG conversion %.3fs"%(draw_time-enter_finish_time, end_time-draw_time))
 
     p.close()
 
@@ -163,12 +171,13 @@ def gathered_plot(request):
         v2 = v2[f]
     else:
         v1, v2 = ts.calculate_all(name1, name2)
-    start(request)
-    p.plot(v1,v2,'k.')
-    p.xlabel(name1)
-    p.ylabel(name2)
-    rescale_plot(request)
-    return finish(request)
+    with _matplotlib_lock:
+        start(request)
+        p.plot(v1,v2,'k.')
+        p.xlabel(name1)
+        p.ylabel(name2)
+        rescale_plot(request)
+        return finish(request)
 
 
 @view_config(route_name='cascade_plot')
@@ -177,13 +186,13 @@ def cascade_plot(request):
     name1 = decode_property_name(request.matchdict['nameid1'])
     name2 = decode_property_name(request.matchdict['nameid2'])
     v1, v2 = halo.calculate_for_progenitors(name1, name2)
-
-    start(request)
-    p.plot(v1,v2,'k')
-    p.xlabel(name1)
-    p.ylabel(name2)
-    rescale_plot(request)
-    return finish(request)
+    with _matplotlib_lock:
+        start(request)
+        p.plot(v1,v2,'k')
+        p.xlabel(name1)
+        p.ylabel(name2)
+        rescale_plot(request)
+        return finish(request)
 
 
 
@@ -191,31 +200,32 @@ def cascade_plot(request):
 def image_plot(request, val, property_info):
 
     log=request.GET.get('logimage',False)
-    start(request)
+    with _matplotlib_lock:
+        start(request)
 
-    width = property_info.plot_extent()
-    if log and len(val.shape)==2:
-        data = np.log10(val)
-        data[data!=data]=data[data==data].min()
+        width = property_info.plot_extent()
+        if log and len(val.shape)==2:
+            data = np.log10(val)
+            data[data!=data]=data[data==data].min()
 
-    else:
-        data =val
+        else:
+            data =val
 
-    print(data.min(),data.max(),width)
-    if width is not None :
-        p.imshow(data,extent=(-width/2,width/2,-width/2,width/2))
-    else :
-        p.imshow(data)
+        print(data.min(),data.max(),width)
+        if width is not None :
+            p.imshow(data,extent=(-width/2,width/2,-width/2,width/2))
+        else :
+            p.imshow(data)
 
-    p.xlabel(property_info.plot_xlabel())
-    p.ylabel(property_info.plot_ylabel())
+        p.xlabel(property_info.plot_xlabel())
+        p.ylabel(property_info.plot_ylabel())
 
-    if len(val.shape) is 2 :
-        cb = p.colorbar()
-        if property_info.plot_clabel() :
-            cb.set_label(property_info.plot_clabel())
+        if len(val.shape) is 2 :
+            cb = p.colorbar()
+            if property_info.plot_clabel() :
+                cb.set_label(property_info.plot_clabel())
 
-    return finish(request)
+        return finish(request)
 
 @view_config(route_name='array_plot')
 def array_plot(request):
@@ -228,24 +238,25 @@ def array_plot(request):
     if len(val.shape)>1:
         return image_plot(request, val, property_info)
 
-    start(request)
+    with _matplotlib_lock:
+        start(request)
 
-    p.plot(property_info.plot_x_values(val),val)
+        p.plot(property_info.plot_x_values(val),val)
 
-    if property_info.plot_xlog() and property_info.plot_ylog():
-        p.loglog()
-    elif property_info.plot_xlog():
-        p.semilogx()
-    elif property_info.plot_ylog():
-        p.semilogy()
+        if property_info.plot_xlog() and property_info.plot_ylog():
+            p.loglog()
+        elif property_info.plot_xlog():
+            p.semilogx()
+        elif property_info.plot_ylog():
+            p.semilogy()
 
-    if property_info.plot_xlabel():
-        p.xlabel(property_info.plot_xlabel())
+        if property_info.plot_xlabel():
+            p.xlabel(property_info.plot_xlabel())
 
-    #if property_info.plot_ylabel():
-    #    p.ylabel(property_info.plot_ylabel())
+        #if property_info.plot_ylabel():
+        #    p.ylabel(property_info.plot_ylabel())
 
-    if property_info.plot_yrange():
-        p.ylim(*property_info.plot_yrange())
+        if property_info.plot_yrange():
+            p.ylim(*property_info.plot_yrange())
 
-    return finish(request)
+        return finish(request)
