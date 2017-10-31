@@ -55,7 +55,8 @@ which builds the merger tree for the halos, and then you probably also want to r
 ```
 tangos_timelink --type group --sims tutorial_gadget
 ```
-to make the merger tree for the groups.
+to make the merger tree for the groups. If you want to speed up these processes, they can each be 
+[MPI parallelised](mpi.md).
 
 The construction of each merger tree should take a couple of minutes,  and again you'll see a log scroll up the screen while it happens.
 
