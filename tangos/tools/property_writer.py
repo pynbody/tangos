@@ -128,6 +128,8 @@ class PropertyWriter(object):
             # Only in 'server' mode is parallelism undertaken at the halo level. See also
             # _get_parallel_timestep_iterator.
 
+            assert parallel_tasks.backend.size()>1, "Cannot use this load mode outside of a parallel session"
+
             # First, we need to make a barrier because we can't start writing to the database
             # before all nodes have generated their local work lists
             parallel_tasks.barrier()

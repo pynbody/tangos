@@ -3,6 +3,7 @@ import time
 import warnings
 import importlib
 import sys
+import re
 
 import tangos.core.creator
 from .. import core, config
@@ -17,11 +18,16 @@ from . import message, jobs, backends
 
 from ..log import logger
 
-if "--backend" in sys.argv:
-    index = sys.argv.index("--backend")
-    _backend_name = sys.argv[index+1]
-    sys.argv.pop(index)
-    sys.argv.pop(index)
+def _process_command_line():
+    command_line = " ".join(sys.argv)
+    match = re.match("^(.*)--backend *=? *([^ ]*)(.*)$", command_line)
+    if match is not None:
+        global _backend_name
+        _backend_name = match.group(2)
+        new_command_line = match.group(1)+" "+match.group(3)
+        sys.argv = new_command_line.split()
+
+_process_command_line()
 
 def use(name):
     global backend, _backend_name
@@ -44,7 +50,6 @@ def parallel_backend_loaded():
 
 def launch(function, num_procs=None, args=[]):
     init_backend()
-
     if _backend_name!='null':
         backend.launch(_exec_function_or_server, num_procs, [function, args])
     else:
