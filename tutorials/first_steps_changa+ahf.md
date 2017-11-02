@@ -86,8 +86,6 @@ from your shell type:
 tangos_writer dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="contamination_fraction<0.01 & NDM()>5000" --sims tutorial_changa  
 ```
 
-If you want to speed up this process, it can be [MPI parallelised](mpi.md).
-
 Here,
  * `tangos_writer` is the same script you called above to add properties to the database
  * `dm_density_profile` is an array representing the dark matter density profile; to see all available properties
@@ -100,6 +98,23 @@ Here,
    with a fraction of low-res particles smaller than 1%) – and, more than that, there must be 5000 dark matter particles
    in a halo before we calculate these properties (otherwise it's too small for us to care). 
    
+   
+This is the slowest process in all the _tangos_ tutorials; there is a 
+[specific example](mpi.md#tangos_writer_example) in the [MPI parallelisation document](mpi.md) showing how to make
+best use of a multi-core system to speed things up.
+   
+Tangos error handling
+---------------------
+
+While running this case the log may contain some errors such as 
+`Number of smoothing particles exceeds number of particles in tree`. Don't panic, this is normal! You're seeing
+the effect of attempting to smooth over a very small number of star or gas particles in some tiny halos. 
+
+If keen, one can alter the `--include-only` clause to prevent any such errors occuring but it's not really necessary: 
+_tangos_ isolates errors that occur in individual halo calculations; it reports them and then moves onto the next
+calculation or halo. 
+
+
 Explore what's possible
 -----------------------
  

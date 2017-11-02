@@ -18,7 +18,6 @@ scroll up the screen.
   * `tangos_manager` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial_gadget` identifies the simulation we're adding
-  * `--handler pynbody.GadgetSubfindOutputSetHandler` identifies the _handler_ for our simulation. A handler defines how to load a simulation and its associated halo catalogue. Here we'll use `pynbody`'s ability to load gadget and subfind files. 
   * `--min-particles 100` imports only halos/groups with at least 100 particles. 
   (The default value is 1000 particles, but this tutorial dataset is fairly low resolution so we'll keep these small halos.)
 
@@ -44,7 +43,7 @@ Note that if you did not correctly specify the Subfind handler in the step above
 Generate the merger trees
 -------------------------
 
-The merger trees are most simply generated using pynbody's bridge function to do this, type
+The merger trees are most simply generated using pynbody's bridge function. To do this type:
 
 ```
 tangos_timelink --sims tutorial_gadget
