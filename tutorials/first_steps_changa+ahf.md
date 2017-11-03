@@ -122,9 +122,8 @@ If keen, one can alter the `--include-only` clause to prevent any such errors oc
 _tangos_ isolates errors that occur in individual halo calculations; it reports them and then moves onto the next
 calculation or halo. 
 
-
-Explore what's possible
------------------------
  
-Now that you have a minimal functioning _tangos_ database, proceed to the data exploration tutorial, either with the
-[web server](data_exploration_python.md) or [python interface](data_exploration_python.md).
+ Explore what's possible
+ -----------------------
+ 
+ Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.

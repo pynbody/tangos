@@ -92,7 +92,8 @@ Here,
  * `--type=halo` calculates the properties only for halos (as opposed to groups)
  
  
-Now let's take a look at what we've created
--------------------------------------------
-
-We're ready to explore the simulation. Depending on your preferences you might prefer to explore with the web service or direct from python. 
+ 
+ Explore what's possible
+ -----------------------
+ 
+ Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.

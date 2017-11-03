@@ -97,5 +97,4 @@ Here,
  Explore what's possible
  -----------------------
  
- Now that you have a minimal functioning _tangos_ database, proceed to the data exploration tutorial, either with the
- [web server](data_exploration_python.md) or [python interface](data_exploration_python.md).
+ Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.
