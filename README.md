@@ -1,7 +1,7 @@
 TANGOS - The Amazing Numerical Galaxy Organisation System
 ---------------------------------------------------------
 
-[![Build Status](https://travis-ci.com/N-BodyShop/halo_database.svg?token=Kwgna3AKWpdHTHRrmaYX&branch=master)](https://travis-ci.com/N-BodyShop/halo_database)
+[![Build Status](https://travis-ci.org/pynbody/tangos.svg?branch=master)](https://travis-ci.org/pynbody/tangos)
 
 This repository contains the complete code for _tangos_, a system for building and querying databases summarising the
 results of cosmological simulations. _Tangos_:
@@ -28,19 +28,17 @@ Installation
 To install _tangos_ first clone the repository, then use the standard setuptools `install` command:
 
 ```
-git clone git@github.com:pynbody/tangos.git 
+git clone https://github.com/pynbody/tangos.git
 cd tangos
 python setup.py install
 ```
-
-Alternatively if you intend to 
 
 This should check for and install the _minimum_ prerequisites, but doesn't install _pynbody_. That's because _tangos_ is
 written to be agnostic about how the underlying simulation snapshots are read so in principle you could use e.g. _yt_.
 For all current tutorials, _pynbody_ is the preferred reading system and so for an easy life you should install it:
 
 ```
-pip install git+ssh://git@github.com/pynbody/pynbody.git
+pip install git+https://github.com/pynbody/pynbody.git
 ```
 
 Once installed, you should check that _tangos_ is functioning correctly by entering the `tests` folder and 
@@ -56,13 +54,13 @@ If you don't want it to do this, you can set the environment variables `TANGOS_S
 and `TANGOS_DB_CONNECTION` (for the database file). For example, in bash:
 
 ```
-export TANGOS_SIMULATION_FOLDER=/path/to/simulation/data/
-export TANGOS_DB_CONNECTION=~/scratch/Romulus/DatabaseFiles/cosmo25/data_romulus25.db 
+export TANGOS_SIMULATION_FOLDER=/path/to/simulations/folder/
+export TANGOS_DB_CONNECTION=/path/to/sqlite.db
 ```
 or, in cshell:
 ```
-setenv TANGOS_SIMULATION_FOLDER /nobackupp8/mtremmel/Romulus/
-setenv TANGOS_DB_CONNECTION /nobackupp8/mtremmel/DataBaseFiles/romulus8/data_romulus8.db
+setenv TANGOS_SIMULATION_FOLDER /path/to/simulations/folder/
+setenv TANGOS_DB_CONNECTION /path/to/sqlite.db
 ```
 The top line in each example points to the parent directory for all of your simulation data directories. 
 If you don't have any simulations (i.e. you are just using a database object already created) then you 
