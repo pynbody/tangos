@@ -55,7 +55,7 @@ def rho_e(self):
 class GasProfiles(HaloProperties):
 	@classmethod
 	def name(self):
-		return "Tew_profile", "Tmw_profile"
+		return "Tew_profile", "Tmw_profile", "rho_e_profile"
 
 	def plot_x0(cls):
 		return 0.05
