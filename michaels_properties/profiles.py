@@ -2,17 +2,17 @@ from tangos.properties import HaloProperties, TimeChunkedProperty
 import numpy as np
 import pynbody
 
+temp_cut = 1.26e6
+kb = pynbody.array.SimArray(1.380658e-16, 'erg K**-1')
+mh = pynbody.array.SimArray(1.6726219e-24, 'g')
 
 def emissivity(rho, T, mu, tcool):
-	kb = pynbody.array.SimArray(1.380658e-16, 'erg K**-1')
-	mh = pynbody.array.SimArray(1.6726219e-24, 'g')
 	return 3. / 2. * rho * kb * T / (mu * mh * tcool)
 
 
 def tcool(rho, T, mu):
 	# taken from https://arxiv.org/abs/astro-ph/9809159 eq 12
 	fm = 1.0  # metalicity dependent factor, 1.0 for solar, 0.03 for pristine
-	mh = pynbody.array.SimArray(1.6726219e-24, 'g')
 	C1 = 3.88e11
 	C2 = 5e7
 	return C1 * mu * mh * T ** 0.5 / (rho * (1 + C2 * fm / T))
@@ -20,8 +20,6 @@ def tcool(rho, T, mu):
 
 @pynbody.analysis.profile.Profile.profile_property
 def Tew(self):
-	temp_cut = 1.26e6
-	kb = pynbody.array.SimArray(1.380658e-16, 'erg K**-1')
 	temp = np.zeros(self.nbins)
 	rho_c = pynbody.analysis.cosmology.rho_crit(self.sim, z=0)
 	for i in range(self.nbins):
@@ -37,8 +35,6 @@ def Tew(self):
 
 @pynbody.analysis.profile.Profile.profile_property
 def Tmw(self):
-	temp_cut = 1.26e6
-	kb = pynbody.array.SimArray(1.380658e-16, 'erg K**-1')
 	temp = np.zeros(self.nbins)
 	for i in range(self.nbins):
 		subs = self.sim[self.binind[i]]
@@ -46,8 +42,17 @@ def Tmw(self):
 		temp[i] = np.sum(subs.g['mass'][use] * subs.g['temp'][use]) / np.sum(subs.g['mass'][use])
 	return kb.in_units('keV K**-1') * temp
 
+@pynbody.analysis.profile.Profile.profile_property
+def rho_e(self):
+	n_e = np.zeros(self.nbins)
+	for i in range(self.nbins):
+		subs = self.sim[self.binind[i]]
+		use = np.where(subs.g['temp'] > temp_cut)[0]
+		n_e[i] = np.sum(subs.g['ne'][use] * subs.g['mass'][use].in_units('m_p'))/self._binsize.in_units('cm**'+str(int(self.ndim)))[i]
+	return n_e
 
-class TemperatureProfiles(HaloProperties):
+
+class GasProfiles(HaloProperties):
 	@classmethod
 	def name(self):
 		return "Tew_profile", "Tmw_profile"
@@ -84,7 +89,8 @@ class TemperatureProfiles(HaloProperties):
 		delta = self.plot_xdelta()
 		nbins = int(existing_properties['Rvir']/ delta)
 		maxrad = delta * (nbins + 1)
-		ps = pynbody.analysis.profile.Profile(halo.s, type='lin', ndim=2, min=0, max=maxrad, nbins=nbins)
+		ps = pynbody.analysis.profile.Profile(halo.g, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
 		Tew = ps['Tew']
 		Tmw = ps['Tmw']
-		return Tew, Tmw
+		rho_e = ps['rho_e']
+		return Tew, Tmw, rho_e
