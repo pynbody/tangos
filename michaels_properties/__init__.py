@@ -1,3 +1,3 @@
 from tangos.properties import *
 
-from . import sfhistory
+from . import sfhistory, profiles
