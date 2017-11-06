@@ -88,7 +88,7 @@ class GasProfiles(HaloProperties):
 		delta = self.plot_xdelta()
 		nbins = int(existing_properties['Rvir']/ delta)
 		maxrad = delta * (nbins + 1)
-		ps = pynbody.analysis.profile.Profile(halo.g, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+		ps = pynbody.analysis.profile.Profile(halo, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
 		Tew = ps['Tew']
 		Tmw = ps['Tmw']
 		rho_e = ps['rho_e']
