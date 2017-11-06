@@ -21,7 +21,6 @@ def tcool(rho, T, mu):
 @pynbody.analysis.profile.Profile.profile_property
 def Tew(self):
 	temp = np.zeros(self.nbins)
-	rho_c = pynbody.analysis.cosmology.rho_crit(self.sim, z=0)
 	for i in range(self.nbins):
 		subs = self.sim[self.binind[i]]
 		use = np.where((subs.g['temp'] > temp_cut))[0]
