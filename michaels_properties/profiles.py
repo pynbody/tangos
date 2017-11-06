@@ -23,7 +23,7 @@ def Tew(self):
 	temp = np.zeros(self.nbins)
 	for i in range(self.nbins):
 		subs = self.sim[self.binind[i]]
-		use = np.where((subs.g['temp'] > temp_cut))[0]
+		use = np.where(subs.g['temp'] > temp_cut)[0]
 		mu = 0.58
 		tc = tcool(subs.g['rho'][use].in_units('g cm**-3'), subs.g['temp'][use], mu)
 		em = emissivity(subs.g['rho'][use].in_units('g cm**-3'), subs.g['temp'][use], mu, tc)
@@ -37,7 +37,7 @@ def Tmw(self):
 	temp = np.zeros(self.nbins)
 	for i in range(self.nbins):
 		subs = self.sim[self.binind[i]]
-		use = np.where((subs.g['temp'] > temp_cut))[0]
+		use = np.where(subs.g['temp'] > temp_cut)[0]
 		temp[i] = np.sum(subs.g['mass'][use] * subs.g['temp'][use]) / np.sum(subs.g['mass'][use])
 	return kb.in_units('keV K**-1') * temp
 
@@ -88,7 +88,7 @@ class GasProfiles(HaloProperties):
 		delta = self.plot_xdelta()
 		nbins = int(existing_properties['Rvir']/ delta)
 		maxrad = delta * (nbins + 1)
-		ps = pynbody.analysis.profile.Profile(halo, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+		ps = pynbody.analysis.profile.Profile(halo.g, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
 		Tew = ps['Tew']
 		Tmw = ps['Tmw']
 		rho_e = ps['rho_e']
