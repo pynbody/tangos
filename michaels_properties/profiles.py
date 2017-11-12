@@ -1,8 +1,8 @@
 from tangos.properties import HaloProperties, TimeChunkedProperty
 import numpy as np
 import pynbody
+from tangos.properties.centring import centred_calculation
 
-temp_cut = 1.26e6
 kb = pynbody.array.SimArray(1.380658e-16, 'erg K**-1')
 mh = pynbody.array.SimArray(1.6726219e-24, 'g')
 
@@ -52,6 +52,7 @@ def rho_e(self):
 
 
 class GasProfiles(HaloProperties):
+	_temp_cut = 1.26e6
 	@classmethod
 	def name(self):
 		return "Tew_profile", "Tmw_profile", "rho_e_profile"
@@ -80,15 +81,16 @@ class GasProfiles(HaloProperties):
 		return "T$_{ew}$ keV", "T$_{mw}$ keV"
 
 	def requires_property(self):
-		return ["SSC", "Rvir"]
+		return ["shink_center", "max_radius"]
 
+	@centred_calculation
 	def calculate(self, halo, existing_properties):
-		halo['pos'] -= existing_properties['SSC']
-		halo.wrap()
+		#halo['pos'] -= existing_properties['SSC']
+		#halo.wrap()
 		delta = self.plot_xdelta()
-		nbins = int(existing_properties['Rvir']/ delta)
+		nbins = int(existing_properties['max_radius']/ delta)
 		maxrad = delta * (nbins + 1)
-		ps = pynbody.analysis.profile.Profile(halo.g, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+		ps = pynbody.analysis.profile.Profile(halo.g[pynbody.filt.HighPass('temp',self._temp_cut)], type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
 		Tew = ps['Tew']
 		Tmw = ps['Tmw']
 		rho_e = ps['rho_e']

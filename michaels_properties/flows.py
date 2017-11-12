@@ -2,15 +2,15 @@ from tangos.properties import HaloProperties, TimeChunkedProperty
 from tangos.properties.spherical_region import SphericalRegionHaloProperties
 import numpy as np
 import pynbody
-
+from tangos.properties.centring import centred_calculation
 
 class FlowProfile(SphericalRegionHaloProperties):
     #_xmax = 100.0
     _threshold_vel = 20.0
 
-    def region_specification(self, db_data):
-        return pynbody.filt.Sphere(db_data['Rvir'], db_data['SSC']) & \
-               (pynbody.filt.FamilyFilter(pynbody.family.gas)|pynbody.filt.FamilyFilter(pynbody.family.star))
+    #def region_specification(self, db_data):
+    #    return pynbody.filt.Sphere(db_data['Rvir'], db_data['SSC']) & \
+    #           (pynbody.filt.FamilyFilter(pynbody.family.gas)|pynbody.filt.FamilyFilter(pynbody.family.star))
 
     @classmethod
     def name(cls):
@@ -41,16 +41,16 @@ class FlowProfile(SphericalRegionHaloProperties):
 
 
         pro = pynbody.analysis.profile.Profile(f_gas, min=0.0,max=rvir,
-                                               nbins=int(self.rvir/self.plot_xdelta()),
+                                               nbins=int(rvir/self.plot_xdelta()),
                                                ndim=3, weight_by='Mdot')
         return pro['weight_fn'].in_units("Msol yr^-1"), pro['vr'], pro['vr2'], pro['temp']
 
-
+    @centred_calculation
     def calculate(self, halo, properties):
-        with pynbody.analysis.halo.center(halo):
+        with pynbody.analysis.vel_center(halo):
             halo.gas['vr2'] = halo.gas['vr'] ** 2
-            inflow_Mdot, inflow_vel, inflow_vel2, inflow_temp = self.profile_calculation(halo.ancestor.gas, -self._threshold_vel)
-            outflow_Mdot, outflow_vel, outflow_vel2, outflow_temp = self.profile_calculation(halo.ancestor.gas, self._threshold_vel)
-            inflow_Mdot_dm, inflow_vel_dm, inflow_vel2_dm, _ = self.profile_calculation(halo.ancestor.dm, -self._threshold_vel)
-            outflow_Mdot_dm, outflow_vel_dm, outflow_vel2_dm, _ = self.profile_calculation(halo.ancestor.dm, self._threshold_vel)
-        return inflow_Mdot, outflow_Mdot, -inflow_vel, outflow_vel,  inflow_vel2, outflow_vel2, inflow_temp, outflow_temp, inflow_Mdot_dm, outflow_Mdot_dm, -inflow_vel_dm, outflow_vel_dm,  inflow_vel2_dm, outflow_vel2_dm
+            inflow_Mdot, inflow_vel, inflow_vel2, inflow_temp = self.profile_calculation(halo.ancestor.gas, -self._threshold_vel, properties['max_radius'])
+            outflow_Mdot, outflow_vel, outflow_vel2, outflow_temp = self.profile_calculation(halo.ancestor.gas, self._threshold_vel,properties['max_radius'])
+            #inflow_Mdot_dm, inflow_vel_dm, inflow_vel2_dm, _ = self.profile_calculation(halo.ancestor.dm, -self._threshold_vel,properties['max_radius'])
+            #outflow_Mdot_dm, outflow_vel_dm, outflow_vel2_dm, _ = self.profile_calculation(halo.ancestor.dm, self._threshold_vel,properties['max_radius'])
+        return inflow_Mdot, outflow_Mdot, -inflow_vel, outflow_vel,  inflow_vel2, outflow_vel2, inflow_temp, outflow_temp
