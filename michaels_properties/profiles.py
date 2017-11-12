@@ -81,7 +81,7 @@ class GasProfiles(HaloProperties):
 		return "T$_{ew}$ keV", "T$_{mw}$ keV"
 
 	def requires_property(self):
-		return ["shink_center", "max_radius"]
+		return ["shrink_center", "max_radius"]
 
 	@centred_calculation
 	def calculate(self, halo, existing_properties):
