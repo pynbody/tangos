@@ -1,13 +1,21 @@
 Tangos Tutorial – Ramses+HOP
 ============================
 
+Initial set up
+--------------
+
+Make sure you have followed the [initial set up instructions](../README.md). Then download the
+[raw simulation data](http://star.ucl.ac.uk/~app/tangos/tutorial_ramses.tar.gz) required for this tutorial.
+Unpack the tar file either in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
+variable to.
+
 Import the simulation
 ---------------------
 
 At the unix command line type:
 
 ```
-tangos_manager add tutorial --handler pynbody.RamsesHOPOutputSetHandler --min-particles 100
+tangos_manager add tutorial_ramses --min-particles 100
 ```
 
 The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
@@ -31,7 +39,7 @@ Generate the merger trees
 The merger trees are most simply generated using pynbody's bridge function. To do this, type
 
 ```
-tangos_timelink
+tangos_timelink --sims tutorial_ramses
 ```
 
 The construction of each merger tree should take a couple of minutes,  and again you'll see a log scroll up the screen while it happens.
@@ -45,7 +53,7 @@ Next, we will add some properties to the halos so that we can start to do some s
 we only want to do science on the highest resolution regions. The first thing to calculate is therefore which halos fall
 in that region. From your shell type:
 ```bash
-tangos_writer contamination_fraction
+tangos_writer contamination_fraction --sims tutorial_ramses
 ```
 
 Here,
@@ -85,8 +93,8 @@ Here,
    for. In the present case, we use that to insist that only "high resolution" halos are included (specifically, those
    with a fraction of low-res particles smaller than 1%)
  
+ 
  Explore what's possible
  -----------------------
  
- Now that you have a minimal functioning _tangos_ database, proceed to the data exploration tutorial, either with the
- [web server](data_exploration_python.md) or [python interface](data_exploration_python.md).
+ Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.

@@ -108,6 +108,33 @@ th {
     overflow: scroll;
 }
 
+#imgbox::-webkit-scrollbar {
+    -webkit-appearance: none;
+}
+
+#imgbox::-webkit-scrollbar:vertical {
+    width: 11px;
+}
+
+#imgbox::-webkit-scrollbar:horizontal {
+    height: 11px;
+}
+
+#imgbox::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    border: 2px solid white;
+    background-color: rgba(0, 0, 0, .5);
+}
+
+#imgbox::-webkit-scrollbar-track {
+    background-color: #fff;
+    border-radius: 8px;
+}
+
+#imgbox {
+    border: 1px solid #eef;
+}
+
 img.plotimg {
     float: right;
 }
@@ -272,5 +299,6 @@ div.popup-controls {
 }
 
 div.properties-area {
-    min-height: 500px;
+    min-height: 700px;
 }
+
