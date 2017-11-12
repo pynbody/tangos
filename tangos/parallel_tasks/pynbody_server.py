@@ -32,7 +32,7 @@ class PynbodySnapshotQueue(object):
         return self.current_halocat
 
     def add(self, filename, requester):
-        log.logger.info("Pynbody server: client %d requests access to %r", requester, filename)
+        log.logger.debug("Pynbody server: client %d requests access to %r", requester, filename)
         if filename==self.current_snapshot_filename:
             self._notify_available(requester)
             self.in_use_by.append(requester)
@@ -45,7 +45,7 @@ class PynbodySnapshotQueue(object):
 
     def free(self, requester):
         self.in_use_by.remove(requester)
-        log.logger.info("Pynbody server: client %d is now finished with %r", requester, self.current_snapshot_filename)
+        log.logger.debug("Pynbody server: client %d is now finished with %r", requester, self.current_snapshot_filename)
         self._free_if_unused()
         self._load_next_if_free()
 
@@ -75,7 +75,7 @@ class PynbodySnapshotQueue(object):
 
     def _free_if_unused(self):
         if len(self.in_use_by)==0:
-            log.logger.info("Pynbody server: all clients are finished with the current snapshot; freeing.")
+            log.logger.debug("Pynbody server: all clients are finished with the current snapshot; freeing.")
             with check_deleted(self.current_snapshot):
                 self.current_snapshot = None
                 self.current_snapshot_filename = None
@@ -83,7 +83,7 @@ class PynbodySnapshotQueue(object):
                 self.current_subsnap_cache = {}
 
     def _notify_available(self, node):
-        log.logger.info("Pynbody server: notify %d that snapshot is now available", node)
+        log.logger.debug("Pynbody server: notify %d that snapshot is now available", node)
         ConfirmLoadPynbodySnapshot().send(node)
 
     def _load_next_if_free(self):
@@ -286,7 +286,7 @@ class RemoteSnapshotConnection(object):
         # ensure server knows what our messages are about
         remote_import.ImportRequestMessage(__name__).send(self._server_id)
 
-        log.logger.info("Pynbody client: attempt to connect to remote snapshot %r", fname)
+        log.logger.debug("Pynbody client: attempt to connect to remote snapshot %r", fname)
         RequestLoadPynbodySnapshot(fname).send(self._server_id)
         ConfirmLoadPynbodySnapshot.receive(self._server_id)
         self.connected = True

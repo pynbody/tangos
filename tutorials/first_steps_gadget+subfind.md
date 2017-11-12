@@ -1,6 +1,14 @@
 Tangos Tutorial – Gadget+SubFind
 ================================
 
+Initial set up
+--------------
+
+Make sure you have followed the [initial set up instructions](../README.md). Then download the
+[raw simulation data](http://star.ucl.ac.uk/~app/tangos/tutorial_gadget.tar.gz) required for this tutorial.
+Unpack the tar file either in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
+variable to.
+
 Import the simulation
 ---------------------
 
@@ -18,7 +26,6 @@ scroll up the screen.
   * `tangos_manager` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial_gadget` identifies the simulation we're adding
-  * `--handler pynbody.GadgetSubfindOutputSetHandler` identifies the _handler_ for our simulation. A handler defines how to load a simulation and its associated halo catalogue. Here we'll use `pynbody`'s ability to load gadget and subfind files. 
   * `--min-particles 100` imports only halos/groups with at least 100 particles. 
   (The default value is 1000 particles, but this tutorial dataset is fairly low resolution so we'll keep these small halos.)
 
@@ -44,7 +51,7 @@ Note that if you did not correctly specify the Subfind handler in the step above
 Generate the merger trees
 -------------------------
 
-The merger trees are most simply generated using pynbody's bridge function to do this, type
+The merger trees are most simply generated using pynbody's bridge function. To do this type:
 
 ```
 tangos_timelink --sims tutorial_gadget
@@ -85,7 +92,8 @@ Here,
  * `--type=halo` calculates the properties only for halos (as opposed to groups)
  
  
-Now let's take a look at what we've created
--------------------------------------------
-
-We're ready to explore the simulation. Depending on your preferences you might prefer to explore with the web service or direct from python. 
+ 
+ Explore what's possible
+ -----------------------
+ 
+ Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.

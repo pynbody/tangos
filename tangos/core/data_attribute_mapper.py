@@ -8,7 +8,13 @@ import zlib
 import time
 import datetime
 import six
+import sys
+import functools
 from six.moves import cPickle as pickle
+
+pickle_loads = pickle.loads
+if sys.version[0]==3:
+    pickle_loads = functools.partial(pickle.loads, encoding='latin1')
 
 
 _THRESHOLD_FOR_COMPRESSION = 1000
@@ -141,10 +147,10 @@ class ArrayAttributeMapper(DataAttributeMapper):
     _handled_types = [list, np.ndarray]
 
     def _unpack_compressed(self, packed):
-        return pickle.loads(zlib.decompress(packed[2:]))
+        return pickle_loads(zlib.decompress(packed[2:]))
 
     def _unpack_uncompressed(self, packed):
-        return pickle.loads(packed[2:])
+        return pickle_loads(packed[2:])
 
     def _unpack_old_format(self, packed):
         return np.frombuffer(packed)

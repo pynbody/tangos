@@ -72,10 +72,14 @@ def _multiprocess_test():
 
 
 def _perform_test(use_blocking=True):
-    db.init_db("sqlite:///test_dbs/test_blocking_session.db", timeout=0.1, verbose=False)
+    if pt.backend.rank()==1:
+        db.init_db("sqlite:///test_dbs/test_blocking_session.db", timeout=0.1, verbose=False)
+        pt.barrier()
+    else:
+        pt.barrier()
+        db.init_db("sqlite:///test_dbs/test_blocking_session.db", timeout=0.1, verbose=False)
     if use_blocking:
         db.blocking.make_engine_blocking()
-    print("hello",pt.backend.rank())
     if pt.backend.rank()==1:
         _multiprocess_block()
     elif pt.backend.rank()==2:

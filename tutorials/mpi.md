@@ -53,6 +53,35 @@ To control the parallelisation, `tangos_writer` accepts a `--load-mode` argument
    The data on the individual ranks is loaded via partial loading (see `--load-mode=partial` above). 
 
 
+tangos_writer example 
+---------------------
+
+Let's consider the longest process in the tutorials which involves writing images and more to 
+the [changa+AHF](first_steps_changa+ahf.md) tutorial simulation. 
+
+Some of the underlying _pynbody_ manipulations are already parallelised. One can therefore experiment
+with different configurations but experience suggests the best option is to 
+[switch off all _pynbody_ parallelisation](https://pynbody.github.io/pynbody/tutorials/threads.html)
+(i.e. set the number of threads to 1) and allow _tangos_ complete control. This is because only some _pynbody_ routines
+are parallelised whereas _tangos_ is close to [embarassingly parallel](https://en.wikipedia.org/wiki/Embarrassingly_parallel).
+Once pynbody threading is disabled, the version of the above command that is most efficient is:
+
+ ```bash
+mpirun -np 5 dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="contamination_fraction<0.01 & NDM()>5000" --sims tutorial_changa --backend mpi4py --load-mode server
+```
+
+for a machine with 4 processors. Why did we specify `--load-mode=server`? Let's consider the possibilities:
+
+ * With the default load mode, the smoothing will be calculated across entire snapshots which is wasteful. It's an
+   N log N calculation and N is needlessly large. 
+ * With `--load-mode=partial` the calculation will fail because the density profiles ask for particles that may be
+   outside the region identified by the halo finder
+ * With `--load-mode=server-partial`, everything will be fine and relatively efficient 
+   but we will keep reading data off the disk rather than keeping it in RAM. This might be useful for large simulations, 
+   but isn't needed here.
+ * So we're left with `--load-mode=server`, which is extremely efficient because the SPH smoothing
+   lengths and densities are calculated using small particle numbers N.
+
 Memory implications: tangos_timelink
 ------------------------------------
 

@@ -46,6 +46,12 @@ mergertree_max_nhalos = 30 # maximum number of halos per step - discard the leas
 mergertree_timeout = 15.0 # seconds before abandoning the construction of a merger tree in the web interface
 
 
+# On some network file systems, concurrency using sqlite is dodgy to say the least. After committing a transaction
+# on one node, and before attempting to open a new transaction on another node, it seems empirically helpful to
+# allow a significant time delay. This variable controls that delay.
+DEFAULT_SLEEP_BEFORE_ALLOWING_NEXT_LOCK = 1.0
+# number of seconds to sleep after a lock is released before reallocating it
+
 try:
     from .config_local import *
 except:
