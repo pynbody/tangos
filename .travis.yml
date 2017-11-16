@@ -9,6 +9,7 @@ sudo: false
 env:
   - PYTHON=2.7  NUMPY_VERSION=1.9.2
   - PYTHON=2.7  NUMPY_VERSION=1.13.1
+  - PYTHON=3.5  NUMPY_VERSION=1.13.1
   - PYTHON=3.6  NUMPY_VERSION=1.13.1
 
 before_install:
