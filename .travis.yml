@@ -22,8 +22,10 @@ before_install:
 install:
   - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip sphinx pygments pandas sqlalchemy cython ipython
   - source activate ${PYTHON}_${NUMPY_VERSION}
-  - pip install git+git://github.com/pynbody/pynbody.git
   - python setup.py install
+  - python -c "import tangos" # ensure tangos can be imported without pynbody present
+  - pip install git+git://github.com/pynbody/pynbody.git
+
 
 
 script:
