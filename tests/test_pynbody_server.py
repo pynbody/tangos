@@ -134,7 +134,7 @@ def _test_underlying_class():
     f = conn.get_view(1)
     f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[1]
     f_local.physical_units()
-    npt.assert_almost_equal(f['tipsy_specific_derived_array'],f_local['tipsy_specific_derived_array'])
+    npt.assert_almost_equal(f['tipsy_specific_derived_array'],f_local['tipsy_specific_derived_array'], decimal=4)
     assert f.connection.underlying_pynbody_class is pynbody.snapshot.tipsy.TipsySnap
 
 def test_underlying_class():
