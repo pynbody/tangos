@@ -84,7 +84,7 @@ class PynbodySnapshotQueue(object):
 
     def _notify_available(self, node):
         log.logger.debug("Pynbody server: notify %d that snapshot is now available", node)
-        ConfirmLoadPynbodySnapshot().send(node)
+        ConfirmLoadPynbodySnapshot(type(self.current_snapshot)).send(node)
 
     def _load_next_if_free(self):
         if len(self.load_file_queue)==0:
@@ -253,6 +253,14 @@ class RemoteSubSnap(pynbody.snapshot.SimSnap):
         self._fam_loadable_keys = {fam: lk for fam, lk in zip(info.families, info.fam_loadable_keys)}
         self.filter_ = filter_
 
+    def _find_deriving_function(self, name):
+        cl = self.connection.underlying_pynbody_class
+        if cl in self._derived_quantity_registry \
+                and name in self._derived_quantity_registry[cl]:
+            return self._derived_quantity_registry[cl][name]
+        else:
+            return super(RemoteSubSnap, self)._find_deriving_function(name)
+
 
     def _load_array(self, array_name, fam=None):
         RequestPynbodyArray(self.filter_,array_name,fam).send(self._server_id)
@@ -288,13 +296,12 @@ class RemoteSnapshotConnection(object):
 
         log.logger.debug("Pynbody client: attempt to connect to remote snapshot %r", fname)
         RequestLoadPynbodySnapshot(fname).send(self._server_id)
-        ConfirmLoadPynbodySnapshot.receive(self._server_id)
+        self.underlying_pynbody_class = ConfirmLoadPynbodySnapshot.receive(self._server_id).contents
         self.connected = True
 
         log.logger.info("Pynbody client: connected to remote snapshot %r", fname)
 
     def get_view(self, filter_):
-        # TODO: deal with different object types (rather than just halos)
         return RemoteSubSnap(self, filter_)
 
     def disconnect(self):
