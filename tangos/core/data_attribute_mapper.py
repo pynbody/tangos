@@ -155,6 +155,7 @@ class IntAttributeMapper(ArrayDowncastingAttributeMapper):
 class ArrayAttributeMapper(DataAttributeMapper):
     _attribute_name = "data_array"
     _handled_types = [list, np.ndarray]
+    _order = 1 # must be used only when downcasting mappers have failed
 
     def _unpack_compressed(self, packed):
         return pickle_loads(zlib.decompress(packed[2:]))
