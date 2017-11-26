@@ -9,7 +9,23 @@ from six.moves import zip
 
 
 class MergerTree(object):
+    """Construct a merger tree from a given starting halo.
+
+    This is chiefly for use by the web interface, since displaying the resulting data
+    is non-trivial. However, it is also possible to use MergerTree from an interactive
+    python session as follows:
+
+     halo = tangos.get_halo(...)
+     tree = tangos.relation_finding.tree.MergerTree(halo)
+     tree.construct()
+     tree.plot()
+
+    This will display the tree information in matplotlib."""
+
     def __init__(self, base_halo):
+        """Initialise the tree starting at the specified base halo.
+
+        Note that the method construct() must be called to actually build the tree"""
         self.base_halo = base_halo
         self.highlight_halo = base_halo
         self.timeout = mergertree_timeout
@@ -17,11 +33,14 @@ class MergerTree(object):
         self.x_step = 5
 
     def construct(self):
+        """Construct the tree"""
         self._construction_start_time = time.time()
         self._treedata = self._construct_preliminary([self.base_halo])[0]
         self._postprocess()
 
     def _construct_preliminary(self, halos, depth=0):
+        """Construct a preliminary representation of the tree, which will later be revised
+        by the post-processing"""
         if len(halos) == 0:
             return []
 
@@ -84,6 +103,7 @@ class MergerTree(object):
 
 
     def _get_basic_halo_node(self, halo, depth):
+        """Get the dictionary of properties belonging to a node of the tree, i.e. a given halo"""
         timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr" % (
             halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
 
@@ -125,7 +145,8 @@ class MergerTree(object):
                   'depth': depth}
         return output
 
-    def to_matplotlib(self):
+    def plot(self):
+        """Display the tree in matplotlib"""
         import pylab as p
         ax = p.gca()
         for node in self._visit_tree():
@@ -165,6 +186,7 @@ class MergerTree(object):
 
 
     def _visit_tree(self, tree=None):
+        """Yields each tree element in turn"""
         if tree is None:
             tree = self._treedata
         yield tree
@@ -173,6 +195,7 @@ class MergerTree(object):
                 yield item
 
     def _visit_tree_layers(self):
+        """Yields each layer of the tree in turn, consisting of a list of elements at each layer"""
         layers = {}
         for leaf in self._visit_tree():
             this_depth = leaf['depth']
@@ -195,9 +218,8 @@ class MergerTree(object):
                 size = self.x_step/10
             node['size'] = size
 
-
-
     def _postprocess(self):
+        """Once all tree information is present, re-process the nodes to a more sensible layout"""
         self._postprocess_megertree_rescale()
         self._postprocess_mergertree_layout_by_branch()
 
