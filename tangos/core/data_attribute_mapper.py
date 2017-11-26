@@ -189,7 +189,7 @@ class ArrayAttributeMapper(DataAttributeMapper):
 class NullAttributeMapper(DataAttributeMapper):
     _handled_types = [type(None)]
     _attribute_name = None
-    _order = 1 # see discussion in the DataAttributeMapper
+    _order = 2 # see discussion in the DataAttributeMapper
 
     def set(self, db_object, data):
         assert data is None
