@@ -31,6 +31,14 @@ def set_data_of_unknown_type(obj, data):
 
 
 class DataAttributeMapper(object):
+    _order = 0
+    # this can be used to force a subclass to be 'found' last
+    # see __all_subclasses below, and use in NullAttributeMapper
+    #
+    # Except for a particular branch of py 3.5 it seems that __subclasses__ always
+    # returns in order that classes were defined anyway, so it is not clear why this
+    # is necessary.
+
     def __new__(cls, db_object=None, data=None):
         if db_object is None and data is None:
             subclass=NullAttributeMapper
@@ -43,7 +51,9 @@ class DataAttributeMapper(object):
 
     @classmethod
     def __all_subclasses(cls):
-        for X in cls.__subclasses__():
+        subclasses = cls.__subclasses__()
+        subclasses.sort(key = lambda x: x._order)
+        for X in subclasses:
             yield X
             for Y in X.__all_subclasses():
                 yield Y
@@ -145,6 +155,7 @@ class IntAttributeMapper(ArrayDowncastingAttributeMapper):
 class ArrayAttributeMapper(DataAttributeMapper):
     _attribute_name = "data_array"
     _handled_types = [list, np.ndarray]
+    _order = 1 # must be used only when downcasting mappers have failed
 
     def _unpack_compressed(self, packed):
         return pickle_loads(zlib.decompress(packed[2:]))
@@ -178,6 +189,7 @@ class ArrayAttributeMapper(DataAttributeMapper):
 class NullAttributeMapper(DataAttributeMapper):
     _handled_types = [type(None)]
     _attribute_name = None
+    _order = 2 # see discussion in the DataAttributeMapper
 
     def set(self, db_object, data):
         assert data is None

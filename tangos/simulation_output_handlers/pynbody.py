@@ -57,7 +57,10 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
     def _pynbody_can_load_halos_for(self, filepath):
         try:
             f = pynbody.load(filepath)
-            h = f.halos()
+            if self.quicker:
+                logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
+            else:
+                h = f.halos()
             return True
         except (IOError, RuntimeError):
             return False
@@ -242,7 +245,13 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
         timesteps = list(self.enumerate_timestep_extensions())
         if len(timesteps)>0:
             f = self.load_timestep_without_caching(timesteps[0])
-            return {'approx_resolution_kpc': self._estimate_resolution(f)}
+            if self.quicker:
+                res = self._estimate_resolution_quicker(f)
+            else:
+                res = self._estimate_resolution(f)
+
+            return {'approx_resolution_kpc': res}
+
         else:
             return {}
 
@@ -263,6 +272,14 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             frac_length = frac_mass ** (1. / 3)
             estimated_eps = 0.01 * frac_length * f.properties['boxsize'].in_units('kpc a', **f.conversion_context())
             return float(estimated_eps)
+
+    def _estimate_resolution_quicker(self, f):
+        interparticle_distance = float(f.properties['boxsize'].in_units("kpc a",**f.conversion_context()))/(float(len(f))**(1./3))
+        res = 0.01*interparticle_distance
+        logger.warn("Because 'quicker' flag is set, estimating res %.2g kpc from the file size; this could be inaccurate",
+                    res)
+        logger.warn(" -- it will certainly be wrong for e.g. zoom simulations")
+        return res
 
 
 class RamsesHOPOutputSetHandler(PynbodyOutputSetHandler):

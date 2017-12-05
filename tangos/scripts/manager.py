@@ -24,7 +24,9 @@ from six.moves import input
 def add_simulation_timesteps(options):
     handler=options.handler
     output_class = get_named_handler_class(handler).best_matching_handler(options.sim)
-    adder = SimulationAdderUpdater(output_class(options.sim))
+    output_object = output_class(options.sim)
+    output_object.quicker = options.quicker
+    adder = SimulationAdderUpdater(output_object)
     adder.min_halo_particles = options.min_particles
     adder.scan_simulation_and_add_all_descendants()
 
@@ -362,6 +364,8 @@ def main():
                               default=config.default_fileset_handler_class)
     subparse_add.add_argument("--min-particles", action="store", type=int, default=config.min_halo_particles,
                               help="The minimum number of particles a halo must have before it is imported (default %d)"%config.min_halo_particles)
+    subparse_add.add_argument("--quicker", action="store_true",
+                              help="Cut corners/make guesses to import quickly and with minimum memory usage. Only use if you understand the consequences!")
 
     subparse_add.set_defaults(func=add_simulation_timesteps)
 

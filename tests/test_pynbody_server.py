@@ -123,3 +123,19 @@ def _test_lazy_evaluation_is_local():
 def test_lazy_evaluation_is_local():
     pt.launch(_test_lazy_evaluation_is_local, 2)
 
+
+@pynbody.snapshot.tipsy.TipsySnap.derived_quantity
+def tipsy_specific_derived_array(sim):
+    """Test derived array to ensure format-specific derived arrays are available"""
+    return 1-sim['x']
+
+def _test_underlying_class():
+    conn = ps.RemoteSnapshotConnection(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")
+    f = conn.get_view(1)
+    f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[1]
+    f_local.physical_units()
+    npt.assert_almost_equal(f['tipsy_specific_derived_array'],f_local['tipsy_specific_derived_array'], decimal=4)
+    assert f.connection.underlying_pynbody_class is pynbody.snapshot.tipsy.TipsySnap
+
+def test_underlying_class():
+    pt.launch(_test_underlying_class, 2)

@@ -92,7 +92,7 @@ class MultiHopStrategy(HopStrategy):
         tt = self._manage_temp_table()
         tt.__enter__()
         try:
-            self._prepare_query()
+            self._generate_multihop_results()
         except:
             tt.__exit__(*sys.exc_info())
             raise
@@ -103,7 +103,7 @@ class MultiHopStrategy(HopStrategy):
                                                           )
         return thl
 
-    def _prepare_query(self):
+    def _generate_multihop_results(self):
         self._generate_query()
         self._seed_temp_table()
         self._filter_query_for_target(self._target)
@@ -111,7 +111,7 @@ class MultiHopStrategy(HopStrategy):
 
     def _execute_query(self):
         with self._manage_temp_table():
-            self._prepare_query()
+            self._generate_multihop_results()
             try:
                 results = self._query_ordered.all()
             except sqlalchemy.exc.ResourceClosedError:
