@@ -10,6 +10,9 @@ from . import Base
 from .halo import Tracker
 from . import creator
 from .simulation import Simulation
+from .timestep import TimeStep
+from .halo_data import HaloLink
+from .dictionary import get_or_create_dictionary_item
 from ..log import logger
 
 
@@ -70,7 +73,6 @@ class TrackData(Base):
 
     def create_objects(self, class_=Tracker, first_timestep=None):
         from . import Session
-        from tangos.core import Halo
         session = Session.object_session(self)
 
         timesteps = self.simulation.timesteps
@@ -94,6 +96,22 @@ class TrackData(Base):
                 logger.debug("This tracker is already present in %r",ts)
 
         session.commit()
+
+    def create_links(self, class_=Tracker):
+        from . import Session
+        session = Session.object_session(self)
+        all_ = session.query(class_).join(TimeStep, TimeStep.id==class_.timestep_id).\
+                                          filter((class_.halo_number == self.halo_number) &
+                                                 (TimeStep.simulation_id == self.simulation_id)).\
+                                          order_by(TimeStep.time_gyr)
+
+        connection_name = get_or_create_dictionary_item(session, 'tracker_connection')
+        for h1,h2 in zip(all_[1:],all_[:-1]):
+            l1 = HaloLink(h1,h2,connection_name)
+            l2 = HaloLink(h2,h1,connection_name)
+            session.add_all([l1,l2])
+        session.commit()
+
 
 def update_tracker_halos(sim=None):
     from tangos.core import get_default_session

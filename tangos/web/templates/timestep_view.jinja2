@@ -49,6 +49,13 @@
             {{ make_table(groups, 'group') }}
         </td>
     {% endif %}
+
+    {% if len(trackers)>0 %}
+        <td>
+            <h2>Trackers</h2>
+            {{ make_table(trackers, 'tracker') }}
+        </td>
+    {% endif %}
     </tr></table>
 
 <script language="JavaScript">

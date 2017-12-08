@@ -363,6 +363,14 @@ class Tracker(Halo):
         return handler.load_tracked_region(self.timestep.extension, self.tracker, mode=mode)
 
 
+
+TimeStep.trackers = orm.relationship(Tracker, cascade='all', lazy='dynamic',
+                                     primaryjoin=Tracker.timestep_id==TimeStep.id,
+                                     order_by=Tracker.halo_number)
+
+
+
+
 class BH(Tracker):
     __mapper_args__ = {
         'polymorphic_identity': 1

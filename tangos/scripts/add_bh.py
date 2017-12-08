@@ -10,7 +10,7 @@ import tangos.core.timestep
 import tangos.core.tracking
 import tangos.parallel_tasks as parallel_tasks
 import tangos.parallel_tasks.database
-import tangos.tracker
+import tangos.tracking
 from tangos.log import logger
 import sys
 import numpy as np
