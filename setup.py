@@ -25,6 +25,7 @@ install_requires = [
 
 tests_require = [
     'nose >= 1.3.0',
+    'webtest >= 2.0',
     'pynbody >= 0.40'
     ]
 
