@@ -6,7 +6,7 @@ from sqlalchemy import func, and_, or_
 import numpy as np
 from . import halo_from_request, timestep_from_request, simulation_from_request
 from pyramid.response import Response
-import StringIO
+from six import StringIO
 import PIL
 
 import tangos
