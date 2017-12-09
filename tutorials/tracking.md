@@ -22,7 +22,7 @@ lowT_gas = particles.gas[pynbody.filt.LowPass('temp',2e4)]
 ```
 
 Now we'll use those particles to generate a  tracker:
-```
+```python
 from tangos import tracking
 tracking.new("tutorial_changa", lowT_gas)
 ```
@@ -32,7 +32,7 @@ database objects. The `tracking.new` function returns the identifying number of 
 tracker which is unique within the simulation. Assuming this is the first tracker
 you created, the number will be 1, in which case you will find you can now get the corresponding
 objects throughout time:
-```
+```python
 particles_step_832 = tangos.get_item("tutorial_changa/%832/tracker_1").load() 
 ```
 In the example above, tangos returns the corresponding particles at step 832. However,
