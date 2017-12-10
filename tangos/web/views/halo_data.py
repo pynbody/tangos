@@ -6,7 +6,7 @@ from sqlalchemy import func, and_, or_
 import numpy as np
 from . import halo_from_request, timestep_from_request, simulation_from_request
 from pyramid.response import Response
-from six import StringIO
+from six import BytesIO
 import PIL
 
 import tangos
@@ -135,7 +135,7 @@ def finish(request, getImage=True) :
         draw_time = time.time()
         imageSize = request.canvas.get_width_height()
         imageRgb = request.canvas.tostring_rgb()
-        buffer = StringIO.StringIO()
+        buffer = BytesIO()
         pilImage = PIL.Image.frombytes("RGB",imageSize, imageRgb)
         pilImage.save(buffer, "PNG")
         end_time = time.time()
