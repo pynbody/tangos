@@ -22,6 +22,7 @@ class SimulationOutputSetHandler(object):
 
     def __init__(self, basename):
         self.basename = self.strip_slashes(basename)
+        self.quicker = False # a flag to indicate that corners may be cut in the interest of efficiency
 
     @classmethod
     def best_matching_handler(cls, basename):

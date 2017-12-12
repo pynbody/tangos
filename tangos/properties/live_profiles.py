@@ -25,8 +25,6 @@ class AtPosition(LiveHaloProperties):
         i1_weight = (pos-i0_loc)/delta_x
         i0_weight = 1.0-i1_weight
 
-        print(i0,i1,i0_weight,i1_weight)
-
         if i1>=len(ar) or i0<0:
             return None
         else:

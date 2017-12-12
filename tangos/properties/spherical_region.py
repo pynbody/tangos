@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 from . import HaloProperties
-import pynbody
 import contextlib
 
 class SphericalRegionHaloProperties(HaloProperties):
@@ -8,6 +7,7 @@ class SphericalRegionHaloProperties(HaloProperties):
     halo finder output)"""
 
     def region_specification(self, db_data):
+        import pynbody
         return pynbody.filt.Sphere(db_data['max_radius'], db_data['shrink_center'])
 
     def requires_property(self):

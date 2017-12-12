@@ -6,7 +6,7 @@ from sqlalchemy import func, and_, or_
 import numpy as np
 from . import halo_from_request, timestep_from_request, simulation_from_request
 from pyramid.response import Response
-import StringIO
+from six import BytesIO
 import PIL
 
 import tangos
@@ -135,7 +135,7 @@ def finish(request, getImage=True) :
         draw_time = time.time()
         imageSize = request.canvas.get_width_height()
         imageRgb = request.canvas.tostring_rgb()
-        buffer = StringIO.StringIO()
+        buffer = BytesIO()
         pilImage = PIL.Image.frombytes("RGB",imageSize, imageRgb)
         pilImage.save(buffer, "PNG")
         end_time = time.time()
@@ -203,7 +203,11 @@ def image_plot(request, val, property_info):
     with _matplotlib_lock:
         start(request)
 
-        width = property_info.plot_extent()
+        if property_info:
+            width = property_info.plot_extent()
+        else:
+            width = 1.0
+
         if log and len(val.shape)==2:
             data = np.log10(val)
             data[data!=data]=data[data==data].min()
@@ -217,12 +221,13 @@ def image_plot(request, val, property_info):
         else :
             p.imshow(data)
 
-        p.xlabel(property_info.plot_xlabel())
-        p.ylabel(property_info.plot_ylabel())
+        if property_info:
+            p.xlabel(property_info.plot_xlabel())
+            p.ylabel(property_info.plot_ylabel())
 
         if len(val.shape) is 2 :
             cb = p.colorbar()
-            if property_info.plot_clabel() :
+            if property_info and property_info.plot_clabel() :
                 cb.set_label(property_info.plot_clabel())
 
         return finish(request)

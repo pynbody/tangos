@@ -184,7 +184,7 @@ def test_temptable_exceptions():
     def raise_exception():
         raise TestException
 
-    strategy._prepare_query = raise_exception
+    strategy._generate_multihop_results = raise_exception
     with assert_raises(TestException):
         with strategy.temp_table() as table:
             assert False, "This point should not be reached"
