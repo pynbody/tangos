@@ -1,8 +1,8 @@
 from tangos.properties import HaloProperties, TimeChunkedProperty
 import numpy as np
 import pynbody
+from tangos.properties.centring import centred_calculation
 
-temp_cut = 1.26e6
 kb = pynbody.array.SimArray(1.380658e-16, 'erg K**-1')
 mh = pynbody.array.SimArray(1.6726219e-24, 'g')
 
@@ -23,11 +23,11 @@ def Tew(self):
 	temp = np.zeros(self.nbins)
 	for i in range(self.nbins):
 		subs = self.sim[self.binind[i]]
-		use = np.where(subs.g['temp'] > temp_cut)[0]
+		#use = np.where(subs.g['temp'] > temp_cut)[0]
 		mu = 0.58
-		tc = tcool(subs.g['rho'][use].in_units('g cm**-3'), subs.g['temp'][use], mu)
-		em = emissivity(subs.g['rho'][use].in_units('g cm**-3'), subs.g['temp'][use], mu, tc)
-		temp[i] = np.sum(em * subs.g['temp'][use]) / np.sum(em)
+		tc = tcool(subs.g['rho'].in_units('g cm**-3'), subs.g['temp'], mu)
+		em = emissivity(subs.g['rho'].in_units('g cm**-3'), subs.g['temp'], mu, tc)
+		temp[i] = np.sum(em * subs.g['temp']) / np.sum(em)
 
 	return kb.in_units('keV K**-1') * temp
 
@@ -37,8 +37,8 @@ def Tmw(self):
 	temp = np.zeros(self.nbins)
 	for i in range(self.nbins):
 		subs = self.sim[self.binind[i]]
-		use = np.where(subs.g['temp'] > temp_cut)[0]
-		temp[i] = np.sum(subs.g['mass'][use] * subs.g['temp'][use]) / np.sum(subs.g['mass'][use])
+		#use = np.where(subs.g['temp'] > temp_cut)[0]
+		temp[i] = np.sum(subs.g['mass'] * subs.g['temp']) / np.sum(subs.g['mass'])
 	return kb.in_units('keV K**-1') * temp
 
 @pynbody.analysis.profile.Profile.profile_property
@@ -46,12 +46,13 @@ def rho_e(self):
 	n_e = np.zeros(self.nbins)
 	for i in range(self.nbins):
 		subs = self.sim[self.binind[i]]
-		use = np.where(subs.g['temp'] > temp_cut)[0]
-		n_e[i] = np.sum(subs.g['ne'][use] * subs.g['mass'][use].in_units('m_p'))/self._binsize.in_units('cm**'+str(int(self.ndim)))[i]
+		#use = np.where(subs.g['temp'] > temp_cut)[0]
+		n_e[i] = np.sum(subs.g['ne'] * subs.g['mass'].in_units('m_p'))/self._binsize.in_units('cm**'+str(int(self.ndim)))[i]
 	return n_e
 
 
 class GasProfiles(HaloProperties):
+	_temp_cut = 1.26e6
 	@classmethod
 	def name(self):
 		return "Tew_profile", "Tmw_profile", "rho_e_profile"
@@ -80,15 +81,16 @@ class GasProfiles(HaloProperties):
 		return "T$_{ew}$ keV", "T$_{mw}$ keV"
 
 	def requires_property(self):
-		return ["SSC", "Rvir"]
+		return ["shrink_center", "max_radius"]
 
+	@centred_calculation
 	def calculate(self, halo, existing_properties):
-		halo['pos'] -= existing_properties['SSC']
-		halo.wrap()
+		#halo['pos'] -= existing_properties['SSC']
+		#halo.wrap()
 		delta = self.plot_xdelta()
-		nbins = int(existing_properties['Rvir']/ delta)
+		nbins = int(existing_properties['max_radius']/ delta)
 		maxrad = delta * (nbins + 1)
-		ps = pynbody.analysis.profile.Profile(halo.g, type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
+		ps = pynbody.analysis.profile.Profile(halo.g[pynbody.filt.HighPass('temp',self._temp_cut)], type='lin', ndim=3, min=0, max=maxrad, nbins=nbins)
 		Tew = ps['Tew']
 		Tmw = ps['Tmw']
 		rho_e = ps['rho_e']
