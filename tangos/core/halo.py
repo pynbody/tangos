@@ -3,6 +3,7 @@ import weakref
 
 from sqlalchemy import Column, Integer, ForeignKey, orm
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.declarative import declared_attr
 
 from . import extraction_patterns
 from . import Base
@@ -13,8 +14,7 @@ from .tracking import TrackerHaloCatalogue
 import six
 
 class Halo(Base):
-    __tablename__ = 'halos'
-
+    __tablename__= "halos"
 
     id = Column(Integer, primary_key=True)
     halo_number = Column(Integer)

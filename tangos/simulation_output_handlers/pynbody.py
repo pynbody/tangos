@@ -29,32 +29,9 @@ class DummyTimeStep(object):
 
     pass
 
-class PynbodyOutputSetHandler(SimulationOutputSetHandler):
-    patterns = [] # should be specified by child class
 
-    @classmethod
-    def best_matching_handler(cls, basename):
-        handler_names = []
-        handler_timestep_lengths = []
-        base = os.path.join(config.base, basename)
-        if len(cls.__subclasses__())==0:
-            return cls
-        for possible_handler in cls.__subclasses__():
-            timesteps_detected = finding.find(basename = base+"/", patterns = possible_handler.patterns)
-            handler_names.append(possible_handler)
-            handler_timestep_lengths.append(len(timesteps_detected))
-        return handler_names[np.argmax(handler_timestep_lengths)]
-
-
-
-    def enumerate_timestep_extensions(self):
-        base = os.path.join(config.base, self.basename)
-        extensions = finding.find(basename=base + "/", patterns=self.patterns)
-        for e in extensions:
-            if self._pynbody_can_load_halos_for(e):
-                yield e[len(base)+1:]
-
-    def _pynbody_can_load_halos_for(self, filepath):
+class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutputSetHandler):
+    def _is_able_to_load(self, filepath):
         try:
             f = pynbody.load(filepath)
             if self.quicker:
@@ -303,7 +280,7 @@ class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
         base = os.path.join(config.base, self.basename)
         extensions = finding.find(basename=base + "/", patterns=["snapshot_???"])
         for e in extensions:
-            if self._pynbody_can_load_halos_for(e):
+            if self._is_able_to_load(e):
                 yield e[len(base)+1:]
 
 
