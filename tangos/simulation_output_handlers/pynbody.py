@@ -7,13 +7,13 @@ import time
 import weakref
 import re
 import numpy as np
-import pynbody
+
+pynbody = None # deferred import; occurs when a PynbodyOutputSetHandler is constructed
 
 from . import halo_stat_files, finding
 from . import SimulationOutputSetHandler
 from .. import config
 from ..log import logger
-from ..parallel_tasks import pynbody_server as ps
 from six.moves import range
 
 
@@ -31,6 +31,14 @@ class DummyTimeStep(object):
 
 
 class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutputSetHandler):
+    def __init__(self, *args, **kwargs):
+        super(PynbodyOutputSetHandler, self).__init__(*args, **kwargs)
+
+        import pynbody as pynbody_local
+
+        global pynbody
+        pynbody = pynbody_local
+
     def _is_able_to_load(self, filepath):
         try:
             f = pynbody.load(filepath)
@@ -60,6 +68,7 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
             f.physical_units()
             return f
         elif mode=='server' or mode=='server-partial':
+            from ..parallel_tasks import pynbody_server as ps
             return ps.RemoteSnapshotConnection(self._extension_to_filename(ts_extension))
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
@@ -164,7 +173,7 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
 
 
 
-    def match_halos(self, ts1, ts2, halo_min, halo_max,
+    def match_objects(self, ts1, ts2, halo_min, halo_max,
                     dm_only=False, threshold=0.005, object_typetag='halo'):
         if dm_only:
             only_family='dm'
@@ -190,10 +199,10 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
             try:
                 h = self._construct_halo_cat(ts_extension, object_typetag)
             except:
-                logger.warn("Unable to read %ss using pynbody, skipping step", object_typetag)
+                logger.warn("Unable to read %ss using pynbody; assuming step has none", object_typetag)
                 raise StopIteration
 
-            logger.info("Reading %ss directly using pynbody", object_typetag)
+            logger.warn(" => enumerating %ss directly using pynbody", object_typetag)
 
             istart = 1
 

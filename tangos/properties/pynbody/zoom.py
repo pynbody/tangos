@@ -1,6 +1,6 @@
-from . import HaloProperties
+from . import PynbodyHaloProperties
 
-class Contamination(HaloProperties):
+class Contamination(PynbodyHaloProperties):
 
     def calculate(self, halo, exist):
         n_heavy = (halo.dm['mass'] > self.min_dm_mass).sum()
@@ -9,6 +9,4 @@ class Contamination(HaloProperties):
     def preloop(self, sim, db_timestep):
         self.min_dm_mass = sim.dm['mass'].min()
 
-    @classmethod
-    def name(self):
-        return "contamination_fraction"
+    names = "contamination_fraction"

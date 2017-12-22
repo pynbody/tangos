@@ -1,9 +1,12 @@
-from . import HaloProperties, LiveHaloProperties
+from . import PynbodyHaloProperties
+from .. import LiveHaloProperties
 import numpy as np
 import functools
 import contextlib
 
-class CentreAndRadius(HaloProperties):
+class CentreAndRadius(PynbodyHaloProperties):
+    names = "shrink_center", "max_radius"
+
     def calculate(self, halo, existing_properties):
         # this does not appear at module level because we want tangos to be importable even when pynbody is not
         # present:
@@ -31,17 +34,13 @@ class CentreAndRadius(HaloProperties):
 
         return center.view(np.ndarray), rmax
 
-    @classmethod
-    def name(cls):
-        return "shrink_center", "max_radius"
 
 class CentreAndRadiusComoving(LiveHaloProperties):
+    names = "shrink_center_comoving", "max_radius_comoving"
+
     def calculate(self, _, existing_properties):
         return existing_properties['shrink_center']
 
-    @classmethod
-    def name(cls):
-        return "shrink_center_comoving", "max_radius_comoving"
 
 
 @contextlib.contextmanager

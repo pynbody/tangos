@@ -2,25 +2,19 @@ from .spherical_region import SphericalRegionHaloProperties
 from .centring import centred_calculation
 
 class BaryonicImages(SphericalRegionHaloProperties):
-    @classmethod
-    def name(self):
-        return "gas_map_sideon", "uvi_image_sideon", "gas_map_faceon", \
-               "uvi_image_faceon", "gas_map", "uvi_image"
+    names = "gas_map_sideon", "uvi_image_sideon", "gas_map_faceon", "uvi_image_faceon", "gas_map", "uvi_image"
 
     @classmethod
     def plot_extent(cls):
         return 15.0
 
-    @classmethod
-    def plot_xlabel(cls):
+    def plot_xlabel(self):
         return "x/kpc"
 
-    @classmethod
-    def plot_ylabel(cls):
+    def plot_ylabel(self):
         return "y/kpc"
 
-    @classmethod
-    def plot_clabel(cls):
+    def plot_clabel(self):
         return r"M$_{\odot}$ kpc$^{-2}$"
 
     def requires_property(self):

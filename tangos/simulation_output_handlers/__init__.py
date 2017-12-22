@@ -39,7 +39,7 @@ class SimulationOutputSetHandler(object):
     @classmethod
     def best_matching_handler(cls, basename):
         """Find the best subclass to read in the specified folder of simulation timesteps"""
-        raise NotImplementedError
+        return cls
 
     def enumerate_timestep_extensions(self):
         """Yield the extension of each timestep available on disk"""
@@ -47,11 +47,11 @@ class SimulationOutputSetHandler(object):
 
     def get_properties(self):
         """Returns a dictionary of properties of the simulation"""
-        raise NotImplementedError
+        return {}
 
     def get_timestep_properties(self, ts_extension):
         """Returns a dictionary of properties of the timestep"""
-        raise NotImplementedError
+        return {}
 
     def enumerate_objects(self, ts_extension, object_typetag='halo'):
         """Yield halo_number, NDM, NStar, Ngas for halos in the specified timestep"""
@@ -138,9 +138,11 @@ class SimulationOutputSetHandler(object):
     @classmethod
     def handler_class_name(cls):
         module = cls.__module__
-        assert module.startswith(SimulationOutputSetHandler.__module__)
-        submodule = module[len(SimulationOutputSetHandler.__module__)+1:]
-        return submodule+"."+cls.__name__
+        if module.startswith(SimulationOutputSetHandler.__module__):
+            submodule = module[len(SimulationOutputSetHandler.__module__)+1:]
+            return submodule+"."+cls.__name__
+        else:
+            return module+"."+cls.__name__
 
     @staticmethod
     def strip_slashes(name):
@@ -166,6 +168,9 @@ def get_named_handler_class(handler):
     The name is of the format submodule.ClassName
 
     :rtype SimulationOutputSetHandler"""
-    output_module = importlib.import_module('.'+handler.split('.')[0],__name__)
+    try:
+        output_module = importlib.import_module('.'+handler.split('.')[0],__name__)
+    except ImportError:
+        output_module = importlib.import_module(handler.split('.')[0])
     output_class = getattr(output_module, handler.split('.')[1])
     return output_class

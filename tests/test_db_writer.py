@@ -12,9 +12,7 @@ def setup():
     parallel_tasks.use('null')
 
 class DummyProperty(properties.HaloProperties):
-    @classmethod
-    def name(self):
-        return "dummy_property",
+    names = "dummy_property",
 
     def requires_property(self):
         return []
@@ -24,9 +22,7 @@ class DummyProperty(properties.HaloProperties):
 
 
 class DummyPropertyCausingException(properties.HaloProperties):
-    @classmethod
-    def name(self):
-        return "dummy_property_with_exception",
+    names = "dummy_property_with_exception",
 
     def calculate(self, data, entry):
         raise RuntimeError("Test of exception handling")
@@ -81,9 +77,7 @@ def test_error_ignoring():
 
 
 class DummyRegionProperty(properties.HaloProperties):
-    @classmethod
-    def name(cls):
-        return "dummy_region_property",
+    names = "dummy_region_property",
 
     def requires_property(self):
         return "dummy_property",

@@ -44,7 +44,7 @@ tangos_import_from_ahf Mvir Rvir --sims tutorial_changa
 The process should take less than a minute on a standard modern computer, during which you'll see a bunch of log messages scroll up the screen.
 
 The example command line lists two properties, `Mvir` and `Rvir` to import from the stat files. The added directive 
-`--sims pioneer50h128.1536gst1.bwK1` specifies which simulation you want to apply this operation to. It's not strictly
+`--sims tutorial_changa` specifies which simulation you want to apply this operation to. It's not strictly
 necessary to add this if you only have one simulation in your database.
 
 Generate the merger trees

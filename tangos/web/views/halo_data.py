@@ -1,20 +1,17 @@
 from __future__ import absolute_import
 from __future__ import print_function
+import matplotlib
+matplotlib.use('agg')
+import pylab as p
 from pyramid.view import view_config
 from pyramid.compat import escape
-from sqlalchemy import func, and_, or_
 import numpy as np
 from . import halo_from_request, timestep_from_request, simulation_from_request
 from pyramid.response import Response
 from six import BytesIO
-import PIL
-
-import tangos
-import matplotlib
-matplotlib.use('agg')
-import pylab as p
+from ...log import logger
+from ... import core
 import threading
-from tangos import core
 import time
 
 _matplotlib_lock = threading.RLock()
@@ -133,13 +130,10 @@ def finish(request, getImage=True) :
         enter_finish_time = time.time()
         request.canvas.draw()
         draw_time = time.time()
-        imageSize = request.canvas.get_width_height()
-        imageRgb = request.canvas.tostring_rgb()
         buffer = BytesIO()
-        pilImage = PIL.Image.frombytes("RGB",imageSize, imageRgb)
-        pilImage.save(buffer, "PNG")
+        p.savefig(buffer, format='png')
         end_time = time.time()
-        print("Image rendering: matplotlib %.2fs; PNG conversion %.3fs"%(draw_time-enter_finish_time, end_time-draw_time))
+        logger.info("Image rendering: matplotlib %.2fs; PNG conversion %.3fs",draw_time-enter_finish_time, end_time-draw_time)
 
     p.close()
 

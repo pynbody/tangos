@@ -1,10 +1,11 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import tangos.parallel_tasks.pynbody_server as ps
+import pynbody
 import tangos.parallel_tasks as pt
 import tangos
 import numpy.testing as npt
-import pynbody
+
 import sys
 import os
 from six.moves import zip

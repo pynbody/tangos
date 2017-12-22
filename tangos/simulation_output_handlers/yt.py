@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-import yt
+yt = None # deferred import; occurs when a YtOutputSetHandler is constructed
 
 from . import finding
 from . import SimulationOutputSetHandler
@@ -9,6 +9,12 @@ from ..log import logger
 from six.moves import range
 
 class YtOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutputSetHandler):
+    def __init__(self, *args, **kwargs):
+        super(YtOutputSetHandler, self).__init__(*args, **kwargs)
+        global yt
+        import yt as yt_local
+        yt = yt_local
+
     def get_timestep_properties(self, ts_extension):
         ts_filename =  self._extension_to_filename(ts_extension)
         f = yt.load(ts_filename)
@@ -36,7 +42,7 @@ class YtOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutputSetH
     def load_tracked_region(self, ts_extension, track_data, mode=None):
         raise NotImplementedError("Tracked regions not implemented for yt")
 
-    def match_halos(self, ts1, ts2, halo_min, halo_max, dm_only=False, threshold=0.005, object_typetag='halo'):
+    def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=False, threshold=0.005, object_typetag='halo'):
         raise NotImplementedError("Matching halos still needs to be implemented for yt")
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
@@ -46,6 +52,9 @@ class YtOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutputSetH
             for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
                 yield X
         else:
+            logger.warn("No halo statistics file found for timestep %r", ts_extension)
+            logger.warn(" => enumerating %ss directly using yt", object_typetag)
+
             catalogue, catalogue_data = self._load_halo_cat(ts_extension, object_typetag)
             num_objects = len(catalogue_data["halos", "virial_radius"])
 

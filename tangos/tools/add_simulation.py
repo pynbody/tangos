@@ -76,22 +76,37 @@ class SimulationAdderUpdater(object):
 
         self.session.commit()
 
+    @staticmethod
+    def _autoadd_zeros(enumerate_fn):
+        # enable enumerate functions to just return halo numbers, adding on the number of dark matter, star and
+        # gas particles for backwards compatibility
+        def adapted(*args, **kwargs):
+            for result in enumerate_fn(*args, **kwargs):
+                if not hasattr(result, "__len__"):
+                    yield result, 0, 0, 0
+                else:
+                    yield result
+        return adapted
+
     def add_objects_to_timestep(self, ts, create_class=core.halo.Halo):
         halos = []
         n_tot = []
-        enumerator = self.simulation_output.enumerate_objects
+        enumerator = self._autoadd_zeros(self.simulation_output.enumerate_objects)
 
         for finder_id, NDM, Nstar, Ngas in enumerator(ts.extension, object_typetag=create_class.tag,
                                                       min_halo_particles=self.min_halo_particles):
             n_tot.append(NDM+Nstar+Ngas)
+
         database_id = np.zeros(len(n_tot), dtype=int)
-        database_id[np.argsort(np.array(n_tot))[::-1]] = np.arange(len(n_tot)) + 1
+
+        # Sort by total particle number, largest objects first. Use mergesort for sort stability.
+        database_id[np.argsort(-np.array(n_tot),kind='mergesort')] = np.arange(len(n_tot)) + 1
 
 
         for database_number,(finder_id, NDM, Nstar, Ngas) in zip(database_id,
                                                                  enumerator(ts.extension, object_typetag=create_class.tag,
                                                                             min_halo_particles=self.min_halo_particles)):
-            if NDM > self.min_halo_particles:
+            if NDM > self.min_halo_particles or NDM==0:
                 h = create_class(ts, database_number, finder_id, NDM, Nstar, Ngas)
                 halos.append(h)
 

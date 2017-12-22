@@ -1,4 +1,4 @@
-from . import LiveHaloProperties
+from .. import LiveHaloProperties
 import numpy as np
 
 class BHGal(LiveHaloProperties):
@@ -8,9 +8,7 @@ class BHGal(LiveHaloProperties):
         self._choicep = choose
         self._bhtype = bhtype
 
-    @classmethod
-    def name(cls):
-        return 'bh'
+    names = 'bh'
 
     def requires_property(self):
         return self._bhtype, self._bhtype+"."+self._choicep
@@ -38,9 +36,7 @@ class BHGal(LiveHaloProperties):
             return halo[self._bhtype]
 
 class BHCentral(BHGal):
+    names = 'bhcenter'
+
     def __init__(self, simulation=None):
         super(BHCentral, self).__init__(simulation, 'BH_central_distance', 'min', 'BH_central')
-
-    @classmethod
-    def name(cls):
-        return 'bhcenter'
