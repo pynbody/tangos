@@ -10,7 +10,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  color:#222;
+  color: #bb4400;
   margin:0 0 20px;
 }
 
@@ -26,21 +26,17 @@ h1 {
   font-size:28px;
 }
 
-h2 {
-  color:#393939;
-}
-
 h3, h4, h5, h6 {
   color:#494949;
 }
 
 a {
-  color:#267CB9;
+  color: #bb4400;
   text-decoration:none;
 }
 
 a:hover, a:focus {
-  color:#069;
+  color: #d74c00;
   font-weight: bold;
 }
 
@@ -56,7 +52,7 @@ a:hover small {
 }
 
 .wrapper {
-  width:860px;
+  width:980px;
   margin:0 auto;
 }
 
@@ -106,7 +102,7 @@ img {
 }
 
 header {
-  width:270px;
+  width:220px;
   float:left;
   position:fixed;
   -webkit-font-smoothing:subpixel-antialiased;
@@ -120,7 +116,7 @@ strong {
 }
 
 section {
-  width:500px;
+  width:700px;
   float:right;
   padding-bottom:50px;
 }
@@ -144,7 +140,7 @@ footer {
   -webkit-font-smoothing:subpixel-antialiased;
 }
 
-@media print, screen and (max-width: 960px) {
+@media print, screen and (max-width: 1000px) {
 
   div.wrapper {
     width:auto;
