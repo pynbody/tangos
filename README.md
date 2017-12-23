@@ -3,15 +3,17 @@ TANGOS - The Amazing Numerical Galaxy Organisation System
 
 [![Build Status](https://travis-ci.org/pynbody/tangos.svg?branch=master)](https://travis-ci.org/pynbody/tangos)
 
-This repository contains the complete code for _tangos_, a system for building and querying databases summarising the
-results of cosmological simulations. _Tangos_:
+_Tangos_ is a system for building and querying databases summarising the
+results of cosmological simulations. 
+
+_Tangos_:
 
  - is written for python 2.7 and 3.5 or later;
- - can be customised to work with multiple python modules such as pynbody or yt to process raw simulation data;
- - uses sqlalchemy to store the resulting data and therefore can connect to many different flavours of database;
  - provides a web interface to the data;
- - allows users to construct efficient, science-focussed queries from python without typing a line of SQL.
- 
+ - allows users to construct efficient, science-focussed queries from python without typing a line of SQL;
+ - can be customised to work with multiple python modules such as pynbody or yt to process raw simulation data;
+ - uses sqlalchemy to store the resulting data and therefore can connect to many different flavours of database.
+
  
 Before you start
 ----------------
