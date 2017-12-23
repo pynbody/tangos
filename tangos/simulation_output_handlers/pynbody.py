@@ -7,13 +7,13 @@ import time
 import weakref
 import re
 import numpy as np
-import pynbody
+
+pynbody = None # deferred import; occurs when a PynbodyOutputSetHandler is constructed
 
 from . import halo_stat_files, finding
 from . import SimulationOutputSetHandler
 from .. import config
 from ..log import logger
-from ..parallel_tasks import pynbody_server as ps
 from six.moves import range
 
 
@@ -29,32 +29,21 @@ class DummyTimeStep(object):
 
     pass
 
-class PynbodyOutputSetHandler(SimulationOutputSetHandler):
-    patterns = [] # should be specified by child class
 
-    @classmethod
-    def best_matching_handler(cls, basename):
-        handler_names = []
-        handler_timestep_lengths = []
-        base = os.path.join(config.base, basename)
-        if len(cls.__subclasses__())==0:
-            return cls
-        for possible_handler in cls.__subclasses__():
-            timesteps_detected = finding.find(basename = base+"/", patterns = possible_handler.patterns)
-            handler_names.append(possible_handler)
-            handler_timestep_lengths.append(len(timesteps_detected))
-        return handler_names[np.argmax(handler_timestep_lengths)]
+class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutputSetHandler):
+    def __init__(self, *args, **kwargs):
+        super(PynbodyOutputSetHandler, self).__init__(*args, **kwargs)
 
+        import pynbody as pynbody_local
 
+        global pynbody
+        pynbody = pynbody_local
 
-    def enumerate_timestep_extensions(self):
-        base = os.path.join(config.base, self.basename)
-        extensions = finding.find(basename=base + "/", patterns=self.patterns)
-        for e in extensions:
-            if self._pynbody_can_load_halos_for(e):
-                yield e[len(base)+1:]
+        # old versions of pynbody have no __version__!
+        pynbody_version = getattr(pynbody, "__version__","0.00")
+        assert pynbody_version>="0.42", "Tangos requires pynbody 0.42 or later"
 
-    def _pynbody_can_load_halos_for(self, filepath):
+    def _is_able_to_load(self, filepath):
         try:
             f = pynbody.load(filepath)
             if self.quicker:
@@ -83,6 +72,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
             f.physical_units()
             return f
         elif mode=='server' or mode=='server-partial':
+            from ..parallel_tasks import pynbody_server as ps
             return ps.RemoteSnapshotConnection(self._extension_to_filename(ts_extension))
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
@@ -187,7 +177,7 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
 
 
 
-    def match_halos(self, ts1, ts2, halo_min, halo_max,
+    def match_objects(self, ts1, ts2, halo_min, halo_max,
                     dm_only=False, threshold=0.005, object_typetag='halo'):
         if dm_only:
             only_family='dm'
@@ -204,25 +194,19 @@ class PynbodyOutputSetHandler(SimulationOutputSetHandler):
                                                  only_family=only_family, groups_1=h1, groups_2=h2)
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
-        ts = DummyTimeStep(self._extension_to_filename(ts_extension))
-        ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
-        try:
-            statfile = halo_stat_files.HaloStatFile(ts)
-            if object_typetag != "halo":
-                raise StopIteration
-            logger.info("Reading halos for timestep %r using a stat file",ts)
-            for X in statfile.iter_rows("n_dm", "n_star", "n_gas"):
+        if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
+            for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
                 yield X
-        except IOError:
-            logger.warn("No halo statistics file found for timestep %r",ts)
+        else:
+            logger.warn("No halo statistics file found for timestep %r",ts_extension)
 
             try:
                 h = self._construct_halo_cat(ts_extension, object_typetag)
             except:
-                logger.warn("Unable to read %ss using pynbody, skipping step", object_typetag)
+                logger.warn("Unable to read %ss using pynbody; assuming step has none", object_typetag)
                 raise StopIteration
 
-            logger.info("Reading %ss directly using pynbody", object_typetag)
+            logger.warn(" => enumerating %ss directly using pynbody", object_typetag)
 
             istart = 1
 
@@ -303,7 +287,7 @@ class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
         base = os.path.join(config.base, self.basename)
         extensions = finding.find(basename=base + "/", patterns=["snapshot_???"])
         for e in extensions:
-            if self._pynbody_can_load_halos_for(e):
+            if self._is_able_to_load(e):
                 yield e[len(base)+1:]
 
 

@@ -157,6 +157,14 @@ class AHFStatFile(HaloStatFile):
     def filename(cls, timestep):
         import glob
         file_list = glob.glob(timestep.filename+'.z*.???.AHF_halos')
+
+        # permit the AHF halos to be in a subfolder called "halos", for yt purposes
+        # (where the yt tipsy reader can't cope with the AHF files being in the same folder)
+        parts = timestep.filename.split("/")
+        parts_with_halo = parts[:-1]+["halos"]+parts[-1:]
+        filename_with_halo = "/".join(parts_with_halo)
+        file_list+=glob.glob(filename_with_halo+'.z*.???.AHF_halos')
+
         if len(file_list)==0:
             return "CannotFindAHFHaloFilename"
         else:

@@ -3,6 +3,7 @@ import weakref
 
 from sqlalchemy import Column, Integer, ForeignKey, orm
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.declarative import declared_attr
 
 from . import extraction_patterns
 from . import Base
@@ -13,8 +14,7 @@ from .tracking import TrackerHaloCatalogue
 import six
 
 class Halo(Base):
-    __tablename__ = 'halos'
-
+    __tablename__= "halos"
 
     id = Column(Integer, primary_key=True)
     halo_number = Column(Integer)
@@ -95,6 +95,12 @@ class Halo(Base):
     def path(self):
         return self.timestep.path+"/"+self.basename
 
+    @property
+    def handler(self):
+        if not hasattr(self, "_handler"):
+            self._handler = self.timestep.simulation.get_output_handler()
+        return self._handler
+
 
     def load(self, mode=None):
         """Use pynbody to load the data for this halo, if it is present on this computer's filesystem.
@@ -102,8 +108,7 @@ class Halo(Base):
         By default, the entire simulation is loaded and a subview with this halo is returned. If mode='partial',
         pynbody's partial loading system is used to only load the data for the one halo, saving memory."""
 
-        handler = self.timestep.simulation.get_output_set_handler()
-        return handler.load_object(self.timestep.extension, self.finder_id, object_typetag=self.tag, mode=mode)
+        return self.handler.load_object(self.timestep.extension, self.finder_id, object_typetag=self.tag, mode=mode)
 
     def calculate(self, name, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.
@@ -356,7 +361,7 @@ class BH(Halo):
 
 
     def load(self, mode=None):
-        handler = self.timestep.simulation.get_output_set_handler()
+        handler = self.timestep.simulation.get_output_handler()
         return handler.load_tracked_region(self.timestep.extension, self.tracker, mode=mode)
 
 

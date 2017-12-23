@@ -5,9 +5,7 @@ from .centring import centred_calculation
 class HaloDensityProfile(SphericalRegionHaloProperties):
     # include
 
-    @classmethod
-    def name(cls):
-        return "dm_density_profile", "dm_mass_profile"
+    names = "dm_density_profile", "dm_mass_profile"
 
     def plot_x0(self):
         return self.plot_xdelta()/2
@@ -15,12 +13,10 @@ class HaloDensityProfile(SphericalRegionHaloProperties):
     def plot_xdelta(self):
         return self._simulation.get("approx_resolution_kpc", 0.1)
 
-    @classmethod
-    def plot_xlabel(cls):
+    def plot_xlabel(self):
         return "r/kpc"
 
-    @staticmethod
-    def plot_ylabel():
+    def plot_ylabel(self):
         return r"$\rho/M_{\odot}\,kpc^{-3}$", r"$M/M_{\odot}$"
 
     def _get_profile(self, halo, maxrad):
@@ -50,12 +46,10 @@ class HaloDensityProfile(SphericalRegionHaloProperties):
 
 
 class BaryonicHaloDensityProfile(HaloDensityProfile):
+    names = "gas_density_profile", "gas_mass_profile", "star_density_profile", "star_mass_profile"
+
     @centred_calculation
     def calculate(self, data, existing_properties):
         gas_a, gas_b = self._get_profile(data.gas, existing_properties["max_radius"])
         star_a, star_b = self._get_profile(data.star, existing_properties["max_radius"])
         return gas_a, gas_b, star_a, star_b
-
-    @classmethod
-    def name(cls):
-        return "gas_density_profile", "gas_mass_profile", "star_density_profile", "star_mass_profile"

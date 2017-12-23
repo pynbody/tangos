@@ -8,8 +8,20 @@ overriding the functionality.
 from __future__ import absolute_import
 import os, os.path
 from .. import config
+from ..log import logger
 import importlib
 import weakref
+
+class DummyTimeStep(object):
+    def __init__(self, filename):
+        self.filename = filename
+
+
+    def __repr__(self):
+        return self.filename
+
+    pass
+
 
 _loaded_timesteps = {}
 
@@ -27,7 +39,7 @@ class SimulationOutputSetHandler(object):
     @classmethod
     def best_matching_handler(cls, basename):
         """Find the best subclass to read in the specified folder of simulation timesteps"""
-        raise NotImplementedError
+        return cls
 
     def enumerate_timestep_extensions(self):
         """Yield the extension of each timestep available on disk"""
@@ -35,15 +47,44 @@ class SimulationOutputSetHandler(object):
 
     def get_properties(self):
         """Returns a dictionary of properties of the simulation"""
-        raise NotImplementedError
+        return {}
 
     def get_timestep_properties(self, ts_extension):
         """Returns a dictionary of properties of the timestep"""
-        raise NotImplementedError
+        return {}
 
     def enumerate_objects(self, ts_extension, object_typetag='halo'):
         """Yield halo_number, NDM, NStar, Ngas for halos in the specified timestep"""
         raise NotImplementedError
+
+    def _enumerate_objects_from_statfile(self, ts_extension, object_typetag):
+        """Implementation of enumerate_objects when the information is provided by a file readable
+        by the halo_stat_files module.
+
+        Call from subclasses when this behaviour is desired"""
+        from . import halo_stat_files
+        assert object_typetag=='halo'
+        ts = DummyTimeStep(self._extension_to_filename(ts_extension))
+        ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
+
+        statfile = halo_stat_files.HaloStatFile(ts)
+        logger.info("Reading halos for timestep %r using a stat file", ts)
+        for X in statfile.iter_rows("n_dm", "n_star", "n_gas"):
+            yield X
+
+    def _can_enumerate_objects_from_statfile(self, ts_extension, object_typetag):
+        """Returns True if the objects can be enumerated from a stat file"""
+        from . import halo_stat_files
+        ts = DummyTimeStep(self._extension_to_filename(ts_extension))
+        ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
+        if object_typetag!='halo':
+            return False
+
+        try:
+            halo_stat_files.HaloStatFile(ts)
+            return True
+        except IOError:
+            return False
 
     def load_timestep(self, ts_extension, mode=None):
         """Returns an object that connects to the data for a timestep on disk -- possibly a version cached in
@@ -97,9 +138,11 @@ class SimulationOutputSetHandler(object):
     @classmethod
     def handler_class_name(cls):
         module = cls.__module__
-        assert module.startswith(SimulationOutputSetHandler.__module__)
-        submodule = module[len(SimulationOutputSetHandler.__module__)+1:]
-        return submodule+"."+cls.__name__
+        if module.startswith(SimulationOutputSetHandler.__module__):
+            submodule = module[len(SimulationOutputSetHandler.__module__)+1:]
+            return submodule+"."+cls.__name__
+        else:
+            return module+"."+cls.__name__
 
     @staticmethod
     def strip_slashes(name):
@@ -125,6 +168,9 @@ def get_named_handler_class(handler):
     The name is of the format submodule.ClassName
 
     :rtype SimulationOutputSetHandler"""
-    output_module = importlib.import_module('.'+handler.split('.')[0],__name__)
+    try:
+        output_module = importlib.import_module('.'+handler.split('.')[0],__name__)
+    except ImportError:
+        output_module = importlib.import_module(handler.split('.')[0])
     output_class = getattr(output_module, handler.split('.')[1])
     return output_class

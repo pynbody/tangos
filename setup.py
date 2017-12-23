@@ -18,7 +18,7 @@ install_requires = [
     'pyramid_debugtoolbar',
     'pyramid_jinja2',
     'pyramid_tm','pyramid_retry',
-    'zope.sqlalchemy','pillow',
+    'zope.sqlalchemy',
     'hupper',
     'six',
     ]
@@ -26,7 +26,8 @@ install_requires = [
 tests_require = [
     'nose >= 1.3.0',
     'webtest >= 2.0',
-    'pynbody >= 0.40'
+    'pynbody >= 0.42',
+    'yt>=3.4.0'
     ]
 
 from setuptools import setup, find_packages

@@ -45,9 +45,7 @@ def setup():
 
 
 class DummyProperty1(properties.HaloProperties):
-    @classmethod
-    def name(self):
-        return "dummy_property_1"
+    names = "dummy_property_1"
 
     def plot_x0(self):
         return 0.0
@@ -56,9 +54,7 @@ class DummyProperty1(properties.HaloProperties):
         return 0.1
 
 class DummyProperty2(properties.HaloProperties):
-    @classmethod
-    def name(self):
-        return "dummy_property_2"
+    names = "dummy_property_2"
 
     def plot_x0(self):
         return 0.0
@@ -67,17 +63,13 @@ class DummyProperty2(properties.HaloProperties):
         return 0.2
 
 class DummyPropertyArray(properties.LiveHaloProperties):
-    @classmethod
-    def name(cls):
-        return "dummy_property_array"
+    names = "dummy_property_array"
 
     def live_calculate(self, db_halo_entry, *input_values):
         return np.array([1,2,3])
 
 class DummyPropertyWithReassemblyOptions(properties.HaloProperties):
-    @classmethod
-    def name(self):
-        return "dummy_property_with_reassembly"
+    names = "dummy_property_with_reassembly"
 
     @classmethod
     def reassemble(cls, property, test_option=25):
@@ -87,9 +79,7 @@ class DummyPropertyWithReassemblyOptions(properties.HaloProperties):
             return test_option
 
 class LivePropertyRequiringRedirectedProperty(properties.LiveHaloProperties):
-    @classmethod
-    def name(cls):
-        return "first_BHs_BH_mass"
+    names = "first_BHs_BH_mass"
 
     def requires_property(self):
         return "BH.BH_mass",

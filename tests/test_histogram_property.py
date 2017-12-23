@@ -37,9 +37,7 @@ def _setup_dummy_histogram_data(ts1, ts2):
 
 
 class DummyHistogramProperty(properties.TimeChunkedProperty):
-    @classmethod
-    def name(self):
-        return "dummy_histogram"
+    names = "dummy_histogram"
 
 
 def test_default_reconstruction():

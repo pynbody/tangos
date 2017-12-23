@@ -1,8 +1,7 @@
 from __future__ import absolute_import
-from . import HaloProperties
-import contextlib
+from . import PynbodyHaloProperties
 
-class SphericalRegionHaloProperties(HaloProperties):
+class SphericalRegionHaloProperties(PynbodyHaloProperties):
     """A base class for calculations which require all data within a sphere (rather than just the literal
     halo finder output)"""
 

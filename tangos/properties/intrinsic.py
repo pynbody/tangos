@@ -2,10 +2,7 @@ from __future__ import absolute_import
 from . import LiveHaloProperties
 
 class IntrinsicProperties(LiveHaloProperties):
-    @classmethod
-    def name(cls):
-        return "t","z","a","dbid", "halo_number", "NDM", "NStar", "NGas", "type", "step_path"
-
+    names = "t","z","a","dbid", "halo_number", "NDM", "NStar", "NGas", "type", "step_path"
 
     def live_calculate(self, halo):
         ts = halo.timestep
