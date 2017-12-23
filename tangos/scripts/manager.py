@@ -254,7 +254,7 @@ def add_tracker(halo, size=None):
         ts_trigger = None
 
     core.get_default_session().add(tx)
-    tx.create_halos(ts_trigger)
+    tx.create_objects(first_timestep=ts_trigger)
     if halo is not None:
         targ = halo.timestep.halos.filter_by(
             object_typecode=1, halo_number=tx.halo_number).first()

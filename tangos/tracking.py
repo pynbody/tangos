@@ -2,7 +2,9 @@ from __future__ import absolute_import
 from __future__ import print_function
 from sqlalchemy.orm import Session
 import numpy as np
-from .core import get_or_create_dictionary_item, Halo, HaloLink
+from .core import get_or_create_dictionary_item, Halo, HaloLink, TrackData
+from . import query
+import six
 import tangos.parallel_tasks as parallel_tasks
 from six.moves import zip
 
@@ -59,3 +61,16 @@ def generate_tracker_halo_links(sim, session):
                 links.append(HaloLink(halos_2[jj],halos_1[ii],dict_obj,1.0))
     session.add_all(links)
     session.commit()
+
+def new(for_simulation, using_particles):
+    if isinstance(for_simulation, six.string_types):
+        for_simulation = query.get_simulation(for_simulation)
+    tracker = TrackData(for_simulation)
+    use_iord = 'iord' in using_particles.loadable_keys()
+    tracker.select(using_particles, use_iord)
+    session = Session.object_session(for_simulation)
+    session.add(tracker)
+    tracker.create_objects()
+    tracker.create_links()
+    session.commit()
+    return tracker.halo_number

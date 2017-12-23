@@ -18,16 +18,13 @@ def timestep_view(request):
 
     halos = ts.halos.all()
     groups = ts.groups.all()
+    trackers = ts.trackers.all()
 
     add_urls(halos, request, sim, ts)
     add_urls(groups, request, sim, ts)
+    add_urls(trackers, request, sim, ts)
 
-
-    for h in groups:
-        h.url = request.route_url('halo_view', simid=sim.basename, timestepid=ts.extension,
-                                  halonumber=h.basename)
-
-    return {'timestep': ts.extension, 'halos': halos, 'groups': groups,
+    return {'timestep': ts.extension, 'halos': halos, 'groups': groups, 'trackers': trackers,
             'gather_url': request.route_url('calculate_all',simid=request.matchdict['simid'],
                                             timestepid=request.matchdict['timestepid'],
                                             nameid="")[:-5]}

@@ -10,7 +10,6 @@ from . import Base
 from . import creator
 from .dictionary import get_dict_id, get_or_create_dictionary_item
 from .timestep import TimeStep
-from .tracking import TrackerHaloCatalogue
 import six
 
 class Halo(Base):
@@ -39,12 +38,19 @@ class Halo(Base):
         'polymorphic_on':object_typecode
     }
 
+    @classmethod
+    def _all_subclasses(cls):
+        for c in cls.__subclasses__():
+            yield c
+            for c_sub in c._all_subclasses():
+                yield c_sub
+
     @staticmethod
     def class_from_tag(match_tag):
         match_tag = match_tag.lower()
         if match_tag == Halo.tag.lower():
             return Halo
-        for c in Halo.__subclasses__():
+        for c in Halo._all_subclasses():
             if match_tag == c.tag.lower():
                 return c
         raise ValueError("Unknown object type %r"%match_tag)
@@ -61,7 +67,7 @@ class Halo(Base):
         if typecode==0:
             return Halo.tag
         else:
-            for c in Halo.__subclasses__():
+            for c in Halo._all_subclasses():
                 if c.__mapper_args__['polymorphic_identity'] == typecode:
                     return c.tag
         raise ValueError("Unknown object typecode %d",typecode)
@@ -239,13 +245,6 @@ class Halo(Base):
         return item in list(self.keys())
 
     @property
-    def tracker(self):
-        if self.object_typecode != 1:
-            return None
-        else:
-            return self.timestep.simulation.trackers.filter_by(halo_number=self.halo_number).first()
-
-    @property
     def earliest(self):
         if self.previous is not None:
             return self.previous.earliest
@@ -349,22 +348,40 @@ TimeStep.halos = orm.relationship(Halo, cascade='all', lazy='dynamic',
                                   foreign_keys=Halo.timestep_id,
                                   order_by=Halo.halo_number)
 
-class BH(Halo):
+class Tracker(Halo):
     __mapper_args__ = {
-        'polymorphic_identity':1
+        'polymorphic_identity':3
     }
 
-    tag = "BH"
+    tag = "tracker"
 
     def __init__(self, timestep, halo_number):
-        super(BH, self).__init__(timestep, halo_number, halo_number, 0,0,0,1)
+        super(Tracker, self).__init__(timestep, halo_number, halo_number, 0,0,0,
+                                 self.__mapper_args__['polymorphic_identity'])
 
+    @property
+    def tracker(self):
+        return self.timestep.simulation.trackers.filter_by(halo_number=self.halo_number).first()
 
     def load(self, mode=None):
         handler = self.timestep.simulation.get_output_handler()
         return handler.load_tracked_region(self.timestep.extension, self.tracker, mode=mode)
 
 
+
+TimeStep.trackers = orm.relationship(Tracker, cascade='all', lazy='dynamic',
+                                     primaryjoin=Tracker.timestep_id==TimeStep.id,
+                                     order_by=Tracker.halo_number)
+
+
+
+
+class BH(Tracker):
+    __mapper_args__ = {
+        'polymorphic_identity': 1
+    }
+
+    tag = "BH"
 
 TimeStep.bhs = orm.relationship(BH, cascade='all', lazy='dynamic', primaryjoin=BH.timestep_id==TimeStep.id)
 
@@ -385,4 +402,3 @@ TimeStep.groups = orm.relationship(Group, cascade='all', lazy='dynamic', primary
                                    order_by=Group.halo_number)
 
 
-_loaded_halocats = {}
