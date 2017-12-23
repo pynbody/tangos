@@ -13,6 +13,7 @@ def setup():
 
 class DummyProperty(properties.HaloProperties):
     names = "dummy_property",
+    requires_particle_data = True
 
     def requires_property(self):
         return []
@@ -23,6 +24,7 @@ class DummyProperty(properties.HaloProperties):
 
 class DummyPropertyCausingException(properties.HaloProperties):
     names = "dummy_property_with_exception",
+    requires_particle_data = True
 
     def calculate(self, data, entry):
         raise RuntimeError("Test of exception handling")

@@ -19,19 +19,18 @@ way to calculate the property and, possibly, provides some ancillary information
 A minimal example
 -----------------
 
-The simplest possible example consists of a single class which defines two custom methods, 
-`calculate` and `name`. Create a new python file and name it `mytangosproperty.py` with the following contents:
+The simplest possible example consists of a single class which defines a custom method,
+`calculate`, and a class static member `names`. 
+Create a new python file and name it `mytangosproperty.py` with the following contents:
 
 ```python
 from tangos.properties import HaloProperties
 
 class ExampleHaloProperty(HaloProperties):
+    names = "myproperty"
+    
     def calculate(self, particle_data, existing_properties):
         return 42.0
-
-    @classmethod
-    def name(cls):
-        return "myproperty"
 ```
 
 This corresponds to a property in the database with the name `myproperty` which is always `42.0` for every halo.
@@ -49,7 +48,7 @@ in a property name you can write `myproperty()` and `42.0` will be returned. Or,
 the following:
 
 ```python
-halo = tangos.get_halo(1) # get the first halo in the database
+halo = tangos.get_halo("tutorial_changa/%960/halo_1") 
 print(halo.calculate("myproperty()")) # -> 42.0
 ```
 
@@ -61,7 +60,7 @@ You can calculate the property for multiple halos. For example, from the web int
 timestep view and add a column with heading `myproperty()`; equivalently, from python
 
 ```python
-timestep = tangos.get_timestep(1) # get the first timestep in the database
+timestep = tangos.get_timestep("tutorial_changa/%960") # get the first timestep in the database
 print(timestep.calculate_all("myproperty()")) # -> array of 42.0s, one for each halo
 ```
 
@@ -81,12 +80,10 @@ Modify `mytangosproperty.py` to read:
 from tangos.properties import HaloProperties
 
 class ExampleHaloProperty(HaloProperties):
+    names = 'my_x'
+    
     def calculate(self, particle_data, existing_properties):
         return existing_properties['shrink_center'][0]
-
-    @classmethod
-    def name(cls):
-        return "my_x"
         
     # NOTE: this example is incomplete - see below
 ```
@@ -96,14 +93,14 @@ web server front end, you will need to restart it.
 Now try calculating `my_x()` for a halo:
 
 ```python
-halo = tangos.get_halo(1)
+halo = tangos.get_halo("tutorial_changa/%960/halo_1")
 print(halo['shrink_center'][0])
 print(halo.calculate("my_x()")) # -> same value
 ```
 
 This should work successfully. However loading across multiple halos will, at this point, fail:
 ```python
-timestep = tangos.get_timestep(1) 
+timestep = tangos.get_timestep("tutorial_changa/%960") 
 print(timestep.calculate_all("my_x()"))  # -> error
 ```
 You'll see a message something like `KeyError: "No such property 'shrink_center'"`. What happened?
@@ -137,13 +134,11 @@ just add the names and return a list or tuple of values:
 from tangos.properties import HaloProperties
 
 class ExampleHaloProperty(HaloProperties):
+    names = "my_x", "my_y", "my_z"
+
     def calculate(self, particle_data, existing_properties):
         my_sc = existing_properties['shrink_center'] 
         return my_sc[0], my_sc[1], my_sc[2]
-
-    @classmethod
-    def name(cls):
-        return "my_x", "my_y", "my_z"
 
     def requires_property(self):
         return ["shrink_center"]
@@ -157,28 +152,28 @@ Let's now implement a property that requires access to the underlying particle d
 the velocity dispersion of the halo:
 
 ```python
-from tangos.properties import HaloProperties
+from tangos.properties.pynbody import PynbodyHaloProperties
 import numpy as np
 
-class ExampleHaloProperty(HaloProperties):
+class ExampleHaloProperty(PynbodyHaloProperties):
+    names = "velocity_dispersion"
+    
     def calculate(self, particle_data, existing_properties):
         return np.std(particle_data['vel'])
-
-    @classmethod
-    def name(cls):
-        return "velocity_dispersion"
-        
-    @classmethod
-    def requires_particle_data(cls):
-        return True
 ```
 
-The `requires_particle_data` method indicates to _tangos_ that this property can only be calculated with reference
-to the original particle data associated with the halo. Accordingly if you try to calculate this from within a 
-standard `tangos` session you'll run into difficulties (specifically you'll see a `RuntimeError`).
+By deriving from `PynbodyHaloProperties` instead of `HaloProperties`, you are indicating to _tangos_ 
+that this property can only be calculated with reference
+to the _pynbody_-loaded original particle data associated with the halo. (Note that there is an [equivalent
+for yt](using_with_yt.md), and you can make your [own customised loaders](custom_output_handlers.md) 
+by delving a bit more into detail.)
+Anyway, if you try to calculate this from within a 
+standard `tangos` session you'll run into difficulties (specifically you'll see a `RuntimeError`). That's because
+_tangos_ refuses to automatically load particle data; it assumes this isn't really what you'd like to happen in
+a typical analysis session.
 
 We instead need to use the `tangos_writer` which populates the database from the underlying particle data. Type
-`tangos_writer velocity_dispersion` from your UNIX shell to do so. Don't forget you can also run this in
+`tangos_writer velocity_dispersion --for tutorial_changa` from your UNIX shell to do so. Don't forget you can also run this in
 parallel, or with various optimisations -- see the basic tutorials for more information on this. Your code does
 not need to be aware of the parallelisation mode or any other details; it's always handed a complete set of particles
 for the halo it's operating on.
@@ -216,21 +211,15 @@ halo finder defined. In the following example, we go out to a sphere of twice th
 
 
 ```python
-from tangos.properties import HaloProperties
+from tangos.properties.pynbody import PynbodyHaloProperties
 import pynbody
 
-class ExampleHaloProperty(HaloProperties):
+class ExampleHaloProperty(PynbodyHaloProperties):
+    names = "my_virial_radius"
+    
     def calculate(self, particle_data, existing_properties):
         with pynbody.transformation.translate(particle_data, -existing_properties['shrink_center']):
             return pynbody.analysis.halo.virial_radius(particle_data)
-
-    @classmethod
-    def name(cls):
-        return "my_virial_radius"
-
-    @classmethod
-    def requires_particle_data(cls):
-        return True
 
     def region_specification(self, existing_properties):
         return pynbody.filt.Sphere(existing_properties['max_radius']*2,
@@ -266,12 +255,13 @@ is within the sphere carved out by another more massive halo -- in other words, 
 Here's an implementation for identifying such halos:
 
 ```python
-from tangos.properties import HaloProperties, ProxyHalo
+from tangos.properties import HaloProperties
 from tangos import get_halo
 import numpy as np
-import pynbody
 
 class ExampleHaloProperty(HaloProperties):
+    names = "my_parent_halo"
+    
     def calculate(self, particle_data, existing_properties):
         offsets = np.linalg.norm(existing_properties['shrink_center'] - self.centres, axis=1)
         offsets[offsets<1e-5] = np.inf # exclude self!
@@ -280,10 +270,6 @@ class ExampleHaloProperty(HaloProperties):
             return get_halo(self.dbid[offsets.argmin()])
         else:
             return None
-
-    @classmethod
-    def name(cls):
-        return "my_parent_halo"
 
     def preloop(self, particle_data, timestep_object):
         self.centres, self.radii, self.dbid, self.NDM = \

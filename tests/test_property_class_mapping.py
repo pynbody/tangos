@@ -14,14 +14,17 @@ class TestOutputHandler2(soh.SimulationOutputSetHandler):
 
 class PropertyForHandler1(prop.HaloProperties):
     works_with_handler = TestOutputHandler1
+    requires_particle_data = True
     names = "widget", "hedgehog"
 
 class PropertyForHandler2(prop.HaloProperties):
     works_with_handler = TestOutputHandler2
+    requires_particle_data = True
     names = "widget", "robin"
 
 class PropertyForHandler1Child(prop.HaloProperties):
     works_with_handler = TestOutputHandler1Child
+    requires_particle_data = True
     names = "hedgehog", "satsuma"
 
 class PropertyForLiveUse(prop.LiveHaloProperties):

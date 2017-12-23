@@ -34,7 +34,7 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
 
     # Specifies whether the particle data needs to be provided for this class to perform a calculation; if
     # False, only existing HaloProperties are required by this calculation (see requires_property below).
-    requires_particle_data = True
+    requires_particle_data = False
 
     # Specifies a tuple of names of properties that will be calculated by this class.
     names = None

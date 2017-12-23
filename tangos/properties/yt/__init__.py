@@ -4,6 +4,7 @@ import numpy as np
 
 class YtHaloProperties(HaloProperties):
     works_with_handler = yt_handler_module.YtOutputSetHandler
+    requires_particle_data = True
 
 class HaloDensityProfile(YtHaloProperties):
     """Proof of concept: get halo density profiles from yt"""
