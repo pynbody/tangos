@@ -25,6 +25,7 @@ install:
   - python setup.py install
   - python -c "import tangos" # ensure tangos can be imported without pynbody present
   - pip install git+git://github.com/pynbody/pynbody.git
+  - pip install yt>=3.4.0
 
 
 
