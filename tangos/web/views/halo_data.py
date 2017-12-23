@@ -103,7 +103,8 @@ def calculate_all(request):
         return {'error': e.message, 'error_class': type(e).__name__}
 
     return {'timestep': ts.extension, 'data_formatted': [format_data(d, request) for d in data],
-           'db_id': list(db_id), 'can_use_in_plot': can_use_elements_in_plot(data),
+           'db_id': [int(x) for x in db_id],  # problems with jsonifying np.int64; needs to be native int?
+            'can_use_in_plot': can_use_elements_in_plot(data),
             'can_use_as_filter': can_use_elements_as_filter(data)}
 
 @view_config(route_name='get_property', renderer='json')

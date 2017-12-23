@@ -15,8 +15,12 @@ def setup():
         creator.add_timestep()
         creator.add_objects_to_timestep(4)
 
-
+    tangos.get_default_session().commit()
     tangos.get_item("sim/ts1/halo_1")['test_image'] = np.zeros((500,500,3))
+    for ts in tangos.get_simulation(1).timesteps:
+        for h in ts.halos:
+            h['test_value'] = 1.0
+
     tangos.get_default_session().commit()
 
     global app
@@ -50,3 +54,9 @@ def test_plot():
 
 def test_image_plot():
     response = app.get("/sim/ts1/halo_1/test_image.png")
+
+def test_json_gather():
+    response = app.get("/sim/ts1/gather/test_value.json")
+    assert response.content_type == 'application/json'
+    assert response.status_int == 200
+    assert b'data_formatted": ["1.00", "1.00", "1.00", "1.00"]' in response.body
