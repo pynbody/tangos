@@ -14,3 +14,5 @@ that process you can try any of the three tutorials.
 If you want to build the database used for the [analysis tutorials](data_exploration.md), you should import
 all of the above. However you can also download the ready-made database file if you don't want to
 go through importing three separate simulations.
+
+As a final example, you can also [import a simulation using yt](using_with_yt.md) as the underlying library.

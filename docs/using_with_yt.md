@@ -10,7 +10,7 @@ As a demonstration, embryonic _yt_ support is included.
 Initial set-up: tangos+yt
 --------------------------
 
-Make sure you have followed the [initial set up instructions](../README.md). Additionally, 
+Make sure you have followed the [initial set up instructions](index.md). Additionally, 
 you will need to install yt version 3.4.0 or later.
 
 Finally, download the tutorial_changa_yt dataset. Unpack the tar file either in your 
