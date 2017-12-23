@@ -14,6 +14,7 @@ class YtOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutputSetH
         global yt
         import yt as yt_local
         yt = yt_local
+        assert "3.4.0" <= yt.__version__, "Tangos requires yt version 3.4.0 or later"
 
     def get_timestep_properties(self, ts_extension):
         ts_filename =  self._extension_to_filename(ts_extension)

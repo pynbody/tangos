@@ -39,6 +39,10 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
         global pynbody
         pynbody = pynbody_local
 
+        # old versions of pynbody have no __version__!
+        pynbody_version = getattr(pynbody, "__version__","0.00")
+        assert pynbody_version>="0.42", "Tangos requires pynbody 0.42 or later"
+
     def _is_able_to_load(self, filepath):
         try:
             f = pynbody.load(filepath)
