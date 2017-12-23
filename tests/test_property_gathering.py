@@ -42,9 +42,7 @@ def setup():
             creator.link_last_bhs_using_mapping({1:1})
 
 class TestProperty(properties.LiveHaloProperties):
-    @classmethod
-    def name(self):
-        return "RvirPlusMvir"
+    names = "RvirPlusMvir"
 
     def requires_property(self):
         return "Mvir", "Rvir"
@@ -53,14 +51,7 @@ class TestProperty(properties.LiveHaloProperties):
         return halo["Mvir"]+halo["Rvir"]
 
 class TestErrorProperty(properties.LiveHaloProperties):
-
-    @classmethod
-    def name(self):
-        return "RvirPlusMvirMiscoded"
-
-    @classmethod
-    def requires_particle_data(self):
-        return False
+    names = "RvirPlusMvirMiscoded"
 
     def requires_property(self):
         return "Mvir",
@@ -69,24 +60,19 @@ class TestErrorProperty(properties.LiveHaloProperties):
         return halo["Mvir"]+halo["Rvir"]
 
 class TestPropertyWithParameter(properties.LiveHaloProperties):
-    @classmethod
-    def name(cls):
-        return "squared"
+    names = "squared"
 
     def live_calculate(self, halo, value):
         return value**2
 
 class TestPathChoice(properties.LiveHaloProperties):
     num_calls = 0
+    names = "my_BH"
 
     def __init__(self, simulation, criterion="hole_mass"):
         super(TestPathChoice, self).__init__(simulation, criterion)
         assert isinstance(criterion, six.string_types), "Criterion must be a named BH property"
         self.criterion = criterion
-
-    @classmethod
-    def name(cls):
-        return "my_BH"
 
     def requires_property(self):
         return "BH", "BH."+self.criterion

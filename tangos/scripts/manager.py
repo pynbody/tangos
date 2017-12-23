@@ -24,7 +24,9 @@ from six.moves import input
 def add_simulation_timesteps(options):
     handler=options.handler
     output_class = get_named_handler_class(handler).best_matching_handler(options.sim)
-    adder = SimulationAdderUpdater(output_class(options.sim))
+    output_object = output_class(options.sim)
+    output_object.quicker = options.quicker
+    adder = SimulationAdderUpdater(output_object)
     adder.min_halo_particles = options.min_particles
     adder.scan_simulation_and_add_all_descendants()
 
@@ -335,10 +337,24 @@ def list_available_properties(options):
     from .. import properties
     all_properties = sorted(properties.all_properties())
 
-    print("%s | %s" % ("name".rjust(30), "from class"))
+    def format_class_name(cl):
+        return "%s.%s"%(cl.__module__, cl.__name__)
+
+    def format_handler_name(cl):
+        if cl.requires_particle_data:
+            return cl.works_with_handler.__name__.center(15)
+        else:
+            return "live".center(15)
+
+    longest_class_name = max([len(format_class_name(cl)) for cl in properties.all_property_classes()])
+    print("%s | %s | %s" % ("name".rjust(30), "handler".center(15), "property class"))
+    print("-"*30+"-+-"+"-"*15+"-+-"+"-"*longest_class_name)
     for p in all_properties:
-        cl = properties.providing_class(p)
-        print("%s | %s"%(p.rjust(30),str(cl)))
+        classes = properties.all_providing_classes(p)
+        print("%s | %.15s | %s"%(p.rjust(30), format_handler_name(classes[0]), format_class_name(classes[0])))
+        for additional_class in classes[1:]:
+            print(" "*30+" | %.15s | %s"%(format_handler_name(additional_class),
+                                          format_class_name(additional_class)))
 
 def main():
 
@@ -362,6 +378,8 @@ def main():
                               default=config.default_fileset_handler_class)
     subparse_add.add_argument("--min-particles", action="store", type=int, default=config.min_halo_particles,
                               help="The minimum number of particles a halo must have before it is imported (default %d)"%config.min_halo_particles)
+    subparse_add.add_argument("--quicker", action="store_true",
+                              help="Cut corners/make guesses to import quickly and with minimum memory usage. Only use if you understand the consequences!")
 
     subparse_add.set_defaults(func=add_simulation_timesteps)
 

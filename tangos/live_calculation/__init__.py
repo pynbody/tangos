@@ -582,7 +582,7 @@ class StoredProperty(Calculation):
         from .. import properties
         values = self.values(halos)
         sim = consistent_collection.consistent_simulation_from_halos(halos)
-        description_class = properties.providing_class(self._name, silent_fail=True)
+        description_class = properties.providing_class(self._name, sim.output_handler_class, silent_fail=True)
         description = None if description_class is None else description_class(sim)
         return values, description
 

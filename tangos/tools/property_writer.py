@@ -9,7 +9,7 @@ import time
 import traceback
 import warnings
 import weakref
-
+import six
 import numpy as np
 import sqlalchemy
 import sqlalchemy.exc
@@ -151,7 +151,6 @@ class PropertyWriter(object):
         if self.options.verbose:
             self.redirect.enabled = False
 
-        self.classes = properties.providing_classes(self.options.properties)
         self.timing_monitor = timing_monitor.TimingMonitor()
 
     def _compile_inclusion_criterion(self):
@@ -258,10 +257,10 @@ class PropertyWriter(object):
     def _needed_properties(self):
         needed = []
         for x in self._property_calculator_instances:
-            if type(x.name()) == str:
-                needed.extend([x.name()])
+            if isinstance(x.names, six.string_types):
+                needed.extend([x.names])
             else:
-                needed.extend([name for name in x.name()])
+                needed.extend([name for name in x.names])
             needed.extend([name for name in x.requires_property()])
         return list(np.unique(needed))
 
@@ -273,7 +272,7 @@ class PropertyWriter(object):
 
 
     def _should_load_halo_particles(self):
-        return any([x.requires_particle_data() for x in self._property_calculator_instances])
+        return any([x.requires_particle_data for x in self._property_calculator_instances])
 
     def _must_load_timestep_particles(self):
         return self._should_load_halo_particles() and self.options.load_mode is None
@@ -344,9 +343,9 @@ class PropertyWriter(object):
 
 
     def _get_standin_property_value(self, property_calculator):
-        if isinstance(property_calculator.name(),str):
+        if isinstance(property_calculator.names,six.string_types):
             return None
-        num = len(property_calculator.name())
+        num = len(property_calculator.names)
         return [None]*num
 
     def _get_property_value(self, db_halo, property_calculator, existing_properties):
@@ -399,7 +398,7 @@ class PropertyWriter(object):
 
 
     def run_property_calculation(self, db_halo, property_calculator, existing_properties):
-        names = property_calculator.name()
+        names = property_calculator.names
         if type(names) is str:
             listize = True
             names = [names]
@@ -473,14 +472,17 @@ class PropertyWriter(object):
         will_calculate = []
         requirements = []
         for inst in self._property_calculator_instances:
-            will_calculate+=inst.name()
+            if isinstance(inst.names, six.string_types):
+                will_calculate+=[inst.names]
+            else:
+                will_calculate+=inst.names
             requirements+=inst.requires_property()
 
         for r in requirements:
             if r not in will_calculate:
                 new_instance = properties.instantiate_class(db_timestep.simulation, r)
                 logger.info("Missing prerequisites - added class %r",type(new_instance))
-                logger.info("                        providing properties %r",new_instance.name())
+                logger.info("                        providing properties %r",new_instance.names)
                 self._property_calculator_instances = [new_instance]+self._property_calculator_instances
                 self._add_prerequisites_to_calculator_instances(db_timestep) # everything has changed; start afresh
                 break

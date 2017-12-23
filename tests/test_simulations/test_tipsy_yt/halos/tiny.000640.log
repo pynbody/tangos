@@ -1,0 +1,370 @@
+===============================================================================
+	             A        H       H   FFFFFFFF    
+	           A A       H       H   F           
+	         A   A      H       H   F           
+	       AAAAAAA     HHHHHHHHH   FFFFFF      
+	     A       A    H       H   F           
+	   A         A   H       H   F           
+	 A           A  H       H   F       (1.0/084)
+===============================================================================
+
+ User Input:
+=============
+ic_filename       = pioneer50h128.1536gst1.bwK1.000640 (TIPSY binary, 90)
+outfile_prefix    = pioneer50h128.1536gst1.bwK1.000640
+LgridDomain       = 512
+LgridMax          = 65536
+NminPerHalo       = 64
+VescTune          = 1
+NperDomCell       = 8
+NperRefCell       = 8
+RhoVir            = 1
+Dvir              = -1
+MaxGatherRad      = 1 Mpc/h
+
+
+ OpenMP Info:
+==============
+Number of available processors = 8
+Number of threads in use       = 8
+
+
+
+
+
+
+===============================================================================
+
+		PART A
+	Setting up the run
+
+===============================================================================
+
+
+
+===============================================================================
+  A-1  Opening the data file
+===============================================================================
+
+Opening pioneer50h128.1536gst1.bwK1.000640, a TIPSY binary file on 1 processes.
+Assuming swapped file
+Starting to initialize file object from pioneer50h128.1536gst1.bwK1.000640
+   tipsy.info -> omega0:                         3.156000e-01
+   tipsy.info -> lambda0:                        6.844000e-01
+   tipsy.info -> boxsize:                        3.363150e+01
+   tipsy.info -> vunit:                          1.162650e+03
+   tipsy.info -> munit:                          1.056960e+16
+   tipsy.info -> eunit:                          2.500000e-02
+Done with initializing file object from pioneer50h128.1536gst1.bwK1.000640
+Fileobject information:
+  Filetype:             TIPSY binary
+  Filename:             pioneer50h128.1536gst1.bwK1.000640
+  Mode:                 1
+  Swapping:             1
+  File version:         1
+  Header size:          1
+  No. particles:        33143293
+  No. particles w/mass: 33143293
+  Multimass:            1
+  MMass (Halo parts):   1e+40
+  Minimal Weight:       1e+40
+  Maximal Weight:       0
+  Sum of all weights:   0
+  No. of species:       0
+  Position scale:       1
+  Weight scale:         1
+   time:                         2.522814e-01
+  nbodies:                       33143293
+  ndim:                          3
+  nsph:                          1639389
+  ndark:                         30786640
+  nstar:                         717264
+  pad:                           0
+
+
+===============================================================================
+  A-2  Reading data from file
+===============================================================================
+
+
+-------------------------------------------------------------------------------
+  A-2.1  Creating Storage
+-------------------------------------------------------------------------------
+
+WARNING: There are 33143293 particles in the file, but the choice of pread and pskip would need 18446744073709551615, adjusting to 33143293
+posx:
+  val    = 0x7ffeedb0b018
+  stride = 64
+posy:
+  val    = 0x7ffeedb0b01c
+  stride = 64
+posz:
+  val    = 0x7ffeedb0b020
+  stride = 64
+momx:
+  val    = 0x7ffeedb0b024
+  stride = 64
+momy:
+  val    = 0x7ffeedb0b028
+  stride = 64
+momz:
+  val    = 0x7ffeedb0b02c
+  stride = 64
+weight:
+  val    = 0x7ffeedb0b030
+  stride = 64
+id:
+  val    = 0x7ffeedb0b040
+  stride = 64
+u:
+  val    = 0x7ffeedb0b048
+  stride = 64
+bytes_float: 4
+bytes_int:   8
+
+-------------------------------------------------------------------------------
+  A-2.2  Reading
+-------------------------------------------------------------------------------
+
+Obviously the file uses float for floating point values (4 bytes).
+A total of 33143293 particle masses with 4 bytes per float (126.431625 MB total) are stored.
+Asked to read 33143293 and to skip 0 particles. Checking those numbers.
+Extreme positions: xmin = -0.5  xmax = 0.5
+                   ymin = -0.5  ymax = 0.5
+                   zmin = -0.5  zmax = 0.5
+Applying shift: (0.5, 0.5, 0.5)
+Scaling by:  positions:  1
+             velocities: 0.0220026
+             weights:    1.08813e+11
+             energies:   0.025
+
+-------------------------------------------------------------------------------
+  A-2.3  Short sanity check
+-------------------------------------------------------------------------------
+
+First particle:
+    positions (x,y,z):      0.510842  0.723398  0.442949
+    velocities (vx,vy,vz):  0.00285009  0.0123271  0.00317327
+    weight:                 1.47641
+    ID:                     31503904
+    energy:                 35.5277
+Last particle:
+    positions (x,y,z):      0.539576  0.709669  0.43297
+    velocities (vx,vy,vz):  0.000632068  0.0150957  0.00485398
+    weight:                 0.434636
+    ID:                     31503903
+    energy:                 -4
+
+
+===============================================================================
+  A-3  Setting simulation parameter
+===============================================================================
+
+
+-------------------------------------------------------------------------------
+  A-3.1  Information from file
+-------------------------------------------------------------------------------
+
+WARNING: ainitial is not set in a TIPSY file, using current expansion.
+WARNING: TIPSY files don't store the use of double precision. Assuming it is not double precision.
+WARNING: TIPSY files don't store the timestep. Setting to 500
+
+-------------------------------------------------------------------------------
+  A-3.2  Gathering from reading processes
+-------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+  A-3.3  Local setup
+-------------------------------------------------------------------------------
+
+Creating timeline from a = 0.0252281 to a = 1
+
+creating timeline from a=0.0252281 to a=1 (MAXTIME=10000) ... done
+
+Timeline created
+Setting volume boundaries
+  minkey: 0
+  maxkey: 0
+  level : 0
+  ctype : Hilbert curve
+
+-------------------------------------------------------------------------------
+  A-3.4  Used simulation parameters
+-------------------------------------------------------------------------------
+
+simu.omega0          :  0.3156
+simu.lambda0         :  0.6844
+simu.boxsize         :  33.6315
+simu.a_initial       :  0.252281
+simu.a_final         :  1
+simu.z_initial       :  2.96383
+simu.z_final         :  0
+simu.t_initial       :  0.149513
+simu.t_final         :  0.95048
+simu.super_t_initial :  -3.06131
+simu.super_t_final   :  -0
+simu.mean_dens       :  1
+simu.FourPiG         :  0.4734
+simu.pmass           :  97135.5
+simu.t_unit          :  0.01
+simu.gamma           :  0
+simu.timeline (ptr)  :  0x65d248
+simu.no_part         :  33143293
+simu.no_vpart        :  3.43414e+10
+simu.no_species      :  1215757
+simu.no_halos        :  0
+simu.NGRID_DOM       :  512
+simu.NGRID_MIN       :  512
+simu.NGRID_MAX       :  65536
+simu.Nth_dom         :  8
+simu.Nth_ref         :  8
+simu.MaxGatherRad    :  1
+simu.lb_level        :  0
+simu.min_weight      :  0.276652
+simu.max_weight      :  2046.9
+simu.np_limit        :  0
+simu.mmfocus         :  0
+simu.multi_mass      :  1
+simu.double_precision:  0
+
+-------------------------------------------------------------------------------
+  A-3.5  Setting time counter
+-------------------------------------------------------------------------------
+
+WARNING: TIPSY files don't store the timestep. Setting to 500
+WARNING: TIPSY files don't store the timestep. Setting to 0.0
+
+
+===============================================================================
+  A-4  Tidying
+===============================================================================
+
+Closing a TIPSY binary file.
+amiga_main:  running with 33143293 particles
+
+
+
+
+
+
+===============================================================================
+
+		PART B
+	Handing over logging to AMIGA
+
+===============================================================================
+
+################## ahf_gridinfo ###################
+Number of grids           = 8
+Number of refinements     = 7
+global.domgrid_no         = 0
+l1dim =              512 refine_ovdens =            64.07 ovlim =            180.2
+l1dim =             1024 refine_ovdens =            512.6 ovlim =            180.2
+l1dim =             2048 refine_ovdens =             4100 ovlim =            180.2
+l1dim =             4096 refine_ovdens =         3.28e+04 ovlim =            180.2
+l1dim =             8192 refine_ovdens =        2.624e+05 ovlim =            180.2
+l1dim =            16384 refine_ovdens =        2.099e+06 ovlim =            180.2
+l1dim =            32768 refine_ovdens =         1.68e+07 ovlim =            180.2
+l1dim =            65536 refine_ovdens =        1.344e+08 ovlim =            180.2
+max_ovdens = 1.34364e+08
+min_ref = 0    (ahf_nogrids = 8)
+################## ahf_gridinfo finished ##################
+
+#################### ahf_halos ####################
+AHF_MINPART  = 64
+AHF_VTUNE    = 1
+z            = 2.96383
+Omega(z)     = 0.966352
+OmegaL(z)    = 0.0336483
+rho_crit(z)  = 9.06461e+10
+rho_back(z)  = 8.7596e+10
+rho_vir(z)   = 8.7596e+10 (actual normalisation density)
+Delta_vir(z) = 180.241
+Hubble(z)    = 450.997
+
+Collecting the isolated refinements ... done
+
+Analysing the isolated refinements:
+
+Converting the spatialRef[][] tree to a halos[] array:
+ spatialRef2halos():
+  number of isolated refinements  = 28400
+  first guess for number of halos = 20141
+  constructing 20141 (potential) halos from all 8 grid levels...
+      grid level        0 (         512) ->          1 isolated refinements ... finished
+      grid level        1 (        1024) ->      10445 isolated refinements ... finished
+      grid level        2 (        2048) ->       6267 isolated refinements ... finished
+      grid level        3 (        4096) ->       1780 isolated refinements ... finished
+      grid level        4 (        8192) ->       2637 isolated refinements ... finished
+      grid level        5 (       16384) ->       4472 isolated refinements ... finished
+      grid level        6 (       32768) ->       2202 isolated refinements ... finished
+      grid level        7 (       65536) ->        596 isolated refinements ... finished
+      number of halos: found=20141 (max=28400) expected=20141 (tmpCount=20133)
+      numDensZero = 3, numPartZero = 3
+
+Free'ing all grid structures:
+  free'ing grid 65536
+  free'ing grid 32768
+  free'ing grid 16384
+  free'ing grid 8192
+  free'ing grid 4096
+  free'ing grid 2048
+  free'ing grid 1024
+  free'ing grid 512
+
+Constructing Halos (20141)
+===================================
+
+Re-hashing substructure information using final radii
+=====================================================
+
+  Used       0.3012s to write halos
+  Used       1.1636s to write profiles
+  Used    0.0040097s to write substructures
+  Used        3.488s to write particles
+Used       4.9571s to write data to ASCII files
+################## ahf_halos finished ##################
+
+supercomoving T = -3.061312
+scale factor  a = 0.252281
+redshift      z = 2.963829
+
+grid information
+----------------
+GRID          512: nodes=   134217728 (       3 GB) npart=18446744073666534230 - TIME: pot=     0 dens=     0 DK=     0 grid=    55 hydro=     0 - SWEEPS: 0 0
+GRID         1024: nodes=     7174264 (    0.16 GB) npart=    19617034 - TIME: pot=     0 dens=     0 DK=     0 grid=    11 hydro=     0 - SWEEPS: 0 0
+GRID         2048: nodes=     5027504 (   0.112 GB) npart=    17583168 - TIME: pot=     0 dens=     0 DK=     0 grid=    10 hydro=     0 - SWEEPS: 0 0
+GRID         4096: nodes=     5607832 (   0.125 GB) npart=    14983766 - TIME: pot=     0 dens=     0 DK=     0 grid=    10 hydro=     0 - SWEEPS: 0 0
+GRID         8192: nodes=     6914608 (   0.155 GB) npart=    11569335 - TIME: pot=     0 dens=     0 DK=     0 grid=     8 hydro=     0 - SWEEPS: 0 0
+GRID        16384: nodes=     5382448 (    0.12 GB) npart=     7442099 - TIME: pot=     0 dens=     0 DK=     0 grid=     5 hydro=     0 - SWEEPS: 0 0
+GRID        32768: nodes=     2766480 (  0.0618 GB) npart=     3544046 - TIME: pot=     0 dens=     0 DK=     0 grid=     2 hydro=     0 - SWEEPS: 0 0
+GRID        65536: nodes=      772112 (  0.0173 GB) npart=     1421231 - TIME: pot=     0 dens=     0 grid=     0
+                                                                                        0           0       101
+detailed timing information (in sec.)
+-------------------------------------
+io           = 54
+      - startrun     = 20
+      - sfckey       = 34
+gendomgrids  = 2
+ll           = 2
+genrefgrids  = 101
+densrecovery = 0
+ahf_gridinfo = 87
+ahf_halos    = 42
+      - RefCentre                   = 21
+      - analyseRef                  = 3
+      - spatialRef2halos            = 0
+      - ahf_halos_sfc_constructHalo = 12
+      - I/O                         = 5
+
+summary information
+-------------------
+force resolution    ~      1.5 kpc/h
+time for AHF        =      129 seconds (  0.0358 hours)
+total time          =      284 seconds (  0.0789 hours)
+cumulative time     =   0.0789 hours (0.00328704 days)
+memory during step  =     5.75 GB
+==========================================================
+                       FINISHED (v1.0/084)
+==========================================================

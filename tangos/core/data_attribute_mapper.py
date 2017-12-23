@@ -13,7 +13,7 @@ import functools
 from six.moves import cPickle as pickle
 
 pickle_loads = pickle.loads
-if sys.version[0]==3:
+if int(sys.version[0])==3:
     pickle_loads = functools.partial(pickle.loads, encoding='latin1')
 
 

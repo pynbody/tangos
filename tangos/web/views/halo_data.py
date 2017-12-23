@@ -1,20 +1,17 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from pyramid.view import view_config
-from pyramid.compat import escape
-from sqlalchemy import func, and_, or_
-import numpy as np
-from . import halo_from_request, timestep_from_request, simulation_from_request
-from pyramid.response import Response
-import StringIO
-import PIL
-
-import tangos
 import matplotlib
 matplotlib.use('agg')
 import pylab as p
+from pyramid.view import view_config
+from pyramid.compat import escape
+import numpy as np
+from . import halo_from_request, timestep_from_request, simulation_from_request
+from pyramid.response import Response
+from six import BytesIO
+from ...log import logger
+from ... import core
 import threading
-from tangos import core
 import time
 
 _matplotlib_lock = threading.RLock()
@@ -133,13 +130,10 @@ def finish(request, getImage=True) :
         enter_finish_time = time.time()
         request.canvas.draw()
         draw_time = time.time()
-        imageSize = request.canvas.get_width_height()
-        imageRgb = request.canvas.tostring_rgb()
-        buffer = StringIO.StringIO()
-        pilImage = PIL.Image.frombytes("RGB",imageSize, imageRgb)
-        pilImage.save(buffer, "PNG")
+        buffer = BytesIO()
+        p.savefig(buffer, format='png')
         end_time = time.time()
-        print("Image rendering: matplotlib %.2fs; PNG conversion %.3fs"%(draw_time-enter_finish_time, end_time-draw_time))
+        logger.info("Image rendering: matplotlib %.2fs; PNG conversion %.3fs",draw_time-enter_finish_time, end_time-draw_time)
 
     p.close()
 
@@ -203,7 +197,11 @@ def image_plot(request, val, property_info):
     with _matplotlib_lock:
         start(request)
 
-        width = property_info.plot_extent()
+        if property_info:
+            width = property_info.plot_extent()
+        else:
+            width = 1.0
+
         if log and len(val.shape)==2:
             data = np.log10(val)
             data[data!=data]=data[data==data].min()
@@ -217,12 +215,13 @@ def image_plot(request, val, property_info):
         else :
             p.imshow(data)
 
-        p.xlabel(property_info.plot_xlabel())
-        p.ylabel(property_info.plot_ylabel())
+        if property_info:
+            p.xlabel(property_info.plot_xlabel())
+            p.ylabel(property_info.plot_ylabel())
 
         if len(val.shape) is 2 :
             cb = p.colorbar()
-            if property_info.plot_clabel() :
+            if property_info and property_info.plot_clabel() :
                 cb.set_label(property_info.plot_clabel())
 
         return finish(request)
