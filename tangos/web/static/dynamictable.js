@@ -96,8 +96,8 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
             if(savedContent!==addLabelText)
                 popupControls($this);
             if($this.text()===addLabelText) {
-                $this.text("");
                 putCursorAt(this, 0);
+                $this.text("");
             }
         },
         'deleteEditable': function() {
