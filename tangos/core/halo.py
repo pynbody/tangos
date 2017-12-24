@@ -106,7 +106,12 @@ class Halo(Base):
         if not hasattr(self, "_handler"):
             self._handler = self.timestep.simulation.get_output_handler()
         return self._handler
-
+        
+    @property
+    def handler_class(self):
+        if not hasattr(self, "_handler_class"):
+            self._handler_class = self.timestep.simulation.output_handler_class
+        return self._handler_class
 
     def load(self, mode=None):
         """Use pynbody to load the data for this halo, if it is present on this computer's filesystem.

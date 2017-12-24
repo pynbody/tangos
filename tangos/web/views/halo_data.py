@@ -100,7 +100,7 @@ def calculate_all(request):
     try:
         data, db_id = ts.calculate_all(decode_property_name(request.matchdict['nameid']), 'dbid()')
     except Exception as e:
-        return {'error': e.message, 'error_class': type(e).__name__}
+        return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
 
     return {'timestep': ts.extension, 'data_formatted': [format_data(d, request) for d in data],
            'db_id': [int(x) for x in db_id],  # problems with jsonifying np.int64; needs to be native int?
@@ -114,7 +114,7 @@ def get_property(request):
     try:
         result = halo.calculate(decode_property_name(request.matchdict['nameid']))
     except Exception as e:
-        return {'error': e.message, 'error_class': type(e).__name__}
+        return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
 
     return {'data_formatted': format_data(result, request, halo),
             'can_use_in_plot': can_use_in_plot(result),

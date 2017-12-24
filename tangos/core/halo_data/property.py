@@ -68,7 +68,7 @@ class HaloProperty(Base):
 
     def get_data_with_reassembly_options(self, *options):
         try:
-            cls = self.name.providing_class(type(self.halo.handler))
+            cls = self.name.providing_class(self.halo.handler_class)
         except NameError:
             cls = None
 
