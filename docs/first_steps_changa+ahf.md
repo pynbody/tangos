@@ -87,11 +87,11 @@ though so far there's not a huge amount of interest to see.
 Add some more interesting properties
 ------------------------------------
 
-Let's finally do some science. We'll add density profiles and thumbnail images; 
+Let's finally do some science. We'll add density profiles, thumbnail images, and star formation rates; 
 from your shell type:
  
 ```bash
-tangos_writer dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="contamination_fraction<0.01 & NDM()>5000" --sims tutorial_changa  
+tangos_writer dm_density_profile gas_density_profile uvi_image SFR_histogram --with-prerequisites --include-only="contamination_fraction<0.01 & NDM()>1000" --sims tutorial_changa  
 ```
 
 Here,
@@ -103,7 +103,7 @@ Here,
    so that calculation will be automatically performed and stored
  * `--include-only` allows an arbitrary filter to be applied, specifying which halos the properties should be calculated
    for. In the present case, we use that to insist that only "high resolution" halos are included (specifically, those
-   with a fraction of low-res particles smaller than 1%) – and, more than that, there must be 5000 dark matter particles
+   with a fraction of low-res particles smaller than 1%) – and, more than that, there must be 1000 dark matter particles
    in a halo before we calculate these properties (otherwise it's too small for us to care). 
    
    
@@ -126,4 +126,8 @@ calculation or halo.
  Explore what's possible
  -----------------------
  
- Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.
+ Now that you have a minimal functioning _tangos_ database, you can proceed to the [data exploration](data_exploration.md) 
+ tutorial. 
+ 
+ However, you can also [enable even more functionality](black_holes_and_crossmatching.md) by  adding a companion simulation 
+ which has black hole (AGN) feedback in addition to the supernova feedback of the `tutorial_changa` simulation. 

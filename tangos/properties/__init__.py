@@ -444,8 +444,7 @@ def instantiate_classes(simulation, property_name_list, silent_fail=False):
 
 def instantiate_class(simulation, property_name, silent_fail=False):
     """Instantiate an appropriate property calculation class for a given simulation and property name"""
-    handler_class = type(simulation.get_output_handler())
-    instance = instantiate_classes(simulation, [property_name],handler_class, silent_fail)
+    instance = instantiate_classes(simulation, [property_name], silent_fail)
     if len(instance)==0:
         return None
     else:

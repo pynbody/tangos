@@ -5,4 +5,4 @@ class PynbodyHaloProperties(HaloProperties):
     works_with_handler = pynbody_handler_module.PynbodyOutputSetHandler
     requires_particle_data = True
 
-from . import BH, zoom, centring, profile, images, gas
+from . import BH, SF, zoom, centring, profile, images, gas
