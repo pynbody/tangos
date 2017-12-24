@@ -34,15 +34,17 @@ from setuptools import setup, find_packages
 
 
 setup(name='tangos',
-      version='1.0.dev0',
+      version='1.0.0',
       description='TANGOS, the amazing numerical galaxy organisation system',
       classifiers=[
           "Development Status :: 4 - Beta",
           "Intended Audience :: Developers",
           "Programming Language :: Python",
           "Programming Language :: Python :: 2.7",
-          "Framework :: Pyramid",
-          "License :: GNU Public License",
+          "Programming Language :: Python :: 3.5",
+          "Programming Language :: Python :: 3.6",
+          "Programming Language :: Python :: 3.7",
+          "License :: GNU Public License v3",
       ],
       author="Andrew Pontzen",
       author_email="a.pontzen@ucl.ac.uk",
