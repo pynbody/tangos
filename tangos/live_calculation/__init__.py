@@ -587,7 +587,14 @@ class StoredProperty(Calculation):
         values = self.values(halos)
         sim = consistent_collection.consistent_simulation_from_halos(halos)
         description_class = properties.providing_class(self._name, sim.output_handler_class, silent_fail=True)
-        description = None if description_class is None else description_class(sim)
+        description = None
+        if description_class is not None:
+            try:
+                description = description_class(sim)
+            except Exception as e:
+                warnings.warn("%r occurred while trying to produce a property description from class %r"%
+                              (e,description_class),
+                              RuntimeWarning)
         return values, description
 
     def proxy_value(self):
