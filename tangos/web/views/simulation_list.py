@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from pyramid.response import Response
 from pyramid.view import view_config
-
+import socket
 import tangos
 from tangos import core
 
@@ -29,5 +29,6 @@ def simulation_list(request):
         links.append(request.route_url('simulation_view',simid=x.basename))
 
 
-    return {'simulations':simulations, 'titles':titles, 'links':links}
+    return {'simulations':simulations, 'titles':titles, 'links':links,
+            'hostname':socket.gethostname()}
 

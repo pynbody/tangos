@@ -3,7 +3,7 @@ from pyramid.view import view_config
 from sqlalchemy import func
 
 from . import simulation_from_request
-
+import socket
 import tangos
 from tangos import core
 
@@ -39,5 +39,6 @@ def simulation_view(request):
             'timesteps':timesteps,
             'links':timestep_links,
             'counts':counts,
-            'properties':props}
+            'properties':props
+            }
 
