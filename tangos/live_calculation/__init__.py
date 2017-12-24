@@ -394,6 +394,10 @@ class BuiltinFunction(LiveProperty):
     __default_args = {'provide_proxy': False, 'assert_class': None}
 
     @classmethod
+    def all(cls):
+        return list(cls.__registered_functions.keys())
+
+    @classmethod
     def register(cls, func):
         """Register a built-in function for the live calculation (LC) system.
 
