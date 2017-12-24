@@ -63,6 +63,7 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
     
     $this.html(addLabelText);
     $this[0].contentEditable=true;
+    enableAutocomplete($this);
 
     var savedContent;
     var column_id = $this.attr('id').substr(7);
@@ -95,6 +96,7 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
             if(savedContent!==addLabelText)
                 popupControls($this);
             if($this.text()===addLabelText) {
+                putCursorAt(this, 0);
                 $this.text("");
             }
         },

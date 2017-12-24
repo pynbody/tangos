@@ -110,3 +110,8 @@ def _get_dict_cache_for_session(session):
         _dict_id[session] = session_dict
 
     return session_dict
+
+def get_lexicon(session):
+    """Get a list of all strings known in the dictionary table"""
+    dict_cache = _get_dict_cache_for_session(session)
+    return dict_cache.keys()

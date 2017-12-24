@@ -63,6 +63,4 @@ def link_exists_initialisation(input):
     input.set_extraction_pattern(
         extraction_patterns.halo_link_target_getter)
 
-
-
 from . import arithmetic, array, reassembly

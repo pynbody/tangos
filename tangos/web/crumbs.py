@@ -1,3 +1,5 @@
+import socket
+
 class BreadCrumbs(object):
     def __init__(self, uri=None, servername="TANGOS"):
         if uri:
@@ -31,11 +33,11 @@ class BreadCrumbs(object):
             if count==1:
                 crumb = self.servername
             if count<len(self.crumbs):
-                links.append('<span class="mono"><a href="' + crumb_uri + '" class="breadcrumbs">' + crumb + '</a></span>')
+                links.append('<a href="' + crumb_uri + '" class="breadcrumbs">' + crumb + '</a>')
             else:
                 links.append(crumb)
         return links
 
 def breadcrumbs(request):
-    c = BreadCrumbs(request.url)
+    c = BreadCrumbs(request.url, servername="TANGOS on "+socket.gethostname())
     return " &rarr; ".join(c.links)

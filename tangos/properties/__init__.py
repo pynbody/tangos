@@ -354,16 +354,15 @@ def _check_class_provided_name(name):
     if "(" in name or ")" in name:
         raise ValueError("Property names must not include brackets; %s not suitable"%name)
 
-def all_properties():
+def all_properties(with_particle_data=True):
     """Return list of all properties which can be calculated using classes derived from HaloProperties"""
     classes = all_property_classes()
     pr = []
     for c in classes:
-        try:
-            i = c(None)
-        except TypeError:
+        if c.requires_particle_data and not with_particle_data:
             continue
-        name = i.names
+
+        name = c.names
         if isinstance(name, six.string_types):
             _check_class_provided_name(name)
             pr.append(name)
