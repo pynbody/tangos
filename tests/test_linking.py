@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import tangos as db
-from tangos.simulation_output_handlers import output_testing
+from tangos.input_handlers import output_testing
 from tangos.tools import crosslink, add_simulation
 from tangos import log, parallel_tasks, live_calculation, testing
 from nose.tools import assert_raises

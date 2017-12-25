@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import tangos as db
-import tangos.simulation_output_handlers.yt as yt_outputs
+import tangos.input_handlers.yt as yt_outputs
 import tangos.tools.add_simulation as add
 from tangos import config
 from tangos import log, testing

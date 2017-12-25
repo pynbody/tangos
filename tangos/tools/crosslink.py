@@ -138,9 +138,11 @@ class GenericLinker(object):
 
         try:
             cat = output_handler_1.match_objects(ts1.extension, ts2.extension, halo_min, halo_max, dmonly, threshold,
-                                               core.halo.Halo.object_typetag_from_code(object_typecode))
+                                                 core.halo.Halo.object_typetag_from_code(object_typecode),
+                                                 output_handler_for_ts2=output_handler_2)
             back_cat = output_handler_2.match_objects(ts2.extension, ts1.extension, halo_min, halo_max, dmonly, threshold,
-                                               core.halo.Halo.object_typetag_from_code(object_typecode))
+                                                      core.halo.Halo.object_typetag_from_code(object_typecode),
+                                                      output_handler_for_ts2= output_handler_1)
         except Exception as e:
             if isinstance(e, KeyboardInterrupt):
                 raise

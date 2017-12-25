@@ -12,6 +12,7 @@ import tangos.core.tracking
 import tangos.parallel_tasks as parallel_tasks
 import tangos.parallel_tasks.database
 import tangos.tracking
+from tangos.input_handlers.changa_bh import BHShortenedLog
 from sqlalchemy.orm import Session
 from tangos.log import logger
 import sys
@@ -213,6 +214,7 @@ def resolve_multiple_mergers(bh_map):
 
 def generate_halolinks(session, fname, pairs):
     for ts1, ts2 in parallel_tasks.distributed(pairs):
+        bh_log = BHShortenedLog(ts2.filename)
         links = []
         mergers_links = []
         bh_map = {}
@@ -234,7 +236,7 @@ def generate_halolinks(session, fname, pairs):
             logger.info("No BHs found in either step %r or %r... moving on", ts1, ts2)
             continue
 
-        logger.info("Collecting BH tracker links between steps %r and %r", ts1, ts2)
+        logger.info("Generating BH tracker links between steps %r and %r", ts1, ts2)
         o1 = np.where(np.in1d(nums1,nums2))[0]
         o2 = np.where(np.in1d(nums2,nums1))[0]
         if len(o1) == 0 or len(o2) == 0:
@@ -242,20 +244,28 @@ def generate_halolinks(session, fname, pairs):
         with session.no_autoflush:
             for ii, jj in zip(o1,o2):
                 if nums1[ii] != nums2[jj]:
-                    raise RuntimeError("ERROR mismatch of BH iords")
+                    raise RuntimeError("BH iords are mismatched")
                 exists = np.where((idf==id1[ii])&(idt==id2[jj]))[0]
                 if len(exists) == 0:
                     links.append(tangos.core.halo_data.HaloLink(bh_objects_1[ii],bh_objects_2[jj],dict_obj,1.0))
                     links.append(tangos.core.halo_data.HaloLink(bh_objects_2[jj],bh_objects_1[ii],dict_obj,1.0))
-        logger.info("Found %d tracker links between steps %r and %r", len(links), ts1, ts2)
+        logger.info("Generated %d tracker links between steps %r and %r", len(links), ts1, ts2)
 
-        logger.info("Gathering BH Merger information for steps %r and %r", ts1, ts2)
+        logger.info("Generating BH Merger information for steps %r and %r", ts1, ts2)
         for l in open(fname[0]):
             l_split = l.split()
             t = float(l_split[0])
             bh_dest_id = int(l_split[2])
             bh_src_id = int(l_split[3])
             ratio = float(l_split[4])
+
+            # ratios in merger file are ambiguous (since major progenitor may be "source" rather than "destination")
+            # re-establish using the log file:
+            try:
+                ratio = bh_log.determine_merger_ratio(bh_src_id, bh_dest_id)
+            except ValueError:
+                logger.debug("Could not calculate merger ratio for %d->%d from the BH log; assuming the .mergers-asserted value is accurate",
+                            bh_src_id, bh_dest_id)
 
             if t>ts1.time_gyr and t<=ts2.time_gyr:
                 bh_map[bh_src_id] = (bh_dest_id, ratio)
@@ -270,13 +280,10 @@ def generate_halolinks(session, fname, pairs):
                 bh_dest_after = bh_objects_2[nums2.index(dest)]
 
                 if ((idf_n==bh_src_before.id)&(idt_n==bh_dest_after.id)).sum()==0:
-                    logger.info("Add link idf_n %d -> idt_n %d", bh_src_before.id, bh_dest_after.id)
                     mergers_links.append(tangos.core.halo_data.HaloLink(bh_src_before,bh_dest_after,dict_obj_next,1.0))
                     mergers_links.append(tangos.core.halo_data.HaloLink(bh_dest_after,bh_src_before,dict_obj_prev,ratio))
-                else:
-                    logger.info("Existing link %d -> %d", bh_src_before.id, bh_dest_after.id)
 
-        logger.info("Found %d BH merger links for steps %r and %r", len(mergers_links), ts1, ts2)
+        logger.info("Generated %d BH merger links for steps %r and %r", len(mergers_links), ts1, ts2)
 
         with parallel_tasks.RLock("bh"):
             logger.info("Committing total %d BH links for steps %r and %r", len(mergers_links)+len(links), ts1, ts2)

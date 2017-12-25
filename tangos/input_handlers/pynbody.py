@@ -178,17 +178,23 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
 
 
     def match_objects(self, ts1, ts2, halo_min, halo_max,
-                    dm_only=False, threshold=0.005, object_typetag='halo'):
+                      dm_only=False, threshold=0.005, object_typetag='halo',
+                      output_handler_for_ts2=None):
         if dm_only:
             only_family='dm'
         else:
             only_family=None
 
         f1 = self.load_timestep(ts1)
-        f2 = self.load_timestep(ts2)
-
         h1 = self._construct_halo_cat(ts1, object_typetag)
-        h2 = self._construct_halo_cat(ts2, object_typetag)
+
+        if output_handler_for_ts2:
+            assert isinstance(output_handler_for_ts2, PynbodyOutputSetHandler)
+            f2 = output_handler_for_ts2.load_timestep(ts2)
+            h2 = output_handler_for_ts2._construct_halo_cat(ts2, object_typetag)
+        else:
+            f2 = self.load_timestep(ts2)
+            h2 = self._construct_halo_cat(ts2, object_typetag)
 
         return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold,
                                                  only_family=only_family, groups_1=h1, groups_2=h2)

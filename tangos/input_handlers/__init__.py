@@ -1,8 +1,10 @@
-"""simulation_output_handlers sub-package
+"""input_handlers sub-package
 
 This sub-package handles returning views of the original simulation data on disk for further processing.
 At the moment, the views are always pynbody views, but adaptors for other frameworks could be implemented by
 overriding the functionality.
+
+For an introduction, see https://pynbody.github.io/tangos/input_handlers.html
 """
 
 from __future__ import absolute_import

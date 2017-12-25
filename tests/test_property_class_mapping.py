@@ -1,5 +1,5 @@
 import tangos
-import tangos.simulation_output_handlers as soh
+import tangos.input_handlers as soh
 import tangos.properties as prop
 from nose.tools import assert_raises
 

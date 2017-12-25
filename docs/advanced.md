@@ -8,4 +8,4 @@ topics:
  - [Tracking](tracking.md) groups of particles across timesteps
  - [Parallelisation strategies](mpi.md)
  - The [live calculation](live_calculation.md) system
- - Writing [custom handlers](custom_output_handlers.md) for new file formats or libraries
+ - Writing [custom handlers](custom_input_handlers.md) for new file formats or libraries

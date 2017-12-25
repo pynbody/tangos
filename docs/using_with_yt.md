@@ -59,14 +59,14 @@ Import some AHF-defined properties
 At the unix command line type:
 
 ```
-tangos_import_from_ahf Mvir Rvir --sims tutorial_changa_yt
+tangos_import_from_ahf Mvir Rvir --for tutorial_changa_yt
 ```
 
 The process should take less than a minute on a standard modern computer, 
 during which you'll see a bunch of log messages scroll up the screen.
 
 The example command line lists two properties, `Mvir` and `Rvir` to import from the stat files. The added directive 
-`--sims tutorial_changa_yt` specifies which simulation you want to apply this operation to. It's not strictly
+`--for tutorial_changa_yt` specifies which simulation you want to apply this operation to. It's not strictly
 necessary to add this if you only have one simulation in your database.
  
  
@@ -76,7 +76,7 @@ Add some more interesting properties
 Add a density profile using:
  
 ```bash
-tangos_writer dm_density_profile --sims tutorial_changa  
+tangos_writer dm_density_profile --for tutorial_changa  
 ```
 
 Here,
@@ -87,4 +87,4 @@ Here,
 You might note that `dm_density_profile` is also the name of a property that can be calculated using
 `pynbody` (see the [changa+AHF tutorial](first_steps_changa+ahf.md)). _Tangos_ is able to select the correct piece of
 code to work with _yt_ instead of _pynbody_. For more information on how this is accomplished, 
-see the [custom output handler documentation](custom_output_handlers.md).
+see the [custom output handler documentation](custom_input_handlers.md).

@@ -39,7 +39,7 @@ Generate the merger trees
 The merger trees are most simply generated using pynbody's bridge function. To do this, type
 
 ```
-tangos_timelink --sims tutorial_ramses
+tangos_timelink --for tutorial_ramses
 ```
 
 The construction of each merger tree should take a couple of minutes,  and again you'll see a log scroll up the screen while it happens.
@@ -53,7 +53,7 @@ Next, we will add some properties to the halos so that we can start to do some s
 we only want to do science on the highest resolution regions. The first thing to calculate is therefore which halos fall
 in that region. From your shell type:
 ```bash
-tangos_writer contamination_fraction --sims tutorial_ramses
+tangos_writer contamination_fraction --for tutorial_ramses
 ```
 
 Here,

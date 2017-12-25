@@ -297,7 +297,7 @@ div.popup-controls {
     cursor: pointer;
 }
 
-div.properties-area {
+div#properties-area {
     min-height: 700px;
 }
 

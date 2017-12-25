@@ -41,7 +41,7 @@ Import subfind's properties
 At the unix command line type:
 
 ```
-tangos_import_from_subfind --sims tutorial_gadget
+tangos_import_from_subfind --for tutorial_gadget
 ```
 
 The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages scroll up the screen.
@@ -54,13 +54,13 @@ Generate the merger trees
 The merger trees are most simply generated using pynbody's bridge function. To do this type:
 
 ```
-tangos_timelink --sims tutorial_gadget
+tangos_timelink --for tutorial_gadget
 ```
 
 which builds the merger tree for the halos, and then you probably also want to run
 
 ```
-tangos_timelink --type group --sims tutorial_gadget
+tangos_timelink --type group --for tutorial_gadget
 ```
 to make the merger tree for the groups. If you want to speed up these processes, they can each be 
 [MPI parallelised](mpi.md).
@@ -74,7 +74,7 @@ Add some more interesting properties
 Let's finally do some science. We'll add dark matter density profiles; from your shell type:
  
  ```bash
-tangos_writer dm_density_profile --with-prerequisites --include-only="NDM()>5000" --type=halo --sims tutorial_gadget
+tangos_writer dm_density_profile --with-prerequisites --include-only="NDM()>5000" --type=halo --for tutorial_gadget
 ```
 
 If you want to speed up this process, it can be [MPI parallelised](mpi.md).

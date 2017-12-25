@@ -71,11 +71,11 @@
     </div>
 
 
-    <div class="properties-area">
+    <div class="dynamic-update" id="properties-area">
     <h2>Properties</h2>
 
 
-    <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="dynamic-update autorestore" onchange="plotSelectionUpdate();" >
+    <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="autorestore" onchange="plotSelectionUpdate();" >
     <input type="hidden" name="object_typetag" value="{{ halo_typetag }}"/>
     <table>
         <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>

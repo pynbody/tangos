@@ -4,7 +4,7 @@ import tangos.config
 import os
 from tangos.tools import add_simulation
 from tangos.tools import property_writer
-from tangos.simulation_output_handlers import output_testing
+from tangos.input_handlers import output_testing
 from tangos import parallel_tasks, log, testing
 from tangos import properties
 
