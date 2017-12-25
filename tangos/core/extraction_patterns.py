@@ -140,7 +140,8 @@ class HaloLinkGetter(HaloPropertyGetter):
 
     def get_from_session(self, halo, property_id, session):
         from . import halo_data
-        query_links = session.query(halo_data.HaloLink).filter_by(relation_id=property_id, halo_from_id=halo.id)
+        query_links = session.query(halo_data.HaloLink).filter_by(relation_id=property_id, halo_from_id=halo.id).order_by(
+            halo_data.HaloLink.id)
         return self._postprocess(query_links.all())
 
     def cache_contains(self, halo, property_id):

@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import weakref
 
 from sqlalchemy import Column, Integer, ForeignKey, orm
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, Session
 from sqlalchemy.ext.declarative import declared_attr
 
 from . import extraction_patterns
@@ -122,7 +122,7 @@ class Halo(Base):
         See live_calculation.md for an introduction to this powerful functionality."""
         from .. import live_calculation
         calculation = live_calculation.parser.parse_property_name_if_required(name)
-        (value,), description = calculation.values_sanitized_and_description([self])
+        (value,), description = calculation.values_sanitized_and_description([self], Session.object_session(self))
         if len(value)==1:
             retval = value[0]
         else:
@@ -300,7 +300,7 @@ class Halo(Base):
                 raw_query = thl.halo_query(tt)
                 query = property_description.supplement_halo_query(raw_query)
                 results = query.all()
-                return property_description.values_sanitized(results)
+                return property_description.values_sanitized(results, Session.object_session(self))
         finally:
             session.close()
 
@@ -368,10 +368,10 @@ class Tracker(Halo):
         return handler.load_tracked_region(self.timestep.extension, self.tracker, mode=mode)
 
 
-
-TimeStep.trackers = orm.relationship(Tracker, cascade='all', lazy='dynamic',
-                                     primaryjoin=Tracker.timestep_id==TimeStep.id,
-                                     order_by=Tracker.halo_number)
+TimeStep.trackers = orm.relationship(Halo, cascade='all', lazy='dynamic',
+                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==3)),
+                                  foreign_keys=Halo.timestep_id,
+                                  order_by=Halo.halo_number)
 
 
 
@@ -383,7 +383,11 @@ class BH(Tracker):
 
     tag = "BH"
 
-TimeStep.bhs = orm.relationship(BH, cascade='all', lazy='dynamic', primaryjoin=BH.timestep_id==TimeStep.id)
+
+TimeStep.bhs = orm.relationship(Halo, cascade='all', lazy='dynamic',
+                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==1)),
+                                  foreign_keys=Halo.timestep_id,
+                                  order_by=Halo.halo_number)
 
 
 class Group(Halo):
@@ -397,8 +401,7 @@ class Group(Halo):
         super(Group, self).__init__(*args)
         self.object_typecode = 2
 
-
-TimeStep.groups = orm.relationship(Group, cascade='all', lazy='dynamic', primaryjoin=Group.timestep_id==TimeStep.id,
-                                   order_by=Group.halo_number)
-
-
+TimeStep.groups = orm.relationship(Halo, cascade='all', lazy='dynamic',
+                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==2)),
+                                  foreign_keys=Halo.timestep_id,
+                                  order_by=Halo.halo_number)

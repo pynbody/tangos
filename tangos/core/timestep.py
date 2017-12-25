@@ -139,7 +139,7 @@ class TimeStep(Base):
                 raw_query = raw_query.filter_by(object_typecode=object_typecode)
             query = property_description.supplement_halo_query(raw_query)
             results = query.all()
-            results = property_description.values_sanitized(results)
+            results = property_description.values_sanitized(results, Session.object_session(self))
         finally:
             session.close()
         return results

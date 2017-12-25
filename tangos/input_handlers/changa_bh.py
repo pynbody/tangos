@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import re
 import numpy as np
-import pynbody
 import six
 from ..log import logger
 
@@ -23,6 +22,7 @@ class BHShortenedLog(object):
         return obj
 
     def __init__(self, filename):
+        import pynbody
         f = pynbody.load(filename)
         self.boxsize = float(f.properties['boxsize'].in_units('kpc', a=f.properties['a']))
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$", filename).groups()

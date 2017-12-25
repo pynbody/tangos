@@ -52,15 +52,4 @@ def has_property(source_halos, property):
 
 has_property.set_input_options(0, provide_proxy=False, assert_class=StoredProperty)
 
-
-@BuiltinFunction.register
-def has_link(source_halos, link):
-    return np.not_equal(link,None)
-
-@has_link.set_initialisation
-def link_exists_initialisation(input):
-
-    input.set_extraction_pattern(
-        extraction_patterns.halo_link_target_getter)
-
-from . import arithmetic, array, reassembly
+from . import arithmetic, array, reassembly, link
