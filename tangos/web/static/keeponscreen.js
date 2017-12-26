@@ -3,7 +3,6 @@
 var scrollTop = {};
 
 function initScrollOffsetData() {
-    return;
     console.info("initScrollOffsetData");
     $(".keeponscreen").each(function() {
         if($(this).css('position')!='absolute') {
@@ -14,13 +13,12 @@ function initScrollOffsetData() {
             clone.css('visibility', 'hidden');
             $(this).after(clone);
         }
-        scrollTop[this.id]=this.getBoundingClientRect().top;
+        scrollTop[this.id]=this.getBoundingClientRect().top+window.scrollY;
 
     });
 }
 
 function updatePositionsAfterScroll() {
-    return;
     var windowTop = $(window).scrollTop();
     var current=0;
     $(".keeponscreen").each(function() {
@@ -42,7 +40,6 @@ function updatePositionsAfterScroll() {
 }
 
 function setupScrollAdjustment() {
-    return;
     initScrollOffsetData();
     $(window).scroll(updatePositionsAfterScroll);
     updatePositionsAfterScroll();
