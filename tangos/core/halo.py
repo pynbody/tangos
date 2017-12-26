@@ -186,6 +186,14 @@ class Halo(Base):
             raise KeyError("No such property %r" % key)
         return ret_values
 
+    def get_description(self, key, getters=[extraction_patterns.halo_property_getter,
+                                          extraction_patterns.halo_link_getter]):
+        """Get a description of a named property or link, in the form of an object capable of calculating it.
+
+        This can be helpful to extract meta-data such as the size of an image or steps of an array."""
+        object = self.get_objects(key, getters)[0]
+        return object.description
+
 
     def __setitem__(self, key, obj):
         if isinstance(obj, Halo):
