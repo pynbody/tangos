@@ -52,4 +52,9 @@ def has_property(source_halos, property):
 
 has_property.set_input_options(0, provide_proxy=False, assert_class=StoredProperty)
 
+@has_property.set_initialisation
+def has_property_init(input):
+    input.set_extraction_pattern(extraction_patterns.halo_property_raw_value_getter)
+
+
 from . import arithmetic, array, reassembly, link
