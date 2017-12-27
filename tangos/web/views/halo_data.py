@@ -238,7 +238,6 @@ def image_plot(request, val, property_info):
         else:
             data =val
 
-        print(data.min(),data.max(),width)
         if width is not None :
             p.imshow(data,extent=(-width/2,width/2,-width/2,width/2))
         else :

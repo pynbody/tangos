@@ -3,7 +3,8 @@ import tangos, tangos.web
 from tangos import testing
 from webtest import TestApp
 import numpy as np
-
+import csv
+from six import StringIO
 
 def setup():
     testing.init_blank_db_for_testing()
@@ -14,6 +15,7 @@ def setup():
     for ts in range(1,4):
         creator.add_timestep()
         creator.add_objects_to_timestep(4)
+        creator.link_last_halos()
 
     tangos.get_default_session().commit()
     tangos.get_item("sim/ts1/halo_1")['test_image'] = np.zeros((500,500,3))
@@ -52,8 +54,35 @@ def test_plot():
     assert response.status_int == 200
     assert response.content_type == 'image/png'
 
+def test_plot_as_csv_timeseries():
+    response = app.get("/sim/ts3/halo_1/test_value/vs/z().csv")
+    assert response.status_int == 200
+    assert response.content_type == 'text/csv'
+    assert "filename=timeseries_test_value_vs_z().csv" in response.content_disposition
+    csv_reader = csv.reader(StringIO(response.body.decode('utf-8')))
+    csv_rows = list(csv_reader)
+    assert csv_rows[0]==['test_value', 'z()']
+    assert csv_rows[1]==['1.0','6.0']
+    assert csv_rows[2]==['1.0', '7.0']
+    assert csv_rows[3]==['1.0', '8.0']
+
+def test_plot_as_csv_timestep():
+    response = app.get("/sim/ts3/test_value/vs/halo_number().csv")
+    assert response.status_int == 200
+    assert response.content_type == 'text/csv'
+    assert "filename=timestep_test_value_vs_halo_number().csv" in response.content_disposition
+    csv_reader = csv.reader(StringIO(response.body.decode('utf-8')))
+    csv_rows = list(csv_reader)
+    assert csv_rows[0]==['test_value', 'halo_number()']
+    assert csv_rows[1]==['1.0','1.0']
+    assert csv_rows[2] == ['1.0', '2.0']
+    assert csv_rows[3] == ['1.0', '3.0']
+    assert csv_rows[4] == ['1.0', '4.0']
+
 def test_image_plot():
     response = app.get("/sim/ts1/halo_1/test_image.png")
+    assert response.status_int == 200
+    assert response.content_type == 'image/png'
 
 def test_json_gather():
     response = app.get("/sim/ts1/gather/test_value.json")
