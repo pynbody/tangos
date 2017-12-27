@@ -8,7 +8,7 @@ from pyramid.compat import escape
 import numpy as np
 from . import halo_from_request, timestep_from_request, simulation_from_request
 from pyramid.response import Response
-from six import BytesIO
+from six import BytesIO, string_types
 from ...log import logger
 from ... import core
 import threading
@@ -255,8 +255,7 @@ def image_plot(request, val, property_info):
             p.imshow(data)
 
         if property_info:
-            p.xlabel(property_info.plot_xlabel())
-            p.ylabel(property_info.plot_ylabel())
+            add_xy_labels(property_info, request)
 
         if len(val.shape) is 2 :
             cb = p.colorbar()
@@ -264,6 +263,19 @@ def image_plot(request, val, property_info):
                 cb.set_label(property_info.plot_clabel())
 
         return finish(request)
+
+
+def add_xy_labels(property_info, request):
+    p.xlabel(property_info.plot_xlabel())
+    ylabel = property_info.plot_ylabel()
+    # cludge follows - should be eliminated by fixing the mess around multi-name vs single-name property classes
+    if not isinstance(ylabel, string_types):
+        try:
+            ylabel = ylabel[property_info.index_of_name(decode_property_name(request.matchdict['nameid']))]
+        except:
+            ylabel = ""
+    p.ylabel(ylabel)
+
 
 @view_config(route_name='array_plot')
 def array_plot(request):
@@ -288,14 +300,11 @@ def array_plot(request):
         elif property_info.plot_ylog():
             p.semilogy()
 
-        if property_info.plot_xlabel():
-            p.xlabel(property_info.plot_xlabel())
-
-        #if property_info.plot_ylabel():
-        #    p.ylabel(property_info.plot_ylabel())
 
         if property_info.plot_yrange():
             p.ylim(*property_info.plot_yrange())
+
+        add_xy_labels(property_info, request)
 
         return finish(request)
 

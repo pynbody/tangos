@@ -11,6 +11,12 @@ class StarFormHistogram(TimeChunkedProperty):
     def name(self):
         return "SFR_histogram"
 
+    def plot_xlabel(self):
+        return "t/Gyr"
+
+    def plot_ylabel(self):
+        return r"$SFR/M_{\odot} yr^{-1}$"
+
     def calculate(self, halo, existing_properties):
         M,_ = np.histogram(halo.st['tform'].in_units("Gyr"),weights=halo.st['massform'].in_units("Msol"),bins=self.nbins,range=(0,self.tmax_Gyr))
         t_now = halo.properties['time'].in_units("Gyr")

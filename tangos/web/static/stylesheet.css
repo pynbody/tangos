@@ -299,6 +299,7 @@ div.popup-controls {
 
 div#properties-area {
     min-height: 700px;
+    max-width: 600px;
 }
 
 ul.ui-autocomplete {

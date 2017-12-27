@@ -91,6 +91,12 @@ class BHAccHistogram(TimeChunkedProperty):
     def no_proxies(self):
         return True
 
+    def plot_xlabel(self):
+        return "t/Gyr"
+
+    def plot_ylabel(self):
+        return r"$\dot{M}/M_{\odot}\,yr^{-1}$"
+
     def calculate(self, halo, properties):
 
         halo = halo.s
