@@ -60,7 +60,7 @@ $.fn.markAsColumnInsertPoint = function(editable_tag) {
 
 function updateColumnData(miniLanguageQuery, columnId) {
     $('#header-'+columnId).html("<img src='/static/spinner.gif'/>"+miniLanguageQuery)
-    updatePlotControlElements('#plotctl-'+columnId,miniLanguageQuery, false, false);
+    updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, false, false);
     $.ajax({
         type: "GET",
         url: "{{ gather_url }}"+uriEncodeQuery(miniLanguageQuery)+".json",
@@ -70,8 +70,7 @@ function updateColumnData(miniLanguageQuery, columnId) {
                  $('#header-'+columnId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
             } else {
                 $('#header-'+columnId).html(miniLanguageQuery);
-                updatePlotControlElements('#plotctl-'+columnId,miniLanguageQuery,
-                            false, data.can_use_as_filter, true);
+                updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, data.can_use_as_filter, false, true);
                 $.each(data.data_formatted, function(i, item) {
                     var dbid = data.db_id[i];
                     $('#dbid-'+dbid).find('.'+columnId).html(item);

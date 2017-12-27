@@ -85,13 +85,22 @@ def can_use_elements_in_plot(data_array):
         return can_use_in_plot(data_array[0])
 
 def can_use_as_filter(data):
-    return np.issubdtype(type(data), np.bool) and not np.issubdtype(type(data), np.number) and not hasattr(data,'__len__')
+    return np.issubdtype(type(data), np.bool_) and not np.issubdtype(type(data), np.number) and not hasattr(data,'__len__')
 
 def can_use_elements_as_filter(data_array):
     if len(data_array)==0:
         return False
     else:
         return can_use_as_filter(data_array[0])
+
+def is_array(data):
+    return isinstance(data, np.ndarray) and data.ndim>0
+
+def elements_are_arrays(data_array):
+    if len(data_array)==0:
+        return False
+    else:
+        return is_array(data_array[0])
 
 @view_config(route_name='calculate_all', renderer='json')
 def calculate_all(request):
@@ -105,7 +114,8 @@ def calculate_all(request):
     return {'timestep': ts.extension, 'data_formatted': [format_data(d, request) for d in data],
            'db_id': [int(x) for x in db_id],  # problems with jsonifying np.int64; needs to be native int?
             'can_use_in_plot': can_use_elements_in_plot(data),
-            'can_use_as_filter': can_use_elements_as_filter(data)}
+            'can_use_as_filter': can_use_elements_as_filter(data),
+            'is_array': elements_are_arrays(data)}
 
 @view_config(route_name='get_property', renderer='json')
 def get_property(request):
@@ -118,7 +128,8 @@ def get_property(request):
 
     return {'data_formatted': format_data(result, request, halo),
             'can_use_in_plot': can_use_in_plot(result),
-            'can_use_as_filter': can_use_as_filter(result)}
+            'can_use_as_filter': can_use_as_filter(result),
+            'is_array': is_array(result)}
 
 
 def start(request) :

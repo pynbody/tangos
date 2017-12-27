@@ -229,7 +229,7 @@ function getFilterElements(query) {
     return '<label>Filter <input name="filter-'+uriQuery+'" type="checkbox"/></label>'
 }
 
-function updatePlotControlElements(element, query, isScalar, isFilter, filterOnly) {
+function updatePlotControlElements(element, query, isScalar, isFilter, isArray, filterOnly) {
     var controls = {};
     $(element).find("input").each(function() {
        controls[this.name] = this.checked;
@@ -248,9 +248,12 @@ function updatePlotControlElements(element, query, isScalar, isFilter, filterOnl
     } else if(isScalar) {
         hiddenHtml = arrayControls+filterControls;
         visibleHtml = scalarControls;
-    } else {
+    } else if(isArray) {
         hiddenHtml = scalarControls+filterControls;
         visibleHtml = arrayControls;
+    } else {
+        hiddenHtml = scalarControls+filterControls+arrayControls;
+        visibleHtml = "";
     }
 
     buttonsHtml = "<span class='hidden'>"+hiddenHtml+"</span>"+visibleHtml;

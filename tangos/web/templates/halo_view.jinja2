@@ -123,7 +123,7 @@
             // This is so that the correct radio buttons get ticked after a page update (otherwise the
             // update happens while the DOM elements are not yet available). It also allows the state of the
             // radio buttons to be carried over when a query is updated.
-            updatePlotControlElements('#plotctl-'+rowId,miniLanguageQuery, true);
+            updatePlotControlElements('#plotctl-' + rowId, miniLanguageQuery, false, false, false);
 
             $.ajax({
                 type: "GET",
@@ -139,8 +139,8 @@
                         $('#contents-'+rowId).html(data.data_formatted);
 
                         // See above for why the plot controls are put in place then updated
-                        updatePlotControlElements('#plotctl-'+rowId,miniLanguageQuery,
-                            data.can_use_in_plot, data.can_use_as_filter);
+                        updatePlotControlElements('#plotctl-' + rowId, miniLanguageQuery,
+                            data.can_use_in_plot, data.can_use_as_filter, data.is_array);
                         plotFetchingDisabled=false;
                         fetchPlot(true);
                     }
