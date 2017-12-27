@@ -48,7 +48,8 @@ def earliest(source_halos):
 
 @BuiltinFunction.register
 def has_property(source_halos, property):
-    return np.not_equal(property,None)
+    from ...util import is_not_none
+    return is_not_none(property)
 
 has_property.set_input_options(0, provide_proxy=False, assert_class=StoredProperty)
 
