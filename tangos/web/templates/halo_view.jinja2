@@ -64,7 +64,8 @@
             <input name="type" value="cascade" type="radio" id="type-cascade" checked><label for="type-cascade">This halo</label><br/>
             <input name="logx" type="checkbox" id="logx"/><label for="logx">log x</label>
             <input name="logy" type="checkbox" id="logy"/><label for="logy">log y</label>
-            <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>
+            <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>.
+            <a href="#" id="download-csv-link">&#x25BC; Download CSV</a>
         </form>
         </div>
         <div id="imgbox"></div>
@@ -283,12 +284,18 @@
             return true;
         }
 
+        function updateDownloadLink(url) {
+            var csv_url = url.replace('.png','.csv');
+            $('#download-csv-link').attr('href', csv_url);
+        }
+
         function loadImage(url) {
             objImg = new Image();
             existingImgSrc = url;
             objImg.src = url;
             objImg.onload = placeImage;
             objImg.onerror = placeImageError;
+            updateDownloadLink(url);
         }
 
         function placeImageError() {

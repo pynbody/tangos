@@ -154,18 +154,8 @@ def rescale_plot(request):
 
 @view_config(route_name='gathered_plot')
 def gathered_plot(request):
-    ts = timestep_from_request(request)
-    name1 = decode_property_name(request.matchdict['nameid1'])
-    name2 = decode_property_name(request.matchdict['nameid2'])
-    filter = decode_property_name(request.GET.get('filter', ""))
-    object_typetag = request.matchdict.get('object_typetag',None)
+    name1, name2, v1, v2 = gathered_plot_data(request)
 
-    if filter!="":
-        v1, v2, f = ts.calculate_all(name1, name2, filter)
-        v1 = v1[f]
-        v2 = v2[f]
-    else:
-        v1, v2 = ts.calculate_all(name1, name2)
     with _matplotlib_lock:
         start(request)
         p.plot(v1,v2,'k.')
@@ -175,12 +165,36 @@ def gathered_plot(request):
         return finish(request)
 
 
-@view_config(route_name='cascade_plot')
-def cascade_plot(request):
-    halo = halo_from_request(request)
+@view_config(route_name='gathered_csv', renderer='csv')
+def gathered_csv(request):
+    name1, name2, v1, v2 = gathered_plot_data(request)
+    return {
+        'header': [name1, name2],
+        'rows': np.array((v1,v2)).T,
+        'name': "timestep_" + name1 + "_vs_" + name2
+    }
+
+def gathered_plot_data(request):
+    ts = timestep_from_request(request)
     name1 = decode_property_name(request.matchdict['nameid1'])
     name2 = decode_property_name(request.matchdict['nameid2'])
-    v1, v2 = halo.calculate_for_progenitors(name1, name2)
+    filter = decode_property_name(request.GET.get('filter', ""))
+    object_typetag = request.matchdict.get('object_typetag', None)
+
+    if filter != "":
+        v1, v2, f = ts.calculate_all(name1, name2, filter, object_typetag=object_typetag)
+        v1 = v1[f]
+        v2 = v2[f]
+    else:
+        v1, v2 = ts.calculate_all(name1, name2, object_typetag=object_typetag)
+
+    return name1, name2, v1, v2
+
+
+
+@view_config(route_name='cascade_plot')
+def cascade_plot(request):
+    name1, name2, v1, v2 = cascade_plot_data(request)
     with _matplotlib_lock:
         start(request)
         p.plot(v1,v2,'k')
@@ -189,7 +203,21 @@ def cascade_plot(request):
         rescale_plot(request)
         return finish(request)
 
+@view_config(route_name='cascade_csv', renderer='csv')
+def cascade_csv(request):
+    name1, name2, v1, v2 = cascade_plot_data(request)
+    return {
+        'header': [name1, name2],
+        'rows': np.array((v1,v2)).T,
+        'name': "timeseries_"+name1+"_vs_"+name2
+    }
 
+def cascade_plot_data(request):
+    halo = halo_from_request(request)
+    name1 = decode_property_name(request.matchdict['nameid1'])
+    name2 = decode_property_name(request.matchdict['nameid2'])
+    v1, v2 = halo.calculate_for_progenitors(name1, name2)
+    return name1, name2, v1, v2
 
 
 def image_plot(request, val, property_info):
@@ -260,3 +288,16 @@ def array_plot(request):
             p.ylim(*property_info.plot_yrange())
 
         return finish(request)
+
+
+@view_config(route_name='array_csv', renderer='csv')
+def array_csv(request):
+    halo = halo_from_request(request)
+    name = decode_property_name(request.matchdict['nameid'])
+    val, property_info = halo.calculate(name, True)
+    xval = property_info.plot_x_values(val)
+
+    return {
+        'header': ["bin_center", name],
+        'rows': np.array((xval,val)).T,
+    }
