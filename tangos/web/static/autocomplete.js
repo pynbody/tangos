@@ -9,6 +9,9 @@ $(function() {
         url: "/autocomplete_words.json",
         success: function (data) {
             availableTags = data;
+            availableTags.sort(function (a, b) {
+                return a.toLowerCase().localeCompare(b.toLowerCase());
+            });
         }
     });
 });
@@ -20,7 +23,6 @@ var end_word_regex = /^[a-zA-Z0-9_]*\s*/;
 function extractBeforeWord(val, position) {
     var start = val.substring(0,position);
     var start_word = start_word_regex.exec(start)[0];
-    console.log("start_word=",start_word.length)
     if(start_word.length>0)
         return start.substring(0,start.length-start_word.length);
     else
@@ -97,13 +99,26 @@ function enableAutocomplete(element) {
             minLength: 1,
             delay: 0.0,
             source: function (request, response) {
-                // delegate back to autocomplete, but extract the last term
+
                 var word = extractWord(request.term, currentCaretPosition);
 
-                if(word.length>0)
-                    response($.ui.autocomplete.filter(availableTags, word));
-                else
+                if(word.length===0) {
                     element.autocomplete("close");
+                    return;
+                }
+
+                // check if there's a match which starts with the term the user's typing
+                var results = $.map(availableTags, function (tag) {
+                    if (tag.toUpperCase().indexOf(word.toUpperCase()) === 0) {
+                        return tag;
+                    }
+                });
+
+                // if not, look for any match
+                if (results.length===0)
+                    results = $.ui.autocomplete.filter(availableTags, word);
+
+                response(results);
 
             },
             focus: function () {

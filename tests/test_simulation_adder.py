@@ -4,7 +4,7 @@ import tangos.config
 from tangos import log
 import os
 from tangos.tools import add_simulation
-from tangos.simulation_output_handlers import output_testing
+from tangos.input_handlers import output_testing
 from tangos import testing
 
 def setup():

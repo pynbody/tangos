@@ -77,10 +77,14 @@ class HaloProperty(Base):
         else:
             return self.data_raw
 
+    @property
+    def description(self):
+        return self.name.providing_class(type(self.halo.handler))(self.halo.timestep.simulation)
+
     def x_values(self):
         if not self.data_is_array():
             raise ValueError("The data is not an array")
-        return self.name.providing_class(type(self.halo.handler))(self.halo.timestep.simulation).plot_x_values(self.data)
+        return self.description.plot_x_values(self.data)
 
     @data.setter
     def data(self, data):

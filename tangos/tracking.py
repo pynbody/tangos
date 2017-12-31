@@ -26,7 +26,7 @@ def get_trackers(sim):
     return trackers, np.array(nums)
 
 def get_tracker_halos(ts):
-    halos = ts.halos.filter_by(object_typecode=1).order_by(Halo.halo_number).all()
+    halos = ts.trackers.order_by(Halo.halo_number).all()
     hid = [h.id for h in halos]
     num = [h.halo_number for h in halos]
     return halos, np.array(num), np.array(hid)

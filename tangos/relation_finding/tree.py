@@ -75,7 +75,7 @@ class MergerTree(object):
 
             for obj in link_objs:
                 should_construct_onward_tree = obj.weight > max_weight * mergertree_min_fractional_weight
-                should_construct_onward_tree &= obj.halo_to.NDM > mergertree_min_fractional_NDM * max_NDM
+                should_construct_onward_tree &= (obj.halo_to.NDM > mergertree_min_fractional_NDM * max_NDM) | (obj.halo_to.NDM==0)
                 if NDM_cut:
                     should_construct_onward_tree &= obj.halo_to.NDM > NDM_cut
 

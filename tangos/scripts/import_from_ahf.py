@@ -6,7 +6,7 @@ import argparse
 
 import tangos as db
 import tangos.core.timestep
-from tangos.simulation_output_handlers import halo_stat_files as hsf
+from tangos.input_handlers import halo_stat_files as hsf
 from tangos.util.terminalcontroller import term
 
 

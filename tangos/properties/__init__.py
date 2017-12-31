@@ -6,7 +6,7 @@ from six.moves import zip
 import importlib
 import warnings
 import functools
-from .. import simulation_output_handlers
+from .. import input_handlers
 
 
 class HaloPropertiesMetaClass(type):
@@ -29,8 +29,8 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
 
     # In child class, defines the most general handler that this property is compatible with.
     # If unchanged, it is compatible with all handlers. Typically it will be appropriate to specify something more
-    # restrictive e.g. simulation_output_handlers.pynbody.PynbodyOutputSetHandler
-    works_with_handler = simulation_output_handlers.SimulationOutputSetHandler
+    # restrictive e.g. input_handlers.pynbody.PynbodyOutputSetHandler
+    works_with_handler = input_handlers.SimulationOutputSetHandler
 
     # Specifies whether the particle data needs to be provided for this class to perform a calculation; if
     # False, only existing HaloProperties are required by this calculation (see requires_property below).
@@ -444,8 +444,7 @@ def instantiate_classes(simulation, property_name_list, silent_fail=False):
 
 def instantiate_class(simulation, property_name, silent_fail=False):
     """Instantiate an appropriate property calculation class for a given simulation and property name"""
-    handler_class = type(simulation.get_output_handler())
-    instance = instantiate_classes(simulation, [property_name],handler_class, silent_fail)
+    instance = instantiate_classes(simulation, [property_name], silent_fail)
     if len(instance)==0:
         return None
     else:

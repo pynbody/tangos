@@ -165,7 +165,7 @@ class ExampleHaloProperty(PynbodyHaloProperties):
 By deriving from `PynbodyHaloProperties` instead of `HaloProperties`, you are indicating to _tangos_ 
 that this property can only be calculated with reference
 to the _pynbody_-loaded original particle data associated with the halo. (Note that there is an [equivalent
-for yt](using_with_yt.md), and you can make your [own customised loaders](custom_output_handlers.md) 
+for yt](using_with_yt.md), and you can make your [own customised loaders](custom_input_handlers.md) 
 by delving a bit more into detail.)
 Anyway, if you try to calculate this from within a 
 standard `tangos` session you'll run into difficulties (specifically you'll see a `RuntimeError`). That's because

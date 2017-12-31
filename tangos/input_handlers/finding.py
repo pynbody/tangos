@@ -36,7 +36,7 @@ class PatternBasedFileDiscovery(object):
     """Provides methods for pattern-based file discovery, i.e. glob-ing for specific patterns of file in this
     folder and sub-folders"""
 
-    patterns = []  # should be specified by child class. See simulation_output_handlers.pynbody for examples.
+    patterns = []  # should be specified by child class. See input_handlers.pynbody for examples.
 
     @classmethod
     def best_matching_handler(cls, basename):

@@ -15,7 +15,7 @@ for use.
 Handler classes
 ---------------
 
-Handlers are implemented by subclasses of `tangos.simulation_output_handlers.SimulationOutputSetHandler`.
+Handlers are implemented by subclasses of `tangos.input_handlers.SimulationOutputSetHandler`.
 To write your own, start by creating such a subclass. At a minimum will need to provide a way for _tangos_:
 
  - to enumerate the available simulation timesteps. This is the method 
@@ -42,7 +42,7 @@ Ideally, one also should have a method to link objects between steps, known as `
 
 
 ```python
-import tangos.simulation_output_handlers
+import tangos.input_handlers
 
 class MyDataObject(object):
     def __init__(self, data):
@@ -51,7 +51,7 @@ class MyDataObject(object):
     def __repr__(self):
         return str(self.internal_data)
 
-class MyHandler(tangos.simulation_output_handlers.SimulationOutputSetHandler):
+class MyHandler(tangos.input_handlers.SimulationOutputSetHandler):
     def enumerate_timestep_extensions(self):
         return ["my_timestep_1", "my_timestep_2"]
 
@@ -130,7 +130,7 @@ Ensure that `myhandler.py` is in your python search path. You should see that th
 with 100 and 150 halos respectively. Also from the shell, run:
 
 ```
-tangos_timelink --sims test_my_handler  
+tangos_timelink --for test_my_handler  
 ```
 
 Note that once the simulation has been created you don't need to remind _tangos_ of the handler. It stores

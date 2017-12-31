@@ -55,3 +55,6 @@ def includeme(config):
         'dbsession',
         reify=True
     )
+
+    # add custom renderer for CSV files
+    config.add_renderer('csv', 'tangos.web.renderers.CSVRenderer')

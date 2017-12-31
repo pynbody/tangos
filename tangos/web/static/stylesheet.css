@@ -297,7 +297,15 @@ div.popup-controls {
     cursor: pointer;
 }
 
-div.properties-area {
+div#properties-area {
     min-height: 700px;
+    max-width: 600px;
 }
 
+ul.ui-autocomplete {
+    max-height: 200px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    font-family: 'Lucida Console', 'Lucida Sans Typewriter', monaco, 'Bitstream Vera Sans Mono', monospace;
+    font-size: small;
+}

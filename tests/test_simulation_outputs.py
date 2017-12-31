@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import tangos as db
-import tangos.simulation_output_handlers.pynbody as pynbody_outputs
+import tangos.input_handlers.pynbody as pynbody_outputs
 import tangos.tools.add_simulation as add
 from tangos import config
 from tangos import log, testing
@@ -17,7 +17,7 @@ def setup():
 
 
 def test_get_handler():
-    assert db.simulation_output_handlers.get_named_handler_class('pynbody.ChangaOutputSetHandler') == pynbody_outputs.ChangaOutputSetHandler
+    assert db.input_handlers.get_named_handler_class('pynbody.ChangaOutputSetHandler') == pynbody_outputs.ChangaOutputSetHandler
 
 def test_handler_name():
     assert pynbody_outputs.ChangaOutputSetHandler.handler_class_name()=="pynbody.ChangaOutputSetHandler"

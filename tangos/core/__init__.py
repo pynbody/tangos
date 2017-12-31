@@ -81,8 +81,8 @@ def sim_query_from_args(argv, session=None):
 
     query = session.query(Simulation)
 
-    if "for" in argv:
-        rx = argv[argv.index("for") + 1:]
+    if "--sims" in argv:
+        rx = argv[argv.index("--sims") + 1:]
         clause = None
         for rxi in rx:
             if clause is None:

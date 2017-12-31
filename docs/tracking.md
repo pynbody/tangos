@@ -49,7 +49,7 @@ Let's calculate the mean gas density for the tracked particles across time. For 
 we leave the python session and return to the UNIX shell. Run:
 
 ```
-tangos_writer mean_rho --sims tutorial_changa --type tracker
+tangos_writer mean_rho --for tutorial_changa --type tracker
 ```
 Here,
  * `tangos_writer` is the standard command used in the earlier [tutorial](first_steps_changa+ahf.md)

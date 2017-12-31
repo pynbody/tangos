@@ -1,5 +1,5 @@
 from .. import HaloProperties
-from ...simulation_output_handlers import yt as yt_handler_module
+from ...input_handlers import yt as yt_handler_module
 import numpy as np
 
 class YtHaloProperties(HaloProperties):

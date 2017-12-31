@@ -16,7 +16,7 @@ from tangos.core import Base, get_or_create_dictionary_item, \
 from tangos.core.simulation import SimulationProperty
 from tangos.core.tracking import TrackData
 from tangos.query import get_simulation, get_halo
-from tangos.simulation_output_handlers import get_named_handler_class
+from tangos.input_handlers import get_named_handler_class
 from tangos.tools.add_simulation import SimulationAdderUpdater
 from six.moves import input
 
