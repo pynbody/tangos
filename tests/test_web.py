@@ -89,7 +89,7 @@ def test_json_gather_float():
     response = app.get("/sim/ts1/gather/test_value.json")
     assert response.content_type == 'application/json'
     assert response.status_int == 200
-    result = json.loads(response.body)
+    result = json.loads(response.body.decode('utf-8'))
     assert result['timestep']=='ts1'
     assert result['data_formatted']==["1.00", "1.00", "1.00", "1.00"]
     assert result['can_use_in_plot'] is True
@@ -100,7 +100,7 @@ def test_json_gather_array():
     response = app.get("/sim/ts1/gather/test_image.json")
     assert response.content_type == 'application/json'
     assert response.status_int == 200
-    result = json.loads(response.body)
+    result = json.loads(response.body.decode('utf-8'))
     assert result['timestep']=='ts1'
     assert result['data_formatted']==["Array"]
     assert result['can_use_in_plot'] is False
@@ -111,7 +111,7 @@ def test_json_gather_bool():
     response = app.get("/sim/ts1/gather/has_property(test_image).json")
     assert response.content_type == 'application/json'
     assert response.status_int == 200
-    result = json.loads(response.body)
+    result = json.loads(response.body.decode('utf-8'))
     assert result['timestep'] == 'ts1'
     assert result['data_formatted'] == ["True", "False", "False", "False"]
     assert result['can_use_in_plot'] is False
