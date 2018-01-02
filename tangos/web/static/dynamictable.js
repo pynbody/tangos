@@ -63,6 +63,7 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
     
     $this.html(addLabelText);
     $this[0].contentEditable=true;
+    enableAutocomplete($this);
 
     var savedContent;
     var column_id = $this.attr('id').substr(7);
@@ -95,6 +96,7 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
             if(savedContent!==addLabelText)
                 popupControls($this);
             if($this.text()===addLabelText) {
+                putCursorAt(this, 0);
                 $this.text("");
             }
         },
@@ -227,7 +229,7 @@ function getFilterElements(query) {
     return '<label>Filter <input name="filter-'+uriQuery+'" type="checkbox"/></label>'
 }
 
-function updatePlotControlElements(element, query, isScalar, isFilter, filterOnly) {
+function updatePlotControlElements(element, query, isScalar, isFilter, isArray, filterOnly) {
     var controls = {};
     $(element).find("input").each(function() {
        controls[this.name] = this.checked;
@@ -246,9 +248,12 @@ function updatePlotControlElements(element, query, isScalar, isFilter, filterOnl
     } else if(isScalar) {
         hiddenHtml = arrayControls+filterControls;
         visibleHtml = scalarControls;
-    } else {
+    } else if(isArray) {
         hiddenHtml = scalarControls+filterControls;
         visibleHtml = arrayControls;
+    } else {
+        hiddenHtml = scalarControls+filterControls+arrayControls;
+        visibleHtml = "";
     }
 
     buttonsHtml = "<span class='hidden'>"+hiddenHtml+"</span>"+visibleHtml;

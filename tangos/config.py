@@ -31,8 +31,9 @@ default_backend = 'null'
 # the default paralellism backend. Set e.g. to mpi4py to avoid having to pass --backend mpi4py to all parallel runs.
 
 
-property_modules = os.environ.get("TANGOS_PROPERTY_MODULES","") # names of property modules to import
-property_modules = property_modules.split(",") + ["tangos_nbodyshop_properties"]
+# names of property modules to import; default is for backwards compatibility on systems with N-Body-Shop extensions
+property_modules = os.environ.get("TANGOS_PROPERTY_MODULES","tangos_nbodyshop_properties")
+property_modules = property_modules.split(",")
 property_modules = map(str.strip, property_modules)
 
 file_ignore_pattern = []

@@ -25,3 +25,5 @@ from .query import *
 from . import properties
 
 core.init_db()
+
+__version__ = "1.0.0"

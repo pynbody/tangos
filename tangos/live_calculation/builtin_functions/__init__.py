@@ -48,21 +48,14 @@ def earliest(source_halos):
 
 @BuiltinFunction.register
 def has_property(source_halos, property):
-    return np.not_equal(property,None)
+    from ...util import is_not_none
+    return is_not_none(property)
 
 has_property.set_input_options(0, provide_proxy=False, assert_class=StoredProperty)
 
-
-@BuiltinFunction.register
-def has_link(source_halos, link):
-    return np.not_equal(link,None)
-
-@has_link.set_initialisation
-def link_exists_initialisation(input):
-
-    input.set_extraction_pattern(
-        extraction_patterns.halo_link_target_getter)
+@has_property.set_initialisation
+def has_property_init(input):
+    input.set_extraction_pattern(extraction_patterns.halo_property_raw_value_getter)
 
 
-
-from . import arithmetic, array, reassembly
+from . import arithmetic, array, reassembly, link

@@ -1,6 +1,6 @@
 # Live properties suitable for calculations on underlying profiles, e.g. density profiles, mass profiles etc
 
-from . import LiveHaloProperties, HaloProperties
+from . import LiveHaloProperties
 import numpy as np
 
 class AtPosition(LiveHaloProperties):
@@ -8,10 +8,7 @@ class AtPosition(LiveHaloProperties):
         super(AtPosition, self).__init__(simulation)
         self._array_info = array
 
-
-    @classmethod
-    def name(cls):
-        return "at"
+    names = "at"
 
     def live_calculate(self, halo, pos, ar):
         x0 = self._array_info.plot_x0()
@@ -35,9 +32,7 @@ class MaxMinProperty(LiveHaloProperties):
         super(MaxMinProperty, self).__init__(simulation)
         self._array_info = array
 
-    @classmethod
-    def name(cls):
-        return "max", "min", "posmax", "posmin"
+    names = "max", "min", "posmax", "posmin"
 
     def live_calculate(self, halo, array):
         max_, min_ = np.max(array), np.min(array)

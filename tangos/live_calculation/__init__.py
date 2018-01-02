@@ -6,13 +6,14 @@ from __future__ import absolute_import
 import warnings
 
 import numpy as np
-from sqlalchemy.orm import contains_eager, aliased
+from sqlalchemy.orm import contains_eager, aliased, Session
 
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data
 from tangos.core import extraction_patterns
 from tangos.live_calculation.query_masking import QueryMask
+from tangos.live_calculation.query_multivalue_folding import QueryMultivalueFolding
 from tangos.util import consistent_collection
 from .. import core
 from .. import temporary_halolist as thl
@@ -21,7 +22,8 @@ from six.moves import zip
 
 class UnknownValue(object):
     """A dummy object returned by Calculation.proxy_value when the value of the calculation cannot be predicted"""
-    pass
+    def __init__(self, name=None):
+        self.name = name
 
 class NoResultsError(ValueError):
     pass
@@ -122,12 +124,12 @@ class Calculation(object):
         properties of these values (if possible)"""
         raise NotImplementedError
 
-    def values_sanitized_and_description(self, halos):
+    def values_sanitized_and_description(self, halos, load_into_session=None):
         """Return the 'sanitized' values of this calculation, as well as a HaloProperties object (if available).
 
         See values_sanitized for the definition of sanitized"""
         values, desc = self.values_and_description(halos)
-        return self._sanitize_values(values), desc
+        return self._sanitize_values(values, load_into_session), desc
 
     def values(self, halos):
         """Return the values of this calculation applied to halos.
@@ -140,24 +142,27 @@ class Calculation(object):
         """Return the value of this calculation applied to the given halo"""
         return self.values([halo])[:,0]
 
-    def value_sanitized(self, halo):
+    def value_sanitized(self, halo, load_into_session=None):
         """"Return the value of this calculation applied to the given halo, with conversion to numpy arrays where possible.
 
         See values_sanitized for information about the conversion."""
-        return self.values_sanitized([halo])[:,0]
+        return self.values_sanitized([halo],load_into_session)[:,0]
 
-    def values_sanitized(self, halos):
+    def values_sanitized(self, halos, load_into_session=None):
         """Return the values of this calculation applied to halos, with conversion to numpy arrays where possible
 
         The return value is a self.n_columns()-length list, with each entry in the list being a numpy array of
         length len(halos). The dtype of the numpy array is chosen per-property to match the dtype result found
-        when evaluating the first halo."""
+        when evaluating the first halo.
+
+        Additionally, if load_into_session is provided, any returned database objects are re-queried against that
+        session so that usable ORM objects are returned (rather than ORM objects attached to a dead session)"""
         unsanitized_values = self.values(halos)
-        return self._sanitize_values(unsanitized_values)
+        return self._sanitize_values(unsanitized_values, load_into_session)
 
 
 
-    def _sanitize_values(self, unsanitized_values):
+    def _sanitize_values(self, unsanitized_values, load_into_session=None):
         """Convert the raw calculation result to a sanitized version. See values_sanitized."""
         keep_rows = np.all([[data is not None for data in row] for row in unsanitized_values], axis=0)
         # The obvious way of doing this:
@@ -166,11 +171,33 @@ class Calculation(object):
         # it can end up doing a comparison of an array to None (effectively data!=None),
         # which will not be the same as "is not None" in future versions of numpy.
 
-        unsanitized_values = unsanitized_values[:, keep_rows]
-        for x in unsanitized_values:
+        output_values = unsanitized_values[:, keep_rows]
+        for x in output_values:
             if len(x)==0:
                 raise NoResultsError("Calculation %s returned no results" % self)
-        return [self._make_numpy_array(x) for x in unsanitized_values]
+
+        if load_into_session is not None:
+            self._refetch_halos_from_original_session(output_values, load_into_session)
+
+        return [self._make_numpy_array(x) for x in output_values]
+
+    def _refetch_halos_from_original_session(self, unsanitized_values, session):
+        output_halos = []
+        unsanitized_values_ravel = unsanitized_values.flat
+        for item in unsanitized_values_ravel:
+            if isinstance(item, core.Halo):
+                output_halos.append(item.id)
+        if len(output_halos) > 0:
+            with thl.temporary_halolist_table(session, output_halos) as tab:
+                results = thl.halo_query(tab).all()
+
+            # reinstate duplicates
+            results = self._add_entries_for_duplicates(results, output_halos)
+
+            for i in range(len(unsanitized_values_ravel)):
+                if isinstance(unsanitized_values_ravel[i], core.Halo):
+                    refetched_halo = results[output_halos.index(unsanitized_values_ravel[i].id)]
+                    unsanitized_values_ravel[i] = refetched_halo
 
     @staticmethod
     def _make_numpy_array(x):
@@ -234,6 +261,13 @@ class Calculation(object):
     def proxy_value(self):
         """Return a placeholder value for this calculation"""
         raise NotImplementedError
+
+    @staticmethod
+    def _add_entries_for_duplicates(target_objs, target_ids):
+        if len(target_objs) == len(target_ids):
+            return target_objs
+        target_obj_ids = [t.id for t in target_objs]
+        return [target_objs[target_obj_ids.index(t_id)] for t_id in target_ids]
 
 
 class MultiCalculation(Calculation):
@@ -394,6 +428,10 @@ class BuiltinFunction(LiveProperty):
     __default_args = {'provide_proxy': False, 'assert_class': None}
 
     @classmethod
+    def all(cls):
+        return list(cls.__registered_functions.keys())
+
+    @classmethod
     def register(cls, func):
         """Register a built-in function for the live calculation (LC) system.
 
@@ -443,7 +481,9 @@ class BuiltinFunction(LiveProperty):
                 raise ValueError("Input %d to function %s must be of type %s (received %s)"%\
                                   (i,self._name,assert_class,type(self._inputs[i])))
         if 'initialisation' in self._info:
-            self._info['initialisation'](*self._inputs)
+            f = self._info['initialisation'](*self._inputs)
+            if f is not None:
+                self._func = f
 
     def _get_input_option(self, input_id, option):
         default = self.__default_args[option]
@@ -476,11 +516,20 @@ class Link(Calculation):
         super(Link, self).__init__()
         self.locator = tokens[0]
         self.property = tokens[1]
+        self._multi_selection_basis = 'first'
+        self._multi_selection_column = None
+        self._expect_multivalues = False
         if not isinstance(self.locator, Calculation):
             self.locator = parser.parse_property_name(self.locator)
+
+        if isinstance(self.locator, StoredProperty):
+            self.locator.set_extraction_pattern(extraction_patterns.halo_link_target_getter)
+            self.locator.set_multivalued() # we want to at least know if there are multiple possible links to follow
+            self._expect_multivalues = True
+
         if not isinstance(self.property, Calculation):
             self.property = parser.parse_property_name(self.property)
-        self.locator.set_extraction_pattern(extraction_patterns.halo_link_target_getter)
+
 
     def __str__(self):
         return str(self.locator)+"."+str(self.property)
@@ -497,6 +546,21 @@ class Link(Calculation):
         # so only the locator retrieval needs to be reported upwards
         return self.locator.retrieves()
 
+    def set_multi_selection_basis(self, basis='first', column=0):
+        """Set how a single link will be selected if multiple links from a single halo are present
+
+        Possible modes:
+          * 'first' (default); take the halolink with the lowest id
+          * 'max'; take the halolink where the result of the specified column is highest
+          * 'min'; take the halolink where the result of the specified column is lowest
+        """
+        basis = basis.lower()
+        if basis not in ['first', 'min', 'max']:
+            raise RuntimeError("Unknown basis for selecting a link. Supported modes are first, min or max")
+
+        self._multi_selection_basis = basis
+        self._multi_selection_column = column
+
     def n_columns(self):
         return self.property.n_columns()
 
@@ -511,48 +575,66 @@ class Link(Calculation):
         mask.mark_nones_as_masked(target_halos)
         target_halo_masked = mask.mask(target_halos)
 
+        if len(target_halo_masked)==0:
+            raise NoResultsError("No results found when attempting to follow link %r"%self.locator)
 
-        for i in range(len(target_halo_masked)):
-            if isinstance(target_halo_masked[i], list):
-                warnings.warn("More than one relation for target %r has been found. Picking the first."%str(self.locator))
-                target_halo_masked[i] = target_halo_masked[i][0].id
+        if self._expect_multivalues:
+            if self._multi_selection_basis=='first':
+                for i in range(len(target_halo_masked)):
+                    if len(target_halo_masked[i])>1:
+                        warnings.warn("More than one relation for target %r has been found. Picking the first."%str(self.locator), RuntimeWarning)
+                    target_halo_masked[i] = target_halo_masked[i][0]
             else:
-                target_halo_masked[i] = target_halo_masked[i].id
+                multivalue_folding = QueryMultivalueFolding(self._multi_selection_basis, self._multi_selection_column)
+                target_halo_masked = multivalue_folding.unfold(target_halo_masked)
 
-        # need a new session for the subqueries, because we might have cached copies of objects where
-        # a different set of properties has been loaded into all_properties
-        new_session = core.Session()
+        values, description = self._get_values_and_description_from_halo_id_list([x.id for x in target_halo_masked])
 
-        try:
-            with thl.temporary_halolist_table(new_session, target_halo_masked) as tab:
-                target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
-
-                # sqlalchemy's deduplication means we are now missing any halos that appear more than once in
-                # target_halos_ids_weeded. But we actually want the duplication.
-                target_halos_supplemented_with_duplicates = \
-                    self._add_entries_for_duplicates(target_halos_supplemented, target_halo_masked)
-
-                values, description = self.property.values_and_description(target_halos_supplemented_with_duplicates)
-        finally:
-            new_session.connection().close()
+        if self._expect_multivalues and self._multi_selection_basis!='first':
+            values = multivalue_folding.refold(values)
 
         results[:] = mask.unmask(values)
 
         return results, description
 
+    def _get_values_and_description_from_halo_id_list(self, target_halo_ids):
+
+        new_session = core.Session()
+        # need a new session for the subqueries, because we might have cached copies of objects where
+        # a different set of properties has been loaded into all_properties
+
+        try:
+            with thl.temporary_halolist_table(new_session, target_halo_ids) as tab:
+                target_halos_supplemented = self.property.supplement_halo_query(thl.halo_query(tab)).all()
+
+                # sqlalchemy's deduplication means we are now missing any halos that appear more than once in
+                # target_halo_ids. But we actually want the duplication.
+                target_halos_supplemented_with_duplicates = \
+                    self._add_entries_for_duplicates(target_halos_supplemented, target_halo_ids)
+
+                values, description = self.property.values_and_description(target_halos_supplemented_with_duplicates)
+        finally:
+            new_session.connection().close()
+        return values, description
+
     def _get_target_halos(self, source_halos):
         target_halos = self.locator.values(source_halos)[0]
         return target_halos
 
-    @staticmethod
-    def _add_entries_for_duplicates(target_objs, target_ids):
-        if len(target_objs)==len(target_ids):
-            return target_objs
-        target_obj_ids = [t.id for  t in target_objs]
-        return [target_objs[target_obj_ids.index(t_id)] for t_id in target_ids]
 
 
 
+
+class ReturnInputHalos(Calculation):
+    """Return the input halos (used internally by builtin_functions.link)"""
+    def values(self, halos):
+        return np.asarray(halos)
+
+    def values_and_description(self, halos):
+        return np.asarray(halos), None
+
+    def __str__(self):
+        return "_return_input()"
 
 class StoredProperty(Calculation):
     """Represents a named property with value stored in the database"""
@@ -560,6 +642,7 @@ class StoredProperty(Calculation):
     def __init__(self, *tokens):
         super(StoredProperty,self).__init__()
         self._name = tokens[0]
+        self._multivalued = False
 
     def __str__(self):
         return self._name
@@ -570,25 +653,41 @@ class StoredProperty(Calculation):
     def retrieves(self):
         return {self._name}
 
+    def set_multivalued(self, multivalued=True):
+        """Set multivalued flag; if True, returns all matches for the property, in a list.
+
+        Otherwise (default) returns the first match."""
+        self._multivalued=multivalued
+
     def values(self, halos):
         self._name_id = tangos.core.dictionary.get_dict_id(self._name)
         ret = np.empty((1,len(halos)),dtype=object)
         for i, h in enumerate(halos):
             if self._extraction_pattern.cache_contains(h, self._name_id):
-                ret[0,i]=self._extraction_pattern.get_from_cache(h, self._name_id)[0]
+                if self._multivalued:
+                    ret[0,i]=self._extraction_pattern.get_from_cache(h, self._name_id)
+                else:
+                    ret[0, i] = self._extraction_pattern.get_from_cache(h, self._name_id)[0]
         return ret
 
     def values_and_description(self, halos):
         from .. import properties
         values = self.values(halos)
         sim = consistent_collection.consistent_simulation_from_halos(halos)
-        description_class = properties.providing_class(self._name, silent_fail=True)
-        description = None if description_class is None else description_class(sim)
+        description_class = properties.providing_class(self._name, sim.output_handler_class, silent_fail=True)
+        description = None
+        if description_class is not None:
+            try:
+                description = description_class(sim)
+            except Exception as e:
+                warnings.warn("%r occurred while trying to produce a property description from class %r"%
+                              (e,description_class),
+                              RuntimeWarning)
         return values, description
 
     def proxy_value(self):
         """Return a placeholder value for this calculation"""
-        return UnknownValue()
+        return UnknownValue(self._name)
 
 
 

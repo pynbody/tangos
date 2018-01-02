@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship, backref, Session
 from . import data_attribute_mapper
 from . import Base
 from . import creator
-from .. import simulation_output_handlers, config
+from .. import input_handlers, config
 from .dictionary import DictionaryItem, get_dict_id, get_or_create_dictionary_item
 import six
 
@@ -36,14 +36,20 @@ class Simulation(Base):
         except KeyError:
             return default
 
-    def get_output_set_handler(self):
+    def get_output_handler(self):
         """Get a SimulationOutputSetHandler object, pre-configured suitably for this simulation
 
         :rtype simulation_outputs.SimulationOutputSetHandler"""
         if not hasattr(self, "_handler"):
-            handler = simulation_output_handlers.get_named_handler_class(self.get("handler", config.default_fileset_handler_class))
-            self._handler = handler(self.basename)
+            handler_class = self.output_handler_class
+            self._handler = handler_class(self.basename)
         return self._handler
+
+    @property
+    def output_handler_class(self):
+        if not hasattr(self, "_handler_class"):
+            self._handler_class = input_handlers.get_named_handler_class(self.get("handler", config.default_fileset_handler_class))
+        return self._handler_class
 
     def keys(self):
         return [prop.name.text for prop in self.properties.all()]

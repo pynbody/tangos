@@ -7,8 +7,13 @@ from sqlalchemy import Column, Integer, LargeBinary, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
 from . import Base
+from .halo import Tracker
 from . import creator
 from .simulation import Simulation
+from .timestep import TimeStep
+from .halo_data import HaloLink
+from .dictionary import get_or_create_dictionary_item
+from ..log import logger
 
 
 class TrackData(Base):
@@ -66,41 +71,46 @@ class TrackData(Base):
     def __repr__(self):
         return "<TrackData %d of %s, len=%d" % (self.halo_number, repr(self.simulation), len(self.particles))
 
-    def create_halos(self, first_ts=None, verbose=False):
+    def create_objects(self, class_=Tracker, first_timestep=None):
         from . import Session
-        from tangos.core import Halo
         session = Session.object_session(self)
-        if first_ts is None:
-            create = True
-        else:
-            create = False
-        for ts in self.simulation.timesteps:
-            if ts == first_ts:
-                create = True
-            if not create:
-                if verbose:
-                    print(ts, "-> precursor, don't create")
-            elif ts.halos.filter_by(halo_number=self.halo_number, object_typecode=1).count() == 0:
-                h = Halo(ts, self.halo_number, self.halo_number, 0, 0, 0, 1)
+
+        timesteps = self.simulation.timesteps
+        timesteps_id = [x.id for x in timesteps]
+
+        if first_timestep is not None:
+            first_index = timesteps_id.index(first_timestep.id)
+            timesteps = timesteps[first_index:]
+
+        object_typecode = class_.object_typecode
+
+        for ts in timesteps:
+            existing_query = session.query(class_).filter_by(halo_number = self.halo_number, timestep_id = ts.id)
+
+            if existing_query.count() == 0:
+                h = class_(ts, self.halo_number)
+                h.tracker_id = self.id
                 session.add(h)
-                if verbose:
-                    print(ts, "-> add")
-            elif verbose:
-                print(ts, "exists")
+                logger.info("Added a %s to %r",class_.__name__,ts)
+            else:
+                logger.debug("This tracker is already present in %r",ts)
+
         session.commit()
 
-class TrackerHaloCatalogue(object):
-    def __init__(self, f, trackers):
-        self._sim = weakref.ref(f)
-        self._trackers = trackers
+    def create_links(self, class_=Tracker):
+        from . import Session
+        session = Session.object_session(self)
+        all_ = session.query(class_).join(TimeStep, TimeStep.id==class_.timestep_id).\
+                                          filter((class_.halo_number == self.halo_number) &
+                                                 (TimeStep.simulation_id == self.simulation_id)).\
+                                          order_by(TimeStep.time_gyr)
 
-    def __getitem__(self, item):
-        tracker = self._trackers.filter_by(halo_number=item).first()
-        return tracker.extract(self._sim())
-
-    def load_copy(self, item):
-        tracker = self._trackers.filter_by(halo_number=item).first()
-        return tracker.extract_as_copy(self._sim())
+        connection_name = get_or_create_dictionary_item(session, 'tracker_connection')
+        for h1,h2 in zip(all_[1:],all_[:-1]):
+            l1 = HaloLink(h1,h2,connection_name)
+            l2 = HaloLink(h2,h1,connection_name)
+            session.add_all([l1,l2])
+        session.commit()
 
 
 def update_tracker_halos(sim=None):
@@ -115,4 +125,4 @@ def update_tracker_halos(sim=None):
 
     for y in x:
         heading(repr(y))
-        y.create_halos()
+        y.create_objects()

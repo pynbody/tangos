@@ -3,13 +3,17 @@ td.smallinfo {
 }
 
 body {
-    font-family: Palatino Linotype, Book Antiqua, Palatino, serif
+    font-family: "Quicksand", "Helvetica Neue", Helvetica, Arial;
 }
-    
+
+h1, h2, h3 {
+    font-weight: bold;
+}
+
 h1 {
     font-size: 20px;
-    font-family: arial;
-    background-color: #dde;
+    color: #bb4400;
+    background-color: #ffeecc;
     padding-top: 3px;
     padding-bottom: 2px;
     border-bottom: 1px solid #ccc;
@@ -19,7 +23,6 @@ h1 {
 
 h2 {
     font-size: 16px;
-    font-family: arial;
     text-transform: uppercase;
 }
 
@@ -55,20 +58,16 @@ td {
 }
 
 td.editable, th.editable {
-    color: #1111bb;
+    color: #bb4400;
 }
 
 a {
-    color: #1111bb;
+    color: #bb4400;
     text-decoration: none;
 }
 
 a:hover {
-    color: #8888bb;
-}
-
-a:visited {
-    color: #5544bb;
+    color: #cc5511;
 }
 
 tr.even:hover {
@@ -298,7 +297,15 @@ div.popup-controls {
     cursor: pointer;
 }
 
-div.properties-area {
+div#properties-area {
     min-height: 700px;
+    max-width: 600px;
 }
 
+ul.ui-autocomplete {
+    max-height: 200px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    font-family: 'Lucida Console', 'Lucida Sans Typewriter', monaco, 'Bitstream Vera Sans Mono', monospace;
+    font-size: small;
+}

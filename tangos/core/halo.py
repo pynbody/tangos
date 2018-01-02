@@ -2,19 +2,18 @@ from __future__ import absolute_import
 import weakref
 
 from sqlalchemy import Column, Integer, ForeignKey, orm
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, Session
+from sqlalchemy.ext.declarative import declared_attr
 
 from . import extraction_patterns
 from . import Base
 from . import creator
 from .dictionary import get_dict_id, get_or_create_dictionary_item
 from .timestep import TimeStep
-from .tracking import TrackerHaloCatalogue
 import six
 
 class Halo(Base):
-    __tablename__ = 'halos'
-
+    __tablename__= "halos"
 
     id = Column(Integer, primary_key=True)
     halo_number = Column(Integer)
@@ -39,12 +38,19 @@ class Halo(Base):
         'polymorphic_on':object_typecode
     }
 
+    @classmethod
+    def _all_subclasses(cls):
+        for c in cls.__subclasses__():
+            yield c
+            for c_sub in c._all_subclasses():
+                yield c_sub
+
     @staticmethod
     def class_from_tag(match_tag):
         match_tag = match_tag.lower()
         if match_tag == Halo.tag.lower():
             return Halo
-        for c in Halo.__subclasses__():
+        for c in Halo._all_subclasses():
             if match_tag == c.tag.lower():
                 return c
         raise ValueError("Unknown object type %r"%match_tag)
@@ -61,7 +67,7 @@ class Halo(Base):
         if typecode==0:
             return Halo.tag
         else:
-            for c in Halo.__subclasses__():
+            for c in Halo._all_subclasses():
                 if c.__mapper_args__['polymorphic_identity'] == typecode:
                     return c.tag
         raise ValueError("Unknown object typecode %d",typecode)
@@ -95,6 +101,17 @@ class Halo(Base):
     def path(self):
         return self.timestep.path+"/"+self.basename
 
+    @property
+    def handler(self):
+        if not hasattr(self, "_handler"):
+            self._handler = self.timestep.simulation.get_output_handler()
+        return self._handler
+        
+    @property
+    def handler_class(self):
+        if not hasattr(self, "_handler_class"):
+            self._handler_class = self.timestep.simulation.output_handler_class
+        return self._handler_class
 
     def load(self, mode=None):
         """Use pynbody to load the data for this halo, if it is present on this computer's filesystem.
@@ -102,8 +119,7 @@ class Halo(Base):
         By default, the entire simulation is loaded and a subview with this halo is returned. If mode='partial',
         pynbody's partial loading system is used to only load the data for the one halo, saving memory."""
 
-        handler = self.timestep.simulation.get_output_set_handler()
-        return handler.load_object(self.timestep.extension, self.finder_id, object_typetag=self.tag, mode=mode)
+        return self.handler.load_object(self.timestep.extension, self.finder_id, object_typetag=self.tag, mode=mode)
 
     def calculate(self, name, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.
@@ -111,7 +127,7 @@ class Halo(Base):
         See live_calculation.md for an introduction to this powerful functionality."""
         from .. import live_calculation
         calculation = live_calculation.parser.parse_property_name_if_required(name)
-        (value,), description = calculation.values_sanitized_and_description([self])
+        (value,), description = calculation.values_sanitized_and_description([self], Session.object_session(self))
         if len(value)==1:
             retval = value[0]
         else:
@@ -175,6 +191,14 @@ class Halo(Base):
             raise KeyError("No such property %r" % key)
         return ret_values
 
+    def get_description(self, key, getters=[extraction_patterns.halo_property_getter,
+                                          extraction_patterns.halo_link_getter]):
+        """Get a description of a named property or link, in the form of an object capable of calculating it.
+
+        This can be helpful to extract meta-data such as the size of an image or steps of an array."""
+        object = self.get_objects(key, getters)[0]
+        return object.description
+
 
     def __setitem__(self, key, obj):
         if isinstance(obj, Halo):
@@ -234,13 +258,6 @@ class Halo(Base):
         return item in list(self.keys())
 
     @property
-    def tracker(self):
-        if self.object_typecode != 1:
-            return None
-        else:
-            return self.timestep.simulation.trackers.filter_by(halo_number=self.halo_number).first()
-
-    @property
     def earliest(self):
         if self.previous is not None:
             return self.previous.earliest
@@ -296,7 +313,7 @@ class Halo(Base):
                 raw_query = thl.halo_query(tt)
                 query = property_description.supplement_halo_query(raw_query)
                 results = query.all()
-                return property_description.values_sanitized(results)
+                return property_description.values_sanitized(results, Session.object_session(self))
         finally:
             session.close()
 
@@ -344,24 +361,46 @@ TimeStep.halos = orm.relationship(Halo, cascade='all', lazy='dynamic',
                                   foreign_keys=Halo.timestep_id,
                                   order_by=Halo.halo_number)
 
-class BH(Halo):
+class Tracker(Halo):
     __mapper_args__ = {
-        'polymorphic_identity':1
+        'polymorphic_identity':3
+    }
+
+    tag = "tracker"
+
+    def __init__(self, timestep, halo_number):
+        super(Tracker, self).__init__(timestep, halo_number, halo_number, 0,0,0,
+                                 self.__mapper_args__['polymorphic_identity'])
+
+    @property
+    def tracker(self):
+        return self.timestep.simulation.trackers.filter_by(halo_number=self.halo_number).first()
+
+    def load(self, mode=None):
+        handler = self.timestep.simulation.get_output_handler()
+        return handler.load_tracked_region(self.timestep.extension, self.tracker, mode=mode)
+
+
+TimeStep.trackers = orm.relationship(Halo, cascade='all', lazy='dynamic',
+                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==3)),
+                                  foreign_keys=Halo.timestep_id,
+                                  order_by=Halo.halo_number)
+
+
+
+
+class BH(Tracker):
+    __mapper_args__ = {
+        'polymorphic_identity': 1
     }
 
     tag = "BH"
 
-    def __init__(self, timestep, halo_number):
-        super(BH, self).__init__(timestep, halo_number, halo_number, 0,0,0,1)
 
-
-    def load(self, mode=None):
-        handler = self.timestep.simulation.get_output_set_handler()
-        return handler.load_tracked_region(self.timestep.extension, self.tracker, mode=mode)
-
-
-
-TimeStep.bhs = orm.relationship(BH, cascade='all', lazy='dynamic', primaryjoin=BH.timestep_id==TimeStep.id)
+TimeStep.bhs = orm.relationship(Halo, cascade='all', lazy='dynamic',
+                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==1)),
+                                  foreign_keys=Halo.timestep_id,
+                                  order_by=Halo.halo_number)
 
 
 class Group(Halo):
@@ -375,9 +414,7 @@ class Group(Halo):
         super(Group, self).__init__(*args)
         self.object_typecode = 2
 
-
-TimeStep.groups = orm.relationship(Group, cascade='all', lazy='dynamic', primaryjoin=Group.timestep_id==TimeStep.id,
-                                   order_by=Group.halo_number)
-
-
-_loaded_halocats = {}
+TimeStep.groups = orm.relationship(Halo, cascade='all', lazy='dynamic',
+                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==2)),
+                                  foreign_keys=Halo.timestep_id,
+                                  order_by=Halo.halo_number)

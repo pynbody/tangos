@@ -13,28 +13,38 @@ install_requires = [
     'PasteDeploy >= 1.5.0', # py3 compat
     'plaster',
     'plaster_pastedeploy',
+    'pyramid',
+    'waitress',
+    'pyramid_debugtoolbar',
+    'pyramid_jinja2',
+    'pyramid_tm','pyramid_retry',
+    'zope.sqlalchemy',
     'hupper',
     'six',
     ]
 
 tests_require = [
     'nose >= 1.3.0',
-    'pynbody >= 0.40'
+    'webtest >= 2.0',
+    'pynbody >= 0.42',
+    'yt>=3.4.0'
     ]
 
 from setuptools import setup, find_packages
 
 
 setup(name='tangos',
-      version='1.0.dev0',
+      version='1.0.0',
       description='TANGOS, the amazing numerical galaxy organisation system',
       classifiers=[
           "Development Status :: 4 - Beta",
           "Intended Audience :: Developers",
           "Programming Language :: Python",
           "Programming Language :: Python :: 2.7",
-          "Framework :: Pyramid",
-          "License :: GNU Public License",
+          "Programming Language :: Python :: 3.5",
+          "Programming Language :: Python :: 3.6",
+          "Programming Language :: Python :: 3.7",
+          "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
       ],
       author="Andrew Pontzen",
       author_email="a.pontzen@ucl.ac.uk",
@@ -57,7 +67,7 @@ setup(name='tangos',
       },
       include_package_data=True,
       zip_safe=False,
-      python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
+      python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*',
       install_requires=install_requires,
       tests_require=tests_require,
       test_suite="nose.collector"

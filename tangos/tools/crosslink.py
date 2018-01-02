@@ -125,22 +125,24 @@ class GenericLinker(object):
             same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
             self.session.commit()
 
-        output_handler_1 = ts1.simulation.get_output_set_handler()
-        output_handler_2 = ts2.simulation.get_output_set_handler()
+        output_handler_1 = ts1.simulation.get_output_handler()
+        output_handler_2 = ts2.simulation.get_output_handler()
         if not isinstance(output_handler_1, type(output_handler_2)):
             logger.error("Timesteps %r and %r cannot be crosslinked; they are using incompatible file readers",
                          ts1, ts2)
             return
 
-        # keep the files alive throughout (so they are not garbage-collected after the first match_halos):
+        # keep the files alive throughout (so they are not garbage-collected after the first match_objects):
         snap1 = ts1.load()
         snap2 = ts2.load()
 
         try:
-            cat = output_handler_1.match_halos(ts1.extension, ts2.extension, halo_min, halo_max, dmonly, threshold,
-                                               core.halo.Halo.object_typetag_from_code(object_typecode))
-            back_cat = output_handler_2.match_halos(ts2.extension, ts1.extension, halo_min, halo_max, dmonly, threshold,
-                                               core.halo.Halo.object_typetag_from_code(object_typecode))
+            cat = output_handler_1.match_objects(ts1.extension, ts2.extension, halo_min, halo_max, dmonly, threshold,
+                                                 core.halo.Halo.object_typetag_from_code(object_typecode),
+                                                 output_handler_for_ts2=output_handler_2)
+            back_cat = output_handler_2.match_objects(ts2.extension, ts1.extension, halo_min, halo_max, dmonly, threshold,
+                                                      core.halo.Halo.object_typetag_from_code(object_typecode),
+                                                      output_handler_for_ts2= output_handler_1)
         except Exception as e:
             if isinstance(e, KeyboardInterrupt):
                 raise

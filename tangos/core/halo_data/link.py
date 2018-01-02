@@ -39,7 +39,7 @@ class HaloLink(Base):
 
 
 
-    def __init__(self,  halo_from, halo_to, relationship, weight=None):
+    def __init__(self,  halo_from, halo_to, relationship, weight=1.0):
         self.halo_from = halo_from
         self.halo_to = halo_to
 

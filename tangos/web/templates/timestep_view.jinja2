@@ -35,20 +35,15 @@
 
     <table id="objects-container"><tr>
 
-    {% if len(halos)>0 %}
+    {% for this_object in objects %}
+        {%  if len(this_object['items'])>0 %}
         <td>
-            <h2>Halos</h2>
-            {{ make_table(halos, 'halo') }}
+            <h2>{{ this_object['title'] }}</h2>
+            {{ make_table(this_object['items'], this_object['typetag']) }}
         </td>
-    {% endif %}
+        {% endif %}
+    {% endfor %}
 
-
-    {% if len(groups)>0 %}
-        <td>
-            <h2>Groups</h2>
-            {{ make_table(groups, 'group') }}
-        </td>
-    {% endif %}
     </tr></table>
 
 <script language="JavaScript">
@@ -65,7 +60,7 @@ $.fn.markAsColumnInsertPoint = function(editable_tag) {
 
 function updateColumnData(miniLanguageQuery, columnId) {
     $('#header-'+columnId).html("<img src='/static/spinner.gif'/>"+miniLanguageQuery)
-    updatePlotControlElements('#plotctl-'+columnId,miniLanguageQuery, false, false);
+    updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, false, false);
     $.ajax({
         type: "GET",
         url: "{{ gather_url }}"+uriEncodeQuery(miniLanguageQuery)+".json",
@@ -75,8 +70,7 @@ function updateColumnData(miniLanguageQuery, columnId) {
                  $('#header-'+columnId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
             } else {
                 $('#header-'+columnId).html(miniLanguageQuery);
-                updatePlotControlElements('#plotctl-'+columnId,miniLanguageQuery,
-                            false, data.can_use_as_filter, true);
+                updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, data.can_use_as_filter, false, true);
                 $.each(data.data_formatted, function(i, item) {
                     var dbid = data.db_id[i];
                     $('#dbid-'+dbid).find('.'+columnId).html(item);
@@ -107,8 +101,9 @@ function removeColumn(name) {
 }
 
 function setupInsertionPoint() {
-    $('#header-colid-1-halo').markAsColumnInsertPoint('halo');
-    $('#header-colid-1-group').markAsColumnInsertPoint('group');
+    {% for this_object in objects %}
+        $('#header-colid-1-{{ this_object["typetag"] }}').markAsColumnInsertPoint('{{ this_object["typetag"] }}')
+    {% endfor %}
 }
 
 function filterTable(object_tag) {

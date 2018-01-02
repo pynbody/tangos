@@ -104,7 +104,8 @@ class TestSimulationGenerator(object):
 
     def link_last_halos(self, object_typecode=0):
         """Generate default halolinks for the most recent two timesteps such that 1->1, 2->2 etc"""
-
+        if len(self.sim.timesteps)<2:
+            return
         ts_source, ts_dest = self._two_most_recently_added_timesteps()
         halo_nums_source = set([a.halo_number for a in ts_source.objects.filter_by(object_typecode=object_typecode).all()])
         halo_nums_dest = set([a.halo_number for a in ts_dest.objects.filter_by(object_typecode=object_typecode).all()])

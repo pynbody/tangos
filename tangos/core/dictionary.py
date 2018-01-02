@@ -20,9 +20,9 @@ class DictionaryItem(Base):
     def __init__(self, text):
         self.text = text
 
-    def providing_class(self):
+    def providing_class(self, handler):
         from .. import properties
-        return properties.providing_class(self.text)
+        return properties.providing_class(self.text, handler)
 
 def get_dict_id(text, default=None, session=None, allow_query=True):
     """Get a DictionaryItem id for text (possibly cached). Raises KeyError if
@@ -110,3 +110,8 @@ def _get_dict_cache_for_session(session):
         _dict_id[session] = session_dict
 
     return session_dict
+
+def get_lexicon(session):
+    """Get a list of all strings known in the dictionary table"""
+    dict_cache = _get_dict_cache_for_session(session)
+    return dict_cache.keys()
