@@ -1,25 +1,47 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 import numpy as np
 from tangos.util import timing_monitor
 import six
 from six.moves import zip
 import importlib
 import warnings
+import functools
+from .. import input_handlers
+
 
 class HaloPropertiesMetaClass(type):
     # Present to register new subclasses of HaloProperties, so that subclasses can be dynamically
-    # instantiated when required based on their cls.name() values. Stored as a dictionary so that
+    # instantiated when required based on their cls.names values. Stored as a dictionary so that
     # reloaded classes overwrite their old versions.
     def __init__(cls, name, bases, dict):
         type.__init__(cls, name, bases, dict)
-        cls._all_classes[name] = cls
+        if hasattr(cls, 'name'):
+            warnings.warn("%r defines a name() class method which is deprecated. Use instead a class static variable 'names'."%cls, DeprecationWarning)
+            cls.names = cls.name()
+        if callable(cls.requires_particle_data):
+            warnings.warn("%r defines a requires_particle_data() class method which is deprecated; it should instead be a class static variable", DeprecationWarning)
+            cls.requires_particle_data = cls.requires_particle_data()
+        if cls.names is not None:
+            cls._all_classes.append(cls)
 
 class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
-    _all_classes = {}
+    _all_classes = []
+
+    # In child class, defines the most general handler that this property is compatible with.
+    # If unchanged, it is compatible with all handlers. Typically it will be appropriate to specify something more
+    # restrictive e.g. input_handlers.pynbody.PynbodyOutputSetHandler
+    works_with_handler = input_handlers.SimulationOutputSetHandler
+
+    # Specifies whether the particle data needs to be provided for this class to perform a calculation; if
+    # False, only existing HaloProperties are required by this calculation (see requires_property below).
+    requires_particle_data = False
+
+    # Specifies a tuple of names of properties that will be calculated by this class.
+    names = None
 
     @classmethod
     def all_classes(cls):
-        return list(cls._all_classes.values())
+        return cls._all_classes
 
     def __init__(self, simulation):
         """Initialise a HaloProperties calculation object
@@ -30,24 +52,6 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
         self._simulation = simulation
         self.timing_monitor = timing_monitor.TimingMonitor()
 
-    def requires_array(self):
-        """Returns a list of loaded arrays required to
-        calculate this property"""
-        return []
-
-    @classmethod
-    def requires_particle_data(self):
-        """If this returns false, the class can do its
-        calculation without any raw simulation data loaded
-        (i.e. derived from other properties)"""
-        return True
-
-    @classmethod
-    def name(self):
-        """Returns either the name or a list of names of
-        properties that will be calculated by this class"""
-        return "undefined"
-
     @classmethod
     def index_of_name(cls, name):
         """Returns the index of the named property in the
@@ -57,7 +61,7 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
         X.calculate(..)[X.index_of_name("SSC")] returns the SSC.
         """
         name = name.split("(")[0]
-        return cls.name().index(name)
+        return cls.names.index(name)
 
     @classmethod
     def no_proxies(self):
@@ -98,11 +102,11 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
                 return False
         return True
 
-    def calculate(self, pynbody_halo_data, halo_entry):
+    def calculate(self, particle_data, halo_entry):
         """Calculate the properties using the given data
 
-        :param pynbody_halo_data: The halo data, if available
-        :type pynbody_halo_data: pynbody.snapshot.SimSnap (when the pynbody backend is in use, otherwise could be a yt snapshot etc)
+        :param particle_data: The raw particle data, if available
+        :type particle_data: pynbody.snapshot.SimSnap (when the pynbody backend is in use, otherwise could be a yt snapshot etc)
 
         :param halo_entry: The database object associated with the halo, if available
         :type halo_entry: tangos.core.halo.Halo
@@ -117,16 +121,16 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
         :type halo_entry: tangos.core.halo.Halo
 
         :param input_values: Input values for the function
-        :return: All function values as named by self.name()
+        :return: All function values as named by self.names
         """
-        if self.requires_particle_data():
+        if self.requires_particle_data:
             raise(RuntimeError("Cannot live-calculate a property that requires particle data"))
         return self.calculate(None, halo_entry)
 
     def live_calculate_named(self, name, halo_entry, *input_values):
         """Calculate the result of a function, using the existing data in the database alone
 
-        :param name: The name of the one property to return (which must be one of the values specified by self.name())
+        :param name: The name of the one property to return (which must be one of the values specified by self.names)
         :param halo_entry: The database object associated with the halo
         :type halo_entry: tangos.core.halo.Halo
 
@@ -134,14 +138,14 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
         :return: The single named value
         """
         values = self.live_calculate(halo_entry, *input_values)
-        names = self.name()
+        names = self.names
         if isinstance(names, six.string_types):
             return values
         else:
-            return values[self.name().index(name)]
+            return values[self.names.index(name)]
 
     def calculate_from_db(self, db):
-        if self.requires_particle_data():
+        if self.requires_particle_data:
             region_spec =  self.region_specification(self)
             if region_spec:
                 halo_particles = db.timestep.load_region(region_spec)
@@ -295,13 +299,11 @@ class TimeChunkedProperty(HaloProperties):
 
 
 class LiveHaloProperties(HaloProperties):
+    requires_particle_data = False
+
     def __init__(self, simulation, *args):
         super(LiveHaloProperties, self).__init__(simulation)
         self._nargs = len(args)
-
-    @classmethod
-    def requires_particle_data(self):
-        return False
 
     def calculate(self, _, halo):
         return self.live_calculate(halo, *([None]*self._nargs))
@@ -352,18 +354,16 @@ def _check_class_provided_name(name):
     if "(" in name or ")" in name:
         raise ValueError("Property names must not include brackets; %s not suitable"%name)
 
-def all_properties():
-    """Return list of all properties which can be calculated using
-    classes derived from HaloProperties"""
+def all_properties(with_particle_data=True):
+    """Return list of all properties which can be calculated using classes derived from HaloProperties"""
     classes = all_property_classes()
     pr = []
     for c in classes:
-        try:
-            i = c(None)
-        except TypeError:
+        if c.requires_particle_data and not with_particle_data:
             continue
-        name = i.name()
-        if type(name) == str:
+
+        name = c.names
+        if isinstance(name, six.string_types):
             _check_class_provided_name(name)
             pr.append(name)
         else:
@@ -374,51 +374,83 @@ def all_properties():
     return pr
 
 
-def providing_class(property_name, silent_fail=False):
-    """Return providing class for given property name"""
+def providing_class(property_name, handler_class=None, silent_fail=False):
+    """Return property calculator class for given property name when files will be loaded by specified handler.
+
+    If handler_class is None, return "live" properties which can be calculated without particle data"""
+
+    candidates = all_providing_classes(property_name)
+
+    if handler_class is None:
+        candidates = list(filter(lambda c: not c.requires_particle_data, candidates))
+    else:
+        candidates = list(filter(lambda c: issubclass(handler_class, c.works_with_handler), candidates))
+
+    if len(candidates)>=1:
+        # return the property which is most specialised
+        _sort_by_class_hierarchy(candidates)
+        return candidates[0]
+    elif silent_fail:
+        return None
+    else:
+        raise NameError("No providing class for property " + property_name)
+
+
+def all_providing_classes(property_name):
+    """Return all the calculator classes for the given property name (possibly multiple, for different handlers)"""
     classes = all_property_classes()
-    property_name = property_name.lower().split("(")[0]
+    property_name = property_name.lower()
+    candidates = []
     for c in classes:
-        name = c.name()
+        name = c.names
         if isinstance(name, tuple) or isinstance(name, list):
             for name_j in name:
                 if name_j.lower() == property_name:
-                    return c
+                    candidates.append(c)
         elif name.lower() == property_name:
-            return c
-    if silent_fail:
-        return None
-    raise NameError("No providing class for property " + property_name)
+            candidates.append(c)
+    return candidates
 
 
-def providing_classes(property_name_list, silent_fail=False):
-    """Return providing classes for given list of property names"""
+def _sort_by_class_hierarchy(candidates):
+    def cmp(a, b):
+        if a is b:
+            return 0
+        elif issubclass(a, b):
+            return 1
+        else:
+            return -1
+    candidates.sort(key=functools.cmp_to_key(cmp))
+
+
+def providing_classes(property_name_list, handler_class, silent_fail=False):
+    """Return classes for given list of property names; see providing_class for details"""
     classes = []
     for property_name in property_name_list:
-        cl = providing_class(property_name, silent_fail)
-        if cl not in classes and cl != None:
+        cl = providing_class(property_name, handler_class, silent_fail)
+        if cl not in classes and cl is not None:
             classes.append(cl)
 
     return classes
 
 def instantiate_classes(simulation, property_name_list, silent_fail=False):
+    """Instantiate appropriate property calculation classes for a given simulation and list of property names"""
     instances = []
+    handler_class = type(simulation.get_output_handler())
     for property_identifier in property_name_list:
-        instances.append(providing_class(property_identifier, silent_fail)(simulation))
+        instances.append(providing_class(property_identifier, handler_class, silent_fail)(simulation))
 
     return instances
 
 def instantiate_class(simulation, property_name, silent_fail=False):
-    instance = instantiate_classes(simulation, [property_name],silent_fail)
+    """Instantiate an appropriate property calculation class for a given simulation and property name"""
+    instance = instantiate_classes(simulation, [property_name], silent_fail)
     if len(instance)==0:
         return None
     else:
         return instance[0]
 
-def get_required_properties(property_name):
-    return providing_class(property_name).requires_property()
-
-def import_configured_property_modules():
+def _import_configured_property_modules():
     from ..config import property_modules
     for pm in property_modules:
         if pm=="": continue
@@ -428,5 +460,5 @@ def import_configured_property_modules():
             warnings.warn("Failed to import requested property module %r. Some properties may be unavailable."%pm,
                           ImportWarning)
 
-import_configured_property_modules()
-from . import live_profiles, intrinsic, BH, zoom, centring, profile, images
+_import_configured_property_modules()
+from . import intrinsic, live_profiles, pynbody, yt

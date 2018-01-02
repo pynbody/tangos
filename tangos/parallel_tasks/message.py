@@ -1,6 +1,12 @@
 from __future__ import absolute_import
 import contextlib
 import six
+import struct
+import hashlib
+
+
+def _stable_hash(string):
+    return struct.unpack('<L', hashlib.md5(string.encode()).digest()[:4])[0]
 
 class MessageMetaClass(type):
     _message_classes = {}
@@ -12,9 +18,11 @@ class MessageMetaClass(type):
         super(MessageMetaClass, cls).__init__(name, bases, dct)
         MessageMetaClass.register_class(cls)
 
+
     @staticmethod
     def class_to_hash(cls):
-        return hash(cls.__name__) & 0xfffffff
+        result = _stable_hash(cls.__name__) & 0xfffffff
+        return result
 
     @staticmethod
     def hash_to_class(hash):

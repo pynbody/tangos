@@ -3,7 +3,6 @@ import contextlib
 import time
 import inspect
 import numpy as np
-from .terminalcontroller import term
 import six
 
 class TimingMonitor(object):
@@ -80,13 +79,13 @@ class TimingMonitor(object):
             name = "%20s " % (name[-20:])
             if len(v)>1:
                 marks_info = self.labels_by_class[k]
-                logger.info(term.BLUE + " " + name + term.NORMAL + "%.1fs | %.1f%%" % (sum(v), 100 * sum(v) / v_tot))
-                logger.info(term.GREEN + "  ------ INTERNAL BREAKDOWN ------" + term.NORMAL)
+                logger.info(" " + name + "%.1fs | %.1f%%" % (sum(v), 100 * sum(v) / v_tot))
+                logger.info("  ------ INTERNAL BREAKDOWN ------" )
                 for i, this_v in enumerate(v):
-                    logger.info((" "+term.GREEN+"%8s %8s"+term.NORMAL+" %.1fs | %.1f%% | %.1f%%") %
+                    logger.info((" %8s %8s %.1fs | %.1f%% | %.1f%%") %
                                 (marks_info[i], marks_info[i + 1],
                                  this_v, 100 * this_v / sum(v), 100 * this_v / v_tot))
-                logger.info(term.GREEN+"  --------------------------------"+term.NORMAL)
+                logger.info("  --------------------------------")
             else:
-                logger.info(term.BLUE + name + term.NORMAL+ "%.1fs | %.1f%%" % (v[0], 100 * v[0] / v_tot))
+                logger.info(name + "%.1fs | %.1f%%" % (v[0], 100 * v[0] / v_tot))
 

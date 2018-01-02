@@ -13,7 +13,7 @@ function initScrollOffsetData() {
             clone.css('visibility', 'hidden');
             $(this).after(clone);
         }
-        scrollTop[this.id]=this.getBoundingClientRect().top;
+        scrollTop[this.id]=this.getBoundingClientRect().top+window.scrollY;
 
     });
 }

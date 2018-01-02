@@ -6,7 +6,7 @@ import numpy.testing as npt
 import tangos as db
 import tangos.core.simulation
 import tangos.core.timestep
-import tangos.simulation_output_handlers.halo_stat_files as stat
+import tangos.input_handlers.halo_stat_files as stat
 from tangos import testing
 
 

@@ -6,12 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
     <meta name="description" content="TANGOS: the amazing numerical galaxy organization system">
     <meta name="author" content="TANGOS collaboration">
-    <link rel="shortcut icon" href="{{request.static_url('tangos.web:static/pyramid-16x16.png')}}">
+    <link rel="shortcut icon" href="{{request.static_url('tangos.web:static/tangos-50x50.png')}}">
 
     <title>TANGOS</title>
 
 
     <link href="{{request.static_url('tangos.web:static/stylesheet.css')}}" rel="stylesheet">
+      <link href="{{request.static_url('tangos.web:static/jquery-ui.min.css')}}" rel="stylesheet">
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -21,6 +22,8 @@
 
       <script type="text/javascript" src="{{ request.static_url('tangos.web:static/sorttable.js') }}"></script>
       <script type="text/javascript" src="{{ request.static_url('tangos.web:static/jquery-3.2.1.min.js') }}"></script>
+      <script type="text/javascript" src="{{ request.static_url('tangos.web:static/jquery-ui.min.js') }}"></script>
+      <script type="text/javascript" src="{{ request.static_url('tangos.web:static/autocomplete.js') }}"></script>
       <script type="text/javascript" src="{{ request.static_url('tangos.web:static/dragtable.js') }}"></script>
       <script type="text/javascript" src="{{ request.static_url('tangos.web:static/dynamictable.js') }}"></script>
       <script type="text/javascript" src="{{ request.static_url('tangos.web:static/keeponscreen.js') }}"></script>
@@ -29,6 +32,7 @@
       <script type="text/javascript" src="{{ request.static_url('tangos.web:static/formvalues.js') }}"></script>
       <script type="text/javascript" src="{{ request.static_url('tangos.web:static/mergertree.js') }}"></script>
       <script type="text/javascript" src="{{ request.static_url('tangos.web:static/d3.min.js') }}"></script>
+      <link href="https://fonts.googleapis.com/css?family=Quicksand:400,500,700" rel="stylesheet">
   </head>
 
   <body>

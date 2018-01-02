@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import tangos as db
-import tangos.simulation_output_handlers.pynbody as pynbody_outputs
+import tangos.input_handlers.pynbody as pynbody_outputs
 import tangos.tools.add_simulation as add
 from tangos import config
 from tangos import log, testing
@@ -17,7 +17,7 @@ def setup():
 
 
 def test_get_handler():
-    assert db.simulation_output_handlers.get_named_handler_class('pynbody.ChangaOutputSetHandler') == pynbody_outputs.ChangaOutputSetHandler
+    assert db.input_handlers.get_named_handler_class('pynbody.ChangaOutputSetHandler') == pynbody_outputs.ChangaOutputSetHandler
 
 def test_handler_name():
     assert pynbody_outputs.ChangaOutputSetHandler.handler_class_name()=="pynbody.ChangaOutputSetHandler"
@@ -74,7 +74,7 @@ def test_partial_load_halo():
 
 def test_load_tracker_halo():
     add_test_simulation_to_db()
-    pynbody_h = db.get_halo("test_tipsy/tiny.000640/1.1").load()
+    pynbody_h = db.get_halo("test_tipsy/tiny.000640/tracker_1").load()
     assert len(pynbody_h)==4
 
     # test that we have a subview of the whole file
@@ -82,7 +82,7 @@ def test_load_tracker_halo():
 
 def test_partial_load_tracker_halo():
     add_test_simulation_to_db()
-    pynbody_h = db.get_halo("test_tipsy/tiny.000640/1.1").load(mode='partial')
+    pynbody_h = db.get_halo("test_tipsy/tiny.000640/tracker_1").load(mode='partial')
     assert len(pynbody_h)==4
     assert pynbody_h.ancestor is pynbody_h
 
@@ -90,7 +90,7 @@ def test_load_persistence():
     f = db.get_timestep("test_tipsy/tiny.000640").load()
     f2 = db.get_timestep("test_tipsy/tiny.000640").load()
     h = db.get_halo("test_tipsy/tiny.000640/1").load()
-    h_tracker = db.get_halo("test_tipsy/tiny.000640/1.1").load()
+    h_tracker = db.get_halo("test_tipsy/tiny.000640/tracker_1").load()
     assert id(f)==id(f2)
     assert id(h.ancestor)==id(f)
     assert id(h_tracker.ancestor)==id(f)
@@ -105,8 +105,8 @@ def test_load_persistence():
 
 def test_load_tracker_iord_halo():
     add_test_simulation_to_db()
-    h_direct = db.get_halo("test_tipsy/tiny.000640/1.1").load(mode='partial')
-    h_iord = db.get_halo("test_tipsy/tiny.000640/1.2").load(mode='partial')
+    h_direct = db.get_halo("test_tipsy/tiny.000640/tracker_1").load(mode='partial')
+    h_iord = db.get_halo("test_tipsy/tiny.000640/tracker_2").load(mode='partial')
     assert (h_direct['iord']==h_iord['iord']).all()
 
 
@@ -124,13 +124,13 @@ def add_test_simulation_to_db():
         tx.particles = tracked_particles
         tx.use_iord = False
         tx = db.core.get_default_session().merge(tx)
-        tx.create_halos()
+        tx.create_objects()
 
         tx = db.core.tracking.TrackData(db.get_simulation("test_tipsy"))
         tx.particles = tracked_iord
         tx.use_iord = True
         tx = db.core.get_default_session().merge(tx)
-        tx.create_halos()
+        tx.create_objects()
         _added_to_db=True
 
 def assert_is_subview_of_full_file(pynbody_h):

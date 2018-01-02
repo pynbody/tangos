@@ -128,4 +128,4 @@ def halo_view(request):
                                             timestepid=request.matchdict['timestepid'],
                                             halonumber=request.matchdict['halonumber']),
             'gather_url': "/%s/%s/"%(sim.basename,ts.extension),
-            'cascade_url': "/%s/%s/%d/"%(sim.basename,ts.extension,halo.halo_number)}
+            'cascade_url': "/%s/%s/%s/"%(sim.basename,ts.extension,halo.basename)}

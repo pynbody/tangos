@@ -1,6 +1,9 @@
 from __future__ import absolute_import
 import pyparsing as pp
 import functools
+import threading
+
+_parsing_lock = threading.Lock() # pyparsing is NOT thread safe
 
 from . import StoredProperty, LiveProperty, FixedNumericInput, \
     FixedInput, Link, MultiCalculation, Calculation
@@ -82,7 +85,8 @@ property_complete = pp.stringStart()+value_or_property_name+pp.stringEnd()
 
 
 def parse_property_name( name):
-    return property_complete.parseString(name)[0]
+    with _parsing_lock:
+        return property_complete.parseString(name)[0]
 
 def parse_property_name_if_required(name):
     if isinstance(name, Calculation):

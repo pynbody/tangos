@@ -3,7 +3,7 @@ from __future__ import print_function
 import tangos as db
 import numpy as np
 import numpy.testing as npt
-
+import warnings
 import tangos.core.halo
 import tangos.core.simulation
 import tangos.core.timestep
@@ -42,9 +42,7 @@ def setup():
             creator.link_last_bhs_using_mapping({1:1})
 
 class TestProperty(properties.LiveHaloProperties):
-    @classmethod
-    def name(self):
-        return "RvirPlusMvir"
+    names = "RvirPlusMvir"
 
     def requires_property(self):
         return "Mvir", "Rvir"
@@ -53,14 +51,7 @@ class TestProperty(properties.LiveHaloProperties):
         return halo["Mvir"]+halo["Rvir"]
 
 class TestErrorProperty(properties.LiveHaloProperties):
-
-    @classmethod
-    def name(self):
-        return "RvirPlusMvirMiscoded"
-
-    @classmethod
-    def requires_particle_data(self):
-        return False
+    names = "RvirPlusMvirMiscoded"
 
     def requires_property(self):
         return "Mvir",
@@ -69,24 +60,25 @@ class TestErrorProperty(properties.LiveHaloProperties):
         return halo["Mvir"]+halo["Rvir"]
 
 class TestPropertyWithParameter(properties.LiveHaloProperties):
-    @classmethod
-    def name(cls):
-        return "squared"
+    names = "squared"
 
     def live_calculate(self, halo, value):
         return value**2
 
+class TestBrokenProperty(properties.HaloProperties):
+    names = "brokenproperty"
+
+    def __init__(self, simulation):
+        raise RuntimeError("This intentionally breaks the property")
+
 class TestPathChoice(properties.LiveHaloProperties):
     num_calls = 0
+    names = "my_BH"
 
     def __init__(self, simulation, criterion="hole_mass"):
         super(TestPathChoice, self).__init__(simulation, criterion)
         assert isinstance(criterion, six.string_types), "Criterion must be a named BH property"
         self.criterion = criterion
-
-    @classmethod
-    def name(cls):
-        return "my_BH"
 
     def requires_property(self):
         return "BH", "BH."+self.criterion
@@ -228,4 +220,17 @@ def test_gather_restricted_object_type():
     npt.assert_allclose(ok_1, [100., 200., 300., 400.])
     npt.assert_allclose(ok_2, [100., 200., 300., 400.])
 
+def test_missing_or_broken_class():
+    ts = tangos.get_timestep("sim/ts1")
+    for (i,h) in enumerate(ts.halos):
+        h["noclass"] = 10.0*i
+        h["brokenproperty"] = 10.0*i
+    tangos.get_default_session().commit()
 
+    noclass, = ts.calculate_all("noclass")
+    npt.assert_allclose(noclass, [0., 10., 20., 30.])
+
+    with warnings.catch_warnings(record=True) as w:
+        brokenclass, = ts.calculate_all("brokenproperty")
+    npt.assert_allclose(noclass, [0., 10., 20., 30.])
+    assert len(w)>0

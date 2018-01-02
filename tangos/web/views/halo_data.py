@@ -1,20 +1,17 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from pyramid.view import view_config
-from pyramid.compat import escape
-from sqlalchemy import func, and_, or_
-import numpy as np
-from . import halo_from_request, timestep_from_request, simulation_from_request
-from pyramid.response import Response
-from six import BytesIO
-import PIL
-
-import tangos
 import matplotlib
 matplotlib.use('agg')
 import pylab as p
+from pyramid.view import view_config
+from pyramid.compat import escape
+import numpy as np
+from . import halo_from_request, timestep_from_request, simulation_from_request
+from pyramid.response import Response
+from six import BytesIO, string_types
+from ...log import logger
+from ... import core
 import threading
-from tangos import core
 import time
 
 _matplotlib_lock = threading.RLock()
@@ -88,13 +85,22 @@ def can_use_elements_in_plot(data_array):
         return can_use_in_plot(data_array[0])
 
 def can_use_as_filter(data):
-    return np.issubdtype(type(data), np.bool) and not np.issubdtype(type(data), np.number) and not hasattr(data,'__len__')
+    return np.issubdtype(type(data), np.bool_) and not np.issubdtype(type(data), np.number) and not hasattr(data,'__len__')
 
 def can_use_elements_as_filter(data_array):
     if len(data_array)==0:
         return False
     else:
         return can_use_as_filter(data_array[0])
+
+def is_array(data):
+    return isinstance(data, np.ndarray) and data.ndim>0
+
+def elements_are_arrays(data_array):
+    if len(data_array)==0:
+        return False
+    else:
+        return is_array(data_array[0])
 
 @view_config(route_name='calculate_all', renderer='json')
 def calculate_all(request):
@@ -103,11 +109,13 @@ def calculate_all(request):
     try:
         data, db_id = ts.calculate_all(decode_property_name(request.matchdict['nameid']), 'dbid()')
     except Exception as e:
-        return {'error': e.message, 'error_class': type(e).__name__}
+        return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
 
     return {'timestep': ts.extension, 'data_formatted': [format_data(d, request) for d in data],
-           'db_id': list(db_id), 'can_use_in_plot': can_use_elements_in_plot(data),
-            'can_use_as_filter': can_use_elements_as_filter(data)}
+           'db_id': [int(x) for x in db_id],  # problems with jsonifying np.int64; needs to be native int?
+            'can_use_in_plot': can_use_elements_in_plot(data),
+            'can_use_as_filter': can_use_elements_as_filter(data),
+            'is_array': elements_are_arrays(data)}
 
 @view_config(route_name='get_property', renderer='json')
 def get_property(request):
@@ -116,11 +124,12 @@ def get_property(request):
     try:
         result = halo.calculate(decode_property_name(request.matchdict['nameid']))
     except Exception as e:
-        return {'error': e.message, 'error_class': type(e).__name__}
+        return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
 
     return {'data_formatted': format_data(result, request, halo),
             'can_use_in_plot': can_use_in_plot(result),
-            'can_use_as_filter': can_use_as_filter(result)}
+            'can_use_as_filter': can_use_as_filter(result),
+            'is_array': is_array(result)}
 
 
 def start(request) :
@@ -133,13 +142,10 @@ def finish(request, getImage=True) :
         enter_finish_time = time.time()
         request.canvas.draw()
         draw_time = time.time()
-        imageSize = request.canvas.get_width_height()
-        imageRgb = request.canvas.tostring_rgb()
         buffer = BytesIO()
-        pilImage = PIL.Image.frombytes("RGB",imageSize, imageRgb)
-        pilImage.save(buffer, "PNG")
+        p.savefig(buffer, format='png')
         end_time = time.time()
-        print("Image rendering: matplotlib %.2fs; PNG conversion %.3fs"%(draw_time-enter_finish_time, end_time-draw_time))
+        logger.info("Image rendering: matplotlib %.2fs; PNG conversion %.3fs",draw_time-enter_finish_time, end_time-draw_time)
 
     p.close()
 
@@ -159,18 +165,8 @@ def rescale_plot(request):
 
 @view_config(route_name='gathered_plot')
 def gathered_plot(request):
-    ts = timestep_from_request(request)
-    name1 = decode_property_name(request.matchdict['nameid1'])
-    name2 = decode_property_name(request.matchdict['nameid2'])
-    filter = decode_property_name(request.GET.get('filter', ""))
-    object_typetag = request.matchdict.get('object_typetag',None)
+    name1, name2, v1, v2 = gathered_plot_data(request)
 
-    if filter!="":
-        v1, v2, f = ts.calculate_all(name1, name2, filter)
-        v1 = v1[f]
-        v2 = v2[f]
-    else:
-        v1, v2 = ts.calculate_all(name1, name2)
     with _matplotlib_lock:
         start(request)
         p.plot(v1,v2,'k.')
@@ -180,12 +176,36 @@ def gathered_plot(request):
         return finish(request)
 
 
-@view_config(route_name='cascade_plot')
-def cascade_plot(request):
-    halo = halo_from_request(request)
+@view_config(route_name='gathered_csv', renderer='csv')
+def gathered_csv(request):
+    name1, name2, v1, v2 = gathered_plot_data(request)
+    return {
+        'header': [name1, name2],
+        'rows': np.array((v1,v2)).T,
+        'name': "timestep_" + name1 + "_vs_" + name2
+    }
+
+def gathered_plot_data(request):
+    ts = timestep_from_request(request)
     name1 = decode_property_name(request.matchdict['nameid1'])
     name2 = decode_property_name(request.matchdict['nameid2'])
-    v1, v2 = halo.calculate_for_progenitors(name1, name2)
+    filter = decode_property_name(request.GET.get('filter', ""))
+    object_typetag = request.matchdict.get('object_typetag', None)
+
+    if filter != "":
+        v1, v2, f = ts.calculate_all(name1, name2, filter, object_typetag=object_typetag)
+        v1 = v1[f]
+        v2 = v2[f]
+    else:
+        v1, v2 = ts.calculate_all(name1, name2, object_typetag=object_typetag)
+
+    return name1, name2, v1, v2
+
+
+
+@view_config(route_name='cascade_plot')
+def cascade_plot(request):
+    name1, name2, v1, v2 = cascade_plot_data(request)
     with _matplotlib_lock:
         start(request)
         p.plot(v1,v2,'k')
@@ -194,7 +214,21 @@ def cascade_plot(request):
         rescale_plot(request)
         return finish(request)
 
+@view_config(route_name='cascade_csv', renderer='csv')
+def cascade_csv(request):
+    name1, name2, v1, v2 = cascade_plot_data(request)
+    return {
+        'header': [name1, name2],
+        'rows': np.array((v1,v2)).T,
+        'name': "timeseries_"+name1+"_vs_"+name2
+    }
 
+def cascade_plot_data(request):
+    halo = halo_from_request(request)
+    name1 = decode_property_name(request.matchdict['nameid1'])
+    name2 = decode_property_name(request.matchdict['nameid2'])
+    v1, v2 = halo.calculate_for_progenitors(name1, name2)
+    return name1, name2, v1, v2
 
 
 def image_plot(request, val, property_info):
@@ -215,15 +249,13 @@ def image_plot(request, val, property_info):
         else:
             data =val
 
-        print(data.min(),data.max(),width)
         if width is not None :
             p.imshow(data,extent=(-width/2,width/2,-width/2,width/2))
         else :
             p.imshow(data)
 
         if property_info:
-            p.xlabel(property_info.plot_xlabel())
-            p.ylabel(property_info.plot_ylabel())
+            add_xy_labels(property_info, request)
 
         if len(val.shape) is 2 :
             cb = p.colorbar()
@@ -231,6 +263,19 @@ def image_plot(request, val, property_info):
                 cb.set_label(property_info.plot_clabel())
 
         return finish(request)
+
+
+def add_xy_labels(property_info, request):
+    p.xlabel(property_info.plot_xlabel())
+    ylabel = property_info.plot_ylabel()
+    # cludge follows - should be eliminated by fixing the mess around multi-name vs single-name property classes
+    if not isinstance(ylabel, string_types):
+        try:
+            ylabel = ylabel[property_info.index_of_name(decode_property_name(request.matchdict['nameid']))]
+        except:
+            ylabel = ""
+    p.ylabel(ylabel)
+
 
 @view_config(route_name='array_plot')
 def array_plot(request):
@@ -255,13 +300,23 @@ def array_plot(request):
         elif property_info.plot_ylog():
             p.semilogy()
 
-        if property_info.plot_xlabel():
-            p.xlabel(property_info.plot_xlabel())
-
-        #if property_info.plot_ylabel():
-        #    p.ylabel(property_info.plot_ylabel())
 
         if property_info.plot_yrange():
             p.ylim(*property_info.plot_yrange())
 
+        add_xy_labels(property_info, request)
+
         return finish(request)
+
+
+@view_config(route_name='array_csv', renderer='csv')
+def array_csv(request):
+    halo = halo_from_request(request)
+    name = decode_property_name(request.matchdict['nameid'])
+    val, property_info = halo.calculate(name, True)
+    xval = property_info.plot_x_values(val)
+
+    return {
+        'header': ["bin_center", name],
+        'rows': np.array((xval,val)).T,
+    }

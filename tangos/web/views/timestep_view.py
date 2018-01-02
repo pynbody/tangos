@@ -16,18 +16,29 @@ def timestep_view(request):
     ts = timestep_from_request(request)
     sim = ts.simulation
 
-    halos = ts.halos.all()
-    groups = ts.groups.all()
+    all_objects = []
 
-    add_urls(halos, request, sim, ts)
-    add_urls(groups, request, sim, ts)
+    typecode = 0
+    while True:
+        try:
+            typetag = core.Halo.object_typetag_from_code(typecode)
+        except ValueError:
+            break
+
+        objects = request.dbsession.query(core.Halo).\
+            filter_by(timestep_id=ts.id, object_typecode=typecode).order_by(core.Halo.halo_number).all()
+        add_urls(objects, request, sim, ts)
+        title = core.Halo.class_from_tag(typetag).__name__+"s"
+
+        if title=="BHs":
+            title="Black holes"
+
+        all_objects.append({'title': title, 'typetag': typetag, 'items': objects})
+        typecode+=1
 
 
-    for h in groups:
-        h.url = request.route_url('halo_view', simid=sim.basename, timestepid=ts.extension,
-                                  halonumber=h.basename)
-
-    return {'timestep': ts.extension, 'halos': halos, 'groups': groups,
+    return {'timestep': ts.extension,
+            'objects': all_objects,
             'gather_url': request.route_url('calculate_all',simid=request.matchdict['simid'],
                                             timestepid=request.matchdict['timestepid'],
                                             nameid="")[:-5]}

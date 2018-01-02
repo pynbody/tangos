@@ -45,7 +45,6 @@ def parallel_iterate(task_list):
     from . import backend, barrier
 
     assert backend is not None, "Parallelism is not initialised"
-
     MessageStartIteration(len(task_list)).send(0)
     barrier()
 

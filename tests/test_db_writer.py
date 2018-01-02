@@ -4,7 +4,7 @@ import tangos.config
 import os
 from tangos.tools import add_simulation
 from tangos.tools import property_writer
-from tangos.simulation_output_handlers import output_testing
+from tangos.input_handlers import output_testing
 from tangos import parallel_tasks, log, testing
 from tangos import properties
 
@@ -12,9 +12,8 @@ def setup():
     parallel_tasks.use('null')
 
 class DummyProperty(properties.HaloProperties):
-    @classmethod
-    def name(self):
-        return "dummy_property",
+    names = "dummy_property",
+    requires_particle_data = True
 
     def requires_property(self):
         return []
@@ -24,9 +23,8 @@ class DummyProperty(properties.HaloProperties):
 
 
 class DummyPropertyCausingException(properties.HaloProperties):
-    @classmethod
-    def name(self):
-        return "dummy_property_with_exception",
+    names = "dummy_property_with_exception",
+    requires_particle_data = True
 
     def calculate(self, data, entry):
         raise RuntimeError("Test of exception handling")
@@ -81,9 +79,7 @@ def test_error_ignoring():
 
 
 class DummyRegionProperty(properties.HaloProperties):
-    @classmethod
-    def name(cls):
-        return "dummy_region_property",
+    names = "dummy_region_property",
 
     def requires_property(self):
         return "dummy_property",

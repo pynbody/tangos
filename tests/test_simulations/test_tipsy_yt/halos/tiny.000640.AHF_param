@@ -1,0 +1,23 @@
+[AHF]
+ic_filename = pioneer50h128.1536gst1.bwK1.000640
+ic_filetype = 90
+outfile_prefix = pioneer50h128.1536gst1.bwK1.000640
+LgridDomain = 512
+LgridMax = 65536
+NperDomCell = 8.0
+NperRefCell = 8.0
+VescTune = 1.0
+NminPerHalo = 64
+RhoVir = 1
+Dvir = -1
+MaxGatherRad = 1.0
+LevelDomainDecomp = 7
+NcpuReading = 1
+z 2.964
+[TIPSY]
+TIPSY_BOXSIZE = 3.36315e+01
+TIPSY_MUNIT = 1.05696e+16
+TIPSY_VUNIT = 1.16265e+03
+TIPSY_EUNIT = 2.50000e-02
+TIPSY_OMEGA0 = 0.3156
+TIPSY_LAMBDA0 = 0.6844

@@ -40,7 +40,7 @@
                             {% endif %}
                         {% endfor %}
                     </select></td></tr>
-                <tr><td><label for="target_sim_id">Raw links to other halos:</label></td>
+                <tr><td><label for="target_sim_id">Raw links to other objects:</label></td>
                 <td><select name="halo_link" id="halo_link" onchange="followHaloLink();">
                 <option value="" selected></option>
                         {% for sim in halo_links %}
@@ -64,18 +64,19 @@
             <input name="type" value="cascade" type="radio" id="type-cascade" checked><label for="type-cascade">This halo</label><br/>
             <input name="logx" type="checkbox" id="logx"/><label for="logx">log x</label>
             <input name="logy" type="checkbox" id="logy"/><label for="logy">log y</label>
-            <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>
+            <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>.
+            <a href="#" id="download-csv-link">&#x25BC; Download CSV</a>
         </form>
         </div>
         <div id="imgbox"></div>
     </div>
 
 
-    <div class="properties-area">
+    <div class="dynamic-update" id="properties-area">
     <h2>Properties</h2>
 
 
-    <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="dynamic-update autorestore" onchange="plotSelectionUpdate();" >
+    <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="autorestore" onchange="plotSelectionUpdate();" >
     <input type="hidden" name="object_typetag" value="{{ halo_typetag }}"/>
     <table>
         <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
@@ -122,7 +123,7 @@
             // This is so that the correct radio buttons get ticked after a page update (otherwise the
             // update happens while the DOM elements are not yet available). It also allows the state of the
             // radio buttons to be carried over when a query is updated.
-            updatePlotControlElements('#plotctl-'+rowId,miniLanguageQuery, true);
+            updatePlotControlElements('#plotctl-' + rowId, miniLanguageQuery, false, false, false);
 
             $.ajax({
                 type: "GET",
@@ -138,8 +139,8 @@
                         $('#contents-'+rowId).html(data.data_formatted);
 
                         // See above for why the plot controls are put in place then updated
-                        updatePlotControlElements('#plotctl-'+rowId,miniLanguageQuery,
-                            data.can_use_in_plot, data.can_use_as_filter);
+                        updatePlotControlElements('#plotctl-' + rowId, miniLanguageQuery,
+                            data.can_use_in_plot, data.can_use_as_filter, data.is_array);
                         plotFetchingDisabled=false;
                         fetchPlot(true);
                     }
@@ -283,12 +284,18 @@
             return true;
         }
 
+        function updateDownloadLink(url) {
+            var csv_url = url.replace('.png','.csv');
+            $('#download-csv-link').attr('href', csv_url);
+        }
+
         function loadImage(url) {
             objImg = new Image();
             existingImgSrc = url;
             objImg.src = url;
             objImg.onload = placeImage;
             objImg.onerror = placeImageError;
+            updateDownloadLink(url);
         }
 
         function placeImageError() {

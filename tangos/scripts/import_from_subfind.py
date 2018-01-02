@@ -78,8 +78,8 @@ def main():
 
     with db.get_default_session().no_autoflush: # for performance
         for x in base_sim:
-            if not isinstance(x.get_output_set_handler(),
-                              tangos.simulation_output_handlers.pynbody.GadgetSubfindOutputSetHandler):
+            if not isinstance(x.get_output_handler(),
+                              tangos.input_handlers.pynbody.GadgetSubfindOutputSetHandler):
                 raise ValueError("import_from_subfind requires the handler to be SubfindOutputSetHandler")
             timesteps = db.core.get_default_session().query(tangos.core.timestep.TimeStep).filter_by(
                 simulation_id=x.id, available=True).order_by(tangos.core.timestep.TimeStep.redshift.desc()).all()

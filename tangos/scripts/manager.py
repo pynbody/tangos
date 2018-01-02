@@ -16,7 +16,7 @@ from tangos.core import Base, get_or_create_dictionary_item, \
 from tangos.core.simulation import SimulationProperty
 from tangos.core.tracking import TrackData
 from tangos.query import get_simulation, get_halo
-from tangos.simulation_output_handlers import get_named_handler_class
+from tangos.input_handlers import get_named_handler_class
 from tangos.tools.add_simulation import SimulationAdderUpdater
 from six.moves import input
 
@@ -254,7 +254,7 @@ def add_tracker(halo, size=None):
         ts_trigger = None
 
     core.get_default_session().add(tx)
-    tx.create_halos(ts_trigger)
+    tx.create_objects(first_timestep=ts_trigger)
     if halo is not None:
         targ = halo.timestep.halos.filter_by(
             object_typecode=1, halo_number=tx.halo_number).first()
@@ -337,10 +337,24 @@ def list_available_properties(options):
     from .. import properties
     all_properties = sorted(properties.all_properties())
 
-    print("%s | %s" % ("name".rjust(30), "from class"))
+    def format_class_name(cl):
+        return "%s.%s"%(cl.__module__, cl.__name__)
+
+    def format_handler_name(cl):
+        if cl.requires_particle_data:
+            return cl.works_with_handler.__name__.center(15)
+        else:
+            return "live".center(15)
+
+    longest_class_name = max([len(format_class_name(cl)) for cl in properties.all_property_classes()])
+    print("%s | %s | %s" % ("name".rjust(30), "handler".center(15), "property class"))
+    print("-"*30+"-+-"+"-"*15+"-+-"+"-"*longest_class_name)
     for p in all_properties:
-        cl = properties.providing_class(p)
-        print("%s | %s"%(p.rjust(30),str(cl)))
+        classes = properties.all_providing_classes(p)
+        print("%s | %.15s | %s"%(p.rjust(30), format_handler_name(classes[0]), format_class_name(classes[0])))
+        for additional_class in classes[1:]:
+            print(" "*30+" | %.15s | %s"%(format_handler_name(additional_class),
+                                          format_class_name(additional_class)))
 
 def main():
 
