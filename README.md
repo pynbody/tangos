@@ -3,9 +3,8 @@ Tangos - The agile numerical galaxy organisation system
 
 [![Build Status](https://travis-ci.org/pynbody/tangos.svg?branch=master)](https://travis-ci.org/pynbody/tangos)
 
-_Tangos_ lets you build a database, e.g. like  
-[Eagle](http://icc.dur.ac.uk/Eagle/database.php) 
-or [MultiDark](https://www.cosmosim.org/cms/documentation/projects/multidark-bolshoi-project/),
+_Tangos_ lets you build a database (along the lines of [Eagle](http://icc.dur.ac.uk/Eagle/database.php) 
+or [MultiDark](https://www.cosmosim.org/cms/documentation/projects/multidark-bolshoi-project/))
  for your own cosmological and zoom simulations. 
  
 It's a python 2.7/3.5+ modular system for generating and querying databases 
