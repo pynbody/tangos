@@ -34,7 +34,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='tangos',
-      version='1.0.0',
+      version='1.0.1',
       description='TANGOS, the amazing numerical galaxy organisation system',
       classifiers=[
           "Development Status :: 4 - Beta",
