@@ -1,4 +1,4 @@
-"""tangos - the amazing numerical galaxy organization system
+"""Tangos - the agile numerical galaxy organization system
 
 This package provides ways to create and interpret databases of numerical galaxy formation simulations for scientific
 analysis.
