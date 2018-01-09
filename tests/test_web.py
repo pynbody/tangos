@@ -1,5 +1,6 @@
 # TODO: expand these tests!
 import tangos, tangos.web
+import tangos.testing.simulation_generator
 from tangos import testing
 from webtest import TestApp
 import numpy as np
@@ -10,7 +11,7 @@ from six import StringIO
 def setup():
     testing.init_blank_db_for_testing()
 
-    creator = tangos.testing.TestSimulationGenerator()
+    creator = tangos.testing.simulation_generator.TestSimulationGenerator()
 
     halo_offset = 0
     for ts in range(1,4):

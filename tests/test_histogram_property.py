@@ -3,6 +3,7 @@ import tangos as db
 import tangos.core.simulation
 import tangos
 import tangos.testing as testing
+import tangos.testing.simulation_generator
 from tangos import properties
 import numpy as np
 
@@ -12,7 +13,7 @@ import numpy.testing as npt
 def setup():
     testing.init_blank_db_for_testing()
 
-    generator = testing.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
 
     ts1 = generator.add_timestep()
     generator.add_objects_to_timestep(2)

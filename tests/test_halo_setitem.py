@@ -4,12 +4,14 @@ import tangos.testing
 import tangos
 from six.moves import range
 
+import tangos.testing.simulation_generator
+
 
 def setup():
 
     tangos.testing.init_blank_db_for_testing()
 
-    generator = db.testing.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
     for i in range(3):
         generator.add_timestep()
         generator.add_objects_to_timestep(3)

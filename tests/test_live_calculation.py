@@ -11,6 +11,7 @@ import tangos.live_calculation as lc
 import tangos.live_calculation.parser
 import tangos
 import tangos.testing as testing
+import tangos.testing.simulation_generator
 from tangos import properties
 from tangos.core import extraction_patterns
 
@@ -18,7 +19,7 @@ from tangos.core import extraction_patterns
 def setup():
     testing.init_blank_db_for_testing()
 
-    generator = testing.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
     ts1 = generator.add_timestep()
     ts1_h1, ts2_h2 = generator.add_objects_to_timestep(2)
 

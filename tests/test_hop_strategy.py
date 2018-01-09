@@ -6,6 +6,7 @@ import tangos.core.halo_data
 import tangos.core.simulation
 import tangos.core.timestep
 import tangos
+import tangos.testing.simulation_generator
 
 __author__ = 'app'
 
@@ -18,9 +19,9 @@ from nose.tools import assert_raises
 def setup():
     testing.init_blank_db_for_testing()
 
-    generator = testing.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
     # A second simulation to test linking across
-    generator_2 = testing.TestSimulationGenerator("sim2")
+    generator_2 = tangos.testing.simulation_generator.TestSimulationGenerator("sim2")
 
     generator.add_timestep()
     generator_2.add_timestep()
@@ -268,7 +269,7 @@ def test_find_merger():
     testing.assert_halolists_equal(results, ["sim/ts1/6", "sim/ts1/7"])
 
 def test_major_progenitor_from_minor_progenitor():
-    generator = testing.TestSimulationGenerator("sim3")
+    generator = tangos.testing.simulation_generator.TestSimulationGenerator("sim3")
     ts1 = generator.add_timestep()
     generator.add_objects_to_timestep(4)
     ts2 = generator.add_timestep()
