@@ -98,11 +98,13 @@ class SqlExecutionTracker(object):
             conn.execute("SELECT 1")
             conn.execute("SELECT 1")
         assert ctr.count == 2
-        assert "SELECT" in ctr.get_statement(0)
+        assert "select" in ctr
+        assert "update" not in ctr
     """
     def __init__(self, conn):
         self.conn = conn
         self._queries = []
+        self._stacks = []
 
     def __enter__(self):
         sqlalchemy.event.listen(self.conn, 'after_execute', self.callback)
@@ -118,8 +120,23 @@ class SqlExecutionTracker(object):
     def get_statement(self, i):
         return self._queries[i]
 
+    def count_statements_containing(self, search_string):
+        return sum(self.statements_contain(search_string))
+
+    def traceback_statements_containing(self, search_string):
+        return [tb for include, tb in zip(self.statements_contain(search_string),
+                                          self._stacks)
+                if include]
+
+    def statements_contain(self, search_string):
+        return [search_string.lower() in q.lower() for q in self._queries]
+
+    def __contains__(self, search_string):
+        return (any(self.statements_contain(search_string)))
+
     def callback(self, conn, query, *_):
         self._queries.append(str(query))
+        self._stacks.append("".join(traceback.format_list(traceback.extract_stack()[:-2])))
 
 def init_blank_db_for_testing(**init_kwargs):
     try:

@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import warnings
 
 import numpy as np
-from sqlalchemy.orm import contains_eager, aliased, Session
+from sqlalchemy.orm import contains_eager, aliased, defaultload
 
 import tangos.core.dictionary
 import tangos.core.halo
@@ -245,7 +245,8 @@ class Calculation(object):
                                                   (halo_alias.id==halo_link_alias.halo_from_id)
                                                   & link_name_condition).\
                                         options(contains_eager(*path_to_properties, alias=halo_property_alias),
-                                                contains_eager(*path_to_links, alias=halo_link_alias))
+                                                contains_eager(*path_to_links, alias=halo_link_alias),
+                                                defaultload(*path_to_properties).undefer_group("data"))
 
             if i<self.n_join_levels()-1:
                 next_level_halo_alias = aliased(tangos.core.halo.Halo)
