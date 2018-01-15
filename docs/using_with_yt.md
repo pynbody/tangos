@@ -13,9 +13,15 @@ Initial set-up: tangos+yt
 Make sure you have followed the [initial set up instructions](index.md). Additionally, 
 you will need to install yt version 3.4.0 or later.
 
-Finally, download the tutorial_changa_yt dataset. Unpack the tar file either in your 
+Next, download the [raw simulation data](http://star.ucl.ac.uk/~app/tangos/tutorial_changa.tar.gz). Unpack the tar file either in your 
 home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
 variable to.
+
+Finally, download the [tutorial_changa_yt](http://star.ucl.ac.uk/~app/tangos/tutorial_changa_yt.tar.gz) 
+tar. Unpack the tar file in the same folder as you unpacked tutorial_changa. The `tutorial_changa_yt`
+folder contains a series of symlinks that present the dataset with a slightly different files structure
+that is compatible with _yt_. (Specifically, _yt_ can't cope with the AHF
+files being in the same folder as the tipsy files.)
 
 Using yt to add a simulation
 ----------------------------

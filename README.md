@@ -1,19 +1,31 @@
-TANGOS - The Amazing Numerical Galaxy Organisation System
----------------------------------------------------------
+Tangos - The agile numerical galaxy organisation system
+-------------------------------------------------------
 
 [![Build Status](https://travis-ci.org/pynbody/tangos.svg?branch=master)](https://travis-ci.org/pynbody/tangos)
 
-_Tangos_ is a system for building and querying databases summarising the
-results of cosmological simulations. 
+_Tangos_ lets you build a database (along the lines of [Eagle](http://icc.dur.ac.uk/Eagle/database.php) 
+or [MultiDark](https://www.cosmosim.org/cms/documentation/projects/multidark-bolshoi-project/))
+ for your own cosmological and zoom simulations. 
+ 
+It's a python 2.7/3.5+ modular system for generating and querying databases 
+and:
 
-_Tangos_:
+ - is designed to store and manage results from your own analysis code;
+ - provides web and python interfaces;
+ - allows users to construct science-focussed queries, including across entire merger trees, 
+   without requiring knowledge of SQL;
+   
+When building databases, _tangos_:   
 
- - is written for python 2.7 and 3.5 or later;
- - provides a web interface to the data;
- - allows users to construct efficient, science-focussed queries from python without typing a line of SQL;
- - can be customised to work with multiple python modules such as pynbody or yt to process raw simulation data;
- - uses sqlalchemy to store the resulting data and therefore can connect to many different flavours of database.
+ - manages the process of populating the database with science data, including auto-parallelising
+   your analysis;
+ - can be customised to work with multiple python modules such as 
+   [pynbody](http://pynbody.github.io/pynbody/) or [yt](http://yt-project.org) to 
+   process raw simulation data;
+ - can use your favourite database as the underlying store 
+   (by default, [sqlite](https://sqlite.org)), thanks to [sqlalchemy](https://www.sqlalchemy.org).
 
+ 
  Getting started
  ---------------
  

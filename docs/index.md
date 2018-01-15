@@ -1,3 +1,7 @@
+_Tangos_ lets you build a database (along the lines of [Eagle](http://icc.dur.ac.uk/Eagle/database.php) 
+or [MultiDark](https://www.cosmosim.org/cms/documentation/projects/multidark-bolshoi-project/))
+ for your own cosmological and zoom simulations. 
+ 
 Getting started with tangos
 ---------------------------
 **This is a beta version of tangos**. When _tangos_ is released there will be an accompanying paper.
