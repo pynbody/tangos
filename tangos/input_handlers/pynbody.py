@@ -275,6 +275,20 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
 class RamsesHOPOutputSetHandler(PynbodyOutputSetHandler):
     patterns = ["output_0????"]
 
+    def match_halos(self, ts1, ts2, halo_min, halo_max,
+                    dm_only=False, threshold=0.005, object_typetag='halo'):
+        f1 = self.load_timestep(ts1).dm
+        f2 = self.load_timestep(ts2).dm
+
+        h1 = self._construct_halo_cat(ts1, object_typetag)
+        h2 = self._construct_halo_cat(ts2, object_typetag)
+
+        bridge = pynbody.bridge.OrderBridge(f1,f2, monotonic=False)
+
+        return bridge.fuzzy_match_catalog(halo_min, halo_max, threshold=threshold,
+                                          only_family=pynbody.family.dm, groups_1=h1, groups_2=h2)
+
+
 
 
 class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
