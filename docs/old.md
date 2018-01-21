@@ -8,7 +8,7 @@ If running on a remote server, you will need to forward the appropriate port usi
 1. Clone the repository
 2. Type `python setup.py install` (or `python setup.py develop`, see above)
 3. Put your database file in your home folder, named `data.db` - or point the environment variable `TANGOS_DB_CONNECTION` to an alternate path (see above)
-4. Type `cd web` and then `pserve development.ini`
+4. Type `tangos serve`
 5. Browse to <http://localhost:6543>
 
 Making your own database from scratch
