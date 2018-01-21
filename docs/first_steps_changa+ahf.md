@@ -122,12 +122,13 @@ If keen, one can alter the `--include-only` clause to prevent any such errors oc
 _tangos_ isolates errors that occur in individual halo calculations; it reports them and then moves onto the next
 calculation or halo. 
 
- 
- Explore what's possible
- -----------------------
- 
- Now that you have a minimal functioning _tangos_ database, you can proceed to the [data exploration](data_exploration.md) 
- tutorial. 
- 
- However, you can also [enable even more functionality](black_holes_and_crossmatching.md) by  adding a companion simulation 
- which has black hole (AGN) feedback in addition to the supernova feedback of the `tutorial_changa` simulation. 
+in addition to the supernova feedback of the `tutorial_changa` simulation. 
+
+Explore what's possible
+-----------------------
+
+Now that you have a minimal functioning _tangos_ database, you can proceed to the [data exploration](data_exploration.md) 
+tutorial. 
+
+However, you can also [enable even more functionality](black_holes_and_crossmatching.md) by  adding a companion simulation 
+which has black hole (AGN) feedback 
