@@ -275,8 +275,9 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
 class RamsesHOPOutputSetHandler(PynbodyOutputSetHandler):
     patterns = ["output_0????"]
 
-    def match_halos(self, ts1, ts2, halo_min, halo_max,
-                    dm_only=False, threshold=0.005, object_typetag='halo'):
+    def match_objects(self, ts1, ts2, halo_min, halo_max,
+                      dm_only=False, threshold=0.005, object_typetag='halo',
+                      output_handler_for_ts2=None):
         f1 = self.load_timestep(ts1).dm
         f2 = self.load_timestep(ts2).dm
 
