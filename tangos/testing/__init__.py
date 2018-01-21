@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
-import tangos
-from .. import core
+from .. import core, get_halo
 import sqlalchemy, sqlalchemy.event
 import contextlib
 import gc
@@ -22,7 +21,7 @@ def _as_halos(hlist, session=None):
         elif isinstance(h, core.halo.Halo):
             rvals.append(h)
         else:
-            rvals.append(tangos.get_halo(h, session))
+            rvals.append(get_halo(h, session))
     return rvals
 
 def _halos_to_strings(hlist):
@@ -101,7 +100,10 @@ class SqlExecutionTracker(object):
         assert "select" in ctr
         assert "update" not in ctr
     """
-    def __init__(self, conn):
+    def __init__(self, conn=None):
+        if conn is None:
+            conn = core.get_default_engine()
+
         self.conn = conn
         self._queries = []
         self._stacks = []

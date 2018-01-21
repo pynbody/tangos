@@ -148,6 +148,7 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
 
             query = sources_query.outerjoin(original_orm_alias,
                                             source_ids.source_id==original_orm_alias.source_id)
+            query = query.options(orm.joinedload(original_orm_alias.halo_to))
 
 
 

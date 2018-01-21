@@ -251,6 +251,18 @@ def test_multisource_backwards():
     correct = [i.earliest for i in correct]
     testing.assert_halolists_equal(results,["sim/ts1/2","sim/ts1/3","sim/ts1/4"])
 
+def test_multisource_performance():
+    ts_targ = tangos.get_item("sim/ts1")
+    sources = tangos.get_items(["sim/ts3/1", "sim/ts3/2", "sim/ts3/3"])
+    with testing.SqlExecutionTracker() as track:
+        halo_finding.MultiSourceMultiHopStrategy(sources, ts_targ).all()
+
+    print(track.count_statements_containing("select halos."))
+    for x in track.traceback_statements_containing("select halos."):
+        print(x)
+    assert track.count_statements_containing("select halos.")==0
+
+
 def test_multisource_across():
     strategy = halo_finding.MultiSourceMultiHopStrategy(
         tangos.get_items(["sim/ts2/1", "sim/ts2/2", "sim/ts2/3"]),
