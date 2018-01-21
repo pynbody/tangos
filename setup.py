@@ -62,7 +62,8 @@ setup(name='tangos',
                                            'tangos_manager = tangos.scripts.manager:main',
                                            'tangos_preprocess_bh = tangos.scripts.preprocess_bh:main',
                                            'tangos_timelink = tangos.scripts.timelink:main',
-                                           'tangos_writer = tangos.scripts.writer:main'
+                                           'tangos_writer = tangos.scripts.writer:main',
+                                           'tangos = tangos.scripts:main'
                     ]
       },
       include_package_data=True,

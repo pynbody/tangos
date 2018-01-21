@@ -29,7 +29,7 @@ Using yt to add a simulation
 At the unix command line type:
 
 ```
-tangos_manager add tutorial_changa_yt --handler=yt.YtOutputSetHandler
+tangos add tutorial_changa_yt --handler=yt.YtOutputSetHandler
 ```
 
 The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
@@ -37,7 +37,7 @@ scroll up the screen.
  
  Let's pick this command apart
  
-  * `tangos_manager` is the command-line tool to administrate your tangos database
+  * `tangos` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial_changa_yt` identifies the simulation we're adding
   * `--handler=yt.YtOutputSetHandler` requests that _tangos_ uses yt as the "handler" for raw simulation and halo files.
@@ -82,13 +82,13 @@ Add some more interesting properties
 Add a density profile using:
  
 ```bash
-tangos_writer dm_density_profile --for tutorial_changa  
+tangos write dm_density_profile --for tutorial_changa  
 ```
 
 Here,
- * `tangos_writer` is the same script you called above to add properties to the database
+ * `tangos write` is the same script you called above to add properties to the database
  * `dm_density_profile` is an array representing the dark matter density profile; to see all available properties
-   you can call `tangos_manager list-possible-haloproperties`.
+   you can call `tangos list-possible-haloproperties`.
 
 You might note that `dm_density_profile` is also the name of a property that can be calculated using
 `pynbody` (see the [changa+AHF tutorial](first_steps_changa+ahf.md)). _Tangos_ is able to select the correct piece of

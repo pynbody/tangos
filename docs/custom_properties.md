@@ -172,8 +172,8 @@ standard `tangos` session you'll run into difficulties (specifically you'll see 
 _tangos_ refuses to automatically load particle data; it assumes this isn't really what you'd like to happen in
 a typical analysis session.
 
-We instead need to use the `tangos_writer` which populates the database from the underlying particle data. Type
-`tangos_writer velocity_dispersion --for tutorial_changa` from your UNIX shell to do so. Don't forget you can also run this in
+We instead need to use the `tangos write` which populates the database from the underlying particle data. Type
+`tangos write velocity_dispersion --for tutorial_changa` from your UNIX shell to do so. Don't forget you can also run this in
 parallel, or with various optimisations -- see the basic tutorials for more information on this. Your code does
 not need to be aware of the parallelisation mode or any other details; it's always handed a complete set of particles
 for the halo it's operating on.
@@ -234,7 +234,7 @@ of our own making. The nature of a `region_specification` in general will depend
 pynbody backend, it is a filter that describes how to cut out the target region from the full simulation (in physical
 units). Because we already found the radius and center of the halo in a previous step, this is straight-forward;
 we just ask for a big sphere centered on the halo center. Once again, it doesn't matter what parallelisation strategy
-is in use when you actually invoke `tangos_writer my_virial_radius` – your code sees the complete region that you
+is in use when you actually invoke `tangos write my_virial_radius` – your code sees the complete region that you
 asked for. 
 
 Your code does, however, need to take responsibility for putting back the data as you found it. Sometimes multiple
@@ -287,7 +287,7 @@ existing halos.
 Second, by returning a `Halo` object (retrieved from the database using `get_halo`), the framework automatically understands
 we are creating a link to another halo rather than a numerical property.
 
-After the `my_parent_halo` property has been written by `tangos_writer`, it will be available in link syntax within
+After the `my_parent_halo` property has been written by `tangos write`, it will be available in link syntax within
 live calculations (for instance one could ask for `my_parent_halo.dm_density_profile` to get the density profile of the
 parent halo, if `dm_density_profile` has also been written to the database).
 

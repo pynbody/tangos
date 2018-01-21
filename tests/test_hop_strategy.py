@@ -6,6 +6,7 @@ import tangos.core.halo_data
 import tangos.core.simulation
 import tangos.core.timestep
 import tangos
+import tangos.testing.simulation_generator
 
 __author__ = 'app'
 
@@ -18,9 +19,9 @@ from nose.tools import assert_raises
 def setup():
     testing.init_blank_db_for_testing()
 
-    generator = testing.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
     # A second simulation to test linking across
-    generator_2 = testing.TestSimulationGenerator("sim2")
+    generator_2 = tangos.testing.simulation_generator.TestSimulationGenerator("sim2")
 
     generator.add_timestep()
     generator_2.add_timestep()
@@ -250,6 +251,18 @@ def test_multisource_backwards():
     correct = [i.earliest for i in correct]
     testing.assert_halolists_equal(results,["sim/ts1/2","sim/ts1/3","sim/ts1/4"])
 
+def test_multisource_performance():
+    ts_targ = tangos.get_item("sim/ts1")
+    sources = tangos.get_items(["sim/ts3/1", "sim/ts3/2", "sim/ts3/3"])
+    with testing.SqlExecutionTracker() as track:
+        halo_finding.MultiSourceMultiHopStrategy(sources, ts_targ).all()
+
+    print(track.count_statements_containing("select halos."))
+    for x in track.traceback_statements_containing("select halos."):
+        print(x)
+    assert track.count_statements_containing("select halos.")==0
+
+
 def test_multisource_across():
     strategy = halo_finding.MultiSourceMultiHopStrategy(
         tangos.get_items(["sim/ts2/1", "sim/ts2/2", "sim/ts2/3"]),
@@ -268,7 +281,7 @@ def test_find_merger():
     testing.assert_halolists_equal(results, ["sim/ts1/6", "sim/ts1/7"])
 
 def test_major_progenitor_from_minor_progenitor():
-    generator = testing.TestSimulationGenerator("sim3")
+    generator = tangos.testing.simulation_generator.TestSimulationGenerator("sim3")
     ts1 = generator.add_timestep()
     generator.add_objects_to_timestep(4)
     ts2 = generator.add_timestep()

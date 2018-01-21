@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import argparse
 
 import tangos as db
-import tangos.core
+import tangos.core, tangos.parallel_tasks.database
 from .. import config
 from tangos import parallel_tasks
 from tangos import core
@@ -18,12 +18,20 @@ class GenericLinker(object):
 
     def parse_command_line(self, argv=None):
         parser = self._create_argparser()
-        self.args = parser.parse_args(argv)
+        self.process_options(parser.parse_args(argv))
         db.process_options(self.args)
 
     def _create_argparser(self):
         parser = argparse.ArgumentParser()
         db.supplement_argparser(parser)
+        self.add_parser_arguments(parser)
+        return parser
+
+    def process_options(self, options):
+        self.args = options
+
+    @classmethod
+    def add_parser_arguments(self, parser):
         parser.add_argument("--verbose", action="store_true",
                             help="Print extra information")
         parser.add_argument("--force", action="store_true",
@@ -37,10 +45,9 @@ class GenericLinker(object):
                             help='Process in reverse order (low-z first)')
         parser.add_argument('--dmonly', action='store_true',
                             help='only match halos based on DM particles. Much more memory efficient, but currently only works for Rockstar halos')
-        return parser
 
     def run_calculation_loop(self):
-
+        parallel_tasks.database.synchronize_creator_object()
         pair_list = self._generate_timestep_pairs()
 
         if len(pair_list)==0:
@@ -177,20 +184,21 @@ class TimeLinker(GenericLinker):
             pairs = pairs[::-1]
         return pairs
 
-    def _create_argparser(self):
-        parser = super(TimeLinker, self)._create_argparser()
+    @classmethod
+    def add_parser_arguments(self, parser):
+        super(TimeLinker, self).add_parser_arguments(parser)
         parser.add_argument('--sims', '--for', action='store', nargs='*',
                             metavar='simulation_name',
                             help='Specify a simulation (or multiple simulations) to run on')
-        return parser
+
 
 class CrossLinker(GenericLinker):
-    def _create_argparser(self):
-        parser = super(CrossLinker, self)._create_argparser()
+    @classmethod
+    def add_parser_arguments(self, parser):
+        super(CrossLinker, self).add_parser_arguments(parser)
         parser.add_argument('sims', action='store', nargs=2,
                             metavar=('name1', 'name2'),
                             help='The two simulations (or, optionally, two individual timesteps) to crosslink')
-        return parser
 
     def _generate_timestep_pairs(self):
         obj1 = db.get_item(self.args.sims[0])

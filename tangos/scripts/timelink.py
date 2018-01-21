@@ -16,5 +16,9 @@ def run_dbwriter(argv):
     writer.run_calculation_loop()
 
 def main():
+    print("""
+    The 'tangos_timelink' command line is deprecated in favour of 'tangos link'.
+    'tangos_timelink' may be removed in future versions.
+    """)
     parallel_tasks.launch(run_dbwriter, 2, [sys.argv[1:]])
 

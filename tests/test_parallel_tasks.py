@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+
+import tangos.testing.simulation_generator
 from tangos import parallel_tasks as pt
 from tangos import testing
 import tangos
@@ -9,7 +11,7 @@ def setup():
     pt.use("multiprocessing")
     testing.init_blank_db_for_testing(timeout=5.0, verbose=False)
 
-    generator = testing.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
     generator.add_timestep()
     generator.add_objects_to_timestep(9)
 

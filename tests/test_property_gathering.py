@@ -8,6 +8,7 @@ import tangos.core.halo
 import tangos.core.simulation
 import tangos.core.timestep
 import tangos
+import tangos.testing.simulation_generator
 from tangos import properties
 from tangos import testing
 import os
@@ -19,7 +20,7 @@ from tangos import live_calculation
 def setup():
     testing.init_blank_db_for_testing()
 
-    creator = tangos.testing.TestSimulationGenerator()
+    creator = tangos.testing.simulation_generator.TestSimulationGenerator()
 
     halo_offset = 0
     for ts in range(1,4):
