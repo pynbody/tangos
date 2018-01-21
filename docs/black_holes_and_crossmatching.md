@@ -27,7 +27,7 @@ Next we'll identify which halo corresponds to which across the simulations. This
 comparisons to isolate the effects of AGN. From your UNIX shell type:
 
 ```
-tangos_crosslink tutorial_changa tutorial_changa_blackholes
+tangos crosslink tutorial_changa tutorial_changa_blackholes
 ```
 
 If you want to speed up this process, it can be [MPI parallelised](mpi.md).
@@ -46,11 +46,11 @@ This scans through the timesteps, adds black holes from each snapshot, and links
 information from changa's output `.mergers` file. 
 
 However no properties are associated with the black holes until you ask for them. Property calculations
-can be applied to black holes (and other objects) in just the same way as halos, using the `tangos_writer`
+can be applied to black holes (and other objects) in just the same way as halos, using the `tangos write`
 shell command. Type:
 
 ```
-tangos_writer BH_mass BH_mdot_histogram --for tutorial_changa_blackholes --type bh
+tangos write BH_mass BH_mdot_histogram --for tutorial_changa_blackholes --type bh
 ```
 
 Here
@@ -63,7 +63,7 @@ Here
  - `--type bh` is a new directive, indicating the writer should be applied to all black hole
    objects in the simulation (rather than regular halos).
 
-If you want to speed up the processes above, `tangos_add_bh` and `tangos_writer` can both 
+If you want to speed up the processes above, `tangos_add_bh` and `tangos write` can both 
 be [MPI parallelised](mpi.md).
 
 Explore

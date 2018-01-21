@@ -15,7 +15,7 @@ Import the simulation
 At the unix command line type:
 
 ```
-tangos_manager add tutorial_changa
+tangos add tutorial_changa
 ```
 
 The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
@@ -23,11 +23,11 @@ scroll up the screen.
  
  Let's pick this command apart
  
-  * `tangos_manager` is the command-line tool to administrate your tangos database
+  * `tangos` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial_changa` identifies the simulation we're adding
  
-Note that all _tangos_ command-line tools provide help. For example `tangos_manager --help` will show you all subcommands, and `tangos_manager add --help` will tell you more about the possible options for adding a simulation.
+Note that all _tangos_ command-line tools provide help. For example `tangos --help` will show you all subcommands, and `tangos add --help` will tell you more about the possible options for adding a simulation.
   
 At this point, the database knows about the existence of timesteps and their halos in our simulation, but nothing about the properties of those halos or groups. We need to add more information before the database is useful.
 
@@ -53,7 +53,7 @@ Generate the merger trees
 The merger trees are most simply generated using pynbody's bridge function to do this, type
 
 ```
-tangos_timelink --for tutorial_changa
+tangos link --for tutorial_changa
 ```
 
 which builds the merger tree for the halos. Again, the `--for tutorial_changa` may be omitted if it's the
@@ -71,11 +71,11 @@ Next, we will add some properties to the halos so that we can start to do some s
 we only want to do science on the highest resolution regions. The first thing to calculate is therefore which halos fall
 in that region. From your shell type:
 ```bash
-tangos_writer contamination_fraction --for tutorial_changa
+tangos write contamination_fraction --for tutorial_changa
 ```
 
 Here,
- * `tangos_writer` is the main script for adding properties to a tangos database;
+ * `tangos write` is the main script for adding properties to a tangos database;
  * `contamination_fraction` is the name of a built-in property which returns the fraction of dark matter particles
    which come from outside the high resolution region.
    
@@ -91,13 +91,13 @@ Let's finally do some science. We'll add density profiles, thumbnail images, and
 from your shell type:
  
 ```bash
-tangos_writer dm_density_profile gas_density_profile uvi_image SFR_histogram --with-prerequisites --include-only="contamination_fraction<0.01 & NDM()>1000" --for tutorial_changa  
+tangos write dm_density_profile gas_density_profile uvi_image SFR_histogram --with-prerequisites --include-only="contamination_fraction<0.01 & NDM()>1000" --for tutorial_changa  
 ```
 
 Here,
- * `tangos_writer` is the same script you called above to add properties to the database
+ * `tangos write` is the same script you called above to add properties to the database
  * `dm_density_profile` is an array representing the dark matter density profile; to see all available properties
-   you can call `tangos_manager list-possible-haloproperties`
+   you can call `tangos list-possible-haloproperties`
  * `--with-prerequisites` automatically includes  any underlying properties that are required to perform the calculation. In this case,
    the `dm_density_profile` calculation actually needs to know an accurate center for the halo (known as `shrink_center`),
    so that calculation will be automatically performed and stored
@@ -108,7 +108,7 @@ Here,
    
    
 This is the slowest process in all the _tangos_ tutorials; there is a 
-[specific example](mpi.md#tangos_writer_example) in the [MPI parallelisation document](mpi.md) showing how to make
+[specific example](mpi.md#tangos write_example) in the [MPI parallelisation document](mpi.md) showing how to make
 best use of a multi-core system to speed things up.
    
 Tangos error handling
