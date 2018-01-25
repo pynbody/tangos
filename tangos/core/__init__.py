@@ -43,7 +43,6 @@ from .tracking import TrackData, update_tracker_halos
 from .timestep import TimeStep
 from .halo import Halo
 from .halo_data import HaloProperty, HaloLink
-from .stored_options import ArrayPlotOptions
 
 Index("halo_index", HaloProperty.__table__.c.halo_id)
 Index("name_halo_index", HaloProperty.__table__.c.name_id,
@@ -112,9 +111,17 @@ def process_options(argparser_options):
 def init_db(db_uri=None, timeout=30, verbose=None):
     global _verbose, _internal_session, _engine, Session
     if db_uri is None:
-        db_uri = 'sqlite:///' + config.db
+        if '//' in config.db:
+            db_uri = config.db
+        else:
+            db_uri = 'sqlite:///' + config.db
     _engine = create_engine(db_uri, echo=verbose or _verbose,
                             isolation_level='READ UNCOMMITTED', connect_args={'timeout': timeout})
+
+    #with _engine.connect() as connection:
+        # the following auto-adaptation of the table names is required for backwards compatibility
+        # Halo._adapt_schema(_engine, connection)
+
     Session = sessionmaker(bind=_engine)
     _internal_session=Session()
     Base.metadata.create_all(_engine)
