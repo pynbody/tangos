@@ -6,13 +6,8 @@ want to override and it will automatically take precedence.
 
 from __future__ import absolute_import
 import os
-import sys
 
 home = os.environ['HOME']
-
-if sys.platform=='darwin' :
-    home+='/Science/'
-
 db = os.environ.get("TANGOS_DB_CONNECTION", home+"/tangos_data.db")
 base = os.environ.get("TANGOS_SIMULATION_FOLDER", home+"/")
 
@@ -22,7 +17,7 @@ num_multihops_max_default = 100
 # the maximum number of links to follow when searching for related halos
 
 default_linking_threshold = 0.005
-# the percentage of particles in common between two objects before the database even bothers to store the relationship
+# the percentage of particles in common between two objects before the database bothers to store the relationship
 
 min_halo_particles = 1000
 # the minimum number of particles needed in an object before the database bothers to store it
@@ -40,7 +35,7 @@ file_ignore_pattern = []
 
 max_traverse_depth = 3
 
-# merger tree building thinning criteria
+# merger tree thinning criteria (applied at query time, not at time of writing links)
 mergertree_min_fractional_weight = 0.02 # as a fraction of the weight of the strongest link from each halo
 mergertree_min_fractional_NDM = 0 # as a fraction of the most massive halo at each timestep - set to zero for no thinning
 mergertree_max_nhalos = 30 # maximum number of halos per step - discard the least massive ones
