@@ -216,7 +216,7 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
 
             istart = 1
 
-            if isinstance(h, pynbody.halo.SubfindCatalogue):
+            if isinstance(h, pynbody.halo.SubfindCatalogue) or isinstance(h, pynbody.halo.HOPCatalogue):
                 istart = 0 # indexes from zero
 
             if hasattr(h, 'precalculate'):

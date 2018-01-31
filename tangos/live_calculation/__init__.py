@@ -158,11 +158,11 @@ class Calculation(object):
         Additionally, if load_into_session is provided, any returned database objects are re-queried against that
         session so that usable ORM objects are returned (rather than ORM objects attached to a dead session)"""
         unsanitized_values = self.values(halos)
-        return self._sanitize_values(unsanitized_values, load_into_session)
+        return self._sanitize_values(unsanitized_values, load_into_session, no_results_raises=False)
 
 
 
-    def _sanitize_values(self, unsanitized_values, load_into_session=None):
+    def _sanitize_values(self, unsanitized_values, load_into_session=None, no_results_raises=True):
         """Convert the raw calculation result to a sanitized version. See values_sanitized."""
         keep_rows = np.all([[data is not None for data in row] for row in unsanitized_values], axis=0)
         # The obvious way of doing this:
@@ -173,7 +173,7 @@ class Calculation(object):
 
         output_values = unsanitized_values[:, keep_rows]
         for x in output_values:
-            if len(x)==0:
+            if len(x)==0 and no_results_raises:
                 raise NoResultsError("Calculation %s returned no results" % self)
 
         if load_into_session is not None:
@@ -201,6 +201,8 @@ class Calculation(object):
 
     @staticmethod
     def _make_numpy_array(x):
+        if len(x)==0:
+            return x
         if isinstance(x[0], np.ndarray):
             try:
                 return np.array(list(x), dtype=x[0].dtype)
@@ -674,6 +676,11 @@ class StoredProperty(Calculation):
     def values_and_description(self, halos):
         from .. import properties
         values = self.values(halos)
+        if len(halos)==0:
+            # cannot build a meaningful property description as we don't have any halos, therefore don't know
+            # anything about the simulation or which property calculations are relevant for it
+            return values, None
+
         sim = consistent_collection.consistent_simulation_from_halos(halos)
         description_class = properties.providing_class(self._name, sim.output_handler_class, silent_fail=True)
         description = None

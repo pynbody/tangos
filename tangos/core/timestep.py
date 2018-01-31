@@ -143,11 +143,11 @@ class TimeStep(Base):
             if object_typecode is not None:
                 raw_query = raw_query.filter_by(object_typecode=object_typecode)
             query = property_description.supplement_halo_query(raw_query)
-            results = query.all()
-            results = property_description.values_sanitized(results, Session.object_session(self))
+            sql_query_results = query.all()
+            calculation_results = property_description.values_sanitized(sql_query_results, Session.object_session(self))
         finally:
             session.close()
-        return results
+        return calculation_results
 
     def gather_property(self, *args, **kwargs):
         """The old alias for calculate_all, retained for compatibility"""

@@ -214,8 +214,8 @@ def test_gather_closes_connections():
 
 def test_gather_restricted_object_type():
     ts = tangos.get_timestep("sim/ts1")
-    with assert_raises(live_calculation.NoResultsError):
-        non_existent = ts.calculate_all("hole_mass", object_typetag='halo')
+    non_existent, = ts.calculate_all("hole_mass", object_typetag='halo')
+    assert len(non_existent)==0
     ok_1, = ts.calculate_all("hole_mass",object_typetag='BH')
     ok_2, = ts.calculate_all("hole_mass")
     npt.assert_allclose(ok_1, [100., 200., 300., 400.])
