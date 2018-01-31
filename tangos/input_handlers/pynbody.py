@@ -226,8 +226,6 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
             for i in range(istart, len(h)+istart):
                 try:
                     hi = h[i]
-                    print(i, hi)
-                    import pdb; pdb.set_trace()
                     if len(hi.dm) > min_halo_particles:
                         yield i, len(hi.dm), len(hi.star), len(hi.gas)
                 except (ValueError, KeyError) as e:
