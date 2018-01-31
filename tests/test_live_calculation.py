@@ -43,6 +43,8 @@ def setup():
     generator.add_objects_to_timestep(1)
     generator.link_last_halos()
 
+    generator.add_timestep() # intentionally empty final timestep
+
 
 
 class DummyProperty1(properties.HaloProperties):
@@ -223,3 +225,7 @@ def test_calculate_preserves_numpy_dtype():
     h = tangos.get_halo("sim/ts1/1")
     assert h.calculate("dummy_property_1").dtype == np.float64
     assert h.calculate("dummy_property_2").dtype==np.float64
+
+def test_empty_timestep_live_calculation():
+    vals, = tangos.get_timestep("sim/ts3").calculate_all("BH_mass")
+    assert len(vals)==0

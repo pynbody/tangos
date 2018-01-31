@@ -216,7 +216,7 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
 
             istart = 1
 
-            if isinstance(h, pynbody.halo.SubfindCatalogue):
+            if isinstance(h, pynbody.halo.SubfindCatalogue) or isinstance(h, pynbody.halo.HOPCatalogue):
                 istart = 0 # indexes from zero
 
             if hasattr(h, 'precalculate'):
@@ -226,6 +226,8 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
             for i in range(istart, len(h)+istart):
                 try:
                     hi = h[i]
+                    print(i, hi)
+                    import pdb; pdb.set_trace()
                     if len(hi.dm) > min_halo_particles:
                         yield i, len(hi.dm), len(hi.star), len(hi.gas)
                 except (ValueError, KeyError) as e:
