@@ -122,7 +122,6 @@ If keen, one can alter the `--include-only` clause to prevent any such errors oc
 _tangos_ isolates errors that occur in individual halo calculations; it reports them and then moves onto the next
 calculation or halo. 
 
-in addition to the supernova feedback of the `tutorial_changa` simulation. 
 
 Explore what's possible
 -----------------------
