@@ -85,3 +85,11 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
                 line_split = line.split()
                 if line_split[0].lower() == property.lower():
                     return " ".join(line_split[1:])
+
+
+class TestOutputSetHandlerReverseHaloNDM(TestOutputSetHandler):
+    def enumerate_objects(self, ts_extension, object_typetag='halo', min_halo_particles=config.min_halo_particles):
+        nhalos_string = self._get_ts_property(ts_extension, object_typetag+"s")
+        nhalos = 0 if nhalos_string is None else int(nhalos_string)
+        for i in range(nhalos):
+            yield i+1, 2000+i, 0, 0

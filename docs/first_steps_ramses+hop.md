@@ -15,7 +15,7 @@ Import the simulation
 At the unix command line type:
 
 ```
-tangos add tutorial_ramses --min-particles 100
+tangos add tutorial_ramses --min-particles 100 --no-renumber
 ```
 
 The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
@@ -26,7 +26,11 @@ scroll up the screen.
   * `tangos` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial` identifies the simulation we're adding
-  * `--min-particles 100` imports only halos/groups with at least 100 particles. 
+  * `--min-particles 100` imports only halos/groups with at least 100 particles.
+  * `--no-renumber` specifies that _tangos_ should use the original HOP halo numbering, which starts
+    from zero. Otherwise, _tangos_ renumbers the halos starting from 1. This would have no impact on analyses
+    since it is all handled internally, but it can be confusing if you are used to dealing with the
+    raw catalogues, so we switch it off here.
 
  
 Note that all _tangos_ command-line tools provide help. For example `tangos --help` will show you all subcommands, and `tangos add --help` will tell you more about the possible options for adding a simulation.
