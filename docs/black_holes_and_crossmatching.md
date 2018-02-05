@@ -39,7 +39,7 @@ Black holes are added to the _tangos_ database with a specialised script that sc
 for black hole particles. Type:
 
 ```
-tangos_add_bh tutorial_changa_blackholes
+tangos_add_bh --sims tutorial_changa_blackholes
 ```
 
 This scans through the timesteps, adds black holes from each snapshot, and links them together using merger

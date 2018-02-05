@@ -14,6 +14,8 @@ def get_default_session():
 
     :rtype: sqlalchemy.orm.Session"""
     global _internal_session
+    if _internal_session is None:
+        init_db()
     return _internal_session
 
 def set_default_session(session):
@@ -27,6 +29,8 @@ def set_default_session(session):
 def get_default_engine():
     """Get the default sqlalchemy engine to be used when no other is specified."""
     global _engine
+    if _engine is None:
+        init_db()
     return _engine
 
 
