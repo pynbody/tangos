@@ -4,7 +4,7 @@ or [MultiDark](https://www.cosmosim.org/cms/documentation/projects/multidark-bol
  
 Once tangos is set up, you'll be able to access your simulations from a web browser:
 
-[![Tangos and its web server](images/video_play.png)](https://www.youtube.com/watch?v=SdFGTLM-q5U)
+[![Tangos and its web server](images/video_play.png)](https://www.youtube.com/watch?v=xHyzJmNsVMw)
 
  
 Getting started with tangos

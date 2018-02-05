@@ -18,4 +18,4 @@ Serving on http://localhost:6543
 Navigate your browser to that address to start playing. Click the video below to start a
 tour of the data exploration features.
 
-[![Tangos and its web server](https://img.youtube.com/vi/SdFGTLM-q5U/maxresdefault.jpg)](https://www.youtube.com/watch?v=SdFGTLM-q5U)
+[![Tangos and its web server](images/video_play.png)](https://www.youtube.com/watch?v=xHyzJmNsVMw)
