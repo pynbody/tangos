@@ -1,9 +1,9 @@
 # Live properties suitable for calculations on underlying profiles, e.g. density profiles, mass profiles etc
 
-from . import LiveHaloProperties
+from . import LivePropertyCalculation
 import numpy as np
 
-class AtPosition(LiveHaloProperties):
+class AtPosition(LivePropertyCalculation):
     def __init__(self, simulation, position, array):
         super(AtPosition, self).__init__(simulation)
         self._array_info = array
@@ -27,7 +27,7 @@ class AtPosition(LiveHaloProperties):
         else:
             return ar[i0]*i0_weight + ar[i1]*i1_weight
 
-class MaxMinProperty(LiveHaloProperties):
+class MaxMinProperty(LivePropertyCalculation):
     def __init__(self, simulation, array):
         super(MaxMinProperty, self).__init__(simulation)
         self._array_info = array

@@ -12,22 +12,22 @@ class TestOutputHandler1Child(TestOutputHandler1):
 class TestOutputHandler2(soh.SimulationOutputSetHandler):
     pass
 
-class PropertyForHandler1(prop.HaloProperties):
+class PropertyForHandler1(prop.PropertyCalculation):
     works_with_handler = TestOutputHandler1
     requires_particle_data = True
     names = "widget", "hedgehog"
 
-class PropertyForHandler2(prop.HaloProperties):
+class PropertyForHandler2(prop.PropertyCalculation):
     works_with_handler = TestOutputHandler2
     requires_particle_data = True
     names = "widget", "robin"
 
-class PropertyForHandler1Child(prop.HaloProperties):
+class PropertyForHandler1Child(prop.PropertyCalculation):
     works_with_handler = TestOutputHandler1Child
     requires_particle_data = True
     names = "hedgehog", "satsuma"
 
-class PropertyForLiveUse(prop.LiveHaloProperties):
+class PropertyForLiveUse(prop.LivePropertyCalculation):
     names = "livewidget"
 
 def test_setup():

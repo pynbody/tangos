@@ -174,7 +174,7 @@ be in the same file, of course) as follows:
 ```python
 from tangos import properties
 
-class MyProperty(properties.HaloProperties):
+class MyProperty(properties.PropertyCalculation):
     works_with_handler = MyHandler
 
     names = "my_fantastic_property"
