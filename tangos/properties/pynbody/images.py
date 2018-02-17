@@ -1,7 +1,7 @@
-from .spherical_region import SphericalRegionHaloProperties
+from .spherical_region import SphericalRegionPropertyCalculation
 from .centring import centred_calculation
 
-class BaryonicImages(SphericalRegionHaloProperties):
+class BaryonicImages(SphericalRegionPropertyCalculation):
     names = "gas_map_sideon", "uvi_image_sideon", "gas_map_faceon", "uvi_image_faceon", "gas_map", "uvi_image"
 
     @classmethod

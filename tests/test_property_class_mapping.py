@@ -3,31 +3,31 @@ import tangos.input_handlers as soh
 import tangos.properties as prop
 from nose.tools import assert_raises
 
-class TestOutputHandler1(soh.SimulationOutputSetHandler):
+class TestOutputHandler1(soh.HandlerBase):
     pass
 
 class TestOutputHandler1Child(TestOutputHandler1):
     pass
 
-class TestOutputHandler2(soh.SimulationOutputSetHandler):
+class TestOutputHandler2(soh.HandlerBase):
     pass
 
-class PropertyForHandler1(prop.HaloProperties):
+class PropertyForHandler1(prop.PropertyCalculation):
     works_with_handler = TestOutputHandler1
     requires_particle_data = True
     names = "widget", "hedgehog"
 
-class PropertyForHandler2(prop.HaloProperties):
+class PropertyForHandler2(prop.PropertyCalculation):
     works_with_handler = TestOutputHandler2
     requires_particle_data = True
     names = "widget", "robin"
 
-class PropertyForHandler1Child(prop.HaloProperties):
+class PropertyForHandler1Child(prop.PropertyCalculation):
     works_with_handler = TestOutputHandler1Child
     requires_particle_data = True
     names = "hedgehog", "satsuma"
 
-class PropertyForLiveUse(prop.LiveHaloProperties):
+class PropertyForLiveUse(prop.LivePropertyCalculation):
     names = "livewidget"
 
 def test_setup():
@@ -49,7 +49,7 @@ def test_map_precedence():
 
 def test_map_nonexistent_name():
     with assert_raises(NameError):
-        prop.providing_class("widget", soh.SimulationOutputSetHandler)
+        prop.providing_class("widget", soh.HandlerBase)
     with assert_raises(NameError):
         prop.providing_class("robin", TestOutputHandler1)
 

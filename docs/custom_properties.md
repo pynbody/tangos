@@ -21,9 +21,9 @@ Therefore the simplest possible example consists of a single class which defines
 Create a new python file and name it `mytangosproperty.py` with the following contents:
 
 ```python
-from tangos.properties import HaloProperties
+from tangos.properties import PropertyCalculation
 
-class ExampleHaloProperty(HaloProperties):
+class ExampleHaloProperty(PropertyCalculation):
     names = "myproperty"
     
     def calculate(self, particle_data, existing_properties):
@@ -31,7 +31,7 @@ class ExampleHaloProperty(HaloProperties):
 ```
 
 This corresponds to a property in the database with the name `myproperty` which is always `42.0` for every halo.
-Note that the classes you create _must_ be derived from `tangos.properties.HaloProperties` as above, 
+Note that the classes you create _must_ be derived from `tangos.properties.PropertyCalculation` as above, 
 otherwise _tangos_ will not understand your intention. 
 
 Now we need to make your class visible to _tangos_.
@@ -75,9 +75,9 @@ the center of each halo, this can be inferred from existing properties without t
 Modify `mytangosproperty.py` to read:
 
 ```python
-from tangos.properties import HaloProperties
+from tangos.properties import PropertyCalculation
 
-class ExampleHaloProperty(HaloProperties):
+class ExampleHaloProperty(PropertyCalculation):
     names = 'my_x'
     
     def calculate(self, particle_data, existing_properties):
@@ -129,9 +129,9 @@ It's often desirable to calculate multiple closely-related properties in one cla
 just add the names and return a list or tuple of values:
 
 ```python
-from tangos.properties import HaloProperties
+from tangos.properties import PropertyCalculation
 
-class ExampleHaloProperty(HaloProperties):
+class ExampleHaloProperty(PropertyCalculation):
     names = "my_x", "my_y", "my_z"
 
     def calculate(self, particle_data, existing_properties):
@@ -150,17 +150,17 @@ Let's now implement a property that requires access to the underlying particle d
 the velocity dispersion of the halo:
 
 ```python
-from tangos.properties.pynbody import PynbodyHaloProperties
+from tangos.properties.pynbody import PynbodyPropertyCalculation
 import numpy as np
 
-class ExampleHaloProperty(PynbodyHaloProperties):
+class ExampleHaloProperty(PynbodyPropertyCalculation):
     names = "velocity_dispersion"
     
     def calculate(self, particle_data, existing_properties):
         return np.std(particle_data['vel'])
 ```
 
-By deriving from `PynbodyHaloProperties` instead of `HaloProperties`, you are indicating to _tangos_ 
+By deriving from `PynbodyPropertyCalculation` instead of `PropertyCalculation`, you are indicating to _tangos_ 
 that this property can only be calculated with reference
 to the _pynbody_-loaded original particle data associated with the halo. (Note that there is an [equivalent
 for yt](using_with_yt.md), and you can make your [own customised loaders](custom_input_handlers.md) 
@@ -207,10 +207,10 @@ halo finder defined. In the following example, we go out to a sphere of twice th
 
 
 ```python
-from tangos.properties.pynbody import PynbodyHaloProperties
+from tangos.properties.pynbody import PynbodyPropertyCalculation
 import pynbody
 
-class ExampleHaloProperty(PynbodyHaloProperties):
+class ExampleHaloProperty(PynbodyPropertyCalculation):
     names = "my_virial_radius"
     
     def calculate(self, particle_data, existing_properties):
@@ -251,11 +251,11 @@ out requires access to the position of all halos within a timestep. This is poss
 consider the following implementation:
 
 ```python
-from tangos.properties import HaloProperties
+from tangos.properties import PropertyCalculation
 from tangos import get_halo
 import numpy as np
 
-class ExampleHaloProperty(HaloProperties):
+class ExampleHaloProperty(PropertyCalculation):
     names = "my_parent_halo"
     
     def calculate(self, particle_data, existing_properties):

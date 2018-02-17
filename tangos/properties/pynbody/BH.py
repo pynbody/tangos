@@ -2,13 +2,13 @@ from __future__ import absolute_import
 from __future__ import print_function
 import tangos.core.halo
 from tangos.input_handlers.changa_bh import BHShortenedLog
-from . import PynbodyHaloProperties
-from .. import LiveHaloProperties, TimeChunkedProperty
+from . import PynbodyPropertyCalculation
+from .. import LivePropertyCalculation, TimeChunkedProperty
 import numpy as np
 import scipy, scipy.interpolate
 
 
-class BH(PynbodyHaloProperties):
+class BH(PynbodyPropertyCalculation):
 
     names = "BH_mdot", "BH_mdot_ave", "BH_mdot_std", "BH_central_offset", "BH_central_distance", "BH_mass"
     requires_particle_data = True
@@ -123,7 +123,7 @@ class BHAccHistogram(TimeChunkedProperty):
         return Mdot_grid[self.store_slice(t_max)]
 
 
-class BHAccHistogramMerged(PynbodyHaloProperties):
+class BHAccHistogramMerged(PynbodyPropertyCalculation):
     names = "BH_mdot_histogram_all"
 
     @classmethod
@@ -154,7 +154,7 @@ class BHAccHistogramMerged(PynbodyHaloProperties):
         return mdot
 
 
-class BHGal(LiveHaloProperties):
+class BHGal(LivePropertyCalculation):
     def __init__(self, simulation=None, choose='BH_mass', minmax='max', bhtype='BH_central'):
         super(BHGal, self).__init__(simulation)
         self._maxmin = minmax

@@ -8,10 +8,10 @@ import weakref
 import re
 import numpy as np
 
-pynbody = None # deferred import; occurs when a PynbodyOutputSetHandler is constructed
+pynbody = None # deferred import; occurs when a PynbodyInputHandler is constructed
 
 from . import halo_stat_files, finding
-from . import SimulationOutputSetHandler
+from . import HandlerBase
 from .. import config
 from ..log import logger
 from six.moves import range
@@ -30,9 +30,9 @@ class DummyTimeStep(object):
     pass
 
 
-class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutputSetHandler):
+class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __init__(self, *args, **kwargs):
-        super(PynbodyOutputSetHandler, self).__init__(*args, **kwargs)
+        super(PynbodyInputHandler, self).__init__(*args, **kwargs)
 
         import pynbody as pynbody_local
 
@@ -189,7 +189,7 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
         h1 = self._construct_halo_cat(ts1, object_typetag)
 
         if output_handler_for_ts2:
-            assert isinstance(output_handler_for_ts2, PynbodyOutputSetHandler)
+            assert isinstance(output_handler_for_ts2, PynbodyInputHandler)
             f2 = output_handler_for_ts2.load_timestep(ts2)
             h2 = output_handler_for_ts2._construct_halo_cat(ts2, object_typetag)
         else:
@@ -272,7 +272,7 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
         return res
 
 
-class RamsesHOPOutputSetHandler(PynbodyOutputSetHandler):
+class RamsesHOPInputHandler(PynbodyInputHandler):
     patterns = ["output_0????"]
 
     def match_objects(self, ts1, ts2, halo_min, halo_max,
@@ -292,7 +292,7 @@ class RamsesHOPOutputSetHandler(PynbodyOutputSetHandler):
 
 
 
-class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
+class GadgetSubfindInputHandler(PynbodyInputHandler):
     patterns = ["snapshot_???"]
 
     def load_object(self, ts_extension, halo_number, object_typetag='halo', mode=None):
@@ -300,7 +300,7 @@ class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
             h = self._construct_halo_cat(ts_extension, object_typetag)
             return h.get_halo_properties(halo_number,with_unit=False)
         else:
-            return super(GadgetSubfindOutputSetHandler, self).load_object(ts_extension, halo_number, object_typetag, mode)
+            return super(GadgetSubfindInputHandler, self).load_object(ts_extension, halo_number, object_typetag, mode)
 
 
 
@@ -324,7 +324,7 @@ class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
 
     def _construct_halo_cat(self, ts_extension, object_typetag):
         if object_typetag== 'halo':
-            return super(GadgetSubfindOutputSetHandler, self)._construct_halo_cat(ts_extension, object_typetag)
+            return super(GadgetSubfindInputHandler, self)._construct_halo_cat(ts_extension, object_typetag)
         elif object_typetag== 'group':
             return self._construct_group_cat(ts_extension)
         else:
@@ -333,7 +333,7 @@ class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
 
 
 
-class ChangaOutputSetHandler(PynbodyOutputSetHandler):
+class ChangaInputHandler(PynbodyInputHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",
                      "dESN", "bLowTCool", "bSelfShield", "dExtraCoolShutoff"]
 
@@ -341,7 +341,7 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
 
 
     def get_properties(self):
-        parent_prop_dict = super(ChangaOutputSetHandler, self).get_properties()
+        parent_prop_dict = super(ChangaInputHandler, self).get_properties()
 
         pfile = self._get_paramfile_path()
 

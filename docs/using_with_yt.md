@@ -29,7 +29,7 @@ Using yt to add a simulation
 At the unix command line type:
 
 ```
-tangos add tutorial_changa_yt --handler=yt.YtOutputSetHandler
+tangos add tutorial_changa_yt --handler=yt.YtInputHandler
 ```
 
 The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
@@ -40,7 +40,7 @@ scroll up the screen.
   * `tangos` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial_changa_yt` identifies the simulation we're adding
-  * `--handler=yt.YtOutputSetHandler` requests that _tangos_ uses yt as the "handler" for raw simulation and halo files.
+  * `--handler=yt.YtInputHandler` requests that _tangos_ uses yt as the "handler" for raw simulation and halo files.
   
 
 Verify the underlying data is being read by yt

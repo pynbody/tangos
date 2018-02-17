@@ -28,7 +28,7 @@ class DummyTimeStep(object):
 _loaded_timesteps = {}
 
 
-class SimulationOutputSetHandler(object):
+class HandlerBase(object):
     """This class handles the output from a simulation as it resides on disk.
 
     Subclasses provide implementations for different formats and situations.
@@ -140,8 +140,8 @@ class SimulationOutputSetHandler(object):
     @classmethod
     def handler_class_name(cls):
         module = cls.__module__
-        if module.startswith(SimulationOutputSetHandler.__module__):
-            submodule = module[len(SimulationOutputSetHandler.__module__)+1:]
+        if module.startswith(HandlerBase.__module__):
+            submodule = module[len(HandlerBase.__module__)+1:]
             return submodule+"."+cls.__name__
         else:
             return module+"."+cls.__name__
@@ -165,11 +165,11 @@ class SimulationOutputSetHandler(object):
 
 
 def get_named_handler_class(handler):
-    """Get a SimulationOutputSetHandler identified by the given name.
+    """Get a HandlerBase identified by the given name.
 
     The name is of the format submodule.ClassName
 
-    :rtype SimulationOutputSetHandler"""
+    :rtype HandlerBase"""
     try:
         output_module = importlib.import_module('.'+handler.split('.')[0],__name__)
     except ImportError:

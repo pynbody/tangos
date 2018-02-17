@@ -120,12 +120,12 @@ class Calculation(object):
                 session.close()
 
     def values_and_description(self, halos):
-        """Return the values of this calculation, as well as a HaloProperties object describing the
+        """Return the values of this calculation, as well as a PropertyCalculation object describing the
         properties of these values (if possible)"""
         raise NotImplementedError
 
     def values_sanitized_and_description(self, halos, load_into_session=None):
-        """Return the 'sanitized' values of this calculation, as well as a HaloProperties object (if available).
+        """Return the 'sanitized' values of this calculation, as well as a PropertyCalculation object (if available).
 
         See values_sanitized for the definition of sanitized"""
         values, desc = self.values_and_description(halos)

@@ -42,7 +42,7 @@ def setup():
             creator.link_last_halos()
             creator.link_last_bhs_using_mapping({1:1})
 
-class TestProperty(properties.LiveHaloProperties):
+class TestProperty(properties.LivePropertyCalculation):
     names = "RvirPlusMvir"
 
     def requires_property(self):
@@ -51,7 +51,7 @@ class TestProperty(properties.LiveHaloProperties):
     def live_calculate(self, halo):
         return halo["Mvir"]+halo["Rvir"]
 
-class TestErrorProperty(properties.LiveHaloProperties):
+class TestErrorProperty(properties.LivePropertyCalculation):
     names = "RvirPlusMvirMiscoded"
 
     def requires_property(self):
@@ -60,19 +60,19 @@ class TestErrorProperty(properties.LiveHaloProperties):
     def live_calculate(self, halo):
         return halo["Mvir"]+halo["Rvir"]
 
-class TestPropertyWithParameter(properties.LiveHaloProperties):
+class TestPropertyWithParameter(properties.LivePropertyCalculation):
     names = "squared"
 
     def live_calculate(self, halo, value):
         return value**2
 
-class TestBrokenProperty(properties.HaloProperties):
+class TestBrokenProperty(properties.PropertyCalculation):
     names = "brokenproperty"
 
     def __init__(self, simulation):
         raise RuntimeError("This intentionally breaks the property")
 
-class TestPathChoice(properties.LiveHaloProperties):
+class TestPathChoice(properties.LivePropertyCalculation):
     num_calls = 0
     names = "my_BH"
 

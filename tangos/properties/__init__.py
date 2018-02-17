@@ -9,8 +9,8 @@ import functools
 from .. import input_handlers
 
 
-class HaloPropertiesMetaClass(type):
-    # Present to register new subclasses of HaloProperties, so that subclasses can be dynamically
+class PropertyCalculationMetaClass(type):
+    # Present to register new subclasses of PropertyCalculation, so that subclasses can be dynamically
     # instantiated when required based on their cls.names values. Stored as a dictionary so that
     # reloaded classes overwrite their old versions.
     def __init__(cls, name, bases, dict):
@@ -24,16 +24,16 @@ class HaloPropertiesMetaClass(type):
         if cls.names is not None:
             cls._all_classes.append(cls)
 
-class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
+class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object)):
     _all_classes = []
 
     # In child class, defines the most general handler that this property is compatible with.
     # If unchanged, it is compatible with all handlers. Typically it will be appropriate to specify something more
-    # restrictive e.g. input_handlers.pynbody.PynbodyOutputSetHandler
-    works_with_handler = input_handlers.SimulationOutputSetHandler
+    # restrictive e.g. input_handlers.pynbody.PynbodyInputHandler
+    works_with_handler = input_handlers.HandlerBase
 
     # Specifies whether the particle data needs to be provided for this class to perform a calculation; if
-    # False, only existing HaloProperties are required by this calculation (see requires_property below).
+    # False, only existing PropertyCalculation are required by this calculation (see requires_property below).
     requires_particle_data = False
 
     # Specifies a tuple of names of properties that will be calculated by this class.
@@ -44,7 +44,7 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
         return cls._all_classes
 
     def __init__(self, simulation):
-        """Initialise a HaloProperties calculation object
+        """Initialise a PropertyCalculation calculation object
 
         :param simulation: The simulation from which the properties will be derived
         :type simulation: tangos.core.simulation.Simulation
@@ -57,7 +57,7 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
         """Returns the index of the named property in the
         results returned from calculate().
 
-        For example, for a BasicHaloProperties object X,
+        For example, for a BasicPropertyCalculation object X,
         X.calculate(..)[X.index_of_name("SSC")] returns the SSC.
         """
         name = name.split("(")[0]
@@ -86,7 +86,7 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
         """Returns an abstract specification of the region that this halo property is to be calculated on,
         or None if we want the halo particles as defined by the finder.
 
-        See spherical_region.SphericalRegionHaloProperties for an example and useful base class for returning
+        See spherical_region.SphericalRegionPropertyCalculation for an example and useful base class for returning
         everything within the virial radius."""
         return None
 
@@ -197,7 +197,9 @@ class HaloProperties(six.with_metaclass(HaloPropertiesMetaClass,object)):
     def plot_clabel(self):
         return None
 
-class TimeChunkedProperty(HaloProperties):
+HaloProperties = PropertyCalculation # old name, to be deprecated
+
+class TimeChunkedProperty(PropertyCalculation):
     """TimeChunkedProperty implements a special type of halo property where chunks of a histogram are stored
     at each time step, then appropriately reassembled when the histogram is retrieved."""
 
@@ -298,27 +300,28 @@ class TimeChunkedProperty(HaloProperties):
 
 
 
-class LiveHaloProperties(HaloProperties):
+class LivePropertyCalculation(PropertyCalculation):
     requires_particle_data = False
 
     def __init__(self, simulation, *args):
-        super(LiveHaloProperties, self).__init__(simulation)
+        super(LivePropertyCalculation, self).__init__(simulation)
         self._nargs = len(args)
 
     def calculate(self, _, halo):
         return self.live_calculate(halo, *([None]*self._nargs))
 
+LiveHaloProperties = LivePropertyCalculation # old name, to be deprecated
 
-class LiveHaloPropertiesInheritingMetaProperties(LiveHaloProperties):
-    """LiveHaloProperties which inherit the meta-data (i.e. x0, delta_x values etc) from
+class LivePropertyCalculationInheritingMetaProperties(LivePropertyCalculation):
+    """LivePropertyCalculation which inherit the meta-data (i.e. x0, delta_x values etc) from
     one of the input arguments"""
     def __init__(self, simulation, inherits_from, *args):
         """
         :param simulation: The simulation DB entry for this instance
-        :param inherits_from: The HaloProperties description from which the metadata should be inherited
-        :type inherits_from: HaloProperties
+        :param inherits_from: The PropertyCalculation description from which the metadata should be inherited
+        :type inherits_from: PropertyCalculation
         """
-        super(LiveHaloPropertiesInheritingMetaProperties, self).__init__(simulation)
+        super(LivePropertyCalculationInheritingMetaProperties, self).__init__(simulation)
         self._inherits_from = inherits_from(simulation)
 
     def plot_x0(self):
@@ -344,9 +347,9 @@ class ProxyHalo(object):
 ##############################################################################
 
 def all_property_classes():
-    """Return list of all classes derived from HaloProperties"""
+    """Return list of all classes derived from PropertyCalculation"""
 
-    return HaloProperties.all_classes()
+    return PropertyCalculation.all_classes()
 
 
 
@@ -355,7 +358,7 @@ def _check_class_provided_name(name):
         raise ValueError("Property names must not include brackets; %s not suitable"%name)
 
 def all_properties(with_particle_data=True):
-    """Return list of all properties which can be calculated using classes derived from HaloProperties"""
+    """Return list of all properties which can be calculated using classes derived from PropertyCalculation"""
     classes = all_property_classes()
     pr = []
     for c in classes:
