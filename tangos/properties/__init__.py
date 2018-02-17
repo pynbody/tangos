@@ -29,8 +29,8 @@ class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object
 
     # In child class, defines the most general handler that this property is compatible with.
     # If unchanged, it is compatible with all handlers. Typically it will be appropriate to specify something more
-    # restrictive e.g. input_handlers.pynbody.PynbodyOutputSetHandler
-    works_with_handler = input_handlers.SimulationOutputSetHandler
+    # restrictive e.g. input_handlers.pynbody.PynbodyInputHandler
+    works_with_handler = input_handlers.HandlerBase
 
     # Specifies whether the particle data needs to be provided for this class to perform a calculation; if
     # False, only existing PropertyCalculation are required by this calculation (see requires_property below).

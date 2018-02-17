@@ -3,7 +3,7 @@ from ...input_handlers import yt as yt_handler_module
 import numpy as np
 
 class YtPropertyCalculation(PropertyCalculation):
-    works_with_handler = yt_handler_module.YtOutputSetHandler
+    works_with_handler = yt_handler_module.YtInputHandler
     requires_particle_data = True
 
 class HaloDensityProfile(YtPropertyCalculation):

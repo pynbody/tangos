@@ -15,7 +15,7 @@ for use.
 Handler classes
 ---------------
 
-Handlers are implemented by subclasses of `tangos.input_handlers.SimulationOutputSetHandler`.
+Handlers are implemented by subclasses of `tangos.input_handlers.HandlerBase`.
 To write your own, start by creating such a subclass. At a minimum will need to provide a way for _tangos_:
 
  - to enumerate the available simulation timesteps. This is the method 
@@ -51,7 +51,7 @@ class MyDataObject(object):
     def __repr__(self):
         return str(self.internal_data)
 
-class MyHandler(tangos.input_handlers.SimulationOutputSetHandler):
+class MyHandler(tangos.input_handlers.HandlerBase):
     def enumerate_timestep_extensions(self):
         return ["my_timestep_1", "my_timestep_2"]
 

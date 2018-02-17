@@ -3,7 +3,7 @@ from __future__ import print_function
 import glob
 import os, os.path
 from .. import config
-from . import SimulationOutputSetHandler
+from . import HandlerBase
 from six.moves import range
 
 class DummyTimestepData(object):
@@ -16,7 +16,7 @@ class DummyTimestepData(object):
     def __str__(self):
         return self.message
 
-class TestOutputSetHandler(SimulationOutputSetHandler):
+class TestInputHandler(HandlerBase):
     def get_properties(self):
         result = {}
         with open(os.path.join(config.base, self.basename, "sim_info"),'r') as f:
@@ -87,7 +87,7 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
                     return " ".join(line_split[1:])
 
 
-class TestOutputSetHandlerReverseHaloNDM(TestOutputSetHandler):
+class TestInputHandlerReverseHaloNDM(TestInputHandler):
     def enumerate_objects(self, ts_extension, object_typetag='halo', min_halo_particles=config.min_halo_particles):
         nhalos_string = self._get_ts_property(ts_extension, object_typetag+"s")
         nhalos = 0 if nhalos_string is None else int(nhalos_string)

@@ -4,7 +4,7 @@ from . import pynbody_handler_module
 import numpy as np
 
 class StarFormHistogram(TimeChunkedProperty):
-    works_with_handler = pynbody_handler_module.PynbodyOutputSetHandler
+    works_with_handler = pynbody_handler_module.PynbodyInputHandler
     requires_particle_data = True
 
     @classmethod

@@ -9,7 +9,7 @@ class SimulationAdderUpdater(object):
     """This class contains the necessary tools to add a new simulation to the database"""
 
     def __init__(self, simulation_output, session=None, renumber=True):
-        """:type simulation_output tangos.simulation_outputs.SimulationOutputSetHandler"""
+        """:type simulation_output tangos.simulation_outputs.HandlerBase"""
         self.simulation_output = simulation_output
         if session is None:
             session = core.get_default_session()
