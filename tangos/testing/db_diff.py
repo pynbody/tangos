@@ -125,12 +125,14 @@ class TangosDbDiff(object):
                 v2 = dict2[d]
                 try:
                     self._assert_equal(v1, v2)
-                except AssertionError:
-                    self.fail("Value mismatch for key %s: %r vs %r",d,v1,v2)
+                except AssertionError as e:
+                    self.fail("Value mismatch for key %s",d)
+                    self.fail("%s",e)
 
     def _assert_equal(self, v1, v2):
-        if v1 is None and v2 is None:
-            return
+        if v1 is None or v2 is None:
+            assert v1 is None, "Value 2 is None but Value 1 is not None"
+            assert v2 is None, "Value 1 is None but Value 2 is not None"
         elif isinstance(v1, six.string_types):
             assert v1 == v2
         elif isinstance(v1, tuple):
