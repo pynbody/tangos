@@ -46,7 +46,7 @@ def get_timestep(id, session=None, sim=None):
     if isinstance(id, str) or isinstance(id, six.text_type):
         if sim is None:
             sim, ts = id.split("/")
-            sim = get_simulation(sim)
+            sim = get_simulation(sim, session)
         else:
             ts = id
         res = session.query(TimeStep).filter(
@@ -75,7 +75,7 @@ def get_object(id, session=None):
 
     if isinstance(id, str) or isinstance(id, six.text_type):
         sim, ts, halo = id.split("/")
-        ts = get_timestep(sim + "/" + ts)
+        ts = get_timestep(sim + "/" + ts, session)
         return ts[halo]
     else:
         return session.query(Halo).filter_by(id=int(id)).first()

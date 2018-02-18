@@ -88,8 +88,8 @@ class PropertyWriter(object):
                             help="Emulate MPI by handling slice N out of the total workload of M items. If absent, use real MPI.")
         parser.add_argument('--backend', action='store', type=str,
                             help="Specify the paralellism backend (e.g. pypar, mpi4py)")
-        parser.add_argument('--include-only', action='store', type=str,
-                            help="Specify a filter that describes which halos the calculation should be executed for.")
+        parser.add_argument('--include-only', action='append', type=str,
+                            help="Specify a filter that describes which objects the calculation should be executed for. Multiple filters may be specified, in which case they must all evaluate to true for the object to be included.")
 
     def _create_parser_obj(self):
         parser = argparse.ArgumentParser()
@@ -168,7 +168,9 @@ class PropertyWriter(object):
 
     def _compile_inclusion_criterion(self):
         if self.options.include_only:
-            self._include = live_calculation.parser.parse_property_name(self.options.include_only)
+            includes = ["("+s+")" for s in self.options.include_only]
+            include_only_combined = " & ".join(includes)
+            self._include = live_calculation.parser.parse_property_name(include_only_combined)
         else:
             self._include = None
 

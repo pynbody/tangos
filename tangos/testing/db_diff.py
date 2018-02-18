@@ -57,8 +57,8 @@ class TangosDbDiff(object):
 
     def compare_timestep(self, ts):
         logger.info("Comparing timestep %s", ts)
-        ts1 = get_timestep(ts, self.session1)
-        ts2 = get_timestep(ts, self.session2)
+        ts1 = get_timestep(str(ts), self.session1)
+        ts2 = get_timestep(str(ts), self.session2)
 
         obj_filter = (core.Halo.halo_number < self.max_objects) | (core.Halo.object_typecode == core.Halo.object_typecode_from_tag('bh'))
 
