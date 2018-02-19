@@ -46,7 +46,7 @@ def get_timestep(id, session=None, sim=None):
     if isinstance(id, str) or isinstance(id, six.text_type):
         if sim is None:
             sim, ts = id.split("/")
-            sim = get_simulation(sim)
+            sim = get_simulation(sim, session)
         else:
             ts = id
         res = session.query(TimeStep).filter(
@@ -63,8 +63,8 @@ def get_timestep(id, session=None, sim=None):
         return session.query(TimeStep).filter_by(id=int(id)).first()
 
 
-def get_halo(id, session=None):
-    """Get a halo from an ID or an identifying string
+def get_object(id, session=None):
+    """Get an object from an ID or an identifying string
 
     Optionally, use the specified session.
 
@@ -73,13 +73,14 @@ def get_halo(id, session=None):
     if session is None:
         session = get_default_session()
 
-    if isinstance(id, str):
+    if isinstance(id, str) or isinstance(id, six.text_type):
         sim, ts, halo = id.split("/")
-        ts = get_timestep(sim + "/" + ts)
+        ts = get_timestep(sim + "/" + ts, session)
         return ts[halo]
     else:
         return session.query(Halo).filter_by(id=int(id)).first()
 
+get_halo = get_object # old naming convention - to be deprecated
 
 def get_item(path, session=None):
     c = path.count("/")
@@ -123,4 +124,4 @@ def getdb(cl) :
 
 
 __all__ = ['all_simulations', 'all_creators', 'get_simulation', 'get_timestep',
-           'get_halo', 'get_item' ,'get_haloproperty', 'get_items', 'getdb']
+           'get_halo', 'get_object', 'get_item' ,'get_haloproperty', 'get_items', 'getdb']

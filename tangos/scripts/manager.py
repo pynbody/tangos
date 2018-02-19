@@ -357,6 +357,23 @@ def list_available_properties(options):
             print(" "*30+" | %.15s | %s"%(format_handler_name(additional_class),
                                           format_class_name(additional_class)))
 
+def diff(options):
+    from ..testing import db_diff
+    differ = db_diff.TangosDbDiff(options.uri1, options.uri2)
+    if options.simulation:
+        differ.compare_simulation(options.simulation)
+    elif options.timestep:
+        differ.compare_timestep(options.timestep)
+    elif options.object:
+        differ.compare_object(options.object)
+    else:
+        differ.compare()
+    return differ.failed
+
+    diff = db_diff.diff(options.uri1, options.uri2)
+    if diff:
+        sys.exit(1)
+
 def main():
     print("""
     The 'tangos_manager' command line is deprecated in favour of just 'tangos'.
@@ -433,6 +450,15 @@ def get_argument_parser_and_subparsers():
                                   help="Size, in kpc, of sphere to extract (or omit to get just the halo particles)")
     subparse_dump_id.add_argument("family", type=str, help="The family of particles to extract", default="")
     subparse_dump_id.set_defaults(func=dump_id)
+
+
+    subparse_diff = subparse.add_parser("diff", help="Analyse the difference between two databases")
+    subparse_diff.add_argument("uri1", type=str, help="The first database URI or filename")
+    subparse_diff.add_argument("uri2", type=str, help="The second database URI or filename")
+    subparse_diff.add_argument("--simulation", type=str, help="Only compare the specified simulation", default=None)
+    subparse_diff.add_argument("--timestep", type=str, help="Only compare the specified timestep", default=None)
+    subparse_diff.add_argument("--object", type=str, help="Only compare the specified object", default=None)
+    subparse_diff.set_defaults(func=diff)
 
     subparse_list_available_properties = subparse.add_parser("list-possible-properties",
                                                              help="List all the object properties that can be calculated by the currently available modules")

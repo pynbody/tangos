@@ -115,10 +115,11 @@ def process_options(argparser_options):
 def init_db(db_uri=None, timeout=30, verbose=None):
     global _verbose, _internal_session, _engine, Session
     if db_uri is None:
-        if '//' in config.db:
-            db_uri = config.db
-        else:
-            db_uri = 'sqlite:///' + config.db
+        db_uri = config.db
+
+    if '//' not in db_uri:
+        db_uri = 'sqlite:///' + db_uri
+
     _engine = create_engine(db_uri, echo=verbose or _verbose,
                             isolation_level='READ UNCOMMITTED', connect_args={'timeout': timeout})
 
