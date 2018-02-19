@@ -5,6 +5,8 @@ import numpy.testing as npt
 from sqlalchemy.orm import joinedload, object_session, undefer
 
 class TangosDbDiff(object):
+    """Class to compare two databases, used by the tangos diff command line tool"""
+
     def __init__(self, uri1, uri2, max_objects=10):
         core.init_db(uri1)
         self.session1 = core.get_default_session()
@@ -139,11 +141,4 @@ class TangosDbDiff(object):
             for e1, e2 in zip(v1,v2):
                 self._assert_equal(e1, e2)
         else:
-            npt.assert_almost_equal(v1, v2)
-
-
-def diff(uri1, uri2):
-    """Compare two databases; return True if they differ"""
-    differ = TangosDbDiff(uri1, uri2)
-    differ.compare()
-    return differ.failed
+            npt.assert_allclose(v1, v2, rtol=1e-3, atol=1e-3)

@@ -69,6 +69,9 @@ TANGOS_DB_CONNECTION=`pwd`/data.db
 TANGOS_SIMULATION_FOLDER=`pwd`
 
 detect_mpi
+
+set -e
+
 build_gadget_subfind
 build_ramses
 build_changa
