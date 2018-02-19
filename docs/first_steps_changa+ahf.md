@@ -91,7 +91,7 @@ Let's finally do some science. We'll add density profiles, thumbnail images, and
 from your shell type:
  
 ```bash
-tangos write dm_density_profile gas_density_profile uvi_image SFR_histogram --with-prerequisites --include-only="contamination_fraction<0.01 & NDM()>1000" --for tutorial_changa  
+tangos write dm_density_profile gas_density_profile uvi_image SFR_histogram --with-prerequisites --include-only="contamination_fraction<0.01" --include-only="NDM()>1000" --for tutorial_changa  
 ```
 
 Here,
