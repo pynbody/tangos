@@ -67,7 +67,7 @@ are parallelised whereas _tangos_ is close to [embarassingly parallel](https://e
 Once pynbody threading is disabled, the version of the above command that is most efficient is:
 
  ```bash
-mpirun -np 5 tangos write dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="NDM()>5000" --for tutorial_changa --backend mpi4py --load-mode server
+mpirun -np 5 tangos write dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="NDM()>5000" --include-only="contamination_fraction<0.01" --for tutorial_changa --backend mpi4py --load-mode server
 ```
 
 for a machine with 4 processors. Why did we specify `--load-mode=server`? Let's consider the possibilities:
