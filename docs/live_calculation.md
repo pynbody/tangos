@@ -14,7 +14,7 @@ ts = tangos.get_timestep(...)
 h  = tangos.get_halo(...)
 ```
 
-One can gather properties that do not explicitly exist as properties within the database, but do not require a new calculation using simulation data. For example, the virial radius, "Vvir" is calculated using only the virial mass and virial radius already calculated. However, because it doesn't exist yet as a halo property, `h['Vvir']` will return an error. Instead, you must performa a "live-calculation" of "Vvir". `h.calculate('Vvir()')` will return the virial velocity of the halo. Since this is similar to calling a function, there are parenthesis associated with live calculated values.
+One can gather properties that do not explicitly exist as properties within the database, but do not require a new calculation using simulation data. For example, the virial velocity, "Vvir" is calculated using only the virial mass and virial radius already calculated. However, because it doesn't exist yet as a halo property, `h['Vvir']` will return an error. Instead, you must performa a "live-calculation" of "Vvir". `h.calculate('Vvir()')` will return the virial velocity of the halo. Since this is similar to calling a function, there are parenthesis associated with live calculated values.
 
 Similarly, this method can be used within the `calculate_all` and `calculate_for_descendants` functions, e.g. `ts.calculate_all("Vvir()")` will reaturn the newly calculated virial velocity for all halos in the step. The same syntax would apply to `calculate_for_descendants`
 
@@ -66,7 +66,7 @@ General Syntax Notes
 - All functions can implicitly access halo properties, so that (for example) `Vvir()` returns the virtual velocity without having to specify manually that it should calculate this from `Rvir` and `Vvir`
 - If a function returns a halo link (i.e. a link to another object with its own properties) `f().value` will return the `value` stored or calculated from the linked object returned by `f()`
 - Basic arithmetic works as you'd expect, so you can use `+`, `-`, `*` and `/`, as well as brackets to control precedence, e.g. `f(Mgas+Mstar)` returns the value of `f` taking the sum of the properties `Mgas` and `Mstar` for each target halo as input.
-- live calculation functions and link functions can be combined. For example, given a property function `F` and link function `L`, one can do L(...).F(...) where F will calcualte a property given the properties from the link function results and its own inputs.
+- live calculation functions and link functions can be combined. For example, given a property function `F` and link function `L`, one can do L(...).F(...) where F will calculate a property given the properties from the link function results and its own inputs.
 - live calculation functions can be nested, e.g. given `f1` and `f2`, `f1(5,f2(Mvir))` will return the value of `f1` given, as its second argument, the value of `f2` with the halo property `Mvir` as input.
 
 List of Useful mini-language functions
