@@ -21,7 +21,7 @@ Here,
  * `--backend mpi4py` crucially instructs tangos to parallelise using the mpi4py library. 
    Alternatively you can use the `pypar` library. 
    *If you specify no backend tangos will default to running in single-processor mode which means MPI will launch N processes 
-   that are not aware of each other's prescence. This is very much not what you want. 
+   that are not aware of each other's presence. This is very much not what you want.
    Limitations in the MPI library mean it's not possible for tangos to reliably auto-detect it has been MPI-launched.*
  
 
