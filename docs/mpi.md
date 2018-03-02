@@ -21,7 +21,7 @@ Here,
  * `--backend mpi4py` crucially instructs tangos to parallelise using the mpi4py library. 
    Alternatively you can use the `pypar` library. 
    *If you specify no backend tangos will default to running in single-processor mode which means MPI will launch N processes 
-   that are not aware of each other's prescence. This is very much not what you want. 
+   that are not aware of each other's presence. This is very much not what you want.
    Limitations in the MPI library mean it's not possible for tangos to reliably auto-detect it has been MPI-launched.*
  
 
@@ -67,7 +67,7 @@ are parallelised whereas _tangos_ is close to [embarassingly parallel](https://e
 Once pynbody threading is disabled, the version of the above command that is most efficient is:
 
  ```bash
-mpirun -np 5 dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="contamination_fraction<0.01 & NDM()>5000" --for tutorial_changa --backend mpi4py --load-mode server
+mpirun -np 5 tangos write dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="NDM()>5000" --include-only="contamination_fraction<0.01" --for tutorial_changa --backend mpi4py --load-mode server
 ```
 
 for a machine with 4 processors. Why did we specify `--load-mode=server`? Let's consider the possibilities:
