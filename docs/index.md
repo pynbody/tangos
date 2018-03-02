@@ -7,13 +7,10 @@ Once tangos is set up, you'll be able to access your simulations from a web brow
 [![Tangos and its web server](images/video_play.png)](https://www.youtube.com/watch?v=xHyzJmNsVMw)
 
  
-Getting started with tangos
----------------------------
-**This is a beta version of tangos**. When _tangos_ is released there will be an accompanying paper.
-_Tangos_ is GPL-licenced but good scientific practice requires you to acknowledge its use. Until the paper is
-available please use the following acknowledgement or equivalent:
-
-> This work made use of the _tangos_ analysis stack (Pontzen et al in prep); see www.github.com/pynbody/tangos.
+Acknowledging the code
+----------------------
+When using _tangos_, please acknowledge it by citing the release paper:
+Pontzen & Tremmel, 2018, ApJ Submitted, [arXiv:1803.00010](https://arxiv.org/pdf/1803.00010.pdf)
 
 
 Installation: the very quick version
