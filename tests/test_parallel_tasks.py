@@ -70,6 +70,7 @@ def test_for_loop_is_not_run_twice():
     assert tangos.get_halo(1)['test_count']==3
 
 
+
 def _test_empty_loop():
     for _ in pt.distributed([]):
         assert False
@@ -77,6 +78,16 @@ def _test_empty_loop():
 
 def test_empty_loop():
     pt.launch(_test_empty_loop,3)
+
+def _test_empty_then_non_empty_loop():
+    for _ in pt.distributed([]):
+        pass
+
+    for _ in pt.distributed([1,2,3]):
+        pass
+
+def test_empty_then_non_empty_loop():
+    pt.launch(_test_empty_then_non_empty_loop, 3)
 
 
 def _test_synchronize_db_creator():
