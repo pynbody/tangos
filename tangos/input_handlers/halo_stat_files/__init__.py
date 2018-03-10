@@ -47,7 +47,8 @@ class HaloStatFile(object):
             header = self._read_column_names(f)
             ids = [0] + [header.index(a) for a in args]
             for l in f:
-                yield self._get_values_for_columns(ids, l)
+                if not l.startswith("#"):
+                    yield self._get_values_for_columns(ids, l)
 
     def iter_rows(self, *args):
         """
@@ -171,6 +172,21 @@ class AHFStatFile(HaloStatFile):
             return file_list[0]
         return file
 
+class RockstarStatFile(HaloStatFile):
+    _column_translations = {'n_dm': translations.Rename('Np'),
+                            'n_gas': translations.Value(0),
+                            'n_star': translations.Value(0),
+                            'npart': translations.Rename('Np')}
+
+    @classmethod
+    def filename(cls, timestep):
+        basename = os.path.basename(timestep.filename)
+        dirname = os.path.dirname(timestep.filename)
+        if basename.startswith("snapshot_"):
+            timestep_id = int(basename[9:])
+            return os.path.join(dirname, "out_%d.list"%timestep_id)
+        else:
+            return "CannotComputeRockstarFilename"
 
 class AmigaIDLStatFile(HaloStatFile):
     _id_offset = 0

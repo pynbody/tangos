@@ -24,3 +24,13 @@ class Rename(object):
     def inputs(self):
         return [self.name]
 
+class Value(object):
+    """Define a column by a fixed value"""
+    def __init__(self, value):
+        self.value = value
+
+    def __call__(self, raw_input_names, raw_input_values):
+        return self.value
+
+    def inputs(self):
+        return []
