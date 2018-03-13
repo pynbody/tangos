@@ -10,14 +10,15 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   color: #bb4400;
-  margin:0 0 20px;
+  margin:20px 0 10px;
 }
 
 p, ul, ol, table, pre, dl {
-  margin:0 0 20px;
+  margin:0 0 10px;
 }
 
 h1, h2, h3 {
+  margin: 0 0 10px;
   line-height:1.1;
 }
 
@@ -158,9 +159,6 @@ footer {
     width:auto;
   }
 
-  header {
-    padding-right:320px;
-  }
 
   section {
     border:1px solid #e5e5e5;
@@ -180,9 +178,6 @@ footer {
     word-wrap:break-word;
   }
 
-  header {
-    padding:0;
-  }
 
 
   pre, code {
@@ -194,6 +189,7 @@ footer {
   body {
     padding:15px;
   }
+
 
 }
 
