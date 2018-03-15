@@ -133,7 +133,7 @@ class HaloStatFile(object):
         halos = self._timestep.halos.all()
         halos_map = {}
         for h in halos:
-            halos_map[h.halo_number] = h
+            halos_map[h.finder_id] = h
 
         session = core.Session.object_session(self._timestep)
 

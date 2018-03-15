@@ -128,13 +128,19 @@ class MergerTree(object):
 
         if halo == self.highlight_halo:
             nodeclass = 'node-dot-selected'
-        elif depth == 0:
+
+        if isinstance(halo, core.halo.PhantomHalo):
+            nodeclass+=' phantom'
+
+        if depth == 0:
             if halo.next is not None:
                 nodeclass = 'node-dot-continuation'
                 name = '...'
                 moreinfo = "Continues... " + moreinfo
         if len(name) > 4:
             name = ""
+
+
         output = {'name': name,
                   'nodeclass': nodeclass,
                   'moreinfo': moreinfo,

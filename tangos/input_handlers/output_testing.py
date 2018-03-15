@@ -49,7 +49,7 @@ class TestInputHandler(HandlerBase):
         """Test implementation of match halos always links halo i->i, and a 0.05 mass transfer from i->i+1"""
         assert object_typetag=='halo' # currently only handle halos
         f1 = self.load_timestep(ts1)
-        f2 = self.load_timestep(ts2)
+        f2 = (output_handler_for_ts2 or self).load_timestep(ts2)
         if halo_max is None:
             halo_max = f1.max_halos
         halo_max = min((halo_max,f1.max_halos,f2.max_halos))

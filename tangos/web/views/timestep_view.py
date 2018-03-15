@@ -32,8 +32,11 @@ def timestep_view(request):
 
         if title=="BHs":
             title="Black holes"
+        elif title=="PhantomHalos":
+            title="Phantom halos"
 
         all_objects.append({'title': title, 'typetag': typetag, 'items': objects})
+        print(typecode, title, len(objects))
         typecode+=1
 
 

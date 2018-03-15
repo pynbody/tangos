@@ -429,3 +429,20 @@ TimeStep.groups = orm.relationship(Halo, cascade='all', lazy='dynamic',
                                   primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==2)),
                                   foreign_keys=Halo.timestep_id,
                                   order_by=Halo.halo_number)
+
+
+class PhantomHalo(Halo):
+    __mapper_args__ = {
+        'polymorphic_identity': 4
+    }
+
+    tag = "phantom"
+
+    def __init__(self, timestep, halo_number, finder_id):
+        super(PhantomHalo, self).__init__(timestep, halo_number, finder_id, 0,0,0,
+                                 self.__mapper_args__['polymorphic_identity'])
+
+TimeStep.phantoms = orm.relationship(Halo, cascade='all', lazy='dynamic',
+                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==4)),
+                                  foreign_keys=Halo.timestep_id,
+                                  order_by=Halo.halo_number)

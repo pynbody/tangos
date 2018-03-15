@@ -10,22 +10,11 @@ import sqlalchemy, sqlalchemy.orm
 from tangos.log import logger
 import numpy as np
 from six.moves import zip
+from . import GenericTangosTool
 
-
-class GenericLinker(object):
+class GenericLinker(GenericTangosTool):
     def __init__(self, session=None):
         self.session = session or core.get_default_session()
-
-    def parse_command_line(self, argv=None):
-        parser = self._create_argparser()
-        self.process_options(parser.parse_args(argv))
-        db.process_options(self.args)
-
-    def _create_argparser(self):
-        parser = argparse.ArgumentParser()
-        db.supplement_argparser(parser)
-        self.add_parser_arguments(parser)
-        return parser
 
     def process_options(self, options):
         self.args = options
@@ -134,7 +123,7 @@ class GenericLinker(object):
 
         output_handler_1 = ts1.simulation.get_output_handler()
         output_handler_2 = ts2.simulation.get_output_handler()
-        if not isinstance(output_handler_1, type(output_handler_2)):
+        if type(output_handler_1).match_objects != type(output_handler_2).match_objects:
             logger.error("Timesteps %r and %r cannot be crosslinked; they are using incompatible file readers",
                          ts1, ts2)
             return
@@ -171,6 +160,9 @@ class GenericLinker(object):
         logger.info("Finished committing total of %d links for %r and %r", len(items)+len(items_back), ts1, ts2)
 
 class TimeLinker(GenericLinker):
+    tool_name = "link"
+    tool_description = "Generate merger tree and other information linking tangos objects over time"
+
     def _generate_timestep_pairs(self):
         logger.info("generating pairs of timesteps")
         base_sim = db.sim_query_from_name_list(self.args.sims)
@@ -193,6 +185,9 @@ class TimeLinker(GenericLinker):
 
 
 class CrossLinker(GenericLinker):
+    tool_name = "crosslink"
+    tool_description = "Identify the same objects between two simulations and link them"
+
     @classmethod
     def add_parser_arguments(self, parser):
         super(CrossLinker, self).add_parser_arguments(parser)

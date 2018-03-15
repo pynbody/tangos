@@ -65,7 +65,7 @@ Import some AHF-defined properties
 At the unix command line type:
 
 ```
-tangos_import_from_ahf Mvir Rvir --for tutorial_changa_yt
+tangos import-properties Mvir Rvir --for tutorial_changa_yt
 ```
 
 The process should take less than a minute on a standard modern computer, 

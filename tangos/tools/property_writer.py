@@ -15,6 +15,7 @@ import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
 
+from . import GenericTangosTool
 from .. import properties
 from ..util import terminalcontroller, timing_monitor
 from .. import parallel_tasks, core
@@ -31,7 +32,9 @@ class AttributableDict(dict):
     pass
 
 
-class PropertyWriter(object):
+class PropertyWriter(GenericTangosTool):
+    tool_name = "write"
+    tool_description = "Calculate properties and write them into the tangos database"
 
     def __init__(self):
         self.redirect = terminalcontroller.redirect
@@ -41,11 +44,6 @@ class PropertyWriter(object):
         self._loaded_timestep = None
         self._loaded_halo_id = None
         self._loaded_halo = None
-
-    def _get_parser_obj(self):
-        parser = self._create_parser_obj()
-        self.add_parser_arguments(parser)
-        return parser
 
     @classmethod
     def add_parser_arguments(self, parser):

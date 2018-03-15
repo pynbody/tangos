@@ -196,6 +196,9 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             f2 = self.load_timestep(ts2)
             h2 = self._construct_halo_cat(ts2, object_typetag)
 
+        if halo_max is None:
+            halo_max = max(len(h2), len(h1))
+
         return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold,
                                                  only_family=only_family, groups_1=h1, groups_2=h2)
 
