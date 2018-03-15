@@ -113,6 +113,14 @@ class ConsistentTrees(object):
 
         return dict(zip(ids_this_snap, zip(ids_next_snap, merger_ratios)))
 
+    def get_finder_id_to_tree_id_for_snapshot(self, snapnum):
+        """Get the internal consistent-trees ids for each original halo-finder ID"""
+        this_snap_mask = (self._snap_nums == snapnum)
+        internal_ids_this_snap = self.links['id_this'][this_snap_mask]
+        finder_ids_this_snap = self._id_to_finder_id[internal_ids_this_snap]
+        finder_id_to_id = dict(zip(finder_ids_this_snap, internal_ids_this_snap))
+        return finder_id_to_id
+
     def _get_merger_ratio_array(self, ids_next_snap, snapnum):
         this_snap_mask = self._snap_nums == snapnum
         ratio = np.ones(len(ids_next_snap))

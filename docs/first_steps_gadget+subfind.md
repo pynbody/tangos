@@ -5,7 +5,7 @@ Initial set up
 --------------
 
 Make sure you have followed the [initial set up instructions](index.md). Then download the
-[raw simulation data](http://star.ucl.ac.uk/~app/tangos/tutorial_gadget.tar.gz) required for this tutorial.
+[raw simulation data](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_gadget.tar.gz) required for this tutorial.
 Unpack the tar file either in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
 variable to.
 

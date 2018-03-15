@@ -6,7 +6,7 @@ from ..input_handlers import consistent_trees as ct
 from ..log import logger
 from ..core import get_or_create_dictionary_item
 from ..core.halo import PhantomHalo
-from ..core.halo_data import HaloLink
+from ..core.halo_data import HaloLink, HaloProperty
 from . import GenericTangosTool
 from six.moves import xrange
 
@@ -20,6 +20,9 @@ class ConsistentTreesImporter(GenericTangosTool):
         parser.add_argument('--sims', '--for', action='store', nargs='*',
                             metavar='simulation_name',
                             help='Specify a simulation (or multiple simulations) to run on')
+
+        parser.add_argument('--with-ids', action='store_true',
+                            help="Store the consistent-trees ids as a property for each halo")
 
 
     def process_options(self, options):
@@ -79,6 +82,19 @@ class ConsistentTreesImporter(GenericTangosTool):
         session.commit()
         logger.info("%d links created between %s and %s",len(links), ts, ts_next)
 
+    def store_ids(self, ts, id_to_tree_id):
+        session = db.get_default_session()
+        objs = self.create_timestep_halo_dictionary(ts)
+        dict_obj = get_or_create_dictionary_item(session, "consistent_trees_id")
+        props = []
+        for o in objs.values():
+            tree_id = id_to_tree_id.get(o.finder_id, None)
+            if tree_id is not None:
+                props.append(HaloProperty(o, dict_obj, tree_id))
+        session.add_all(props)
+        session.commit()
+        logger.info("%d consistent tree IDs added to step %s", len(props), ts)
+
 
     def run_calculation_loop(self):
         simulations = db.sim_query_from_name_list(self.options.sims)
@@ -89,6 +105,9 @@ class ConsistentTreesImporter(GenericTangosTool):
             for ts in simulation.timesteps:
                 snapnum = self.filename_to_snapnum(ts.extension)
                 ts_next = ts.next
+
+                if self.options.with_ids:
+                    self.store_ids(ts, tree.get_finder_id_to_tree_id_for_snapshot(snapnum))
 
                 if ts_next is not None:
                     n_phantoms = tree.get_num_phantoms_in_snapshot(snapnum+1)

@@ -10,8 +10,8 @@ halo catalogue and [consistent-trees](https://bitbucket.org/pbehroozi/consistent
 Make sure you have followed the [initial set up instructions](index.md). Then download the raw simulation data
 required for this tutorial. You need two files:
 
- - the simulations snapshots, [tutorial_gadget.tar.gz](http://star.ucl.ac.uk/~app/tangos/tutorial_gadget.tar.gz)
- - the rockstar catalogues, [tutorial_gadget_rockstar.tar.gz](http://star.ucl.ac.uk/~app/tangos/tutorial_gadget_rockstar.tar.gz)
+ - the simulations snapshots, [tutorial_gadget.tar.gz](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_gadget.tar.gz)
+ - the rockstar catalogues, [tutorial_gadget_rockstar.tar.gz](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_gadget_rockstar.tar.gz)
 
 required for this tutorial.
 
