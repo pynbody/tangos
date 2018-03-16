@@ -315,8 +315,13 @@ def rem_run(id, confirm=True):
         print("aborted")
 
 def rollback(options):
-    for run_id in options.ids:
-        rem_run(run_id, not options.force)
+    if len(options.ids)>0:
+        for run_id in options.ids:
+            rem_run(run_id, not options.force)
+    else:
+        most_recent_id = core.get_default_session().query(Creator).order_by(
+          Creator.id.desc()).first().id
+        rem_run(most_recent_id, not options.force)
 
 def dump_id(options):
     import pynbody
@@ -438,9 +443,9 @@ def get_argument_parser_and_subparsers():
                                              help="Remove old copies of properties (if they are present)")
     subparse_deprecate.set_defaults(func=remove_duplicates)
 
-    subparse_rollback = subparse.add_parser("rollback", help="Remove database updates (by ID - see recent-runs)")
-    subparse_rollback.add_argument("ids", nargs="*", type=int, help="IDs of the database updates to remove")
-    subparse_rollback.add_argument("--force", "-f", action="store_true", help="Do not prompt for confirmation")
+    subparse_rollback = subparse.add_parser("rollback", help="Remove database updates")
+    subparse_rollback.add_argument("ids", nargs="*", type=int, help="IDs of the database updates to remove. If none specified, removes the most recent run.")
+    subparse_rollback.add_argument("--force", "-f", action="store_true", help="If this flag is present, no confirmation prompts will be issued")
     subparse_rollback.set_defaults(func=rollback)
 
     subparse_dump_id = subparse.add_parser("dump-iord", help="Dump the iords corresponding to a specified halo")
