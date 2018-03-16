@@ -22,7 +22,7 @@ class CaterpillarInputHandler(PynbodyInputHandler):
     def _pynbody_path_from_snapdir_path(cls, path):
         snap_id = cls._snap_id_from_snapdir_path(path)
         if snap_id:
-            return os.path.join(path, "snap_%3d" % snap_id)
+            return os.path.join(path, "snap_%.3d" % snap_id)
         else:
             raise IOError("Cannot infer correct path to pass to pynbody")
 
@@ -51,8 +51,18 @@ class CaterpillarRockstarStatFile(halo_stat_files.RockstarStatFile):
 
     @classmethod
     def filename(cls, timestep):
-        orig_dirname = os.path.dirname(timestep.filename)
-        stepid = CaterpillarInputHandler._snap_id_from_snapdir_path(orig_dirname)
-        filename = "out_%d.list"%stepid
-        return os.path.join(CaterpillarInputHandler._rockstar_path_from_snapdir_path(orig_dirname),
-                            filename)
+        # following logic is horrible hack: should be solved by requiring consistency between filename passed to pynbody
+        # and filename returned by timestep.filename, removing need for pynbody_path_from_snapdir_path
+        # and for this hack.
+        #
+        # This should probably actually be solved in pynbody.
+        if "snap_" in timestep.filename:
+            filename = os.path.dirname(timestep.filename)
+        else:
+            filename = timestep.filename
+
+        stepid = CaterpillarInputHandler._snap_id_from_snapdir_path(filename)
+        listname = "out_%d.list"%stepid
+        path = os.path.join(CaterpillarInputHandler._rockstar_path_from_snapdir_path(filename),
+                            listname)
+        return path
