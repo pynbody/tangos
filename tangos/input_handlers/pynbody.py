@@ -469,3 +469,5 @@ class ChangaInputHandler(PynbodyInputHandler):
             except (IndexError, ValueError):
                 pass
         return out
+
+from . import caterpillar

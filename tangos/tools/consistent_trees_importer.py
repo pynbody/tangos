@@ -9,6 +9,7 @@ from ..core.halo import PhantomHalo
 from ..core.halo_data import HaloLink, HaloProperty
 from . import GenericTangosTool
 from six.moves import xrange
+import re
 
 class ConsistentTreesImporter(GenericTangosTool):
     tool_name = 'import-consistent-trees'
@@ -31,8 +32,9 @@ class ConsistentTreesImporter(GenericTangosTool):
 
     @staticmethod
     def filename_to_snapnum(filename):
-        if filename.startswith("snapshot_"):
-            return int(filename[-3:])
+        match = re.match("(?:snapdir|snapshot)_([0-9]+)/?$", filename)
+        if match:
+            return int(match.group(1))
         else:
             raise ValueError("Unable to convert %s to snapshot number"%filename)
 

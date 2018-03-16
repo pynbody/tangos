@@ -3,17 +3,23 @@ from __future__ import print_function
 
 import os
 import numpy as np
-from scipy.spatial import KDTree
 from six.moves import xrange
 from ..log import logger
 
 class ConsistentTrees(object):
     def __init__(self, path):
-        self._path = path
+        self._path = self._infer_subpath(path)
         self._load_raw_trees()
         self._load_scale_to_snap_number()
-        self._setup_mapping_to_original_halos()
+        self._setup_map_to_original_finder_catalogues()
 
+    def _infer_subpath(self, rootpath):
+        if os.path.exists(os.path.join(rootpath,'trees')):
+            return rootpath
+        elif os.path.exists(os.path.join(rootpath, 'halos', 'trees')):
+            return os.path.join(rootpath, 'halos')
+        else:
+            raise IOError("Cannot find the consistent-trees output")
 
     def _load_raw_trees(self):
         filename = os.path.join(self._path, "trees", "tree_0_0_0.dat")
@@ -39,60 +45,47 @@ class ConsistentTrees(object):
         self._snap_min = self.scale_to_snap['snap_number'].min()
         self._snap_max = self.scale_to_snap['snap_number'].max()
 
-    def _identify_snap_number(self, scalefactors):
-        snap_scales = self.scale_to_snap['scale']*1.0001
-        snaps =  self.scale_to_snap['snap_number'][np.searchsorted(snap_scales, scalefactors)]
-        snaps[scalefactors<1e-10] = -1
-        return snaps
-
 
     def _load_original_catalogue(self, snapnum):
-        filename = os.path.join(self._path, "out_%d.list"%snapnum)
-        read_type = np.dtype([('id', np.int64), ('pos', (np.float32, 3))])
-        read_cols = (0, 8, 9, 10)
-        return np.loadtxt(filename, dtype=read_type, usecols=read_cols)
+        filename = os.path.join(self._path, "outputs", "really_consistent_%d.list"%snapnum)
+        read_cols = (0, 49)
+        return np.loadtxt(filename, dtype=np.int64, usecols=read_cols, unpack=True)
 
-    def _get_finder_ids(self, snapnum, pos):
-        original_cat = self._load_original_catalogue(snapnum)
-        kdtree = KDTree(original_cat['pos'])
-        distance, index = kdtree.query(pos)
-        error = (distance>0.01).sum()
-        if error>0:
-            raise ValueError("Cannot identify %d halos"%error)
-        return original_cat['id'][index]
+    def _setup_map_to_original_finder_catalogues(self):
+        maxval = self.links['id_this'].max()
+        self._id_to_finder_id = np.zeros(maxval + 1, dtype=np.int64)
+        self._id_to_snap_num = np.zeros(maxval + 1, dtype=np.int32) - 1
+        for snapnum in xrange(self._snap_min, self._snap_max + 1):
+            ctid, original_id = self._load_original_catalogue(snapnum)
+            self._id_to_finder_id[ctid] = original_id
+            self._id_to_snap_num[ctid] = snapnum
 
-    def _setup_mapping_to_original_halos(self):
-        num_ids = self.links['id_this'].max()+1
-
-        self._id_to_original_snapshot = np.zeros(num_ids, dtype=int)-1
-        self._id_to_finder_id = np.zeros(num_ids, dtype=int)-1
+        self._sanity_check_snap_num_assignment()
+        self._snap_nums = self._get_snapshot_nums(self.links['id_this'])
 
         ids = self.links['id_this']
-        pos = self.links['pos']
         phantom = self.links['phantom']
-        self._snap_nums = self._identify_snap_number(self.links['scale_this'])
-
-        # sanity check:
-        snap_nums_next = self._identify_snap_number(self.links['scale_desc'])
-        snap_nums_next[snap_nums_next==-1] = self._snap_nums.max()+1
-        snap_nums_diff = snap_nums_next-self._snap_nums
-        assert (snap_nums_diff==1).all()
-
-        self._id_to_original_snapshot[ids] = self._snap_nums
-
-        for snapnum in range(self._snap_min, self._snap_max+1):
-            logger.info("Matching consistent trees output onto original halo catalogue for snapshot %d",snapnum)
-            this_snap_mask = (self._snap_nums==snapnum)&(phantom==0)
-            ids_this_snap = ids[this_snap_mask]
-            finder_ids = self._get_finder_ids(snapnum, pos[this_snap_mask])
-            self._id_to_finder_id[ids_this_snap] = finder_ids
-
         # any remaining IDs correspond to phantom halos
-        for snapnum in range(self._snap_min, self._snap_max+1):
-            phantom_mask = ((self._snap_nums==snapnum)&(phantom!=0))
+        for snapnum in range(self._snap_min, self._snap_max + 1):
+            phantom_mask = ((self._snap_nums == snapnum) & (phantom != 0))
             num_phantoms = phantom_mask.sum()
-            phantom_ids = -np.arange(1,num_phantoms+1)
+            phantom_ids = -np.arange(1, num_phantoms + 1)
             self._id_to_finder_id[ids[phantom_mask]] = phantom_ids
+
+    def _sanity_check_snap_num_assignment(self):
+        snap_nums_this = self._get_snapshot_nums(self.links['id_this'])
+        snap_nums_next = self._get_snapshot_nums(self.links['id_desc'])
+        snap_nums_next[snap_nums_next == -1] = self._snap_max + 1
+        snap_nums_diff = snap_nums_next-snap_nums_this
+        assert (snap_nums_diff == 1).all()
+
+    def _get_finder_ids(self, consistent_trees_ids):
+        return self._id_to_finder_id[consistent_trees_ids]
+
+    def _get_snapshot_nums(self, consistent_trees_ids):
+        snapnums = self._id_to_snap_num[consistent_trees_ids]
+        snapnums[consistent_trees_ids<0]=-1
+        return snapnums
 
     def get_num_phantoms_in_snapshot(self, snapnum):
         return -self._id_to_finder_id[self._id_to_original_snapshot==snapnum].min()

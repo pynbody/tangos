@@ -18,15 +18,28 @@ class HaloStatFile(object):
     _column_translations = {}
 
     def __new__(cls, timestep):
-        for subclass in cls.__subclasses__():
-            if subclass.can_load(timestep):
-                return object.__new__(subclass)
+        subcls = cls.find_loadable_subclass(timestep)
+        if subcls:
+            return object.__new__(subcls)
         else:
             raise IOError("No stat file found for this timestep")
 
     @classmethod
+    def find_loadable_subclass(cls, timestep):
+        if cls.can_load(timestep):
+            return cls
+        for subclass in cls.__subclasses__():
+            loadable_cls = subclass.find_loadable_subclass(timestep)
+            if loadable_cls:
+                return loadable_cls
+        return None
+
+    @classmethod
     def can_load(cls, timestep):
-        return os.path.exists(cls.filename(timestep))
+        try:
+            return os.path.exists(cls.filename(timestep))
+        except ValueError:
+            return False
 
     @classmethod
     def filename(cls, timestep):
