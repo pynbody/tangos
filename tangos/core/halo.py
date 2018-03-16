@@ -120,8 +120,12 @@ class Halo(Base):
         handler this can be None or 'partial' (in a normal session) and, when running inside an MPI session,
         'server' or 'server-partial'. See https://pynbody.github.io/tangos/mpi.html.
         """
+        if self.finder_id is None:
+            finder_id = self.halo_number # backward compatibility
+        else:
+            finder_id = self.finder_id 
 
-        return self.handler.load_object(self.timestep.extension, self.finder_id, object_typetag=self.tag, mode=mode)
+        return self.handler.load_object(self.timestep.extension, finder_id, object_typetag=self.tag, mode=mode)
 
     def calculate(self, calculation, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.
