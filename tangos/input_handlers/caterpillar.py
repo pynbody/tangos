@@ -24,7 +24,7 @@ class CaterpillarInputHandler(PynbodyInputHandler):
         if snap_id:
             return os.path.join(path, "snap_%3d" % snap_id)
         else:
-            raise IOError, "Cannot infer correct path to pass to pynbody"
+            raise IOError("Cannot infer correct path to pass to pynbody")
 
     @classmethod
     def _rockstar_path_from_snapdir_path(cls, path):
@@ -33,7 +33,7 @@ class CaterpillarInputHandler(PynbodyInputHandler):
             return os.path.join(os.path.dirname(os.path.dirname(path)),
                                 "halos", "halos_%d"%snap_id)
         else:
-            raise IOError, "Cannot infer path of halos"
+            raise IOError("Cannot infer path of halos")
 
     def _extension_to_filename(self, ts_extension):
         return str(os.path.join(config.base, self.basename, self._pynbody_path_from_snapdir_path(ts_extension)))

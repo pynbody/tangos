@@ -80,7 +80,7 @@ class HandlerBase(object):
     def get_stat_file(self, ts_extension, object_typetag):
         from . import halo_stat_files
         if object_typetag != 'halo':
-            raise IOError, "No stat file known for object type %s"%object_typetag
+            raise IOError("No stat file known for object type %s"%object_typetag)
         ts = DummyTimeStep(self._extension_to_filename(ts_extension))
         ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
         from . import caterpillar
