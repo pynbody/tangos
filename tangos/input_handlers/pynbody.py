@@ -237,7 +237,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def get_properties(self):
         timesteps = list(self.enumerate_timestep_extensions())
         if len(timesteps)>0:
-            f = self.load_timestep_without_caching(timesteps[0])
+            f = self.load_timestep_without_caching(sorted(timesteps)[-1])
             if self.quicker:
                 res = self._estimate_resolution_quicker(f)
             else:
