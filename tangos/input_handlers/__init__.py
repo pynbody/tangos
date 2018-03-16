@@ -85,7 +85,6 @@ class HandlerBase(object):
         ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
         from . import caterpillar
         statfile = halo_stat_files.HaloStatFile(ts)
-        print type(statfile)
         return statfile
 
 
