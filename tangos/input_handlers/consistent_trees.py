@@ -88,7 +88,11 @@ class ConsistentTrees(object):
         return snapnums
 
     def get_num_phantoms_in_snapshot(self, snapnum):
-        return -self._id_to_finder_id[self._id_to_snap_num==snapnum].min()
+        finder_ids = self._id_to_finder_id[self._id_to_snap_num==snapnum]
+        if len(finder_ids)==0:
+            return 0
+        else:
+            return -finder_ids.min()
 
     def get_links_for_snapshot(self, snapnum):
         """Get the links from snapshot snapnum to its immediate successor.
