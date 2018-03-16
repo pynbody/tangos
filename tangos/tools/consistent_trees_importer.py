@@ -32,7 +32,7 @@ class ConsistentTreesImporter(GenericTangosTool):
 
     @staticmethod
     def filename_to_snapnum(filename):
-        match = re.match("(?:snapdir|snapshot)_([0-9]+)/?$", filename)
+        match = re.match(".*(?:snapdir|snapshot)_([0-9]+)/?$", filename)
         if match:
             return int(match.group(1))
         else:
