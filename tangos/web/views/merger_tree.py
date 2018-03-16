@@ -13,7 +13,7 @@ class WebMergerTree(tree.MergerTree):
         output = super(WebMergerTree, self)._get_basic_halo_node(halo, depth)
         output['url'] = self.request.route_url('halo_view',
                                        simid=self.base_halo.timestep.simulation.basename,
-                                       timestepid=halo.timestep.extension,
+                                       timestepid=halo.timestep.escaped_extension,
                                        halonumber=halo.basename)
         return output
 

@@ -29,6 +29,10 @@ class TimeStep(Base):
                               cascade='save-update, merge')
 
     @property
+    def escaped_extension(self):
+        return self.extension.replace("/","%")
+
+    @property
     def filename(self):
         return os.path.join(config.base, self.simulation.basename, self.extension)
 
