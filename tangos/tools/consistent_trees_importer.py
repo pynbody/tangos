@@ -2,11 +2,13 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import tangos as db
+import os
 from ..input_handlers import consistent_trees as ct
 from ..log import logger
 from ..core import get_or_create_dictionary_item
 from ..core.halo import PhantomHalo
 from ..core.halo_data import HaloLink, HaloProperty
+from .. import config
 from . import GenericTangosTool
 from six.moves import xrange
 import re
@@ -103,7 +105,7 @@ class ConsistentTreesImporter(GenericTangosTool):
 
         for simulation in simulations:
             logger.info("Processing %s",simulation)
-            tree = ct.ConsistentTrees(simulation.basename)
+            tree = ct.ConsistentTrees(os.path.join(config.base,simulation.basename))
             for ts in simulation.timesteps:
                 snapnum = self.filename_to_snapnum(ts.extension)
                 ts_next = ts.next

@@ -396,8 +396,6 @@ def main():
 def get_argument_parser_and_subparsers():
     parser = argparse.ArgumentParser()
     core.supplement_argparser(parser)
-    parser.add_argument("--verbose", action="store_true",
-                        help="Print extra information")
     subparse = parser.add_subparsers()
 
     subparse_add = subparse.add_parser("add",

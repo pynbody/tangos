@@ -65,7 +65,10 @@ class CaterpillarRockstarStatFile(halo_stat_files.RockstarStatFile):
             filename = timestep.filename
 
         stepid = CaterpillarInputHandler._snap_id_from_snapdir_path(filename)
-        listname = "out_%d.list"%stepid
-        path = os.path.join(CaterpillarInputHandler._rockstar_path_from_snapdir_path(filename),
-                            listname)
-        return path
+        if stepid:
+            listname = "out_%d.list"%stepid
+            path = os.path.join(CaterpillarInputHandler._rockstar_path_from_snapdir_path(filename),
+                                listname)
+            return path
+        else:
+            return None

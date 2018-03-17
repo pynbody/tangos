@@ -38,7 +38,7 @@ class HaloStatFile(object):
     def can_load(cls, timestep):
         try:
             return os.path.exists(cls.filename(timestep))
-        except ValueError:
+        except (ValueError, TypeError):
             return False
 
     @classmethod

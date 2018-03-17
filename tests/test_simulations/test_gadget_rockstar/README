@@ -1,0 +1,4 @@
+This is a skeleton rockstar/consistent-trees output for testing.
+
+output 13 has only CPU 1, output 14 only CPU 0; this is because these two
+CPUs happened to output halos starting at number 0.

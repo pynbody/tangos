@@ -28,14 +28,12 @@ class ConsistentTrees(object):
             l = f.readline()
             if l.startswith("#tree"):
                 break
-        read_type = np.dtype([('scale_this', np.float32),
+        read_type = np.dtype([
                   ('id_this', np.int64),
-                  ('scale_desc', np.float32),
                   ('id_desc', np.int64),
                   ('phantom', np.int8),
-                  ('Mvir', np.float32),
-                  ('pos', (np.float32, 3))])
-        results = np.loadtxt(f, usecols=(0,1,2,3,8,10,17,18,19), dtype=read_type)
+                  ('Mvir', np.float32)])
+        results = np.loadtxt(f, usecols=(1,3,8,10), dtype=read_type)
         self.links = results
 
     def _load_scale_to_snap_number(self):

@@ -24,7 +24,6 @@ class GenericTangosTool(object):
     def _create_parser_obj(self):
         parser = argparse.ArgumentParser()
         core.supplement_argparser(parser)
-        self.add_parser_arguments(parser)
         return parser
 
     @abc.abstractmethod
