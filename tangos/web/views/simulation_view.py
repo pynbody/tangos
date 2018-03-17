@@ -24,7 +24,7 @@ def simulation_view(request):
         order_by(tangos.core.timestep.TimeStep.time_gyr.desc()).\
         all()
 
-    timestep_links = [request.route_url('timestep_view',simid=sim.basename,timestepid=timestep.extension)
+    timestep_links = [request.route_url('timestep_view',simid=sim.basename,timestepid=timestep.escaped_extension)
                       for timestep in timesteps]
 
     counts = [c[0] for c in counts]

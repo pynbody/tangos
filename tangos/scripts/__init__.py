@@ -1,7 +1,6 @@
 from . import manager, writer, timelink, crosslink
 from .. import parallel_tasks
-from tangos.tools.property_writer import PropertyWriter
-from tangos.tools.crosslink import TimeLinker, CrossLinker
+import tangos.tools
 import sys
 import os
 
@@ -34,14 +33,7 @@ def add_serve_tool(subparse):
     web_subparser.set_defaults(func=serve)
 
 def add_commands(subparse):
-    add_generic_tool(subparse, PropertyWriter, 'write', "Calculate properties and write them into the tangos database")
-
-    add_generic_tool(subparse, TimeLinker, 'link',
-                     "Generate merger tree and other information linking tangos objects over time")
-
-    add_generic_tool(subparse, CrossLinker, 'crosslink',
-                     "Identify the same objects between two simulations and link them")
-
+    tangos.tools.GenericTangosTool.add_tools(subparse)
     add_serve_tool(subparse)
 
 def main():

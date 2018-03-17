@@ -128,13 +128,19 @@ class MergerTree(object):
 
         if halo == self.highlight_halo:
             nodeclass = 'node-dot-selected'
-        elif depth == 0:
+
+        if isinstance(halo, core.halo.PhantomHalo):
+            nodeclass+=' phantom'
+
+        if depth == 0:
             if halo.next is not None:
                 nodeclass = 'node-dot-continuation'
                 name = '...'
                 moreinfo = "Continues... " + moreinfo
         if len(name) > 4:
             name = ""
+
+
         output = {'name': name,
                   'nodeclass': nodeclass,
                   'moreinfo': moreinfo,
@@ -142,7 +148,9 @@ class MergerTree(object):
                   'halo_number': halo.halo_number,
                   'unscaled_size': unscaled_size,
                   'contents': [],
-                  'depth': depth}
+                  'depth': depth,
+                  'halo_number_with_phantom_offset': halo.halo_number+
+                                10000*('phantom' in nodeclass)}
         return output
 
     def plot(self):
@@ -233,19 +241,19 @@ class MergerTree(object):
             if len(node['contents']) > 0:
                 delta = (x_end - x_start) / len(node['contents'])
                 total_nodes = len(node['contents'])
-                halo_numbers = [child['halo_number'] for child in node['contents']]
+                halo_numbers = [child['halo_number_with_phantom_offset'] for child in node['contents']]
                 halo_numbers.sort()
                 for i, child in enumerate(node['contents']):
                     # create an index that starts in the middle then works outwards
-                    rank = halo_numbers.index(child['halo_number'])
+                    rank = halo_numbers.index(child['halo_number_with_phantom_offset'])
                     sign = 2 * ((rank + 1) % 2) - 1
                     i_shuffled = total_nodes // 2 + sign * ((rank + 1) // 2)
-                    child_range = existing_ranges[child['depth']].get(child['halo_number'],
+                    child_range = existing_ranges[child['depth']].get(child['halo_number_with_phantom_offset'],
                                                                       (x_start + i_shuffled * delta,
                                                                        x_start + (i_shuffled + 1) * delta))
 
                     child['space_range'] = child_range
-                    existing_ranges[child['depth']][child['halo_number']] = child_range
+                    existing_ranges[child['depth']][child['halo_number_with_phantom_offset']] = child_range
 
         self._postprocess_mergertree_layout_by_number('mid_range')
 

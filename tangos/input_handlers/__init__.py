@@ -64,29 +64,29 @@ class HandlerBase(object):
         by the halo_stat_files module.
 
         Call from subclasses when this behaviour is desired"""
-        from . import halo_stat_files
-        assert object_typetag=='halo'
-        ts = DummyTimeStep(self._extension_to_filename(ts_extension))
-        ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
-
-        statfile = halo_stat_files.HaloStatFile(ts)
-        logger.info("Reading halos for timestep %r using a stat file", ts)
+        statfile = self.get_stat_file(ts_extension, object_typetag)
+        logger.info("Reading halos for timestep %r using a stat file", ts_extension)
         for X in statfile.iter_rows("n_dm", "n_star", "n_gas"):
             yield X
 
     def _can_enumerate_objects_from_statfile(self, ts_extension, object_typetag):
         """Returns True if the objects can be enumerated from a stat file"""
-        from . import halo_stat_files
-        ts = DummyTimeStep(self._extension_to_filename(ts_extension))
-        ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
-        if object_typetag!='halo':
-            return False
-
         try:
-            halo_stat_files.HaloStatFile(ts)
+            self.get_stat_file(ts_extension, object_typetag)
             return True
         except IOError:
             return False
+
+    def get_stat_file(self, ts_extension, object_typetag):
+        from . import halo_stat_files
+        if object_typetag != 'halo':
+            raise IOError("No stat file known for object type %s"%object_typetag)
+        ts = DummyTimeStep(self._extension_to_filename(ts_extension))
+        ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
+        from . import caterpillar
+        statfile = halo_stat_files.HaloStatFile(ts)
+        return statfile
+
 
     def load_timestep(self, ts_extension, mode=None):
         """Returns an object that connects to the data for a timestep on disk -- possibly a version cached in

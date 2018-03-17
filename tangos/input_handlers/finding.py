@@ -38,6 +38,10 @@ class PatternBasedFileDiscovery(object):
 
     patterns = []  # should be specified by child class. See input_handlers.pynbody for examples.
 
+    auxiliary_file_patterns = []
+    # will not be used for finding the snapshots, but if files matching these patterns are present
+    # the handler is more likely to be selected automatically. See e.g. GadgetRockstarInputHandler.
+
     @classmethod
     def best_matching_handler(cls, basename):
         handler_names = []
@@ -48,8 +52,9 @@ class PatternBasedFileDiscovery(object):
         all_possible_handlers = cls.__subclasses__()
         for possible_handler in all_possible_handlers:
             timesteps_detected = find(basename=base + "/", patterns=possible_handler.patterns)
+            other_files_detected = find(basename=base+"/", patterns=possible_handler.auxiliary_file_patterns)
             handler_names.append(possible_handler)
-            handler_timestep_lengths.append(len(timesteps_detected))
+            handler_timestep_lengths.append(len(timesteps_detected)+len(other_files_detected))
         best_handler = handler_names[np.argmax(handler_timestep_lengths)]
         logger.debug("Detected best handler (of %d) is %s",len(all_possible_handlers), best_handler)
         return best_handler
@@ -61,6 +66,8 @@ class PatternBasedFileDiscovery(object):
         for e in extensions:
             if self._is_able_to_load(e):
                 yield e[len(base) + 1:]
+            else:
+                logger.info("Could not load %s",e)
 
     def _is_able_to_load(self, fname):
         """Determine whether a named file can be loaded

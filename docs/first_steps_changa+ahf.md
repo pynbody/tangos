@@ -5,7 +5,7 @@ Initial set up
 --------------
 
 Make sure you have followed the [initial set up instructions](index.md). Then download the
-[raw simulation data](http://star.ucl.ac.uk/~app/tangos/tutorial_changa.tar.gz) required for this tutorial.
+[raw simulation data](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_changa.tar.gz) required for this tutorial.
 Unpack the tar file either in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
 variable to.
 
@@ -38,7 +38,7 @@ Import some AHF-defined properties
 At the unix command line type:
 
 ```
-tangos_import_from_ahf Mvir Rvir --for tutorial_changa
+tangos import-properties Mvir Rvir --for tutorial_changa
 ```
 
 The process should take less than a minute on a standard modern computer, during which you'll see a bunch of log messages scroll up the screen.

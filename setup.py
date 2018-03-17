@@ -21,6 +21,7 @@ install_requires = [
     'zope.sqlalchemy',
     'hupper',
     'six',
+    'scipy >= 0.14.0'
     ]
 
 tests_require = [

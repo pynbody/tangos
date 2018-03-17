@@ -8,7 +8,7 @@ from tangos import core
 
 def add_urls(halos, request, sim, ts):
     for h in halos:
-        h.url = request.route_url('halo_view', simid=sim.basename, timestepid=ts.extension,
+        h.url = request.route_url('halo_view', simid=sim.basename, timestepid=ts.escaped_extension,
                                   halonumber=h.basename)
 
 @view_config(route_name='timestep_view', renderer='../templates/timestep_view.jinja2')
@@ -32,8 +32,11 @@ def timestep_view(request):
 
         if title=="BHs":
             title="Black holes"
+        elif title=="PhantomHalos":
+            title="Phantom halos"
 
         all_objects.append({'title': title, 'typetag': typetag, 'items': objects})
+        print(typecode, title, len(objects))
         typecode+=1
 
 

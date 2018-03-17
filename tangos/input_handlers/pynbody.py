@@ -196,6 +196,9 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             f2 = self.load_timestep(ts2)
             h2 = self._construct_halo_cat(ts2, object_typetag)
 
+        if halo_max is None:
+            halo_max = max(len(h2), len(h1))
+
         return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold,
                                                  only_family=only_family, groups_1=h1, groups_2=h2)
 
@@ -234,7 +237,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def get_properties(self):
         timesteps = list(self.enumerate_timestep_extensions())
         if len(timesteps)>0:
-            f = self.load_timestep_without_caching(timesteps[0])
+            f = self.load_timestep_without_caching(sorted(timesteps)[-1])
             if self.quicker:
                 res = self._estimate_resolution_quicker(f)
             else:
@@ -299,6 +302,15 @@ class RamsesHOPInputHandler(PynbodyInputHandler):
 
 class GadgetSubfindInputHandler(PynbodyInputHandler):
     patterns = ["snapshot_???"]
+    auxiliary_file_patterns =["groups_???"]
+
+    def _is_able_to_load(self, filepath):
+        try:
+            f = pynbody.load(filepath)
+            h = pynbody.halo.SubfindCatalogue(f)
+            return True
+        except (IOError, RuntimeError):
+            return False
 
     def load_object(self, ts_extension, halo_number, object_typetag='halo', mode=None):
         if mode=='subfind_properties':
@@ -306,16 +318,6 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
             return h.get_halo_properties(halo_number,with_unit=False)
         else:
             return super(GadgetSubfindInputHandler, self).load_object(ts_extension, halo_number, object_typetag, mode)
-
-
-
-    def enumerate_timestep_extensions(self):
-        base = os.path.join(config.base, self.basename)
-        extensions = finding.find(basename=base + "/", patterns=["snapshot_???"])
-        for e in extensions:
-            if self._is_able_to_load(e):
-                yield e[len(base)+1:]
-
 
     def _construct_group_cat(self, ts_extension):
         f = self.load_timestep(ts_extension)
@@ -334,6 +336,18 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
             return self._construct_group_cat(ts_extension)
         else:
             raise ValueError("Unknown halo type %r" % object_typetag)
+
+class GadgetRockstarInputHandler(PynbodyInputHandler):
+    patterns = ["snapshot_???"]
+    auxiliary_file_patterns = ["halos_*.bin"]
+
+    def _is_able_to_load(self, filepath):
+        try:
+            f = pynbody.load(filepath)
+            h = pynbody.halo.RockstarCatalogue(f)
+            return True
+        except (IOError, RuntimeError):
+            return False
 
 
 
@@ -455,3 +469,5 @@ class ChangaInputHandler(PynbodyInputHandler):
             except (IndexError, ValueError):
                 pass
         return out
+
+from . import caterpillar
