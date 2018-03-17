@@ -5,7 +5,6 @@ from .. import config
 from .pynbody import PynbodyInputHandler
 from . import halo_stat_files
 import os.path
-import pynbody
 
 class CaterpillarInputHandler(PynbodyInputHandler):
     patterns = ["snapdir_???"]
@@ -40,6 +39,7 @@ class CaterpillarInputHandler(PynbodyInputHandler):
 
     def _is_able_to_load(self, filepath):
         try:
+            import pynbody
             f = pynbody.load(self._pynbody_path_from_snapdir_path(filepath))
             h = pynbody.halo.RockstarCatalogue(f, pathname=self._rockstar_path_from_snapdir_path(filepath),
                                                format_revision='caterpillar')
