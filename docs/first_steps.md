@@ -4,6 +4,7 @@ Generating your first tangos database
 There are currently three sample simulations available to illustrate the use of tangos. They are respectively:
 
 * A uniform resolution volume run with GADGET and with SubFind halo catalogues - [click here](first_steps_gadget+subfind.md);
+* Alternatively you can try the same GADGET run with Rockstar catalogues - [click here](first_steps_gadget+rockstar.md);
 * A zoom simulation run with RAMSES and with HOP catalogues - [click here](first_steps_ramses+hop.md);
 * A zoom simulation run with Changa (similar to Gasoline) with AHF catalogues - [click here](first_steps_changa+ahf.md). This simulation also has baryons
   unlike the others which contain only dark matter. An additional sample Changa simulation is available 
