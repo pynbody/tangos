@@ -1,3 +1,6 @@
+"""Specialised input handler for the caterpillar project
+http://www.caterpillarproject.org"""
+
 from __future__ import absolute_import
 
 import re
