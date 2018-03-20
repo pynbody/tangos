@@ -40,7 +40,7 @@ mergertree_min_fractional_weight = 0.02 # as a fraction of the weight of the str
 mergertree_min_fractional_NDM = 0 # as a fraction of the most massive halo at each timestep - set to zero for no thinning
 mergertree_max_nhalos = 30 # maximum number of halos per step - discard the least massive ones
 mergertree_timeout = 15.0 # seconds before abandoning the construction of a merger tree in the web interface
-
+mergertree_max_hops = 500 # maximum number of timesteps to scan
 
 # On some network file systems, concurrency using sqlite is dodgy to say the least. After committing a transaction
 # on one node, and before attempting to open a new transaction on another node, it seems empirically helpful to
