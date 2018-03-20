@@ -25,7 +25,7 @@ class MergerTree(object):
 
     This will display the tree information in matplotlib."""
 
-    def __init__(self, base_halo, with_calculations=["NDM()"]):
+    def __init__(self, base_halo, with_calculations=["Mvir"]):
         """Initialise the tree starting at the specified base halo.
 
         Note that the method construct() must be called to actually build the tree"""
@@ -171,7 +171,7 @@ class MergerTree(object):
         Mvir = self._properties_cache[halo.id].get("Mvir", None)
 
         if Mvir is not None:
-            moreinfo += ", %s=%.2e" % ("Mvir", Mvir.data)
+            moreinfo += ", %s=%.2e" % ("Mvir", Mvir)
 
         nodeclass = 'node-dot-standard'
         name = str(halo.halo_number)
