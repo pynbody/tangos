@@ -25,10 +25,21 @@ class MergerTree(object):
 
     This will display the tree information in matplotlib."""
 
-    def __init__(self, base_halo, with_calculations=["Mvir"]):
+    def __init__(self, base_halo, with_calculations=None):
         """Initialise the tree starting at the specified base halo.
 
-        Note that the method construct() must be called to actually build the tree"""
+        Note that the method construct() must be called to actually build the tree.
+
+        :argument base_halo - the halo to build the tree from
+        :argument with_calculations - a list of strings for property calculations to perform on each halo node;
+                                      default is ["Mvir"] if 'Mvir' is in the database; empty list otherwise.
+        """
+        if with_calculations is None:
+            if core.get_dict_id("Mvir", -1)!=-1:
+                with_calculations=["Mvir"]
+            else:
+                with_calculations=[]
+
         self.base_halo = base_halo
         self.highlight_halo = base_halo
         self.timeout = mergertree_timeout
