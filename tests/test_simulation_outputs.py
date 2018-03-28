@@ -19,6 +19,9 @@ def setup():
 def test_get_handler():
     assert db.input_handlers.get_named_handler_class('pynbody.ChangaInputHandler') == pynbody_outputs.ChangaInputHandler
 
+def test_get_deprecated_handler():
+    assert db.input_handlers.get_named_handler_class('pynbody.ChangaOutputSetHandler') == pynbody_outputs.ChangaInputHandler
+
 def test_handler_name():
     assert pynbody_outputs.ChangaInputHandler.handler_class_name()=="pynbody.ChangaInputHandler"
 
