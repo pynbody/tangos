@@ -291,6 +291,10 @@ def list_recent_runs(opts):
 
 def rem_run(id, confirm=True):
     run = core.get_default_session().query(Creator).filter_by(id=id).first()
+
+    if run is None:
+        raise ValueError(" Run %i does not exist" % id)
+
     print("You want to delete everything created by the following run:")
     run.print_info()
 
