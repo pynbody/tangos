@@ -13,6 +13,7 @@ from .. import config
 from ..log import logger
 import importlib
 import weakref
+import warnings
 
 class DummyTimeStep(object):
     def __init__(self, filename):
@@ -164,12 +165,22 @@ class HandlerBase(object):
         return str(os.path.join(config.base, self.basename, ts_extension))
 
 
+def _map_deprecated_handler_name(handler):
+    if 'OutputSetHandler' in handler:
+        new_handler = handler.replace('OutputSetHandler','InputHandler')
+        warnings.warn("The database has stored the handler name as %r; automatically translating this to the new name %r"%(handler, new_handler),
+                  DeprecationWarning)
+        return new_handler
+    else:
+        return handler
+
 def get_named_handler_class(handler):
     """Get a HandlerBase identified by the given name.
 
     The name is of the format submodule.ClassName
 
     :rtype HandlerBase"""
+    handler = _map_deprecated_handler_name(handler)
     try:
         output_module = importlib.import_module('.'+handler.split('.')[0],__name__)
     except ImportError:
