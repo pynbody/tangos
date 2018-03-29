@@ -8,8 +8,8 @@ tutorial data to your first database. To skip adding the data, you can download 
 contains the full path to this database (or just put it in your home folder as
 `tangos_data.db`). 
 
-Once that's done, enter the `tangos/web` folder and type `pserve production.ini`. You should
-see some messages finishing with:
+Once that's done, type `tangos serve`. (For experts: this is just a shortcut to launching pyramid's
+`pserve`). You should see some messages finishing with:
  
 ```
 Serving on http://localhost:6543
@@ -18,4 +18,4 @@ Serving on http://localhost:6543
 Navigate your browser to that address to start playing. Click the video below to start a
 tour of the data exploration features.
 
-[![Tangos and its web server](https://img.youtube.com/vi/SdFGTLM-q5U/maxresdefault.jpg)](https://www.youtube.com/watch?v=SdFGTLM-q5U)
+[![Tangos and its web server](images/video_play.png)](https://www.youtube.com/watch?v=xHyzJmNsVMw)

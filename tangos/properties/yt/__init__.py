@@ -1,12 +1,12 @@
-from .. import HaloProperties
+from .. import PropertyCalculation
 from ...input_handlers import yt as yt_handler_module
 import numpy as np
 
-class YtHaloProperties(HaloProperties):
-    works_with_handler = yt_handler_module.YtOutputSetHandler
+class YtPropertyCalculation(PropertyCalculation):
+    works_with_handler = yt_handler_module.YtInputHandler
     requires_particle_data = True
 
-class HaloDensityProfile(YtHaloProperties):
+class HaloDensityProfile(YtPropertyCalculation):
     """Proof of concept: get halo density profiles from yt"""
     names = "dm_density_profile", "dm_mass_profile"
 

@@ -1,16 +1,16 @@
 from __future__ import absolute_import
 
-yt = None # deferred import; occurs when a YtOutputSetHandler is constructed
+yt = None # deferred import; occurs when a YtInputHandler is constructed
 
 from . import finding
-from . import SimulationOutputSetHandler
+from . import HandlerBase
 from .. import config
 from ..log import logger
 from six.moves import range
 
-class YtOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutputSetHandler):
+class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __init__(self, *args, **kwargs):
-        super(YtOutputSetHandler, self).__init__(*args, **kwargs)
+        super(YtInputHandler, self).__init__(*args, **kwargs)
         global yt
         import yt as yt_local
         yt = yt_local
@@ -78,13 +78,13 @@ class YtOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutputSetH
             raise ValueError("Unknown halo type %r" % object_typetag)
 
     def _load_halo_cat_without_caching(self, ts_extension, snapshot_file):
-        raise NotImplementedError("You need to select a subclass of YtOutputSetHandler")
+        raise NotImplementedError("You need to select a subclass of YtInputHandler")
 
     def get_properties(self):
         return {}
 
 
-class YtChangaAHFOutputSetHandler(YtOutputSetHandler):
+class YtChangaAHFInputHandler(YtInputHandler):
     patterns = ["*.00???", "*.00????"]
 
     def _load_halo_cat_without_caching(self, ts_extension, snapshot_file):

@@ -107,7 +107,15 @@ function buildTree(containerName, treeData, customOptions)
         .attr("d", link)
         .style("stroke-width", function(d) {
                 return Math.min(d.source.size, d.target.size)*1.3;
-            });
+            })
+        .style("stroke-dasharray", function(d) {
+            console.log(d);
+            if(d.source.nodeclass.includes("phantom") ||
+               d.target.nodeclass.includes("phantom"))
+                return "5, 5";
+            else
+                return "";
+        });
 
 
     /*
@@ -219,7 +227,8 @@ function buildTree(containerName, treeData, customOptions)
         .attr("fill","#aaa")
         .text(function(d)
         {
-            return d.name;
+            if(!d.nodeclass.includes("phantom"))
+                return d.name;
         });
 
 

@@ -11,11 +11,11 @@ def setup():
     global output_manager
     testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
-    output_manager = yt_outputs.YtChangaAHFOutputSetHandler("test_tipsy_yt")
+    output_manager = yt_outputs.YtChangaAHFInputHandler("test_tipsy_yt")
     add.SimulationAdderUpdater(output_manager).scan_simulation_and_add_all_descendants()
 
 def test_handler():
-    assert isinstance(db.get_simulation("test_tipsy_yt").get_output_handler(), yt_outputs.YtChangaAHFOutputSetHandler)
+    assert isinstance(db.get_simulation("test_tipsy_yt").get_output_handler(), yt_outputs.YtChangaAHFInputHandler)
 
 def test_timestep():
     ts = db.get_timestep("test_tipsy_yt/tiny.000640")

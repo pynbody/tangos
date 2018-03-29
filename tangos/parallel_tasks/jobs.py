@@ -28,6 +28,7 @@ class MessageRequestJob(message.Message):
         if current_job is not None and num_jobs>0:
             log.logger.info("Send job %d of %d to node %d", current_job, num_jobs, source)
         else:
+            num_jobs = None
             current_job = None # in case num_jobs=0, still want to send 'end of loop' signal to client
             log.logger.info("Finished jobs; notify node %d", source)
 

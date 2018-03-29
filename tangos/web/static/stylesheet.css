@@ -260,6 +260,11 @@ circle.node-dot-selected {
     stroke-width: 3px;
 }
 
+.phantom {
+    stroke-dasharray: 2,2;
+    fill-opacity: 0.5;
+}
+
 circle.node-dot-continuation {
     fill: white;
     stroke: #bbb;

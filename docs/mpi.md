@@ -1,11 +1,11 @@
 MPI Parallelisation
 -------------------
 
-If you want to speed up time-consuming `tangos` operations from your command line, such as `tangos_timelink` and
-`tangos_writer`, you can run them in parallel if you have MPI and `mpi4py` on your machine. This is straight-forward 
+If you want to speed up time-consuming `tangos` operations from your command line, such as `tangos link` and
+`tangos write`, you can run them in parallel if you have MPI and `mpi4py` on your machine. This is straight-forward 
 with, for example, anaconda python distributions – just type `conda install mpi4py`. 
 
-Once this has successfully installed, you can run `tangos_timelink` or `tangos_writer` within MPI with 
+Once this has successfully installed, you can run `tangos link` or `tangos write` within MPI with 
 
 ```
 mpirun -np N [normal tangos command here] --backend mpi4py
@@ -17,23 +17,23 @@ Here,
     and 4 worker processes. 
     If you want to run across multiple nodes, only the first node should have one more process running than cores available. 
     Consult your system administrator to figure this out. 
- *  Then you type your normal set of commands, e.g. `tangos_timelink ...` or `tangos_writer ...`.
+ *  Then you type your normal set of commands, e.g. `tangos link ...` or `tangos write ...`.
  * `--backend mpi4py` crucially instructs tangos to parallelise using the mpi4py library. 
    Alternatively you can use the `pypar` library. 
    *If you specify no backend tangos will default to running in single-processor mode which means MPI will launch N processes 
-   that are not aware of each other's prescence. This is very much not what you want. 
+   that are not aware of each other's presence. This is very much not what you want.
    Limitations in the MPI library mean it's not possible for tangos to reliably auto-detect it has been MPI-launched.*
  
 
-Advanced options and memory implications: tangos_writer
+Advanced options and memory implications: tangos write
 -------------------------------------------------------
 
-For tangos_writer, there are multiple parallelisation modes. The default mode parallelises at the snapshot level.
+For tangos write, there are multiple parallelisation modes. The default mode parallelises at the snapshot level.
 Each worker loads an entire snapshot at once, then works through the halos within that snapshot. This is highly efficient
 in terms of limiting disk access and communication requirements. However, for large simulations it can cause memory
 usage to be overly high.
 
-To control the parallelisation, `tangos_writer` accepts a `--load-mode` argument:
+To control the parallelisation, `tangos write` accepts a `--load-mode` argument:
 
 
 * `--load-mode=partial`: This strategy is similar to the default described above. However, only the data for a single 
@@ -53,7 +53,7 @@ To control the parallelisation, `tangos_writer` accepts a `--load-mode` argument
    The data on the individual ranks is loaded via partial loading (see `--load-mode=partial` above). 
 
 
-tangos_writer example 
+tangos write example 
 ---------------------
 
 Let's consider the longest process in the tutorials which involves writing images and more to 
@@ -67,7 +67,7 @@ are parallelised whereas _tangos_ is close to [embarassingly parallel](https://e
 Once pynbody threading is disabled, the version of the above command that is most efficient is:
 
  ```bash
-mpirun -np 5 dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="contamination_fraction<0.01 & NDM()>5000" --for tutorial_changa --backend mpi4py --load-mode server
+mpirun -np 5 tangos write dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="NDM()>5000" --include-only="contamination_fraction<0.01" --for tutorial_changa --backend mpi4py --load-mode server
 ```
 
 for a machine with 4 processors. Why did we specify `--load-mode=server`? Let's consider the possibilities:
@@ -82,10 +82,10 @@ for a machine with 4 processors. Why did we specify `--load-mode=server`? Let's 
  * So we're left with `--load-mode=server`, which is extremely efficient because the SPH smoothing
    lengths and densities are calculated using small particle numbers N.
 
-Memory implications: tangos_timelink
+Memory implications: tangos link
 ------------------------------------
 
-For `tangos_timelink`, parallelisation is currently implemented only at the snapshot level. Suppose you have a simulation
+For `tangos link`, parallelisation is currently implemented only at the snapshot level. Suppose you have a simulation
 with M particles. Each worker loads needs to store at least 2M integers at any one time (possibly more depending on the 
 underlying formats) in order to work out the merger tree.
 

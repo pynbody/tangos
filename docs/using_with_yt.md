@@ -13,11 +13,11 @@ Initial set-up: tangos+yt
 Make sure you have followed the [initial set up instructions](index.md). Additionally, 
 you will need to install yt version 3.4.0 or later.
 
-Next, download the [raw simulation data](http://star.ucl.ac.uk/~app/tangos/tutorial_changa.tar.gz). Unpack the tar file either in your 
+Next, download the [raw simulation data](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_changa.tar.gz). Unpack the tar file either in your
 home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
 variable to.
 
-Finally, download the [tutorial_changa_yt](http://star.ucl.ac.uk/~app/tangos/tutorial_changa_yt.tar.gz) 
+Finally, download the [tutorial_changa_yt](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_changa_yt.tar.gz)
 tar. Unpack the tar file in the same folder as you unpacked tutorial_changa. The `tutorial_changa_yt`
 folder contains a series of symlinks that present the dataset with a slightly different files structure
 that is compatible with _yt_. (Specifically, _yt_ can't cope with the AHF
@@ -29,7 +29,7 @@ Using yt to add a simulation
 At the unix command line type:
 
 ```
-tangos_manager add tutorial_changa_yt --handler=yt.YtOutputSetHandler
+tangos add tutorial_changa_yt --handler=yt.YtInputHandler
 ```
 
 The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
@@ -37,10 +37,10 @@ scroll up the screen.
  
  Let's pick this command apart
  
-  * `tangos_manager` is the command-line tool to administrate your tangos database
+  * `tangos` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial_changa_yt` identifies the simulation we're adding
-  * `--handler=yt.YtOutputSetHandler` requests that _tangos_ uses yt as the "handler" for raw simulation and halo files.
+  * `--handler=yt.YtInputHandler` requests that _tangos_ uses yt as the "handler" for raw simulation and halo files.
   
 
 Verify the underlying data is being read by yt
@@ -65,7 +65,7 @@ Import some AHF-defined properties
 At the unix command line type:
 
 ```
-tangos_import_from_ahf Mvir Rvir --for tutorial_changa_yt
+tangos import-properties Mvir Rvir --for tutorial_changa_yt
 ```
 
 The process should take less than a minute on a standard modern computer, 
@@ -82,13 +82,13 @@ Add some more interesting properties
 Add a density profile using:
  
 ```bash
-tangos_writer dm_density_profile --for tutorial_changa  
+tangos write dm_density_profile --for tutorial_changa  
 ```
 
 Here,
- * `tangos_writer` is the same script you called above to add properties to the database
+ * `tangos write` is the same script you called above to add properties to the database
  * `dm_density_profile` is an array representing the dark matter density profile; to see all available properties
-   you can call `tangos_manager list-possible-haloproperties`.
+   you can call `tangos list-possible-haloproperties`.
 
 You might note that `dm_density_profile` is also the name of a property that can be calculated using
 `pynbody` (see the [changa+AHF tutorial](first_steps_changa+ahf.md)). _Tangos_ is able to select the correct piece of

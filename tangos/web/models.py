@@ -24,6 +24,7 @@ def get_transaction_managed_session(session_factory, transaction_manager):
               dbsession = get_tm_session(session_factory, transaction.manager)
 
     """
+
     dbsession = session_factory()
     zope.sqlalchemy.register(
         dbsession, transaction_manager=transaction_manager)
@@ -47,6 +48,8 @@ def includeme(config):
     config.include('pyramid_retry')
 
     config.registry['dbsession_factory'] = tangos.core.Session
+
+    _ = tangos.core.get_default_engine()  # ensures the db is initialised
 
     # make request.dbsession available for use in Pyramid
     config.add_request_method(

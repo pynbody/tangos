@@ -17,13 +17,9 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm.session import Session
 
 
-
-
 from . import core, log
 from .core import *
 from .query import *
 from . import properties
 
-core.init_db()
-
-__version__ = "1.0.1"
+__version__ = "1.0.2"

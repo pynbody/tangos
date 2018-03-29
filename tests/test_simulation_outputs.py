@@ -13,14 +13,17 @@ def setup():
     global output_manager
     testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
-    output_manager = pynbody_outputs.ChangaOutputSetHandler("test_tipsy")
+    output_manager = pynbody_outputs.ChangaInputHandler("test_tipsy")
 
 
 def test_get_handler():
-    assert db.input_handlers.get_named_handler_class('pynbody.ChangaOutputSetHandler') == pynbody_outputs.ChangaOutputSetHandler
+    assert db.input_handlers.get_named_handler_class('pynbody.ChangaInputHandler') == pynbody_outputs.ChangaInputHandler
+
+def test_get_deprecated_handler():
+    assert db.input_handlers.get_named_handler_class('pynbody.ChangaOutputSetHandler') == pynbody_outputs.ChangaInputHandler
 
 def test_handler_name():
-    assert pynbody_outputs.ChangaOutputSetHandler.handler_class_name()=="pynbody.ChangaOutputSetHandler"
+    assert pynbody_outputs.ChangaInputHandler.handler_class_name()=="pynbody.ChangaInputHandler"
 
 def test_enumerate():
     assert set(output_manager.enumerate_timestep_extensions())==set(["tiny.000640","tiny.000832"])

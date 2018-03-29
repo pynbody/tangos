@@ -5,6 +5,7 @@ from __future__ import print_function
 import sys
 
 import numpy as np
+import argparse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -26,7 +27,7 @@ def add_simulation_timesteps(options):
     output_class = get_named_handler_class(handler).best_matching_handler(options.sim)
     output_object = output_class(options.sim)
     output_object.quicker = options.quicker
-    adder = SimulationAdderUpdater(output_object)
+    adder = SimulationAdderUpdater(output_object,renumber=not options.no_renumber)
     adder.min_halo_particles = options.min_particles
     adder.scan_simulation_and_add_all_descendants()
 
@@ -314,8 +315,13 @@ def rem_run(id, confirm=True):
         print("aborted")
 
 def rollback(options):
-    for run_id in options.ids:
-        rem_run(run_id, not options.force)
+    if len(options.ids)>0:
+        for run_id in options.ids:
+            rem_run(run_id, not options.force)
+    else:
+        most_recent_id = core.get_default_session().query(Creator).order_by(
+          Creator.id.desc()).first().id
+        rem_run(most_recent_id, not options.force)
 
 def dump_id(options):
     import pynbody
@@ -356,75 +362,108 @@ def list_available_properties(options):
             print(" "*30+" | %.15s | %s"%(format_handler_name(additional_class),
                                           format_class_name(additional_class)))
 
+def diff(options):
+    from ..testing import db_diff
+    differ = db_diff.TangosDbDiff(options.uri1, options.uri2)
+    if options.simulation:
+        differ.compare_simulation(options.simulation)
+    elif options.timestep:
+        differ.compare_timestep(options.timestep)
+    elif options.object:
+        differ.compare_object(options.object)
+    else:
+        differ.compare()
+    return differ.failed
+
+    diff = db_diff.diff(options.uri1, options.uri2)
+    if diff:
+        sys.exit(1)
+
 def main():
+    print("""
+    The 'tangos_manager' command line is deprecated in favour of just 'tangos'.
+    'tangos_manager' may be removed in future versions.
+    """)
 
-    #db.core.get_default_session() = tangos.blocking_session.BlockingSession(bind = db.core.engine)
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    core.supplement_argparser(parser)
-    parser.add_argument("--verbose", action="store_true",
-                        help="Print extra information")
-
-
-    subparse = parser.add_subparsers()
-
-    subparse_add = subparse.add_parser("add",
-                                       help="Add new simulations to the database, or update existing simulations")
-    subparse_add.add_argument("sim",action="store",
-                              help="The path to the simulation folders relative to the database folder")
-    subparse_add.add_argument("--handler", action="store",
-                              help="The handler to use from the simulation_outputs subpackage",
-                              default=config.default_fileset_handler_class)
-    subparse_add.add_argument("--min-particles", action="store", type=int, default=config.min_halo_particles,
-                              help="The minimum number of particles a halo must have before it is imported (default %d)"%config.min_halo_particles)
-    subparse_add.add_argument("--quicker", action="store_true",
-                              help="Cut corners/make guesses to import quickly and with minimum memory usage. Only use if you understand the consequences!")
-
-    subparse_add.set_defaults(func=add_simulation_timesteps)
-
-    subparse_recentruns = subparse.add_parser("recent-runs",
-                                              help="List information about the most recent database updates")
-    subparse_recentruns.set_defaults(func=list_recent_runs)
-    subparse_recentruns.add_argument("num",type=int,
-                                     help="The number of runs to display, starting with the most recent")
-
-    subparse_remruns = subparse.add_parser("rm", help="Remove a simulation from the database")
-    subparse_remruns.add_argument("sims",help="The path to the simulation folder relative to the database folder")
-    subparse_remruns.set_defaults(func=rem_simulation_timesteps)
-
-    subparse_deprecate = subparse.add_parser("flag-duplicates",
-                                             help="Flag old copies of properties (if they are present)")
-    subparse_deprecate.set_defaults(func=flag_duplicates_deprecated)
-
-    subparse_deprecate = subparse.add_parser("remove-duplicates",
-                                             help="Remove old copies of properties (if they are present)")
-    subparse_deprecate.set_defaults(func=remove_duplicates)
-
-    subparse_import = subparse.add_parser("import",
-                                          help="Import one or more simulations from another sqlite file")
-    subparse_import.add_argument("file",type=str,help="The filename of the sqlite file from which to import")
-    subparse_import.add_argument("sims",nargs="*",type=str,help="The name of the simulations to import (or import everything if none specified)")
-    subparse_import.set_defaults(func=db_import)
-
-    subparse_rollback = subparse.add_parser("rollback", help="Remove database updates (by ID - see recent-runs)")
-    subparse_rollback.add_argument("ids",nargs="*",type=int,help="IDs of the database updates to remove")
-    subparse_rollback.add_argument("--force","-f",action="store_true",help="Do not prompt for confirmation")
-    subparse_rollback.set_defaults(func=rollback)
-
-    subparse_dump_id = subparse.add_parser("dump-iord", help="Dump the iords corresponding to a specified halo")
-    subparse_dump_id.add_argument("halo",type=str,help="The identity of the halo to dump")
-    subparse_dump_id.add_argument("filename",type=str,help="A filename for the output text file")
-    subparse_dump_id.add_argument("size",type=str,nargs="?",help="Size, in kpc, of sphere to extract (or omit to get just the halo particles)")
-    subparse_dump_id.add_argument("family",type=str,help="The family of particles to extract",default="")
-
-    subparse_dump_id.set_defaults(func=dump_id)
-
-    subparse_list_available_properties = subparse.add_parser("list-possible-properties", help = "List all the object properties that can be calculated by the currently available modules")
-    subparse_list_available_properties.set_defaults(func=list_available_properties)
-
+    parser, _ = get_argument_parser_and_subparsers()
 
     args = parser.parse_args()
     core.process_options(args)
     core.init_db()
     args.func(args)
+
+
+def get_argument_parser_and_subparsers():
+    parser = argparse.ArgumentParser()
+    core.supplement_argparser(parser)
+    subparse = parser.add_subparsers()
+
+    subparse_add = subparse.add_parser("add",
+                                       help="Add new simulations to the database, or update existing simulations")
+    subparse_add.add_argument("sim", action="store",
+                              help="The path to the simulation folders relative to the database folder")
+    subparse_add.add_argument("--handler", action="store",
+                              help="The handler to use from the simulation_outputs subpackage",
+                              default=config.default_fileset_handler_class)
+    subparse_add.add_argument("--min-particles", action="store", type=int, default=config.min_halo_particles,
+                              help="The minimum number of particles a halo must have before it is imported (default %d)" % config.min_halo_particles)
+    subparse_add.add_argument("--quicker", action="store_true",
+                              help="Cut corners/make guesses to import quickly and with minimum memory usage. Only use if you understand the consequences!")
+    subparse_add.add_argument("--no-renumber", action="store_true",
+                              help="By default tangos renumbers halos to start from 1, in decreasing order of dark matter particles. Set this flag to keep the original halo finder numbers.")
+    subparse_add.set_defaults(func=add_simulation_timesteps)
+
+    subparse_recentruns = subparse.add_parser("recent-runs",
+                                              help="List information about the most recent database updates")
+    subparse_recentruns.set_defaults(func=list_recent_runs)
+    subparse_recentruns.add_argument("num", type=int,
+                                     help="The number of runs to display, starting with the most recent")
+
+    # The following subcommands currently do not work and is disabled:
+    """
+    subparse_remruns = subparse.add_parser("rm", help="Remove a simulation from the database")
+    subparse_remruns.add_argument("sims", help="The path to the simulation folder relative to the database folder")
+    subparse_remruns.set_defaults(func=rem_simulation_timesteps)
+    
+    subparse_import = subparse.add_parser("import",
+                                          help="Import one or more simulations from another sqlite file")
+    subparse_import.add_argument("file", type=str, help="The filename of the sqlite file from which to import")
+    subparse_import.add_argument("sims", nargs="*", type=str,
+                                 help="The name of the simulations to import (or import everything if none specified)")
+    subparse_import.set_defaults(func=db_import)
+    """
+
+
+    subparse_deprecate = subparse.add_parser("flag-duplicates",
+                                             help="Flag old copies of properties (if they are present)")
+    subparse_deprecate.set_defaults(func=flag_duplicates_deprecated)
+    subparse_deprecate = subparse.add_parser("remove-duplicates",
+                                             help="Remove old copies of properties (if they are present)")
+    subparse_deprecate.set_defaults(func=remove_duplicates)
+
+    subparse_rollback = subparse.add_parser("rollback", help="Remove database updates")
+    subparse_rollback.add_argument("ids", nargs="*", type=int, help="IDs of the database updates to remove. If none specified, removes the most recent run.")
+    subparse_rollback.add_argument("--force", "-f", action="store_true", help="If this flag is present, no confirmation prompts will be issued")
+    subparse_rollback.set_defaults(func=rollback)
+
+    subparse_dump_id = subparse.add_parser("dump-iord", help="Dump the iords corresponding to a specified halo")
+    subparse_dump_id.add_argument("halo", type=str, help="The identity of the halo to dump")
+    subparse_dump_id.add_argument("filename", type=str, help="A filename for the output text file")
+    subparse_dump_id.add_argument("size", type=str, nargs="?",
+                                  help="Size, in kpc, of sphere to extract (or omit to get just the halo particles)")
+    subparse_dump_id.add_argument("family", type=str, help="The family of particles to extract", default="")
+    subparse_dump_id.set_defaults(func=dump_id)
+
+
+    subparse_diff = subparse.add_parser("diff", help="Analyse the difference between two databases")
+    subparse_diff.add_argument("uri1", type=str, help="The first database URI or filename")
+    subparse_diff.add_argument("uri2", type=str, help="The second database URI or filename")
+    subparse_diff.add_argument("--simulation", type=str, help="Only compare the specified simulation", default=None)
+    subparse_diff.add_argument("--timestep", type=str, help="Only compare the specified timestep", default=None)
+    subparse_diff.add_argument("--object", type=str, help="Only compare the specified object", default=None)
+    subparse_diff.set_defaults(func=diff)
+
+    subparse_list_available_properties = subparse.add_parser("list-possible-properties",
+                                                             help="List all the object properties that can be calculated by the currently available modules")
+    subparse_list_available_properties.set_defaults(func=list_available_properties)
+    return parser, subparse

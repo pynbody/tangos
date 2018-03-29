@@ -1,6 +1,6 @@
-from . import PynbodyHaloProperties
+from . import PynbodyPropertyCalculation
 
-class Contamination(PynbodyHaloProperties):
+class Contamination(PynbodyPropertyCalculation):
 
     def calculate(self, halo, exist):
         n_heavy = (halo.dm['mass'] > self.min_dm_mass).sum()

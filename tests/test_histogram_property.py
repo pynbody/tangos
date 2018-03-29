@@ -3,6 +3,7 @@ import tangos as db
 import tangos.core.simulation
 import tangos
 import tangos.testing as testing
+import tangos.testing.simulation_generator
 from tangos import properties
 import numpy as np
 
@@ -12,7 +13,7 @@ import numpy.testing as npt
 def setup():
     testing.init_blank_db_for_testing()
 
-    generator = testing.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
 
     ts1 = generator.add_timestep()
     generator.add_objects_to_timestep(2)
@@ -55,6 +56,26 @@ def test_summed_reconstruction():
     manual_reconstruction[:len(added_bit)]+=added_bit
 
     npt.assert_almost_equal(reconstructed, manual_reconstruction)
+
+def test_reconstruction_optimized():
+    # check that no temporary tables are created during reassembly of a histogram property
+    ts2_h1 = db.get_halo("sim/ts2/1")
+    hist_obj = ts2_h1.get_objects("dummy_histogram")[0]
+
+    with testing.SqlExecutionTracker(db.core.get_default_engine()) as track:
+        hist_obj.get_data_with_reassembly_options('sum')
+
+    # print out any tracebacks for select haloproperties, for debug help
+    for s in track.traceback_statements_containing("select haloproperties"):
+        print ("traceback for select haloproperties:")
+        print(s)
+
+    # current algorithm constructs 2 temp tables for merger tree probe, plus one for final gathering of properties
+    assert track.count_statements_containing("create temporary table") <= 3
+
+    # joined load should prevent separate selects being emitted
+    assert "select haloproperties" not in track
+
 
 def test_live_calculation_summed_reconstruction():
     ts2_h1 = db.get_halo("sim/ts2/1")

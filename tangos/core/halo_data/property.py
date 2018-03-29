@@ -18,7 +18,7 @@ class HaloProperty(Base):
     halo = relationship(Halo, cascade='none', backref=backref('all_properties'))
 
     data_float = Column(Float)
-    data_array = deferred(Column(LargeBinary))
+    data_array = deferred(Column(LargeBinary), group='data')
     data_int = Column(Integer)
 
     name_id = Column(Integer, ForeignKey('dictionary.id'))

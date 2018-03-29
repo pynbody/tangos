@@ -1,7 +1,7 @@
 from __future__ import absolute_import
-from . import PynbodyHaloProperties
+from . import PynbodyPropertyCalculation
 
-class SphericalRegionHaloProperties(PynbodyHaloProperties):
+class SphericalRegionPropertyCalculation(PynbodyPropertyCalculation):
     """A base class for calculations which require all data within a sphere (rather than just the literal
     halo finder output)"""
 
@@ -10,5 +10,6 @@ class SphericalRegionHaloProperties(PynbodyHaloProperties):
         return pynbody.filt.Sphere(db_data['max_radius'], db_data['shrink_center'])
 
     def requires_property(self):
-        return ["shrink_center", "max_radius"]+super(SphericalRegionHaloProperties, self).requires_property()
+        return ["shrink_center", "max_radius"]+super(SphericalRegionPropertyCalculation, self).requires_property()
 
+SphericalRegionHaloProperties = SphericalRegionPropertyCalculation # old name, to be deprecated

@@ -37,9 +37,9 @@ class Simulation(Base):
             return default
 
     def get_output_handler(self):
-        """Get a SimulationOutputSetHandler object, pre-configured suitably for this simulation
+        """Get a HandlerBase object, pre-configured suitably for this simulation
 
-        :rtype simulation_outputs.SimulationOutputSetHandler"""
+        :rtype simulation_outputs.HandlerBase"""
         if not hasattr(self, "_handler"):
             handler_class = self.output_handler_class
             self._handler = handler_class(self.basename)

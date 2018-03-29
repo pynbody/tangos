@@ -11,7 +11,7 @@ from tangos import properties
 def setup():
     parallel_tasks.use('null')
 
-class DummyProperty(properties.HaloProperties):
+class DummyProperty(properties.PropertyCalculation):
     names = "dummy_property",
     requires_particle_data = True
 
@@ -22,7 +22,7 @@ class DummyProperty(properties.HaloProperties):
         return data.time*data.halo,
 
 
-class DummyPropertyCausingException(properties.HaloProperties):
+class DummyPropertyCausingException(properties.PropertyCalculation):
     names = "dummy_property_with_exception",
     requires_particle_data = True
 
@@ -32,7 +32,7 @@ class DummyPropertyCausingException(properties.HaloProperties):
 def init_blank_simulation():
     testing.init_blank_db_for_testing(timeout=0.0)
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
-    manager = add_simulation.SimulationAdderUpdater(output_testing.TestOutputSetHandler("dummy_sim_1"))
+    manager = add_simulation.SimulationAdderUpdater(output_testing.TestInputHandler("dummy_sim_1"))
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()
 
@@ -78,7 +78,7 @@ def test_error_ignoring():
     assert 'dummy_property_with_exception' not in list(db.get_halo("dummy_sim_1/step.1/1").keys())
 
 
-class DummyRegionProperty(properties.HaloProperties):
+class DummyRegionProperty(properties.PropertyCalculation):
     names = "dummy_region_property",
 
     def requires_property(self):

@@ -2,39 +2,50 @@ _Tangos_ lets you build a database (along the lines of [Eagle](http://icc.dur.ac
 or [MultiDark](https://www.cosmosim.org/cms/documentation/projects/multidark-bolshoi-project/))
  for your own cosmological and zoom simulations. 
  
-Getting started with tangos
----------------------------
-**This is a beta version of tangos**. When _tangos_ is released there will be an accompanying paper.
-_Tangos_ is GPL-licenced but good scientific practice requires you to acknowledge its use. Until the paper is
-available please use the following acknowledgement or equivalent:
+Once tangos is set up, you'll be able to access your simulations from a web browser:
 
-> This work made use of the _tangos_ analysis stack (Pontzen et al in prep); see www.github.com/pynbody/tangos.
+[![Tangos and its web server](images/video_play.png)](https://www.youtube.com/watch?v=xHyzJmNsVMw)
+
+ 
+Acknowledging the code
+----------------------
+When using _tangos_, please acknowledge it by citing the release paper:
+Pontzen & Tremmel, 2018, ApJ Submitted, [arXiv:1803.00010](https://arxiv.org/pdf/1803.00010.pdf)
 
 
-Installation
+Installation: the very quick version
 ------------
 
-To install _tangos_ first clone the repository, then use the standard setuptools `install` command:
+To install _tangos_ first clone the repository, then use the standard setuptools `install` command;
+for the most recent published version use:
 
 ```
-git clone https://github.com/pynbody/tangos.git
-cd tangos
-python setup.py install
+pip install tangos
 ```
 
-Note that this is preferable to installing using `pip install git+https://github.com/pynbody/tangos.git`;
-although using pip in this way will work, you will be missing ancillary files (like the tests and the
-`.ini` files for launching the web server).
+or, for the latest version from the repository use `pip install git+https://github.com/pynbody/tangos.git`.
+
 
 This should check for and install the _minimum_ prerequisites, but doesn't install _pynbody_. That's because _tangos_ is
 written to be agnostic about how the underlying simulation snapshots are read so in principle you could use e.g. _yt_.
 For all current tutorials, _pynbody_ is the preferred reading system and so for an easy life you should install it:
+`pip install pynbody`, or again for the latest version you can use `pip install git+https://github.com/pynbody/pynbody.git`.
 
+
+Installation with tests and ancillary dependencies
+--------------------------------------------------
+
+If you wish to run the test suite (which is advised) or are planning to develop using tangos, 
+it is preferable to keep the source repository handy, in which case instead of the instructions
+above use:
 ```
-pip install git+https://github.com/pynbody/pynbody.git
+git clone https://github.com/pynbody/tangos.git
+cd tangos
+python setup.py develop
 ```
 
-To run the tests, you will also need to install _yt_ e.g. using `pip install yt`. 
+To run the tests, you will also need to install _yt_, _nose_, _webtest_ and _pynbody_ e.g. using `pip install yt nose webtest pynbody`. 
+
 Once installed, you should check that _tangos_ is functioning correctly by entering the `tests` folder and
 typing `nosetests`. You should see a bunch of text scrolling by, ultimately finishing with the simple message `OK`.
 If you get a failure message instead of `OK`, report it (with as much detail of your setup as possible) in the

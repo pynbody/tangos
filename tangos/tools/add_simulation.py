@@ -8,13 +8,14 @@ import numpy as np
 class SimulationAdderUpdater(object):
     """This class contains the necessary tools to add a new simulation to the database"""
 
-    def __init__(self, simulation_output, session=None):
-        """:type simulation_output tangos.simulation_outputs.SimulationOutputSetHandler"""
+    def __init__(self, simulation_output, session=None, renumber=True):
+        """:type simulation_output tangos.simulation_outputs.HandlerBase"""
         self.simulation_output = simulation_output
         if session is None:
             session = core.get_default_session()
         self.session = session
         self.min_halo_particles = config.min_halo_particles
+        self.renumber = renumber
 
     @property
     def basename(self):
@@ -97,15 +98,21 @@ class SimulationAdderUpdater(object):
                                                       min_halo_particles=self.min_halo_particles):
             n_tot.append(NDM+Nstar+Ngas)
 
-        database_id = np.zeros(len(n_tot), dtype=int)
+        if self.renumber:
+            database_id = np.zeros(len(n_tot), dtype=int)
 
-        # Sort by total particle number, largest objects first. Use mergesort for sort stability.
-        database_id[np.argsort(-np.array(n_tot),kind='mergesort')] = np.arange(len(n_tot)) + 1
+            # Sort by total particle number, largest objects first. Use mergesort for sort stability.
+            database_id[np.argsort(-np.array(n_tot),kind='mergesort')] = np.arange(len(n_tot)) + 1
+        else:
+            database_id = [None]*len(n_tot)
 
 
         for database_number,(finder_id, NDM, Nstar, Ngas) in zip(database_id,
                                                                  enumerator(ts.extension, object_typetag=create_class.tag,
                                                                             min_halo_particles=self.min_halo_particles)):
+            if database_number is None:
+                database_number = finder_id
+
             if NDM > self.min_halo_particles or NDM==0:
                 h = create_class(ts, database_number, finder_id, NDM, Nstar, Ngas)
                 halos.append(h)

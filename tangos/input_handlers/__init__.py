@@ -13,6 +13,7 @@ from .. import config
 from ..log import logger
 import importlib
 import weakref
+import warnings
 
 class DummyTimeStep(object):
     def __init__(self, filename):
@@ -28,7 +29,7 @@ class DummyTimeStep(object):
 _loaded_timesteps = {}
 
 
-class SimulationOutputSetHandler(object):
+class HandlerBase(object):
     """This class handles the output from a simulation as it resides on disk.
 
     Subclasses provide implementations for different formats and situations.
@@ -64,29 +65,29 @@ class SimulationOutputSetHandler(object):
         by the halo_stat_files module.
 
         Call from subclasses when this behaviour is desired"""
-        from . import halo_stat_files
-        assert object_typetag=='halo'
-        ts = DummyTimeStep(self._extension_to_filename(ts_extension))
-        ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
-
-        statfile = halo_stat_files.HaloStatFile(ts)
-        logger.info("Reading halos for timestep %r using a stat file", ts)
+        statfile = self.get_stat_file(ts_extension, object_typetag)
+        logger.info("Reading halos for timestep %r using a stat file", ts_extension)
         for X in statfile.iter_rows("n_dm", "n_star", "n_gas"):
             yield X
 
     def _can_enumerate_objects_from_statfile(self, ts_extension, object_typetag):
         """Returns True if the objects can be enumerated from a stat file"""
-        from . import halo_stat_files
-        ts = DummyTimeStep(self._extension_to_filename(ts_extension))
-        ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
-        if object_typetag!='halo':
-            return False
-
         try:
-            halo_stat_files.HaloStatFile(ts)
+            self.get_stat_file(ts_extension, object_typetag)
             return True
         except IOError:
             return False
+
+    def get_stat_file(self, ts_extension, object_typetag):
+        from . import halo_stat_files
+        if object_typetag != 'halo':
+            raise IOError("No stat file known for object type %s"%object_typetag)
+        ts = DummyTimeStep(self._extension_to_filename(ts_extension))
+        ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
+        from . import caterpillar
+        statfile = halo_stat_files.HaloStatFile(ts)
+        return statfile
+
 
     def load_timestep(self, ts_extension, mode=None):
         """Returns an object that connects to the data for a timestep on disk -- possibly a version cached in
@@ -140,8 +141,8 @@ class SimulationOutputSetHandler(object):
     @classmethod
     def handler_class_name(cls):
         module = cls.__module__
-        if module.startswith(SimulationOutputSetHandler.__module__):
-            submodule = module[len(SimulationOutputSetHandler.__module__)+1:]
+        if module.startswith(HandlerBase.__module__):
+            submodule = module[len(HandlerBase.__module__)+1:]
             return submodule+"."+cls.__name__
         else:
             return module+"."+cls.__name__
@@ -164,12 +165,22 @@ class SimulationOutputSetHandler(object):
         return str(os.path.join(config.base, self.basename, ts_extension))
 
 
+def _map_deprecated_handler_name(handler):
+    if 'OutputSetHandler' in handler:
+        new_handler = handler.replace('OutputSetHandler','InputHandler')
+        warnings.warn("The database has stored the handler name as %r; automatically translating this to the new name %r"%(handler, new_handler),
+                  DeprecationWarning)
+        return new_handler
+    else:
+        return handler
+
 def get_named_handler_class(handler):
-    """Get a SimulationOutputSetHandler identified by the given name.
+    """Get a HandlerBase identified by the given name.
 
     The name is of the format submodule.ClassName
 
-    :rtype SimulationOutputSetHandler"""
+    :rtype HandlerBase"""
+    handler = _map_deprecated_handler_name(handler)
     try:
         output_module = importlib.import_module('.'+handler.split('.')[0],__name__)
     except ImportError:

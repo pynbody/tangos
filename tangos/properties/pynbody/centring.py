@@ -1,10 +1,10 @@
-from . import PynbodyHaloProperties
-from .. import LiveHaloProperties
+from . import PynbodyPropertyCalculation
+from .. import LivePropertyCalculation
 import numpy as np
 import functools
 import contextlib
 
-class CentreAndRadius(PynbodyHaloProperties):
+class CentreAndRadius(PynbodyPropertyCalculation):
     names = "shrink_center", "max_radius"
 
     def calculate(self, halo, existing_properties):
@@ -35,7 +35,7 @@ class CentreAndRadius(PynbodyHaloProperties):
         return center.view(np.ndarray), rmax
 
 
-class CentreAndRadiusComoving(LiveHaloProperties):
+class CentreAndRadiusComoving(LivePropertyCalculation):
     names = "shrink_center_comoving", "max_radius_comoving"
 
     def calculate(self, _, existing_properties):

@@ -295,7 +295,7 @@ def generate_halolinks(session, fname, pairs):
 def timelink_bh(sims, session):
     query = db.sim_query_from_name_list(sims, session)
     for sim in query.all():
-        pairs = parallel_tasks.distributed(list(zip(sim.timesteps[:-1],sim.timesteps[1:])))
+        pairs = list(zip(sim.timesteps[:-1],sim.timesteps[1:]))
         fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
         if len(fname)==0:
             logger.error("No merger file for "+sim.basename)
