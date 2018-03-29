@@ -14,11 +14,11 @@ ts = tangos.get_timestep(...)
 h  = tangos.get_halo(...)
 ```
 
-One can gather properties that do not explicitly exist as properties within the database, but do not require a new calculation using simulation data. For example, the virial radius, "Vvir" is calculated using only the virial mass and virial radius already calculated. However, because it doesn't exist yet as a halo property, `h['Vvir']` will return an error. Instead, you must performa a "live-calculation" of "Vvir". `h.calculate('Vvir()')` will return the virial velocity of the halo. Since this is similar to calling a function, there are parenthesis associated with live calculated values.
+One can gather properties that do not explicitly exist as properties within the database, but do not require a new calculation using simulation data. For example, the virial velocity, "Vvir" is calculated using only the virial mass and virial radius already calculated. However, because it doesn't exist yet as a halo property, `h['Vvir']` will return an error. Instead, you must perform a a "live-calculation" of "Vvir". `h.calculate('Vvir()')` will return the virial velocity of the halo. Since this is similar to calling a function, there are parenthesis associated with live calculated values.
 
 Similarly, this method can be used within the `calculate_all` and `calculate_for_descendants` functions, e.g. `ts.calculate_all("Vvir()")` will reaturn the newly calculated virial velocity for all halos in the step. The same syntax would apply to `calculate_for_descendants`
 
-There are some live calcuations that exist which take arguments. For example, `at(r,property)` returns the value of the profile property `"property"` at radius `r`. While the second argument taken by the function *must* be an already existing halo profile property, the first argument could be either a number or even a halo property itself. Here are some examples of how one might use this function with the example profile property `"dm_density_profile"`. The values for `r` are in units of kpc.
+There are some live calculations that exist which take arguments. For example, `at(r,property)` returns the value of the profile property `"property"` at radius `r`. While the second argument taken by the function *must* be an already existing halo profile property, the first argument could be either a number or even a halo property itself. Here are some examples of how one might use this function with the example profile property `"dm_density_profile"`. The values for `r` are in units of kpc.
 
 `at(5.0,dm_density_profile)` returns the dm density at 5.0 kpc
 
@@ -31,13 +31,13 @@ This syntax works the same in `h.calculate` or `ts.calculate_all` or `h.calculat
 
 `at(5.0,ColdGasMass_encl/GasMass_encl)` returns the fraction of cold/total gas within the inner 5 kpc of a given halo.
 
-Some functions, rather than return a property, return a linked object. For example, the function `later(N)` returns a given halo's descendent halo N snapshots forward in time. The purpose of this is to connect a halo's properties at a given step to those of that halo N steps in the future (or past if you use the `earlier` function). To get properties from these links, add your target property after the function following a period. All of the above live calculation syntax also applies. For example:
+Some functions, rather than return a property, return a linked object. For example, the function `later(N)` returns a given halo's descendant halo N snapshots forward in time. The purpose of this is to connect a halo's properties at a given step to those of that halo N steps in the future (or past if you use the `earlier` function). To get properties from these links, add your target property after the function following a period. All of the above live calculation syntax also applies. For example:
 
 `ts.calculate_all('later(5).Mvir', 'Mvir')` returns the the virial mass of each halo 5 snapshots later and the current virial mass of each halo in the current step
 
 `ts.calculate_all('earlier(10).Vvir()')` returns the virial mass of each halo 10 snapshots earlier than the current step.
 
-`ts.calculate_all('earlier(2).at(Rvir/2,GasMass_encl')` returns the gas mass within half of the virial radius of each halo's main progenitor 2 snapshots previoius.
+`ts.calculate_all('earlier(2).at(Rvir/2,GasMass_encl')` returns the gas mass within half of the virial radius of each halo's main progenitor 2 snapshots previous.
 
 
 Special case use for histogram properties
@@ -47,7 +47,7 @@ For *histogram* properties (currently these are just `SFR_histogram` and `BH_mdo
 
 Let's take the SFR as an example. If you have a halo `h`, and ask for `h['SFR_histogram']`, you just get a SFR histogram back as you'd expect, one bin per 20 Myr by default. However, the database is actually storing *chunks* of the star formation history and automatically recreating it for you on the *major progenitor* branch.
  
-You can instead request the SFR summed over *all* branches by typing `h.calculate("reassemble(SFR_histogram, 'sum')")`. Simiarly, for a BH accretion history you could do `h.calculate("BH.reassemble(BH_mdot_histogram, 'sum')")`._
+You can instead request the SFR summed over *all* branches by typing `h.calculate("reassemble(SFR_histogram, 'sum')")`. Similarly, for a BH accretion history you could do `h.calculate("BH.reassemble(BH_mdot_histogram, 'sum')")`._
 
 If you want to manually handle the reassembly, one useful option is `h.calculate("reassemble(SFR_histogram, 'place')")`. This correctly zero-pads the histogram, but does not fill in any of the data from preceding steps, so you are free to do that yourself.
 
@@ -66,7 +66,7 @@ General Syntax Notes
 - All functions can implicitly access halo properties, so that (for example) `Vvir()` returns the virtual velocity without having to specify manually that it should calculate this from `Rvir` and `Vvir`
 - If a function returns a halo link (i.e. a link to another object with its own properties) `f().value` will return the `value` stored or calculated from the linked object returned by `f()`
 - Basic arithmetic works as you'd expect, so you can use `+`, `-`, `*` and `/`, as well as brackets to control precedence, e.g. `f(Mgas+Mstar)` returns the value of `f` taking the sum of the properties `Mgas` and `Mstar` for each target halo as input.
-- live calculation functions and link functions can be combined. For example, given a property function `F` and link function `L`, one can do L(...).F(...) where F will calcualte a property given the properties from the link function results and its own inputs.
+- live calculation functions and link functions can be combined. For example, given a property function `F` and link function `L`, one can do L(...).F(...) where F will calculate a property given the properties from the link function results and its own inputs.
 - live calculation functions can be nested, e.g. given `f1` and `f2`, `f1(5,f2(Mvir))` will return the value of `f1` given, as its second argument, the value of `f2` with the halo property `Mvir` as input.
 
 List of Useful mini-language functions

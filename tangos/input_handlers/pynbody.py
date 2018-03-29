@@ -8,10 +8,10 @@ import weakref
 import re
 import numpy as np
 
-pynbody = None # deferred import; occurs when a PynbodyOutputSetHandler is constructed
+pynbody = None # deferred import; occurs when a PynbodyInputHandler is constructed
 
 from . import halo_stat_files, finding
-from . import SimulationOutputSetHandler
+from . import HandlerBase
 from .. import config
 from ..log import logger
 from six.moves import range
@@ -30,9 +30,9 @@ class DummyTimeStep(object):
     pass
 
 
-class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutputSetHandler):
+class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __init__(self, *args, **kwargs):
-        super(PynbodyOutputSetHandler, self).__init__(*args, **kwargs)
+        super(PynbodyInputHandler, self).__init__(*args, **kwargs)
 
         import pynbody as pynbody_local
 
@@ -189,12 +189,15 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
         h1 = self._construct_halo_cat(ts1, object_typetag)
 
         if output_handler_for_ts2:
-            assert isinstance(output_handler_for_ts2, PynbodyOutputSetHandler)
+            assert isinstance(output_handler_for_ts2, PynbodyInputHandler)
             f2 = output_handler_for_ts2.load_timestep(ts2)
             h2 = output_handler_for_ts2._construct_halo_cat(ts2, object_typetag)
         else:
             f2 = self.load_timestep(ts2)
             h2 = self._construct_halo_cat(ts2, object_typetag)
+
+        if halo_max is None:
+            halo_max = max(len(h2), len(h1))
 
         return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold,
                                                  only_family=only_family, groups_1=h1, groups_2=h2)
@@ -216,8 +219,8 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
 
             istart = 1
 
-            if isinstance(h, pynbody.halo.SubfindCatalogue):
-                istart = 0 # subfind indexes from zero
+            if isinstance(h, pynbody.halo.SubfindCatalogue) or isinstance(h, pynbody.halo.HOPCatalogue):
+                istart = 0 # indexes from zero
 
             if hasattr(h, 'precalculate'):
                 h.precalculate()
@@ -234,7 +237,7 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
     def get_properties(self):
         timesteps = list(self.enumerate_timestep_extensions())
         if len(timesteps)>0:
-            f = self.load_timestep_without_caching(timesteps[0])
+            f = self.load_timestep_without_caching(sorted(timesteps)[-1])
             if self.quicker:
                 res = self._estimate_resolution_quicker(f)
             else:
@@ -272,30 +275,49 @@ class PynbodyOutputSetHandler(finding.PatternBasedFileDiscovery, SimulationOutpu
         return res
 
 
-class RamsesHOPOutputSetHandler(PynbodyOutputSetHandler):
+class RamsesHOPInputHandler(PynbodyInputHandler):
     patterns = ["output_0????"]
 
+    def match_objects(self, ts1, ts2, halo_min, halo_max,
+                      dm_only=False, threshold=0.005, object_typetag='halo',
+                      output_handler_for_ts2=None):
+
+        f1 = self.load_timestep(ts1).dm
+        h1 = self._construct_halo_cat(ts1, object_typetag)
+
+        if output_handler_for_ts2 is None:
+            f2 = self.load_timestep(ts2).dm
+            h2 = self._construct_halo_cat(ts2, object_typetag)
+        else:
+            f2 = output_handler_for_ts2.load_timestep(ts2).dm
+            h2 = output_handler_for_ts2._construct_halo_cat(ts2, object_typetag)
+
+        bridge = pynbody.bridge.OrderBridge(f1,f2, monotonic=False)
+
+        return bridge.fuzzy_match_catalog(halo_min, halo_max, threshold=threshold,
+                                          only_family=pynbody.family.dm, groups_1=h1, groups_2=h2)
 
 
-class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
+
+
+class GadgetSubfindInputHandler(PynbodyInputHandler):
     patterns = ["snapshot_???"]
+    auxiliary_file_patterns =["groups_???"]
+
+    def _is_able_to_load(self, filepath):
+        try:
+            f = pynbody.load(filepath)
+            h = pynbody.halo.SubfindCatalogue(f)
+            return True
+        except (IOError, RuntimeError):
+            return False
 
     def load_object(self, ts_extension, halo_number, object_typetag='halo', mode=None):
         if mode=='subfind_properties':
             h = self._construct_halo_cat(ts_extension, object_typetag)
             return h.get_halo_properties(halo_number,with_unit=False)
         else:
-            return super(GadgetSubfindOutputSetHandler, self).load_object(ts_extension, halo_number, object_typetag, mode)
-
-
-
-    def enumerate_timestep_extensions(self):
-        base = os.path.join(config.base, self.basename)
-        extensions = finding.find(basename=base + "/", patterns=["snapshot_???"])
-        for e in extensions:
-            if self._is_able_to_load(e):
-                yield e[len(base)+1:]
-
+            return super(GadgetSubfindInputHandler, self).load_object(ts_extension, halo_number, object_typetag, mode)
 
     def _construct_group_cat(self, ts_extension):
         f = self.load_timestep(ts_extension)
@@ -309,16 +331,28 @@ class GadgetSubfindOutputSetHandler(PynbodyOutputSetHandler):
 
     def _construct_halo_cat(self, ts_extension, object_typetag):
         if object_typetag== 'halo':
-            return super(GadgetSubfindOutputSetHandler, self)._construct_halo_cat(ts_extension, object_typetag)
+            return super(GadgetSubfindInputHandler, self)._construct_halo_cat(ts_extension, object_typetag)
         elif object_typetag== 'group':
             return self._construct_group_cat(ts_extension)
         else:
             raise ValueError("Unknown halo type %r" % object_typetag)
 
+class GadgetRockstarInputHandler(PynbodyInputHandler):
+    patterns = ["snapshot_???"]
+    auxiliary_file_patterns = ["halos_*.bin"]
+
+    def _is_able_to_load(self, filepath):
+        try:
+            f = pynbody.load(filepath)
+            h = pynbody.halo.RockstarCatalogue(f)
+            return True
+        except (IOError, RuntimeError):
+            return False
 
 
 
-class ChangaOutputSetHandler(PynbodyOutputSetHandler):
+
+class ChangaInputHandler(PynbodyInputHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",
                      "dESN", "bLowTCool", "bSelfShield", "dExtraCoolShutoff"]
 
@@ -326,7 +360,7 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
 
 
     def get_properties(self):
-        parent_prop_dict = super(ChangaOutputSetHandler, self).get_properties()
+        parent_prop_dict = super(ChangaInputHandler, self).get_properties()
 
         pfile = self._get_paramfile_path()
 
@@ -435,3 +469,5 @@ class ChangaOutputSetHandler(PynbodyOutputSetHandler):
             except (IndexError, ValueError):
                 pass
         return out
+
+from . import caterpillar

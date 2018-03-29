@@ -1,4 +1,4 @@
-"""tangos - the amazing numerical galaxy organization system
+"""Tangos - the agile numerical galaxy organization system
 
 This package provides ways to create and interpret databases of numerical galaxy formation simulations for scientific
 analysis.
@@ -17,13 +17,9 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm.session import Session
 
 
-
-
 from . import core, log
 from .core import *
 from .query import *
 from . import properties
 
-core.init_db()
-
-__version__ = "1.0.0"
+__version__ = "1.0.2"

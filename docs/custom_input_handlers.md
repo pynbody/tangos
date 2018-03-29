@@ -15,7 +15,7 @@ for use.
 Handler classes
 ---------------
 
-Handlers are implemented by subclasses of `tangos.input_handlers.SimulationOutputSetHandler`.
+Handlers are implemented by subclasses of `tangos.input_handlers.HandlerBase`.
 To write your own, start by creating such a subclass. At a minimum will need to provide a way for _tangos_:
 
  - to enumerate the available simulation timesteps. This is the method 
@@ -51,7 +51,7 @@ class MyDataObject(object):
     def __repr__(self):
         return str(self.internal_data)
 
-class MyHandler(tangos.input_handlers.SimulationOutputSetHandler):
+class MyHandler(tangos.input_handlers.HandlerBase):
     def enumerate_timestep_extensions(self):
         return ["my_timestep_1", "my_timestep_2"]
 
@@ -123,14 +123,14 @@ Your handler class in action
 Let's see your handler class in action. First, create a new simulation. From the UNIX shell type:
 
 ```
-tangos_manager add test_my_handler --handler=myhandler.MyHandler
+tangos add test_my_handler --handler=myhandler.MyHandler
 ```
 
 Ensure that `myhandler.py` is in your python search path. You should see that the two timesteps are created,
 with 100 and 150 halos respectively. Also from the shell, run:
 
 ```
-tangos_timelink --for test_my_handler  
+tangos link --for test_my_handler  
 ```
 
 Note that once the simulation has been created you don't need to remind _tangos_ of the handler. It stores
@@ -146,13 +146,13 @@ print(tangos.get_halo("test_my_handler/my_timestep_2/halo_10").earlier.load())
 You should see the following string: `Data for $TANGOS_SIMULATION_FOLDER/test_my_handler/my_timestep_1 halo 10` (with
 `$TANGOS_SIMULATION_FOLDER` appropriately expanded). Let's see what's happened here:
 
- - The `tangos_manager add` command created a record of the `test_my_handler` simulation. It called your
+ - The `tangos add` command created a record of the `test_my_handler` simulation. It called your
    `enumerate_timestep_extensions` implementation which revealed the existence of two timesteps. It then called
    the `enumerate_objects` implementation which revealed the existence of halos in these timesteps. The 
    relevant database objects were created.
    
  - From within python, you fetched the simulation `test_my_handler`, the timestep `my_timestep_2`, and finally
-   the halo 10 within that timestep. You asked for the `earlier` halo, which used the links `tangos_timelink` set up
+   the halo 10 within that timestep. You asked for the `earlier` halo, which used the links `tangos link` set up
    based on the information returned from your `match_objects` routine.
    
  - Then you asked to `load()` the underlying data. _Tangos_ redirected this
@@ -174,7 +174,7 @@ be in the same file, of course) as follows:
 ```python
 from tangos import properties
 
-class MyProperty(properties.HaloProperties):
+class MyProperty(properties.PropertyCalculation):
     works_with_handler = MyHandler
 
     names = "my_fantastic_property"
@@ -195,10 +195,10 @@ the declaration that this property `works_with_handler`, associating it specific
 data handler. You can therefore be assured that `calculate` will be passed a `MyDataObject` to work
 with (and the `assert` is just there to demonstrate that fact).
  
-This new property should be available to the `tangos_writer`, so from your UNIX shell type:
+This new property should be available to the `tangos write`, so from your UNIX shell type:
 
 ```
-tangos_writer my_fantastic_property --for test_my_handler
+tangos write my_fantastic_property --for test_my_handler
 ```
 
 and finally, go back to python and verify everything worked:

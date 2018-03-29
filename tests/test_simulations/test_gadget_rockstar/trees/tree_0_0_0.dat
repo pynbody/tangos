@@ -1,0 +1,63 @@
+#scale(0) id(1) desc_scale(2) desc_id(3) num_prog(4) pid(5) upid(6) desc_pid(7) phantom(8) sam_Mvir(9) Mvir(10) Rvir(11) rs(12) vrms(13) mmp?(14) scale_of_last_MM(15) vmax(16) x(17) y(18) z(19) vx(20) vy(21) vz(22) Jx(23) Jy(24) Jz(25) Spin(26) Breadth_first_ID(27) Depth_first_ID(28) Tree_root_ID(29) Orig_halo_ID(30) Snap_idx(31) Next_coprogenitor_depthfirst_ID(32) Last_progenitor_depthfirst_ID(33) Last_mainleaf_depthfirst_ID(34) Tidal_Force(35) Tidal_ID(36) Rs_Klypin Mvir_all M200b M200c M500c M2500c Xoff Voff Spin_Bullock b_to_a c_to_a A[x] A[y] A[z] b_to_a(500c) c_to_a(500c) A[x](500c) A[y](500c) A[z](500c) T/|U| M_pe_Behroozi M_pe_Diemer Halfmass_Radius
+#Omega_M = 0.279000; Omega_L = 0.721000; h0 = 0.701000
+#Full box size = 50.000000 Mpc/h
+#Scale: Scale factor of halo.
+#ID: ID of halo (unique across entire simulation).
+#Desc_Scale: Scale of descendant halo, if applicable.
+#Descid: ID of descendant halo, if applicable.
+#Num_prog: Number of progenitors.
+#Pid: ID of least massive host halo (-1 if distinct halo).
+#Upid: ID of most massive host halo (different from Pid when the halo is within two or more larger halos).
+#Desc_pid: Pid of descendant halo (if applicable).
+#Phantom: Nonzero for halos interpolated across timesteps.
+#SAM_Mvir: Halo mass, smoothed across accretion history; always greater than sum of halo masses of contributing progenitors (Msun/h).  Only for use with select semi-analytical models.
+#Mvir: Halo mass (Msun/h).
+#Rvir: Halo radius (kpc/h comoving).
+#Rs: Scale radius (kpc/h comoving).
+#Vrms: Velocity dispersion (km/s physical).
+#mmp?: whether the halo is the most massive progenitor or not.
+#scale_of_last_MM: scale factor of the last major merger (Mass ratio > 0.3).
+#Vmax: Maxmimum circular velocity (km/s physical).
+#X/Y/Z: Halo position (Mpc/h comoving).
+#VX/VY/VZ: Halo velocity (km/s physical, peculiar).
+#JX/JY/JZ: Halo angular momenta ((Msun/h) * (Mpc/h) * km/s (physical)).
+#Spin: Halo spin parameter.
+#Breadth_first_ID: breadth-first ordering of halos within a tree.
+#Depth_first_ID: depth-first ordering of halos within a tree.
+#Tree_root_ID: ID of the halo at the last timestep in the tree.
+#Orig_halo_ID: Original halo ID from halo finder.
+#Snap_idx: Index of snapshot (in original snapshot list) from which halo originated.
+#Next_coprogenitor_depthfirst_ID: Depthfirst ID of next coprogenitor.
+#Last_progenitor_depthfirst_ID: Depthfirst ID of last progenitor.
+#Last_mainleaf_depthfirst_ID: Depthfirst ID of last progenitor on main progenitor branch.
+#Tidal_Force: Strongest tidal force from any nearby halo, in dimensionless units (Rhalo / Rhill).
+#Tidal_ID: ID of halo exerting strongest tidal force.
+#Rs_Klypin: Scale radius determined using Vmax and Mvir (see Rockstar paper)
+#Mvir_all: Mass enclosed within the specified overdensity, including unbound particles (Msun/h)
+#M200b--M2500c: Mass enclosed within specified overdensities (Msun/h)
+#Xoff: Offset of density peak from average particle position (kpc/h comoving)
+#Voff: Offset of density peak from average particle velocity (km/s physical)
+#Spin_Bullock: Bullock spin parameter (J/(sqrt(2)*MVR))
+#b_to_a, c_to_a: Ratio of second and third largest shape ellipsoid axes (B and C) to largest shape ellipsoid axis (A) (dimensionless).
+#  Shapes are determined by the method in Allgood et al. (2006).
+#  (500c) indicates that only particles within R500c are considered.
+#A[x],A[y],A[z]: Largest shape ellipsoid axis (kpc/h comoving)
+#T/|U|: ratio of kinetic to potential energies
+#M_pe_*: Pseudo-evolution corrected masses (very experimental)
+#Halfmass_Radius: Radius within which 1/2 of Mvir is enclosed.
+#Consistent Trees Version 1.01
+5450
+# the rest of this file is a simplified test. Halo 2 snap_013 -> Halo 1 snap_014. Halos 3,4 merge into Halo 2.
+# Halo 4 is the major progenitor because its consistent mass assigned here is higher.
+#tree 12985
+0 12985 0 17081 0 0 0 0 0 0 1e10
+0 11423 0 19718 0 0 0 0 0 0 1e10
+0 14175 0 19718 0 0 0 0 0 0 2e10
+# halo 1 will link to a phantom
+0 10985 0 17082 0 0 0 0 0 0 2e10
+# initialise the IDs for snap_013
+0 17081 0 -1    0 0 0 0 0 0 1e10
+0 19718 0 -1    0 0 0 0 0 0 3e10
+0 19129 0 -1    0 0 0 0 0 0 1e10
+# flag the phantom
+0 17082 0 -1    0 0 0 0 1 0 1e10

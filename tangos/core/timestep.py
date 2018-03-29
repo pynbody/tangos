@@ -29,6 +29,10 @@ class TimeStep(Base):
                               cascade='save-update, merge')
 
     @property
+    def escaped_extension(self):
+        return self.extension.replace("/","%")
+
+    @property
     def filename(self):
         return os.path.join(config.base, self.simulation.basename, self.extension)
 
@@ -114,6 +118,8 @@ class TimeStep(Base):
         :param object_type: integer or string representing the particular object type
                             (e.g. 'halo', 'BH' or 'group'). If None (default), all
                             types are included.
+
+        :param limit: maximum number of objects to use. If None (default), all are included.
         """
 
         from .. import live_calculation
@@ -122,6 +128,7 @@ class TimeStep(Base):
 
         object_typecode = None
         object_typetag = kwargs.get('object_typetag',None)
+        limit = kwargs.get('limit', None)
         if object_typetag:
             object_typecode = Halo.object_typecode_from_tag(object_typetag)
 
@@ -135,14 +142,16 @@ class TimeStep(Base):
         session = Session()
         try:
             raw_query = session.query(Halo).filter_by(timestep_id=self.id)
+            if limit:
+                raw_query = raw_query.limit(limit)
             if object_typecode is not None:
                 raw_query = raw_query.filter_by(object_typecode=object_typecode)
             query = property_description.supplement_halo_query(raw_query)
-            results = query.all()
-            results = property_description.values_sanitized(results, Session.object_session(self))
+            sql_query_results = query.all()
+            calculation_results = property_description.values_sanitized(sql_query_results, Session.object_session(self))
         finally:
             session.close()
-        return results
+        return calculation_results
 
     def gather_property(self, *args, **kwargs):
         """The old alias for calculate_all, retained for compatibility"""

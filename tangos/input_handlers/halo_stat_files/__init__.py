@@ -18,15 +18,28 @@ class HaloStatFile(object):
     _column_translations = {}
 
     def __new__(cls, timestep):
-        for subclass in cls.__subclasses__():
-            if subclass.can_load(timestep):
-                return object.__new__(subclass)
+        subcls = cls.find_loadable_subclass(timestep)
+        if subcls:
+            return object.__new__(subcls)
         else:
             raise IOError("No stat file found for this timestep")
 
     @classmethod
+    def find_loadable_subclass(cls, timestep):
+        if cls.can_load(timestep):
+            return cls
+        for subclass in cls.__subclasses__():
+            loadable_cls = subclass.find_loadable_subclass(timestep)
+            if loadable_cls:
+                return loadable_cls
+        return None
+
+    @classmethod
     def can_load(cls, timestep):
-        return os.path.exists(cls.filename(timestep))
+        try:
+            return os.path.exists(cls.filename(timestep))
+        except (ValueError, TypeError):
+            return False
 
     @classmethod
     def filename(cls, timestep):
@@ -47,7 +60,8 @@ class HaloStatFile(object):
             header = self._read_column_names(f)
             ids = [0] + [header.index(a) for a in args]
             for l in f:
-                yield self._get_values_for_columns(ids, l)
+                if not l.startswith("#"):
+                    yield self._get_values_for_columns(ids, l)
 
     def iter_rows(self, *args):
         """
@@ -132,7 +146,7 @@ class HaloStatFile(object):
         halos = self._timestep.halos.all()
         halos_map = {}
         for h in halos:
-            halos_map[h.halo_number] = h
+            halos_map[h.finder_id] = h
 
         session = core.Session.object_session(self._timestep)
 
@@ -171,6 +185,21 @@ class AHFStatFile(HaloStatFile):
             return file_list[0]
         return file
 
+class RockstarStatFile(HaloStatFile):
+    _column_translations = {'n_dm': translations.Rename('Np'),
+                            'n_gas': translations.Value(0),
+                            'n_star': translations.Value(0),
+                            'npart': translations.Rename('Np')}
+
+    @classmethod
+    def filename(cls, timestep):
+        basename = os.path.basename(timestep.filename)
+        dirname = os.path.dirname(timestep.filename)
+        if basename.startswith("snapshot_"):
+            timestep_id = int(basename[9:])
+            return os.path.join(dirname, "out_%d.list"%timestep_id)
+        else:
+            return "CannotComputeRockstarFilename"
 
 class AmigaIDLStatFile(HaloStatFile):
     _id_offset = 0

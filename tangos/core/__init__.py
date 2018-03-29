@@ -14,6 +14,8 @@ def get_default_session():
 
     :rtype: sqlalchemy.orm.Session"""
     global _internal_session
+    if _internal_session is None:
+        init_db()
     return _internal_session
 
 def set_default_session(session):
@@ -27,6 +29,8 @@ def set_default_session(session):
 def get_default_engine():
     """Get the default sqlalchemy engine to be used when no other is specified."""
     global _engine
+    if _engine is None:
+        init_db()
     return _engine
 
 
@@ -43,7 +47,6 @@ from .tracking import TrackData, update_tracker_halos
 from .timestep import TimeStep
 from .halo import Halo
 from .halo_data import HaloProperty, HaloLink
-from .stored_options import ArrayPlotOptions
 
 Index("halo_index", HaloProperty.__table__.c.halo_id)
 Index("name_halo_index", HaloProperty.__table__.c.name_id,
@@ -112,9 +115,18 @@ def process_options(argparser_options):
 def init_db(db_uri=None, timeout=30, verbose=None):
     global _verbose, _internal_session, _engine, Session
     if db_uri is None:
-        db_uri = 'sqlite:///' + config.db
+        db_uri = config.db
+
+    if '//' not in db_uri:
+        db_uri = 'sqlite:///' + db_uri
+
     _engine = create_engine(db_uri, echo=verbose or _verbose,
                             isolation_level='READ UNCOMMITTED', connect_args={'timeout': timeout})
+
+    #with _engine.connect() as connection:
+        # the following auto-adaptation of the table names is required for backwards compatibility
+        # Halo._adapt_schema(_engine, connection)
+
     Session = sessionmaker(bind=_engine)
     _internal_session=Session()
     Base.metadata.create_all(_engine)

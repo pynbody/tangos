@@ -39,7 +39,7 @@ In the example above, tangos returns the corresponding particles at step 832. To
 that's not necessarily the particles that exceed the threshold density at step 832 – it's the 
 particles that will end up satisfying the criterion at our original step 960.
 
-The normal use for trackers is in conjunction with `tangos_writer`: we can now use the
+The normal use for trackers is in conjunction with `tangos write`: we can now use the
 tracked particles pretty much like any halo, as follows.
 
 Calculating properties for trackers
@@ -49,10 +49,10 @@ Let's calculate the mean gas density for the tracked particles across time. For 
 we leave the python session and return to the UNIX shell. Run:
 
 ```
-tangos_writer mean_rho --for tutorial_changa --type tracker
+tangos write mean_rho --for tutorial_changa --type tracker
 ```
 Here,
- * `tangos_writer` is the standard command used in the earlier [tutorial](first_steps_changa+ahf.md)
+ * `tangos write` is the standard command used in the earlier [tutorial](first_steps_changa+ahf.md)
  * `mean_rho` is a simple built-in property that calculates the mean density of the tracked region in 
    proton masses per cm^3.
    Of course, the real power is in being able to define your [own properties](custom_properties.md), but this will do for now. 

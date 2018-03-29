@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import argparse
 
 import tangos as db
-import tangos.core
+import tangos.core, tangos.parallel_tasks.database
 from .. import config
 from tangos import parallel_tasks
 from tangos import core
@@ -10,20 +10,17 @@ import sqlalchemy, sqlalchemy.orm
 from tangos.log import logger
 import numpy as np
 from six.moves import zip
+from . import GenericTangosTool
 
-
-class GenericLinker(object):
+class GenericLinker(GenericTangosTool):
     def __init__(self, session=None):
         self.session = session or core.get_default_session()
 
-    def parse_command_line(self, argv=None):
-        parser = self._create_argparser()
-        self.args = parser.parse_args(argv)
-        db.process_options(self.args)
+    def process_options(self, options):
+        self.args = options
 
-    def _create_argparser(self):
-        parser = argparse.ArgumentParser()
-        db.supplement_argparser(parser)
+    @classmethod
+    def add_parser_arguments(self, parser):
         parser.add_argument("--verbose", action="store_true",
                             help="Print extra information")
         parser.add_argument("--force", action="store_true",
@@ -37,10 +34,9 @@ class GenericLinker(object):
                             help='Process in reverse order (low-z first)')
         parser.add_argument('--dmonly', action='store_true',
                             help='only match halos based on DM particles. Much more memory efficient, but currently only works for Rockstar halos')
-        return parser
 
     def run_calculation_loop(self):
-
+        parallel_tasks.database.synchronize_creator_object()
         pair_list = self._generate_timestep_pairs()
 
         if len(pair_list)==0:
@@ -127,7 +123,7 @@ class GenericLinker(object):
 
         output_handler_1 = ts1.simulation.get_output_handler()
         output_handler_2 = ts2.simulation.get_output_handler()
-        if not isinstance(output_handler_1, type(output_handler_2)):
+        if type(output_handler_1).match_objects != type(output_handler_2).match_objects:
             logger.error("Timesteps %r and %r cannot be crosslinked; they are using incompatible file readers",
                          ts1, ts2)
             return
@@ -164,6 +160,9 @@ class GenericLinker(object):
         logger.info("Finished committing total of %d links for %r and %r", len(items)+len(items_back), ts1, ts2)
 
 class TimeLinker(GenericLinker):
+    tool_name = "link"
+    tool_description = "Generate merger tree and other information linking tangos objects over time"
+
     def _generate_timestep_pairs(self):
         logger.info("generating pairs of timesteps")
         base_sim = db.sim_query_from_name_list(self.args.sims)
@@ -177,20 +176,24 @@ class TimeLinker(GenericLinker):
             pairs = pairs[::-1]
         return pairs
 
-    def _create_argparser(self):
-        parser = super(TimeLinker, self)._create_argparser()
+    @classmethod
+    def add_parser_arguments(self, parser):
+        super(TimeLinker, self).add_parser_arguments(parser)
         parser.add_argument('--sims', '--for', action='store', nargs='*',
                             metavar='simulation_name',
                             help='Specify a simulation (or multiple simulations) to run on')
-        return parser
+
 
 class CrossLinker(GenericLinker):
-    def _create_argparser(self):
-        parser = super(CrossLinker, self)._create_argparser()
+    tool_name = "crosslink"
+    tool_description = "Identify the same objects between two simulations and link them"
+
+    @classmethod
+    def add_parser_arguments(self, parser):
+        super(CrossLinker, self).add_parser_arguments(parser)
         parser.add_argument('sims', action='store', nargs=2,
                             metavar=('name1', 'name2'),
                             help='The two simulations (or, optionally, two individual timesteps) to crosslink')
-        return parser
 
     def _generate_timestep_pairs(self):
         obj1 = db.get_item(self.args.sims[0])

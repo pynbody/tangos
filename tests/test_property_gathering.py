@@ -8,6 +8,7 @@ import tangos.core.halo
 import tangos.core.simulation
 import tangos.core.timestep
 import tangos
+import tangos.testing.simulation_generator
 from tangos import properties
 from tangos import testing
 import os
@@ -19,7 +20,7 @@ from tangos import live_calculation
 def setup():
     testing.init_blank_db_for_testing()
 
-    creator = tangos.testing.TestSimulationGenerator()
+    creator = tangos.testing.simulation_generator.TestSimulationGenerator()
 
     halo_offset = 0
     for ts in range(1,4):
@@ -41,7 +42,7 @@ def setup():
             creator.link_last_halos()
             creator.link_last_bhs_using_mapping({1:1})
 
-class TestProperty(properties.LiveHaloProperties):
+class TestProperty(properties.LivePropertyCalculation):
     names = "RvirPlusMvir"
 
     def requires_property(self):
@@ -50,7 +51,7 @@ class TestProperty(properties.LiveHaloProperties):
     def live_calculate(self, halo):
         return halo["Mvir"]+halo["Rvir"]
 
-class TestErrorProperty(properties.LiveHaloProperties):
+class TestErrorProperty(properties.LivePropertyCalculation):
     names = "RvirPlusMvirMiscoded"
 
     def requires_property(self):
@@ -59,19 +60,19 @@ class TestErrorProperty(properties.LiveHaloProperties):
     def live_calculate(self, halo):
         return halo["Mvir"]+halo["Rvir"]
 
-class TestPropertyWithParameter(properties.LiveHaloProperties):
+class TestPropertyWithParameter(properties.LivePropertyCalculation):
     names = "squared"
 
     def live_calculate(self, halo, value):
         return value**2
 
-class TestBrokenProperty(properties.HaloProperties):
+class TestBrokenProperty(properties.PropertyCalculation):
     names = "brokenproperty"
 
     def __init__(self, simulation):
         raise RuntimeError("This intentionally breaks the property")
 
-class TestPathChoice(properties.LiveHaloProperties):
+class TestPathChoice(properties.LivePropertyCalculation):
     num_calls = 0
     names = "my_BH"
 
@@ -213,8 +214,8 @@ def test_gather_closes_connections():
 
 def test_gather_restricted_object_type():
     ts = tangos.get_timestep("sim/ts1")
-    with assert_raises(live_calculation.NoResultsError):
-        non_existent = ts.calculate_all("hole_mass", object_typetag='halo')
+    non_existent, = ts.calculate_all("hole_mass", object_typetag='halo')
+    assert len(non_existent)==0
     ok_1, = ts.calculate_all("hole_mass",object_typetag='BH')
     ok_2, = ts.calculate_all("hole_mass")
     npt.assert_allclose(ok_1, [100., 200., 300., 400.])

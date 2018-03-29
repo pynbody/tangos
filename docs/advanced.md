@@ -9,3 +9,4 @@ topics:
  - [Parallelisation strategies](mpi.md)
  - The [live calculation](live_calculation.md) system
  - Writing [custom handlers](custom_input_handlers.md) for new file formats or libraries
+ - Understanding [time-histogram properties](histogram_properties.md)

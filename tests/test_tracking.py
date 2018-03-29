@@ -14,7 +14,7 @@ def setup():
     global output_manager, iord_expected_s960, iord_expected_s832
     testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
-    output_manager = pynbody_outputs.ChangaOutputSetHandler("test_tipsy")
+    output_manager = pynbody_outputs.ChangaInputHandler("test_tipsy")
     with log.LogCapturer():
         add.SimulationAdderUpdater(output_manager).scan_simulation_and_add_all_descendants()
 

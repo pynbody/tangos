@@ -31,7 +31,7 @@ def halo_later_earlier(request, rel='later'):
             pass
 
     raise exc.HTTPFound(request.route_url("halo_view", simid=halo.timestep.simulation.basename,
-                                          timestepid=halo.timestep.extension,
+                                          timestepid=halo.timestep.escaped_extension,
                                           halonumber=halo.basename))
 
 

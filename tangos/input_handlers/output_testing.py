@@ -3,7 +3,7 @@ from __future__ import print_function
 import glob
 import os, os.path
 from .. import config
-from . import SimulationOutputSetHandler
+from . import HandlerBase
 from six.moves import range
 
 class DummyTimestepData(object):
@@ -16,7 +16,7 @@ class DummyTimestepData(object):
     def __str__(self):
         return self.message
 
-class TestOutputSetHandler(SimulationOutputSetHandler):
+class TestInputHandler(HandlerBase):
     def get_properties(self):
         result = {}
         with open(os.path.join(config.base, self.basename, "sim_info"),'r') as f:
@@ -49,7 +49,7 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
         """Test implementation of match halos always links halo i->i, and a 0.05 mass transfer from i->i+1"""
         assert object_typetag=='halo' # currently only handle halos
         f1 = self.load_timestep(ts1)
-        f2 = self.load_timestep(ts2)
+        f2 = (output_handler_for_ts2 or self).load_timestep(ts2)
         if halo_max is None:
             halo_max = f1.max_halos
         halo_max = min((halo_max,f1.max_halos,f2.max_halos))
@@ -85,3 +85,11 @@ class TestOutputSetHandler(SimulationOutputSetHandler):
                 line_split = line.split()
                 if line_split[0].lower() == property.lower():
                     return " ".join(line_split[1:])
+
+
+class TestInputHandlerReverseHaloNDM(TestInputHandler):
+    def enumerate_objects(self, ts_extension, object_typetag='halo', min_halo_particles=config.min_halo_particles):
+        nhalos_string = self._get_ts_property(ts_extension, object_typetag+"s")
+        nhalos = 0 if nhalos_string is None else int(nhalos_string)
+        for i in range(nhalos):
+            yield i+1, 2000+i, 0, 0

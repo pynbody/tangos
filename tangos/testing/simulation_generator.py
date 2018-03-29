@@ -1,16 +1,5 @@
-from __future__ import absolute_import
-from __future__ import print_function
-import tangos
-from . import core
-import sqlalchemy, sqlalchemy.event
-import contextlib
-import gc
-import traceback
-import os
-import inspect
+from .. import core
 import six
-from six.moves import range
-from six.moves import zip
 
 class TestSimulationGenerator(object):
     def __init__(self, sim_name="sim", session=None):
@@ -18,7 +7,7 @@ class TestSimulationGenerator(object):
             session = core.get_default_session()
 
         self.session = session
-        self.sim = tangos.core.simulation.Simulation(sim_name)
+        self.sim = core.simulation.Simulation(sim_name)
         self._ptcls_in_common_dict = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
         self._BH_dict = core.dictionary.get_or_create_dictionary_item(self.session, "BH")
         self._host_dict = core.dictionary.get_or_create_dictionary_item(self.session, "host")
@@ -35,7 +24,7 @@ class TestSimulationGenerator(object):
                 NDM_halo = 1000-i*100
             else:
                 NDM_halo = NDM[i-1]
-            halo = tangos.core.halo.Halo(ts, i, i, NDM_halo, 0, 0, 0)
+            halo = core.halo.Halo(ts, i, i, NDM_halo, 0, 0, 0)
             halo.object_typecode = object_typecode
             returned_halos.append(self.session.merge(halo))
 
@@ -83,7 +72,7 @@ class TestSimulationGenerator(object):
         """Add a sequentially-numbered timestep to the specified simulation"""
 
         timestep_num = len(self.sim.timesteps)+1
-        ts = tangos.core.timestep.TimeStep(self.sim, "ts%d"%timestep_num)
+        ts = core.timestep.TimeStep(self.sim, "ts%d"%timestep_num)
         ts.redshift = 9 - timestep_num
         ts.time_gyr = 0.9*timestep_num
         self.session.add(ts)
@@ -178,104 +167,3 @@ class TestSimulationGenerator(object):
             target_halo = ts_dest.halos.filter_by(halo_number=target_num).first()
             print(source_num, ts_source)
             target_halo.NDM += source_halo.NDM
-
-
-
-def _as_halos(hlist, session=None):
-    if session is None:
-        session = core.get_default_session()
-    rvals = []
-    for h in hlist:
-        if h is None:
-            rvals.append(None)
-        elif isinstance(h, core.halo.Halo):
-            rvals.append(h)
-        else:
-            rvals.append(tangos.get_halo(h, session))
-    return rvals
-
-def _halos_to_strings(hlist):
-    if len(hlist)==0:
-        return "(empty list)"
-    else:
-        return str([hx.path if hx else "None" for hx in _as_halos(hlist)])
-
-def halolists_equal(hl1, hl2, session=None):
-    """Return True if hl1 and hl2 are equivalent lists of halos"""
-
-    hl1 = _as_halos(hl1)
-    hl2 = _as_halos(hl2)
-
-    return len(hl1)==len(hl2) and all([h1==h2 for h1, h2 in zip(hl1,hl2)])
-
-def assert_halolists_equal(hl1, hl2, session=None):
-    equal = halolists_equal(hl1, hl2, session=None)
-    assert equal, "Not equal: %s %s"%(_halos_to_strings(hl1),_halos_to_strings(hl2))
-
-@contextlib.contextmanager
-def autorevert():
-    old_session = core.get_default_session()
-    connection = core.get_default_engine().connect()
-    transaction = connection.begin()
-    isolated_session = core.Session(bind=connection)
-    core.set_default_session(isolated_session)
-    yield
-    transaction.rollback()
-    core.set_default_session(old_session)
-
-
-
-
-@contextlib.contextmanager
-def assert_connections_all_closed():
-    num_connections = [0,0]
-    connection_details = {}
-    def on_checkout(dbapi_conn, connection_rec, connection_proxy):
-        num_connections[0]+=1
-        num_connections[1]+=1
-        connection_details[id(connection_rec)] = traceback.extract_stack()
-
-    def on_checkin(dbapi_conn, connection_rec):
-        if id(connection_rec) in connection_details:
-            num_connections[0]-=1
-            del connection_details[id(connection_rec)]
-
-    gc.collect()
-
-    sqlalchemy.event.listen(core.get_default_engine().pool, 'checkout', on_checkout)
-    sqlalchemy.event.listen(core.get_default_engine().pool, 'checkin', on_checkin)
-
-    yield
-
-
-    gc.collect()
-
-    sqlalchemy.event.remove(core.get_default_engine().pool, 'checkout', on_checkout)
-    sqlalchemy.event.remove(core.get_default_engine().pool, 'checkin', on_checkin)
-
-    for k,v in six.iteritems(connection_details):
-        print("object id",k,"not checked in; was created here:")
-        for line in traceback.format_list(v):
-            print("  ",line)
-
-    assert num_connections[0]==0, "%d (of %d) connections were not closed"%(num_connections[0], num_connections[1])
-
-
-def init_blank_db_for_testing(**init_kwargs):
-    try:
-        os.mkdir("test_dbs")
-    except OSError:
-        pass
-
-    caller_fname = os.path.basename(inspect.getframeinfo(inspect.currentframe().f_back)[0])[:-3]
-
-    print(caller_fname)
-    db_name = "test_dbs/%s.db"%caller_fname
-    try:
-
-        os.remove(db_name)
-    except OSError:
-        pass
-
-    core.init_db("sqlite:///"+db_name,**init_kwargs)
-

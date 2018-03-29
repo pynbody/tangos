@@ -15,6 +15,7 @@ import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
 
+from . import GenericTangosTool
 from .. import properties
 from ..util import terminalcontroller, timing_monitor
 from .. import parallel_tasks, core
@@ -31,7 +32,9 @@ class AttributableDict(dict):
     pass
 
 
-class PropertyWriter(object):
+class PropertyWriter(GenericTangosTool):
+    tool_name = "write"
+    tool_description = "Calculate properties and write them into the tangos database"
 
     def __init__(self):
         self.redirect = terminalcontroller.redirect
@@ -42,12 +45,11 @@ class PropertyWriter(object):
         self._loaded_halo_id = None
         self._loaded_halo = None
 
-    def _get_parser_obj(self):
-        parser = argparse.ArgumentParser()
-        core.supplement_argparser(parser)
+    @classmethod
+    def add_parser_arguments(self, parser):
         parser.add_argument('properties', action='store', nargs='+',
                             help="The names of the halo properties to calculate")
-        parser.add_argument('--sims','--for', action='store', nargs='*',
+        parser.add_argument('--sims', '--for', action='store', nargs='*',
                             metavar='simulation_name',
                             help='Specify a simulation (or multiple simulations) to run on')
         parser.add_argument('--latest', action='store_true',
@@ -64,7 +66,8 @@ class PropertyWriter(object):
                             help='Process timesteps in random order')
         parser.add_argument('--with-prerequisites', action='store_true',
                             help='Automatically calculate any missing prerequisites for the properties')
-        parser.add_argument('--load-mode', action='store', choices=['all', 'partial', 'server', 'server-partial'], required=False, default=None,
+        parser.add_argument('--load-mode', action='store', choices=['all', 'partial', 'server', 'server-partial'],
+                            required=False, default=None,
                             help="Select a load-mode: " \
                                  "  --load-mode partial:        each node attempts to load only the data it needs; " \
                                  "  --load-mode server:         a server process manages the data;"
@@ -79,12 +82,17 @@ class PropertyWriter(object):
         parser.add_argument('--verbose', action='store_true',
                             help="Allow all output from calculations (by default print statements are suppressed)")
         parser.add_argument('--part', action='store', nargs=2, type=int,
-                            metavar=('N','M'),
+                            metavar=('N', 'M'),
                             help="Emulate MPI by handling slice N out of the total workload of M items. If absent, use real MPI.")
-        parser.add_argument('--backend', action='store', type=str, help="Specify the paralellism backend (e.g. pypar, mpi4py)")
-        parser.add_argument('--include-only', action='store', type=str, help="Specify a filter that describes which halos the calculation should be executed for.")
-        return parser
+        parser.add_argument('--backend', action='store', type=str,
+                            help="Specify the paralellism backend (e.g. pypar, mpi4py)")
+        parser.add_argument('--include-only', action='append', type=str,
+                            help="Specify a filter that describes which objects the calculation should be executed for. Multiple filters may be specified, in which case they must all evaluate to true for the object to be included.")
 
+    def _create_parser_obj(self):
+        parser = argparse.ArgumentParser()
+        core.supplement_argparser(parser)
+        return parser
 
     def _build_file_list(self):
 
@@ -140,7 +148,10 @@ class PropertyWriter(object):
 
     def parse_command_line(self, argv=None):
         parser = self._get_parser_obj()
-        self.options = parser.parse_args(argv)
+        self.process_options(parser.parse_args(argv))
+
+    def process_options(self, options):
+        self.options = options
         core.process_options(self.options)
         self._build_file_list()
         self._compile_inclusion_criterion()
@@ -155,7 +166,9 @@ class PropertyWriter(object):
 
     def _compile_inclusion_criterion(self):
         if self.options.include_only:
-            self._include = live_calculation.parser.parse_property_name(self.options.include_only)
+            includes = ["("+s+")" for s in self.options.include_only]
+            include_only_combined = " & ".join(includes)
+            self._include = live_calculation.parser.parse_property_name(include_only_combined)
         else:
             self._include = None
 

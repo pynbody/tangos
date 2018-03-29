@@ -1,6 +1,6 @@
-from . import PynbodyHaloProperties
+from . import PynbodyPropertyCalculation
 
-class MeanGasProperties(PynbodyHaloProperties):
+class MeanGasProperties(PynbodyPropertyCalculation):
     @classmethod
     def name(self):
         return "mean_temp", "mean_rho"

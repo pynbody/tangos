@@ -1,7 +1,7 @@
 from __future__ import absolute_import
-from . import LiveHaloProperties
+from . import LivePropertyCalculation
 
-class IntrinsicProperties(LiveHaloProperties):
+class IntrinsicProperties(LivePropertyCalculation):
     names = "t","z","a","dbid", "halo_number", "NDM", "NStar", "NGas", "type", "step_path"
 
     def live_calculate(self, halo):

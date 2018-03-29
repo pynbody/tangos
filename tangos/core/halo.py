@@ -114,19 +114,30 @@ class Halo(Base):
         return self._handler_class
 
     def load(self, mode=None):
-        """Use pynbody to load the data for this halo, if it is present on this computer's filesystem.
+        """Load the data for this halo, if it is present on this computer's filesystem.
 
-        By default, the entire simulation is loaded and a subview with this halo is returned. If mode='partial',
-        pynbody's partial loading system is used to only load the data for the one halo, saving memory."""
+        :param mode: the load mode to pass to the relevant input handler. For example with the pynbody input
+        handler this can be None or 'partial' (in a normal session) and, when running inside an MPI session,
+        'server' or 'server-partial'. See https://pynbody.github.io/tangos/mpi.html.
+        """
 
         return self.handler.load_object(self.timestep.extension, self.finder_id, object_typetag=self.tag, mode=mode)
 
-    def calculate(self, name, return_description=False):
+    def calculate(self, calculation, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.
 
-        See live_calculation.md for an introduction to this powerful functionality."""
+        See the data exploration tutorials at https://pynbody.github.io/tangos/data_exploration.html
+        for an introduction to the system.
+
+        :param calculation: the calculation (or a string representation of it to be parsed)
+        :param return_description: if True, return both the value and the PropertyCalculation class describing it.
+        :returns: The result of the calculation, or a tuple containing the result and the description if
+                  return_description is True.
+
+        """
+
         from .. import live_calculation
-        calculation = live_calculation.parser.parse_property_name_if_required(name)
+        calculation = live_calculation.parser.parse_property_name_if_required(calculation)
         (value,), description = calculation.values_sanitized_and_description([self], Session.object_session(self))
         if len(value)==1:
             retval = value[0]
@@ -416,5 +427,22 @@ class Group(Halo):
 
 TimeStep.groups = orm.relationship(Halo, cascade='all', lazy='dynamic',
                                   primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==2)),
+                                  foreign_keys=Halo.timestep_id,
+                                  order_by=Halo.halo_number)
+
+
+class PhantomHalo(Halo):
+    __mapper_args__ = {
+        'polymorphic_identity': 4
+    }
+
+    tag = "phantom"
+
+    def __init__(self, timestep, halo_number, finder_id):
+        super(PhantomHalo, self).__init__(timestep, halo_number, finder_id, 0,0,0,
+                                 self.__mapper_args__['polymorphic_identity'])
+
+TimeStep.phantoms = orm.relationship(Halo, cascade='all', lazy='dynamic',
+                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==4)),
                                   foreign_keys=Halo.timestep_id,
                                   order_by=Halo.halo_number)

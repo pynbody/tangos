@@ -17,5 +17,9 @@ def run_dbwriter(argv):
 
 
 def main():
+    print("""
+    The 'tangos_crosslink' command line is deprecated in favour of 'tangos crosslink'.
+    'tangos_crosslink' may be removed in future versions.
+    """)
     parallel_tasks.launch(run_dbwriter, 2, [sys.argv[1:]])
 

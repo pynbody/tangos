@@ -8,12 +8,13 @@ import tangos.testing as testing
 import tangos.live_calculation as lc
 import warnings
 
+import tangos.testing.simulation_generator
 
 
 def setup():
     testing.init_blank_db_for_testing()
 
-    generator = testing.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
     generator.add_timestep()
     ts1_h1, ts1_h2, ts1_h3, ts1_h4, ts1_h5 = generator.add_objects_to_timestep(5)
 
