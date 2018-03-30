@@ -270,17 +270,21 @@ class Halo(Base):
 
     @property
     def earliest(self):
-        if self.previous is not None:
-            return self.previous.earliest
-        else:
-            return self
+        if not hasattr(self, '_earliest'):
+            from .. import relation_finding
+            strategy = relation_finding.MultiHopMajorProgenitorsStrategy(self,order_by=['time_asc'],include_startpoint=True)
+            self._earliest=strategy.first()
+
+        return self._earliest
 
     @property
     def latest(self):
-        if self.next is not None:
-            return self.next.latest
-        else:
-            return self
+        if not hasattr(self, '_latest'):
+            from .. import relation_finding
+            strategy = relation_finding.MultiHopMajorDescendantsStrategy(self,order_by=['time_desc'],include_startpoint=True)
+            self._latest=strategy.first()
+
+        return self._latest
 
     def plot(self, name, *args, **kwargs):
         from . import Session
