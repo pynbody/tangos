@@ -27,7 +27,7 @@ install_requires = [
 tests_require = [
     'nose >= 1.3.0',
     'webtest >= 2.0',
-    'pynbody >= 0.42',
+    'pynbody >= 0.44',
     'yt>=3.4.0'
     ]
 
@@ -35,7 +35,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='tangos',
-      version='1.0.2',
+      version='1.0.3',
       description='TANGOS, the agile numerical galaxy organisation system',
       classifiers=[
           "Development Status :: 4 - Beta",
