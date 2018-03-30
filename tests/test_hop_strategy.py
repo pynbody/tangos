@@ -328,6 +328,17 @@ def test_major_progenitor_from_minor_progenitor():
 
     testing.assert_halolists_equal(progen_in_ts1, ['sim3/ts1/2'])
 
-
+def test_offset_outputs_dont_confuse_match():
+    # This tests for a bug where crosslinked timesteps at slightly different times could confuse the
+    # search for a progentior or descendant because the recursive search strayed into a different simulation
+    tangos.get_timestep("sim2/ts2").time_gyr*=1.01
+    try:
+        ts1_2_next = tangos.get_item("sim/ts2/2").next
+        ts1_2_later = tangos.get_item("sim/ts2/2").calculate("later(1)")
+        correct = ["sim/ts3/1"]
+        testing.assert_halolists_equal([ts1_2_next], correct)
+        testing.assert_halolists_equal([ts1_2_later], correct)
+    finally:
+        tangos.get_timestep("sim2/ts2").time_gyr /= 1.01
 
 
