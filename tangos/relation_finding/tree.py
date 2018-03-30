@@ -150,8 +150,13 @@ class MergerTree(object):
     def _generate_properties_cache(self):
         live_calcs = live_calculation.parser.parse_property_names("dbid()",*self.with_calculations)
         session = object_session(self.base_halo)
+
+        all_halo_ids = self._link_cache.keys()
+        if self.base_halo.id not in all_halo_ids:
+            all_halo_ids=list(all_halo_ids)+[self.base_halo.id]
+
         with temporary_halolist.temporary_halolist_table(session,
-                                                         self._link_cache.keys()) as temptable:
+                                                         all_halo_ids) as temptable:
             query = temporary_halolist.halo_query(temptable)
             query = live_calcs.supplement_halo_query(query)
             sql_query_results = query.all()
