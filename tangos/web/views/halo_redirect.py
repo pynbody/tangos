@@ -8,12 +8,10 @@ def halo_later_earlier(request, rel='later'):
     halo = halo_from_request(request)
 
     if request.matchdict['n']=='inf':
-        rel = rel[:-1]+"st" # later->latest, earlier->earliest
-        try:
-            halo = halo.calculate("%s()"%(rel))
-        except tangos.live_calculation.NoResultsError:
-            pass
-
+        if rel=='earlier':
+            halo = halo.earliest
+        if rel=='later':
+            halo = halo.latest
     else:
         try:
             steps = int(request.matchdict['n'])
