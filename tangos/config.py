@@ -27,7 +27,7 @@ default_backend = 'null'
 
 
 # names of property modules to import; default is for backwards compatibility on systems with N-Body-Shop extensions
-property_modules = os.environ.get("TANGOS_PROPERTY_MODULES","tangos_nbodyshop_properties")
+property_modules = os.environ.get("TANGOS_PROPERTY_MODULES")
 property_modules = property_modules.split(",")
 property_modules = map(str.strip, property_modules)
 

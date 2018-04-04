@@ -358,6 +358,8 @@ class LiveProperty(Calculation):
         super(LiveProperty, self).__init__()
         self._name = str(tokens[0])
         self._inputs = list(tokens[1:])
+        self._evaluation_pattern = '_evaluate_function'
+        self._evaluation_options= []
 
     def __str__(self):
         return self._name + "(" + (",".join(str(x) for x in self._inputs)) + ")"
@@ -384,6 +386,16 @@ class LiveProperty(Calculation):
         result = result.union(providing_instance.requires_property())
         return result
 
+    def set_evaluation_pattern(self, eval_name):
+        self._evaluation_pattern = eval_name
+
+    def set_evaluation_pattern_with_options(self,eval_name,*options):
+        self._evaluation_pattern = eval_name
+        self._evaluation_options = options
+
+    def _evaluate(self, halos, input_descriptions, input_values):
+        return getattr(self, self._evaluation_pattern)(halos, input_descriptions, input_values, *self._evaluation_options)
+
     def values_and_description(self, halos):
         input_values = []
         input_descriptions = []
@@ -392,7 +404,7 @@ class LiveProperty(Calculation):
             input_values.append(iv)
             input_descriptions.append(id)
 
-        calculator, results = self._evaluate_function(halos, input_descriptions, input_values)
+        calculator, results = self._evaluate(halos, input_descriptions, input_values)
 
         return results, calculator
 
@@ -411,6 +423,21 @@ class LiveProperty(Calculation):
         for inputs in zip(halos, *input_values):
             if self._has_required_properties(inputs[0]) and all([x is not None for x in inputs]):
                 results.append(calculator.live_calculate_named(self.name(), *inputs))
+            else:
+                results.append(None)
+        return calculator, self._as_1xn_array(results)
+
+    def _evaluate_function_with_reassemble(self, halos, input_descriptions, input_values, *options):
+        from .. import properties
+        sim = consistent_collection.consistent_simulation_from_halos(halos)
+        results = []
+        calculator = properties.providing_class(self.name())(sim, *input_descriptions)
+        for inputs in zip(halos, *input_values):
+            if self._has_required_properties(inputs[0]) and all([x is not None for x in inputs]):
+                if hasattr(calculator,'reassemble'):
+                    results.append(calculator.reassemble(self, inputs[0], *options))
+                else:
+                    results.append(calculator.live_calculate_named(self.name(), *inputs))
             else:
                 results.append(None)
         return calculator, self._as_1xn_array(results)
