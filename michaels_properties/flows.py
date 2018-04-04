@@ -8,16 +8,16 @@ class FlowProfile(SphericalRegionHaloProperties):
     #_xmax = 100.0
     _threshold_vel = 20.0
 
-    #def region_specification(self, db_data):
-    #    return pynbody.filt.Sphere(db_data['Rvir'], db_data['SSC']) & \
-    #           (pynbody.filt.FamilyFilter(pynbody.family.gas)|pynbody.filt.FamilyFilter(pynbody.family.star))
+    def region_specification(self, db_data):
+        return pynbody.filt.Sphere(db_data['max_radius'], db_data['shrink_center']) & \
+               (pynbody.filt.FamilyFilter(pynbody.family.gas)|pynbody.filt.FamilyFilter(pynbody.family.star))
 
     @classmethod
     def name(cls):
-        return "inflow_Mdot", "outflow_Mdot", \
-               "inflow_vel", "outflow_vel", \
-               "inflow_vel2", "outflow_vel2", \
-               "inflow_temp", "outflow_temp", \
+        return "gas_inflow_Mdot", "gas_outflow_Mdot", \
+               "gas_inflow_vel", "gas_outflow_vel", \
+               "gas_inflow_vel2", "gas_outflow_vel2", \
+               "gas_inflow_temp", "gas_outflow_temp", \
 #               "inflow_Mdot_dm", "outflow_Mdot_dm", \
 #               "inflow_vel_dm", "outflow_vel_dm", \
 #               "inflow_vel2_dm", "outflow_vel2_dm"
