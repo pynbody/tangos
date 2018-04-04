@@ -59,7 +59,7 @@ def setup():
     generator.add_mass_transfer(4,3,0.01)
 
     generator.add_timestep()
-    generator.add_objects_to_timestep(4)
+    generator.add_objects_to_timestep(5)
     generator.add_bhs_to_timestep(2)
     generator.assign_bhs_to_halos({1: 1, 2: 2})
 
@@ -67,6 +67,7 @@ def setup():
     # ts2_h3 becomes ts3_h2
     # ts2_h4 becomes ts3_h3 but loses 5% of its mass to ts3_h2
     # ts2_h5 becomes ts3_h4
+    # ts3_h5 has no counterpart
     generator.link_last_halos_using_mapping({1: 1,
                                              2: 1,
                                              3: 2,
@@ -120,7 +121,6 @@ def test_twostep_ordering():
     strategy = halo_finding.MultiHopStrategy(tangos.get_item("sim/ts3/3"), 2, 'backwards', order_by="time_asc")
 
     all = strategy.all()
-    print(all)
     assert tangos.get_item("sim/ts1/4") == all[0]
     assert tangos.get_item("sim/ts2/4") == all[1]
 
@@ -245,11 +245,24 @@ def test_multisource_preserves_order():
     testing.assert_halolists_equal(results, ["sim/ts3/2", "sim/ts3/1", "sim/ts3/1",  None])
 
 def test_multisource_backwards():
-    results = halo_finding.MultiSourceMultiHopStrategy(tangos.get_items(["sim/ts3/1", "sim/ts3/2", "sim/ts3/3"]),
+    sources = tangos.get_items(["sim/ts3/1", "sim/ts3/2", "sim/ts3/3"])
+    results = halo_finding.MultiSourceMultiHopStrategy(sources,
                                                        tangos.get_item("sim/ts1")).all()
-    correct = tangos.get_items(["sim/ts3/1", "sim/ts3/2", "sim/ts3/3"])
-    correct = [i.earliest for i in correct]
+
     testing.assert_halolists_equal(results,["sim/ts1/2","sim/ts1/3","sim/ts1/4"])
+
+    single_earliest = [i.earliest for i in sources]
+    testing.assert_halolists_equal(single_earliest, ["sim/ts1/2", "sim/ts1/3", "sim/ts1/4"])
+
+def test_multisource_forwards():
+    sources = tangos.get_items(["sim/ts1/1","sim/ts1/2","sim/ts1/3","sim/ts1/4"])
+    results = halo_finding.MultiSourceMultiHopStrategy(sources,
+                                                       tangos.get_item("sim/ts3")).all()
+    testing.assert_halolists_equal(results, ["sim/ts3/1", "sim/ts3/1", "sim/ts3/2", "sim/ts3/3"])
+
+    single_latest = [i.latest for i in sources]
+    testing.assert_halolists_equal(single_latest, ["sim/ts3/1", "sim/ts3/1", "sim/ts3/2", "sim/ts3/3"])
+
 
 def test_multisource_performance():
     ts_targ = tangos.get_item("sim/ts1")
@@ -257,9 +270,6 @@ def test_multisource_performance():
     with testing.SqlExecutionTracker() as track:
         halo_finding.MultiSourceMultiHopStrategy(sources, ts_targ).all()
 
-    print(track.count_statements_containing("select halos."))
-    for x in track.traceback_statements_containing("select halos."):
-        print(x)
     assert track.count_statements_containing("select halos.")==0
 
 
@@ -328,6 +338,23 @@ def test_major_progenitor_from_minor_progenitor():
 
     testing.assert_halolists_equal(progen_in_ts1, ['sim3/ts1/2'])
 
+def test_offset_outputs_dont_confuse_match():
+    # This tests for a bug where crosslinked timesteps at slightly different times could confuse the
+    # search for a progentior or descendant because the recursive search strayed into a different simulation
+    tangos.get_timestep("sim2/ts2").time_gyr*=1.01
+    try:
+        ts1_2_next = tangos.get_item("sim/ts2/2").next
+        ts1_2_later = tangos.get_item("sim/ts2/2").calculate("later(1)")
+        correct = ["sim/ts3/1"]
+        testing.assert_halolists_equal([ts1_2_next], correct)
+        testing.assert_halolists_equal([ts1_2_later], correct)
+    finally:
+        tangos.get_timestep("sim2/ts2").time_gyr /= 1.01
 
+def test_earliest_no_ancestor():
+    # Test that earliest returns self when there is not actually an ancestor to find
+    no_ancestor = tangos.get_halo("sim/ts3/5")
 
+    earliest = no_ancestor.earliest
+    assert earliest==no_ancestor
 

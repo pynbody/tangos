@@ -165,5 +165,4 @@ class TestSimulationGenerator(object):
         for source_num, target_num in six.iteritems(mapping):
             source_halo = ts_source.halos.filter_by(halo_number=source_num).first()
             target_halo = ts_dest.halos.filter_by(halo_number=target_num).first()
-            print(source_num, ts_source)
             target_halo.NDM += source_halo.NDM

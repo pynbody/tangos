@@ -146,10 +146,12 @@ class MultiHopStrategy(HopStrategy):
 
         if self.directed is not None:
             directed = self.directed.lower()
+            if (directed=='backwards' or directed=='forwards') and (self._target is not None):
+                recursion_filter &= (timestep_new.simulation_id == timestep_old.simulation_id)
             if directed == 'backwards':
-                recursion_filter &= timestep_new.time_gyr < timestep_old.time_gyr*(1.0-SMALL_FRACTION)
+                recursion_filter &= (timestep_new.time_gyr < timestep_old.time_gyr*(1.0-SMALL_FRACTION))
             elif directed == 'forwards':
-                recursion_filter &= timestep_new.time_gyr > timestep_old.time_gyr*(1.0+SMALL_FRACTION)
+                recursion_filter &= (timestep_new.time_gyr > timestep_old.time_gyr*(1.0+SMALL_FRACTION))
             elif directed == 'across':
                 existing_timestep_ids = self.session.query(core.Halo.timestep_id).\
                     select_from(self._link_orm_class).join(self._link_orm_class.halo_to).distinct()
