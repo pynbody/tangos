@@ -204,7 +204,7 @@ class TimeChunkedProperty(PropertyCalculation):
     """TimeChunkedProperty implements a special type of halo property where chunks of a histogram are stored
     at each time step, then appropriately reassembled when the histogram is retrieved."""
 
-    nbins = 2000
+    nbins = 1000
     tmax_Gyr = 20.0
     minimum_store_Gyr = 1.0
 
