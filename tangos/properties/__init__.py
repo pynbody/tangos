@@ -255,7 +255,7 @@ class TimeChunkedProperty(PropertyCalculation):
         elif reassembly_type=='sum':
             return cls._reassemble_using_finding_strategy(property, halo, strategy = rfs.MultiHopAllProgenitorsStrategy)
         elif reassembly_type=='place':
-            return cls._place_data(property.halo.timestep.time_gyr, halo, property.data_raw)
+            return cls._place_data(property.halo.timestep.time_gyr, property.data_raw)
         elif reassembly_type=='raw':
             return property.data_raw
         else:
