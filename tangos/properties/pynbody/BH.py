@@ -155,16 +155,46 @@ class BHAccHistogramMerged(PynbodyPropertyCalculation):
 
 
 class BHGal(LivePropertyCalculation):
-    def __init__(self, simulation=None, choose='BH_mass', minmax='max', bhtype='BH_central'):
+    def __init__(self, simulation=None, choose='BH_mass', minmax='max', bhtype='BH_central',*constraints):
         super(BHGal, self).__init__(simulation)
         self._maxmin = minmax
         self._choicep = choose
         self._bhtype = bhtype
+        self._constraints = {}
+        value = None
+        prop = None
+        highlo = None
+        for arg in constraints:
+            if '>' in arg:
+                prop, value = arg.split('>')
+                highlo = 'min'
+            if '<' in arg:
+                prop, value = arg.split('<')
+                highlo = 'max'
+            if value:
+                value = float(value)
+                self._constraints[prop] = (highlo,value)
 
     names = 'bh'
 
     def requires_property(self):
         return self._bhtype, self._bhtype+"."+self._choicep
+
+    def check_constraints(self,bh):
+        print("check constraints!")
+        for prop in self._constraints.keys():
+            print(self._constraints[prop], prop)
+            try:
+                bh.calculate(prop)
+            except:
+                return False
+            if self._constraints[prop][0]=='max':
+                if bh.calculate(prop) > self._constraints[prop][1]:
+                    return False
+            if self._constraints[prop][0]=='min':
+                if bh.calculate(prop) < self._constraints[prop][1]:
+                    return False
+        return True
 
     def live_calculate(self, halo, *args):
         if halo.object_typecode != 0:
@@ -173,20 +203,31 @@ class BHGal(LivePropertyCalculation):
         if self._bhtype not in list(halo.keys()):
             return None
 
+        target_value = None
+        target_bh = None
+
         if type(halo[self._bhtype]) is list:
-            chp = [bh[self._choicep] for bh in halo[self._bhtype] if self._choicep in bh]
-            if len(chp) == 0:
-                return None
-            target = None
-            if self._maxmin == 'min':
-                target = np.argmin(chp)
-            if self._maxmin == 'max':
-                target = np.argmax(chp)
-            if target is None:
-                return None
-            return halo[self._bhtype][target]
+            for bh in halo[self._bhtype]:
+                if not self.check_constraints(bh):
+                    continue
+                if target_value is None:
+                    target_bh = bh
+                    target_value = bh[self._choicep]
+                else:
+                    if self._maxmin == 'min':
+                        if bh[self._choicep] < target_value:
+                            target_bh = bh
+                            target_value = bh[self._choicep]
+                    if self._maxmin == 'max':
+                        if bh[self._choicep] > target_value:
+                            target_bh = bh
+                            target_value = bh[self._choicep]
         else:
-            return halo[self._bhtype]
+            bh = halo[self._bhtype]
+            if self.check_constraints(bh):
+                target_bh = bh
+
+        return target_bh
 
 class BHCentral(BHGal):
     names = 'bhcenter'
