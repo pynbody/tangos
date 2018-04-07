@@ -75,7 +75,7 @@ class DummyPropertyWithReassemblyOptions(properties.PropertyCalculation):
     names = "dummy_property_with_reassembly"
 
     @classmethod
-    def reassemble(cls, property, test_option=25):
+    def reassemble(cls, property, halo, test_option=25):
         if test_option=='actual_data':
             return property.data_raw
         else:

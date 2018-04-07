@@ -73,7 +73,7 @@ class HaloProperty(Base):
             cls = None
 
         if hasattr(cls, 'reassemble'):
-            return cls.reassemble(self, *options)
+            return cls.reassemble(self, self.halo, *options)
         else:
             return self.data_raw
 
