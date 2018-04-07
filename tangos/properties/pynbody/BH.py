@@ -181,9 +181,7 @@ class BHGal(LivePropertyCalculation):
         return self._bhtype, self._bhtype+"."+self._choicep
 
     def check_constraints(self,bh):
-        print("check constraints!")
         for prop in self._constraints.keys():
-            print(self._constraints[prop], prop)
             try:
                 bh.calculate(prop)
             except:
