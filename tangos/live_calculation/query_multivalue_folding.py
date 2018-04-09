@@ -6,10 +6,11 @@ class QueryMultivalueFolding(object):
     """This class manages a situation where a query returns multiple outputs per input, and one temporarily wants
     to explore all those outputs then later fold them back to a single output per input"""
 
-    def __init__(self, determiner_mode, determiner_column):
+    def __init__(self, determiner_mode, determiner_column, constraints_columns=[]):
         assert determiner_mode in ['max', 'min']
         self.determiner_mode = determiner_mode
         self.determiner_column = determiner_column
+        self.constraints_columns = constraints_columns
 
     def unfold(self, input):
         input_unfolded = []
@@ -34,11 +35,18 @@ class QueryMultivalueFolding(object):
             mask.mark_nones_as_masked(determiner_slice)
             results_slice = mask.mask(results_slice.T).T
             determiner_slice = mask.mask(determiner_slice)
-            if len(determiner_slice)!=0:
+
+            truth_slice = np.full(len(determiner_slice),True)
+            for cc in self.constraints_columns:
+                constraint = results_slice[cc]
+                constraint = mask.mask(constraint)
+                truth_slice[(constraint==False)] = False
+
+            if len(determiner_slice)!=0 and True in truth_slice:
                 if self.determiner_mode=='max':
-                    select_index = determiner_slice.argmax()
+                    select_index = np.where(truth_slice)[0][determiner_slice[truth_slice].argmax()]
                 else:
-                    select_index = determiner_slice.argmin()
+                    select_index = np.where(truth_slice)[0][determiner_slice[truth_slice].argmin()]
                 out_results_place = out_results.T[i].T
                 out_results_place[:] = results_slice.T[select_index].T
         return out_results

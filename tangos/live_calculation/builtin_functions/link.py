@@ -20,14 +20,18 @@ def link(*args):
     raise RuntimeError("Internal error in link(). The customised function from the link_initialisation routine should be called.")
 
 link.set_input_options(0, provide_proxy=True, assert_class=StoredProperty)
-link.set_input_options(1, provide_proxy=True, assert_class=StoredProperty)
+link.set_input_options(1, provide_proxy=True)
 
 @link.set_initialisation
-def link_initialisation(link_getter, property_getter=None, basis='max'):
+def link_initialisation(link_getter, property_getter=None, basis='max',*constraints):
     if isinstance(basis, FixedInput):
         basis = basis.proxy_value()
     if property_getter:
-        internal_getter = Link(link_getter, MultiCalculation(ReturnInputHalos(), property_getter))
+        if constraints:
+            internal_getter = Link(link_getter, MultiCalculation(ReturnInputHalos(), property_getter,*constraints))
+            internal_getter.set_constraints_columns(list(np.arange(len(constraints))+2))
+        else:
+            internal_getter = Link(link_getter, MultiCalculation(ReturnInputHalos(), property_getter))
         internal_getter.set_multi_selection_basis(basis, 1)
     else:
         internal_getter = Link(link_getter, ReturnInputHalos())
