@@ -156,7 +156,7 @@ class HaloStatFile(object):
             halo = halos_map.get(values[0], None)
             if halo is not None:
                 for name_object, value in zip(property_db_names, values[1:]):
-                    if isinstance(value, float) or isinstance(value, str):
+                    if isinstance(value, float) or isinstance(value, int):
                         property_objects.append(tangos.core.halo_data.HaloProperty(halo, name_object, value))
                     else:
                         logger.warn("Ignoring stat file entry key='%s' value='%s' as the value is not a number",
