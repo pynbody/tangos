@@ -43,7 +43,8 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         pynbody_version = getattr(pynbody, "__version__","0.00")
         assert pynbody_version>="0.42", "Tangos requires pynbody 0.42 or later"
 
-    def _is_able_to_load(self, filepath):
+    def _is_able_to_load(self, ts_extension):
+        filepath = self._extension_to_filename(ts_extension)
         try:
             f = pynbody.load(filepath)
             if self.quicker:
@@ -470,4 +471,4 @@ class ChangaInputHandler(PynbodyInputHandler):
                 pass
         return out
 
-from . import caterpillar
+from . import caterpillar, eagle
