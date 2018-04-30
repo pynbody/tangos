@@ -56,7 +56,9 @@ def centred_calculation(fn):
     """Wrap a calculation with a robust recentring of the halo particles that is automatically reverted"""
     @functools.wraps(fn)
     def new_fn(self, halo, existing_properties):
-        with _recenter(halo, existing_properties['shrink_center']):
+        # Note that we recenter halo.ancestor i.e. the whole snapshot, if it is loaded into memory, so that there
+        # is no confusion when performing whole-snapshot operations such as smoothing/density calculations.
+        with _recenter(halo.ancestor, existing_properties['shrink_center']):
             return fn(self, halo, existing_properties)
 
     return new_fn
