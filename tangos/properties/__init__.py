@@ -201,7 +201,9 @@ HaloProperties = PropertyCalculation # old name, to be deprecated
 
 class TimeChunkedProperty(PropertyCalculation):
     """TimeChunkedProperty implements a special type of halo property where chunks of a histogram are stored
-    at each time step, then appropriately reassembled when the histogram is retrieved."""
+    at each time step, then appropriately reassembled when the histogram is retrieved.
+
+    For more information see docs/histogram_properties.md"""
 
     pixel_delta_t_Gyr = 0.02  # default value. Can be overriden by a simulation property histogram_delta_t_Gyr
     minimum_store_Gyr = 0.5
