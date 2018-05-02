@@ -69,11 +69,10 @@ def db_export(remote_db, *sims):
 
 
 def _db_import_export(target_session, from_session, *sims):
-    from tangos.util.terminalcontroller import heading
     external_to_internal_halo_id = {}
     translated_halolink_ids = []
 
-    if sims == tuple():
+    if len(sims)==0:
         sims = [x.id for x in all_simulations(from_session)]
 
     for sim in sims:

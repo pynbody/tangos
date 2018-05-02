@@ -2,18 +2,24 @@ from .. import core, all_simulations, get_simulation, get_timestep, get_object
 from ..log import logger
 import six
 import numpy.testing as npt
-from sqlalchemy.orm import joinedload, object_session, undefer
+from sqlalchemy.orm import joinedload, object_session, undefer, Session
 
 class TangosDbDiff(object):
     """Class to compare two databases, used by the tangos diff command line tool"""
 
     def __init__(self, uri1, uri2, max_objects=10):
-        core.init_db(uri1)
-        self.session1 = core.get_default_session()
-        self.uri1 = uri1
-        core.init_db(uri2)
-        self.session2 = core.get_default_session()
-        self.uri2 = uri2
+        if isinstance(uri1, Session):
+            self.session1 = uri1
+        else:
+            core.init_db(uri1)
+            self.session1 = core.get_default_session()
+
+
+        if isinstance(uri2, Session):
+            self.session2 = uri2
+        else:
+            core.init_db(uri2)
+            self.session2 = core.get_default_session()
 
         self.test_simulations = True
         self.test_timesteps = True

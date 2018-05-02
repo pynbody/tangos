@@ -148,8 +148,9 @@ def init_blank_db_for_testing(**init_kwargs):
 
     caller_fname = os.path.basename(inspect.getframeinfo(inspect.currentframe().f_back)[0])[:-3]
 
-    print(caller_fname)
-    db_name = "test_dbs/%s.db"%caller_fname
+    testing_db_name = init_kwargs.pop("testing_db_name", caller_fname)
+
+    db_name = "test_dbs/%s.db"%testing_db_name
     try:
 
         os.remove(db_name)
