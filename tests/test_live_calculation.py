@@ -81,6 +81,19 @@ class DummyPropertyWithReassemblyOptions(properties.PropertyCalculation):
         else:
             return test_option
 
+class DummyLivePropertyWithReassembly(properties.LivePropertyCalculation):
+    names = "dummy_live_property_with_reassembly"
+
+    def live_calculate(self, db_halo_entry, factor=2):
+        return db_halo_entry.calculate('raw(dummy_property_with_reassembly)') * factor
+
+    @classmethod
+    def reassemble(cls, property, halo, test_option=25):
+        if test_option == 'actual_data':
+            return halo.calculate(property.__str__())
+        else:
+            return halo.calculate('raw(dummy_property_with_reassembly)') * test_option
+
 class LivePropertyRequiringRedirectedProperty(properties.LivePropertyCalculation):
     names = "first_BHs_BH_mass"
 
