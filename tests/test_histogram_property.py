@@ -31,13 +31,16 @@ def _setup_dummy_histogram_data(ts1, ts2):
     ts1_h1 = db.get_halo("sim/ts1/1")
     ts1_h2 = db.get_halo("sim/ts1/2")
     ts2_h1 = db.get_halo("sim/ts2/1")
-    ts1_h1['dummy_histogram'] = test_histogram[DummyHistogramProperty.store_slice(ts1.time_gyr)]
-    ts1_h2['dummy_histogram'] = test_histogram[DummyHistogramProperty.store_slice(ts1.time_gyr)] * 0.5
-    ts2_h1['dummy_histogram'] = test_histogram[DummyHistogramProperty.store_slice(ts2.time_gyr)]
+
+    property = DummyHistogramProperty(db.get_simulation("sim"))
+    ts1_h1['dummy_histogram'] = test_histogram[property.store_slice(ts1.time_gyr)]
+    ts1_h2['dummy_histogram'] = test_histogram[property.store_slice(ts1.time_gyr)] * 0.5
+    ts2_h1['dummy_histogram'] = test_histogram[property.store_slice(ts2.time_gyr)]
     db.core.get_default_session().commit()
 
 
 class DummyHistogramProperty(properties.TimeChunkedProperty):
+    minimum_store_Gyr = 1.0
     names = "dummy_histogram"
 
 
@@ -45,7 +48,7 @@ def test_default_reconstruction():
     ts2_h1 = db.get_halo("sim/ts2/1")
     reconstructed = db.get_halo("sim/ts2/1")['dummy_histogram']
     assert np.all(reconstructed == test_histogram[:len(reconstructed)])
-    assert len(reconstructed)==int(DummyHistogramProperty.nbins*ts2_h1.timestep.time_gyr/DummyHistogramProperty.tmax_Gyr)
+    assert len(reconstructed)==int(ts2_h1.timestep.time_gyr/DummyHistogramProperty.pixel_delta_t_Gyr)
 
 def test_summed_reconstruction():
     ts2_h1 = db.get_halo("sim/ts2/1")
@@ -124,3 +127,13 @@ def test_summed_reconstruction_across_simulations():
 
     finally:
         ts2.simulation = db.query.get_simulation("sim")
+
+
+def test_custom_delta_t():
+    try:
+        db.get_simulation("sim")["histogram_delta_t_Gyr"] = 0.01
+        reconstructed_lc = db.get_halo("sim/ts2/1").calculate("reassemble(dummy_histogram, 'place')")
+        assert len(reconstructed_lc) == int(db.get_timestep("sim/ts2").time_gyr/0.01)
+    finally:
+        # restore to default
+        db.get_simulation("sim")["histogram_delta_t_Gyr"] = DummyHistogramProperty.pixel_delta_t_Gyr
