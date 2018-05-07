@@ -358,7 +358,7 @@ class LiveProperty(Calculation):
         super(LiveProperty, self).__init__()
         self._name = str(tokens[0])
         self._inputs = list(tokens[1:])
-        self._evaluation_pattern = '_evaluate_function'
+        self._evaluation_pattern = '_evaluate_function_with_reassemble'
         self._evaluation_options= []
 
     def __str__(self):
@@ -505,6 +505,7 @@ class BuiltinFunction(LiveProperty):
         super(BuiltinFunction, self).__init__(*tokens)
         self._func = self.__registered_functions[self._name]['function']
         self._info = self.__registered_functions[self._name]
+        self.set_evaluation_pattern('_evaluate_function')
         for i in range(len(self._inputs)):
             assert_class = self._get_input_option(i, 'assert_class')
             if assert_class is not None and not isinstance(self._inputs[i], assert_class):

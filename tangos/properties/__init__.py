@@ -264,7 +264,7 @@ class TimeChunkedProperty(PropertyCalculation):
             if not isinstance(property, LiveProperty):
                 return property.data_raw
             else:
-                return halo.calculate(property.__str__())
+                return halo.calculate('raw('+property.__str__()+')')
         else:
             raise ValueError("Unknown reassembly type")
 
