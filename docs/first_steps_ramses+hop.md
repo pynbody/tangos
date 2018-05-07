@@ -4,10 +4,20 @@ Tangos Tutorial – Ramses+HOP
 Initial set up
 --------------
 
-Make sure you have followed the [initial set up instructions](index.md). Then download the
+Make sure you have followed the [initial set up instructions](index.md).
+
+Next, download the
 [raw simulation data](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_ramses.tar.gz) required for this tutorial.
 Unpack the tar file either in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
 variable to.
+
+For most Linux or macOS systems, the following typed at your bash command line will download the required data and
+unpack it in the correct location:
+
+```bash
+cd $TANGOS_SIMULATION_FOLDER
+curl ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_ramses.tar.gz | tar -xz
+```
 
 Import the simulation
 ---------------------
@@ -89,7 +99,7 @@ If you want to speed up this process, it can be [MPI parallelised](mpi.md).
 Here,
  * `tangos write` is the same script you called above to add properties to the database
  * `dm_density_profile` is an array representing the dark matter density profile; to see all available properties
-   you can call `tangos list-possible-haloproperties`
+   you can call `tangos list-possible-properties`
  * `--with-prerequisites` automatically includes  any underlying properties that are required to perform the calculation. In this case,
    the `dm_density_profile` calculation actually needs to know an accurate center for the halo (known as `shrink_center`),
    so that calculation will be automatically performed and stored
@@ -98,7 +108,7 @@ Here,
    with a fraction of low-res particles smaller than 1%)
  
  
- Explore what's possible
- -----------------------
+Explore what's possible
+-----------------------
  
- Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.
+Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.

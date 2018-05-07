@@ -7,7 +7,9 @@ Initial set up
 This tutorial imports a gadget-run simulation with a [Rockstar](https://bitbucket.org/gfcstanford/rockstar/)
 halo catalogue and [consistent-trees](https://bitbucket.org/pbehroozi/consistent-trees) merger information.
 
-Make sure you have followed the [initial set up instructions](index.md). Then download the raw simulation data
+Make sure you have followed the [initial set up instructions](index.md).
+
+Then download the raw simulation data
 required for this tutorial. You need two files:
 
  - the simulations snapshots, [tutorial_gadget.tar.gz](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_gadget.tar.gz)
@@ -18,12 +20,21 @@ required for this tutorial.
 Unpack both tar files either in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
 variable to.
 
+For most Linux or macOS systems, the following typed at your bash command line will download the required data and
+unpack it in the correct location:
+
+```bash
+cd $TANGOS_SIMULATION_FOLDER
+curl ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_gadget.tar.gz | tar -xz
+curl ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_gadget_rockstar.tar.gz | tar -xz
+```
+
 Import the simulation
 ---------------------
 
 At the unix command line type:
 
-```
+```bash
 tangos add tutorial_gadget_rockstar --min-particles 100
 ```
 
@@ -51,7 +62,7 @@ Import rockstar's properties
 
 At the unix command line type:
 
-```
+```bash
 tangos import-properties Mvir Rvir X Y Z --for tutorial_gadget_rockstar
 ```
 
@@ -67,7 +78,7 @@ Import the merger trees
 
 The merger trees can be imported from consistent-trees.  To do this type
 
-```
+```bash
 tangos import-consistent-trees --for tutorial_gadget_rockstar
 ```
 
@@ -86,7 +97,7 @@ Add some more interesting properties
 
 Let's finally do some science. We'll add dark matter density profiles; from your shell type:
  
- ```bash
+```bash
 tangos write dm_density_profile --with-prerequisites --include-only="NDM()>5000" --type=halo --for tutorial_gadget_rockstar
 ```
 
@@ -95,7 +106,7 @@ If you want to speed up this process, it can be [MPI parallelised](mpi.md).
 Here,
  * `tangos write` is the same script you called above to add properties to the database
  * `dm_density_profile` is an array representing the dark matter density profile; to see all available properties
-   you can call `tangos list-possible-haloproperties`
+   you can call `tangos list-possible-properties`
  * `--with-prerequisites` automatically includes  any underlying properties that are required to perform the calculation. In this case,
    the `dm_density_profile` calculation actually needs to know an accurate center for the halo (known as `shrink_center`),
    so that calculation will be automatically performed and stored
@@ -106,7 +117,7 @@ Here,
  
  
  
- Explore what's possible
- -----------------------
+Explore what's possible
+-----------------------
  
- Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.
+Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.
