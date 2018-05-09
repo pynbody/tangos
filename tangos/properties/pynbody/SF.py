@@ -34,5 +34,5 @@ class StarFormHistogram(TimeChunkedProperty):
         return M
 
     def reassemble(self, *options):
-        reassembled = TimeChunkedProperty.reassemble(*options)
+        reassembled = super(StarFormHistogram, self).reassemble(*options)
         return reassembled/1e9 # Msol per Gyr -> Msol per yr
