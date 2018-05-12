@@ -1,3 +1,9 @@
+"""
+Tools to guarantee that only one tangos parallel_tasks process will access the database at once.
+
+This module is no longer in use and should be removed in the near future
+"""
+
 from __future__ import absolute_import
 import sqlalchemy, sqlalchemy.engine, sqlalchemy.event
 from . import parallel_tasks as pt
