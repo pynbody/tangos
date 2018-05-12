@@ -1,3 +1,7 @@
+"""
+Logging utilities used throughout the tangos package
+"""
+
 from __future__ import absolute_import
 import logging
 from six import StringIO
@@ -14,6 +18,16 @@ logger.addHandler(handler_stderr)
 
 
 class LogCapturer(object):
+    """A class to store a log, prevent it being written to screen, but make it accessible for later use.
+    
+    Mainly used in the test suite, as follows:
+    
+    lc = LogCapturer()
+    with lc:
+        do_operation_generating_log() # log will not appear on screen
+    assert "terrible error string" not in lc.get_output()
+    """
+    
     def __init__(self):
         self.buffer = StringIO()
         self.handler_buffer = logging.StreamHandler(self.buffer)
@@ -37,6 +51,10 @@ class LogCapturer(object):
 
 
 def set_identity_string(identifier):
+    """Set an identifying string for all log entries.
+    
+    Used by parallel_tasks to distinguish log messages from different CPUs.
+    """
     global handler_stderr
     formatter = logging.Formatter(identifier+"%(asctime)s : %(message)s")
     handler_stderr.setFormatter(formatter)
