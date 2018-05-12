@@ -1,3 +1,7 @@
+"""
+Basic querying tools for tangos. Note these are imported into the root tangos namespace for user convenience.
+"""
+
 from __future__ import absolute_import
 from __future__ import print_function
 from sqlalchemy import and_
@@ -15,12 +19,23 @@ def all_simulations(session=None):
 
 
 def all_creators():
+    """Get all Creator objects.
+    
+    Each represents a distinct runtime of tangos where new database objects were created.
+    """
     return get_default_session().query(Creator).all()
 
 
 def get_simulation(id, session=None):
+    """Get the simulation with a specified id or name.
+    
+    Optionally, a specific SQLAlchemy session can be specified; otherwise the default tangos session is used.
+    
+    :rtype: Simulation
+    """
     if session is None:
         session = get_default_session()
+        
     if isinstance(id, str) or isinstance(id, six.text_type):
         assert "/" not in id
         if "%" in id:
@@ -35,12 +50,20 @@ def get_simulation(id, session=None):
             raise RuntimeError("Multiple (%d) matches for %r" % (num, id))
         else:
             return res.first()
-
     else:
         return session.query(Simulation).filter_by(id=int(id)).first()
 
 
 def get_timestep(id, session=None, sim=None):
+    """Get the simulation with a specified integer id or identifying string.
+    
+    If a string, it should be formatted as 'sim_name/timestep_name', unless a simulation is 
+    specified through the sim argument, in which case the only the timestep name need be given.
+    
+    Optionally, a specific SQLAlchemy session can be specified; otherwise the default tangos session is used.
+    
+    :rtype: TimeStep
+    """
     if session is None:
         session = get_default_session()
     if isinstance(id, str) or isinstance(id, six.text_type):
@@ -64,9 +87,13 @@ def get_timestep(id, session=None, sim=None):
 
 
 def get_object(id, session=None):
-    """Get an object from an ID or an identifying string
+    """Get an object with the specified integer id or identifying string
+    
+    If a string, it should be formatted as 'sim_name/timestep_name/X' where X is the number of a halo
+    to be retrieved. To retrieve objects other than a halo -- for example a BH -- replace X with 
+    BH_X where X is still an integer.
 
-    Optionally, use the specified session.
+    Optionally, use the specified SQLAlchemy session.
 
     :rtype: Halo
     """
@@ -83,6 +110,10 @@ def get_object(id, session=None):
 get_halo = get_object # old naming convention - to be deprecated
 
 def get_item(path, session=None):
+    """Get a simulation, timestep, or object depending on the specified path.
+    
+    Optionally, use the specified SQLAlchemy session.
+    """
     c = path.count("/")
     if c is 0:
         return get_simulation(path, session)
@@ -97,11 +128,12 @@ def get_haloproperty(id):
 
 
 def get_items(path_list, session=None):
+    """Get multiple items from a list of paths; see get_item for more information."""
     return [get_item(path,session) for path in path_list]
 
 
 def getdb(cl) :
-    """Function decorator to ensure input is parsed into a database object."""
+    """Function decorator to ensure input to the function is a tangos object."""
     def getdb_inner(f) :
         def wrapped(*args, **kwargs) :
 
