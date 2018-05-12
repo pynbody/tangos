@@ -1,3 +1,9 @@
+"""
+Tools to create and commit a set of properties to a halo or other object
+
+Used by tangos write (tangos.scripts.writer)
+"""
+
 from __future__ import absolute_import
 from . import core
 
