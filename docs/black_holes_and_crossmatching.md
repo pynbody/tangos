@@ -17,7 +17,11 @@ environment
 variable to.
 
 Next, refer back to the [first steps with Changa+AHF tutorial](first_steps_changa+ahf.md).
-Follow all the steps there but replacing `tutorial_changa` with `tutorial_changa_blackholes`. 
+Follow all the steps there but replacing `tutorial_changa` with `tutorial_changa_blackholes`.
+
+Note that if you are using Michael Tremmel's black hole implementation in Changa, you need to run his
+pre-processing script to generate the black hole logs (such as `.shortened.orbit` and `.mergers`) from 
+the raw output logs.
 
 
 Crosslink the simulations

@@ -202,32 +202,33 @@ HaloProperties = PropertyCalculation # old name, to be deprecated
 
 class TimeChunkedProperty(PropertyCalculation):
     """TimeChunkedProperty implements a special type of halo property where chunks of a histogram are stored
-    at each time step, then appropriately reassembled when the histogram is retrieved."""
+    at each time step, then appropriately reassembled when the histogram is retrieved.
 
-    nbins = 1000
-    tmax_Gyr = 20.0
-    minimum_store_Gyr = 1.0
+    For more information see docs/histogram_properties.md"""
 
-    @property
-    def delta_t(self):
-        return self.tmax_Gyr/self.nbins
+    pixel_delta_t_Gyr = 0.02  # default value. Can be overriden by a simulation property histogram_delta_t_Gyr
+    minimum_store_Gyr = 0.5
 
-    @classmethod
+    def __init__(self, simulation):
+        if simulation is not None:
+            self.pixel_delta_t_Gyr = simulation.get("histogram_delta_t_Gyr", self.pixel_delta_t_Gyr)
+        super(TimeChunkedProperty, self).__init__(simulation)
+
+
     def bin_index(self, time):
         """Convert a time (Gyr) to a bin index in the histogram"""
-        index = int(self.nbins*time/self.tmax_Gyr)
+        index = int(time/self.pixel_delta_t_Gyr)
         if index<0:
             index = 0
         return index
 
-    @classmethod
     def store_slice(self, time):
         """Tells subclasses which have generated a histogram over all time which slice of that histogram
         they should store."""
         return slice(self.bin_index(time-self.minimum_store_Gyr), self.bin_index(time))
 
-    @classmethod
-    def reassemble(cls, property, halo, reassembly_type='major'):
+
+    def reassemble(self, property, halo, reassembly_type='major'):
         """Reassemble a histogram by suitable treatment of the merger tree leading up to the current halo.
 
         This function is normally called by the framework (see Halo.get_data_with_reassembly_options) and you would
@@ -248,18 +249,19 @@ class TimeChunkedProperty(PropertyCalculation):
         from tangos import relation_finding as rfs
 
         if reassembly_type=='major':
-            return cls._reassemble_using_finding_strategy(property, halo, strategy = rfs.MultiHopMajorProgenitorsStrategy)
+            return self._reassemble_using_finding_strategy(property, halo, strategy = rfs.MultiHopMajorProgenitorsStrategy)
         elif reassembly_type=='major_across_simulations':
-            return cls._reassemble_using_finding_strategy(property, halo, strategy = rfs.MultiHopMajorProgenitorsStrategy,
-                                                          strategy_kwargs = {'target': None})
+            return self._reassemble_using_finding_strategy(property, halo, strategy = rfs.MultiHopMajorProgenitorsStrategy,
+                                                           strategy_kwargs = {'target': None})
         elif reassembly_type=='sum':
-            return cls._reassemble_using_finding_strategy(property, halo, strategy = rfs.MultiHopAllProgenitorsStrategy)
+            return self._reassemble_using_finding_strategy(property, halo, strategy = rfs.MultiHopAllProgenitorsStrategy)
         elif reassembly_type=='place':
             if not isinstance(property, LiveProperty):
-                place_data =  property.data_raw
+                place_data = property.data_raw
             else:
-                place_data =  halo.calculate(property.__str__())
-            return cls._place_data(property.halo.timestep.time_gyr, place_data)
+                place_data = halo.calculate(property.__str__())
+            return self._place_data(property.halo.timestep.time_gyr, place_data)
+
         elif reassembly_type=='raw':
             if not isinstance(property, LiveProperty):
                 return property.data_raw
@@ -268,25 +270,23 @@ class TimeChunkedProperty(PropertyCalculation):
         else:
             raise ValueError("Unknown reassembly type")
 
-    @classmethod
-    def _place_data(cls, time, raw_data):
-        final = np.zeros(cls.bin_index(time))
+    def _place_data(self, time, raw_data):
+        final = np.zeros(self.bin_index(time))
         end = len(final)
         start = end - len(raw_data)
         final[start:] = raw_data
         return final
 
-    @classmethod
-    def _reassemble_using_finding_strategy(cls, property, halo, strategy, strategy_kwargs={}):
+    def _reassemble_using_finding_strategy(self, property, halo, strategy, strategy_kwargs={}):
         if not isinstance(property, LiveProperty):
             name = property.name.text
         else:
             name = property.__str__()
         t, stack = halo.calculate_for_descendants("t()", "raw(" + name + ")", strategy=strategy, strategy_kwargs=strategy_kwargs)
-        final = np.zeros(cls.bin_index(t[0]))
+        final = np.zeros(self.bin_index(t[0]))
         previous_time = -1
         for t_i, hist_i in zip(t, stack):
-            end = cls.bin_index(t_i)
+            end = self.bin_index(t_i)
             start = end - len(hist_i)
             valid = hist_i == hist_i
             if t_i != previous_time:
@@ -299,13 +299,13 @@ class TimeChunkedProperty(PropertyCalculation):
         return final
 
 
-    def plot_xdelta(cls):
-        return cls.tmax_Gyr/cls.nbins
+    def plot_xdelta(self):
+        return self.pixel_delta_t_Gyr
 
-    def plot_xlog(cls):
+    def plot_xlog(self):
         return False
 
-    def plot_ylog(cls):
+    def plot_ylog(self):
         return False
 
 
