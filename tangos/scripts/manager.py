@@ -19,6 +19,7 @@ from tangos.core.tracking import TrackData
 from tangos.query import get_simulation, get_halo
 from tangos.input_handlers import get_named_handler_class
 from tangos.tools.add_simulation import SimulationAdderUpdater
+from tangos.log import logger
 from six.moves import input
 
 
@@ -68,63 +69,83 @@ def db_export(remote_db, *sims):
 
 
 def _db_import_export(target_session, from_session, *sims):
-    from tangos.util.terminalcontroller import heading
     external_to_internal_halo_id = {}
     translated_halolink_ids = []
 
-    if sims == tuple():
+    if len(sims)==0:
         sims = [x.id for x in all_simulations(from_session)]
 
     for sim in sims:
         ext_sim = get_simulation(sim, from_session)
         sim = Simulation(ext_sim.basename)
-        heading("import " + repr(ext_sim))
         sim = target_session.merge(sim)
+        logger.info("Transferring simulation %s", ext_sim)
 
+        halos_this_ts = []
         for p_ext in ext_sim.properties:
             dic = get_or_create_dictionary_item(
                 target_session, p_ext.name.text)
             p = SimulationProperty(sim, dic, p_ext.data)
-            p = target_session.merge(p)
+            halos_this_ts.append(p)
 
         for tk_ext in ext_sim.trackers:
             tk = TrackData(sim, tk_ext.halo_number)
             tk.particles = tk_ext.particles
             tk.use_iord = tk_ext.use_iord
+            halos_this_ts.append(tk)
+
+        target_session.add_all(halos_this_ts)
 
         for ts_ext in ext_sim.timesteps:
-            print(".", end=' ')
-            sys.stdout.flush()
-            ts = TimeStep(sim, ts_ext.extension, False)
+            logger.info("Transferring timestep %s",ts_ext)
+            ts = TimeStep(sim, ts_ext.extension)
             ts.redshift = ts_ext.redshift
             ts.time_gyr = ts_ext.time_gyr
             ts.available = True
             ts = target_session.merge(ts)
-            for h_ext in ts_ext.halos:
+
+            halos_this_ts = []
+
+            logger.info("Transferring objects for %s", ts_ext)
+            for h_ext in ts_ext.objects:
                 h = Halo(ts, h_ext.halo_number, h_ext.finder_id, h_ext.NDM,
                          h_ext.NStar, h_ext.NGas, h_ext.object_typecode)
-                h = target_session.merge(h)
+                h.external_id = h_ext.id
+                halos_this_ts.append(h)
+
+            target_session.add_all(halos_this_ts)
+            target_session.commit()
+
+            for h in halos_this_ts:
                 assert h.id is not None and h.id > 0
-                external_to_internal_halo_id[h_ext.id] = h.id
+                external_to_internal_halo_id[h.external_id] = h.id
+
+            properties_this_ts = []
+            logger.info("Transferring object properties for %s", ts_ext)
+            for h_ext in ts_ext.objects:
+                h_new_id = external_to_internal_halo_id[h_ext.id]
                 for p_ext in h_ext.properties:
                     dic = get_or_create_dictionary_item(
                         target_session, p_ext.name.text)
-                    dat = p_ext.data
+                    dat = p_ext.data_raw
                     if dat is not None:
-                        p = HaloProperty(h, dic, dat)
-                        p = target_session.merge(p)
+                        p = HaloProperty(h_new_id, dic, dat)
+                        properties_this_ts.append(p)
 
-        print("Translate halolinks", end=' ')
+            target_session.add_all(properties_this_ts)
+            target_session.commit()
+
         for ts_ext in ext_sim.timesteps:
-            print(".", end=' ')
+            logger.info("Transferring halolinks for timestep %s", ts_ext)
             sys.stdout.flush()
             _translate_halolinks(
                 target_session, ts_ext.links_from, external_to_internal_halo_id, translated_halolink_ids)
             _translate_halolinks(
                 target_session, ts_ext.links_to, external_to_internal_halo_id, translated_halolink_ids)
+            target_session.commit()
 
-        print("Done")
-        target_session.commit()
+        logger.info("Done")
+
 
 
 def _translate_halolinks(target_session, halolinks, external_to_internal_halo_id, translated):
@@ -134,7 +155,7 @@ def _translate_halolinks(target_session, halolinks, external_to_internal_halo_id
 
         dic = get_or_create_dictionary_item(
             target_session, hl_ext.relation.text)
-        hl_new = HaloLink(None, None, dic)
+        hl_new = target_session.merge(HaloLink(None, None, dic))
 
         try:
             hl_new.halo_from_id = external_to_internal_halo_id[
@@ -146,7 +167,7 @@ def _translate_halolinks(target_session, halolinks, external_to_internal_halo_id
             hl_new.halo_to_id = external_to_internal_halo_id[hl_ext.halo_to_id]
         except KeyError:
             continue
-        target_session.add(hl_new)
+
         translated.append(hl_ext.id)
 
 
@@ -428,6 +449,7 @@ def get_argument_parser_and_subparsers():
     subparse_remruns = subparse.add_parser("rm", help="Remove a simulation from the database")
     subparse_remruns.add_argument("sims", help="The path to the simulation folder relative to the database folder")
     subparse_remruns.set_defaults(func=rem_simulation_timesteps)
+     """
     
     subparse_import = subparse.add_parser("import",
                                           help="Import one or more simulations from another sqlite file")
@@ -435,7 +457,7 @@ def get_argument_parser_and_subparsers():
     subparse_import.add_argument("sims", nargs="*", type=str,
                                  help="The name of the simulations to import (or import everything if none specified)")
     subparse_import.set_defaults(func=db_import)
-    """
+
 
 
     subparse_deprecate = subparse.add_parser("flag-duplicates",

@@ -4,24 +4,35 @@ Tangos Tutorial – Changa + AHF
 Initial set up
 --------------
 
-Make sure you have followed the [initial set up instructions](index.md). Then download the
+Make sure you have followed the [initial set up instructions](index.md).
+
+Next, download the
 [raw simulation data](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_changa.tar.gz) required for this tutorial.
 Unpack the tar file either in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
 variable to.
+
+For most Linux or macOS systems, the following typed at your bash command line will download the required data and
+unpack it in the correct location:
+
+```bash
+cd $TANGOS_SIMULATION_FOLDER
+curl ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_changa.tar.gz | tar -xz
+```
+
 
 Import the simulation
 ---------------------
 
 At the unix command line type:
 
-```
+```bash
 tangos add tutorial_changa
 ```
 
 The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
 scroll up the screen.
  
- Let's pick this command apart
+Let's pick this command apart
  
   * `tangos` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
@@ -37,7 +48,7 @@ Import some AHF-defined properties
 
 At the unix command line type:
 
-```
+```bash
 tangos import-properties Mvir Rvir --for tutorial_changa
 ```
 
@@ -52,7 +63,7 @@ Generate the merger trees
 
 The merger trees are most simply generated using pynbody's bridge function to do this, type
 
-```
+```bash
 tangos link --for tutorial_changa
 ```
 
@@ -97,7 +108,7 @@ tangos write dm_density_profile gas_density_profile uvi_image SFR_histogram --wi
 Here,
  * `tangos write` is the same script you called above to add properties to the database
  * `dm_density_profile` is an array representing the dark matter density profile; to see all available properties
-   you can call `tangos list-possible-haloproperties`
+   you can call `tangos list-possible-properties`
  * `--with-prerequisites` automatically includes  any underlying properties that are required to perform the calculation. In this case,
    the `dm_density_profile` calculation actually needs to know an accurate center for the halo (known as `shrink_center`),
    so that calculation will be automatically performed and stored
