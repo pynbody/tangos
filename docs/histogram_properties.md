@@ -108,6 +108,18 @@ Note that it is a _very_ bad idea to change this after you have already written 
 for a simulation. You will almost certainly end up getting inconsistent results. Always set `histogram_delta_t_Gyr`
 before your first `tangos write`.
 
+Reassembling live calculations
+------------------------------
+
+It is possible to define a [live calculation](live_calculation.md) that manipulates an already stored histogram
+property (like `SFR_histogram`) and returns a new histogram. Because such a calculation only requires data already stored
+in the database, it can be performed on the fly and reassembled accordingly in the same way as the original stored
+histogram data.
+
+The property `SpecSFR_histogram` calculates the specific star formation rate history of a halo given `SFR_histogram`.
+
+
+
 
 Exercising caution
 -------------------

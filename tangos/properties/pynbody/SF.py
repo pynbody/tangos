@@ -1,4 +1,4 @@
-from .. import TimeChunkedProperty
+from .. import TimeChunkedProperty, LiveHaloProperties
 from . import pynbody_handler_module
 
 import numpy as np
@@ -36,3 +36,29 @@ class StarFormHistogram(TimeChunkedProperty):
     def reassemble(self, *options):
         reassembled = super(StarFormHistogram, self).reassemble(*options)
         return reassembled/1e9 # Msol per Gyr -> Msol per yr
+
+class SpecStarFormationHistogram(TimeChunkedProperty,LiveHaloProperties):
+    names = "SpecSFR_histogram"
+
+    def __init__(self, simulation):
+        super(SpecStarFormationHistogram, self).__init__(simulation)
+
+    def plot_xlabel(self):
+        return "t/Gyr"
+
+    def plot_ylabel(self):
+        return r"$SFR/M_{\odot} yr^{-1}$"
+
+    def requires_property(self):
+        return ['Mstar','SFR_histogram']
+
+    def live_calculate(self, halo, *args):
+        sfr = halo.calculate('raw(SFR_histogram)')
+        Mstar_f = halo['Mstar']
+        Mstar_i = Mstar_f - np.sum(sfr*self.pixel_delta_t_Gyr)
+        Mstar_t = Mstar_i + np.cumsum(sfr*self.pixel_delta_t_Gyr)
+        return sfr/Mstar_t
+
+    def reassemble(self, *options):
+        reassembled = super(SpecStarFormationHistogram, self).reassemble(*options)
+        return reassembled / 1e9  # Msol per Gyr -> Msol per yr
