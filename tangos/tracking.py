@@ -1,3 +1,13 @@
+"""Support routines for tracking regions/sets of particles through a simulation.
+
+Tracked regions consist of a list of particles (stored in the database) alongside a set of Tracker
+objects attached to each timestep which give access to the data associated with those particles.
+For example one might be interested in tracing where the ISM of a galaxy came from, or where it ends
+up. Tracker objects enable this. 
+
+See https://pynbody.github.io/tangos/tracking.html or docs/tracking.md for more information and an example.
+"""
+
 from __future__ import absolute_import
 from __future__ import print_function
 from sqlalchemy.orm import Session
@@ -63,6 +73,11 @@ def generate_tracker_halo_links(sim, session):
     session.commit()
 
 def new(for_simulation, using_particles):
+    """Create a new tracked region for the specific simulation using the specified particles.
+    
+    This routine is not strictly pynbody-specific in its implementation but it is built 
+    with the pynbody backend in mind."""
+    
     if isinstance(for_simulation, six.string_types):
         for_simulation = query.get_simulation(for_simulation)
     tracker = TrackData(for_simulation)
