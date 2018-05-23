@@ -16,6 +16,7 @@ import weakref
 import warnings
 
 class DummyTimeStep(object):
+    """A class standing in for a TimeStep while it may not yet exist in the database"""
     def __init__(self, filename):
         self.filename = filename
 
@@ -41,7 +42,7 @@ class HandlerBase(object):
 
     @classmethod
     def best_matching_handler(cls, basename):
-        """Find the best subclass to read in the specified folder of simulation timesteps"""
+        """Find the best subclass to read in the specified folder of simulation timesteps."""
         return cls
 
     def enumerate_timestep_extensions(self):
@@ -57,21 +58,21 @@ class HandlerBase(object):
         return {}
 
     def enumerate_objects(self, ts_extension, object_typetag='halo'):
-        """Yield halo_number, NDM, NStar, Ngas for halos in the specified timestep"""
+        """Yield halo_number, NDM, NStar, Ngas for objects in the specified timestep"""
         raise NotImplementedError
 
     def _enumerate_objects_from_statfile(self, ts_extension, object_typetag):
         """Implementation of enumerate_objects when the information is provided by a file readable
         by the halo_stat_files module.
 
-        Call from subclasses when this behaviour is desired"""
+        Called from subclasses when this behaviour is desired"""
         statfile = self.get_stat_file(ts_extension, object_typetag)
         logger.info("Reading halos for timestep %r using a stat file", ts_extension)
         for X in statfile.iter_rows("n_dm", "n_star", "n_gas"):
             yield X
 
     def _can_enumerate_objects_from_statfile(self, ts_extension, object_typetag):
-        """Returns True if the objects can be enumerated from a stat file"""
+        """Returns True if the objects can be enumerated from a stat file."""
         try:
             self.get_stat_file(ts_extension, object_typetag)
             return True
@@ -79,6 +80,7 @@ class HandlerBase(object):
             return False
 
     def get_stat_file(self, ts_extension, object_typetag):
+        """Return a HaloStatFile object for the specified timestep and object type"""
         from . import halo_stat_files
         if object_typetag != 'halo':
             raise IOError("No stat file known for object type %s"%object_typetag)
@@ -140,6 +142,7 @@ class HandlerBase(object):
 
     @classmethod
     def handler_class_name(cls):
+        """Return an identifying string such that get_named_handler_class returns this class"""
         module = cls.__module__
         if module.startswith(HandlerBase.__module__):
             submodule = module[len(HandlerBase.__module__)+1:]
@@ -166,6 +169,7 @@ class HandlerBase(object):
 
 
 def _map_deprecated_handler_name(handler):
+    """Map pre-v1.0 handler class names (starting OutputSetHandler) onto new class names (starting InputHandler"""
     if 'OutputSetHandler' in handler:
         new_handler = handler.replace('OutputSetHandler','InputHandler')
         warnings.warn("The database has stored the handler name as %r; automatically translating this to the new name %r"%(handler, new_handler),
