@@ -59,31 +59,32 @@ Under the hood, this is implemented using the `reassemble` property of `TimeChun
 Getting information on linked objects
 ----------------------------------------
 
-Often halos have several linked objects associated with them. For example, any given halo may have several BH trackers linked to it.
-Live calculations using the `link()` function will return an object linked to the halo under a given name, based on having a maximum or minimum
+Often halos have several linked objects associated with them. For example, any given halo may have several black holes and so
+ will have several black hole objects in the database linked to it.
+Live calculations using the `link()` function will return an object linked to the halo under a given name having the maximum or minimum
 of a given quantity among all other linked objects of the same name associated with that same halo. The general syntax is as follows.
 
 ```
-halo.calculate('link(my_link_name, link_property, "max/min", constraint1, constraint2, ...constrantN)')
+h.calculate('link(my_link_name, link_property, "max/min", constraint1, constraint2, ...constrantN)')
 ```
 
 An example would be the following, looking among black holes linked to their host halo via the "BH" link name.
 
 ```
-sim[-1][6].calculate('link(BH,BH_mass,"max")')
+h.calculate('link(BH,BH_mass,"max")')
 ```
 
-The above command will return an object linked under the "BH" name to halo number 6 in the last step of the simulation, sim.
-The balck hole that is returned will be the one that has the largest value of mass (based on the property called "BH_mass" of the linked black hole objects).
+The above command will return an object linked under the "BH" name to halo h.
+The black hole that is returned will be the one that has the largest value of mass (based on the property called "BH_mass" of the linked black hole objects).
 
 It is also possible to put any arbitrary number of constraints on which link you want other than simply the maximum or minimum of some value. For example:
 
 ```
-sim[-1][6].calculate('link(BH, BH_mass, "max", BH_central_distance<10)')
+h.calculate('link(BH, BH_mass, "max", BH_central_distance<10)')
 ```
 
 This will return the same as the first example, but this time returning the black hole
-with maximum mass among those that are within 10 kpc of halo center. Any number of additional constraints like this can be used.
+with maximum mass among only those that are within 10 kpc of halo center. Any number of additional constraints like this can be used.
 Once you've decided how you want to pick the linked object, you can return any of that object's properties.
 
 ```
