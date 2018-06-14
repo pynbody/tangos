@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import numpy as np
-from ..util import is_not_none
+from ..util import is_not_none, is_not_false
 
 
 class QueryMask(object):
@@ -20,6 +20,24 @@ class QueryMask(object):
             mask = np.any(is_not_none(to_mask),axis=0).reshape(self.N)
         elif len(to_mask.shape)==1:
             mask = is_not_none(to_mask)
+        else:
+            raise ValueError("Not able to use an input of this shape to determine a query mask")
+
+        assert mask.shape==(self.N,)
+        self.results_target = np.where(mask)
+
+    def mark_false_as_masked(self, input):
+        """Mark any rows in the input that are None as masked, excluding them from future queries."""
+        if self.N is None:
+            self.N = len(input)
+            to_mask = input
+        else:
+            to_mask = self.unmask(input)
+
+        if len(to_mask.shape)==2:
+            mask = np.any(is_not_false(to_mask),axis=0).reshape(self.N)
+        elif len(to_mask.shape)==1:
+            mask = is_not_false(to_mask)
         else:
             raise ValueError("Not able to use an input of this shape to determine a query mask")
 

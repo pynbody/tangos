@@ -41,16 +41,19 @@ class QueryMultivalueFolding(object):
                 constraint = results_slice[cc]
                 constraint = mask.mask(constraint)
                 constraint = constraint.astype(np.bool)
-                print("CONSTRAINT", constraint)
-                print(np.where(constraint==None))
-                print(np.where(constraint==False))
                 truth_slice[(constraint == False)|(constraint == None)] = False
-            print("TRUTH", truth_slice)
+
             if len(determiner_slice)!=0 and True in truth_slice:
+                mask2 = QueryMask()
+                mask2.mark_false_as_masked(truth_slice)
+                determiner_slice = mask2.mask(determiner_slice)
+                results_slice = mask2.mask(results_slice.T).T
                 if self.determiner_mode=='max':
-                    select_index = np.where(truth_slice)[0][determiner_slice[truth_slice].argmax()]
+                    select_index = determiner_slice.argmax()
+                    #select_index = np.where(truth_slice)[0][determiner_slice[truth_slice].argmax()]
                 else:
-                    select_index = np.where(truth_slice)[0][determiner_slice[truth_slice].argmin()]
+                    select_index = determiner_slice.argmin()
+                    #select_index = np.where(truth_slice)[0][determiner_slice[truth_slice].argmin()]
                 out_results_place = out_results.T[i].T
                 out_results_place[:] = results_slice.T[select_index].T
         return out_results
