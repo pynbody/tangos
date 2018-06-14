@@ -73,7 +73,8 @@ class HaloProperty(Base):
             cls = None
 
         if hasattr(cls, 'reassemble'):
-            return cls.reassemble(self, *options)
+            instance = cls(self.halo.timestep.simulation)
+            return instance.reassemble(self, *options)
         else:
             return self.data_raw
 

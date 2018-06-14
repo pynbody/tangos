@@ -10,7 +10,7 @@ from tangos import core
 from . import translations
 from six.moves import range
 from six.moves import zip
-
+from .. import logger
 
 class HaloStatFile(object):
     """Manages and reads a halo stat file of unspecified format."""
@@ -104,7 +104,7 @@ class HaloStatFile(object):
         l_split = line.split()
         for id_this in columns:
             this_str = l_split[id_this]
-            if "." in this_str:
+            if "." in this_str or "e" in this_str:
                 guess_type = float
             else:
                 guess_type = int
@@ -156,7 +156,11 @@ class HaloStatFile(object):
             halo = halos_map.get(values[0], None)
             if halo is not None:
                 for name_object, value in zip(property_db_names, values[1:]):
-                    property_objects.append(tangos.core.halo_data.HaloProperty(halo, name_object, value))
+                    if isinstance(value, float) or isinstance(value, int):
+                        property_objects.append(tangos.core.halo_data.HaloProperty(halo, name_object, value))
+                    else:
+                        logger.warn("Ignoring stat file entry key='%s' value='%s' as the value is not a number",
+                                    name_object.text,value)
 
         session.add_all(property_objects)
 

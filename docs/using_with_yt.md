@@ -88,7 +88,7 @@ tangos write dm_density_profile --for tutorial_changa
 Here,
  * `tangos write` is the same script you called above to add properties to the database
  * `dm_density_profile` is an array representing the dark matter density profile; to see all available properties
-   you can call `tangos list-possible-haloproperties`.
+   you can call `tangos list-possible-properties`.
 
 You might note that `dm_density_profile` is also the name of a property that can be calculated using
 `pynbody` (see the [changa+AHF tutorial](first_steps_changa+ahf.md)). _Tangos_ is able to select the correct piece of
