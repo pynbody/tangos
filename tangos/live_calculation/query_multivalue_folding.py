@@ -39,9 +39,10 @@ class QueryMultivalueFolding(object):
             truth_slice = np.full(len(determiner_slice),True).astype(np.bool)
             for cc in self.constraints_columns:
                 constraint = results_slice[cc]
+                print("CONSTRAINT", constraint)
                 constraint = mask.mask(constraint)
-                truth_slice[(constraint==False)] = False
-
+                truth_slice[(constraint == False)|(constraint == None)] = False
+            print("TRUTH", truth_slice)
             if len(determiner_slice)!=0 and True in truth_slice:
                 if self.determiner_mode=='max':
                     select_index = np.where(truth_slice)[0][determiner_slice[truth_slice].argmax()]
