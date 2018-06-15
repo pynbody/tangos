@@ -116,18 +116,18 @@ property (like `SFR_histogram`) and returns a new histogram. Because such a calc
 in the database, it can be performed on the fly and reassembled accordingly in the same way as the original stored
 histogram data.
 
-The property `SpecSFR_histogram` calculates the specific star formation rate history of a halo given `SFR_histogram` and
+The property `SpecSFR_histogram`, for example, calculates the specific star formation rate history of a halo given `SFR_histogram` and
 normalizing it by the mass at every intermediate step. We can call this in the same way as any other histogram property, but
-this time we are doing a live calculation, which is called like any other using `()` (in this case there are
-no relevant arguments to give).
+this time we are doing a live calculation, which is called like any other live calculation (in this case there are
+no relevant arguments to give, but any argument taken by the live calculation will work like normal).
 
 ```
 halo.calculate('reassemble(SpecSFR_histogram())')
 ```
 
 It is still important to make sure that the time resolution is set correctly. For any live calculation acting on a histogram
-property, the time resolution, `sim["histogram_delta_t_Gyr"]`, should be set to what it was when the stored histogram
- data was originally calculated.
+property, the time resolution, defined for each simulation by `sim["histogram_delta_t_Gyr"]`, should be set to what it 
+was when the stored histogram data was originally calculated.
 
 Exercising caution
 -------------------
