@@ -54,11 +54,14 @@ class SpecStarFormationHistogram(TimeChunkedProperty,LiveHaloProperties):
 
     def live_calculate(self, halo, *args):
         sfr = halo.calculate('raw(SFR_histogram)')
-        Mstar_f = halo['Mstar']
-        Mstar_i = Mstar_f - np.sum(sfr*self.pixel_delta_t_Gyr)
+        try:
+            Mstar_i = halo.previous.calculate('Mstar')
+        except:
+            Mstar_i = halo['Mstar'] - np.sum(sfr*self.pixel_delta_t_Gyr)
+
         Mstar_t = Mstar_i + np.cumsum(sfr*self.pixel_delta_t_Gyr)
         return sfr/Mstar_t
 
     def reassemble(self, *options):
         reassembled = super(SpecStarFormationHistogram, self).reassemble(*options)
-        return reassembled / 1e9  # Msol per Gyr -> Msol per yr
+        return reassembled / 1e9  # Gyr^-1 -> yr^-1
