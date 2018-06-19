@@ -105,6 +105,7 @@ function buildTree(containerName, treeData, customOptions)
         .append("svg:path")
         .attr("class", "link")
         .attr("d", link)
+        .style("stroke", "#a8aaa6")
         .style("stroke-width", function(d) {
                 return Math.min(d.source.size, d.target.size)*1.3;
             })
@@ -130,6 +131,7 @@ function buildTree(containerName, treeData, customOptions)
         .enter()
         .append("svg:g")
         .attr("class", "node")
+        .style("fill", "#aa161f")
         .attr("transform", function(d)
         {
             return "translate(" + d.y + "," + d.x + ")";
