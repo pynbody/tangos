@@ -8,7 +8,7 @@ class QueryMask(object):
     def __init__(self):
         self.N = None
 
-    def _retain_row_if_true(self, input, condition):
+    def _retain_row_if(self, input, condition):
         if self.N is None:
             self.N = len(input)
             to_mask = input
@@ -32,11 +32,11 @@ class QueryMask(object):
 
     def mark_nones_as_masked(self, input):
         """Mark any rows in the input that are None as masked, excluding them from future queries."""
-        self._retain_row_if_true(input, is_not_none)
+        self._retain_row_if(input, is_not_none)
 
     def mark_false_as_masked(self, input):
         """Mark any rows in input that are False as masked"""
-        self._retain_row_if_true(input, is_not_false)
+        self._retain_row_if(input, is_not_false)
 
     def mask(self, input):
         """Mask an input array so that it only includes the rows that are to be queried"""
