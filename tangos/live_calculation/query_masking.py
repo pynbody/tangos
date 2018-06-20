@@ -8,41 +8,35 @@ class QueryMask(object):
     def __init__(self):
         self.N = None
 
+    def _retain_row_if_true(self, input, condition):
+        if self.N is None:
+            self.N = len(input)
+            to_mask = input
+            self._mask_array = np.full(self.N,True)
+        else:
+            to_mask = self.unmask(input)
+
+        if len(to_mask.shape)==2:
+            mask = np.any(condition(to_mask),axis=0).reshape(self.N)
+        elif len(to_mask.shape)==1:
+            mask = condition(to_mask)
+        else:
+            raise ValueError("Not able to use an input of this shape to determine a query mask")
+
+        mask = mask&self._mask_array
+
+        assert mask.shape==(self.N,)
+        self._mask_array = mask
+        self.results_target = np.where(mask)
+
+
     def mark_nones_as_masked(self, input):
         """Mark any rows in the input that are None as masked, excluding them from future queries."""
-        if self.N is None:
-            self.N = len(input)
-            to_mask = input
-        else:
-            to_mask = self.unmask(input)
-
-        if len(to_mask.shape)==2:
-            mask = np.any(is_not_none(to_mask),axis=0).reshape(self.N)
-        elif len(to_mask.shape)==1:
-            mask = is_not_none(to_mask)
-        else:
-            raise ValueError("Not able to use an input of this shape to determine a query mask")
-
-        assert mask.shape==(self.N,)
-        self.results_target = np.where(mask)
+        self._retain_row_if_true(input, is_not_none)
 
     def mark_false_as_masked(self, input):
-        """Mark any rows in the input that are None as masked, excluding them from future queries."""
-        if self.N is None:
-            self.N = len(input)
-            to_mask = input
-        else:
-            to_mask = self.unmask(input)
-
-        if len(to_mask.shape)==2:
-            mask = np.any(is_not_false(to_mask),axis=0).reshape(self.N)
-        elif len(to_mask.shape)==1:
-            mask = is_not_false(to_mask)
-        else:
-            raise ValueError("Not able to use an input of this shape to determine a query mask")
-
-        assert mask.shape==(self.N,)
-        self.results_target = np.where(mask)
+        """Mark any rows in input that are False as masked"""
+        self._retain_row_if_true(input, is_not_false)
 
     def mask(self, input):
         """Mask an input array so that it only includes the rows that are to be queried"""
