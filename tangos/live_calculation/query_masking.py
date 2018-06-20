@@ -23,7 +23,7 @@ class QueryMask(object):
         else:
             raise ValueError("Not able to use an input of this shape to determine a query mask")
 
-        mask = mask&self._mask_array
+        mask = mask & self._mask_array
 
         assert mask.shape==(self.N,)
         self._mask_array = mask

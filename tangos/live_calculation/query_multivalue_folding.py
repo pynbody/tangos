@@ -31,6 +31,7 @@ class QueryMultivalueFolding(object):
         for i in range(self.num_original_rows):
             results_slice = results_to_refold.T[self.slices_for_original_rows[i]].T
             determiner_slice = results_slice[self.determiner_column]
+            #truth_slice = np.full(len(determiner_slice),True).astype(np.bool)
             mask = QueryMask()
             mask.mark_nones_as_masked(determiner_slice)
             results_slice = mask.mask(results_slice.T).T
@@ -44,16 +45,13 @@ class QueryMultivalueFolding(object):
                 truth_slice[(constraint == False)|(constraint == None)] = False
 
             if len(determiner_slice)!=0 and True in truth_slice:
-                mask2 = QueryMask()
-                mask2.mark_false_as_masked(truth_slice)
-                determiner_slice = mask2.mask(determiner_slice)
-                results_slice = mask2.mask(results_slice.T).T
+                mask.mark_false_as_masked(truth_slice)
+                determiner_slice = mask.mask(determiner_slice)
+                results_slice = mask.mask(results_slice.T).T
                 if self.determiner_mode=='max':
                     select_index = determiner_slice.argmax()
-                    #select_index = np.where(truth_slice)[0][determiner_slice[truth_slice].argmax()]
                 else:
                     select_index = determiner_slice.argmin()
-                    #select_index = np.where(truth_slice)[0][determiner_slice[truth_slice].argmin()]
                 out_results_place = out_results.T[i].T
                 out_results_place[:] = results_slice.T[select_index].T
         return out_results
