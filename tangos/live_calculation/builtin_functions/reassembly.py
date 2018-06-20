@@ -11,7 +11,7 @@ def raw(halos, values):
 @raw.set_initialisation
 def raw_initialisation(input):
     if isinstance(input, LiveProperty):
-        input.set_evaluation_pattern('_evaluate_function')
+        input.set_raw()
     else:
         input.set_extraction_pattern(extraction_patterns.halo_property_raw_value_getter)
 
@@ -29,7 +29,8 @@ def reassemble_initialisation(input, *options):
         else:
             raise TypeError("Options to 'reassemble' must be fixed numbers or strings")
     if isinstance(input,LiveProperty):
-        input.set_evaluation_pattern_with_options('_evaluate_function_with_reassemble', *options_values)
+        input.set_reassemble()
+        input.set_evaluation_options(*options_values)
     else:
         input.set_extraction_pattern(
             extraction_patterns.HaloPropertyValueWithReassemblyOptionsGetter(*options_values))
