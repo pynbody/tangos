@@ -432,21 +432,6 @@ class LiveProperty(Calculation):
                 results.append(None)
         return calculator, self._as_1xn_array(results)
 
-    #def _evaluate_function_with_reassemble(self, halos, input_descriptions, input_values, *options):
-    #    from .. import properties
-    #    sim = consistent_collection.consistent_simulation_from_halos(halos)
-    #    results = []
-    #    calculator = properties.providing_class(self.name())(sim, *input_descriptions)
-    #    for inputs in zip(halos, *input_values):
-    #        if self._has_required_properties(inputs[0]) and all([x is not None for x in inputs]):
-    #            if hasattr(calculator,'reassemble'):
-    #                results.append(calculator.reassemble(self, inputs[0], *options))
-    #            else:
-    #                results.append(calculator.live_calculate_named(self.name(), *inputs))
-    #        else:
-    #            results.append(None)
-    #    return calculator, self._as_1xn_array(results)
-
     @classmethod
     def _as_1xn_array(cls, results):
         results_array = np.empty((1, len(results)), dtype=object)
