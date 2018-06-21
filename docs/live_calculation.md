@@ -55,6 +55,45 @@ Under the hood, this is implemented using the `reassemble` property of `TimeChun
 
 **Technical note**: to access the data that is actually stored in the database, as opposed to the default reconstruction, you can ask for `h.calculate("raw(SFR_histogram)")`. The default data access `h['SFR_histogram']` or `h.calculate("SFR_histogram")`_ actually expands to something equivalent to `h.calculate("reassemble(SFR_histogram")`, and the default parameter to `reassemble` is `major`, which (as previously stated) sums only over the major progenitor branch.
 
+
+Getting information on linked objects
+----------------------------------------
+
+Often halos have several linked objects associated with them. For example, any given halo may have several black holes and so
+ will have several black hole objects in the database linked to it.
+Live calculations using the `link()` function will return an object linked to the halo under a given name having the maximum or minimum
+of a given quantity among all other linked objects of the same name associated with that same halo. The general syntax is as follows.
+
+```
+h.calculate('link(my_link_name, link_property, "max/min", constraint1, constraint2, ...constrantN)')
+```
+
+An example would be the following, looking among black holes linked to their host halo via the "BH" link name.
+
+```
+h.calculate('link(BH,BH_mass,"max")')
+```
+
+The above command will return an object linked under the "BH" name to halo h.
+The black hole that is returned will be the one that has the largest value of mass (based on the property called "BH_mass" of the linked black hole objects).
+
+It is also possible to put any arbitrary number of constraints on which link you want other than simply the maximum or minimum of some value. For example:
+
+```
+h.calculate('link(BH, BH_mass, "max", BH_central_distance<10)')
+```
+
+This will return the same as the first example, but this time returning the black hole
+with maximum mass among only those that are within 10 kpc of halo center. Any number of additional constraints like this can be used.
+Once you've decided how you want to pick the linked object, you can return any of that object's properties.
+
+```
+sim[-1][6].calculate('link(BH, BH_mass, "max", BH_central_distance<10, BH_mass>1e6).BH_mdot')
+```
+
+This will return the accretion rate of the most massive linked black hole within halo 6 that has a mass of at least
+1e6 solar masses and is within 10 kpc of halo center.
+
 General Syntax Notes
 ------------
 - a given live calculation function, `f()`, returns a value using already calculated properties of a halo
@@ -93,12 +132,6 @@ Note that string inputs *must* have quotes when used, but property names do not 
 * **[link]** `later(n)`: returns descendant halo n snapshots forward in time 
     Inputs:
         - n (integer): number of snapshots
- 
-* **[Link]** `bh(BH_property, minmax, bhtype)`: returns a black hole object from a halo chosen based on having the max/min of the given BH_property 
-   Inputs:
-       - *BH_property* (string) : black hole property (default is "BH_mass")
-       - *minmax* (string): either "min" or "max" (default is "max")
-       - *bhtype* (string): either "BH" or "BH_central" (default is "BH_central")
 
 * `raw(property)`: returns the raw value as stored in the database. Currently only used for histogram properties; see discussion of these above.
   Inputs:
