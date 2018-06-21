@@ -52,20 +52,26 @@ def test_link_returned_halo_is_valid():
     assert db.get_halo("sim/ts1/1").calculate('link(testlink)').halo_number == 2
     assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval)').halo_number == 4
     assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"min")').halo_number == 5
+    assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"min",testval>1)').halo_number==3
+    assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"max",testval2>10,testval2<40)').halo_number==4
+    assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"min",testval2>10,testval2<40)').halo_number==3
 
 def test_link_missing_data():
     assert db.get_halo("sim/ts1/1").calculate('link(testlink,testvalpartial,"max")').halo_number == 3
+    print("MY TEST",  db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"max",testvalpartial>1.0)').halo_number)
+    assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"max",testvalpartial>1.0)').halo_number == 3
 
 def test_link_can_be_used_within_calculation():
     assert db.get_halo("sim/ts1/1").calculate('link(testlink).testval2') == 10.0
     assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval).testval2') == 30.0
     assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"min").testval2') == 40.0
-
+    assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"max",testval2>10,testval2<40).testval2') == 30
 
 def test_link_returned_halo_is_usable():
     assert db.get_halo("sim/ts1/1").calculate('link(testlink)')["testval"] == 1.0
     assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval)')["testval"] == 3.0
     assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"min")')["testval"] == 0.0
+    assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"max",testval2>10,testval2<40)')["testval"] == 3.0
 
 
 def test_multi_calculation_link_returned_halo_is_usable():

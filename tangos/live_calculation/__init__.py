@@ -554,6 +554,7 @@ class Link(Calculation):
         self.property = tokens[1]
         self._multi_selection_basis = 'first'
         self._multi_selection_column = None
+        self._constraints_columns = []
         self._expect_multivalues = False
         if not isinstance(self.locator, Calculation):
             self.locator = parser.parse_property_name(self.locator)
@@ -597,13 +598,15 @@ class Link(Calculation):
         self._multi_selection_basis = basis
         self._multi_selection_column = column
 
+    def set_constraints_columns(self, columns=[]):
+        self._constraints_columns = columns
+
     def n_columns(self):
         return self.property.n_columns()
 
     def values_and_description(self, halos):
         if self.locator.n_columns()!=1:
             raise ValueError("Cannot use property %r, which returns more than one column, as a halo locator"%(str(self.locator)))
-
         target_halos = self._get_target_halos(halos)
         results = np.empty((self.n_columns(),len(halos)),dtype=object)
 
@@ -621,9 +624,9 @@ class Link(Calculation):
                         warnings.warn("More than one relation for target %r has been found. Picking the first."%str(self.locator), RuntimeWarning)
                     target_halo_masked[i] = target_halo_masked[i][0]
             else:
-                multivalue_folding = QueryMultivalueFolding(self._multi_selection_basis, self._multi_selection_column)
+                multivalue_folding = QueryMultivalueFolding(self._multi_selection_basis,
+                                                            self._multi_selection_column, self._constraints_columns)
                 target_halo_masked = multivalue_folding.unfold(target_halo_masked)
-
         values, description = self._get_values_and_description_from_halo_id_list([x.id for x in target_halo_masked])
 
         if self._expect_multivalues and self._multi_selection_basis!='first':
