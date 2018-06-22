@@ -66,6 +66,7 @@
             <input name="logy" type="checkbox" id="logy"/><label for="logy">log y</label>
             <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>.
             <a href="#" id="download-csv-link">&#x25BC; Download CSV</a>
+            <a href="#" id="download-merger-tree">&#x25BC; Download Merger Tree</a>
         </form>
         </div>
         <div id="imgbox"></div>
@@ -240,6 +241,11 @@
                 treeError();
             });
 
+            d3.select("#download-merger-tree").on("click", function(){
+               d3.select(this)
+                    .attr("href", 'data:image/svg+xml;base64,' + btoa(d3.select("#imgbox").html()))
+                   .attr("download", "merger_tree.svg")
+            })
         }
 
         function fetchPlot(isUpdate)
