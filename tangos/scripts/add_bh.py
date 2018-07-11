@@ -275,7 +275,8 @@ def generate_halolinks(session, fname, pairs):
         with session.no_autoflush:
             for src,(dest,ratio) in six.iteritems(bh_map):
                 if src not in nums1 or dest not in nums2:
-                    logger.warn("Can't link BH %r -> %r; missing BH objects in database",nums1,nums2)
+                    logger.warn("Can't link BH %r -> %r; missing BH objects in database",src,dest)
+                    continue
                 bh_src_before = bh_objects_1[nums1.index(src)]
                 bh_dest_after = bh_objects_2[nums2.index(dest)]
 
