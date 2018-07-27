@@ -31,3 +31,10 @@ When building databases, _tangos_:
  
  For information on getting started refer to the [tutorials on our github pages](https://pynbody.github.io/tangos/).
  These tutorials are also available in markdown format [within the tangos repository](docs/index.md).
+ 
+ 
+Acknowledging the code
+----------------------
+When using _tangos_, please acknowledge it by citing the release paper:
+Pontzen & Tremmel, 2018, ApJS 237, 2. [DOI 10.3847/1538-4365/aac832](https://doi.org/10.3847/1538-4365/aac832);  [arXiv:1803.00010](https://arxiv.org/pdf/1803.00010.pdf). Optionally you can also cite the Zenodo DOI for the specific version of _tangos_ that you are using, which may be found [here](https://doi.org/10.5281/zenodo.1243070).
+
