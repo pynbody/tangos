@@ -3,10 +3,6 @@ import os
 
 import numpy as np
 
-import tangos.core.dictionary
-import tangos.core.halo
-import tangos.core.halo_data
-from tangos import core
 from . import translations
 from six.moves import range
 from six.moves import zip
@@ -22,32 +18,32 @@ class HaloStatFile(object):
         if subcls:
             return object.__new__(subcls)
         else:
-            raise IOError("No stat file found for this timestep")
+            raise IOError("No stat file found for timestep %r"%timestep)
 
     @classmethod
-    def find_loadable_subclass(cls, timestep):
-        if cls.can_load(timestep):
+    def find_loadable_subclass(cls, timestep_filename):
+        if cls.can_load(timestep_filename):
             return cls
         for subclass in cls.__subclasses__():
-            loadable_cls = subclass.find_loadable_subclass(timestep)
+            loadable_cls = subclass.find_loadable_subclass(timestep_filename)
             if loadable_cls:
                 return loadable_cls
         return None
 
     @classmethod
-    def can_load(cls, timestep):
+    def can_load(cls, timestep_filename):
         try:
-            return os.path.exists(cls.filename(timestep))
+            return os.path.exists(cls.filename(timestep_filename))
         except (ValueError, TypeError):
             return False
 
     @classmethod
-    def filename(cls, timestep):
+    def filename(cls, timestep_filename):
         raise ValueError("Unknown path to stat file")
 
-    def __init__(self, timestep):
-        self._timestep = timestep
-        self.filename = self.filename(timestep)
+    def __init__(self, timestep_filename):
+        self._timestep_filename = timestep_filename
+        self.filename = self.filename(timestep_filename)
 
     def iter_rows_raw(self, *args):
         """
@@ -121,44 +117,8 @@ class HaloStatFile(object):
     def _read_column_names(self, f):
         return [x.split("(")[0] for x in f.readline().split()]
 
-    def make_halo_objects(self, min_NDM=1000):
-        halos = []
-        import numpy as np
-        n_tot = []
-        for num, NDM, Nstar, Ngas in self.iter_rows("n_dm", "n_star", "n_gas"):
-            n_tot.append(NDM+Nstar+Ngas)
-        ids = np.zeros(len(n_tot))
-        ids[np.argsort(np.array(n_tot))[::-1]] = np.arange(len(n_tot)) + 1
-        cnt = 1
-        for num, NDM, Nstar, Ngas in self.iter_rows("n_dm", "n_star", "n_gas"):
-            if NDM > min_NDM:
-                h = tangos.core.halo.Halo(self._timestep, ids[cnt-1],cnt, NDM, Nstar, Ngas)
-                halos.append(h)
-            cnt += 1
-        return halos
 
-    def add_halos(self, min_NDM=1000):
-        halos = self.make_halo_objects(min_NDM)
-        session = core.Session.object_session(self._timestep)
-        session.add_all(halos)
 
-    def add_halo_properties(self, *property_names):
-        halos = self._timestep.halos.all()
-        halos_map = {}
-        for h in halos:
-            halos_map[h.finder_id] = h
-
-        session = core.Session.object_session(self._timestep)
-
-        property_db_names = [tangos.core.dictionary.get_or_create_dictionary_item(session, name) for name in property_names]
-        property_objects = []
-        for values in self.iter_rows(*property_names):
-            halo = halos_map.get(values[0], None)
-            if halo is not None:
-                for name_object, value in zip(property_db_names, values[1:]):
-                    property_objects.append(tangos.core.halo_data.HaloProperty(halo, name_object, value))
-
-        session.add_all(property_objects)
 
 
 class AHFStatFile(HaloStatFile):
@@ -168,13 +128,13 @@ class AHFStatFile(HaloStatFile):
                                                           'n_gas', 'n_star', 'npart')}
 
     @classmethod
-    def filename(cls, timestep):
+    def filename(cls, timestep_filename):
         import glob
-        file_list = glob.glob(timestep.filename+'.z*.???.AHF_halos')
+        file_list = glob.glob(timestep_filename+ '.z*.???.AHF_halos')
 
         # permit the AHF halos to be in a subfolder called "halos", for yt purposes
         # (where the yt tipsy reader can't cope with the AHF files being in the same folder)
-        parts = timestep.filename.split("/")
+        parts = timestep_filename.split("/")
         parts_with_halo = parts[:-1]+["halos"]+parts[-1:]
         filename_with_halo = "/".join(parts_with_halo)
         file_list+=glob.glob(filename_with_halo+'.z*.???.AHF_halos')
@@ -192,9 +152,9 @@ class RockstarStatFile(HaloStatFile):
                             'npart': translations.Rename('Np')}
 
     @classmethod
-    def filename(cls, timestep):
-        basename = os.path.basename(timestep.filename)
-        dirname = os.path.dirname(timestep.filename)
+    def filename(cls, timestep_filename):
+        basename = os.path.basename(timestep_filename)
+        dirname = os.path.dirname(timestep_filename)
         if basename.startswith("snapshot_"):
             timestep_id = int(basename[9:])
             return os.path.join(dirname, "out_%d.list"%timestep_id)
@@ -211,6 +171,6 @@ class AmigaIDLStatFile(HaloStatFile):
                                                            "N_dark", "N_gas", "N_star")}
 
     @classmethod
-    def filename(cls, timestep):
-        return timestep.filename + '.amiga.stat'
+    def filename(cls, timestep_filename):
+        return timestep_filename + '.amiga.stat'
 

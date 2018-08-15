@@ -6,12 +6,14 @@ import numpy.testing as npt
 import tangos as db
 import tangos.core.simulation
 import tangos.core.timestep
+import tangos.tools.add_simulation as add_simulation
+import tangos.tools.property_importer as property_importer
 import tangos.input_handlers.halo_stat_files as stat
 from tangos import testing
 
 
 def setup():
-    global ts1, ts2
+    global ts1, ts2, sim
     testing.init_blank_db_for_testing()
     db.config.base = os.path.dirname(os.path.abspath(__file__))+"/"
 
@@ -33,13 +35,15 @@ def setup():
 
     session.commit()
 
+    parallel_tasks.use('null')
+
 def test_statfile_identity():
     global ts1,ts2
-    assert isinstance(stat.HaloStatFile(ts1), stat.AHFStatFile)
-    assert isinstance(stat.HaloStatFile(ts2), stat.AmigaIDLStatFile)
+    assert isinstance(stat.HaloStatFile(ts1.filename), stat.AHFStatFile)
+    assert isinstance(stat.HaloStatFile(ts2.filename), stat.AmigaIDLStatFile)
 
 def test_ahf_values():
-    h_id, ngas, nstar, ndm, ntot,  rvir = stat.HaloStatFile(ts1).read("n_gas", "n_star", "n_dm", "npart", "Rvir")
+    h_id, ngas, nstar, ndm, ntot,  rvir = stat.HaloStatFile(ts1.filename).read("n_gas", "n_star", "n_dm", "npart", "Rvir")
     assert all(h_id==[1,2,3,4])
     assert all(ngas==[324272,  47634,  53939,  19920])
     assert all(nstar==[1227695,   55825,   24561,    7531])
@@ -48,7 +52,7 @@ def test_ahf_values():
     npt.assert_allclose(rvir, [195.87, 88.75, 90.01, 69.41])
 
 def test_idl_values():
-    h_id, ntot, mvir = stat.HaloStatFile(ts2).read("npart","Mvir")
+    h_id, ntot, mvir = stat.HaloStatFile(ts2.filename).read("npart","Mvir")
     assert all(h_id==[1,49,52,58,94,121,127,148,163])
     assert all(ntot==[3273314, 27631, 24654, 22366, 12915, 9831, 9498, 8200, 7256])
     npt.assert_almost_equal(mvir,   [  1.12282280e+12 ,  1.19939950e+10 ,  1.19538740e+10  , 3.07825010e+10,
@@ -57,13 +61,18 @@ def test_idl_values():
 
 
 def test_insert_halos():
-    stat.HaloStatFile(ts1).add_halos(min_NDM=200000)
-    db.core.get_default_session().commit()
+    #stat.HaloStatFile(ts1.filename).add_halos(min_NDM=200000)
+    adder = add_simulation.SimulationAdderUpdater(sim.get_output_handler())
+    adder.min_halo_particles = 200000
+    adder.add_objects_to_timestep(ts1)
     assert ts1.halos.count()==3
     assert ts1.halos[0].NDM==4348608
     assert ts1.halos[1].NDM==402567
 
 def test_insert_properties():
-    stat.HaloStatFile(ts1).add_halo_properties("Mvir","Rvir")
+    importer = property_importer.PropertyImporter()
+    importer.parse_command_line("Mvir Rvir --for test_stat_files".split())
+    print(importer.options)
+    importer.run_calculation_loop()
     npt.assert_almost_equal(ts1.halos[0]["Rvir"], 195.87)
     npt.assert_almost_equal(ts1.halos[0]["Mvir"], 5.02432e+11)
