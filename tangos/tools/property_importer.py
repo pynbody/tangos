@@ -1,12 +1,9 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import tangos as db
-import tangos.core.timestep
-from ..input_handlers import halo_stat_files as hsf
 from .. import parallel_tasks
 from ..log import logger
-from .. import core, query, input_handlers
+from .. import core
 from . import GenericTangosTool
 
 
