@@ -330,17 +330,6 @@ class LivePropertyCalculationInheritingMetaProperties(LivePropertyCalculation):
     def plot_xdelta(self):
         return self._inherits_from.plot_xdelta()
 
-class ProxyHalo(object):
-
-    """Used to return pointers to halos within this snapshot to the database"""
-
-    def __init__(self, value):
-        self.value = value
-
-    def __int__(self):
-        return int(self.value)
-
-
 
 ##############################################################################
 # UTILITY FUNCTIONS

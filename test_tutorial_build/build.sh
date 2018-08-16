@@ -22,7 +22,8 @@ detect_mpi() {
 build_gadget_subfind() {
     get_tutorial_data gadget
     tangos add tutorial_gadget --min-particles 100
-    tangos_import_from_subfind --for tutorial_gadget
+    tangos import-properties --for tutorial_gadget
+    tangos import-properties --type group --for tutorial_gadget
     $MPI tangos $MPIBACKEND link --for tutorial_gadget
     $MPI tangos $MPIBACKEND link --type group --for tutorial_gadget
     $MPI tangos $MPIBACKEND write dm_density_profile --with-prerequisites --include-only="NDM()>5000" --type=halo --for tutorial_gadget

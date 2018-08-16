@@ -41,12 +41,12 @@ Import subfind's properties
 At the unix command line type:
 
 ```
-tangos_import_from_subfind --for tutorial_gadget
+tangos import-properties --type halo --for tutorial_gadget
+tangos import-properties --type group --for tutorial_gadget
 ```
 
-The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages scroll up the screen.
+The two processes combined should take about a minute on a standard modern computer, during which you'll see a bunch of log messages scroll up the screen.
 
-Note that if you did not correctly specify the Subfind handler in the step above, this will just generate an error. To recover from that situation, the easiest thing is to delete the database file you created and start again.
 
 Generate the merger trees
 -------------------------

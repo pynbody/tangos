@@ -17,9 +17,8 @@ import sqlalchemy.orm
 
 from . import GenericTangosTool
 from .. import properties
-from ..util import terminalcontroller, timing_monitor
+from ..util import terminalcontroller, timing_monitor, proxy_object
 from .. import parallel_tasks, core
-from ..parallel_tasks import database
 from ..util.check_deleted import check_deleted
 from ..cached_writer import insert_list
 from ..log import logger
@@ -257,9 +256,9 @@ class PropertyWriter(GenericTangosTool):
 
     def _queue_results_for_later_commit(self, db_halo, names, results, existing_properties_data):
         for n, r in zip(names, results):
-            if isinstance(r, properties.ProxyHalo):
-                # resolve halo
-                r = core.get_default_session().query(core.halo.Halo).filter_by(id=int(r)).first()
+            if isinstance(r, proxy_object.ProxyObjectBase):
+                # TODO: possible optimization here using relative_to_timestep_cache
+                r = r.relative_to_timestep_id(self._current_timestep_id).resolve(core.get_default_session())
             if self.options.force or (n not in list(existing_properties_data.keys())):
                 existing_properties_data[n] = r
                 if self.options.debug:

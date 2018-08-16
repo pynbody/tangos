@@ -5,6 +5,8 @@ from .. import parallel_tasks
 from ..log import logger
 from .. import core
 from . import GenericTangosTool
+from ..util import proxy_object
+from ..util import timestep_object_cache
 
 
 class PropertyImporter(GenericTangosTool):
@@ -29,6 +31,37 @@ class PropertyImporter(GenericTangosTool):
     def process_options(self, options):
         self.options = options
 
+    def _create_property(self, name, object, value):
+        """Create a single database property corresponding to the given value
+
+        See _create_properties for more information."""
+        if isinstance(value, proxy_object.ProxyObjectBase):
+            value = value.relative_to_timestep_cache(self._object_cache).resolve(self._session)
+            if value is not None:
+                return core.halo_data.HaloLink(object, value, name)
+        else:
+            if value is not None:
+                return core.halo_data.HaloProperty(object, name, value)
+        return None
+
+    def _create_properties(self, name, object, values):
+        """Create database property or properties corresponding to the given values.
+
+        The values can be proxy objects, to indicate a link should be created
+
+        :arg name: the name ORM object
+        :arg object: the object with which the property should be associated
+        :arg values: the value, or a list of values
+        :returns: a list of objects to be added to the database (always a list, even if there is only one value)
+        """
+
+        if isinstance(values, list):
+            objects = [self._create_property(name, object, v) for v in values]
+        else:
+            objects = [self._create_property(name, object, values)]
+
+        return filter(lambda x: x is not None, objects)
+
     def _import_properties_for_timestep(self, ts, property_names, object_typetag):
         """Import the named properties for a specific timestep
 
@@ -44,27 +77,22 @@ class PropertyImporter(GenericTangosTool):
         if len(property_names)==0:
             property_names = self.handler.available_object_property_names_for_timestep(ts.extension, object_typetag)
 
-        object_typecode = core.Halo.object_typecode_from_tag(object_typetag)
-        all_objects = ts.objects.filter_by(object_typecode=object_typecode).all()
+        self._object_cache = timestep_object_cache.TimestepObjectCache(ts)
+        self._session = core.Session.object_session(ts)
 
-        finder_id_map = {}
-        for h in all_objects:
-            finder_id_map[h.finder_id] = h
-
-        session = core.Session.object_session(ts)
-
-        property_db_names = [core.dictionary.get_or_create_dictionary_item(session, name) for name in
+        property_db_names = [core.dictionary.get_or_create_dictionary_item(self._session, name) for name in
                              property_names]
-        property_objects = []
+        rows_to_store = []
         for values in self.handler.iterate_object_properties_for_timestep(ts.extension, object_typetag, property_names):
-            halo = finder_id_map.get(values[0], None)
-            if halo is not None:
-                for name_object, value in zip(property_db_names, values[1:]):
-                    property_objects.append(core.halo_data.HaloProperty(halo, name_object, value))
+            db_object = self._object_cache.resolve(values[0], object_typetag)
+            if db_object is not None:
+                for db_name, value in zip(property_db_names, values[1:]):
+                    rows_to_store+=self._create_properties(db_name, db_object, value)
 
-        logger.info("Add %d properties", len(property_objects))
-        session.add_all(property_objects)
-        session.commit()
+
+        logger.info("Add %d properties", len(rows_to_store))
+        self._session.add_all(rows_to_store)
+        self._session.commit()
 
     def run_calculation_loop(self):
         base_sim = core.sim_query_from_name_list(self.options.sims)

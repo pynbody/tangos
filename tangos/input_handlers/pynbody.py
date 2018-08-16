@@ -7,6 +7,7 @@ import time
 import weakref
 import re
 import numpy as np
+from ..util import proxy_object
 
 pynbody = None # deferred import; occurs when a PynbodyInputHandler is constructed
 
@@ -353,6 +354,19 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
         else:
             raise ValueError("Unknown object typetag %r"%object_typetag)
 
+    def _get_group_children(self,ts_extension):
+        h = self._construct_halo_cat(ts_extension, 'halo')
+        group_children = {}
+        for i in range(len(h)):
+            halo_props = h.get_halo_properties(i,with_unit=False)
+            if 'sub_parent' in halo_props:
+                parent = halo_props['sub_parent']
+                if parent not in group_children:
+                    group_children[parent] = []
+                group_children[parent].append(i)
+        return group_children
+
+
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         h = self._construct_halo_cat(ts_extension, object_typetag)
 
@@ -363,14 +377,27 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
         else:
             raise ValueError("Unknown object typetag %r"%object_typetag)
 
+        if 'child' in property_names and object_typetag=='group':
+            child_map = self._get_group_children(ts_extension)
+
         for i in range(len(h)):
             all_data = [i]
             for k in property_names:
                 pynbody_properties = h.get_halo_properties(i,with_unit=False)
                 if pynbody_prefix+k in pynbody_properties:
                     data = self._resolve_units(pynbody_properties[pynbody_prefix+k])
+                    if k == 'parent' and data is not None:
+                        # turn into a link
+                        data = proxy_object.IncompleteProxyObjectFromFinderId(data, 'group')
+                elif k=='child' and object_typetag=='group':
+                    # subfind does not actually store a list of children; we infer it from the parent
+                    # data in the halo catalogue
+                    data = child_map.get(i,None)
+                    if data is not None:
+                        data = [proxy_object.IncompleteProxyObjectFromFinderId(data_i, 'halo') for data_i in data]
                 else:
                     data = None
+
                 all_data.append(data)
             yield all_data
 
