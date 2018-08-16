@@ -107,7 +107,7 @@ class HaloStatFile(object):
         l_split = line.split()
         for id_this in columns:
             this_str = l_split[id_this]
-            if "." in this_str:
+            if "." in this_str or "e" in this_str:
                 guess_type = float
             else:
                 guess_type = int

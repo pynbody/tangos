@@ -9,12 +9,20 @@ Make sure you have followed the [initial set up instructions](index.md). Then do
 Unpack the tar file either in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
 variable to.
 
+For most Linux or macOS systems, the following typed at your bash command line will download the required data and
+unpack it in the correct location:
+
+```bash
+cd $TANGOS_SIMULATION_FOLDER
+curl ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_gadget.tar.gz | tar -xz
+```
+
 Import the simulation
 ---------------------
 
 At the unix command line type:
 
-```
+```bash
 tangos add tutorial_gadget --min-particles 100
 ```
 
@@ -40,7 +48,7 @@ Import subfind's properties
 
 At the unix command line type:
 
-```
+```bash
 tangos import-properties --type halo --for tutorial_gadget
 tangos import-properties --type group --for tutorial_gadget
 ```
@@ -53,13 +61,13 @@ Generate the merger trees
 
 The merger trees are most simply generated using pynbody's bridge function. To do this type:
 
-```
+```bash
 tangos link --for tutorial_gadget
 ```
 
 which builds the merger tree for the halos, and then you probably also want to run
 
-```
+```bash
 tangos link --type group --for tutorial_gadget
 ```
 to make the merger tree for the groups. If you want to speed up these processes, they can each be 
@@ -82,7 +90,7 @@ If you want to speed up this process, it can be [MPI parallelised](mpi.md).
 Here,
  * `tangos write` is the same script you called above to add properties to the database
  * `dm_density_profile` is an array representing the dark matter density profile; to see all available properties
-   you can call `tangos list-possible-haloproperties`
+   you can call `tangos list-possible-properties`
  * `--with-prerequisites` automatically includes  any underlying properties that are required to perform the calculation. In this case,
    the `dm_density_profile` calculation actually needs to know an accurate center for the halo (known as `shrink_center`),
    so that calculation will be automatically performed and stored
@@ -93,7 +101,7 @@ Here,
  
  
  
- Explore what's possible
- -----------------------
+Explore what's possible
+-----------------------
  
- Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.
+Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.

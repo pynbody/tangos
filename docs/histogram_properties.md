@@ -26,11 +26,11 @@ of the `StarFormHistogram` class:
 
 ```python
 def calculate(self, halo, _):
-    M,_ = np.histogram(halo.st['tform'].in_units("Gyr"),
-                       weights=halo.st['massform'].in_units("Msol"),
-                       bins=self.nbins,range=(0,self.tmax_Gyr))
+    tmax_Gyr = 20.0 # calculate up to 20 Gyr
+    nbins = int(20.0/self.pixel_delta_t_Gyr)
+    M,_ = np.histogram(halo.st['tform'].in_units("Gyr"),weights=weights.in_units("Msol"),bins=nbins,range=(0,tmax_Gyr))
     t_now = halo.properties['time'].in_units("Gyr")
-    M/=self.delta_t
+    M/=self.pixel_delta_t_Gyr
     M = M[self.store_slice(t_now)]
 
     return M
@@ -92,6 +92,22 @@ p.plot(halo.calculate('reassemble(SFR_histogram, "place")'),"k:")
 The differences between the default `major` reassembly and `sum` reassembly are discussed in the
 data exploration tutorial. The `place` reassembly closely tracks the `sum` reassembly back to the
 start point of the stored region, and then drops to zero.
+
+Changing the time resolution
+----------------------------
+
+By default each histogram bin is 20 Myr long. You can change this on a per-simulation basis by
+setting a simulation property. For example, for a 10 Myr time resolution for all time histograms use:
+
+```python
+sim = tangos.get_simulation("my_sim")
+sim["histogram_delta_t_Gyr"] = 0.01
+```
+
+Note that it is a _very_ bad idea to change this after you have already written some time histograms
+for a simulation. You will almost certainly end up getting inconsistent results. Always set `histogram_delta_t_Gyr`
+before your first `tangos write`.
+
 
 Exercising caution
 -------------------

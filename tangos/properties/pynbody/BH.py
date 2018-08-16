@@ -77,6 +77,9 @@ class BH(PynbodyPropertyCalculation):
 
 
 class BHAccHistogram(TimeChunkedProperty):
+
+    requires_particle_data = True
+
     @classmethod
     def name(self):
         return "BH_mdot_histogram"
@@ -116,7 +119,10 @@ class BHAccHistogram(TimeChunkedProperty):
         order = np.argsort(t_orbit)
 
         t_max = properties.timestep.time_gyr
-        t_grid = np.linspace(0, self.tmax_Gyr, self.nbins)
+
+        grid_tmax_Gyr = 20.0
+        nbins = grid_tmax_Gyr/self.pixel_delta_t_Gyr
+        t_grid = np.linspace(0, grid_tmax_Gyr, nbins)
 
         Mdot_grid = scipy.interpolate.interp1d(t_orbit[order], Mdot_orbit[order], bounds_error=False)(t_grid)
 
