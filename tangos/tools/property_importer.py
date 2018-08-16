@@ -39,9 +39,12 @@ class PropertyImporter(GenericTangosTool):
             value = value.relative_to_timestep_cache(self._object_cache).resolve(self._session)
             if value is not None:
                 return core.halo_data.HaloLink(object, value, name)
-        else:
-            if value is not None:
-                return core.halo_data.HaloProperty(object, name, value)
+        elif isinstance(value, float) or isinstance(value, int):
+            return core.halo_data.HaloProperty(object, name, value)
+        elif value is not None:
+            logger.warn("Ignoring stat file entry key='%s' value='%s' as the value is not a number",
+                        name.text, value)
+
         return None
 
     def _create_properties(self, name, object, values):
