@@ -20,8 +20,8 @@ class PropertyImporter(GenericTangosTool):
         parser.add_argument('--type', action='store', type=str, dest='typetag', default='halo',
                             help="Specify the object type to run on by tag name (e.g. 'halo' or 'group')")
 
-        parser.add_argument('properties', action='store', nargs='+',
-                            help="The names of the halo-finder pre-calculated properties to import")
+        parser.add_argument('properties', action='store', nargs='*',
+                            help="The names of the halo-finder pre-calculated properties to import; if not specified, all available properties are imported.")
 
         parser.add_argument('--backwards', action='store_true',
                             help='Process low-z timesteps first')
@@ -33,13 +33,16 @@ class PropertyImporter(GenericTangosTool):
         """Import the named properties for a specific timestep
 
         :arg ts: the database timestep
-        :arg property_names: list of names to import
+        :arg property_names: list of names to import, or empty list to import all available names
         :arg object_typetag: the type tag of the objects for which properties will be imported
 
         :type ts: core.timestep.TimeStep
         """
 
         logger.info("Processing %s", ts)
+
+        if len(property_names)==0:
+            property_names = self.handler.available_object_property_names_for_timestep(ts.extension, object_typetag)
 
         object_typecode = core.Halo.object_typecode_from_tag(object_typetag)
         all_objects = ts.objects.filter_by(object_typecode=object_typecode).all()
@@ -53,7 +56,7 @@ class PropertyImporter(GenericTangosTool):
         property_db_names = [core.dictionary.get_or_create_dictionary_item(session, name) for name in
                              property_names]
         property_objects = []
-        for values in self.handler.get_object_properties_for_timestep(ts.extension, object_typetag, property_names):
+        for values in self.handler.iterate_object_properties_for_timestep(ts.extension, object_typetag, property_names):
             halo = finder_id_map.get(values[0], None)
             if halo is not None:
                 for name_object, value in zip(property_db_names, values[1:]):

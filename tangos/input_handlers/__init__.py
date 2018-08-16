@@ -89,10 +89,18 @@ class HandlerBase(object):
         statfile = halo_stat_files.HaloStatFile(self._extension_to_filename(ts_extension))
         return statfile
 
-    def get_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
+
+    def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
+        """Returns a list of all pre-computed properties available for this timestep.
+
+        These pre-computed properties can then be evaluated through iterate_object_properties_for_timestep"""
+        return self.get_stat_file(ts_extension, object_typetag).all_columns()
+
+    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         """Iterate through all objects of specified type, providing named pre-computed data.
 
         This is normally data that was calculated and stored by the halo finder such as masses or particle counts.
+        Each object yields an array with the finder_id followed by values for the requested properties.
 
         :arg ts_extension - the timestep path (relative to the simulation basename)
         :arg object_typetag - the type of halo catalogue (e.g. 'halo' or 'group')

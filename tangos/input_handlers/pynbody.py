@@ -338,6 +338,45 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
         else:
             raise ValueError("Unknown halo type %r" % object_typetag)
 
+    @staticmethod
+    def _resolve_units(value):
+        if (pynbody.units.is_unit(value)):
+            return float(value)
+        else:
+            return value
+
+    def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
+        if object_typetag=='halo':
+            return ["CM","HalfMassRad","VMax","VMaxRad","mass","pos","spin","vel","veldisp","parent"]
+        elif object_typetag=='group':
+            return ["mass","mcrit_200","mmean_200","mtop_200","rcrit_200","rmean_200","rtop_200","child"]
+        else:
+            raise ValueError("Unknown object typetag %r"%object_typetag)
+
+    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
+        h = self._construct_halo_cat(ts_extension, object_typetag)
+
+        if object_typetag=='halo':
+            pynbody_prefix = 'sub_'
+        elif object_typetag=='group':
+            pynbody_prefix = ""
+        else:
+            raise ValueError("Unknown object typetag %r"%object_typetag)
+
+        for i in range(len(h)):
+            all_data = [i]
+            for k in property_names:
+                pynbody_properties = h.get_halo_properties(i,with_unit=False)
+                if pynbody_prefix+k in pynbody_properties:
+                    data = self._resolve_units(pynbody_properties[pynbody_prefix+k])
+                else:
+                    data = None
+                all_data.append(data)
+            yield all_data
+
+
+
+
 class GadgetRockstarInputHandler(PynbodyInputHandler):
     patterns = ["snapshot_???"]
     auxiliary_file_patterns = ["halos_*.bin"]

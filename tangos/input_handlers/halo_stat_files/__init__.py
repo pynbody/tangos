@@ -45,6 +45,13 @@ class HaloStatFile(object):
         self._timestep_filename = timestep_filename
         self.filename = self.filename(timestep_filename)
 
+    def all_columns(self):
+        with open(self.filename) as f:
+            columns = self._read_column_names(f)
+
+        columns+=self._column_translations.keys()
+        return columns
+
     def iter_rows_raw(self, *args):
         """
         Yield the halo ID and requested columns from each line of the stat file, without any emulation.
