@@ -9,7 +9,7 @@ import tangos.core.timestep
 import tangos.tools.add_simulation as add_simulation
 import tangos.tools.property_importer as property_importer
 import tangos.input_handlers.halo_stat_files as stat
-from tangos import testing
+from tangos import testing, parallel_tasks
 
 
 def setup():
