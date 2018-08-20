@@ -2,9 +2,7 @@
 
 get_tutorial_data() {
     if [ ! -d tutorial_$1 ]; then
-	wget ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_$1.tar.gz
-	tar -xzf tutorial_$1.tar.gz
-	rm tutorial_$1.tar.gz
+	wget -O - ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_$1.tar.gz | tar -xz
     fi
 }
 
@@ -61,15 +59,15 @@ build_changa_bh() {
     $MPI tangos write BH_mass BH_mdot_histogram --for tutorial_changa_blackholes --type bh $MPIBACKEND
     $MPI tangos crosslink tutorial_changa tutorial_changa_blackholes $MPIBACKEND
 }
-    
+
 
 echo "This script builds the tangos tutorial database"
 echo
 echo "It will download data and build in the current working directory:"
 echo "  "`pwd`
-echo 
+echo
 echo "The total required space is approximately 35GB"
-echo 
+echo
 echo "If this is not what you want, press ^C now"
 echo "Starting process in 5 seconds..."
 
