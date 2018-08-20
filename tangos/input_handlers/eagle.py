@@ -7,7 +7,9 @@ import weakref
 import scipy.stats
 import numpy as np
 from .. import config
+from ..util import proxy_object
 from ..log import logger
+from six.moves import range
 
 _eagle_underlying_subfind_cache = weakref.WeakValueDictionary()
 
@@ -98,6 +100,7 @@ class EagleLikeInputHandler(PynbodyInputHandler):
         # see if we previously saved it:
         u_subgrp_number = f_subfind.get('TangosSubGroupNumber', None)
         if u_subgrp_number is not None:
+            logger.info("Found cached TangosSubGroupNumber within Eagle snapshot")
             return
 
         grp = f_subfind['GroupNumber']
@@ -113,4 +116,56 @@ class EagleLikeInputHandler(PynbodyInputHandler):
         f_subfind['TangosSubGroupNumber'] = unique_subgrp_ordered
         f_subfind['TangosSubGroupNumber'].write()
         return subgrp_max
+
+        
+    def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
+        if object_typetag=='halo':
+            return ['parent', 'original_subgroup_number']
+        elif object_typetag=='group':
+            return ['child']
+        else:
+            raise ValueError("Unknown object type %r"%object_typetag)
+
+    @staticmethod
+    def _second_largest(array):
+        max_ = np.max(array)
+        second_max = np.max(array[array!=max_])
+        return second_max
+
+    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
+        from .pynbody import pynbody
+        if object_typetag not in ("halo","group"):
+            raise ValueError("Unknown object type tag %r"%object_typetag)
+        
+        halofilepath = self._extension_to_halodata_filename(ts_extension)
+        f_subfind = pynbody.load(halofilepath)
+        self._create_unique_subgroup_ids(f_subfind)
+
+        logger.info("Calculating child-parent relationships")
+        children, unique_indices = np.unique(f_subfind['TangosSubGroupNumber'],return_index=True)
+        parents = f_subfind['GroupNumber'][unique_indices]
+        original = f_subfind['SubGroupNumber'][unique_indices]
+
+        logger.info("Done; enumerating properties")
+        if object_typetag=='halo':
+            num_children = self._second_largest(children)
+            for i in range(num_children):
+                row, = np.where(children==i)
+                if len(row)==0:
+                    props = {}
+                else:
+                    props = {'parent': proxy_object.IncompleteProxyObjectFromFinderId(parents[row[0]],'group'),
+                             'original_subgroup_number': original[row[0]]}
+                yield [i]+[props.get(n, None) for n in property_names]
+        else:
+            # must be group
+            num_parents = self._second_largest(parents)
+            for i in range(num_parents):
+                row, = np.where(parents==i)
+                children_proxies = [proxy_object.IncompleteProxyObjectFromFinderId(child, 'halo') for child in children[row]]
+                if len(children_proxies)==0:
+                    props = {}
+                else:
+                    props = {'child': children_proxies}
+                yield [i]+[props.get(n, None) for n in property_names]
 

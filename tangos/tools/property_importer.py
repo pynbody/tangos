@@ -7,7 +7,7 @@ from .. import core
 from . import GenericTangosTool
 from ..util import proxy_object
 from ..util import timestep_object_cache
-
+import numpy as np
 
 class PropertyImporter(GenericTangosTool):
     tool_name = 'import-properties'
@@ -39,7 +39,7 @@ class PropertyImporter(GenericTangosTool):
             value = value.relative_to_timestep_cache(self._object_cache).resolve(self._session)
             if value is not None:
                 return core.halo_data.HaloLink(object, value, name)
-        elif isinstance(value, float) or isinstance(value, int):
+        elif np.issubdtype(type(value), np.float) or np.issubdtype(type(value), np.integer):
             return core.halo_data.HaloProperty(object, name, value)
         elif value is not None:
             logger.warn("Ignoring stat file entry key='%s' value='%s' as the value is not a number",
