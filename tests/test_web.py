@@ -1,4 +1,3 @@
-# TODO: expand these tests!
 import tangos, tangos.web
 import tangos.testing.simulation_generator
 from tangos import testing
@@ -6,6 +5,7 @@ from webtest import TestApp
 import numpy as np
 import csv
 import json
+import urllib
 from six import StringIO
 
 def setup():
@@ -29,7 +29,9 @@ def setup():
 
     creator = tangos.testing.simulation_generator.TestSimulationGenerator("simname/has/slashes")
     creator.add_timestep()
-    creator.add_objects_to_timestep(3)
+    creator.add_objects_to_timestep(1)
+    tangos.get_simulation(2).timesteps[0].halos[0]['test_value'] = 2.0
+    tangos.get_default_session().commit()
 
     
 
@@ -131,3 +133,10 @@ def test_simulation_with_slash():
     assert "simname/has/slashes" in response
     simpage_response = response.click("simname/has/slashes")
     assert "Simulation: simname/has/slashes" in simpage_response
+    ts_response = simpage_response.click("Go")
+    assert "Timestep: ts1" in ts_response
+    halo_response = ts_response.click("Go")
+    assert "halo 1 of ts1" in halo_response
+    calculate_url = halo_response.pyquery("#calculate_url").text()
+    calculate_url = urllib.unquote(calculate_url).decode('utf8')
+    assert "simname%has%slashes" in calculate_url

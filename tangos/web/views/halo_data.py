@@ -70,7 +70,7 @@ def format_halo(halo, request, relative_to=None):
     if relative_to==halo or request is None:
         return _relative_description(relative_to, halo)
     else:
-        link = request.route_url('halo_view', simid=halo.timestep.simulation.basename,
+        link = request.route_url('halo_view', simid=halo.timestep.simulation.escaped_basename,
                                  timestepid=halo.timestep.escaped_extension,
                                  halonumber=halo.basename)
         return "<a href='%s'>%s</a>"%(link, _relative_description(relative_to, halo))
