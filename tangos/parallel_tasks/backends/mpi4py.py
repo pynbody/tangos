@@ -23,9 +23,15 @@ def receive(source=None, tag=0):
     return comm.recv(source=source,tag=tag)
 
 
+def _get_dtype_code(numpy_dtype):
+    return numpy_dtype.char
+
 def send_numpy_array(data, destination):
     comm.send((data.shape, data.dtype), dest=destination, tag=1)
-    comm.Send(data, dest=destination, tag=2)
+    # made necessary by strange bug with hdf arrays, similar to: https://groups.google.com/forum/#!topic/mpi4py/8gOVvT4ObvU
+    # when sending without an explicit dtype code, sometimes get a KeyError
+    dtype_code=_get_dtype_code(data.dtype)
+    comm.Send([data, dtype_code], dest=destination, tag=2)
 
 def receive_numpy_array(source):
     shape,dtype = comm.recv(source=source, tag=1)
