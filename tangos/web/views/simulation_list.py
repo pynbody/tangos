@@ -26,7 +26,7 @@ def simulation_list(request):
             s[1 + ids.index(q.name_id)] = q.data_repr()
 
         simulations.append(s)
-        links.append(request.route_url('simulation_view',simid=x.basename))
+        links.append(request.route_url('simulation_view',simid=x.basename.replace("/","%")))
 
 
     return {'simulations':simulations, 'titles':titles, 'links':links,

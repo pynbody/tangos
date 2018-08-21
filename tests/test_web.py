@@ -27,6 +27,12 @@ def setup():
 
     tangos.get_default_session().commit()
 
+    creator = tangos.testing.simulation_generator.TestSimulationGenerator("simname/has/slashes")
+    creator.add_timestep()
+    creator.add_objects_to_timestep(3)
+
+    
+
     global app
     app = TestApp(tangos.web.main({}))
 
@@ -118,3 +124,10 @@ def test_json_gather_bool():
     assert result['can_use_in_plot'] is False
     assert result['can_use_as_filter'] is True
     assert result['is_array'] is False
+
+
+def test_simulation_with_slash():
+    response = app.get("/")
+    assert "simname/has/slashes" in response
+    simpage_response = response.click("simname/has/slashes")
+    assert "Simulation: simname/has/slashes" in simpage_response
