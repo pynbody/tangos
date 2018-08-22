@@ -75,19 +75,19 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             return f
         elif mode=='server' or mode=='server-partial':
             from ..parallel_tasks import pynbody_server as ps
-            return ps.RemoteSnapshotConnection(self._extension_to_filename(ts_extension))
+            return ps.RemoteSnapshotConnection(self,ts_extension)
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def load_region(self, ts_extension, region_specification, mode=None):
         if mode is None:
-            timestep = self.load_timestep(ts_extension)
+            timestep = self.load_timestep(ts_extension, mode)
             return timestep[region_specification]
         elif mode=='server':
-            timestep = self.load_timestep(ts_extension)
+            timestep = self.load_timestep(ts_extension, mode)
             return timestep.get_view(region_specification)
         elif mode=='server-partial':
-            timestep = self.load_timestep(ts_extension)
+            timestep = self.load_timestep(ts_extension, mode)
             view = timestep.get_view(region_specification)
             load_index = view['remote-index-list']
             logger.info("Partial load %r, taking %d particles",ts_extension,len(load_index))
@@ -106,11 +106,13 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             h_file.physical_units()
             return h_file
         elif mode=='server':
-            timestep = self.load_timestep(ts_extension)
-            return timestep.get_view(halo_number)
+            timestep = self.load_timestep(ts_extension, mode)
+            from ..parallel_tasks import pynbody_server as ps
+            return timestep.get_view(ps.ObjectSpecification(halo_number, object_typetag))
         elif mode=='server-partial':
-            timestep = self.load_timestep(ts_extension)
-            view = timestep.get_view(halo_number)
+            timestep = self.load_timestep(ts_extension, mode)
+            from ..parallel_tasks import pynbody_server as ps
+            view = timestep.get_view(ps.ObjectSpecification(halo_number, object_typetag))
             load_index = view['remote-index-list']
             logger.info("Partial load %r, taking %d particles", ts_extension, len(load_index))
             f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
@@ -123,7 +125,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def load_tracked_region(self, ts_extension, track_data, mode=None):
-        f = self.load_timestep(ts_extension)
+        f = self.load_timestep(ts_extension, mode)
         indices = self._get_indices_for_snapshot(f, track_data)
         if mode=='partial':
             return pynbody.load(f.filename, take=indices)

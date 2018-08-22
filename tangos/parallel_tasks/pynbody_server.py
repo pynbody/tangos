@@ -8,22 +8,26 @@ import gc
 import six.moves.cPickle as pickle
 import numpy as np
 from six.moves import zip
-
-
-currently_loaded_snapshot = None
+import tangos.input_handlers.pynbody
 
 class ConfirmLoadPynbodySnapshot(Message):
     pass
 
+class ObjectSpecification(object):
+    def __init__(self, object_number, object_typetag='halo'):
+        self.object_number = object_number
+        self.object_typetag = object_typetag
 
 class PynbodySnapshotQueue(object):
     def __init__(self):
-        self.load_file_queue = []
+        self.timestep_queue = []
+        self.handler_queue = []
         self.load_requester_queue = []
-        self.current_snapshot_filename = None
+        self.current_timestep = None
         self.current_snapshot = None
         self.current_subsnap_cache = {}
         self.current_halocat = None
+        self.current_handler = None
         self.in_use_by = []
 
     def halos(self):
@@ -31,41 +35,46 @@ class PynbodySnapshotQueue(object):
             self.current_halocat = self.current_snapshot.halos()
         return self.current_halocat
 
-    def add(self, filename, requester):
+    def add(self, handler, filename, requester):
         log.logger.debug("Pynbody server: client %d requests access to %r", requester, filename)
-        if filename==self.current_snapshot_filename:
+        if filename==self.current_timestep:
             self._notify_available(requester)
             self.in_use_by.append(requester)
-        elif filename in self.load_file_queue:
-            self.load_requester_queue[self.load_file_queue.index(filename)].append(requester)
+        elif filename in self.timestep_queue:
+            queue_position = self.timestep_queue.index(filename)
+            self.load_requester_queue[queue_position].append(requester)
+            assert self.handler_queue[queue_position] == handler
         else:
-            self.load_file_queue.append(filename)
+            self.timestep_queue.append(filename)
+            self.handler_queue.append(handler)
             self.load_requester_queue.append([requester])
         self._load_next_if_free()
 
     def free(self, requester):
         self.in_use_by.remove(requester)
-        log.logger.debug("Pynbody server: client %d is now finished with %r", requester, self.current_snapshot_filename)
+        log.logger.debug("Pynbody server: client %d is now finished with %r", requester, self.current_timestep)
         self._free_if_unused()
         self._load_next_if_free()
 
-    def get_subsnap(self, filter_, fam):
-        if (filter_,fam) in self.current_subsnap_cache:
-            return self.current_subsnap_cache[(filter_, fam)]
+    def get_subsnap(self, filter_or_object_spec, fam):
+        if (filter_or_object_spec, fam) in self.current_subsnap_cache:
+            return self.current_subsnap_cache[(filter_or_object_spec, fam)]
         else:
-            subsnap = self.get_subsnap_uncached(filter_, fam)
-            self.current_subsnap_cache[(filter_, fam)] = subsnap
+            subsnap = self.get_subsnap_uncached(filter_or_object_spec, fam)
+            self.current_subsnap_cache[(filter_or_object_spec, fam)] = subsnap
             return subsnap
 
-    def get_subsnap_uncached(self, filter_, fam):
+    def get_subsnap_uncached(self, filter_or_object_spec, fam):
 
         snap = self.current_snapshot
 
-        if isinstance(filter_, pynbody.filt.Filter):
-            snap = snap[filter_]
+        if isinstance(filter_or_object_spec, pynbody.filt.Filter):
+            snap = snap[filter_or_object_spec]
+        elif isinstance(filter_or_object_spec, ObjectSpecification):
+            snap = self.current_handler.load_object(self.current_timestep, filter_or_object_spec.object_number,
+                                                    filter_or_object_spec.object_typetag)
         else:
-            snap = self.halos()[filter_]
-
+            raise TypeError("filter_or_object_spec must be either a pynbody filter or an ObjectRequestInformation object")
         if fam is not None:
             snap = snap[fam]
 
@@ -78,24 +87,27 @@ class PynbodySnapshotQueue(object):
             log.logger.debug("Pynbody server: all clients are finished with the current snapshot; freeing.")
             with check_deleted(self.current_snapshot):
                 self.current_snapshot = None
-                self.current_snapshot_filename = None
+                self.current_timestep = None
                 self.current_halocat = None
                 self.current_subsnap_cache = {}
+                self.current_handler = None
 
     def _notify_available(self, node):
         log.logger.debug("Pynbody server: notify %d that snapshot is now available", node)
         ConfirmLoadPynbodySnapshot(type(self.current_snapshot)).send(node)
 
     def _load_next_if_free(self):
-        if len(self.load_file_queue)==0:
+        if len(self.timestep_queue)==0:
             return
 
-        if self.current_snapshot_filename is None:
+        if self.current_handler is None:
             # TODO: Error handling
-            self.current_snapshot_filename = self.load_file_queue.pop(0)
-            self.current_snapshot = pynbody.load(self.current_snapshot_filename)
+            self.current_timestep = self.timestep_queue.pop(0)
+            self.current_handler = self.handler_queue.pop(0)
+
+            self.current_snapshot = self.current_handler.load_timestep(self.current_timestep)
             self.current_snapshot.physical_units()
-            log.logger.info("Pynbody server: loaded %r", self.current_snapshot_filename)
+            log.logger.info("Pynbody server: loaded %r", self.current_timestep)
 
             notify = self.load_requester_queue.pop(0)
             self.in_use_by = notify
@@ -103,7 +115,7 @@ class PynbodySnapshotQueue(object):
                 self._notify_available(n)
         else:
             log.logger.info("The currently loaded snapshot is still required and so other clients will have to wait")
-            log.logger.info("(Currently %d snapshots are in the queue to be loaded later)", len(self.load_file_queue))
+            log.logger.info("(Currently %d snapshots are in the queue to be loaded later)", len(self.timestep_queue))
 
 
 
@@ -111,7 +123,7 @@ _server_queue = PynbodySnapshotQueue()
 
 class RequestLoadPynbodySnapshot(Message):
     def process(self):
-        _server_queue.add(self.contents, self.source)
+        _server_queue.add(self.contents[0], self.contents[1], self.source)
 
 class ReleasePynbodySnapshot(Message):
     def process(self):
@@ -150,8 +162,8 @@ class ReturnPynbodyArray(Message):
         backend.send_numpy_array(self.contents.view(np.ndarray), destination)
 
 class RequestPynbodyArray(Message):
-    def __init__(self, filter_, array, fam=None):
-        self.filter_ = filter_
+    def __init__(self, filter_or_object_spec, array, fam=None):
+        self.filter_or_object_spec = filter_or_object_spec
         self.array = array
         self.fam = fam
 
@@ -162,12 +174,12 @@ class RequestPynbodyArray(Message):
         return obj
 
     def serialize(self):
-        return (self.filter_, self.array, self.fam)
+        return (self.filter_or_object_spec, self.array, self.fam)
 
     def process(self):
-        with _server_queue.current_snapshot.immediate_mode, _server_queue.current_snapshot.lazy_derive_off:
-            try:
-                subsnap = _server_queue.get_subsnap(self.filter_, self.fam)
+        try:
+            subsnap = _server_queue.get_subsnap(self.filter_or_object_spec, self.fam)
+            with subsnap.immediate_mode, subsnap.lazy_derive_off:
                 if subsnap._array_name_implies_ND_slice(self.array):
                     raise KeyError("Not transferring a single slice %r of a ND array"%self.array)
                 if self.array=='remote-index-list':
@@ -176,11 +188,11 @@ class RequestPynbodyArray(Message):
                     subarray = subsnap[self.array]
                     assert isinstance(subarray, pynbody.array.SimArray)
                 array_result = ReturnPynbodyArray(subarray)
-            except Exception as e:
-                array_result = ExceptionMessage(e)
-            array_result.send(self.source)
-            del array_result
-            gc.collect()
+        except Exception as e:
+            array_result = ExceptionMessage(e)
+        array_result.send(self.source)
+        del array_result
+        gc.collect()
 
 
 class ReturnPynbodySubsnapInfo(Message):
@@ -207,7 +219,7 @@ class RequestPynbodySubsnapInfo(Message):
     def __init__(self, filename, filter_):
         super(RequestPynbodySubsnapInfo, self).__init__()
         self.filename = filename
-        self.filter_ = filter_
+        self.filter_or_object_spec = filter_
 
     @classmethod
     def deserialize(cls, source, message):
@@ -216,14 +228,11 @@ class RequestPynbodySubsnapInfo(Message):
         return obj
 
     def serialize(self):
-        return (self.filename, self.filter_)
+        return (self.filename, self.filter_or_object_spec)
 
     def process(self):
-        assert(_server_queue.current_snapshot_filename==self.filename)
-        if isinstance(self.filter_, pynbody.filt.Filter):
-            obj = _server_queue.current_snapshot[self.filter_]
-        else:
-            obj = _server_queue.halos()[self.filter_]
+        assert(_server_queue.current_timestep == self.filename)
+        obj = _server_queue.get_subsnap(self.filter_or_object_spec, None)
         families = obj.families()
         fam_lengths = [len(obj[fam]) for fam in families]
         fam_lkeys = [obj.loadable_keys(fam) for fam in families]
@@ -232,14 +241,14 @@ class RequestPynbodySubsnapInfo(Message):
 
 
 class RemoteSubSnap(pynbody.snapshot.SimSnap):
-    def __init__(self, connection, filter_):
+    def __init__(self, connection, filter_or_object_spec):
         super(RemoteSubSnap, self).__init__()
 
         self.connection = connection
         self._filename = connection.identity
         self._server_id = connection._server_id
 
-        RequestPynbodySubsnapInfo(connection.filename, filter_).send(self._server_id)
+        RequestPynbodySubsnapInfo(connection.filename, filter_or_object_spec).send(self._server_id)
         info = ReturnPynbodySubsnapInfo.receive(self._server_id)
 
         index = 0
@@ -251,7 +260,7 @@ class RemoteSubSnap(pynbody.snapshot.SimSnap):
         self.properties.update(info.properties)
         self._loadable_keys = info.loadable_keys
         self._fam_loadable_keys = {fam: lk for fam, lk in zip(info.families, info.fam_loadable_keys)}
-        self.filter_ = filter_
+        self._filter_or_object_spec = filter_or_object_spec
 
     def _find_deriving_function(self, name):
         cl = self.connection.underlying_pynbody_class
@@ -263,7 +272,7 @@ class RemoteSubSnap(pynbody.snapshot.SimSnap):
 
 
     def _load_array(self, array_name, fam=None):
-        RequestPynbodyArray(self.filter_,array_name,fam).send(self._server_id)
+        RequestPynbodyArray(self._filter_or_object_spec, array_name, fam).send(self._server_id)
         try:
             data = ReturnPynbodyArray.receive(self._server_id).contents
         except KeyError:
@@ -277,8 +286,11 @@ class RemoteSubSnap(pynbody.snapshot.SimSnap):
 _connection_active = False
 
 class RemoteSnapshotConnection(object):
-    def __init__(self, fname, server_id=0):
+    def __init__(self, input_handler, ts_extension, server_id=0):
         global _connection_active
+
+        from ..input_handlers import pynbody
+        assert isinstance(input_handler, pynbody.PynbodyInputHandler)
 
         if _connection_active:
             raise RuntimeError("Each client can only have one remote snapshot connection at any time")
@@ -287,22 +299,28 @@ class RemoteSnapshotConnection(object):
 
         super(RemoteSnapshotConnection, self).__init__()
 
-        self._server_id = 0
-        self.filename = fname
-        self.identity = "%d: %s"%(self._server_id,fname)
+        self._server_id = server_id
+        self._input_handler = input_handler
+        self.filename = ts_extension
+        self.identity = "%d: %s"%(self._server_id, ts_extension)
 
         # ensure server knows what our messages are about
         remote_import.ImportRequestMessage(__name__).send(self._server_id)
 
-        log.logger.debug("Pynbody client: attempt to connect to remote snapshot %r", fname)
-        RequestLoadPynbodySnapshot(fname).send(self._server_id)
+        log.logger.debug("Pynbody client: attempt to connect to remote snapshot %r", ts_extension)
+        RequestLoadPynbodySnapshot((input_handler, ts_extension)).send(self._server_id)
         self.underlying_pynbody_class = ConfirmLoadPynbodySnapshot.receive(self._server_id).contents
         self.connected = True
 
-        log.logger.info("Pynbody client: connected to remote snapshot %r", fname)
+        log.logger.info("Pynbody client: connected to remote snapshot %r", ts_extension)
 
-    def get_view(self, filter_):
-        return RemoteSubSnap(self, filter_)
+    def get_view(self, filter_or_object_spec):
+        """Return a RemoteSubSnap that contains either the pynbody filtered region, or the specified object from a catalogue
+
+        filter_or_object_spec is either an instance of pynbody.filt.Filter, or a tuple containing
+        (typetag, number), which are respectively the object type tag and object number to be loaded
+        """
+        return RemoteSubSnap(self, filter_or_object_spec)
 
     def disconnect(self):
         global _connection_active

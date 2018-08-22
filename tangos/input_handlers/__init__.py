@@ -114,13 +114,13 @@ class HandlerBase(object):
     def load_timestep(self, ts_extension, mode=None):
         """Returns an object that connects to the data for a timestep on disk -- possibly a version cached in
         memory"""
-        ts_filename = self._extension_to_filename(ts_extension)
-        stored_timestep = _loaded_timesteps.get(ts_filename, None)
+        ts_hash = "%s:%r"%(ts_extension,mode)
+        stored_timestep = _loaded_timesteps.get(ts_hash, None)
         if stored_timestep is not None:
             return stored_timestep
         else:
             data = self.load_timestep_without_caching(ts_extension, mode=mode)
-            _loaded_timesteps[ts_filename] = data
+            _loaded_timesteps[ts_hash] = data
             return data
 
     def load_region(self, ts_extension, region_specification, mode=None):
