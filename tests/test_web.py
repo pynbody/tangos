@@ -5,8 +5,8 @@ from webtest import TestApp
 import numpy as np
 import csv
 import json
-import urllib
 from six import StringIO
+from six.moves.urllib import parse
 
 def setup():
     testing.init_blank_db_for_testing()
@@ -138,5 +138,5 @@ def test_simulation_with_slash():
     halo_response = ts_response.click("Go")
     assert "halo 1 of ts1" in halo_response
     calculate_url = halo_response.pyquery("#calculate_url").text()
-    calculate_url = urllib.unquote(calculate_url).decode('utf8')
+    calculate_url = parse.unquote(calculate_url)
     assert "simname%has%slashes" in calculate_url
