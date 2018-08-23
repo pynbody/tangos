@@ -36,7 +36,11 @@ class EagleLikeInputHandler(PynbodyInputHandler):
     def _pynbody_subfind_extension_from_ts_extension(cls, path):
         snap_id = cls._snap_id_from_snapdir_path(path)
         if snap_id:
-            return os.path.join(os.path.dirname(path), "particledata_%s/eagle_subfind_particles_%s" % (snap_id, snap_id))
+            subfind_path = os.path.join(os.path.dirname(path), "particledata_%s/eagle_subfind_particles_%s" % (snap_id, snap_id))
+            if os.path.exists(os.path.dirname(subfind_path)):
+                return subfind_path
+            else:
+                return cls._pynbody_extension_from_ts_extension(path)
         else:
             raise IOError("Cannot infer correct subfind particledata path to pass to pynbody")
 
@@ -73,7 +77,11 @@ class EagleLikeInputHandler(PynbodyInputHandler):
         to_unpack = getattr(f, "_eagle_subfind_cache", None)
 
         if to_unpack is None:
-            f_subfind = pynbody.load(halofilepath)
+            logger.debug("Eagle input handler constructing GrpCatalogues")
+            if halofilepath==self._extension_to_filename(ts_extension):
+                f_subfind = f
+            else:
+                f_subfind = pynbody.load(halofilepath)
             h_group = f_subfind.halos()
 
             # Eagle files have group and subgroup numbers, but tangos can only associate a single "finder id" with
@@ -82,11 +90,12 @@ class EagleLikeInputHandler(PynbodyInputHandler):
 
             h_halo = pynbody.halo.GrpCatalogue(f_subfind, 'TangosSubGroupNumber',
                                           ignore=f_subfind['TangosSubGroupNumber'].max())
-            logger.info("Eagle input handler found on-disk total of %d groups and %d subgroups" % (len(h_group), len(h_halo)))
+            logger.debug("Eagle input handler found on-disk total of %d groups and %d subgroups" % (len(h_group), len(h_halo)))
             h_halo.precalculate()
             h_group.precalculate()
             f._eagle_subfind_cache = f_subfind, h_group, h_halo
         else:
+            logger.debug("Eagle input handler using cached in-memory catalogues")
             f_subfind, h_group, h_halo = to_unpack
 
         if object_typetag=='halo':
@@ -114,7 +123,10 @@ class EagleLikeInputHandler(PynbodyInputHandler):
         unique_subgrp_ordered = scipy.stats.rankdata(unique_subgrp_hash, 'dense')
         unique_subgrp_ordered[subgrp == subgrp_max] = subgrp_max
         f_subfind['TangosSubGroupNumber'] = unique_subgrp_ordered
-        f_subfind['TangosSubGroupNumber'].write()
+        try:
+            f_subfind['TangosSubGroupNumber'].write()
+        except IOError:
+            logger.info("Unable to cache TangosSubGroupNumber on disk")
         return subgrp_max
 
         
