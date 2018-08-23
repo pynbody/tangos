@@ -32,13 +32,17 @@ class DummyTimeStep(object):
 
 
 class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
-    def __init__(self, *args, **kwargs):
-        super(PynbodyInputHandler, self).__init__(*args, **kwargs)
-
+    def __new__(cls, *args, **kwargs):
         import pynbody as pynbody_local
 
         global pynbody
         pynbody = pynbody_local
+
+        return super(PynbodyInputHandler, cls).__new__(cls, *args, **kwargs)
+
+    def __init__(self, *args, **kwargs):
+        super(PynbodyInputHandler, self).__init__(*args, **kwargs)
+
 
         # old versions of pynbody have no __version__!
         pynbody_version = getattr(pynbody, "__version__","0.00")
@@ -168,7 +172,6 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         if object_typetag!= 'halo':
             raise ValueError("Unknown object type %r" % object_typetag)
         f = self.load_timestep(ts_extension)
-        # amiga grp halo
         h = _loaded_halocats.get(id(f), lambda: None)()
         if h is None:
             h = f.halos()
