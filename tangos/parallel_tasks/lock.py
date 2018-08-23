@@ -17,16 +17,14 @@ class MessageRequestLock(message.Message):
 
 class MessageRelinquishLock(message.Message):
     def process(self):
-        lock_id, delay_time = self.contents
+        lock_id = self.contents
         proc = self.source
         queue = _get_lock_queue(lock_id)
         assert queue[0]==proc
         queue.pop(0)
         log.logger.debug("Finished with lock %r for proc %d",lock_id, proc)
         if len(queue)>0:
-            if delay_time is not None:
-                time.sleep(delay_time)
-            _issue_next_lock(lock_id)
+            _issue_next_lock(lock_id, True)
 
 class MessageGrantLock(message.Message):
     pass
@@ -40,10 +38,10 @@ def _get_lock_queue(lock_id):
     _lock_queues[lock_id] = lock_queue
     return lock_queue
 
-def _issue_next_lock(lock_id):
+def _issue_next_lock(lock_id, impose_filesystem_delay=False):
     queue = _get_lock_queue(lock_id)
     log.logger.debug("Issue lock %r to proc %d",lock_id, queue[0])
-    MessageGrantLock(lock_id).send(queue[0])
+    MessageGrantLock((lock_id, impose_filesystem_delay)).send(queue[0])
 
 def _any_locks_alive():
     return any([len(v)>0 for v in six.itervalues(_lock_queues)])
@@ -62,7 +60,10 @@ class RLock(object):
             MessageRequestLock(self.name).send(0)
             start = time.time()
             granted = MessageGrantLock.receive(0)
-            assert granted.contents==self.name, "Received a lock that was not requested. The implementation of RLock is not locally thread-safe; are you using multiple threads in one process?"
+            lock_id, delay = granted.contents
+            assert lock_id==self.name, "Received a lock that was not requested. The implementation of RLock is not locally thread-safe; are you using multiple threads in one process?"
+            if delay:
+                time.sleep(self._delay)
             log.logger.debug("Lock %r acquired in %.1fs",self.name, time.time()-start)
         self._count+=1
 
@@ -71,7 +72,7 @@ class RLock(object):
             return
         self._count-=1
         if self._count==0:
-            MessageRelinquishLock((self.name, self._delay)).send(0)
+            MessageRelinquishLock(self.name).send(0)
 
     def __enter__(self):
         self.acquire()
