@@ -38,7 +38,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         global pynbody
         pynbody = pynbody_local
 
-        return super(PynbodyInputHandler, cls).__new__(cls, *args, **kwargs)
+        return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
         super(PynbodyInputHandler, self).__init__(*args, **kwargs)
