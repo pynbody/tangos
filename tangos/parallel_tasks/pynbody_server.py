@@ -9,6 +9,7 @@ import six.moves.cPickle as pickle
 import numpy as np
 from six.moves import zip
 import tangos.input_handlers.pynbody
+import time
 
 class ConfirmLoadPynbodySnapshot(Message):
     pass
@@ -18,6 +19,17 @@ class ObjectSpecification(object):
         self.object_number = object_number
         self.object_typetag = object_typetag
 
+    def __repr__(self):
+        return "ObjectSpecification(%d,%r)"%(self.object_number, self.object_typetag)
+
+    def __eq__(self, other):
+        if not isinstance(other, ObjectSpecification):
+            return False
+        return self.object_number==other.object_number and self.object_typetag==other.object_typetag
+
+    def __hash__(self):
+        return hash((self.object_number, self.object_typetag))
+
 class PynbodySnapshotQueue(object):
     def __init__(self):
         self.timestep_queue = []
@@ -26,14 +38,8 @@ class PynbodySnapshotQueue(object):
         self.current_timestep = None
         self.current_snapshot = None
         self.current_subsnap_cache = {}
-        self.current_halocat = None
         self.current_handler = None
         self.in_use_by = []
-
-    def halos(self):
-        if self.current_halocat is None:
-            self.current_halocat = self.current_snapshot.halos()
-        return self.current_halocat
 
     def add(self, handler, filename, requester):
         log.logger.debug("Pynbody server: client %d requests access to %r", requester, filename)
@@ -58,8 +64,10 @@ class PynbodySnapshotQueue(object):
 
     def get_subsnap(self, filter_or_object_spec, fam):
         if (filter_or_object_spec, fam) in self.current_subsnap_cache:
+            log.logger.debug("Pynbody server: cache hit for %r (fam %r)",filter_or_object_spec, fam)
             return self.current_subsnap_cache[(filter_or_object_spec, fam)]
         else:
+            log.logger.debug("Pynbody server: cache miss for %r (fam %r)",filter_or_object_spec, fam)
             subsnap = self.get_subsnap_uncached(filter_or_object_spec, fam)
             self.current_subsnap_cache[(filter_or_object_spec, fam)] = subsnap
             return subsnap
@@ -75,6 +83,7 @@ class PynbodySnapshotQueue(object):
                                                     filter_or_object_spec.object_typetag)
         else:
             raise TypeError("filter_or_object_spec must be either a pynbody filter or an ObjectRequestInformation object")
+
         if fam is not None:
             snap = snap[fam]
 
@@ -88,7 +97,6 @@ class PynbodySnapshotQueue(object):
             with check_deleted(self.current_snapshot):
                 self.current_snapshot = None
                 self.current_timestep = None
-                self.current_halocat = None
                 self.current_subsnap_cache = {}
                 self.current_handler = None
 
@@ -177,8 +185,11 @@ class RequestPynbodyArray(Message):
         return (self.filter_or_object_spec, self.array, self.fam)
 
     def process(self):
+        start_time = time.time()
         try:
+            log.logger.debug("Receive request for array %r from %d",self.array,self.source)
             subsnap = _server_queue.get_subsnap(self.filter_or_object_spec, self.fam)
+
             with subsnap.immediate_mode, subsnap.lazy_derive_off:
                 if subsnap._array_name_implies_ND_slice(self.array):
                     raise KeyError("Not transferring a single slice %r of a ND array"%self.array)
@@ -186,13 +197,17 @@ class RequestPynbodyArray(Message):
                     subarray = subsnap.get_index_list(subsnap.ancestor)
                 else:
                     subarray = subsnap[self.array]
-                    assert isinstance(subarray, pynbody.array.SimArray)
+                    assert isinstance(subarray, pynbody.array.SimArray)            
                 array_result = ReturnPynbodyArray(subarray)
+
         except Exception as e:
             array_result = ExceptionMessage(e)
+        
         array_result.send(self.source)
         del array_result
         gc.collect()
+        log.logger.debug("Array sent after %.2fs"%(time.time()-start_time))
+
 
 
 class ReturnPynbodySubsnapInfo(Message):
@@ -231,14 +246,16 @@ class RequestPynbodySubsnapInfo(Message):
         return (self.filename, self.filter_or_object_spec)
 
     def process(self):
+        start_time = time.time()
         assert(_server_queue.current_timestep == self.filename)
+        log.logger.debug("Received request for subsnap info, spec %r", self.filter_or_object_spec)
         obj = _server_queue.get_subsnap(self.filter_or_object_spec, None)
         families = obj.families()
         fam_lengths = [len(obj[fam]) for fam in families]
         fam_lkeys = [obj.loadable_keys(fam) for fam in families]
         lkeys = obj.loadable_keys()
         ReturnPynbodySubsnapInfo(families, fam_lengths, obj.properties, lkeys, fam_lkeys).send(self.source)
-
+        log.logger.debug("Subsnap info sent after %.2f",(time.time()-start_time))
 
 class RemoteSubSnap(pynbody.snapshot.SimSnap):
     def __init__(self, connection, filter_or_object_spec):
@@ -274,7 +291,10 @@ class RemoteSubSnap(pynbody.snapshot.SimSnap):
     def _load_array(self, array_name, fam=None):
         RequestPynbodyArray(self._filter_or_object_spec, array_name, fam).send(self._server_id)
         try:
+            start_time=time.time()
+            log.logger.debug("Send array request")
             data = ReturnPynbodyArray.receive(self._server_id).contents
+            log.logger.debug("Array received; waited %.2fs",time.time()-start_time)
         except KeyError:
             raise IOError("No such array %r available from the remote"%array_name)
         if fam is None:
