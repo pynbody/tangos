@@ -2,13 +2,11 @@ from __future__ import absolute_import
 from .message import Message, ExceptionMessage
 from . import log, parallel_backend_loaded, remote_import
 from ..util.check_deleted import check_deleted
-import sys
 import pynbody
 import gc
 import six.moves.cPickle as pickle
 import numpy as np
 from six.moves import zip
-import tangos.input_handlers.pynbody
 import time
 
 class ConfirmLoadPynbodySnapshot(Message):
