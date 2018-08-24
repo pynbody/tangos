@@ -454,7 +454,7 @@ class PropertyWriter(GenericTangosTool):
         self.tracker = CalculationSuccessTracker()
 
         logger.info("Processing %r", db_timestep)
-        with parallel_tasks.RLock("insert_list"):
+        with parallel_tasks.lock.SharedLock("insert_list"):
             self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
             if self.options.with_prerequisites:
                 self._add_prerequisites_to_calculator_instances(db_timestep)
