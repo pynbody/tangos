@@ -95,7 +95,6 @@ class EagleLikeInputHandler(PynbodyInputHandler):
             h_group.precalculate()
             f._eagle_subfind_cache = f_subfind, h_group, h_halo
         else:
-            logger.debug("Eagle input handler using cached in-memory catalogues")
             f_subfind, h_group, h_halo = to_unpack
 
         if object_typetag=='halo':
