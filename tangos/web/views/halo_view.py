@@ -21,7 +21,7 @@ class TimeLinks(object):
         ns = ['inf',10,1,1,10,'inf']
 
         urls = [
-            request.route_url(r, simid=halo.timestep.simulation.basename,
+            request.route_url(r, simid=halo.timestep.simulation.escaped_basename,
                               timestepid=halo.timestep.escaped_extension,
                               halonumber=halo.basename,
                               n=n)
