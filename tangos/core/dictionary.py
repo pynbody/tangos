@@ -24,9 +24,12 @@ class DictionaryItem(Base):
         from .. import properties
         return properties.providing_class(self.text, handler)
 
-def get_dict_id(text, default=None, session=None, allow_query=True):
+raise_exception = object()
+
+def get_dict_id(text, default=raise_exception, session=None, allow_query=True):
     """Get a DictionaryItem id for text (possibly cached). Raises KeyError if
-    no dictionary object exists for the specified text"""
+    no dictionary object exists for the specified text, unless a default is provided
+    in which case the default value is returned instead."""
 
     from . import Session
 
@@ -46,7 +49,7 @@ def get_dict_id(text, default=None, session=None, allow_query=True):
             try:
                 obj = session.query(DictionaryItem).filter_by(text=text).first()
             except:
-                if default is None:
+                if default is raise_exception:
                     raise
                 else:
                     return default
@@ -57,7 +60,7 @@ def get_dict_id(text, default=None, session=None, allow_query=True):
             obj = None
 
         if obj is None:
-            if default is None:
+            if default is raise_exception:
                 raise
             else:
                 return default
