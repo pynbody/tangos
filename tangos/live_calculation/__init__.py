@@ -236,8 +236,12 @@ class Calculation(object):
                 property_name_condition = halo_property_alias.name_id.in_(name_targets)
                 link_name_condition = (halo_link_alias.relation_id.in_(name_targets))
             else:
-                # We know we're joining to a null list of properties; do this as efficiently as possible
-                property_name_condition = link_name_condition = False
+                # We know we're joining to a null list of properties; however simply setting these conditions
+                # to False results in an apparently efficient SQL query (boils down to 0==1) which actually
+                # takes a very long time to execute if the link or propery tables are large. Thus, compare
+                # to an impossible value instead.
+                property_name_condition = halo_property_alias.name_id==-1
+                link_name_condition = halo_link_alias.relation_id==-1
 
 
             augmented_query =augmented_query.outerjoin(halo_property_alias,
