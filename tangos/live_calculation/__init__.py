@@ -40,7 +40,7 @@ class Calculation(object):
     live_calculation.parser"""
 
     def __init__(self):
-        self._extraction_pattern = extraction_patterns.halo_property_value_getter
+        self._extraction_pattern = extraction_patterns.HaloPropertyValueGetter()
 
     def __repr__(self):
         return "<Calculation description for %s>"%str(self)
@@ -66,8 +66,8 @@ class Calculation(object):
         property_is_present = []
         for p_id in self._essential_dict_ids():
             this_property_ok = False
-            for extraction_pattern in (extraction_patterns.halo_link_getter,
-                                       extraction_patterns.halo_property_getter):
+            for extraction_pattern in (extraction_patterns.HaloLinkGetter(),
+                                       extraction_patterns.HaloPropertyGetter()):
                 if not extraction_pattern.use_fixed_cache(halo):
                     this_property_ok = True
                 elif extraction_pattern.cache_contains(halo, p_id):
@@ -531,7 +531,7 @@ class Link(Calculation):
             self.locator = parser.parse_property_name(self.locator)
 
         if isinstance(self.locator, StoredProperty):
-            self.locator.set_extraction_pattern(extraction_patterns.halo_link_target_getter)
+            self.locator.set_extraction_pattern(extraction_patterns.HaloLinkTargetGetter())
             self.locator.set_multivalued() # we want to at least know if there are multiple possible links to follow
             self._expect_multivalues = True
 

@@ -11,7 +11,7 @@ raw.set_input_options(0, assert_class=StoredProperty)
 
 @raw.set_initialisation
 def raw_initialisation(input):
-    input.set_extraction_pattern(extraction_patterns.halo_property_raw_value_getter)
+    input.set_extraction_pattern(extraction_patterns.HaloPropertyRawValueGetter())
 
 
 @BuiltinFunction.register
