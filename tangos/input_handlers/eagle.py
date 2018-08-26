@@ -106,8 +106,7 @@ class EagleLikeInputHandler(PynbodyInputHandler):
 
     def _create_unique_subgroup_ids(self, f_subfind):
         # see if we previously saved it:
-        u_subgrp_number = f_subfind.get('TangosSubGroupNumber', None)
-        if u_subgrp_number is not None:
+        if 'TangosSubGroupNumber' in f_subfind.loadable_keys():
             logger.info("Found cached TangosSubGroupNumber within Eagle snapshot")
             return
 
