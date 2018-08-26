@@ -25,7 +25,7 @@ def format_array(data, max_array_length=3):
         return "Array"
     data_fmt = []
     for d in data:
-        data_fmt.append(format_data(data))
+        data_fmt.append(format_data(d))
     return "["+(", ".join(data_fmt))+"]"
 
 def format_number(data):
