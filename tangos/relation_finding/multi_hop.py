@@ -197,7 +197,7 @@ class MultiHopStrategy(HopStrategy):
             prefixes=['TEMPORARY']
         )
 
-        self._table_index = Index('temp.source_id_index', multi_hop_link_table.c.source_id, multi_hop_link_table.c.nhops)
+        self._table_index = Index('temp.source_id_index_' + rstr, multi_hop_link_table.c.source_id, multi_hop_link_table.c.nhops)
 
         self._table = multi_hop_link_table
         self._prelim_table = multi_hop_link_prelim_table
