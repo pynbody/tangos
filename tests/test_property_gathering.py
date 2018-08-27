@@ -42,6 +42,13 @@ def setup():
             creator.link_last_halos()
             creator.link_last_bhs_using_mapping({1:1})
 
+    # special timestep 5->6 where there is an exact equal weight link
+    creator.add_timestep()
+    creator.add_objects_to_timestep(2, NDM=[5,5])
+    creator.add_timestep()
+    creator.add_objects_to_timestep(1, NDM=[10])
+    creator.link_last_halos_using_mapping({1:1, 2:1})
+
 class TestProperty(properties.LivePropertyCalculation):
     names = "RvirPlusMvir"
 
@@ -196,6 +203,14 @@ def test_earlier():
     testing.assert_halolists_equal(ts1_halos, ['sim/ts1/1', 'sim/ts1/2', 'sim/ts1/3', 'sim/ts1/1.1'])
     testing.assert_halolists_equal(ts3_halos, ['sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts3/1.1'])
 
+def test_earlier_equal_weight():
+    """Regression test for problem where earlier(x) or later(x) failed when there was more than one link
+    with the identical same weight, meaning the major progenitor was undefined. An interim fix picks one or the
+    other possibility, so that at least the code does not crash. However, a better long-term solution should
+    be found - see TODO in multi_source.py"""
+    ts5_halo, ts4_halo = tangos.get_timestep("sim/ts5").calculate_all("dbid()","earlier(1).dbid()")
+    testing.assert_halolists_equal(ts5_halo, ['sim/ts5/1'])
+    assert testing.halolists_equal(ts4_halo, ['sim/ts4/1']) or testing.halolists_equal(ts4_halo, ['sim/ts4/2'])
 
 def test_cascade_closes_connections():
     h = tangos.get_halo("sim/ts3/1")

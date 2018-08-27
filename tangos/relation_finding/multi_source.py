@@ -99,6 +99,12 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
             group_by(table.c.halo_from_id).subquery()
         query = query.join(subq, sqlalchemy.and_(table.c.halo_from_id == subq.c.halo_from_id,
                                                  table.c.weight == subq.c.max_weight))
+
+        # there may be rare occasions where two links have exactly the same weight, in which case the above query
+        # currently generates more than one row. Avoid by grouping. Note in this case SQL will return
+        # basically a random choice of which row to return, so this is not a perfect solution - TODO.
+        query = query.group_by(table.c.source_id)
+
         return query
 
     def _should_halt(self):
