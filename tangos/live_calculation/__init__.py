@@ -271,10 +271,14 @@ class Calculation(object):
 
     @staticmethod
     def _add_entries_for_duplicates(target_objs, target_ids):
+        """Given a list of target_objs and their target_ids, the latter of which may contain duplicates, return the full list of objects
+
+        For example, if target_objs = [obj1, obj3, obj6] where obj1.id=1, obj3.id=3, obj6.id=6, and target_ids = [1, 3, 6, 3, 6, 6],
+        the returned list will be [obj1, obj3, obj6, obj3, obj6, obj6]."""
         if len(target_objs) == len(target_ids):
             return target_objs
-        target_obj_ids = [t.id for t in target_objs]
-        return [target_objs[target_obj_ids.index(t_id)] for t_id in target_ids]
+        target_obj_from_id = {t.id: t for t in target_objs}
+        return [target_obj_from_id[t_id] for t_id in target_ids]
 
 
 class MultiCalculation(Calculation):
