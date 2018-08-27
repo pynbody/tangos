@@ -9,7 +9,7 @@ import sqlalchemy.exc
 import sqlalchemy.orm
 import sqlalchemy.orm.dynamic
 import sqlalchemy.orm.query
-from sqlalchemy import and_, Table, Column, Integer, Float, ForeignKey
+from sqlalchemy import and_, Table, Index, Column, Integer, Float, ForeignKey
 from sqlalchemy.orm import relationship
 
 from .. import core
@@ -163,6 +163,7 @@ class MultiHopStrategy(HopStrategy):
         return recursion_filter
 
     def _delete_temp_table(self):
+        self._table_index.drop(bind=self._connection)
         self._table.drop(checkfirst=True, bind=self._connection)
         self._prelim_table.drop(checkfirst=True, bind=self._connection)
         # self._index.drop(bind=self.connection)
@@ -195,6 +196,8 @@ class MultiHopStrategy(HopStrategy):
             Column('nhops', Integer),
             prefixes=['TEMPORARY']
         )
+
+        self._table_index = Index('temp.source_id_index', multi_hop_link_table.c.source_id, multi_hop_link_table.c.nhops)
 
         self._table = multi_hop_link_table
         self._prelim_table = multi_hop_link_prelim_table
