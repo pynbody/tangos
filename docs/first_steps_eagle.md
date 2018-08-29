@@ -7,7 +7,7 @@ Initial set up
 Make sure you have followed the [initial set up instructions](index.md).
 
 Next, download the raw simulation data required for this tutorial. We will use the Eagle
-particle data from a 25 Mpc box (RefL0025N0376); to access this you need to sign up for a free account and download the
+particle data from a 25 Mpc box (RefL0025N0376); to access this you need to [sign up for a free account](http://icc.dur.ac.uk/Eagle/database.php) and download the
 individual snapshots, unpacking them in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
 variable to.
 
