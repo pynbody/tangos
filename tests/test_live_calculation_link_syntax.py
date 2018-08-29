@@ -58,7 +58,6 @@ def test_link_returned_halo_is_valid():
 
 def test_link_missing_data():
     assert db.get_halo("sim/ts1/1").calculate('link(testlink,testvalpartial,"max")').halo_number == 3
-    print("MY TEST",  db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"max",testvalpartial>1.0)').halo_number)
     assert db.get_halo("sim/ts1/1").calculate('link(testlink,testval,"max",testvalpartial>1.0)').halo_number == 3
 
 def test_link_can_be_used_within_calculation():
