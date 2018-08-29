@@ -114,7 +114,7 @@ class SimulationAdderUpdater(object):
                 database_number = finder_id
 
             if (NDM >= self.min_halo_particles or NDM==0) \
-                    and (database_number<=self.max_num_objects or self.max_num_objects is None):
+                    and (self.max_num_objects is None or database_number<=self.max_num_objects ):
                 h = create_class(ts, database_number, finder_id, NDM, Nstar, Ngas)
                 halos.append(h)
 
