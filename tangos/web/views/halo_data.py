@@ -165,8 +165,9 @@ def rescale_plot(request):
 
 @view_config(route_name='gathered_plot')
 def gathered_plot(request):
+    start_time = time.time()
     name1, name2, v1, v2 = gathered_plot_data(request)
-
+    logger.info("Gathering data took %.2fs"%(time.time()-start_time))
     with _matplotlib_lock:
         start(request)
         p.plot(v1,v2,'k.')
@@ -190,7 +191,7 @@ def gathered_plot_data(request):
     name1 = decode_property_name(request.matchdict['nameid1'])
     name2 = decode_property_name(request.matchdict['nameid2'])
     filter = decode_property_name(request.GET.get('filter', ""))
-    object_typetag = request.matchdict.get('object_typetag', None)
+    object_typetag = request.GET.get('object_typetag', None)
 
     if filter != "":
         v1, v2, f = ts.calculate_all(name1, name2, filter, object_typetag=object_typetag)
