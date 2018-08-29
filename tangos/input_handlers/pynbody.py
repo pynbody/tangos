@@ -46,7 +46,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
         # old versions of pynbody have no __version__!
         pynbody_version = getattr(pynbody, "__version__","0.00")
-        assert pynbody_version>="0.42", "Tangos requires pynbody 0.42 or later"
+        assert pynbody_version>="0.46", "Tangos requires pynbody 0.46 or later"
 
     def _is_able_to_load(self, ts_extension):
         filepath = self._extension_to_filename(ts_extension)
