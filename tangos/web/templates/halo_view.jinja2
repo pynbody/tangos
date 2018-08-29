@@ -65,8 +65,8 @@
             <input name="logx" type="checkbox" id="logx"/><label for="logx">log x</label>
             <input name="logy" type="checkbox" id="logy"/><label for="logy">log y</label>
             <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>.
-            <a href="#" id="download-csv-link">&#x25BC; Download CSV</a>
-            <a href="#" id="download-merger-tree">&#x25BC; Download Merger Tree</a>
+            <span class="download-area-csv"><a href="#" id="download-csv-link">&#x25BC; Download CSV</a></span>
+            <span class="download-area-tree"><a href="#" id="download-merger-tree">&#x25BC; Download Merger Tree</a></span>
         </form>
         </div>
         <div id="imgbox"></div>
@@ -248,11 +248,23 @@
             })
         }
 
+        function updateDownloadButtons() {
+             if ($('#image_form').values()['type']==='tree') {
+                 $('#download-merger-tree').show();
+                 $('#download-csv-link').hide();
+             } else {
+                 $('#download-csv-link').show()
+                 $('#download-merger-tree').hide();
+             }
+        }
+
         function fetchPlot(isUpdate)
         {
 
             if (plotFetchingDisabled)
                 return;
+
+            updateDownloadButtons();
 
             if ($('#image_form').values()['type']==='tree')
                 return fetchTree(isUpdate);
