@@ -1,4 +1,5 @@
 import socket
+from six.moves.urllib import parse
 
 class BreadCrumbs(object):
     def __init__(self, uri=None, servername="TANGOS"):
@@ -33,7 +34,7 @@ class BreadCrumbs(object):
             if count==1:
                 crumb = self.servername
             if count<len(self.crumbs):
-                links.append('<a href="' + crumb_uri + '" class="breadcrumbs">' + crumb + '</a>')
+                links.append('<a href="' + crumb_uri + '" class="breadcrumbs">' + parse.unquote(crumb) + '</a>')
             else:
                 links.append(crumb)
         return links

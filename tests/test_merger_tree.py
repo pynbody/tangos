@@ -39,6 +39,13 @@ def setup():
     generator.add_objects_to_timestep(5)
     generator.link_last_halos()
 
+    # setup the default options, so that these can change in the config without changing the tests
+    tree.mergertree_min_fractional_weight = 0.02
+    tree.mergertree_min_fractional_NDM = 0.0
+    tree.mergertree_max_nhalos = 30
+    tree.mergertree_timeout = 15.0
+    tree.mergertree_max_hops = 500
+
 def test_default_tree_has_correct_structure():
     mt = tree.MergerTree(tangos.get_halo("%/ts6/1"))
     mt.construct()

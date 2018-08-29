@@ -28,7 +28,7 @@ def insert_list(property_list):
     from tangos import parallel_tasks as pt
 
     if pt.backend!=None:
-        with pt.RLock("insert_list"):
+        with pt.ExclusiveLock("insert_list"):
             _insert_list_unlocked(property_list)
     else:
         _insert_list_unlocked(property_list)

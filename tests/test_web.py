@@ -1,4 +1,3 @@
-# TODO: expand these tests!
 import tangos, tangos.web
 import tangos.testing.simulation_generator
 from tangos import testing
@@ -7,6 +6,7 @@ import numpy as np
 import csv
 import json
 from six import StringIO
+from six.moves.urllib import parse
 
 def setup():
     testing.init_blank_db_for_testing()
@@ -26,6 +26,17 @@ def setup():
             h['test_value'] = 1.0
 
     tangos.get_default_session().commit()
+
+    creator = tangos.testing.simulation_generator.TestSimulationGenerator("simname/has/slashes")
+    creator.add_timestep()
+    creator.add_objects_to_timestep(1)
+    creator.add_timestep()
+    creator.add_objects_to_timestep(1)
+    creator.link_last_halos()
+    tangos.get_simulation(2).timesteps[0].halos[0]['test_value'] = 2.0
+    tangos.get_default_session().commit()
+
+    
 
     global app
     app = TestApp(tangos.web.main({}))
@@ -118,3 +129,19 @@ def test_json_gather_bool():
     assert result['can_use_in_plot'] is False
     assert result['can_use_as_filter'] is True
     assert result['is_array'] is False
+
+
+def test_simulation_with_slash():
+    response = app.get("/")
+    assert "simname/has/slashes" in response
+    simpage_response = response.click("simname/has/slashes")
+    assert "Simulation: simname/has/slashes" in simpage_response
+    ts_response = simpage_response.click("Go", index=1)
+    assert "Timestep: ts1" in ts_response
+    halo_response = ts_response.click("Go")
+    assert "halo 1 of ts1" in halo_response
+    calculate_url = halo_response.pyquery("#calculate_url").text()
+    calculate_url = parse.unquote(calculate_url)
+    assert "simname%has%slashes" in calculate_url
+    halo_next_step_response = halo_response.click("\+1$").follow()
+    assert "halo 1 of ts2" in halo_next_step_response

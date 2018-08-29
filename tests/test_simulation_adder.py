@@ -91,3 +91,18 @@ def test_renumbering_disabled():
     assert db.get_halo("dummy_sim_2/step.1/halo_2").finder_id == 2
     assert db.get_halo("dummy_sim_2/step.1/halo_2").NDM==2001
 
+
+def test_limited_numbers():
+    testing.init_blank_db_for_testing()
+    manager = add_simulation.SimulationAdderUpdater(output_testing.TestInputHandlerReverseHaloNDM("dummy_sim_2"))
+    manager.max_num_objects = 3
+    manager.scan_simulation_and_add_all_descendants()
+    assert db.get_timestep("dummy_sim_2/step.1").halos.count()==3
+
+def test_NDM_cut():
+    testing.init_blank_db_for_testing()
+    manager = add_simulation.SimulationAdderUpdater(output_testing.TestInputHandlerReverseHaloNDM("dummy_sim_2"))
+    manager.min_halo_particles = 2005
+    manager.scan_simulation_and_add_all_descendants()
+    ndm, = db.get_timestep("dummy_sim_2/step.1").calculate_all("NDM()")
+    assert ndm.min()==2005

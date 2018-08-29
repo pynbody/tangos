@@ -3,6 +3,7 @@ from __future__ import print_function
 import tangos.parallel_tasks.pynbody_server as ps
 import pynbody
 import tangos.parallel_tasks as pt
+import tangos.input_handlers.pynbody
 import tangos
 import numpy.testing as npt
 
@@ -10,19 +11,30 @@ import sys
 import os
 from six.moves import zip
 
+
+class TestHandler(tangos.input_handlers.pynbody.ChangaInputHandler):
+    def load_object(self, ts_extension, halo_number, object_typetag='halo', mode=None):
+        # Specialised object 'catalogue' to check this works ok when loading remotely
+        if object_typetag=='test-objects' and mode is None:
+            return self.load_timestep(ts_extension)[[halo_number]]
+        else:
+            return super(TestHandler, self).load_object(ts_extension, halo_number, object_typetag, mode)
+
 def setup():
+    global handler
     pt.use("multiprocessing")
     tangos.config.base = os.path.dirname(__file__)+"/"
+    handler = TestHandler("test_simulations/test_tipsy")
 
 def _get_array():
     test_filter = pynbody.filt.Sphere('5000 kpc')
-    for fname in pt.distributed(["test_simulations/test_tipsy/tiny.000640", "test_simulations/test_tipsy/tiny.000832"]):
-        ps.RequestLoadPynbodySnapshot(tangos.config.base+fname).send(0)
+    for fname in pt.distributed(["tiny.000640", "tiny.000832"]):
+        ps.RequestLoadPynbodySnapshot((handler, fname)).send(0)
         ps.ConfirmLoadPynbodySnapshot.receive(0)
 
         ps.RequestPynbodyArray(test_filter, "pos").send(0)
 
-        f_local = pynbody.load(tangos.config.base+fname)
+        f_local = pynbody.load(tangos.config.base+"/test_simulations/test_tipsy/"+fname)
         f_local.physical_units()
         remote_result =  ps.ReturnPynbodyArray.receive(0).contents
         assert (f_local[test_filter]['pos']==remote_result).all()
@@ -36,7 +48,7 @@ def test_get_array():
 
 def _test_simsnap_properties():
     test_filter = pynbody.filt.Sphere('5000 kpc')
-    conn = ps.RemoteSnapshotConnection(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")
+    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
     f = conn.get_view(test_filter)
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")[test_filter]
     f_local.physical_units()
@@ -54,7 +66,7 @@ def test_simsnap_properties():
 
 def _test_simsnap_arrays():
     test_filter = pynbody.filt.Sphere('5000 kpc')
-    conn = ps.RemoteSnapshotConnection(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")
+    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
     f = conn.get_view(test_filter)
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")[test_filter]
     f_local.physical_units()
@@ -66,7 +78,7 @@ def test_simsnap_arrays():
 
 def _test_nonexistent_array():
     test_filter = pynbody.filt.Sphere('5000 kpc')
-    conn = ps.RemoteSnapshotConnection(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")
+    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
     f = conn.get_view(test_filter)
     with npt.assert_raises(KeyError):
         f['nonexistent']
@@ -76,8 +88,8 @@ def test_nonexistent_array():
 
 
 def _test_halo_array():
-    conn = ps.RemoteSnapshotConnection(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")
-    f = conn.get_view(1)
+    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
+    f = conn.get_view(ps.ObjectSpecification(1))
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
     assert len(f)==len(f_local)
     assert (f['x'] == f_local['x']).all()
@@ -88,8 +100,8 @@ def test_halo_array():
 
 
 def _test_remote_file_index():
-    conn = ps.RemoteSnapshotConnection(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")
-    f = conn.get_view(1)
+    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
+    f = conn.get_view(ps.ObjectSpecification(1))
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
     local_index_list = f_local.get_index_list(f_local.ancestor)
     index_list = f['remote-index-list']
@@ -103,8 +115,8 @@ def _debug_print_arrays(*arrays):
         print(vals, file=sys.stderr)
 
 def _test_lazy_evaluation_is_local():
-    conn = ps.RemoteSnapshotConnection(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")
-    f = conn.get_view(1)
+    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
+    f = conn.get_view(ps.ObjectSpecification(1))
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
     f_local.physical_units()
 
@@ -131,8 +143,8 @@ def tipsy_specific_derived_array(sim):
     return 1-sim['x']
 
 def _test_underlying_class():
-    conn = ps.RemoteSnapshotConnection(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")
-    f = conn.get_view(1)
+    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
+    f = conn.get_view(ps.ObjectSpecification(1))
     f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[1]
     f_local.physical_units()
     npt.assert_almost_equal(f['tipsy_specific_derived_array'],f_local['tipsy_specific_derived_array'], decimal=4)
@@ -140,3 +152,18 @@ def _test_underlying_class():
 
 def test_underlying_class():
     pt.launch(_test_underlying_class, 2)
+
+
+def _test_correct_object_loading():
+    f_remote = handler.load_object('tiny.000640', 1, mode='server')
+    f_local = handler.load_object('tiny.000640', 1, mode=None)
+    assert (f_remote['iord']==f_local['iord']).all()
+    f_remote = handler.load_object('tiny.000640', 1, 'test-objects', mode='server')
+    f_local = handler.load_object('tiny.000640', 1, 'test-objects', mode=None)
+    assert (f_remote['iord'] == f_local['iord']).all()
+
+def test_correct_object_loading():
+    """This regression test looks for a bug where the pynbody_server module assumed halos could be
+    loaded just by calling f.halos() where f was the SimSnap. This is not true in general; for example,
+    for SubFind catalogues one has both halos and groups and the correct arguments must be passed."""
+    pt.launch(_test_correct_object_loading, 2)

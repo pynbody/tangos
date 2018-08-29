@@ -7,6 +7,7 @@ import importlib
 import warnings
 import functools
 from .. import input_handlers
+from .. import util
 
 
 class PropertyCalculationMetaClass(type):
@@ -327,17 +328,6 @@ class LivePropertyCalculationInheritingMetaProperties(LivePropertyCalculation):
     def plot_xdelta(self):
         return self._inherits_from.plot_xdelta()
 
-class ProxyHalo(object):
-
-    """Used to return pointers to halos within this snapshot to the database"""
-
-    def __init__(self, value):
-        self.value = value
-
-    def __int__(self):
-        return int(self.value)
-
-
 
 ##############################################################################
 # UTILITY FUNCTIONS
@@ -373,7 +363,7 @@ def all_properties(with_particle_data=True):
 
     return pr
 
-
+@util.lru_cache()
 def providing_class(property_name, handler_class=None, silent_fail=False):
     """Return property calculator class for given property name when files will be loaded by specified handler.
 
@@ -395,7 +385,7 @@ def providing_class(property_name, handler_class=None, silent_fail=False):
     else:
         raise NameError("No providing class for property " + property_name)
 
-
+@util.lru_cache()
 def all_providing_classes(property_name):
     """Return all the calculator classes for the given property name (possibly multiple, for different handlers)"""
     classes = all_property_classes()

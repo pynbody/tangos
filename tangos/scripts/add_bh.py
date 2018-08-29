@@ -145,7 +145,7 @@ def assign_bh_to_halos(bh_halo_assignment, bh_iord, timestep, linkname, hostname
     halo_ids = np.array([h.id for h in halos])
 
     logger.info("Gathering bh halo information for %r", timestep)
-    with parallel_tasks.RLock("bh"):
+    with parallel_tasks.lock.SharedLock("bh"):
         bh_database_object, existing_bh_nums, bhobj_ids = get_bh_objs_numbers_and_dbids(timestep)
 
     bh_links = []
@@ -175,7 +175,7 @@ def assign_bh_to_halos(bh_halo_assignment, bh_iord, timestep, linkname, hostname
                     bh_links.append(tangos.core.halo_data.HaloLink(bh_obj, halo_obj, host_dict_id))
 
     logger.info("Committing %d %s links for step %r...", len(bh_links), linkname, timestep)
-    with parallel_tasks.RLock("bh"):
+    with parallel_tasks.ExclusiveLock("bh"):
         session.add_all(bh_links)
         session.commit()
     logger.info("...done")
@@ -189,7 +189,7 @@ def get_bh_objs_numbers_and_dbids(timestep):
 
 
 def add_missing_trackdata_and_BH_objects(timestep, this_step_bh_iords, existing_bhobj_iords, session):
-    with parallel_tasks.RLock("bh"):
+    with parallel_tasks.ExclusiveLock("bh"):
         track, track_nums = db.tracking.get_trackers(timestep.simulation)
         with session.no_autoflush:
             tracker_to_add = collect_bh_trackers(this_step_bh_iords, timestep.simulation, track_nums)
@@ -219,7 +219,7 @@ def generate_halolinks(session, fname, pairs):
         mergers_links = []
         bh_map = {}
         logger.info("Gathering BH tracking information for steps %r and %r", ts1, ts2)
-        with parallel_tasks.RLock("bh"):
+        with parallel_tasks.ExclusiveLock("bh"):
             dict_obj = db.core.get_or_create_dictionary_item(session, "tracker")
             dict_obj_next = db.core.get_or_create_dictionary_item(session, "BH_merger_next")
             dict_obj_prev = db.core.get_or_create_dictionary_item(session, "BH_merger_prev")
@@ -286,7 +286,7 @@ def generate_halolinks(session, fname, pairs):
 
         logger.info("Generated %d BH merger links for steps %r and %r", len(mergers_links), ts1, ts2)
 
-        with parallel_tasks.RLock("bh"):
+        with parallel_tasks.ExclusiveLock("bh"):
             logger.info("Committing total %d BH links for steps %r and %r", len(mergers_links)+len(links), ts1, ts2)
             session.add_all(links)
             session.add_all(mergers_links)

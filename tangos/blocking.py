@@ -18,7 +18,7 @@ def make_engine_blocking(engine=None):
     if engine is None:
         engine = core.get_default_engine()
     assert isinstance(engine, sqlalchemy.engine.Engine)
-    rlock = pt.RLock("db_write_lock")
+    rlock = pt.ExclusiveLock("db_write_lock")
 
     sqlalchemy.event.listen(engine, 'begin', event_begin )
     sqlalchemy.event.listen(engine, 'commit', event_commit_or_rollback)

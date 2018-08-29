@@ -8,7 +8,7 @@ from tangos import core
 
 def add_urls(halos, request, sim, ts):
     for h in halos:
-        h.url = request.route_url('halo_view', simid=sim.basename, timestepid=ts.escaped_extension,
+        h.url = request.route_url('halo_view', simid=sim.escaped_basename, timestepid=ts.escaped_extension,
                                   halonumber=h.basename)
 
 @view_config(route_name='timestep_view', renderer='../templates/timestep_view.jinja2')

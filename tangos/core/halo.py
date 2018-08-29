@@ -175,10 +175,10 @@ class Halo(Base):
         """
 
         if raw:
-            getters=[extraction_patterns.halo_property_raw_value_getter]
+            getters=[extraction_patterns.HaloPropertyRawValueGetter()]
         else:
-            getters=[extraction_patterns.halo_property_value_getter]
-        getters+=[extraction_patterns.halo_link_target_getter]
+            getters=[extraction_patterns.HaloPropertyValueGetter()]
+        getters+=[extraction_patterns.HaloLinkTargetGetter()]
 
         return_data = self.get_objects(key, getters)
 
@@ -187,13 +187,14 @@ class Halo(Base):
 
         return return_data
 
-    def get_objects(self, key, getters = [extraction_patterns.halo_property_getter,
-                                          extraction_patterns.halo_link_getter]):
+    def get_objects(self, key, getters=None):
         """Get objects belonging to this halo named by the specified key.
 
         Compared to get_data, this allows access to the underlying HaloProperty or HaloLink objects, or to perform
         custom processing of the data by specifying particular extraction patterns to getters. For more information,
         see halo_data_extraction_patterns."""
+        if getters is None:
+            getters = [extraction_patterns.HaloPropertyGetter(), extraction_patterns.HaloLinkGetter()]
         from . import Session
         session = Session.object_session(self)
         key_id = get_dict_id(key, session=session)
@@ -206,11 +207,12 @@ class Halo(Base):
             raise KeyError("No such property %r" % key)
         return ret_values
 
-    def get_description(self, key, getters=[extraction_patterns.halo_property_getter,
-                                          extraction_patterns.halo_link_getter]):
+    def get_description(self, key, getters=None):
         """Get a description of a named property or link, in the form of an object capable of calculating it.
 
         This can be helpful to extract meta-data such as the size of an image or steps of an array."""
+        if getters is None:
+            getters = [extraction_patterns.HaloPropertyGetter(), extraction_patterns.HaloLinkGetter()]
         object = self.get_objects(key, getters)[0]
         return object.description
 
@@ -258,14 +260,14 @@ class Halo(Base):
         session.add_all(links)
 
 
-    def keys(self, getters = [extraction_patterns.halo_property_getter,
-                              extraction_patterns.halo_link_getter]):
+    def keys(self, getters = None):
+        if getters is None:
+            getters = [extraction_patterns.HaloPropertyGetter(), extraction_patterns.HaloLinkGetter()]
         from . import Session
         names = []
         session = Session.object_session(self)
         for g in getters:
             names+=g.keys(self, session)
-
 
         return names
 

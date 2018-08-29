@@ -7,6 +7,7 @@ import time
 import weakref
 import re
 import numpy as np
+from ..util import proxy_object
 
 pynbody = None # deferred import; occurs when a PynbodyInputHandler is constructed
 
@@ -31,19 +32,24 @@ class DummyTimeStep(object):
 
 
 class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
-    def __init__(self, *args, **kwargs):
-        super(PynbodyInputHandler, self).__init__(*args, **kwargs)
-
+    def __new__(cls, *args, **kwargs):
         import pynbody as pynbody_local
 
         global pynbody
         pynbody = pynbody_local
 
+        return object.__new__(cls)
+
+    def __init__(self, *args, **kwargs):
+        super(PynbodyInputHandler, self).__init__(*args, **kwargs)
+
+
         # old versions of pynbody have no __version__!
         pynbody_version = getattr(pynbody, "__version__","0.00")
-        assert pynbody_version>="0.42", "Tangos requires pynbody 0.42 or later"
+        assert pynbody_version>="0.46", "Tangos requires pynbody 0.46 or later"
 
-    def _is_able_to_load(self, filepath):
+    def _is_able_to_load(self, ts_extension):
+        filepath = self._extension_to_filename(ts_extension)
         try:
             f = pynbody.load(filepath)
             if self.quicker:
@@ -73,19 +79,19 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             return f
         elif mode=='server' or mode=='server-partial':
             from ..parallel_tasks import pynbody_server as ps
-            return ps.RemoteSnapshotConnection(self._extension_to_filename(ts_extension))
+            return ps.RemoteSnapshotConnection(self,ts_extension)
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def load_region(self, ts_extension, region_specification, mode=None):
         if mode is None:
-            timestep = self.load_timestep(ts_extension)
+            timestep = self.load_timestep(ts_extension, mode)
             return timestep[region_specification]
         elif mode=='server':
-            timestep = self.load_timestep(ts_extension)
+            timestep = self.load_timestep(ts_extension, mode)
             return timestep.get_view(region_specification)
         elif mode=='server-partial':
-            timestep = self.load_timestep(ts_extension)
+            timestep = self.load_timestep(ts_extension, mode)
             view = timestep.get_view(region_specification)
             load_index = view['remote-index-list']
             logger.info("Partial load %r, taking %d particles",ts_extension,len(load_index))
@@ -104,11 +110,13 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             h_file.physical_units()
             return h_file
         elif mode=='server':
-            timestep = self.load_timestep(ts_extension)
-            return timestep.get_view(halo_number)
+            timestep = self.load_timestep(ts_extension, mode)
+            from ..parallel_tasks import pynbody_server as ps
+            return timestep.get_view(ps.ObjectSpecification(halo_number, object_typetag))
         elif mode=='server-partial':
-            timestep = self.load_timestep(ts_extension)
-            view = timestep.get_view(halo_number)
+            timestep = self.load_timestep(ts_extension, mode)
+            from ..parallel_tasks import pynbody_server as ps
+            view = timestep.get_view(ps.ObjectSpecification(halo_number, object_typetag))
             load_index = view['remote-index-list']
             logger.info("Partial load %r, taking %d particles", ts_extension, len(load_index))
             f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
@@ -121,7 +129,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def load_tracked_region(self, ts_extension, track_data, mode=None):
-        f = self.load_timestep(ts_extension)
+        f = self.load_timestep(ts_extension, mode)
         indices = self._get_indices_for_snapshot(f, track_data)
         if mode=='partial':
             return pynbody.load(f.filename, take=indices)
@@ -164,7 +172,6 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         if object_typetag!= 'halo':
             raise ValueError("Unknown object type %r" % object_typetag)
         f = self.load_timestep(ts_extension)
-        # amiga grp halo
         h = _loaded_halocats.get(id(f), lambda: None)()
         if h is None:
             h = f.halos()
@@ -337,6 +344,71 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
         else:
             raise ValueError("Unknown halo type %r" % object_typetag)
 
+    @staticmethod
+    def _resolve_units(value):
+        if (pynbody.units.is_unit(value)):
+            return float(value)
+        else:
+            return value
+
+    def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
+        if object_typetag=='halo':
+            return ["CM","HalfMassRad","VMax","VMaxRad","mass","pos","spin","vel","veldisp","parent"]
+        elif object_typetag=='group':
+            return ["mass","mcrit_200","mmean_200","mtop_200","rcrit_200","rmean_200","rtop_200","child"]
+        else:
+            raise ValueError("Unknown object typetag %r"%object_typetag)
+
+    def _get_group_children(self,ts_extension):
+        h = self._construct_halo_cat(ts_extension, 'halo')
+        group_children = {}
+        for i in range(len(h)):
+            halo_props = h.get_halo_properties(i,with_unit=False)
+            if 'sub_parent' in halo_props:
+                parent = halo_props['sub_parent']
+                if parent not in group_children:
+                    group_children[parent] = []
+                group_children[parent].append(i)
+        return group_children
+
+
+    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
+        h = self._construct_halo_cat(ts_extension, object_typetag)
+
+        if object_typetag=='halo':
+            pynbody_prefix = 'sub_'
+        elif object_typetag=='group':
+            pynbody_prefix = ""
+        else:
+            raise ValueError("Unknown object typetag %r"%object_typetag)
+
+        if 'child' in property_names and object_typetag=='group':
+            child_map = self._get_group_children(ts_extension)
+
+        for i in range(len(h)):
+            all_data = [i]
+            for k in property_names:
+                pynbody_properties = h.get_halo_properties(i,with_unit=False)
+                if pynbody_prefix+k in pynbody_properties:
+                    data = self._resolve_units(pynbody_properties[pynbody_prefix+k])
+                    if k == 'parent' and data is not None:
+                        # turn into a link
+                        data = proxy_object.IncompleteProxyObjectFromFinderId(data, 'group')
+                elif k=='child' and object_typetag=='group':
+                    # subfind does not actually store a list of children; we infer it from the parent
+                    # data in the halo catalogue
+                    data = child_map.get(i,None)
+                    if data is not None:
+                        data = [proxy_object.IncompleteProxyObjectFromFinderId(data_i, 'halo') for data_i in data]
+                else:
+                    data = None
+
+                all_data.append(data)
+            yield all_data
+
+
+
+
 class GadgetRockstarInputHandler(PynbodyInputHandler):
     patterns = ["snapshot_???"]
     auxiliary_file_patterns = ["halos_*.bin"]
@@ -470,4 +542,4 @@ class ChangaInputHandler(PynbodyInputHandler):
                 pass
         return out
 
-from . import caterpillar
+from . import caterpillar, eagle

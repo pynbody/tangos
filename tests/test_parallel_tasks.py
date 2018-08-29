@@ -5,6 +5,7 @@ from tangos import parallel_tasks as pt
 from tangos import testing
 import tangos
 import sys
+import time
 from six.moves import range
 
 def setup():
@@ -57,7 +58,7 @@ def _test_not_run_twice():
     time.sleep(pt.backend.rank()*0.05)
 
     for i in pt.distributed(list(range(3))):
-        with pt.RLock("lock"):
+        with pt.ExclusiveLock("lock"):
             tangos.get_halo(1)['test_count']+=1
             tangos.get_default_session().commit()
 
@@ -105,3 +106,43 @@ def test_synchronize_db_creator():
     assert tangos.get_halo(2)['db_creator_test_property'] == 1.0
     creator_1, creator_2 = [tangos.get_halo(i).get_objects('db_creator_test_property')[0].creator for i in (1,2)]
     assert creator_1==creator_2
+
+
+
+def _test_shared_locks():
+    start_time = time.time()
+    if pt.backend.rank()==1:
+        # exclusive mode
+        time.sleep(0.05)
+        with pt.lock.ExclusiveLock("lock"):
+            # should be running after the shared locks are done
+            assert time.time()-start_time>0.1
+    else:
+        # shared mode
+        with pt.lock.SharedLock("lock"):
+            # should not have waited for the other shared locks
+            assert time.time() - start_time < 0.1
+            time.sleep(0.1)
+    pt.backend.barrier()
+
+def _test_shared_locks_in_queue():
+    start_time = time.time()
+    if pt.backend.rank() <=2 :
+        # exclusive mode
+        with pt.lock.ExclusiveLock("lock", 0):
+            assert time.time() - start_time < 0.2
+            time.sleep(0.1)
+    else:
+        # shared mode
+        time.sleep(0.1)
+        with pt.lock.SharedLock("lock",0):
+            # should be running after the exclusive locks are done
+            assert time.time() - start_time > 0.1
+            time.sleep(0.1)
+        # should all have run in parallel
+        assert time.time()-start_time<0.5
+    pt.backend.barrier()
+
+def test_shared_locks():
+    pt.launch(_test_shared_locks,4)
+    pt.launch(_test_shared_locks_in_queue, 6)
