@@ -130,17 +130,17 @@ def _test_shared_locks_in_queue():
     if pt.backend.rank() <=2 :
         # exclusive mode
         with pt.lock.ExclusiveLock("lock", 0):
-            assert time.time() - start_time < 0.11
-            time.sleep(0.05)
+            assert time.time() - start_time < 0.2
+            time.sleep(0.1)
     else:
         # shared mode
-        time.sleep(0.01)
+        time.sleep(0.1)
         with pt.lock.SharedLock("lock",0):
             # should be running after the exclusive locks are done
             assert time.time() - start_time > 0.1
             time.sleep(0.1)
         # should all have run in parallel
-        assert time.time()-start_time<0.3
+        assert time.time()-start_time<0.5
     pt.backend.barrier()
 
 def test_shared_locks():
