@@ -9,6 +9,7 @@ import tangos.live_calculation as lc
 import warnings
 
 import tangos.testing.simulation_generator
+from tangos.testing import assert_halolists_equal
 
 
 def setup():
@@ -35,6 +36,18 @@ def setup():
     ts1_h3['testval2'] = 20.0
     ts1_h4['testval2'] = 30.0
     ts1_h5['testval2'] = 40.0
+
+    generator.add_timestep()
+    ts2_h1, ts2_h2 = generator.add_objects_to_timestep(2)
+    ts2_h1['testval'] = 2.0
+    ts2_h2['testval'] = 100.0
+    generator.link_last_halos_using_mapping({2: 1, 3: 2})
+
+    generator.add_timestep()
+    ts3_h1, ts3_h2 = generator.add_objects_to_timestep(2)
+    generator.link_last_halos()
+    ts3_h1['testval'] = -1.0
+    ts3_h2['testval'] = 1000.0
 
     db.core.get_default_session().commit()
 
@@ -90,3 +103,12 @@ def test_missing_link():
 
     with assert_raises(lc.NoResultsError):
         db.get_halo("sim/ts1/1").calculate("nonexistent_link.testval")
+
+def test_historical_value_finding():
+    vals = db.get_halo("sim/ts3/1").calculate_for_progenitors("testval")
+    halo = db.get_halo("sim/ts3/1")
+    assert_halolists_equal([halo.calculate("find_progenitor(testval, 'max')")], ["sim/ts2/1"])
+    assert_halolists_equal([halo.calculate("find_progenitor(testval, 'min')")], ["sim/ts3/1"])
+
+    timestep = db.get_timestep("sim/ts3")
+    assert_halolists_equal(timestep.calculate_all("find_progenitor(testval, 'min')")[0], ["sim/ts3/1", "sim/ts1/3"])
