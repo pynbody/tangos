@@ -19,6 +19,9 @@ def setup():
     generator.add_timestep()
     ts1_h1, ts1_h2, ts1_h3, ts1_h4, ts1_h5 = generator.add_objects_to_timestep(5)
 
+
+
+
     ts1_h1['testlink'] = ts1_h2, ts1_h3, ts1_h4, ts1_h5
     ts1_h1['testlink_univalued'] = ts1_h2
 
@@ -42,6 +45,18 @@ def setup():
     ts2_h1['testval'] = 2.0
     ts2_h2['testval'] = 100.0
     generator.link_last_halos_using_mapping({2: 1, 3: 2})
+
+    generator_sim2 = tangos.testing.simulation_generator.TestSimulationGenerator("sim2")
+    # this is added to offer red herring links that should be ignored
+    # We add a timestep and links that create an illusory past, but actually it's in another simulation
+    # so should be ignored. It triggers a problem with the original implementation of find_progenitor.
+
+    generator_sim2.add_timestep()
+    s2_h1, s2_h2 = generator_sim2.add_objects_to_timestep(2)
+    generator_sim2.link_last_halos_across_using_mapping(generator, {1: 1, 2: 2})
+    s2_h2['testval'] = 1e6
+
+    # end of red herring
 
     generator.add_timestep()
     ts3_h1, ts3_h2 = generator.add_objects_to_timestep(2)
@@ -111,4 +126,5 @@ def test_historical_value_finding():
     assert_halolists_equal([halo.calculate("find_progenitor(testval, 'min')")], ["sim/ts3/1"])
 
     timestep = db.get_timestep("sim/ts3")
+    assert_halolists_equal(timestep.calculate_all("find_progenitor(testval, 'max')")[0], ["sim/ts2/1", "sim/ts3/2"])
     assert_halolists_equal(timestep.calculate_all("find_progenitor(testval, 'min')")[0], ["sim/ts3/1", "sim/ts1/3"])

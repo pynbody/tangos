@@ -20,27 +20,24 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
     Additionally, as soon as any halo is "matched" in the target, the entire query is stopped. In other words,
     this class assumes that the number of hops is the same to reach all target halos."""
 
-    def __init__(self, halos_from, target=None, **kwargs):
+    def __init__(self, halos_from, target, **kwargs):
         """Construct a strategy for finding Halos via multiple "hops" along HaloLinks from multiple start-points
 
         :param halos_from: a list of all halos to start from.
         :param target: a TimeStep or Simulation object to target.
-        :param directed: 'backwards', 'forwards' or 'across'. If not specified, inferred from the target.
         :param one_match_per_input: if True (default), return one halo per starting point in order.
                                   The returned halo in each case should be the one with the
                                   highest weight link (i.e. the major progenitor or similar)
 
                                   if False, *all* linked halos are returned and the caller has to figure out
                                   which one belongs to which starting halo
-        :param one_match_per_step: if True, return one halo per starting point per timestep.
 
         Other parameters are passed onto an underlying MultiHopStrategy. However note that the order_by parameter
         has no effect unless one_match_per_input is False.
         """
         directed = kwargs.get("directed", self._infer_direction(halos_from, target))
         kwargs["directed"] = directed
-        kwargs['target'] = target = kwargs.get("target", None)
-
+        kwargs["target"] = target
 
         self._return_only_highest_weights = kwargs.pop('one_match_per_input', True)
 
