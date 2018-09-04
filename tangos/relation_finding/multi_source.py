@@ -30,7 +30,7 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
                                   highest weight link (i.e. the major progenitor or similar)
 
                                   if False, *all* linked halos are returned and the caller has to figure out
-                                  which one belongs to which starting halo
+                                  which one belongs to which starting halo, e.g. by calling sources()
 
         Other parameters are passed onto an underlying MultiHopStrategy. However note that the order_by parameter
         has no effect unless one_match_per_input is False.
@@ -96,7 +96,7 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         # return only the highest weight link from each halo
         # (the following join is basically a work-around for the lack of an 'argmax' type functionality in sql)
         subq = query.add_columns(func.max(table.c.weight).label("max_weight")). \
-            group_by(table.c.halo_from_id).subquery()
+            group_by(table.c.halo_from_id, table.c.source_id).subquery()
         query = query.join(subq, sqlalchemy.and_(table.c.halo_from_id == subq.c.halo_from_id,
                                                  table.c.weight == subq.c.max_weight))
 
@@ -125,6 +125,10 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
             return [x.halo_to for x in results]
 
     def sources(self):
+        """Returns the offset in the original list that generated each result returned by all().
+
+        For example, if the class is constructed for two halos, but the results have two results for
+        the first halo, sources() will return [0,0,1]."""
         results = self._get_query_all()
         if self._return_only_highest_weights:
             return [x[0] for x in results]
