@@ -88,11 +88,18 @@ with maximum mass among only those that are within 10 kpc of halo center. Any nu
 Once you've decided how you want to pick the linked object, you can return any of that object's properties.
 
 ```
-sim[-1][6].calculate('link(BH, BH_mass, "max", BH_central_distance<10, BH_mass>1e6).BH_mdot')
+h.calculate('link(BH, BH_mass, "max", BH_central_distance<10, BH_mass>1e6).BH_mdot')
 ```
 
 This will return the accretion rate of the most massive linked black hole within halo 6 that has a mass of at least
 1e6 solar masses and is within 10 kpc of halo center.
+
+Finally, one can also get a link to a progenitor with a particular property. For example, if you want to find the
+progenitors of a galaxy where the `SFR` property was maximum, and return its `mass` at that time, you could use:
+
+```
+h.calculate('find_progenitor(SFR, "max").mass')
+```
 
 General Syntax Notes
 ------------
