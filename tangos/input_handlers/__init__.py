@@ -26,7 +26,7 @@ class DummyTimeStep(object):
     pass
 
 
-_loaded_timesteps = {}
+_loaded_timesteps = weakref.WeakValueDictionary()
 
 
 class HandlerBase(object):
@@ -56,9 +56,10 @@ class HandlerBase(object):
         """Returns a dictionary of properties of the timestep"""
         return {}
 
-    def enumerate_objects(self, ts_extension, object_typetag='halo'):
+    def enumerate_objects(self, ts_extension, object_typetag='halo', min_halo_particles=None):
         """Yield halo_number, NDM, NStar, Ngas for halos in the specified timestep"""
-        raise NotImplementedError
+        for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
+            yield X
 
     def _enumerate_objects_from_statfile(self, ts_extension, object_typetag):
         """Implementation of enumerate_objects when the information is provided by a file readable
@@ -82,23 +83,44 @@ class HandlerBase(object):
         from . import halo_stat_files
         if object_typetag != 'halo':
             raise IOError("No stat file known for object type %s"%object_typetag)
-        ts = DummyTimeStep(self._extension_to_filename(ts_extension))
-        ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
+        #ts = DummyTimeStep()
+        #ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
         from . import caterpillar
-        statfile = halo_stat_files.HaloStatFile(ts)
+        statfile = halo_stat_files.HaloStatFile(self._extension_to_filename(ts_extension))
         return statfile
+
+
+    def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
+        """Returns a list of all pre-computed properties available for this timestep.
+
+        These pre-computed properties can then be evaluated through iterate_object_properties_for_timestep"""
+        return self.get_stat_file(ts_extension, object_typetag).all_columns()
+
+    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
+        """Iterate through all objects of specified type, providing named pre-computed data.
+
+        This is normally data that was calculated and stored by the halo finder such as masses or particle counts.
+        Each object yields an array with the finder_id followed by values for the requested properties.
+
+        :arg ts_extension - the timestep path (relative to the simulation basename)
+        :arg object_typetag - the type of halo catalogue (e.g. 'halo' or 'group')
+        :arg property_names - a list of property names to retrieve (depends on catalogue file format)
+        """
+        statfile = self.get_stat_file(ts_extension, object_typetag)
+        for values in statfile.iter_rows(*property_names):
+            yield values
 
 
     def load_timestep(self, ts_extension, mode=None):
         """Returns an object that connects to the data for a timestep on disk -- possibly a version cached in
         memory"""
-        ts_filename = self._extension_to_filename(ts_extension)
-        stored_timestep = _loaded_timesteps.get(ts_filename, lambda: None)()
+        ts_hash = hash((ts_extension,mode,type(self)))
+        stored_timestep = _loaded_timesteps.get(ts_hash, None)
         if stored_timestep is not None:
             return stored_timestep
         else:
             data = self.load_timestep_without_caching(ts_extension, mode=mode)
-            _loaded_timesteps[ts_filename] = weakref.ref(data)
+            _loaded_timesteps[ts_hash] = data
             return data
 
     def load_region(self, ts_extension, region_specification, mode=None):

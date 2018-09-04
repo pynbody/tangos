@@ -143,7 +143,8 @@ def test_non_existent_redirection():
 
 def test_parse_raw_psuedofunction():
     parsed = tangos.live_calculation.parser.parse_property_name("raw(dummy_property_1)")
-    assert parsed._inputs[0]._extraction_pattern is extraction_patterns.halo_property_raw_value_getter
+    assert isinstance(parsed._inputs[0]._extraction_pattern,
+                      extraction_patterns.HaloPropertyRawValueGetter)
 
     assert all(tangos.get_halo("sim/ts1/1").calculate(parsed) == tangos.get_halo("sim/ts1/1")['dummy_property_1'])
 

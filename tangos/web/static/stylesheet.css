@@ -243,19 +243,19 @@ g.node {
 }
 
 circle.node-dot-standard {
-    fill: red;
-    stroke: red;
+    fill: #bb4400;
+    stroke: #bb4400;
     stroke-width: 1px;
 }
 
 circle.node-dot-sub {
-    fill: lightsalmon;
-    stroke: red;
+    fill: #bb4400;
+    stroke: bb4400;
     stroke-width: 1px;
 }
 
 circle.node-dot-selected {
-    fill: yellow;
+    fill: #e26000;
     stroke:black;
     stroke-width: 3px;
 }
@@ -273,7 +273,7 @@ circle.node-dot-continuation {
 
 path.link {
     fill: none;
-    stroke: #cccccc;
+    stroke: #e2e2e2;
 }
 
 text.info {

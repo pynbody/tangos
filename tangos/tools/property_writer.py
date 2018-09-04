@@ -17,9 +17,8 @@ import sqlalchemy.orm
 
 from . import GenericTangosTool
 from .. import properties
-from ..util import terminalcontroller, timing_monitor
+from ..util import terminalcontroller, timing_monitor, proxy_object
 from .. import parallel_tasks, core
-from ..parallel_tasks import database
 from ..util.check_deleted import check_deleted
 from ..cached_writer import insert_list
 from ..log import logger
@@ -214,12 +213,14 @@ class PropertyWriter(GenericTangosTool):
     def _build_existing_properties(self, db_halo):
         existing_properties = db_halo.all_properties
         need_data = self._needed_property_data()
-        existing_properties_data = AttributableDict(
-                [(x.name.text, x.data) if x.name.text in need_data
-                 else (x.name.text, None) for x in existing_properties])
-        existing_properties_data.update(
-                [(x.relation.text, x.halo_to) if x.relation.text in need_data
-                 else (x.relation.text, None) for x in db_halo.links])
+        need_data_ids = [core.get_dict_id(x,None) for x in need_data]
+
+        existing_properties_data = AttributableDict()
+        for x in existing_properties:
+            if x.name_id in need_data_ids:
+                name = need_data[need_data_ids.index(x.name_id)]
+                existing_properties_data[name] = x.data
+
         existing_properties_data.halo_number = db_halo.halo_number
         existing_properties_data.NDM = db_halo.NDM
         existing_properties_data.NGas = db_halo.NGas
@@ -229,8 +230,8 @@ class PropertyWriter(GenericTangosTool):
         return existing_properties_data
 
     def _build_existing_properties_all_halos(self, halos):
-        logger.info("Gathering existing properties...")
         return [self._build_existing_properties(h) for h in halos]
+        
 
     def _is_commit_needed(self, end_of_timestep, end_of_simulation):
         if len(self._pending_properties)==0:
@@ -257,9 +258,9 @@ class PropertyWriter(GenericTangosTool):
 
     def _queue_results_for_later_commit(self, db_halo, names, results, existing_properties_data):
         for n, r in zip(names, results):
-            if isinstance(r, properties.ProxyHalo):
-                # resolve halo
-                r = core.get_default_session().query(core.halo.Halo).filter_by(id=int(r)).first()
+            if isinstance(r, proxy_object.ProxyObjectBase):
+                # TODO: possible optimization here using relative_to_timestep_cache
+                r = r.relative_to_timestep_id(self._current_timestep_id).resolve(core.get_default_session())
             if self.options.force or (n not in list(existing_properties_data.keys())):
                 existing_properties_data[n] = r
                 if self.options.debug:
@@ -455,14 +456,17 @@ class PropertyWriter(GenericTangosTool):
         self.tracker = CalculationSuccessTracker()
 
         logger.info("Processing %r", db_timestep)
-        with parallel_tasks.RLock("insert_list"):
-            self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
-            if self.options.with_prerequisites:
-                self._add_prerequisites_to_calculator_instances(db_timestep)
-            db_halos = self._build_halo_list(db_timestep)
-            self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
-            core.get_default_session().commit()
+        self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
+        if self.options.with_prerequisites:
+            self._add_prerequisites_to_calculator_instances(db_timestep)
 
+        with parallel_tasks.lock.SharedLock("insert_list"):
+            logger.debug("Start halo list query")
+            db_halos = self._build_halo_list(db_timestep)
+            logger.debug("End halo list query")
+
+        self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
+        
         logger.info("Successfully gathered existing properties; calculating halo properties now...")
 
         logger.info("  %d halos to consider; %d property calculations for each of them",

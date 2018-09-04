@@ -21,7 +21,7 @@ class TimeLinks(object):
         ns = ['inf',10,1,1,10,'inf']
 
         urls = [
-            request.route_url(r, simid=halo.timestep.simulation.basename,
+            request.route_url(r, simid=halo.timestep.simulation.escaped_basename,
                               timestepid=halo.timestep.escaped_extension,
                               halonumber=halo.basename,
                               n=n)
@@ -85,7 +85,7 @@ class HaloLinkInfo(object):
         halo_dest = link.halo_to
         weight_text = "( %.2f)"%link.weight if link.weight else ""
         self.name = "%s%s: %s"%(link.relation.text,weight_text,_relative_description(halo_source, halo_dest))
-        self.url = request.route_url('halo_view', simid=halo_dest.timestep.simulation.basename,
+        self.url = request.route_url('halo_view', simid=halo_dest.timestep.simulation.escaped_basename,
                                      timestepid=halo_dest.timestep.escaped_extension,
                                      halonumber=halo_dest.basename)
 
@@ -127,5 +127,5 @@ def halo_view(request):
             'tree_url': request.route_url('merger_tree',simid=request.matchdict['simid'],
                                             timestepid=request.matchdict['timestepid'],
                                             halonumber=request.matchdict['halonumber']),
-            'gather_url': "/%s/%s/"%(sim.basename,ts.escaped_extension),
-            'cascade_url': "/%s/%s/%s/"%(sim.basename,ts.escaped_extension,halo.basename)}
+            'gather_url': "/%s/%s/"%(sim.escaped_basename,ts.escaped_extension),
+            'cascade_url': "/%s/%s/%s/"%(sim.escaped_basename,ts.escaped_extension,halo.basename)}

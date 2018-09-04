@@ -1,5 +1,5 @@
 from .. import TimeChunkedProperty
-from . import pynbody_handler_module
+from . import pynbody_handler_module, PynbodyPropertyCalculation
 
 import numpy as np
 
@@ -36,3 +36,16 @@ class StarFormHistogram(TimeChunkedProperty):
     def reassemble(self, *options):
         reassembled = super(StarFormHistogram, self).reassemble(*options)
         return reassembled/1e9 # Msol per Gyr -> Msol per yr
+
+class StarForm(PynbodyPropertyCalculation):
+    names = "SFR_10Myr", "SFR_100Myr"
+    
+    def calculate(self, halo, existing_properties):
+        halo = halo.star
+
+        t_now = halo.properties['time'].in_units("Gyr")
+        tform = halo['tform'].in_units("Gyr")
+        mask_10Myr = (t_now-tform)<0.01
+        mask_100Myr = (t_now-tform)<0.1
+        # Because physical_units has been called previously, mass is in Msol. Return results in Msol/yr.
+        return halo['mass'][mask_10Myr].sum()/1e7, halo['mass'][mask_100Myr].sum()/1e8

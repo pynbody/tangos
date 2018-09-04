@@ -9,6 +9,9 @@ There are currently various sample simulations available to illustrate the use o
 * A zoom simulation run with Changa (similar to Gasoline) with AHF catalogues - [click here](first_steps_changa+ahf.md). This simulation also has baryons
   unlike the others which contain only dark matter. An additional sample Changa simulation is available 
   [with black holes](black_holes_and_crossmatching.md).
+* You can also use the publicly-available Eagle particle data to try
+  analysing [a full uniform volume galaxy formation simulation](first_steps_eagle.md), although this takes slightly
+  longer and requires a large amount of disk space.
   
 Adding simulations to _tangos_ is not strongly dependent on the underlying format so to get to grips with
 that process you can try any of the tutorials.

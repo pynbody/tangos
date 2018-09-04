@@ -88,6 +88,10 @@ class Simulation(Base):
     def path(self):
         return self.basename
 
+    @property
+    def escaped_basename(self):
+        return self.basename.replace("/","%")
+
 
 class SimulationProperty(Base):
     __tablename__ = 'simulationproperties'

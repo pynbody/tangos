@@ -7,4 +7,4 @@ class PynbodyPropertyCalculation(PropertyCalculation):
 
 PynbodyHaloProperties = PynbodyPropertyCalculation # old name, to be deprecated
 
-from . import BH, SF, zoom, centring, profile, images, gas
+from . import BH, SF, zoom, centring, profile, images, gas, eagle, mass

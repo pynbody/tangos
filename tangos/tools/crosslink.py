@@ -117,7 +117,7 @@ class GenericLinker(GenericTangosTool):
         halos1 = self.make_finder_id_to_halo_map(ts1, object_typecode)
         halos2 = self.make_finder_id_to_halo_map(ts2, object_typecode)
 
-        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+        with parallel_tasks.ExclusiveLock("create_db_objects_from_catalog"):
             same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
             self.session.commit()
 
@@ -152,7 +152,7 @@ class GenericLinker(GenericTangosTool):
             items_back = self.create_db_objects_from_catalog(back_cat, halos2, halos1, same_d_id)
             logger.info("Identified %d links between %r and %r", len(items_back), ts2, ts1)
 
-        with parallel_tasks.RLock("create_db_objects_from_catalog"):
+        with parallel_tasks.ExclusiveLock("create_db_objects_from_catalog"):
             logger.info("Preparing to commit links for %r and %r", ts1, ts2)
             self.session.add_all(items)
             self.session.add_all(items_back)

@@ -10,7 +10,7 @@ def has_link(source_halos, link):
 @has_link.set_initialisation
 def link_exists_initialisation(input):
     input.set_extraction_pattern(
-        extraction_patterns.halo_link_target_getter)
+        extraction_patterns.HaloLinkTargetGetter())
 
 
 @BuiltinFunction.register

@@ -53,16 +53,16 @@ class CaterpillarInputHandler(PynbodyInputHandler):
 class CaterpillarRockstarStatFile(halo_stat_files.RockstarStatFile):
 
     @classmethod
-    def filename(cls, timestep):
+    def filename(cls, timestep_filename):
         # following logic is horrible hack: should be solved by requiring consistency between filename passed to pynbody
         # and filename returned by timestep.filename, removing need for pynbody_path_from_snapdir_path
         # and for this hack.
         #
         # This should probably actually be solved in pynbody.
-        if "snap_" in timestep.filename:
-            filename = os.path.dirname(timestep.filename)
+        if "snap_" in timestep_filename:
+            filename = os.path.dirname(timestep_filename)
         else:
-            filename = timestep.filename
+            filename = timestep_filename
 
         stepid = CaterpillarInputHandler._snap_id_from_snapdir_path(filename)
         if stepid:

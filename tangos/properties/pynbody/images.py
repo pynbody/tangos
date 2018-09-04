@@ -17,9 +17,6 @@ class BaryonicImages(SphericalRegionPropertyCalculation):
     def plot_clabel(self):
         return r"M$_{\odot}$ kpc$^{-2}$"
 
-    def requires_property(self):
-        return ["shrink_center"]
-
     @centred_calculation
     def calculate(self, particle_data, properties):
         import pynbody.analysis.angmom as angmom

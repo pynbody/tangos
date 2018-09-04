@@ -30,6 +30,7 @@ def add_simulation_timesteps(options):
     output_object.quicker = options.quicker
     adder = SimulationAdderUpdater(output_object,renumber=not options.no_renumber)
     adder.min_halo_particles = options.min_particles
+    adder.max_num_objects = options.max_objects
     adder.scan_simulation_and_add_all_descendants()
 
 
@@ -432,6 +433,8 @@ def get_argument_parser_and_subparsers():
                               default=config.default_fileset_handler_class)
     subparse_add.add_argument("--min-particles", action="store", type=int, default=config.min_halo_particles,
                               help="The minimum number of particles a halo must have before it is imported (default %d)" % config.min_halo_particles)
+    subparse_add.add_argument("--max-objects", action="store", type=int, default=config.max_num_objects,
+                              help="The maximum number of objects of a particular type to store (no limit if not specified)")
     subparse_add.add_argument("--quicker", action="store_true",
                               help="Cut corners/make guesses to import quickly and with minimum memory usage. Only use if you understand the consequences!")
     subparse_add.add_argument("--no-renumber", action="store_true",

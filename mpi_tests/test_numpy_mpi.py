@@ -10,7 +10,7 @@ from six.moves import zip
 
 
 def test_function():
-    lock = pt.RLock("hello")
+    lock = pt.ExclusiveLock("hello")
 
     rank = pt.backend.rank()
 

@@ -125,6 +125,6 @@ def _shutdown_parallelism():
 
 
 
-from .lock import RLock
+from .lock import ExclusiveLock
 from .barrier import barrier
 from . import remote_import
