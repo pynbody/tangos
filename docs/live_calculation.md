@@ -120,13 +120,11 @@ General Syntax Notes
 List of built-in mini-language functions
 ----------------------------------------
 
-Note that string inputs *must* have quotes when used, but property names do not need quotes.
+Note that _string_ inputs must have quotes when used, but property names and _expressions_ do not need quotes.
 
-* `at(r,property)`: returns value of property at radius r
-    Inputs:
-        - r (float, integer, or halo property): radius at which to take value
-        - property (halo property, must be a profile): target property to operate on
-        
+
+**Intrinsic object information**
+
 * `halo_number()`:returns halo number of target 
 * `t()`: returns simulation time of target 
 * `z()`: returns simulation redshift of target
@@ -149,17 +147,17 @@ Note that string inputs *must* have quotes when used, but property names do not 
 *  `earlier(n)`: returns main progenitor halo n snapshots previous to current snapshot.
     Inputs:
     
-    - n (integer): number of snapshots
+    - *n* (integer): number of snapshots
         
 * `later(n)`: returns descendant halo n snapshots forward in time.
     Inputs:
         
-    - n (integer): number of snapshots
+    - *n* (integer): number of snapshots
         
 * `match(s)`: returns the best match for an object in the named simulation or timestep.
    Inputs:
    
-    - s (string): the name of the simulation or timestep to link to
+    - *s* (string): the name of the simulation or timestep to link to
         
 * `link(link_name, [property_name, property_criterion, [constraint1, ...]])`: Finds a named
    link where the linked object satisfies a criterion and, optionally, some constraints.
