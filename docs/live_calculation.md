@@ -3,6 +3,8 @@ The live-calculation mini-language
 
 Halo properties that are stored in the database can be re-processed using a set of powerful tools that are designed to pull out insight into the data. Using this framework with `Timestep.calculate_all` or `Halo.calculate_for_descendants` can result in far faster evaluation than would be achieved by manually evaluating the equivalent on each individual halo.
 
+The language used to express these operations is python-like but _not_ actually python. The rest of this document explains the language, first through examples and then with a list of possible operations.
+
 Examples
 --------
 
@@ -112,12 +114,11 @@ General Syntax Notes
 - All functions can implicitly access halo properties, so that (for example) `Vvir()` returns the virtual velocity without having to specify manually that it should calculate this from `Rvir` and `Vvir`
 - If a function returns a halo link (i.e. a link to another object with its own properties) `f().value` will return the `value` stored or calculated from the linked object returned by `f()`
 - Basic arithmetic works as you'd expect, so you can use `+`, `-`, `*` and `/`, as well as brackets to control precedence, e.g. `f(Mgas+Mstar)` returns the value of `f` taking the sum of the properties `Mgas` and `Mstar` for each target halo as input.
-- live calculation functions and link functions can be combined. For example, given a property function `F` and link function `L`, one can do L(...).F(...) where F will calculate a property given the properties from the link function results and its own inputs.
+- live calculation functions and link functions can be combined. For example, given a property function `F` and link function `L`, one can do `L(...).F(...)` where F will calculate a property given the properties from the link function results and its own inputs.
 - live calculation functions can be nested, e.g. given `f1` and `f2`, `f1(5,f2(Mvir))` will return the value of `f1` given, as its second argument, the value of `f2` with the halo property `Mvir` as input.
 
-List of Useful mini-language functions
---------------------------------------
-Functions that return linked objects are denoted by "[Link]"
+List of built-in mini-language functions
+----------------------------------------
 
 Note that string inputs *must* have quotes when used, but property names do not need quotes.
 
@@ -126,28 +127,89 @@ Note that string inputs *must* have quotes when used, but property names do not 
         - r (float, integer, or halo property): radius at which to take value
         - property (halo property, must be a profile): target property to operate on
         
-  
-* `Vvir()`: returns virial velocity of halo
-* `halo_number()`:returns halo number of target halo
-* `t()`: returns simulation time of target halo
+* `halo_number()`:returns halo number of target 
+* `t()`: returns simulation time of target 
+* `z()`: returns simulation redshift of target
+* `a()`: returns simulation scalefactor of target
 * `NDM()`: returns number of DM particles in halo
 * `NStar()`: returns number of star particles in halo
 * `Ngas()`: returns number of gas particles in halo
-*  **[link]** `earlier(n)`: returns main progenitor halo n snapshots previous to current snapshot
+* `finder_id()`: returns the halo number in the original finder output (which may differ from
+  `halo_number()`)
+
+**Mathematics and logic**
+
+* Binary operators: `*`, `/`, `+`, `-`, `**` (power)
+* Binary logic operators: `<`, `>`, `&`, `|`
+* Unary operators: `abs`, `sqrt`, `log`, `log10` 
+* Unary logic operator: `!` (not)
+
+**Links**
+
+*  `earlier(n)`: returns main progenitor halo n snapshots previous to current snapshot.
     Inputs:
-        - n (integer): number of snapshots
-* **[link]** `later(n)`: returns descendant halo n snapshots forward in time 
+    
+    - n (integer): number of snapshots
+        
+* `later(n)`: returns descendant halo n snapshots forward in time.
     Inputs:
-        - n (integer): number of snapshots
+        
+    - n (integer): number of snapshots
+        
+* `match(s)`: returns the best match for an object in the named simulation or timestep.
+   Inputs:
+   
+    - s (string): the name of the simulation or timestep to link to
+        
+* `link(link_name, [property_name, property_criterion, [constraint1, ...]])`: Finds a named
+   link where the linked object satisfies a criterion and, optionally, some constraints.
+   Inputs:
+   
+    - *link_name* (expression): the name of the link to follow, e.g. `BH`.
+    - *property_name* (expression): the name of the target property to base a decision on, e.g. `BH_mass`
+    - *property_criterion* (string): either `'max'` or `'min'` to pick out either the link with 
+       maximum or minimum value of the target property
+    - *constraint1*, ... (expression): an expression returning a boolean that the object must satisfy,
+       e.g. `BH_mass>1e8`
+           
+* `find_progenitor(property_name, property_criterion)`: Finds the progenitor which satisfies the 
+   given criterion.
+   Inputs:
+   
+    - *property_name* (expression): the name of the property to evaluate, e.g. `SFR`.
+    - *property_criterion* (string): either `'max'` or `'min'` to pick out either the progenitor with
+      the maximum or minimum value of the target property
+        
+* Redirection operator `.`: finds a property in the linked object, e.g. `find_progenitor(SFR, 'max').mass` gets `mass`
+  at the time of maximum `SFR`.
+
+**Array extraction**
+
+* `array[i]`: array indexing, where `array` is an expression and `i` is an integer.
+
+* `at(position, property_name)`: Get the value of the array at a given position.
+   The meaning of the position is determined by the property implementer, but could be a physical radius
+   for example. Inputs:
+   
+   - *position* (float or expression): the location to evaluate at
+   - *property_name* (expression): the array to interpolate
+
+* `array_smooth(property, npix)`: returns a smoothed version of an array. Inputs:
+
+    - *property* (expression): the name of the array to operate on, e.g. `SFR_histogram`
+    - *npix* (integer): the number of pixels FWHM for the Gaussian smoothing kernel
+    
+**Array reassembly**
 
 * `raw(property)`: returns the raw value as stored in the database. Currently only used for histogram properties; see discussion of these above.
   Inputs:
-     - *property* (halo property)
+  
+  - *property* (expression)
      
-* `reassemble(property, reassembly_type)`: controls the way the raw value is turned into a science-ready value. Currently only used for histogram properties; see discussion of these above.
-    Inputs:
-     - *property* (halo property)
-     - *reassembly_type*: the default choice is `'major'` which returns the
-     property evaluated over the major progenitor branch. The most useful alternative is
-     `'sum'` which instead sums over all progenitors.
+* `reassemble(property, reassembly_type)`: controls the way the raw value is turned into a science-ready value. Currently only used for histogram properties; see discussion of these above. Inputs:
+
+  - *property* (expression)
+  - *reassembly_type*: the default choice is `'major'` which returns the
+  property evaluated over the major progenitor branch. The most useful alternative is
+  `'sum'` which instead sums over all progenitors.
 
