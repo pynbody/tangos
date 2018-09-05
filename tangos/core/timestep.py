@@ -142,10 +142,10 @@ class TimeStep(Base):
         session = Session()
         try:
             raw_query = session.query(Halo).filter_by(timestep_id=self.id)
-            if limit:
-                raw_query = raw_query.limit(limit)
             if object_typecode is not None:
                 raw_query = raw_query.filter_by(object_typecode=object_typecode)
+            if limit:
+                raw_query = raw_query.limit(limit).from_self() # from_self required for onwards joins
             query = property_description.supplement_halo_query(raw_query)
             sql_query_results = query.all()
             calculation_results = property_description.values_sanitized(sql_query_results, Session.object_session(self))

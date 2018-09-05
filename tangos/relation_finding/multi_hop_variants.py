@@ -5,7 +5,7 @@ from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
 class MultiHopAllProgenitorsStrategy(MultiHopStrategy):
     """Finds all progenitors for a halo at every step"""
     def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False, target='auto',
-                 combine_routes=True, order_by=None):
+                 combine_routes=True, order_by=None, one_simulation=None):
         if order_by is None:
             order_by = ['time_desc', 'halo_number_asc']
         self.sim_id = halo_from.timestep.simulation_id
@@ -17,7 +17,8 @@ class MultiHopAllProgenitorsStrategy(MultiHopStrategy):
                                                                target=target,
                                                                order_by=order_by,
                                                                combine_routes=combine_routes,
-                                                             min_onehop_reverse_weight=0.1)
+                                                             min_onehop_reverse_weight=0.1,
+                                                             one_simulation=one_simulation)
 
     def _supplement_halolink_query_with_filter(self, query, table):
         query = super(MultiHopAllProgenitorsStrategy, self)._supplement_halolink_query_with_filter(query, table)
