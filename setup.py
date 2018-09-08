@@ -27,7 +27,8 @@ install_requires = [
 tests_require = [
     'nose >= 1.3.0',
     'webtest >= 2.0',
-    'pynbody >= 0.44',
+    'pyquery >= 1.3.0',
+    'pynbody >= 0.46',
     'yt>=3.4.0'
     ]
 
@@ -35,7 +36,7 @@ from setuptools import setup, find_packages
 
 
 setup(name='tangos',
-      version='1.0.6',
+      version='1.0.7',
       description='TANGOS, the agile numerical galaxy organisation system',
       classifiers=[
           "Development Status :: 4 - Beta",
@@ -59,7 +60,6 @@ setup(name='tangos',
                                            'tangos_crosslink = tangos.scripts.crosslink:main',
                                            'tangos_fix_bh_hosts = tangos.scripts.fix_bh_hosts:main',
                                            'tangos_import_from_ahf = tangos.scripts.import_from_ahf:main',
-                                           'tangos_import_from_subfind = tangos.scripts.import_from_subfind:main',
                                            'tangos_manager = tangos.scripts.manager:main',
                                            'tangos_preprocess_bh = tangos.scripts.preprocess_bh:main',
                                            'tangos_timelink = tangos.scripts.timelink:main',

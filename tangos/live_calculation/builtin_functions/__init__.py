@@ -17,6 +17,8 @@ def match(source_halos, target):
         if not isinstance(target, core.Base):
             target = tangos.get_item(target, core.Session.object_session(timestep))
         results = relation_finding.MultiSourceMultiHopStrategy(source_halos, target).all()
+    # if following assert fails, it might be duplicate links in the database which the
+    # current MultiSourceMultiHop implementation cannot de-duplicate:
     assert len(results) == len(source_halos)
     return np.array(results, dtype=object)
 match.set_input_options(0, provide_proxy=True, assert_class = FixedInput)
@@ -55,7 +57,7 @@ has_property.set_input_options(0, provide_proxy=False, assert_class=StoredProper
 
 @has_property.set_initialisation
 def has_property_init(input):
-    input.set_extraction_pattern(extraction_patterns.halo_property_raw_value_getter)
+    input.set_extraction_pattern(extraction_patterns.HaloPropertyRawValueGetter())
 
 
 from . import arithmetic, array, reassembly, link

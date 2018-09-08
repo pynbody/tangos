@@ -9,7 +9,7 @@ from six.moves import range
 
 
 def test_function():
-    lock = pt.RLock("hello")
+    lock = pt.ExclusiveLock("hello")
 
     print("Hello from rank",pt.backend.rank())
     for i in pt.distributed(range(10)):

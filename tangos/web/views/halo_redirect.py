@@ -28,7 +28,7 @@ def halo_later_earlier(request, rel='later'):
         except tangos.live_calculation.NoResultsError:
             pass
 
-    raise exc.HTTPFound(request.route_url("halo_view", simid=halo.timestep.simulation.basename,
+    raise exc.HTTPFound(request.route_url("halo_view", simid=halo.timestep.simulation.escaped_basename,
                                           timestepid=halo.timestep.escaped_extension,
                                           halonumber=halo.basename))
 

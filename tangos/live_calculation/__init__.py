@@ -40,7 +40,7 @@ class Calculation(object):
     live_calculation.parser"""
 
     def __init__(self):
-        self._extraction_pattern = extraction_patterns.halo_property_value_getter
+        self._extraction_pattern = extraction_patterns.HaloPropertyValueGetter()
 
     def __repr__(self):
         return "<Calculation description for %s>"%str(self)
@@ -66,8 +66,8 @@ class Calculation(object):
         property_is_present = []
         for p_id in self._essential_dict_ids():
             this_property_ok = False
-            for extraction_pattern in (extraction_patterns.halo_link_getter,
-                                       extraction_patterns.halo_property_getter):
+            for extraction_pattern in (extraction_patterns.HaloLinkGetter(),
+                                       extraction_patterns.HaloPropertyGetter()):
                 if not extraction_pattern.use_fixed_cache(halo):
                     this_property_ok = True
                 elif extraction_pattern.cache_contains(halo, p_id):
@@ -236,8 +236,12 @@ class Calculation(object):
                 property_name_condition = halo_property_alias.name_id.in_(name_targets)
                 link_name_condition = (halo_link_alias.relation_id.in_(name_targets))
             else:
-                # We know we're joining to a null list of properties; do this as efficiently as possible
-                property_name_condition = link_name_condition = False
+                # We know we're joining to a null list of properties; however simply setting these conditions
+                # to False results in an apparently efficient SQL query (boils down to 0==1) which actually
+                # takes a very long time to execute if the link or propery tables are large. Thus, compare
+                # to an impossible value instead.
+                property_name_condition = halo_property_alias.name_id==-1
+                link_name_condition = halo_link_alias.relation_id==-1
 
 
             augmented_query =augmented_query.outerjoin(halo_property_alias,
@@ -267,10 +271,14 @@ class Calculation(object):
 
     @staticmethod
     def _add_entries_for_duplicates(target_objs, target_ids):
+        """Given a list of target_objs and their target_ids, the latter of which may contain duplicates, return the full list of objects
+
+        For example, if target_objs = [obj1, obj3, obj6] where obj1.id=1, obj3.id=3, obj6.id=6, and target_ids = [1, 3, 6, 3, 6, 6],
+        the returned list will be [obj1, obj3, obj6, obj3, obj6, obj6]."""
         if len(target_objs) == len(target_ids):
             return target_objs
-        target_obj_ids = [t.id for t in target_objs]
-        return [target_objs[target_obj_ids.index(t_id)] for t_id in target_ids]
+        target_obj_from_id = {t.id: t for t in target_objs}
+        return [target_obj_from_id[t_id] for t_id in target_ids]
 
 
 class MultiCalculation(Calculation):
@@ -549,12 +557,13 @@ class Link(Calculation):
         self.property = tokens[1]
         self._multi_selection_basis = 'first'
         self._multi_selection_column = None
+        self._constraints_columns = []
         self._expect_multivalues = False
         if not isinstance(self.locator, Calculation):
             self.locator = parser.parse_property_name(self.locator)
 
         if isinstance(self.locator, StoredProperty):
-            self.locator.set_extraction_pattern(extraction_patterns.halo_link_target_getter)
+            self.locator.set_extraction_pattern(extraction_patterns.HaloLinkTargetGetter())
             self.locator.set_multivalued() # we want to at least know if there are multiple possible links to follow
             self._expect_multivalues = True
 
@@ -592,13 +601,15 @@ class Link(Calculation):
         self._multi_selection_basis = basis
         self._multi_selection_column = column
 
+    def set_constraints_columns(self, columns=[]):
+        self._constraints_columns = columns
+
     def n_columns(self):
         return self.property.n_columns()
 
     def values_and_description(self, halos):
         if self.locator.n_columns()!=1:
             raise ValueError("Cannot use property %r, which returns more than one column, as a halo locator"%(str(self.locator)))
-
         target_halos = self._get_target_halos(halos)
         results = np.empty((self.n_columns(),len(halos)),dtype=object)
 
@@ -616,9 +627,9 @@ class Link(Calculation):
                         warnings.warn("More than one relation for target %r has been found. Picking the first."%str(self.locator), RuntimeWarning)
                     target_halo_masked[i] = target_halo_masked[i][0]
             else:
-                multivalue_folding = QueryMultivalueFolding(self._multi_selection_basis, self._multi_selection_column)
+                multivalue_folding = QueryMultivalueFolding(self._multi_selection_basis,
+                                                            self._multi_selection_column, self._constraints_columns)
                 target_halo_masked = multivalue_folding.unfold(target_halo_masked)
-
         values, description = self._get_values_and_description_from_halo_id_list([x.id for x in target_halo_masked])
 
         if self._expect_multivalues and self._multi_selection_basis!='first':

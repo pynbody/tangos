@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from sqlalchemy import Column, Integer, ForeignKey, Float, LargeBinary, Boolean
 from sqlalchemy.orm import relationship, backref, deferred
 
-from .. import data_attribute_mapper
+from .. import data_attribute_mapper, extraction_patterns
 from .. import Base
 from .. import creator
 from ..dictionary import DictionaryItem
@@ -67,16 +67,7 @@ class HaloProperty(Base):
         return self.get_data_with_reassembly_options()
 
     def get_data_with_reassembly_options(self, *options):
-        try:
-            cls = self.name.providing_class(self.halo.handler_class)
-        except NameError:
-            cls = None
-
-        if hasattr(cls, 'reassemble'):
-            instance = cls(self.halo.timestep.simulation)
-            return instance.reassemble(self, self.halo, *options)
-        else:
-            return self.data_raw
+        return extraction_patterns.HaloPropertyValueWithReassemblyOptionsGetter(*options).postprocess_data_objects([self])[0]
 
     @property
     def description(self):

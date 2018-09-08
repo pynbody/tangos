@@ -15,6 +15,7 @@ class SimulationAdderUpdater(object):
             session = core.get_default_session()
         self.session = session
         self.min_halo_particles = config.min_halo_particles
+        self.max_num_objects = config.max_num_objects
         self.renumber = renumber
 
     @property
@@ -106,14 +107,14 @@ class SimulationAdderUpdater(object):
         else:
             database_id = [None]*len(n_tot)
 
-
         for database_number,(finder_id, NDM, Nstar, Ngas) in zip(database_id,
                                                                  enumerator(ts.extension, object_typetag=create_class.tag,
                                                                             min_halo_particles=self.min_halo_particles)):
             if database_number is None:
                 database_number = finder_id
 
-            if NDM > self.min_halo_particles or NDM==0:
+            if (NDM >= self.min_halo_particles or NDM==0) \
+                    and (self.max_num_objects is None or database_number<=self.max_num_objects ):
                 h = create_class(ts, database_number, finder_id, NDM, Nstar, Ngas)
                 halos.append(h)
 

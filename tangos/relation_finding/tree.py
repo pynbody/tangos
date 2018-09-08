@@ -9,7 +9,7 @@ from ..log import logger
 import time, math
 from six.moves import range
 from six.moves import zip
-
+import numpy as np
 
 class MergerTree(object):
     """Construct a merger tree from a given starting halo.
@@ -94,15 +94,16 @@ class MergerTree(object):
         maxdepth = 0
 
         if len(link_objs) > 0 and time.time() - self._construction_start_time < self.timeout:
-            max_weight = max([o.weight for o in link_objs])
+
             NDM_array = [o.halo_to.NDM for o in link_objs]
             max_NDM = max(NDM_array)
             if len(NDM_array) > mergertree_max_nhalos:
-                NDM_cut = sorted(NDM_array)[mergertree_max_nhalos]
+                NDM_cut = sorted(NDM_array)[-mergertree_max_nhalos]
             else:
                 NDM_cut = None
 
             for obj in link_objs:
+                max_weight = max([o.weight for o in link_objs if o.halo_from_id == obj.halo_from_id])
                 should_construct_onward_tree = obj.weight > max_weight * mergertree_min_fractional_weight
                 should_construct_onward_tree &= (obj.halo_to.NDM > mergertree_min_fractional_NDM * max_NDM) | (obj.halo_to.NDM==0)
                 if NDM_cut:
@@ -300,15 +301,16 @@ class MergerTree(object):
 
     def _visit_tree_layers(self):
         """Yields each layer of the tree in turn, consisting of a list of elements at each layer"""
-        layers = {}
-        for leaf in self._visit_tree():
-            this_depth = leaf['depth']
-            if this_depth not in layers:
-                layers[this_depth] = []
-            layers[this_depth].append(leaf)
-        for i in range(self._treedata['maxdepth']):
+        layers = self._get_tree_layers()
+        for i in range(len(layers)):
             yield layers[i]
 
+    def _get_tree_layers(self):
+        layers = [[] for i in range(self._treedata['maxdepth'])]
+        for leaf in self._visit_tree():
+            this_depth = leaf['depth']
+            layers[this_depth].append(leaf)
+        return layers
 
     def _postprocess_megertree_rescale(self):
         max_size = -100

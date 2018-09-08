@@ -38,8 +38,12 @@ class CentreAndRadius(PynbodyPropertyCalculation):
 class CentreAndRadiusComoving(LivePropertyCalculation):
     names = "shrink_center_comoving", "max_radius_comoving"
 
-    def calculate(self, _, existing_properties):
-        return existing_properties['shrink_center']
+    def requires_property(self):
+        return ['shrink_center','max_radius']
+
+    def calculate(self, _, halo):
+        scalefactor = 1./(1.+halo.timestep.redshift)
+        return halo['shrink_center']/scalefactor, halo['max_radius']/scalefactor
 
 
 

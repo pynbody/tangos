@@ -13,7 +13,7 @@ def raw_initialisation(input):
     if isinstance(input, LiveProperty):
         input.set_evaluation_pattern('_evaluate_function')
     else:
-        input.set_extraction_pattern(extraction_patterns.halo_property_raw_value_getter)
+        input.set_extraction_pattern(extraction_patterns.HaloPropertyRawValueGetter())
 
 
 @BuiltinFunction.register

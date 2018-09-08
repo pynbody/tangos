@@ -1,5 +1,5 @@
 from .. import TimeChunkedProperty, LiveHaloProperties
-from . import pynbody_handler_module
+from . import pynbody_handler_module, PynbodyPropertyCalculation
 
 import numpy as np
 
@@ -54,14 +54,24 @@ class SpecStarFormationHistogram(TimeChunkedProperty,LiveHaloProperties):
 
     def live_calculate(self, halo, *args):
         sfr = halo.calculate('raw(SFR_histogram)')
-        try:
-            Mstar_i = halo.previous.calculate('Mstar')
-        except:
-            Mstar_i = halo['Mstar'] - np.sum(sfr*self.pixel_delta_t_Gyr)
-
-        Mstar_t = Mstar_i + np.cumsum(sfr*self.pixel_delta_t_Gyr)
-        return sfr/Mstar_t
+        t_sfr = halo.timestep.time_gyr - np.arange(len(sfr))*self.pixel_delta_t_Gyr
+        Marray = halo['Mstar'] - np.cumsum(sfr*self.pixel_delta_t_Gyr)
+        Marray = Marray[::-1]
+        return sfr/Marray
 
     def reassemble(self, *options):
         reassembled = super(SpecStarFormationHistogram, self).reassemble(*options)
         return reassembled / 1e9  # Gyr^-1 -> yr^-1
+
+class StarForm(PynbodyPropertyCalculation):
+    names = "SFR_10Myr", "SFR_100Myr"
+    
+    def calculate(self, halo, existing_properties):
+        halo = halo.star
+
+        t_now = halo.properties['time'].in_units("Gyr")
+        tform = halo['tform'].in_units("Gyr")
+        mask_10Myr = (t_now-tform)<0.01
+        mask_100Myr = (t_now-tform)<0.1
+        # Because physical_units has been called previously, mass is in Msol. Return results in Msol/yr.
+        return halo['mass'][mask_10Myr].sum()/1e7, halo['mass'][mask_100Myr].sum()/1e8
