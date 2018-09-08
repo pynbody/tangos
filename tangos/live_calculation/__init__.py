@@ -366,7 +366,7 @@ class LiveProperty(Calculation):
         super(LiveProperty, self).__init__()
         self._name = str(tokens[0])
         self._inputs = list(tokens[1:])
-        self._evaluation_pattern = '_evaluate_function_with_reassemble'
+        self._evaluation_with_reassemble = True
         self._evaluation_options= []
 
     def __str__(self):
@@ -394,15 +394,17 @@ class LiveProperty(Calculation):
         result = result.union(providing_instance.requires_property())
         return result
 
-    def set_evaluation_pattern(self, eval_name):
-        self._evaluation_pattern = eval_name
+    def set_reassemble(self):
+        self._evaluation_with_reassemble = True
 
-    def set_evaluation_pattern_with_options(self,eval_name,*options):
-        self._evaluation_pattern = eval_name
+    def set_raw(self):
+        self._evaluation_with_reassemble = False
+
+    def set_evaluation_options(self,*options):
         self._evaluation_options = options
 
     def _evaluate(self, halos, input_descriptions, input_values):
-        return getattr(self, self._evaluation_pattern)(halos, input_descriptions, input_values, *self._evaluation_options)
+        return self._evaluate_function(halos, input_descriptions, input_values, *self._evaluation_options)
 
     def values_and_description(self, halos):
         input_values = []
@@ -423,26 +425,14 @@ class LiveProperty(Calculation):
             raise ValueError("Functions cannot receive more than one value per input")
         return val[0], desc
 
-    def _evaluate_function(self, halos, input_descriptions, input_values):
+    def _evaluate_function(self, halos, input_descriptions, input_values, *options):
         from .. import properties
         sim = consistent_collection.consistent_simulation_from_halos(halos)
         results = []
         calculator = properties.providing_class(self.name())(sim, *input_descriptions)
         for inputs in zip(halos, *input_values):
             if self._has_required_properties(inputs[0]) and all([x is not None for x in inputs]):
-                results.append(calculator.live_calculate_named(self.name(), *inputs))
-            else:
-                results.append(None)
-        return calculator, self._as_1xn_array(results)
-
-    def _evaluate_function_with_reassemble(self, halos, input_descriptions, input_values, *options):
-        from .. import properties
-        sim = consistent_collection.consistent_simulation_from_halos(halos)
-        results = []
-        calculator = properties.providing_class(self.name())(sim, *input_descriptions)
-        for inputs in zip(halos, *input_values):
-            if self._has_required_properties(inputs[0]) and all([x is not None for x in inputs]):
-                if hasattr(calculator,'reassemble'):
+                if hasattr(calculator,'reassemble') & self._evaluation_with_reassemble is True:
                     results.append(calculator.reassemble(self, inputs[0], *options))
                 else:
                     results.append(calculator.live_calculate_named(self.name(), *inputs))
@@ -513,7 +503,7 @@ class BuiltinFunction(LiveProperty):
         super(BuiltinFunction, self).__init__(*tokens)
         self._func = self.__registered_functions[self._name]['function']
         self._info = self.__registered_functions[self._name]
-        self.set_evaluation_pattern('_evaluate_function')
+        self.set_raw()
         for i in range(len(self._inputs)):
             assert_class = self._get_input_option(i, 'assert_class')
             if assert_class is not None and not isinstance(self._inputs[i], assert_class):
