@@ -249,7 +249,7 @@ class TimeChunkedProperty(PropertyCalculation):
             return self._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy)
         elif reassembly_type=='major_across_simulations':
             return self._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy,
-                                                           strategy_kwargs = {'target': None})
+                                                           strategy_kwargs = {'target': None, 'one_simulation': False})
         elif reassembly_type=='sum':
             return self._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopAllProgenitorsStrategy)
         elif reassembly_type=='place':

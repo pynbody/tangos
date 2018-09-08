@@ -60,4 +60,4 @@ def has_property_init(input):
     input.set_extraction_pattern(extraction_patterns.HaloPropertyRawValueGetter())
 
 
-from . import arithmetic, array, reassembly, link
+from . import arithmetic, array, reassembly, link, search

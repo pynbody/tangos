@@ -10,7 +10,7 @@ import tangos.testing.simulation_generator
 
 __author__ = 'app'
 
-import tangos as db
+import tangos, tangos.live_calculation
 import tangos.relation_finding as halo_finding
 import tangos.temporary_halolist as thl
 import tangos.testing as testing
@@ -74,8 +74,6 @@ def setup():
                                              4: 3,
                                              5: 4})
     generator.add_mass_transfer(4,2,0.05)
-
-
 
 
 

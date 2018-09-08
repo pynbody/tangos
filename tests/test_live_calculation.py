@@ -20,6 +20,8 @@ def setup():
     testing.init_blank_db_for_testing()
 
     generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+
+
     ts1 = generator.add_timestep()
     ts1_h1, ts2_h2 = generator.add_objects_to_timestep(2)
 
@@ -44,6 +46,8 @@ def setup():
     generator.link_last_halos()
 
     generator.add_timestep() # intentionally empty final timestep
+
+
 
 
 
