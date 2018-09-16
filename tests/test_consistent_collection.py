@@ -54,3 +54,7 @@ def test_set_pruning():
 def test_generate_from_halos():
     col2 = cc.consistent_simulation_from_halos([h1,h2,h2])
     assert col2['consistent_property']==1.0
+
+def test_empty_collection():
+    with assert_raises(ValueError):
+        col = cc.ConsistentCollection([])
