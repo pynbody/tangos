@@ -212,7 +212,7 @@ class PropertyWriter(GenericTangosTool):
 
     def _build_existing_properties(self, db_halo):
         existing_properties = db_halo.all_properties
-        need_data = self._needed_property_data()
+        need_data = self._needed_properties()
         need_data_ids = [core.get_dict_id(x,None) for x in need_data]
 
         existing_properties_data = AttributableDict()
