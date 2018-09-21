@@ -97,3 +97,12 @@ def test_region_property():
     run_writer_with_args("dummy_property","dummy_region_property")
     _assert_properties_as_expected()
     assert db.get_halo("dummy_sim_1/step.2/1")['dummy_region_property']==100.0
+
+def test_no_duplication():
+    init_blank_simulation()
+    run_writer_with_args("dummy_property")
+    assert db.get_default_session().query(db.core.HaloProperty).count()==15
+    run_writer_with_args("dummy_property") # should not create duplicates
+    assert db.get_default_session().query(db.core.HaloProperty).count() == 15
+    run_writer_with_args("dummy_property", "--force")  # should create duplicates
+    assert db.get_default_session().query(db.core.HaloProperty).count() == 30
