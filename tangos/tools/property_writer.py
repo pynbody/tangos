@@ -184,7 +184,7 @@ class PropertyWriter(GenericTangosTool):
         if self.options.hmax is not None:
             query = sqlalchemy.and_(query, core.halo.Halo.halo_number<=self.options.hmax)
 
-        needed_properties = self._needed_properties()
+        needed_properties = self._required_and_calculated_property_names()
 
         halo_query = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query)
         if self._include:
@@ -212,7 +212,7 @@ class PropertyWriter(GenericTangosTool):
 
     def _build_existing_properties(self, db_halo):
         existing_properties = db_halo.all_properties
-        need_data = self._needed_properties()
+        need_data = self._required_and_calculated_property_names()
         need_data_ids = [core.get_dict_id(x,None) for x in need_data]
 
         existing_properties_data = AttributableDict()
@@ -268,7 +268,7 @@ class PropertyWriter(GenericTangosTool):
                 else:
                     self._pending_properties.append((db_halo, n, r))
 
-    def _needed_properties(self):
+    def _required_and_calculated_property_names(self):
         needed = []
         for x in self._property_calculator_instances:
             if isinstance(x.names, six.string_types):
@@ -278,7 +278,7 @@ class PropertyWriter(GenericTangosTool):
             needed.extend([name for name in x.requires_property()])
         return list(np.unique(needed))
 
-    def _needed_property_data(self):
+    def _required_property_names(self):
         needed = []
         for x in self._property_calculator_instances:
             needed.extend([name for name in x.requires_property()])
