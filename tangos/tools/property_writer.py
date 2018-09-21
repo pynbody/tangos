@@ -278,13 +278,6 @@ class PropertyWriter(GenericTangosTool):
             needed.extend([name for name in x.requires_property()])
         return list(np.unique(needed))
 
-    def _required_property_names(self):
-        needed = []
-        for x in self._property_calculator_instances:
-            needed.extend([name for name in x.requires_property()])
-        return list(np.unique(needed))
-
-
     def _should_load_halo_particles(self):
         return any([x.requires_particle_data for x in self._property_calculator_instances])
 
