@@ -234,3 +234,10 @@ def test_calculate_preserves_numpy_dtype():
 def test_empty_timestep_live_calculation():
     vals, = tangos.get_timestep("sim/ts3").calculate_all("BH_mass")
     assert len(vals)==0
+
+
+def test_non_existent_redirection_multihalo():
+    # See issue #46
+    vals1, vals2 = tangos.get_timestep("sim/ts3").calculate_all("BH_mass","later(1).BH_mass")
+    assert len(vals1)==0
+    assert len(vals2)==0
