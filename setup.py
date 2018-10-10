@@ -50,7 +50,7 @@ setup(name='tangos',
       ],
       author="Andrew Pontzen",
       author_email="a.pontzen@ucl.ac.uk",
-      license="GNUv3",
+      license="BSD",
       packages=find_packages(),
       entry_points={'paste.app_factory': [
                                             'main = tangos.web:main',
