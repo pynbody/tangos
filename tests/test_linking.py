@@ -16,6 +16,12 @@ def setup():
         manager.scan_simulation_and_add_all_descendants()
         manager2.scan_simulation_and_add_all_descendants()
 
+def test_issue_77():
+    # tests that the input handler caching does not deliver the wrong timestep when it has the same name
+    ih1 = output_testing.TestInputHandler("dummy_sim_1")
+    ih2 = output_testing.TestInputHandler("dummy_sim_2")
+    assert(ih1.load_timestep("step.1") is not ih2.load_timestep("step.1"))
+
 def test_timestep_linking():
     tl = crosslink.TimeLinker()
     tl.parse_command_line([])
