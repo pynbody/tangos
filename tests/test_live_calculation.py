@@ -185,6 +185,17 @@ def test_arithmetic():
     assert h.calculate("at(1.0,dummy_property_1)*at(5.0,dummy_property_1)") ==\
            h.calculate("at(1.0,dummy_property_1)") * h.calculate("at(5.0,dummy_property_1)")
 
+def test_comparison():
+    h = tangos.get_halo("sim/ts1/1")
+    assert h.calculate("1.0<2.0")
+    assert not h.calculate("1.0>2.0")
+    assert h.calculate("1.0==1.0")
+    assert h.calculate("1.0>=1.0")
+    assert h.calculate("1.0<=1.0")
+    assert h.calculate("1.0>=0.5")
+    assert not h.calculate("1.0<=0.5")
+
+
 def test_calculate_array():
     h = tangos.get_halo("sim/ts1/1")
 
