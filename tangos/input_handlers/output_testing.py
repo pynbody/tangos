@@ -61,7 +61,7 @@ class TestInputHandler(HandlerBase):
                 return_matches.append(tuple())
         return return_matches
 
-    def load_timestep(self, ts_extension, mode=None):
+    def load_timestep_without_caching(self, ts_extension, mode=None):
         return DummyTimestepData("Test string - this would contain the data for "+ts_extension,
                                  float(self._get_ts_property(ts_extension, 'time')),
                                  int(self._get_ts_property(ts_extension, 'halos')))

@@ -114,7 +114,7 @@ class HandlerBase(object):
     def load_timestep(self, ts_extension, mode=None):
         """Returns an object that connects to the data for a timestep on disk -- possibly a version cached in
         memory"""
-        ts_hash = hash((ts_extension,mode,type(self)))
+        ts_hash = hash((self._extension_to_filename(ts_extension),mode,type(self)))
         stored_timestep = _loaded_timesteps.get(ts_hash, None)
         if stored_timestep is not None:
             return stored_timestep
