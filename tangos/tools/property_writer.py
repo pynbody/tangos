@@ -419,7 +419,9 @@ class PropertyWriter(GenericTangosTool):
         else:
             listize = False
 
-        if all([name in list(existing_properties.keys()) for name in names]) and not self.options.force:
+        existing_names = [p.name.text for p in db_halo.all_properties]
+
+        if all([name in existing_names for name in names]) and not self.options.force:
             self.tracker.register_already_exists()
             return
 
