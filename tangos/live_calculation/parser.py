@@ -25,7 +25,10 @@ IN_OPS = [("**", "power"),
           (">", "greater"),
           ("<", "less"),
           ("|", "logical_or"),
-          ("&", "logical_and")]
+          ("&", "logical_and"),
+          ("==", "equal"),
+          (">=", "greater_equal"),
+          ("<=", "less_equal")]
 
 UNARY_OPS = [("!", "logical_not")]
 
