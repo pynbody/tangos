@@ -45,6 +45,18 @@ def less(halos, vals1, vals2):
     return arithmetic_binary_op(vals1, vals2, np.less)
 
 @BuiltinFunction.register
+def equal(halos, vals1, vals2):
+    return arithmetic_binary_op(vals1, vals2, np.equal)
+
+@BuiltinFunction.register
+def greater_equal(halos, vals1, vals2):
+    return arithmetic_binary_op(vals1, vals2, np.greater_equal)
+
+@BuiltinFunction.register
+def less_equal(halos, vals1, vals2):
+    return arithmetic_binary_op(vals1, vals2, np.less_equal)
+
+@BuiltinFunction.register
 def logical_and(halos, vals1, vals2):
     return arithmetic_binary_op(vals1, vals2, np.logical_and)
 
