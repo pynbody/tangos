@@ -150,7 +150,23 @@ class AHFStatFile(HaloStatFile):
             return "CannotFindAHFHaloFilename"
         else:
             return file_list[0]
-        return file
+
+    def iter_rows_raw(self, *args):
+        """
+        AHF specific function allows for ID numbers to always be tied to the position within the file rather than the
+        Raw ID numbers given by AHF. This is important for pynbody's AHF catalog reader. It also retains the meaning of
+        ID numbers between MPI and non-MPI versions of AHF.
+        """
+        with open(self.filename) as f:
+            header = self._read_column_names(f)
+            ids = [0] + [header.index(a) for a in args]
+            cnt = 0
+            for l in f:
+                if not l.startswith("#"):
+                    col_data = self._get_values_for_columns(ids, l)
+                    col_data[0] = cnt + self._id_offset
+                    yield col_data
+                    cnt += 1
 
 class RockstarStatFile(HaloStatFile):
     _column_translations = {'n_dm': translations.Rename('Np'),
