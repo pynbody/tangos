@@ -11,6 +11,7 @@ from six.moves import zip
 class HaloStatFile(object):
     """Manages and reads a halo stat file of unspecified format."""
     _id_offset = 0
+    _id_from_file_pos = False
     _column_translations = {}
 
     def __new__(cls, timestep):
@@ -55,16 +56,23 @@ class HaloStatFile(object):
     def iter_rows_raw(self, *args):
         """
         Yield the halo ID and requested columns from each line of the stat file, without any emulation.
-
+        If _id_from_file_pos is True, the ID is not taken from the stat file, but rather from the order in which
+        the halos appear.
         :param args: strings for the column names
         :return: id, arg1, arg2, arg3 where ID is the halo ID and argN is the value of the Nth named column
         """
         with open(self.filename) as f:
             header = self._read_column_names(f)
             ids = [0] + [header.index(a) for a in args]
+            cnt = 0
             for l in f:
                 if not l.startswith("#"):
-                    yield self._get_values_for_columns(ids, l)
+                    col_data = self._get_values_for_columns(ids, l)
+                    if self._id_from_file_pos:
+                        col_data[0] = cnt
+                    col_data[0] += self._id_offset
+                    yield col_data
+                    cnt += 1
 
     def iter_rows(self, *args):
         """
@@ -130,6 +138,7 @@ class HaloStatFile(object):
 
 class AHFStatFile(HaloStatFile):
     _id_offset = 1
+    _id_from_file_pos = True
 
     _column_translations = {'n_dm': translations.Function(lambda ngas, nstar, npart: npart - ngas - nstar,
                                                           'n_gas', 'n_star', 'npart')}
@@ -150,23 +159,6 @@ class AHFStatFile(HaloStatFile):
             return "CannotFindAHFHaloFilename"
         else:
             return file_list[0]
-
-    def iter_rows_raw(self, *args):
-        """
-        AHF specific function allows for ID numbers to always be tied to the position within the file rather than the
-        Raw ID numbers given by AHF. This is important for pynbody's AHF catalog reader. It also retains the meaning of
-        ID numbers between MPI and non-MPI versions of AHF.
-        """
-        with open(self.filename) as f:
-            header = self._read_column_names(f)
-            ids = [0] + [header.index(a) for a in args]
-            cnt = 0
-            for l in f:
-                if not l.startswith("#"):
-                    col_data = self._get_values_for_columns(ids, l)
-                    col_data[0] = cnt + self._id_offset
-                    yield col_data
-                    cnt += 1
 
 class RockstarStatFile(HaloStatFile):
     _column_translations = {'n_dm': translations.Rename('Np'),
