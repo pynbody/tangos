@@ -10,7 +10,7 @@ env:
   - PYTHON=2.7  NUMPY_VERSION=1.13.1
   - PYTHON=3.5  NUMPY_VERSION=1.13.1
   - PYTHON=3.6  NUMPY_VERSION=1.13.1
-  - PYTHON=3.7  NUMPY_VERSION=1.13.1
+  - PYTHON=3.7  NUMPY_VERSION=1.15.1
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -20,8 +20,8 @@ before_install:
   - conda update --yes conda
 
 install:
-  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython ipython
-  - pip install pyramid_mako # anaconda does not yet have pyramid_mako for py3.7
+  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip pyquery sphinx pygments pandas sqlalchemy cython ipython
+  - pip install pyramid_mako webtest # anaconda does not yet have pyramid_mako for py3.7
   - source activate ${PYTHON}_${NUMPY_VERSION}
   - python setup.py install
   - python -c "import tangos" # ensure tangos can be imported without pynbody present
