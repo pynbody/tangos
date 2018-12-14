@@ -25,6 +25,14 @@ def test_get_deprecated_handler():
 def test_handler_name():
     assert pynbody_outputs.ChangaInputHandler.handler_class_name()=="pynbody.ChangaInputHandler"
 
+def test_handler_properties():
+    prop = output_manager.get_properties()
+    assert len(prop) == 10
+    assert prop.__contains__('approx_resolution_kpc')
+    assert prop.__contains__('approx_resolution_Msol')
+    npt.assert_allclose(prop['approx_resolution_kpc'], 0.3499348849)
+    npt.assert_allclose(prop['approx_resolution_Msol'], 144411.17640)
+
 def test_enumerate():
     assert set(output_manager.enumerate_timestep_extensions())==set(["tiny.000640","tiny.000832"])
 
