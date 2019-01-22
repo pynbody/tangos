@@ -15,7 +15,6 @@ def setup():
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
     output_manager = pynbody_outputs.ChangaInputHandler("test_tipsy")
 
-
 def test_get_handler():
     assert db.input_handlers.get_named_handler_class('pynbody.ChangaInputHandler') == pynbody_outputs.ChangaInputHandler
 
@@ -32,6 +31,12 @@ def test_handler_properties():
     assert prop.__contains__('approx_resolution_Msol')
     npt.assert_allclose(prop['approx_resolution_kpc'], 0.3499348849)
     npt.assert_allclose(prop['approx_resolution_Msol'], 144411.17640)
+
+def test_handler_properties_quicker_flag():
+    output_manager.quicker = True
+    prop = output_manager.get_properties()
+    npt.assert_allclose(prop['approx_resolution_kpc'], 33.4360203909648)
+    npt.assert_allclose(prop['approx_resolution_Msol'], 40370039199.44858)
 
 def test_enumerate():
     assert set(output_manager.enumerate_timestep_extensions())==set(["tiny.000640","tiny.000832"])
