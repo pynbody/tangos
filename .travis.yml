@@ -10,7 +10,6 @@ env:
   - PYTHON=2.7
   - PYTHON=3.5
   - PYTHON=3.6
-  - PYTHON=3.7
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -21,6 +20,7 @@ before_install:
 
 install:
   - conda create --yes -n ${PYTHON} python=$PYTHON numpy scipy matplotlib nose h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython pyramid pyramid_mako ipython
+  - pip install --force numpy # hopefully this is temporary, but conda's cython is producing binaries that don't work on conda's numpy
   - source activate ${PYTHON}
   - python setup.py install
   - python -c "import tangos" # ensure tangos can be imported without pynbody present
