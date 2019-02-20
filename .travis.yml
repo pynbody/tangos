@@ -23,7 +23,7 @@ install:
   - source activate ${PYTHON}
   - python setup.py install
   - python -c "import tangos" # ensure tangos can be imported without pynbody present
-  - git clone git@github.com:pynbody/pynbody.git
+  - git clone https://github.com/pynbody/pynbody.git
   - cd pynbody
   - python setup.py install
   - cd ..
