@@ -24,7 +24,7 @@ before_install:
   - conda update --yes conda
 
 install:
-  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION}_{$CYTHON_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython$CYTHON_VERSION pyramid pyramid_mako ipython
+  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION}_{$CYTHON_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython=$CYTHON_VERSION pyramid pyramid_mako ipython
   - source activate ${PYTHON}_${NUMPY_VERSION}
   - python setup.py install
   - python -c "import tangos" # ensure tangos can be imported without pynbody present
