@@ -7,9 +7,10 @@ sudo: false
 
 # specify different versions of python and numpy
 env:
-  - PYTHON=2.7
-  - PYTHON=3.5
-  - PYTHON=3.6
+  - PYTHON=2.7  NUMPY_VERSION=1.10.4
+  - PYTHON=2.7  NUMPY_VERSION=1.13.1
+  - PYTHON=3.5  NUMPY_VERSION=1.13.1
+  - PYTHON=3.6  NUMPY_VERSION=1.13.1
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -19,8 +20,8 @@ before_install:
   - conda update --yes conda
 
 install:
-  - conda create --yes -n ${PYTHON} python=$PYTHON numpy scipy matplotlib nose h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython pyramid pyramid_mako ipython
-  - source activate ${PYTHON}
+  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython ipython
+  - source activate ${PYTHON}_${NUMPY_VERSION}
   - python setup.py install
   - python -c "import tangos" # ensure tangos can be imported without pynbody present
   - git clone https://github.com/pynbody/pynbody.git
