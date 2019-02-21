@@ -48,7 +48,7 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
         if object_typetag!="halo":
-            raise StopIteration
+            return
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
             for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
                 yield X

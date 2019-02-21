@@ -220,7 +220,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                 h = self._construct_halo_cat(ts_extension, object_typetag)
             except:
                 logger.warn("Unable to read %ss using pynbody; assuming step has none", object_typetag)
-                raise StopIteration
+                return
 
             logger.warn(" => enumerating %ss directly using pynbody", object_typetag)
 
