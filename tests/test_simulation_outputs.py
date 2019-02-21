@@ -27,8 +27,8 @@ def test_handler_name():
 def test_handler_properties():
     prop = output_manager.get_properties()
     assert len(prop) == 10
-    assert prop.__contains__('approx_resolution_kpc')
-    assert prop.__contains__('approx_resolution_Msol')
+    assert 'approx_resolution_kpc' in prop
+    assert 'approx_resolution_Msol' in prop
     npt.assert_allclose(prop['approx_resolution_kpc'], 0.3499348849)
     npt.assert_allclose(prop['approx_resolution_Msol'], 144411.17640)
 

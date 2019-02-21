@@ -14,7 +14,10 @@ class Contamination(PynbodyPropertyCalculation):
 
     def calculate(self, halo, exist):
         loaded_data_min_dm_mass = halo.dm['mass'].min()
-        simulation_min_dm_mass = self._simulation.get("approx_resolution_Msol")
+
+        # If mass resolution not present as a property, ensure backward compatibility by setting the min mass to infinity
+        import numpy as np
+        simulation_min_dm_mass = self._simulation.get("approx_resolution_Msol", default=np.inf)
 
         if loaded_data_min_dm_mass > simulation_min_dm_mass:
             # Loaded data contains only "heavy" particles, e.g. an unzoomed halo in server mode
