@@ -3,7 +3,7 @@
 language: c
 # use language: c to be able to use a matrix of python and numpy versions -- see https://github.com/rmcgibbo/mdtraj/blob/master/.travis.yml
 
-sudo: false 
+sudo: false
 
 # specify different versions of python and numpy
 env:
@@ -22,12 +22,15 @@ before_install:
   - conda update --yes conda
 
 install:
-  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION}_{$CYTHON_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython=$CYTHON_VERSION pyramid pyramid_mako ipython
-  - source activate ${PYTHON}_${NUMPY_VERSION}_{$CYTHON_VERSION}
+  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib nose h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython pyramid ipython
+  - pip install pyramid_mako  # anaconda does not yet have pyramid_mako for py3.7
+  - source activate ${PYTHON}_${NUMPY_VERSION}
   - python setup.py install
   - python -c "import tangos" # ensure tangos can be imported without pynbody present
-  - pip install numpy==1.16.1
-  - pip install git+git://github.com/pynbody/pynbody.git
+  - git clone https://github.com/pynbody/pynbody.git
+  - cd pynbody
+  - python setup.py install
+  - cd ..
   - pip install yt>=3.4.0
 
 
