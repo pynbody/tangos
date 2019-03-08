@@ -66,7 +66,7 @@ class MyHandler(tangos.input_handlers.HandlerBase):
     def enumerate_objects(self, timestep_extension, object_typetag, min_halo_particles):
         if object_typetag!="halo":
             # we only know about objects called 'halo'
-            raise StopIteration
+            return
 
         if timestep_extension=="my_timestep_1":
             # suppose timestep 1 has 100 halos
