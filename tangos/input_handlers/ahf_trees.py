@@ -1,4 +1,4 @@
-"""Code to read AHF's mtree files """
+""" Code to read AHF's mtree files """
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -12,7 +12,7 @@ from ..log import logger
 class AHFTree(object):
     def __init__(self, path, ts):
         self._path = self._AHF_path_from_snapdir_path(os.path.join(path,ts.extension))
-        self._load_Mvir(ts.previous)
+        #self._load_Mvir(ts.previous)
         self._load_raw_links()
 
     def _snap_id_from_snapdir_path(cls, path):
@@ -38,67 +38,41 @@ class AHFTree(object):
 
     def _load_raw_links(self):
         """
-        read in the AHF mtree file containing the indices of halos and its progenitors.
-        logic is we read backwards in time which is the opposite to what is done when this function is actually called
+        read in the AHF mtree file containing the indices of halos and its progenitors as well as information about the shared particles.
+        We establish symmetric links since for AHF any progenitor can have several descendants cause of mass transfer.
         """
         filename = os.path.join(self._path)
-        results = {'id_this':np.asarray([],dtype=np.int64), 'id_desc':np.asarray([],dtype=np.int64), 'Mvir':np.asarray([],dtype=np.float64)} #np.empty((0,), dtype=np.dtype([('id_this', np.int64), ('id_desc', np.int64), ('Mvir', np.float32)]))
+        results = {'id_this':np.asarray([],dtype=np.int64), 'id_desc':np.asarray([],dtype=np.int64), 'N_share':np.asarray([],dtype=np.float64)} #np.empty((0,), dtype=np.dtype([('id_this', np.int64), ('id_desc', np.int64), ('Mvir', np.float32)]))
 
-        f = open(filename)
-        lines = f.readlines()
-        #mtree_data = np.genfromtxt(f, dtype=int)
-        nhalos = int(lines[0])#np.fromstring(lines[0], dtype=np.int16) #mtree_data[0][0] #np.loadtxt(f, usecols=0, dtype=np.int64, max_rows=1) #read only first line
-        skip = 1 #skip the first line
+        data = np.genfromtxt(filename,comments="#",dtype="int")
         i=0
-        while i < nhalos:
-            i += 1
-            _tmp = np.fromstring(lines[skip], dtype=np.dtype(int,int), sep=' ') #mtree_data[skip][0] #np.loadtxt(f, usecols=(0, 1), dtype=np.dtype(np.int64,np.int64), max_rows=1)
-            _id = int(_tmp[0]) 
-            ndesc = int(_tmp[1])
-            if ndesc > 0:
-                skip += 1 # increment the skip of lines for the line read above
-
-                #_this = np.loadtxt(f, usecols=0, dtype=str, skiprows=skip, max_rows=ndesc)
-                for n in range(ndesc):
-                    #_this = int(lines[skip+n]) #mtree_data[skip:ndesc+skip][0] 
-                    results['id_desc'] = np.append(results['id_desc'],np.asarray([_id],dtype=np.int64))
-                    _this_id = int(lines[skip+n]) #[int(x[4:]) for x in _this] # rip off the timestep which is encoded as the first 3 digits
-                    results['id_this'] = np.append(results['id_this'],np.asarray([_this_id],dtype=np.int64))
-                    results['Mvir'] = np.append(results['Mvir'], self._Mvir[self._fid == _this_id])
-
-            skip += ndesc # increment line skip by already read lines   
+        while i < len(data):
+            for j in range(data[i][2]):
+                idx = i+1+j
+                if data[idx][1] in self._fid: # check if this halo was loaded in case a minimum number of particles different to AHF was used to load halos into DB
+                    results['id_desc'] = np.append(results['id_desc'],data[i][0])
+                    results['id_this'] = np.append(results['id_this'],data[idx][1])
+                    results['f_share'] = np.append(results['f_share'], data[idx][0] * data[idx][0] / (data[i][1] * data[idx][2]) )
+            i += data[i][2] + 1
         
         self.links = results
 
+    def _load_major_progenitor_branch(self):
+        """
+        load the major progenitor branch of the merger tree from the mtree_idx files.
+        """
 
-    def _load_Mvir(self, ts):
-        Mvir = ts.calculate_all('Mvir')
-        self._fid = np.array([x.finder_id for x in ts.halos.all()])
-        self._Mvir = np.asarray(Mvir)[0]
+
 
     def get_links_for_snapshot(self):
         """Get the links from snapshot ts to its immediate successor.
 
         Returns a dictionary; keys are the finder IDs at the given snapnum, whereas the values are
-        a tuple containing the ID at the subsequent snapshot and the merger ratio (or 1.0 for no merger).
+        a tuple containing the ID at the subsequent snapshot and the fraction of shared particles.
         """
         ids_this_snap = self.links['id_this']
         ids_next_snap = self.links['id_desc']
-        merger_ratios = self._get_merger_ratio_array(self.links['id_desc'])
+        merger_ratios = self.links['f_share']
 
-        return dict(zip(ids_this_snap, zip(ids_next_snap, merger_ratios)))
-
-
-    def _get_merger_ratio_array(self, ids_next_snap):
-
-        ratio = np.ones(len(ids_next_snap))
-        tmp_ids_next_snap = [int(str(x)[4:]) for x in ids_next_snap]
-        num_occurences_next_snap = np.bincount(tmp_ids_next_snap)
-        mergers_next_snap = np.where(num_occurences_next_snap > 1)[0]
-        logger.info("Identified %d mergers between snapshots", len(mergers_next_snap))
-        for merger in mergers_next_snap:
-            contributor_offsets = np.where(ids_next_snap == merger)[0]
-            contributing_masses = self.links['Mvir'][contributor_offsets]
-            ratio[contributor_offsets] = contributing_masses / contributing_masses.sum()
-        return ratio
+        return list(zip(ids_this_snap, zip(ids_next_snap, merger_ratios)))
 

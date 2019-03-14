@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import tangos as db
 import os
-from ..input_handlers import hestia as hes
+from ..input_handlers import ahf_trees as at
 from ..log import logger
 from ..core import get_or_create_dictionary_item
 from ..core.halo_data import HaloLink, HaloProperty
@@ -49,11 +49,11 @@ class AHFTreeImporter(GenericTangosTool):
         objs_this = self.create_timestep_halo_dictionary(ts)
         objs_next = self.create_timestep_halo_dictionary(ts_next)
         links = []
-        for this_id, (next_id, merger_ratio) in link_dictionary.items():
+        for this_id, (next_id, merger_ratio) in link_dictionary:
             this_obj = objs_this.get(this_id, None)
             next_obj = objs_next.get(next_id, None)
             if this_obj is not None and next_obj is not None:
-                links.append(HaloLink(this_obj, next_obj, d_id, 1.0))
+                links.append(HaloLink(this_obj, next_obj, d_id, merger_ratio))
                 links.append(HaloLink(next_obj, this_obj, d_id, merger_ratio))
         session.add_all(links)
         session.commit()
@@ -70,6 +70,6 @@ class AHFTreeImporter(GenericTangosTool):
                 # ahf merger tree tool goes back in time 
                 if ts_prev is not None:
                     #additionally check if this is the first snapshot
-                    tree = hes.AHFTree(os.path.join(config.base,simulation.basename), ts)
+                    tree = at.AHFTree(os.path.join(config.base,simulation.basename), ts)
                     self.create_links(ts_prev, ts, tree.get_links_for_snapshot())
 
