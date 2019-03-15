@@ -25,14 +25,14 @@ def test_property_import():
     Mvir_test, = tangos.get_timestep("test_ahf_merger_tree/tiny_000832").calculate_all("Mvir")
     npt.assert_allclose(Mvir_test, [2.34068e+11,   4.94677e+10,   4.58779e+10,   4.24798e+10,   2.31297e+10,   2.1545e+10,   1.85704e+10,   1.62538e+10,   1.28763e+10])
 
-def test_consistent_tree_import():
+def test_ahf_merger_tree_import():
     importer = tools.ahf_merger_tree_importer.AHFTreeImporter()
     importer.parse_command_line("--for test_ahf_merger_tree".split())
     with log.LogCapturer():
         importer.run_calculation_loop()
+        print(tangos.get_halo("test_ahf_merger_tree/tiny.000832/halo_1").all_links)
+
     assert (np.array([x.finder_id for x in tangos.get_timestep("test_ahf_merger_tree/tiny_000832").halos.all()])==[1, 2, 3, 4, 5, 6, 7, 8, 9]).all()
-    print(tangos.get_halo("test_ahf_merger_tree/tiny.000832/halo_1").all_links)
-    print(tangos.get_timestep("test_ahf_merger_tree/tiny.000832").calculate_all("earlier(1)", object_typetag='halo')[0])
     testing.assert_halolists_equal(tangos.get_timestep("test_ahf_merger_tree/tiny.000832").calculate_all("earlier(1)", object_typetag='halo')[0],
                                    ["test_ahf_merger_tree/tiny.000640/halo_1",
                                     "test_ahf_merger_tree/tiny.000640/halo_2",
