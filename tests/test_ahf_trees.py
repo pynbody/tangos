@@ -30,13 +30,16 @@ def test_consistent_tree_import():
     importer.parse_command_line("--for test_ahf_merger_tree".split())
     with log.LogCapturer():
         importer.run_calculation_loop()
-    print(np.array([x.finder_id for x in tangos.get_timestep("test_ahf_merger_tree/tiny_000832").halos.all()]))    
     assert (np.array([x.finder_id for x in tangos.get_timestep("test_ahf_merger_tree/tiny_000832").halos.all()])==[1, 2, 3, 4, 5, 6, 7, 8, 9]).all()
     testing.assert_halolists_equal(tangos.get_timestep("test_ahf_merger_tree/tiny.000832").calculate_all("earlier(1)", object_typetag='halo')[0],
-                                   ["test_ahf_merger_tree/tiny.000640/halo_2",
-                                    "test_ahf_merger_tree/tiny.000640/halo_3"])
+                                   ["test_ahf_merger_tree/tiny.000640/halo_1",
+                                    "test_ahf_merger_tree/tiny.000640/halo_2",
+                                    "test_ahf_merger_tree/tiny.000640/halo_3",
+                                    "test_ahf_merger_tree/tiny.000640/halo_4",
+                                    "test_ahf_merger_tree/tiny.000640/halo_5"])
 
     assert tangos.get_halo("%/%640/halo_7").next == tangos.get_halo("%/%832/halo_1")
 
     assert tangos.get_halo("%/%832/halo_1").prev == tangos.get_halo("%/%640/halo_1")
 
+AssertionError: Not equal: [u'test_ahf_merger_tree/tiny.000640/halo_1', u'test_ahf_merger_tree/tiny.000640/halo_2', u'test_ahf_merger_tree/tiny.000640/halo_3', u'test_ahf_merger_tree/tiny.000640/halo_4', u'test_ahf_merger_tree/tiny.000640/halo_5', u'test_ahf_merger_tree/tiny.000640/halo_1'] [u'test_ahf_merger_tree/tiny.000640/halo_2', u'test_ahf_merger_tree/tiny.000640/halo_3']
