@@ -197,19 +197,25 @@ def remove_duplicates(opts):
     db.core.get_default_session().commit()
 
 
+def rem_simulation(options):
 
-def rem_simulation_timesteps(options):
-    basename = options.sims
-    from tangos.util.terminalcontroller import term
+    all_runs = core.get_default_session().query(Creator).order_by(
+        Creator.id.desc()).all()
 
-    sim = core.get_default_session().query(Simulation).filter_by(
-        basename=basename).first()
+    if len(all_runs) == 0:
+        print("No calculations have been performed on this database. Aborting deletion.")
+        return
 
-    if sim == None:
-        print(term.GREEN + "Simulation does not exist", term.NORMAL)
-    else:
-        print(term.RED + "Delete simulation", sim, term.NORMAL)
-        core.get_default_session().delete(sim)
+    any_match = False
+    for r in all_runs:
+        if options.sim in r.command_line.split():
+            any_match = True
+            rem_run(r.id, confirm=not options.force)
+
+    if not any_match:
+        raise ValueError("No database calculations have been found for this simulation. "
+                         "Check simulation name or database path.")
+
 
 
 def add_tracker(halo, size=None):
@@ -447,12 +453,10 @@ def get_argument_parser_and_subparsers():
     subparse_recentruns.add_argument("num", type=int,
                                      help="The number of runs to display, starting with the most recent")
 
-    # The following subcommands currently do not work and is disabled:
-    """
     subparse_remruns = subparse.add_parser("rm", help="Remove a simulation from the database")
-    subparse_remruns.add_argument("sims", help="The path to the simulation folder relative to the database folder")
-    subparse_remruns.set_defaults(func=rem_simulation_timesteps)
-     """
+    subparse_remruns.add_argument("sim", action="store", help="The simulation name within the database")
+    subparse_remruns.add_argument("--force", "-f", action="store_true", help="If this flag is present, no confirmation prompts will be issued")
+    subparse_remruns.set_defaults(func=rem_simulation)
     
     subparse_import = subparse.add_parser("import",
                                           help="Import one or more simulations from another sqlite file")
