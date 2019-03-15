@@ -26,7 +26,7 @@ def test_property_import():
     npt.assert_allclose(Mvir_test, [2.34068e+11,   4.94677e+10,   4.58779e+10,   4.24798e+10,   2.31297e+10,   2.1545e+10,   1.85704e+10,   1.62538e+10,   1.28763e+10])
 
 def test_consistent_tree_import():
-    importer = tools.ahf_merger_tree_importer.AHFTreesImporter()
+    importer = tools.ahf_merger_tree_importer.AHFTreeImporter()
     importer.parse_command_line("--for test_ahf_merger_tree".split())
     with log.LogCapturer():
         importer.run_calculation_loop()
