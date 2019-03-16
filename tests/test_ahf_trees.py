@@ -41,4 +41,4 @@ def test_ahf_merger_tree_import():
 
     assert tangos.get_halo("%/%640/halo_7").next == tangos.get_halo("%/%832/halo_1")
 
-    assert tangos.get_halo("%/%832/halo_1").prev == tangos.get_halo("%/%640/halo_1")
+    assert tangos.get_halo("%/%832/halo_1").previous == tangos.get_halo("%/%640/halo_1")
