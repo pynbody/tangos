@@ -26,21 +26,21 @@ def setup():
 
     generator.add_timestep() # ts2
     generator.add_objects_to_timestep(2)
-    generator.link_last_halos(consistent_masses=True)
+    generator.link_last_halos(adjust_masses=True)
 
     generator.add_timestep() # ts3, in which halo 1 and 2 collide
     generator.add_objects_to_timestep(2)
-    generator.link_last_halos_using_mapping({1:2, 2:1}, consistent_masses=True) # halo 1 becomes 2, 2 becomes 1 due to mass ordering
+    generator.link_last_halos_using_mapping({1:2, 2:1}, adjust_masses=True) # halo 1 becomes 2, 2 becomes 1 due to mass ordering
     generator.add_mass_transfer(1,1,0.3, adjust_masses=True) # halo 1 in previous step loses 30% of its mass to halo 1 in this step... but survives
 
     generator.add_timestep() # ts4
     generator.add_objects_to_timestep(2)
-    generator.link_last_halos(consistent_masses=True)
+    generator.link_last_halos(adjust_masses=True)
     generator.add_mass_transfer(2,1,0.05, adjust_masses=True) # continued minor stripping of halo 2
 
     generator.add_timestep() #ts5, in which halo 1 and 2 finally merge completely
     generator.add_objects_to_timestep(1)
-    generator.link_last_halos_using_mapping({1:1, 2:1}, consistent_masses=True)
+    generator.link_last_halos_using_mapping({1:1, 2:1}, adjust_masses=True)
 
 def test_setup():
     ndm_test = [[x.NDM for x in tangos.get_timestep(ts).halos] for ts in range(1,6)]
