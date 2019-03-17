@@ -30,7 +30,6 @@ def test_ahf_merger_tree_import():
     importer.parse_command_line("--for test_ahf_merger_tree".split())
     with log.LogCapturer():
         importer.run_calculation_loop()
-        print(tangos.get_halo("test_ahf_merger_tree/tiny.000832/halo_1").all_links)
 
     assert (np.array([x.finder_id for x in tangos.get_timestep("test_ahf_merger_tree/tiny_000832").halos.all()])==[1, 2, 3, 4, 5, 6, 7, 8, 9]).all()
     testing.assert_halolists_equal(tangos.get_timestep("test_ahf_merger_tree/tiny.000832").calculate_all("earlier(1)", object_typetag='halo')[0],
