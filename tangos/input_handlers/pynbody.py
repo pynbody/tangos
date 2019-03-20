@@ -438,6 +438,19 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
             return False
 
 
+class GadgetAHFInputHandler(PynbodyInputHandler):
+    patterns = ["snapshot_???"]
+    auxiliary_file_patterns = ["*AHF_halos"]
+
+    def _is_able_to_load(self, filepath):
+        try:
+            f = pynbody.load(filepath)
+            h = pynbody.halo.AHFCatalogue(f)
+            return True
+        except (IOError, RuntimeError):
+            return False
+
+
 
 
 class ChangaInputHandler(PynbodyInputHandler):
