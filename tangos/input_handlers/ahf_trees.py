@@ -73,7 +73,7 @@ class AHFTree(object):
         read in the AHF mtree file containing only the indices of halos and its progenitors and assume progenitors are ordered in descending weight.
         """
         filename = self._path
-        results = {'id_this':np.asarray([],dtype=np.int64), 'id_desc':np.asarray([],dtype=np.int64), 'Merit':np.asarray([],dtype=np.float64)} #'Mvir':np.asarray([],dtype=np.float64), 
+        results = {'id_this':np.asarray([],dtype=np.int64), 'id_desc':np.asarray([],dtype=np.int64), 'fshare':np.asarray([],dtype=np.float64)} #'Mvir':np.asarray([],dtype=np.float64), 
 
         f = open(filename)
         lines = f.readlines()
@@ -93,7 +93,7 @@ class AHFTree(object):
                         results['id_desc'] = np.append(results['id_desc'],np.asarray([int(str(_id)[4:])],dtype=np.int64))
                         results['id_this'] = np.append(results['id_this'],np.asarray([_this_id],dtype=np.int64))
                         #results['Mvir'] = np.append(results['Mvir'], np.asarray([self._Mvir[self._fid == _this_id]]))
-                        results['Merit'] = np.append(results['Merit'], np.asarray([(nprogen-n)/nprogen],dtype=np.float64))
+                        results['fshare'] = np.append(results['fshare'], np.asarray([(nprogen-n)/nprogen],dtype=np.float64))
             skip += nprogen   # increment line skip by already read lines   
         self.links = results
 
