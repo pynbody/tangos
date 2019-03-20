@@ -14,7 +14,7 @@ import re
 
 class AHFTreeImporter(GenericTangosTool):
     tool_name = 'import-ahf-trees'
-    tool_description = 'Import properties that were calculated by the halo finder'
+    tool_description = "Import merger trees calculated by AHF's merger tree tools."
     parallel = False
 
     @classmethod
