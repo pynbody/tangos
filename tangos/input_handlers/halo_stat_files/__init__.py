@@ -137,7 +137,6 @@ class HaloStatFile(object):
 
 
 
-
 class AHFStatFile(HaloStatFile):
     _id_offset = 1
 
