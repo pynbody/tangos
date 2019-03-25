@@ -220,3 +220,4 @@ class AmigaIDLStatFile(HaloStatFile):
     def filename(cls, timestep_filename):
         return timestep_filename + '.amiga.stat'
 
+
