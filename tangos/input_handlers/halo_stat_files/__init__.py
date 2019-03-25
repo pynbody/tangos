@@ -61,7 +61,7 @@ class HaloStatFile(object):
         """
         with open(self.filename) as f:
             header = self._read_column_names(f)
-            ids = [0] + [header.index(a) for a in args if a in header else None]
+            ids = [0] + [header.index(a) if a in header else None for a in args]
             for l in f:
                 if not l.startswith("#"):
                     yield self._get_values_for_columns(ids, l)
