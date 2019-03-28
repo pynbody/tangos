@@ -80,18 +80,18 @@ class TestSimulationGenerator(object):
 
         return ts
 
-    def link_last_halos_using_mapping(self, mapping, consistent_masses=True, object_typecode=0) :
+    def link_last_halos_using_mapping(self, mapping, adjust_masses=True, object_typecode=0) :
         """Store halolinks such that ts_source[halo_i].next = ts_dest[mapping[halo_i]]
 
         :type mapping dict"""
 
         ts_source, ts_dest = self._two_most_recently_added_timesteps()
-        if consistent_masses:
+        if adjust_masses:
             self._adjust_halo_NDM_for_mapping(mapping, ts_dest, ts_source)
         self._generate_bidirectional_halolinks_for_mapping(mapping, ts_dest, ts_source, object_typecode)
         self.session.commit()
 
-    def link_last_halos(self, object_typecode=0):
+    def link_last_halos(self, object_typecode=0, adjust_masses=False):
         """Generate default halolinks for the most recent two timesteps such that 1->1, 2->2 etc"""
         if len(self.sim.timesteps)<2:
             return
@@ -100,7 +100,7 @@ class TestSimulationGenerator(object):
         halo_nums_dest = set([a.halo_number for a in ts_dest.objects.filter_by(object_typecode=object_typecode).all()])
         halo_nums_common = halo_nums_source.intersection(halo_nums_dest)
         mapping = dict([(a,a) for a in halo_nums_common])
-        self.link_last_halos_using_mapping(mapping,False, object_typecode)
+        self.link_last_halos_using_mapping(mapping,adjust_masses, object_typecode)
 
 
     def link_last_bhs(self):
@@ -132,7 +132,7 @@ class TestSimulationGenerator(object):
         self._generate_bidirectional_halolinks_for_mapping(mapping, ts_dest, ts_source, object_typecode)
         self.session.commit()
 
-    def add_mass_transfer(self, source_num, target_num, fraction_of_source, object_typecode=0):
+    def add_mass_transfer(self, source_num, target_num, fraction_of_source, object_typecode=0, adjust_masses=False):
         ts_source, ts_dest = self._two_most_recently_added_timesteps()
         source_halo = ts_source.objects.filter_by(halo_number=source_num, object_typecode=object_typecode).first()
         target_halo = ts_dest.objects.filter_by(halo_number=target_num, object_typecode=object_typecode).first()
@@ -141,8 +141,18 @@ class TestSimulationGenerator(object):
         fraction_of_dest = float(transferred_ptcls)/target_halo.NDM
         ts_source, ts_dest = self._two_most_recently_added_timesteps()
 
+        if adjust_masses:
+            target_halo.NDM+=source_halo.NDM * fraction_of_source
+            major_descendant = source_halo.next
+            if major_descendant:
+                major_descendant.NDM-=source_halo.NDM * fraction_of_source
+
         forward_link = core.halo_data.HaloLink(source_halo, target_halo, self._ptcls_in_common_dict, fraction_of_source)
         backward_link = core.halo_data.HaloLink(target_halo, source_halo, self._ptcls_in_common_dict, fraction_of_dest)
+
+        self.session.add_all([forward_link, backward_link])
+        self.session.commit()
+
 
 
     def _generate_bidirectional_halolinks_for_mapping(self, mapping, ts_dest, ts_source, object_typecode):
