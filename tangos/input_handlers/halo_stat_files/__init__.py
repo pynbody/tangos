@@ -61,7 +61,13 @@ class HaloStatFile(object):
         """
         with open(self.filename) as f:
             header = self._read_column_names(f)
-            ids = [0] + [header.index(a) for a in args]
+            ids = [0]
+            for a in args:
+                try:
+                    ids.append(header.index(a))
+                except ValueError:
+                    ids.append(None)
+
             for l in f:
                 if not l.startswith("#"):
                     yield self._get_values_for_columns(ids, l)
@@ -106,16 +112,19 @@ class HaloStatFile(object):
         results = []
         l_split = line.split()
         for id_this in columns:
-            this_str = l_split[id_this]
-            if "." in this_str or "e" in this_str:
-                guess_type = float
+            if id_this is None:
+                this_cast = None
             else:
-                guess_type = int
+                this_str = l_split[id_this]
+                if "." in this_str or "e" in this_str:
+                    guess_type = float
+                else:
+                    guess_type = int
 
-            try:
-                this_cast = guess_type(this_str)
-            except ValueError:
-                this_cast = this_str
+                try:
+                    this_cast = guess_type(this_str)
+                except ValueError:
+                    this_cast = this_str
 
             results.append(this_cast)
         results[0] += self._id_offset

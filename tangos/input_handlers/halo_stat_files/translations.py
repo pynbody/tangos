@@ -34,3 +34,19 @@ class Value(object):
 
     def inputs(self):
         return []
+
+class DefaultValue(object):
+    """Give a default value to a column, in case it is absent"""
+    def __init__(self, name, default_value):
+        self.name = name
+        self.default_value = default_value
+
+    def __call__(self, raw_input_names, raw_input_values):
+        val = raw_input_values[raw_input_names.index(self.name)]
+        if val is None:
+            return self.default_value
+        else:
+            return val
+
+    def inputs(self):
+        return [self.name]

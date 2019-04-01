@@ -2,13 +2,14 @@ from __future__ import absolute_import
 import os
 
 import numpy.testing as npt
-
+import copy
 import tangos as db
 import tangos.core.simulation
 import tangos.core.timestep
 import tangos.tools.add_simulation as add_simulation
 import tangos.tools.property_importer as property_importer
 import tangos.input_handlers.halo_stat_files as stat
+from tangos.input_handlers.halo_stat_files import translations
 from tangos import testing, parallel_tasks
 
 
@@ -76,3 +77,13 @@ def test_insert_properties():
     importer.run_calculation_loop()
     npt.assert_almost_equal(ts1.halos[0]["Rvir"], 195.87)
     npt.assert_almost_equal(ts1.halos[0]["Mvir"], 5.02432e+11)
+
+def test_default_value():
+    class AHFStatFileWithDefaultValues(stat.AHFStatFile):
+        _column_translations = {'nonexistent_column': translations.DefaultValue('nonexistent_column', 42),
+                                'existent_column': translations.DefaultValue('n_gas', 43)}
+
+    h_id, fortytwo, n_gas = AHFStatFileWithDefaultValues(ts1.filename).read('nonexistent_column', 'existent_column')
+
+    assert (fortytwo==42).all()
+    assert all(n_gas == [324272,  47634,  53939,  19920])
