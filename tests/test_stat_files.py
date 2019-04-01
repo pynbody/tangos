@@ -71,12 +71,21 @@ def test_insert_halos():
     assert ts1.halos[1].NDM==402567
 
 def test_insert_properties():
+    adder = add_simulation.SimulationAdderUpdater(sim.get_output_handler())
+    adder.add_objects_to_timestep(ts1)
     importer = property_importer.PropertyImporter()
-    importer.parse_command_line("Mvir Rvir --for test_stat_files".split())
+    importer.parse_command_line("Mvir Rvir hostHalo childHalo --for test_stat_files".split())
     print(importer.options)
     importer.run_calculation_loop()
     npt.assert_almost_equal(ts1.halos[0]["Rvir"], 195.87)
     npt.assert_almost_equal(ts1.halos[0]["Mvir"], 5.02432e+11)
+    with npt.assert_raises(KeyError):
+        ts1.halos[0]['hostHalo']
+    with npt.assert_raises(KeyError):
+        ts1.halos[1]['childHalo']
+    assert ts1.halos[2]['hostHalo']==ts1.halos[0]
+    assert ts1.halos[3]['hostHalo']==ts1.halos[0]
+    testing.assert_halolists_equal(ts1.halos[0]['childHalo'], [ts1.halos[2], ts1.halos[3]])
 
 def test_default_value():
     class AHFStatFileWithDefaultValues(stat.AHFStatFile):

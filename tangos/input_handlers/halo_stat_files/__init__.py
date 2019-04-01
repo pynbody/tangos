@@ -1,9 +1,10 @@
 from __future__ import absolute_import
 import os
-
+import copy
 import numpy as np
 
 from . import translations
+from ...util import proxy_object
 from six.moves import range
 from six.moves import zip
 
@@ -141,7 +142,16 @@ class AHFStatFile(HaloStatFile):
     _id_offset = 1
 
     _column_translations = {'n_dm': translations.Function(lambda ngas, nstar, npart: npart - ngas - nstar,
-                                                          'n_gas', 'n_star', 'npart')}
+                                                          'n_gas', 'n_star', 'npart'),
+                            'hostHalo': translations.Function(
+                                lambda id: None if id==-1 else proxy_object.IncompleteProxyObjectFromFinderId(id+AHFStatFile._id_offset, 'halo'),
+                                'hostHalo'
+                            )}
+
+    def __init__(self, timestep_filename):
+        super(AHFStatFile, self).__init__(timestep_filename)
+        self._column_translations = copy.copy(self._column_translations)
+        self._column_translations['childHalo'] = translations.Function(self._child_halo_entry, '#ID')
 
     @classmethod
     def filename(cls, timestep_filename):
@@ -160,6 +170,26 @@ class AHFStatFile(HaloStatFile):
         else:
             return file_list[0]
         return file
+
+    def _calculate_children(self):
+        # use hostHalo column to calculate virtual childHalo entries
+        self._children_map = {}
+        for h_id, host_id_raw in self.iter_rows_raw("hostHalo"):
+            if host_id_raw!=-1:
+                host_id = host_id_raw + self._id_offset
+                cmap = self._children_map.get(host_id, [])
+                cmap.append(proxy_object.IncompleteProxyObjectFromFinderId(h_id,'halo'))
+                self._children_map[host_id] = cmap
+
+    def _calculate_children_if_required(self):
+        if not hasattr(self, "_children_map"):
+            self._calculate_children()
+
+    def _child_halo_entry(self, this_id_raw):
+        self._calculate_children_if_required()
+        this_id = this_id_raw + self._id_offset
+        children = self._children_map.get(this_id, [])
+        return children
 
 class RockstarStatFile(HaloStatFile):
     _column_translations = {'n_dm': translations.Rename('Np'),
