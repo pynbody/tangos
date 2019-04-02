@@ -71,6 +71,8 @@ def test_insert_halos():
     assert ts1.halos[1].NDM==402567
 
 def test_insert_properties():
+    for h in ts1.halos:
+        db.get_default_session().delete(h) # remove previous objects so that we can add them afresh
     adder = add_simulation.SimulationAdderUpdater(sim.get_output_handler())
     adder.add_objects_to_timestep(ts1)
     importer = property_importer.PropertyImporter()
