@@ -440,7 +440,7 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
 
 class GadgetAHFInputHandler(PynbodyInputHandler):
     patterns = ["snapshot_???"]
-    auxiliary_file_patterns = ["*AHF_particlesSTARDUST"]
+    auxiliary_file_patterns = ["*.AHF_particlesSTARDUST"]
 
     def _is_able_to_load(self, filepath):
         try:
