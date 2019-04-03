@@ -146,8 +146,7 @@ class AHFStatFile(HaloStatFile):
                                                           'n_gas', 'n_star', 'npart'),
                             'hostHalo': translations.Function(
                                 lambda id: None if id==-1 else proxy_object.IncompleteProxyObjectFromFinderId(id+AHFStatFile._id_offset, 'halo'),
-                                'hostHalo'
-                            )}
+                                'hostHalo')}
 
     def __init__(self, timestep_filename):
         super(AHFStatFile, self).__init__(timestep_filename)
