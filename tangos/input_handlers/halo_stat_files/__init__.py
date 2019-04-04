@@ -116,6 +116,7 @@ class HaloStatFile(object):
             if id_this is None:
                 this_cast = None
             else:
+            if id_this is not None:
                 this_str = l_split[id_this]
                 if "." in this_str or "e" in this_str:
                     guess_type = float
