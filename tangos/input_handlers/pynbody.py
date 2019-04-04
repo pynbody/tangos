@@ -457,7 +457,7 @@ class ChangaInputHandler(PynbodyInputHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",
                      "dESN", "bLowTCool", "bSelfShield", "dExtraCoolShutoff"]
 
-    patterns = ["*.00???","*.00????"]
+    patterns = ["*.00???","*.00????","*.0????"]
 
 
     def get_properties(self):
