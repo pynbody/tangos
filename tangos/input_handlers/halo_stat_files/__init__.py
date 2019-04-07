@@ -137,16 +137,16 @@ class HaloStatFile(object):
 
 
 
-
 class AHFStatFile(HaloStatFile):
     _id_offset = 1
 
-    _column_translations = {'n_dm': translations.Function(lambda ngas, nstar, npart: npart - ngas - nstar,
+    _column_translations = {'n_gas': translations.DefaultValue('n_gas', 0),
+                            'n_star': translations.DefaultValue('n_star', 0),
+                            'n_dm': translations.Function(lambda ngas, nstar, npart: npart - (ngas or 0) - (nstar or 0),
                                                           'n_gas', 'n_star', 'npart'),
                             'hostHalo': translations.Function(
                                 lambda id: None if id==-1 else proxy_object.IncompleteProxyObjectFromFinderId(id+AHFStatFile._id_offset, 'halo'),
-                                'hostHalo'
-                            )}
+                                'hostHalo')}
 
     def __init__(self, timestep_filename):
         super(AHFStatFile, self).__init__(timestep_filename)
@@ -219,4 +219,5 @@ class AmigaIDLStatFile(HaloStatFile):
     @classmethod
     def filename(cls, timestep_filename):
         return timestep_filename + '.amiga.stat'
+
 

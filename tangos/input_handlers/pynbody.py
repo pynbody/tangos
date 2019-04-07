@@ -438,13 +438,26 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
             return False
 
 
+class GadgetAHFInputHandler(PynbodyInputHandler):
+    patterns = ["snapshot_???"]
+    auxiliary_file_patterns = ["*.AHF_particlesSTARDUST"]
+
+    def _is_able_to_load(self, filepath):
+        try:
+            f = pynbody.load(filepath)
+            h = pynbody.halo.AHFCatalogue(f)
+            return True
+        except (IOError, RuntimeError):
+            return False
+
+
 
 
 class ChangaInputHandler(PynbodyInputHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",
                      "dESN", "bLowTCool", "bSelfShield", "dExtraCoolShutoff"]
 
-    patterns = ["*.00???","*.00????"]
+    patterns = ["*.00???","*.00????","*.0????"]
 
 
     def get_properties(self):

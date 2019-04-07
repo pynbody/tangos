@@ -5,6 +5,7 @@ There are currently various sample simulations available to illustrate the use o
 
 * A uniform resolution volume run with GADGET and with SubFind halo catalogues - [click here](first_steps_gadget+subfind.md);
 * An alternative set of Rockstar halo catalogues based on the same GADGET simulation as above - [click here](first_steps_gadget+rockstar.md);
+* An alternative set of AHF halo catalogues based on the same GADGET simulation as above - [click here](first_steps_gadget+AHF.md);
 * A zoom simulation run with RAMSES and with HOP catalogues - [click here](first_steps_ramses+hop.md);
 * A zoom simulation run with Changa (similar to Gasoline) with AHF catalogues - [click here](first_steps_changa+ahf.md). This simulation also has baryons
   unlike the others which contain only dark matter. An additional sample Changa simulation is available 

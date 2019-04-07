@@ -98,3 +98,5 @@ def test_default_value():
 
     assert (fortytwo==42).all()
     assert all(n_gas == [324272,  47634,  53939,  19920])
+
+
