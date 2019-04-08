@@ -58,6 +58,10 @@ def test_idl_values():
     npt.assert_almost_equal(mvir,   [  1.12282280e+12 ,  1.19939950e+10 ,  1.19538740e+10  , 3.07825010e+10,
                                        1.76325820e+10 ,  1.33353700e+10  , 1.28836660e+10 ,  1.11229900e+10,
                                        9.84248220e+09], decimal=5)
+    h_id, ntot, mvir = stat.AHFStatFile(ts1.filename).read("npart","Mvir")
+    assert all(h_id==[1,2,3,4])
+    assert all(ntot==[5900575,506026,498433,226976])
+    npt.assert_almost_equal(mvir,   [5.02432e+11,4.67419e+10, 4.87598e+10, 2.23568e+10  ], decimal=5)
 
 
 def test_insert_halos():
