@@ -1,5 +1,7 @@
 """Helper classes for defining translations between .stat file of different formats."""
 
+import numpy as np
+
 class Function(object):
     """Define a column which is actually a function of other columns"""
     def __init__(self, fn, *input_arg_names):
@@ -34,3 +36,19 @@ class Value(object):
 
     def inputs(self):
         return []
+
+class DefaultValue(object):
+    """Give a default value to a column, in case it is absent"""
+    def __init__(self, name, default_value):
+        self.name = name
+        self.default_value = default_value
+
+    def __call__(self, raw_input_names, raw_input_values):
+        val = raw_input_values[raw_input_names.index(self.name)]
+        if val is None:
+            return self.default_value
+        else:
+            return val
+
+    def inputs(self):
+        return [self.name]

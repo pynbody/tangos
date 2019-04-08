@@ -13,9 +13,6 @@ base = os.environ.get("TANGOS_SIMULATION_FOLDER", home+"/")
 
 default_fileset_handler_class = "pynbody.PynbodyInputHandler"
 
-num_multihops_max_default = 100
-# the maximum number of links to follow when searching for related halos
-
 default_linking_threshold = 0.005
 # the percentage of particles in common between two objects before the database bothers to store the relationship
 
@@ -46,6 +43,10 @@ mergertree_min_fractional_NDM = 0.01 # as a fraction of the most massive halo at
 mergertree_max_nhalos = 30 # maximum number of halos per step - discard the least massive ones
 mergertree_timeout = 15.0 # seconds before abandoning the construction of a merger tree in the web interface
 mergertree_max_hops = 500 # maximum number of timesteps to scan
+
+# relation finding paremeters for multi hop queries
+num_multihops_max_default = 100     # the maximum number of links to follow when searching for related halos
+max_relative_time_difference = 1e-4     # the maximum fractional difference in time between two contemporaneous timesteps when searching for related halos
 
 # On some network file systems, concurrency using sqlite is dodgy to say the least. After committing a transaction
 # on one node, and before attempting to open a new transaction on another node, it seems empirically helpful to
