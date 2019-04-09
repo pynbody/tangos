@@ -14,7 +14,7 @@ from tangos import testing, parallel_tasks
 
 
 def setup():
-    global ts1, ts2, sim
+    global ts1, ts2, ts3, sim
     testing.init_blank_db_for_testing()
     db.config.base = os.path.dirname(os.path.abspath(__file__))+"/"
 
@@ -31,7 +31,11 @@ def setup():
     ts2.time_gyr = 10
     ts2.redshift = 0
 
-    session.add_all([ts1,ts2])
+    ts3 = tangos.core.timestep.TimeStep(sim, "pioneer50h128MPI.1536gst1.bwK1.000832")
+    ts3.time_gyr = 6
+    ts3.redshift = 2.323
+
+    session.add_all([ts1,ts2, ts3])
 
 
     session.commit()
@@ -39,9 +43,10 @@ def setup():
     parallel_tasks.use('null')
 
 def test_statfile_identity():
-    global ts1,ts2
+    global ts1,ts2, ts3
     assert isinstance(stat.HaloStatFile(ts1.filename), stat.AHFStatFile)
     assert isinstance(stat.HaloStatFile(ts2.filename), stat.AmigaIDLStatFile)
+    assert isinstance(stat.HaloStatFile(ts3.filename), stat.AHFStatFile)
 
 def test_ahf_values():
     h_id, ngas, nstar, ndm, ntot,  rvir = stat.HaloStatFile(ts1.filename).read("n_gas", "n_star", "n_dm", "npart", "Rvir")
@@ -59,7 +64,9 @@ def test_idl_values():
     npt.assert_almost_equal(mvir,   [  1.12282280e+12 ,  1.19939950e+10 ,  1.19538740e+10  , 3.07825010e+10,
                                        1.76325820e+10 ,  1.33353700e+10  , 1.28836660e+10 ,  1.11229900e+10,
                                        9.84248220e+09], decimal=5)
-    h_id, ntot, mvir = stat.AHFStatFile(ts1.filename).read("npart","Mvir")
+
+def test_mpi_ahf_values():
+    h_id, ntot, mvir = stat.AHFStatFile(ts3.filename).read("npart","Mvir")
     assert all(h_id==[1,2,3,4])
     assert all(ntot==[5900575,506026,498433,226976])
     npt.assert_almost_equal(mvir,   [5.02432e+11,4.67419e+10, 4.87598e+10, 2.23568e+10  ], decimal=5)
