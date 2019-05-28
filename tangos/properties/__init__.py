@@ -8,6 +8,7 @@ import warnings
 import functools
 from .. import input_handlers
 from .. import util
+import pkg_resources
 
 
 class PropertyCalculationMetaClass(type):
@@ -449,6 +450,8 @@ def _import_configured_property_modules():
         except ImportError:
             warnings.warn("Failed to import requested property module %r. Some properties may be unavailable."%pm,
                           ImportWarning)
+    for module in pkg_resources.iter_entry_points('tangos.property_modules'):
+        module.load()
 
 _import_configured_property_modules()
 from . import intrinsic, live_profiles, pynbody, yt
