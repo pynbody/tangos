@@ -251,7 +251,7 @@ def image_plot(request, val, property_info):
             data =val
 
         if width is not None:
-            if isinstance(width, tuple):
+            if hasattr(width, '__len__'):
                 p.imshow(data, extent=width)
             else:
                 p.imshow(data, extent=(-width/2, width/2, -width/2, width/2))
