@@ -64,4 +64,4 @@ class GenericTangosTool(object):
         for c in cls.__subclasses__():
             c.add_tools(subparse)
 
-from . import add_simulation, consistent_trees_importer, crosslink, property_importer, property_writer
+from . import add_simulation, consistent_trees_importer, crosslink, property_importer, property_writer, ahf_merger_tree_importer

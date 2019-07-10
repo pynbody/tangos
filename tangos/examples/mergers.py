@@ -17,7 +17,7 @@ def get_mergers_of_major_progenitor(input_halo):
     halo  = []
     time = []
     while input_halo is not None:
-        mergers = db.relation_finding.MultiHopMostRecentMergerStrategy(input_halo).all()
+        mergers = db.relation_finding.MultiHopMostRecentMergerStrategy(input_halo, order_by='weight').all()
         if len(mergers)>0 :
             for m in mergers[1:]:
                 redshift.append(mergers[0].timestep.next.redshift)

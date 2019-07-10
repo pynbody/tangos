@@ -220,7 +220,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                 h = self._construct_halo_cat(ts_extension, object_typetag)
             except:
                 logger.warn("Unable to read %ss using pynbody; assuming step has none", object_typetag)
-                raise StopIteration
+                return
 
             logger.warn(" => enumerating %ss directly using pynbody", object_typetag)
 
@@ -246,16 +246,17 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         if len(timesteps)>0:
             f = self.load_timestep_without_caching(sorted(timesteps)[-1])
             if self.quicker:
-                res = self._estimate_resolution_quicker(f)
+                res_kpc = self._estimate_spatial_resolution_quicker(f)
+                res_msol = self._estimate_mass_resolution_quicker(f)
             else:
-                res = self._estimate_resolution(f)
-
-            return {'approx_resolution_kpc': res}
+                res_kpc = self._estimate_spatial_resolution(f)
+                res_msol = self._estimate_mass_resolution(f)
+            return {'approx_resolution_kpc': res_kpc, 'approx_resolution_Msol': res_msol}
 
         else:
             return {}
 
-    def _estimate_resolution(self, f):
+    def _estimate_spatial_resolution(self, f):
         f.physical_units()
         if "eps" in f.dm.loadable_keys():
             # Interpret the eps array as a softening, and assume that it is not a comoving softening (as the
@@ -273,7 +274,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             estimated_eps = 0.01 * frac_length * f.properties['boxsize'].in_units('kpc a', **f.conversion_context())
             return float(estimated_eps)
 
-    def _estimate_resolution_quicker(self, f):
+    def _estimate_spatial_resolution_quicker(self, f):
         interparticle_distance = float(f.properties['boxsize'].in_units("kpc a",**f.conversion_context()))/(float(len(f))**(1./3))
         res = 0.01*interparticle_distance
         logger.warn("Because 'quicker' flag is set, estimating res %.2g kpc from the file size; this could be inaccurate",
@@ -281,6 +282,21 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         logger.warn(" -- it will certainly be wrong for e.g. zoom simulations")
         return res
 
+    def _estimate_mass_resolution(self, f):
+        f.physical_units()
+        if "mass" in f.dm.loadable_keys():
+            min_simulation_mass = f.dm['mass'].min()
+            return float(min_simulation_mass)
+
+    def _estimate_mass_resolution_quicker(self, f):
+        import pynbody.analysis.cosmology as cosmo
+        rho_m = cosmo.rho_M(f, z=0, unit="Msol kpc**-3 a**-3")
+        volume_box = float(f.properties['boxsize'].in_units("kpc a",**f.conversion_context()) ** 3)
+        estimated_part_mass = rho_m * volume_box / len(f)
+        logger.warn("Because 'quicker' flag is set, estimating mass res %.2g msol from the file size; this could be inaccurate",
+                    estimated_part_mass)
+        logger.warn(" -- it will certainly be wrong for e.g. zoom simulations")
+        return estimated_part_mass
 
 class RamsesHOPInputHandler(PynbodyInputHandler):
     patterns = ["output_0????"]
@@ -422,13 +438,26 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
             return False
 
 
+class GadgetAHFInputHandler(PynbodyInputHandler):
+    patterns = ["snapshot_???"]
+    auxiliary_file_patterns = ["*.AHF_particlesSTARDUST"]
+
+    def _is_able_to_load(self, filepath):
+        try:
+            f = pynbody.load(filepath)
+            h = pynbody.halo.AHFCatalogue(f)
+            return True
+        except (IOError, RuntimeError):
+            return False
+
+
 
 
 class ChangaInputHandler(PynbodyInputHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",
                      "dESN", "bLowTCool", "bSelfShield", "dExtraCoolShutoff"]
 
-    patterns = ["*.00???","*.00????"]
+    patterns = ["*.00???","*.00????","*.0????"]
 
 
     def get_properties(self):

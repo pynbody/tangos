@@ -250,9 +250,12 @@ def image_plot(request, val, property_info):
         else:
             data =val
 
-        if width is not None :
-            p.imshow(data,extent=(-width/2,width/2,-width/2,width/2))
-        else :
+        if width is not None:
+            if hasattr(width, '__len__'):
+                p.imshow(data, extent=width)
+            else:
+                p.imshow(data, extent=(-width/2, width/2, -width/2, width/2))
+        else:
             p.imshow(data)
 
         if property_info:

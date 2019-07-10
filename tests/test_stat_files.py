@@ -2,13 +2,14 @@ from __future__ import absolute_import
 import os
 
 import numpy.testing as npt
-
+import copy
 import tangos as db
 import tangos.core.simulation
 import tangos.core.timestep
 import tangos.tools.add_simulation as add_simulation
 import tangos.tools.property_importer as property_importer
 import tangos.input_handlers.halo_stat_files as stat
+from tangos.input_handlers.halo_stat_files import translations
 from tangos import testing, parallel_tasks
 
 
@@ -70,9 +71,32 @@ def test_insert_halos():
     assert ts1.halos[1].NDM==402567
 
 def test_insert_properties():
+    for h in ts1.halos:
+        db.get_default_session().delete(h) # remove previous objects so that we can add them afresh
+    adder = add_simulation.SimulationAdderUpdater(sim.get_output_handler())
+    adder.add_objects_to_timestep(ts1)
     importer = property_importer.PropertyImporter()
-    importer.parse_command_line("Mvir Rvir --for test_stat_files".split())
+    importer.parse_command_line("Mvir Rvir hostHalo childHalo --for test_stat_files".split())
     print(importer.options)
     importer.run_calculation_loop()
     npt.assert_almost_equal(ts1.halos[0]["Rvir"], 195.87)
     npt.assert_almost_equal(ts1.halos[0]["Mvir"], 5.02432e+11)
+    with npt.assert_raises(KeyError):
+        ts1.halos[0]['hostHalo']
+    with npt.assert_raises(KeyError):
+        ts1.halos[1]['childHalo']
+    assert ts1.halos[2]['hostHalo']==ts1.halos[0]
+    assert ts1.halos[3]['hostHalo']==ts1.halos[0]
+    testing.assert_halolists_equal(ts1.halos[0]['childHalo'], [ts1.halos[2], ts1.halos[3]])
+
+def test_default_value():
+    class AHFStatFileWithDefaultValues(stat.AHFStatFile):
+        _column_translations = {'nonexistent_column': translations.DefaultValue('nonexistent_column', 42),
+                                'existent_column': translations.DefaultValue('n_gas', 43)}
+
+    h_id, fortytwo, n_gas = AHFStatFileWithDefaultValues(ts1.filename).read('nonexistent_column', 'existent_column')
+
+    assert (fortytwo==42).all()
+    assert all(n_gas == [324272,  47634,  53939,  19920])
+
+

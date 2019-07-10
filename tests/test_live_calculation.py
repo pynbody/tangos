@@ -94,6 +94,15 @@ class LivePropertyRequiringRedirectedProperty(properties.LivePropertyCalculation
     def live_calculate(self, db_halo_entry, *input_values):
         return db_halo_entry["BH"][0]["BH_mass"]
 
+class LivePropertyWithCustomInterpolator(properties.LivePropertyCalculation):
+    names = "property_with_custom_interpolator"
+
+    def live_calculate(self, halo_entry, *input_values):
+        return np.arange(10,20) # irrelevant
+
+    def get_interpolated_value(self, at_x_position, property_array):
+        return at_x_position
+
 
 def test_simple_retrieval():
     BH = tangos.get_halo("sim/ts1/1.1")
@@ -102,6 +111,10 @@ def test_simple_retrieval():
 def test_at_function():
     halo = tangos.get_halo("sim/ts1/1")
     assert np.allclose(halo.calculate("at(3.0,dummy_property_1)"), 30.0)
+
+def test_custom_at_function():
+    halo = tangos.get_halo("sim/ts1/1")
+    assert np.allclose(halo.calculate("at(3.0,property_with_custom_interpolator())"), 3.0)
 
 def test_abs_function():
     halo = tangos.get_halo("sim/ts1/1")
