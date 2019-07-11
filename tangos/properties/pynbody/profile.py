@@ -1,6 +1,7 @@
 import numpy as np
 from .spherical_region import SphericalRegionPropertyCalculation
 from .centring import centred_calculation
+import pynbody
 
 class HaloDensityProfile(SphericalRegionPropertyCalculation):
     # include
@@ -51,5 +52,5 @@ class BaryonicHaloDensityProfile(HaloDensityProfile):
     @centred_calculation
     def calculate(self, data, existing_properties):
         gas_a, gas_b = self._get_profile(data.gas, existing_properties["max_radius"])
-        star_a, star_b = self._get_profile(data.star, existing_properties["max_radius"])
+        star_a, star_b = self._get_profile(data.star[pynbody.filt.HighPass('tform',0)], existing_properties["max_radius"])
         return gas_a, gas_b, star_a, star_b
