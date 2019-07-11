@@ -21,8 +21,6 @@ class HaloDensityProfile(SphericalRegionPropertyCalculation):
         return r"$\rho/M_{\odot}\,kpc^{-3}$", r"$M/M_{\odot}$"
 
     def _get_profile(self, halo, maxrad):
-        import pynbody
-
         delta = self.plot_xdelta()
         nbins = int(maxrad / delta)
         maxrad = delta * (nbins + 1)
