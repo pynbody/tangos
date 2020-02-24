@@ -116,8 +116,10 @@ def scan_for_BHs(files, session):
         # re-order our information so that links refer to BHs in descending order of mass
         bh_order_by_mass = np.argsort(bh_mass_this_timestep)[::-1]
         bh_iord_this_timestep = bh_iord_this_timestep[bh_order_by_mass]
-        bh_halos = bh_halos[bh_order_by_mass]
-        bh_cen_halos = bh_cen_halos[bh_order_by_mass]
+        if bh_halos is not None:
+            bh_halos = bh_halos[bh_order_by_mass]
+        if bh_cen_halos is not None:
+            bh_cen_halos = bh_cen_halos[bh_order_by_mass]
 
         logger.info("Freeing the timestep particle data")
         with check_deleted(timestep_particle_data):
