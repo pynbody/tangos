@@ -17,12 +17,8 @@ from .. import temporary_halolist
 from .one_hop import HopStrategy
 
 from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
+from ..config import max_relative_time_difference as SMALL_FRACTION
 from six.moves import range
-
-# Fractional increase or decrease in time to represent future or past when making hops
-# (prevents numerical accuracy issues making the db misunderstand a contemporaneous step
-# as being in the future or past)
-SMALL_FRACTION = 1e-4
 
 class MultiHopStrategy(HopStrategy):
     """An extension of the HopStrategy class that takes multiple hops across
@@ -36,7 +32,7 @@ class MultiHopStrategy(HopStrategy):
     def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, directed=None, target=None,
                  order_by=None, combine_routes=True, min_aggregated_weight=0.0,
                  min_onehop_weight=0.0, min_onehop_reverse_weight=None,
-                 include_startpoint=False):
+                 include_startpoint=False, one_simulation=None):
         """Construct a strategy for finding Halos via multiple "hops" along HaloLinks
 
         :param halo_from:   The halo to start hopping from
@@ -56,6 +52,10 @@ class MultiHopStrategy(HopStrategy):
 
         :param target:      Only return results in target, which can be a TimeStep or Simulation object.
             If None, return all results. Intermediate hops are not restricted by target, only the results returned.
+
+        :param one_simulation:  Only follow links to objects in the same simulation, if True. If False, follow
+            links to any simulation. By default this is None, and the behaviour is dictated by directed: if
+            directed is 'backwards' or 'forwards' one_simulation is True, whereas for other values it is False.
 
         :param order_by:    Return results in specified order; see HopStrategy for more information
 
@@ -84,6 +84,9 @@ class MultiHopStrategy(HopStrategy):
         self._min_onehop_weight = min_onehop_weight
         self._min_onehop_reverse_weight = min_onehop_reverse_weight
         self._include_startpoint = include_startpoint
+        if one_simulation is None:
+            one_simulation = directed=='backwards' or directed=='forwards'
+        self._one_simulation = one_simulation
         self._connection = self.session.connection()
         self._combine_routes = combine_routes
 
@@ -146,7 +149,7 @@ class MultiHopStrategy(HopStrategy):
 
         if self.directed is not None:
             directed = self.directed.lower()
-            if (directed=='backwards' or directed=='forwards') and (self._target is not None):
+            if self._one_simulation:
                 recursion_filter &= (timestep_new.simulation_id == timestep_old.simulation_id)
             if directed == 'backwards':
                 recursion_filter &= (timestep_new.time_gyr < timestep_old.time_gyr*(1.0-SMALL_FRACTION))
@@ -156,7 +159,8 @@ class MultiHopStrategy(HopStrategy):
                 existing_timestep_ids = self.session.query(core.Halo.timestep_id).\
                     select_from(self._link_orm_class).join(self._link_orm_class.halo_to).distinct()
                 recursion_filter &= ~timestep_new.id.in_(existing_timestep_ids)
-                recursion_filter &= sqlalchemy.func.abs(timestep_new.time_gyr - timestep_old.time_gyr) < SMALL_FRACTION
+                recursion_filter &= sqlalchemy.func.abs(timestep_new.time_gyr - timestep_old.time_gyr) \
+                                    < SMALL_FRACTION * timestep_old.time_gyr
             else:
                 raise ValueError("Unknown direction %r" % directed)
 

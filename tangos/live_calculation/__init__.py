@@ -407,6 +407,8 @@ class LiveProperty(Calculation):
         return self._evaluate_function(halos, input_descriptions, input_values, *self._evaluation_options)
 
     def values_and_description(self, halos):
+        if len(halos)==0:
+            return np.array([[]]), None
         input_values = []
         input_descriptions = []
         for input in range(len(self._inputs)):
@@ -606,9 +608,6 @@ class Link(Calculation):
         mask = QueryMask()
         mask.mark_nones_as_masked(target_halos)
         target_halo_masked = mask.mask(target_halos)
-
-        if len(target_halo_masked)==0:
-            raise NoResultsError("No results found when attempting to follow link %r"%self.locator)
 
         if self._expect_multivalues:
             if self._multi_selection_basis=='first':

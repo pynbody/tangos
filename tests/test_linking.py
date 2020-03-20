@@ -3,6 +3,7 @@ import tangos as db
 from tangos.input_handlers import output_testing
 from tangos.tools import crosslink, add_simulation
 from tangos import log, parallel_tasks, live_calculation, testing
+from tangos.core.halo_data import link
 from nose.tools import assert_raises
 import os, os.path
 
@@ -15,6 +16,12 @@ def setup():
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()
         manager2.scan_simulation_and_add_all_descendants()
+
+def test_issue_77():
+    # tests that the input handler caching does not deliver the wrong timestep when it has the same name
+    ih1 = output_testing.TestInputHandler("dummy_sim_1")
+    ih2 = output_testing.TestInputHandler("dummy_sim_2")
+    assert(ih1.load_timestep("step.1") is not ih2.load_timestep("step.1"))
 
 def test_timestep_linking():
     tl = crosslink.TimeLinker()
@@ -40,3 +47,13 @@ def test_crosslinking():
 
     with assert_raises(live_calculation.NoResultsError):
         result = db.get_halo('dummy_sim_2/step.3/1').calculate('match("dummy_sim_1").dbid()')
+
+
+def test_link_repr():
+    h1 = db.get_halo('dummy_sim_1/step.1/1')
+    h2 = db.get_halo('dummy_sim_1/step.1/2')
+    d_test = db.core.get_or_create_dictionary_item(db.get_default_session(), "test")
+    l_obj = link.HaloLink(h1, h2, d_test, 1.0)
+    assert repr(l_obj)=="<HaloLink test dummy_sim_1/step.1/halo_1 to dummy_sim_1/step.1/halo_2 weight=1.00>"
+    l_obj = link.HaloLink(h1, h2, d_test, None)
+    assert repr(l_obj) == "<HaloLink test dummy_sim_1/step.1/halo_1 to dummy_sim_1/step.1/halo_2 weight=None>"

@@ -6,6 +6,8 @@ class ConsistentCollection(object):
     returns a different value, a ValueError is raised."""
 
     def __init__(self, objects):
+        if len(objects)==0:
+            raise ValueError("Cannot create a ConsistentCollection from an empty list")
         self._objects = set(objects)
 
     def __getitem__(self, item):

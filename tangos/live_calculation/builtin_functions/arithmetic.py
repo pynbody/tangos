@@ -6,7 +6,10 @@ from six.moves import zip
 
 @BuiltinFunction.register
 def abs(halos, vals):
-    return arithmetic_unary_op(vals, functools.partial(np.linalg.norm, axis=-1))
+    if not hasattr(vals[0], '__len__'):    # Avoid norm failing if abs is called on a single number (issue 110)
+        return arithmetic_unary_op(vals, np.abs)
+    else:
+        return arithmetic_unary_op(vals, functools.partial(np.linalg.norm, axis=-1))
 
 @BuiltinFunction.register
 def sqrt(halos, vals):
@@ -43,6 +46,18 @@ def greater(halos, vals1, vals2):
 @BuiltinFunction.register
 def less(halos, vals1, vals2):
     return arithmetic_binary_op(vals1, vals2, np.less)
+
+@BuiltinFunction.register
+def equal(halos, vals1, vals2):
+    return arithmetic_binary_op(vals1, vals2, np.equal)
+
+@BuiltinFunction.register
+def greater_equal(halos, vals1, vals2):
+    return arithmetic_binary_op(vals1, vals2, np.greater_equal)
+
+@BuiltinFunction.register
+def less_equal(halos, vals1, vals2):
+    return arithmetic_binary_op(vals1, vals2, np.less_equal)
 
 @BuiltinFunction.register
 def logical_and(halos, vals1, vals2):

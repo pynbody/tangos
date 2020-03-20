@@ -20,6 +20,8 @@ def setup():
     testing.init_blank_db_for_testing()
 
     generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+
+
     ts1 = generator.add_timestep()
     ts1_h1, ts2_h2 = generator.add_objects_to_timestep(2)
 
@@ -29,6 +31,8 @@ def setup():
     angmom = np.empty((100,3))
     angmom[:,:] = np.arange(0,100.0).reshape((100,1))
     ts1_h1['dummy_property_2'] = angmom
+
+    ts1_h1['dummy_property_3'] = -2.5
 
 
     ts1_h1_bh1 = tangos.core.halo.BH(ts1, 1)
@@ -44,6 +48,8 @@ def setup():
     generator.link_last_halos()
 
     generator.add_timestep() # intentionally empty final timestep
+
+
 
 
 
@@ -103,6 +109,15 @@ class LivePropertyRequiringRedirectedProperty(properties.LivePropertyCalculation
     def live_calculate(self, db_halo_entry, *input_values):
         return db_halo_entry["BH"][0]["BH_mass"]
 
+class LivePropertyWithCustomInterpolator(properties.LivePropertyCalculation):
+    names = "property_with_custom_interpolator"
+
+    def live_calculate(self, halo_entry, *input_values):
+        return np.arange(10,20) # irrelevant
+
+    def get_interpolated_value(self, at_x_position, property_array):
+        return at_x_position
+
 
 def test_simple_retrieval():
     BH = tangos.get_halo("sim/ts1/1.1")
@@ -112,9 +127,20 @@ def test_at_function():
     halo = tangos.get_halo("sim/ts1/1")
     assert np.allclose(halo.calculate("at(3.0,dummy_property_1)"), 30.0)
 
-def test_abs_function():
+def test_custom_at_function():
     halo = tangos.get_halo("sim/ts1/1")
+    assert np.allclose(halo.calculate("at(3.0,property_with_custom_interpolator())"), 3.0)
+
+def test_abs_array_function():
+    halo = tangos.get_halo("sim/ts1/1")
+    assert np.allclose(halo.calculate("abs(dummy_property_2)"), halo.calculate("abs(dummy_property_2 * (-1))"))
     assert np.allclose(halo.calculate("abs(dummy_property_2)"), np.arange(0,100.0)*np.sqrt(3))
+
+def test_abs_scalar_function():
+    # Test that abs also works on a single scalar (issue 110)
+    halo = tangos.get_halo("sim/ts1/1")
+    assert np.allclose(halo.calculate("abs(dummy_property_3)"), - halo.calculate("dummy_property_3"))
+    assert np.allclose(halo.calculate("abs(dummy_property_3)"), 2.5)
 
 def test_nested_abs_at_function():
     halo = tangos.get_halo("sim/ts1/1")
@@ -194,6 +220,17 @@ def test_arithmetic():
     assert h.calculate("at(1.0,dummy_property_1)*at(5.0,dummy_property_1)") ==\
            h.calculate("at(1.0,dummy_property_1)") * h.calculate("at(5.0,dummy_property_1)")
 
+def test_comparison():
+    h = tangos.get_halo("sim/ts1/1")
+    assert h.calculate("1.0<2.0")
+    assert not h.calculate("1.0>2.0")
+    assert h.calculate("1.0==1.0")
+    assert h.calculate("1.0>=1.0")
+    assert h.calculate("1.0<=1.0")
+    assert h.calculate("1.0>=0.5")
+    assert not h.calculate("1.0<=0.5")
+
+
 def test_calculate_array():
     h = tangos.get_halo("sim/ts1/1")
 
@@ -264,3 +301,10 @@ def test_calculate_preserves_numpy_dtype():
 def test_empty_timestep_live_calculation():
     vals, = tangos.get_timestep("sim/ts3").calculate_all("BH_mass")
     assert len(vals)==0
+
+
+def test_non_existent_redirection_multihalo():
+    # See issue #46
+    vals1, vals2 = tangos.get_timestep("sim/ts3").calculate_all("BH_mass","later(1).BH_mass")
+    assert len(vals1)==0
+    assert len(vals2)==0
