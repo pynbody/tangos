@@ -6,7 +6,10 @@ from six.moves import zip
 
 @BuiltinFunction.register
 def abs(halos, vals):
-    return arithmetic_unary_op(vals, functools.partial(np.linalg.norm, axis=-1))
+    if not hasattr(vals[0], '__len__'):    # Avoid norm failing if abs is called on a single number (issue 110)
+        return arithmetic_unary_op(vals, np.abs)
+    else:
+        return arithmetic_unary_op(vals, functools.partial(np.linalg.norm, axis=-1))
 
 @BuiltinFunction.register
 def sqrt(halos, vals):

@@ -32,6 +32,8 @@ def setup():
     angmom[:,:] = np.arange(0,100.0).reshape((100,1))
     ts1_h1['dummy_property_2'] = angmom
 
+    ts1_h1['dummy_property_3'] = -2.5
+
 
     ts1_h1_bh1 = tangos.core.halo.BH(ts1, 1)
     ts1_h1_bh1["BH_mass"]=1000.0
@@ -116,9 +118,16 @@ def test_custom_at_function():
     halo = tangos.get_halo("sim/ts1/1")
     assert np.allclose(halo.calculate("at(3.0,property_with_custom_interpolator())"), 3.0)
 
-def test_abs_function():
+def test_abs_array_function():
     halo = tangos.get_halo("sim/ts1/1")
+    assert np.allclose(halo.calculate("abs(dummy_property_2)"), halo.calculate("abs(dummy_property_2 * (-1))"))
     assert np.allclose(halo.calculate("abs(dummy_property_2)"), np.arange(0,100.0)*np.sqrt(3))
+
+def test_abs_scalar_function():
+    # Test that abs also works on a single scalar (issue 110)
+    halo = tangos.get_halo("sim/ts1/1")
+    assert np.allclose(halo.calculate("abs(dummy_property_3)"), - halo.calculate("dummy_property_3"))
+    assert np.allclose(halo.calculate("abs(dummy_property_3)"), 2.5)
 
 def test_nested_abs_at_function():
     halo = tangos.get_halo("sim/ts1/1")
