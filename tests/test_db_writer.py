@@ -7,6 +7,7 @@ from tangos.tools import property_writer
 from tangos.input_handlers import output_testing
 from tangos import parallel_tasks, log, testing
 from tangos import properties
+from tangos.util import proxy_object
 
 def setup():
     parallel_tasks.use('null')
@@ -106,3 +107,33 @@ def test_no_duplication():
     assert db.get_default_session().query(db.core.HaloProperty).count() == 15
     run_writer_with_args("dummy_property", "--force")  # should create duplicates
     assert db.get_default_session().query(db.core.HaloProperty).count() == 30
+
+
+
+class DummyLink(DummyProperty):
+    names = "dummy_link"
+
+    def calculate(self, data, entry):
+        return proxy_object.IncompleteProxyObjectFromFinderId(1,'halo')
+
+class DummyPropertyRequiringLink(DummyProperty):
+    names = "dummy_property_requiring_link",
+
+    def requires_property(self):
+        return ["dummy_link"]
+
+def test_link_property():
+    init_blank_simulation()
+    run_writer_with_args("dummy_link")
+    assert db.get_default_session().query(db.core.HaloLink).count() == 15
+    db.testing.assert_halolists_equal([db.get_halo(2)['dummy_link']], [db.get_halo(1)])
+
+def test_link_dependency():
+    init_blank_simulation()
+    run_writer_with_args("dummy_property_requiring_link")
+    assert db.get_default_session().query(db.core.HaloProperty).count() == 0
+
+
+    run_writer_with_args("dummy_link")
+    run_writer_with_args("dummy_property_requiring_link")
+    assert db.get_default_session().query(db.core.HaloProperty).count() == 15
