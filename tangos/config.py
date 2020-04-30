@@ -40,7 +40,6 @@ default_backend = 'null'
 property_modules = os.environ.get("TANGOS_PROPERTY_MODULES","tangos_nbodyshop_properties")
 property_modules = property_modules.split(",")
 property_modules = map(str.strip, property_modules)
-property_modules = os.environ.get("TANGOS_PROPERTY_MODULES")
 
 file_ignore_pattern = []
 
