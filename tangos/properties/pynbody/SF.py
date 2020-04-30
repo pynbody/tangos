@@ -33,8 +33,8 @@ class StarFormHistogram(TimeChunkedProperty):
 
         return M
 
-    def reassemble(self, *options):
-        reassembled = super(StarFormHistogram, self).reassemble(*options)
+    def reassemble(self, halo, *options):
+        reassembled = super(StarFormHistogram, self).reassemble(halo, *options)
         return reassembled/1e9 # Msol per Gyr -> Msol per yr
 
 class SpecStarFormationHistogram(TimeChunkedProperty,LiveHaloProperties):
@@ -59,8 +59,8 @@ class SpecStarFormationHistogram(TimeChunkedProperty,LiveHaloProperties):
         Marray = Marray[::-1]
         return sfr/Marray
 
-    def reassemble(self, *options):
-        reassembled = super(SpecStarFormationHistogram, self).reassemble(*options)
+    def reassemble(self, halo, *options):
+        reassembled = super(SpecStarFormationHistogram, self).reassemble(halo, *options)
         return reassembled / 1e9  # Gyr^-1 -> yr^-1
 
 class StarForm(PynbodyPropertyCalculation):

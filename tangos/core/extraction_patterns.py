@@ -131,7 +131,7 @@ class HaloPropertyValueGetter(HaloPropertyGetter):
 
         if hasattr(self._providing_class, 'reassemble'):
             instance = self._providing_class(property_object.halo.timestep.simulation)
-            return instance.reassemble(property_object, *self._options)
+            return instance.reassemble(property_object, property_object.halo, *self._options)
         else:
             self._setup_data_mapper(property_object)
             return self._mapper.get(property_object)
