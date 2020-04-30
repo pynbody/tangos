@@ -15,7 +15,6 @@ def get_mergers_of_major_progenitor(input_halo):
     redshift = []
     ratio = []
     halo  = []
-    time = []
     while input_halo is not None:
         mergers = db.relation_finding.MultiHopMostRecentMergerStrategy(input_halo, order_by='weight').all()
         if len(mergers)>0 :
@@ -23,12 +22,11 @@ def get_mergers_of_major_progenitor(input_halo):
                 redshift.append(mergers[0].timestep.next.redshift)
                 halo.append((mergers[0], m))
                 ratio.append(float(mergers[0].NDM)/m.NDM)
-                time.append(mergers[0].timestep.next.time_gyr)
             input_halo = mergers[0]
         else:
             input_halo = None
 
-    return np.array(redshift), np.array(ratio), time, halo
+    return np.array(redshift), np.array(ratio), halo
 
 def most_major_mergers_since(ts, Mvir_min=0.8e12, Mvir_max=2e12, z_merger_max=4.0, no_merger_value=None):
     """Given a timestep, calculate the most major merger ratio since a given redshift for all halos in a specified mass range
