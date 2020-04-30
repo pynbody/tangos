@@ -69,6 +69,7 @@ class HaloProperty(Base):
     def get_data_with_reassembly_options(self, *options):
         return extraction_patterns.HaloPropertyValueWithReassemblyOptionsGetter(*options).postprocess_data_objects([self])[0]
 
+
     @property
     def description(self):
         return self.name.providing_class(type(self.halo.handler))(self.halo.timestep.simulation)
