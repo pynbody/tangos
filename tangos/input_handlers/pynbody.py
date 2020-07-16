@@ -32,6 +32,8 @@ class DummyTimeStep(object):
 
 
 class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
+    pynbody_halo_class_name = None
+
     def __new__(cls, *args, **kwargs):
         import pynbody as pynbody_local
 
@@ -48,6 +50,14 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         pynbody_version = getattr(pynbody, "__version__","0.00")
         assert pynbody_version>="0.46", "Tangos requires pynbody 0.46 or later"
 
+    @classmethod
+    def _construct_pynbody_halos(cls, sim, *args, **kwargs):
+        if cls.pynbody_halo_class_name is None:
+            return sim.halos(*args, **kwargs)
+        else:
+            halo_class = getattr(pynbody.halo, cls.pynbody_halo_class_name)
+            return halo_class(sim, *args, **kwargs)
+
     def _is_able_to_load(self, ts_extension):
         filepath = self._extension_to_filename(ts_extension)
         try:
@@ -55,7 +65,8 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             if self.quicker:
                 logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
             else:
-                h = f.halos()
+                h = self._construct_pynbody_halos(f)
+
             return True
         except (IOError, RuntimeError):
             return False
@@ -174,9 +185,10 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         f = self.load_timestep(ts_extension)
         h = _loaded_halocats.get(id(f), lambda: None)()
         if h is None:
-            h = f.halos()
+            h = self._construct_pynbody_halos(f)
             if isinstance(h, pynbody.halo.SubfindCatalogue):
-                h = f.halos(subs=True)
+                # ugly fix - loads groups by default, wanted halos
+                h = self._construct_pynbody_halos(f, subs=True)
             _loaded_halocats[id(f)] = weakref.ref(h)
             f._db_current_halocat = h # keep alive for lifetime of simulation
         return h  # pynbody.halo.AmigaGrpCatalogue(f)
@@ -216,6 +228,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         else:
             logger.warn("No halo statistics file found for timestep %r",ts_extension)
 
+            snapshot_keep_alive = self.load_timestep(ts_extension)
             try:
                 h = self._construct_halo_cat(ts_extension, object_typetag)
             except:
@@ -346,7 +359,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
         f = self.load_timestep(ts_extension)
         h = _loaded_halocats.get(id(f)+1, lambda: None)()
         if h is None:
-            h = f.halos()
+            h = self._construct_pynbody_halos(f)
             assert isinstance(h, pynbody.halo.SubfindCatalogue)
             _loaded_halocats[id(f)+1] = weakref.ref(h)
             f._db_current_groupcat = h  # keep alive for lifetime of simulation
@@ -449,6 +462,7 @@ class GadgetAHFInputHandler(PynbodyInputHandler):
             return True
         except (IOError, RuntimeError):
             return False
+
 
 
 
@@ -570,5 +584,14 @@ class ChangaInputHandler(PynbodyInputHandler):
             except (IndexError, ValueError):
                 pass
         return out
+
+class ChangaIgnoreIDLInputHandler(ChangaInputHandler):
+    pynbody_halo_class_name = "AHFCatalogue"
+    halo_stat_file_class_name = "AHFStatFile"
+
+class ChangaUseIDLInputHandler(ChangaInputHandler):
+    pynbody_halo_class_name = "AmigaGrpCatalogue"
+    halo_stat_file_class_name = "AmigaIDLStatFile"
+    auxiliary_file_patterns = ["*.amiga.grp"]
 
 from . import caterpillar, eagle
