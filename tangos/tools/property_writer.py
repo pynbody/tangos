@@ -219,7 +219,7 @@ class PropertyWriter(GenericTangosTool):
         for x in existing_properties:
             if x.name_id in need_data_ids:
                 name = need_data[need_data_ids.index(x.name_id)]
-                existing_properties_data[name] = x.data
+                existing_properties_data[name] = x.data_raw
 
         existing_links = db_halo.all_links
         for x in existing_links:
