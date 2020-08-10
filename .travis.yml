@@ -7,11 +7,11 @@ sudo: false
 
 # specify different versions of python and numpy
 env:
-  - PYTHON=2.7  NUMPY_VERSION=1.13.1
-  - PYTHON=3.5  NUMPY_VERSION=1.13.1
-  - PYTHON=3.6  NUMPY_VERSION=1.13.1
-  - PYTHON=3.7  NUMPY_VERSION=1.15.1
-  - PYTHON=3.8  NUMPY_VERSION=1.18.5
+  - PYTHON=2.7  NUMPY_VERSION=1.13.1  YT="yt=3.4.0"
+  - PYTHON=3.5  NUMPY_VERSION=1.13.1  YT="yt=3.4.0"
+  - PYTHON=3.6  NUMPY_VERSION=1.13.1  YT="yt>=3.4.0"
+  - PYTHON=3.7  NUMPY_VERSION=1.15.1  YT="yt>=3.4.0"
+  - PYTHON=3.8  NUMPY_VERSION=1.18.5  YT="yt>=3.4.0"
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -30,7 +30,7 @@ install:
   - cd pynbody
   - python setup.py install
   - cd ..
-  - pip install yt>=3.4.0
+  - pip install ${YT}
 
 
 
