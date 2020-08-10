@@ -432,7 +432,7 @@ class LiveProperty(Calculation):
         return results_array
 
     def proxy_value(self):
-        return UnknownValue()
+        return UnknownValue(self)
 
 class BuiltinFunction(LiveProperty):
     """Represents a calculation that is achieved by executing a python function. See the builtin_functions module."""
@@ -553,7 +553,7 @@ class Link(Calculation):
 
     def proxy_value(self):
         """Return a placeholder value for this calculation"""
-        return UnknownValue()
+        return UnknownValue(self)
 
     def retrieves(self):
         # the property retrieval will not be on the set of halos known to higher levels,

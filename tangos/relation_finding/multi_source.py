@@ -177,3 +177,12 @@ class MultiSourceAllMajorProgenitorsStrategy(MultiSourceMultiHopStrategy):
 
     def _should_halt(self):
         return False
+
+class MultiSourceAllMajorDescendantsStrategy(MultiSourceMultiHopStrategy):
+
+    def __init__(self, halos_from, **kwargs):
+        super(MultiSourceAllMajorDescendantsStrategy, self).__init__(halos_from, None, one_match_per_input=False,
+                                                                     directed='forwards', include_startpoint=True)
+
+    def _should_halt(self):
+        return False
