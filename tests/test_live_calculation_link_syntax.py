@@ -41,7 +41,7 @@ def setup():
     ts1_h5['testval2'] = 40.0
 
     generator.add_timestep()
-    ts2_h1, ts2_h2 = generator.add_objects_to_timestep(2)
+    ts2_h1, ts2_h2, ts2_h3 = generator.add_objects_to_timestep(3)
     ts2_h1['testval'] = 2.0
     ts2_h2['testval'] = 100.0
     generator.link_last_halos_using_mapping({2: 1, 3: 2})
@@ -128,3 +128,19 @@ def test_historical_value_finding():
     timestep = db.get_timestep("sim/ts3")
     assert_halolists_equal(timestep.calculate_all("find_progenitor(testval, 'max')")[0], ["sim/ts2/1", "sim/ts3/2"])
     assert_halolists_equal(timestep.calculate_all("find_progenitor(testval, 'min')")[0], ["sim/ts3/1", "sim/ts1/3"])
+
+def test_latest_earliest():
+    earliest = db.get_halo("sim/ts3/1").calculate("earliest()")
+    assert earliest == db.get_halo("sim/ts3/1").earliest
+
+    latest = db.get_halo("sim/ts1/2").calculate("latest()")
+    assert latest == db.get_halo("sim/ts1/2").latest
+
+    latest = db.get_halo("sim/ts3/1").calculate("latest()")
+    assert latest == db.get_halo("sim/ts3/1") # this is already the latest. See #123
+
+    earliest_no_ancestors = db.get_halo("sim/ts2/3").calculate("earliest()") # has no predecessor in ts1. See #124
+    assert earliest_no_ancestors == db.get_halo("sim/ts2/3")
+
+    multi_earliest,  = db.get_timestep("sim/ts2").calculate_all("earliest()")
+    assert_halolists_equal(multi_earliest, ['sim/ts1/2', 'sim/ts1/3', 'sim/ts2/3'])
