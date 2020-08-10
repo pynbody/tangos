@@ -84,11 +84,11 @@ get_halo = get_object # old naming convention - to be deprecated
 
 def get_item(path, session=None):
     c = path.count("/")
-    if c is 0:
+    if c == 0:
         return get_simulation(path, session)
-    elif c is 1:
+    elif c == 1:
         return get_timestep(path, session)
-    elif c is 2:
+    elif c == 2:
         return get_halo(path, session)
 
 
