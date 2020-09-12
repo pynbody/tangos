@@ -7,6 +7,7 @@ import tangos.core.simulation
 import tangos.core.timestep
 import tangos
 import tangos.testing.simulation_generator
+import numpy as np
 
 __author__ = 'app'
 
@@ -356,3 +357,14 @@ def test_earliest_no_ancestor():
     earliest = no_ancestor.earliest
     assert earliest==no_ancestor
 
+def test_merging():
+
+    source, dest = tangos.get_timestep("sim/ts1").calculate_all("halo_number()","later(2)", object_typetag='halo')
+    assert np.all(source==[1,2,3,4,6,7])
+    testing.assert_halolists_equal(dest, ['sim/ts3/1', 'sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts3/4', 'sim/ts3/4'])
+
+    source, dest = tangos.get_timestep("sim/ts1").calculate_all("halo_number()", "latest()", object_typetag='halo')
+    print(source,dest)
+    assert np.all(source==[1,2,3,4,5,6,7])
+    testing.assert_halolists_equal(dest, ['sim/ts3/1', 'sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts1/5',
+                                          'sim/ts3/4', 'sim/ts3/4'])
