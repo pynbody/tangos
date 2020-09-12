@@ -11,7 +11,7 @@ env:
   - PYTHON=3.5  NUMPY_VERSION=1.13.1  YT="parso==0.7.0 yt==3.4.0"
   - PYTHON=3.6  NUMPY_VERSION=1.13.1  YT="yt>=3.4.0"
   - PYTHON=3.7  NUMPY_VERSION=1.15.1  YT="yt>=3.4.0"
-  - PYTHON=3.8  NUMPY_VERSION=1.18.5  YT="yt>=3.4.0"
+  - PYTHON=3.8  NUMPY_VERSION=1.18.5  YT="git+ssh://git@github.com/yt-project/yt.git"
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -26,10 +26,7 @@ install:
   - source activate ${PYTHON}_${NUMPY_VERSION}
   - python setup.py install
   - python -c "import tangos" # ensure tangos can be imported without pynbody present
-  - git clone https://github.com/pynbody/pynbody.git
-  - cd pynbody
-  - python setup.py install
-  - cd ..
+  - pip install pynbody --no-build-isolation
   - pip install ${YT}
 
 
