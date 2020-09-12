@@ -21,7 +21,7 @@ before_install:
   - conda update --yes conda
 
 install:
-  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy matplotlib<3.3.0 nose h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython pyramid ipython
+  - conda create --yes -n ${PYTHON}_${NUMPY_VERSION} python=$PYTHON numpy=$NUMPY_VERSION scipy "matplotlib<3.3.0" nose h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython pyramid ipython
   - pip install pyramid_mako  # anaconda does not yet have pyramid_mako for py3.7
   - source activate ${PYTHON}_${NUMPY_VERSION}
   - python setup.py install
