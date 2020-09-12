@@ -20,12 +20,16 @@ def _find_progenitor_or_descendant(source_halos, property_proxy, property_criter
     property_and_obj = MultiCalculation(ReturnInputHalos(), property_proxy.name)
 
     with all_major_progs.temp_table() as tt:
-        raw_query = thl.halo_query(tt)
+        # the query has to explicitly include the source_id, otherwise the sqlalchemy dedup
+        # process removes duplicates rows (e.g. if there are several null results, only the
+        # first will be returned!)
+        raw_query = thl.enumerated_halo_query(tt)
         query = property_and_obj.supplement_halo_query(raw_query)
-        all_major_progs = query.all()
+        all_major_progs = [x[1] for x in query.all()]
         db_objects, values = property_and_obj.values_sanitized(all_major_progs,
                                                                core.Session.object_session(source_halos[0]))
 
+    assert len(values) == len(all_major_progs) == len(sources)
     # now re-organize the values so that we have one per source
     values_per_source = {s: [] for s in range(len(source_halos))}
     objs_per_source = {s: [] for s in range(len(source_halos))}
