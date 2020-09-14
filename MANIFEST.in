@@ -1,1 +1,1 @@
-recursive-include tangos *.ico *.png *.css *.gif *.jpg *.js *.jinja2 *.ini
+recursive-include tangos *.png *.css *.gif *.js *.jinja2 *.ini

@@ -268,6 +268,10 @@ def test_empty_timestep_live_calculation():
     vals, = tangos.get_timestep("sim/ts3").calculate_all("BH_mass")
     assert len(vals)==0
 
+def test_calculate_all_object_restriction():
+    assert np.all(tangos.get_timestep("sim/ts1").calculate_all("dbid()")[0] == [1,2,3,4])
+    assert np.all(tangos.get_timestep("sim/ts1").calculate_all("dbid()",object_type='halo')[0] == [1,2])
+    assert np.all(tangos.get_timestep("sim/ts1").calculate_all("dbid()", object_type='BH')[0] == [3, 4])
 
 def test_non_existent_redirection_multihalo():
     # See issue #46
