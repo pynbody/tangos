@@ -128,6 +128,13 @@ def test_historical_value_finding():
     timestep = db.get_timestep("sim/ts3")
     assert_halolists_equal(timestep.calculate_all("find_progenitor(testval, 'max')")[0], ["sim/ts2/1", "sim/ts3/2"])
     assert_halolists_equal(timestep.calculate_all("find_progenitor(testval, 'min')")[0], ["sim/ts3/1", "sim/ts1/3"])
+    assert_halolists_equal(db.get_timestep("sim/ts1").calculate_all("find_descendant(testval, 'min')")[0],
+                           ["sim/ts3/1", "sim/ts1/3", "sim/ts1/4", "sim/ts1/5"])
+
+def test_historical_value_finding_missing_data():
+    sources, targets = db.get_timestep("sim/ts3").calculate_all("path()", "find_progenitor(testvalpartial, 'max')")
+    assert_halolists_equal(sources, ["sim/ts3/1", "sim/ts3/2"])
+    assert_halolists_equal(targets, ["sim/ts1/2", "sim/ts1/3"])
 
 def test_latest_earliest():
     earliest = db.get_halo("sim/ts3/1").calculate("earliest()")

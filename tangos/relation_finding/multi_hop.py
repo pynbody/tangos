@@ -92,6 +92,12 @@ class MultiHopStrategy(HopStrategy):
 
     def temp_table(self):
         """Execute the strategy and return results as a temp_table (see temporary_halolist module)"""
+        if self._all is None:
+            return self._temp_table_without_leaving_sql()
+        else:
+            return temporary_halolist.temporary_halolist_table(self.session, [x.halo_to_id for x in self._all])
+
+    def _temp_table_without_leaving_sql(self):
         tt = self._manage_temp_table()
         tt.__enter__()
         try:
