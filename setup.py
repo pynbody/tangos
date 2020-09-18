@@ -40,7 +40,7 @@ with open(path.join(this_directory, 'README.md')) as f:
     long_description = f.read()
 
 setup(name='tangos',
-      version='1.1.0',
+      version='1.1.1',
       description='TANGOS, the agile numerical galaxy organisation system',
       classifiers=[
           "Development Status :: 5 - Production/Stable",
