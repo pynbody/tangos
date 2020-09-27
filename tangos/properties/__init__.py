@@ -5,6 +5,7 @@ import six
 from six.moves import zip
 import importlib
 import warnings
+from ..live_calculation import LiveProperty
 import functools
 from .. import input_handlers
 from .. import util
@@ -229,9 +230,9 @@ class TimeChunkedProperty(PropertyCalculation):
     minimum_store_Gyr = 0.5
 
     def __init__(self, simulation):
-        self.pixel_delta_t_Gyr = simulation.get("histogram_delta_t_Gyr", self.pixel_delta_t_Gyr)
+        if simulation is not None:
+            self.pixel_delta_t_Gyr = simulation.get("histogram_delta_t_Gyr", self.pixel_delta_t_Gyr)
         super(TimeChunkedProperty, self).__init__(simulation)
-
 
     def bin_index(self, time):
         """Convert a time (Gyr) to a bin index in the histogram"""
@@ -245,7 +246,8 @@ class TimeChunkedProperty(PropertyCalculation):
         they should store."""
         return slice(self.bin_index(time-self.minimum_store_Gyr), self.bin_index(time))
 
-    def reassemble(self, property, reassembly_type='major'):
+
+    def reassemble(self, property, halo, reassembly_type='major'):
         """Reassemble a histogram by suitable treatment of the merger tree leading up to the current halo.
 
         This function is normally called by the framework (see Halo.get_data_with_reassembly_options) and you would
@@ -266,16 +268,24 @@ class TimeChunkedProperty(PropertyCalculation):
         from tangos import relation_finding as rfs
 
         if reassembly_type=='major':
-            return self._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy)
+            return self._reassemble_using_finding_strategy(property, halo, strategy = rfs.MultiHopMajorProgenitorsStrategy)
         elif reassembly_type=='major_across_simulations':
-            return self._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopMajorProgenitorsStrategy,
+            return self._reassemble_using_finding_strategy(property, halo, strategy = rfs.MultiHopMajorProgenitorsStrategy,
                                                            strategy_kwargs = {'target': None, 'one_simulation': False})
         elif reassembly_type=='sum':
-            return self._reassemble_using_finding_strategy(property, strategy = rfs.MultiHopAllProgenitorsStrategy)
+            return self._reassemble_using_finding_strategy(property, halo, strategy = rfs.MultiHopAllProgenitorsStrategy)
         elif reassembly_type=='place':
-            return self._place_data(property.halo.timestep.time_gyr, property.data_raw)
+            if not isinstance(property, LiveProperty):
+                place_data = property.data_raw
+            else:
+                place_data = halo.calculate(property.__str__())
+            return self._place_data(property.halo.timestep.time_gyr, place_data)
+
         elif reassembly_type=='raw':
-            return property.data_raw
+            if not isinstance(property, LiveProperty):
+                return property.data_raw
+            else:
+                return halo.calculate('raw('+property.__str__()+')')
         else:
             raise ValueError("Unknown reassembly type")
 
@@ -286,9 +296,11 @@ class TimeChunkedProperty(PropertyCalculation):
         final[start:] = raw_data
         return final
 
-    def _reassemble_using_finding_strategy(self, property, strategy, strategy_kwargs={}):
-        name = property.name.text
-        halo = property.halo
+    def _reassemble_using_finding_strategy(self, property, halo, strategy, strategy_kwargs={}):
+        if not isinstance(property, LiveProperty):
+            name = property.name.text
+        else:
+            name = property.__str__()
         t, stack = halo.calculate_for_descendants("t()", "raw(" + name + ")", strategy=strategy, strategy_kwargs=strategy_kwargs)
         final = np.zeros(self.bin_index(t[0]))
         previous_time = -1

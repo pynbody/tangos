@@ -81,11 +81,24 @@ class DummyPropertyWithReassemblyOptions(properties.PropertyCalculation):
     names = "dummy_property_with_reassembly"
 
     @classmethod
-    def reassemble(cls, property, test_option=25):
+    def reassemble(cls, property, halo, test_option=25):
         if test_option=='actual_data':
             return property.data_raw
         else:
             return test_option
+
+class DummyLivePropertyWithReassembly(properties.LivePropertyCalculation):
+    names = "dummy_live_property_with_reassembly"
+
+    def live_calculate(self, db_halo_entry, factor=2):
+        return db_halo_entry.calculate('raw(dummy_property_with_reassembly)') * factor
+
+    @classmethod
+    def reassemble(cls, property, halo, test_option=10):
+        if test_option == 'actual_data':
+            return halo.calculate('raw('+property.__str__()+')')
+        else:
+            return halo.calculate('raw('+property.__str__()+')') * test_option
 
 class LivePropertyRequiringRedirectedProperty(properties.LivePropertyCalculation):
     names = "first_BHs_BH_mass"
@@ -251,6 +264,27 @@ def test_reassembly():
     # our dummy reassembly function can return the actual value if suitably requested
     assert h.calculate('reassemble(dummy_property_with_reassembly, "actual_data")') == 101
 
+def test_live_reassembly():
+    h = tangos.get_halo("sim/ts1/1")
+    h['dummy_property_with_reassembly'] = 101
+
+    # default reassembly takes in the dummy property and multiplies it first by 2, then by 10
+    assert h.calculate('dummy_live_property_with_reassembly()') == 2020
+
+    # default live_calculation without reassemble takes dummy property and multiplies by 2
+    assert h.calculate('raw(dummy_live_property_with_reassembly())') == 202
+
+    # ability to give input into live calculation
+    assert h.calculate('raw(dummy_live_property_with_reassembly(4))') == 404
+
+    # pass option to reassembly and change how the dummpy property is manipulated
+    assert h.calculate('reassemble(dummy_live_property_with_reassembly(),3)') == 606
+
+    # reassemble on live calculation with new variable
+    assert h.calculate('reassemble(dummy_live_property_with_reassembly(3))') == 3030
+
+    # will return the original value of the live calculation without reassembly if requested correctly
+    assert h.calculate('reassemble(dummy_live_property_with_reassembly(3),"actual_data")') == 303
 
 def test_liveproperty_requiring_redirection():
     h = tangos.get_halo("sim/ts1/1")
