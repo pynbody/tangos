@@ -197,11 +197,20 @@ function updateDownloadLink(url, extension) {
 }
 
 function loadImage(url, extension) {
-    objImg = new Image();
     existingImgSrc = url;
-    objImg.src = url;
-    objImg.onload = placeImage;
+    if (extension === 'pdf') {
+        objImg = $('<object type="application/pdf" data="' + url + '" height="100%" width="100%">');
+        $(objImg).ready(placeImage)
+        $('#imgbox').empty();
+        $('#imgbox').append(objImg);
+        objImg.onerror = placeImageError;
+    } else {
+        objImg = new Image();
+        objImg.src = url;
+        objImg.onload = placeImage;
+    }
     objImg.onerror = placeImageError;
+
     updateDownloadLink(url, extension);
 }
 
@@ -218,7 +227,7 @@ function treeError() {
 function placeImage() {
     $('#imgbox').empty();
     $('#imgbox').append(objImg);
-    $('#imgbox').css('width',objImg.width);
+    $('#imgbox').css('width', objImg.width);
 }
 
 function ensurePlotTypeIsNotTree() {
