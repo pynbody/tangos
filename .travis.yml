@@ -7,8 +7,6 @@ sudo: false
 
 # specify different versions of python and numpy
 env:
-  - PYTHON=2.7  NUMPY_VERSION=1.13.1  YT="yt==3.4.0"
-  - PYTHON=3.5  NUMPY_VERSION=1.13.1  YT="parso==0.7.0 yt==3.4.0"
   - PYTHON=3.6  NUMPY_VERSION=1.13.1  YT="yt>=3.4.0"
   - PYTHON=3.7  NUMPY_VERSION=1.15.1  YT="yt>=3.4.0"
   - PYTHON=3.8  NUMPY_VERSION=1.18.5  YT="yt>=3.4.0"
