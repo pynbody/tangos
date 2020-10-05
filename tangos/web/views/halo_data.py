@@ -145,18 +145,20 @@ CONTENT_TYPES = {
 }
 
 def finish(request, getImage=True):
+    extension = request.matchdict.get("ext", webview_default_image_format)
+    print(f'Got extension: {extension}')
     if getImage:
         enter_finish_time = time.time()
         request.canvas.draw()
         draw_time = time.time()
         buffer = BytesIO()
-        p.savefig(buffer, format=webview_default_image_format)
+        p.savefig(buffer, format=extension)
         end_time = time.time()
 
         logger.info(
             "Image rendering: matplotlib %.2fs; %s conversion %.3fs",
             draw_time - enter_finish_time, 
-            webview_default_image_format.upper(),
+            extension.upper(),
             end_time - draw_time
         )
 
@@ -165,13 +167,13 @@ def finish(request, getImage=True):
     if getImage:
         try:
             return Response(
-                content_type=CONTENT_TYPES[webview_default_image_format],
+                content_type=CONTENT_TYPES[extension],
                 body=buffer.getvalue()
             )
         except KeyError:
             raise NotImplementedError(
                 'Tangos does not support the provided image format: '
-                f'{webview_default_image_format}. '
+                f'{ext}. '
                 'This can be changed in the config.'
             )
 
