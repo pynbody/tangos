@@ -11,6 +11,7 @@ from pyramid.response import Response
 from six import BytesIO, string_types
 from ...log import logger
 from ... import core
+from ...config import webview_default_image_format
 import threading
 import time
 
@@ -132,25 +133,47 @@ def get_property(request):
             'is_array': is_array(result)}
 
 
-def start(request) :
+def start(request):
     p.ioff()
     p.clf()
-    request.canvas =  p.get_current_fig_manager().canvas
+    request.canvas = p.get_current_fig_manager().canvas
 
-def finish(request, getImage=True) :
+
+CONTENT_TYPES = {
+    'png': 'image/png',
+    'svg': 'image/svg+xml'
+}
+
+def finish(request, getImage=True):
     if getImage:
         enter_finish_time = time.time()
         request.canvas.draw()
         draw_time = time.time()
         buffer = BytesIO()
-        p.savefig(buffer, format='png')
+        p.savefig(buffer, format=webview_default_image_format)
         end_time = time.time()
-        logger.info("Image rendering: matplotlib %.2fs; PNG conversion %.3fs",draw_time-enter_finish_time, end_time-draw_time)
+
+        logger.info(
+            "Image rendering: matplotlib %.2fs; %s conversion %.3fs",
+            draw_time - enter_finish_time, 
+            webview_default_image_format.upper(),
+            end_time - draw_time
+        )
 
     p.close()
 
-    if getImage :
-        return Response(content_type='image/png',body=buffer.getvalue())
+    if getImage:
+        try:
+            return Response(
+                content_type=CONTENT_TYPES[webview_default_image_format],
+                body=buffer.getvalue()
+            )
+        except KeyError:
+            raise NotImplementedError(
+                'Tangos does not support the provided image format: '
+                f'{webview_default_image_format}. '
+                'This can be changed in the config.'
+            )
 
 
 def rescale_plot(request):

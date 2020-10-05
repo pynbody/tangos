@@ -62,6 +62,9 @@ max_relative_time_difference = 1e-4     # the maximum fractional difference in t
 DEFAULT_SLEEP_BEFORE_ALLOWING_NEXT_LOCK = 1.0
 # number of seconds to sleep after a lock is released before reallocating it
 
+# Default format to use in the webview. Can be either svg or png
+webview_default_image_format = 'svg'
+
 try:
     from .config_local import *
 except:
