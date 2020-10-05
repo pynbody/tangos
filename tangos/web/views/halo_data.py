@@ -141,7 +141,8 @@ def start(request):
 
 CONTENT_TYPES = {
     'png': 'image/png',
-    'svg': 'image/svg+xml'
+    'svg': 'image/svg+xml',
+    'pdf': 'application/pdf'
 }
 
 def finish(request, getImage=True):
