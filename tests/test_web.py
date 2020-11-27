@@ -142,6 +142,6 @@ def test_simulation_with_slash():
     assert "halo 1 of ts1" in halo_response
     calculate_url = halo_response.pyquery("#calculate_url").text()
     calculate_url = parse.unquote(calculate_url)
-    assert "simname%has%slashes" in calculate_url
+    assert "simname_has_slashes" in calculate_url
     halo_next_step_response = halo_response.click("\+1$").follow()
     assert "halo 1 of ts2" in halo_next_step_response
