@@ -90,7 +90,7 @@ class Simulation(Base):
 
     @property
     def escaped_basename(self):
-        return self.basename.replace("/","%")
+        return self.basename.replace("/","_")
 
 
 class SimulationProperty(Base):
