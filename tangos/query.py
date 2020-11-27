@@ -22,8 +22,8 @@ def get_simulation(id, session=None):
     if session is None:
         session = get_default_session()
     if isinstance(id, str) or isinstance(id, six.text_type):
-        assert "/" not in id
-        if "%" in id:
+        assert "/" not in id, "Replace '/' with '_' in input string."
+        if "%" in id or "_" in id:
             match_clause = Simulation.basename.like(id)
         else:
             match_clause = Simulation.basename == id
