@@ -7,8 +7,8 @@ sudo: false
 
 # specify different versions of python and numpy
 env:
-  - PYTHON=3.6  NUMPY_VERSION=1.13.1  YT="yt>=3.4.0"
-  - PYTHON=3.7  NUMPY_VERSION=1.15.1  YT="yt>=3.4.0"
+  - PYTHON=3.6  NUMPY_VERSION=1.18.5  YT="yt>=3.4.0"
+  - PYTHON=3.7  NUMPY_VERSION=1.18.5 YT="yt>=3.4.0"
   - PYTHON=3.8  NUMPY_VERSION=1.18.5  YT="yt>=3.4.0"
 
 before_install:
