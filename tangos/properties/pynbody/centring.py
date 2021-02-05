@@ -1,5 +1,6 @@
 from . import PynbodyPropertyCalculation
 from .. import LivePropertyCalculation
+from .spherical_region import SphericalRegionPropertyCalculation
 import numpy as np
 import functools
 import contextlib
@@ -16,6 +17,10 @@ class CentreAndRadius(PynbodyPropertyCalculation):
         # this does not appear at module level because we want tangos to be importable even when pynbody is not
         # present:
         import pynbody
+
+        # Throw a more informative error message if particle data is empty
+        if len(particle_data) == 0:
+            raise RuntimeError("No particle of this type are available for centering")
 
         # ensure the box is wrapped correctly by centring on one of the particles:
         temporary_centre = np.array(particle_data['pos'][0])
@@ -40,15 +45,18 @@ class CentreAndRadius(PynbodyPropertyCalculation):
         return center.view(np.ndarray), rmax
 
 
-class CentreAndRadiusStars(CentreAndRadius):
+class CentreAndRadiusStars(CentreAndRadius, SphericalRegionPropertyCalculation):
     names = "stars_shrink_center", "stars_max_radius"
+    # Inherit from Spherical Region in case halo finder does not link gas
+    # and star particles to the actual "halo" object
+    # in pynbody (as for HOP)
 
     def calculate(self, halo, existing_properties):
         stars_center, stars_max_radius = self._get_centre_and_max_radius(halo.st)
         return stars_center, stars_max_radius
 
 
-class CentreAndRadiusGas(CentreAndRadius):
+class CentreAndRadiusGas(CentreAndRadius, SphericalRegionPropertyCalculation):
     names = "gas_shrink_center", "gas_max_radius"
 
     def calculate(self, halo, existing_properties):
