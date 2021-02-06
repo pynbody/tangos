@@ -52,10 +52,20 @@ class TimingMonitor(object):
         self._unset_as_monitor_for(self._monitoring)
         self._time_marks_info.append("end")
         self._time_marks.append(time.time())
-        previous_timings = self.timings_by_class.get(cl, 0)
-        cumulative_timings = np.diff(self._time_marks)+previous_timings
-        self.timings_by_class[cl] = cumulative_timings
-        self.labels_by_class[cl] = self._time_marks_info
+        previous_timings = self.timings_by_class.get(cl, None)
+        if previous_timings is None or len(previous_timings) == len(self._time_marks)-1:
+            cumulative_timings = np.diff(self._time_marks)
+            if previous_timings is not None:
+                cumulative_timings+=previous_timings
+            self.timings_by_class[cl] = cumulative_timings
+            self.labels_by_class[cl] = self._time_marks_info
+        else:
+            # Incompatibility between this and previous timings from the same procedure. Can only track total time spent.
+            start_time = self._time_marks[0]
+            end_time = self._time_marks[-1]
+            time_elapsed = end_time-start_time + sum(previous_timings)
+            self.labels_by_class[cl] = ['start','end']
+            self.timings_by_class[cl] = [time_elapsed]
 
 
     def mark(self, label=None):
