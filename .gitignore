@@ -7,3 +7,4 @@ test_tutorial_build/tutorial_*
 dist/*
 tests/test_dbs/
 .DS_store
+.pytest_cache/
