@@ -82,7 +82,7 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
             if self.quicker:
                 logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
             else:
-                h = f.halos(index_parent=False)
+                h = f.halos()
                 return isinstance(h, pynbody.halo.adaptahop.BaseAdaptaHOPCatalogue)
             return True
         except (IOError, RuntimeError):

@@ -16,14 +16,18 @@ from tangos.core import Base, get_or_create_dictionary_item, \
     Creator, Simulation, TimeStep, Halo, HaloProperty, HaloLink
 from tangos.core.simulation import SimulationProperty
 from tangos.core.tracking import TrackData
+from tangos.parallel_tasks.barrier import barrier
 from tangos.query import get_simulation, get_halo
 from tangos.input_handlers import get_named_handler_class
 from tangos.tools.add_simulation import SimulationAdderUpdater
 from tangos.log import logger
+import tangos.parallel_tasks as pt
 from six.moves import input
 
 
-def add_simulation_timesteps(options):
+def add_simulation_timesteps_helper(options):
+    barrier()
+
     handler=options.handler
     output_class = get_named_handler_class(handler).best_matching_handler(options.sim)
     output_object = output_class(options.sim)
@@ -33,7 +37,11 @@ def add_simulation_timesteps(options):
     adder.max_num_objects = options.max_objects
     adder.scan_simulation_and_add_all_descendants()
 
+def add_simulation_timesteps(options):
+    if options.backend:
+        pt.use(options.backend)
 
+    pt.launch(add_simulation_timesteps_helper, args=[options])
 
 
 def db_import(options):
@@ -439,6 +447,7 @@ def get_argument_parser_and_subparsers():
                               help="Cut corners/make guesses to import quickly and with minimum memory usage. Only use if you understand the consequences!")
     subparse_add.add_argument("--no-renumber", action="store_true",
                               help="By default tangos renumbers halos to start from 1, in decreasing order of dark matter particles. Set this flag to keep the original halo finder numbers.")
+    subparse_add.add_argument("--backend", type=str, default=config.default_backend,)
     subparse_add.set_defaults(func=add_simulation_timesteps)
 
     subparse_recentruns = subparse.add_parser("recent-runs",

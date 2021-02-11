@@ -1,22 +1,19 @@
 from __future__ import absolute_import
-import time
 import warnings
 import importlib
 import sys
 import re
+from functools import wraps
 
-import tangos.core.creator
-from .. import core, config
-import traceback
+from .. import config
 from six.moves import range
 
 backend = None
 _backend_name = config.default_backend
 from .. import log
-from . import message, jobs, backends
+from . import message
+from .barrier import barrier
 
-
-from ..log import logger
 
 def _process_command_line():
     command_line = " ".join(sys.argv)
@@ -115,16 +112,55 @@ def _server_thread():
 
 
 def _shutdown_parallelism():
-    global backend
+    global backend, _backend_name
     log.logger.info("Shutting down parallel_tasks")
     backend.barrier()
     backend.finalize()
     backend = None
-    _bankend_name = 'null'
+    _backend_name = 'null'
 
+
+
+def root_only(fun):
+    global backend, _backend_name
+    @wraps(fun)
+    def wrapped(*args, **kwargs):
+        log.logger.debug("Entering root_only %s", fun)
+        if _backend_name == "null":
+            return fun(*args, **kwargs)
+
+        ret = None
+        if backend:
+            if backend.rank() == 1:
+                barrier()
+                ret = fun(*args, **kwargs)
+            elif backend.rank() > 1:
+                barrier()
+        return ret
+
+    return wrapped
+
+def root_first(fun):
+    global backend, _backend_name
+    @wraps(fun)
+    def wrapped(*args, **kwargs):
+        log.logger.debug("Entering root_first %s", fun)
+        if _backend_name == "null":
+            return fun(*args, **kwargs)
+
+        ret = None
+        if backend:
+            if backend.rank() == 1:
+                ret = fun(*args, **kwargs)
+                barrier()
+            elif backend.rank() > 1:
+                barrier()
+                ret = fun(*args, **kwargs)
+        return ret
+
+    return wrapped
 
 
 
 from .lock import ExclusiveLock
-from .barrier import barrier
-from . import remote_import
+from . import remote_import, jobs
