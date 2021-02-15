@@ -11,8 +11,8 @@ from six.moves import zip
 
 class HaloStatFile(object):
     """Manages and reads a halo stat file of unspecified format."""
-    _id_offset = 0
-    _id_from_file_pos = False
+    _catalog_id_offset = 0
+#    _id_from_file_pos = False
     _column_translations = {}
 
     def __new__(cls, timestep):
@@ -64,7 +64,7 @@ class HaloStatFile(object):
         """
         with open(self.filename) as f:
             header = self._read_column_names(f)
-            cnt = 0
+            #cnt = 0
             ids = [0]
             for a in args:
                 try:
@@ -74,11 +74,11 @@ class HaloStatFile(object):
             for l in f:
                 if not l.startswith("#"):
                     col_data = self._get_values_for_columns(ids, l)
-                    if self._id_from_file_pos:
-                        col_data[0] = cnt
-                    col_data[0] += self._id_offset
+                    #if self._id_from_file_pos:
+                    #    col_data[0] = cnt
+                    #col_data[0] += self._id_offset
                     yield col_data
-                    cnt += 1
+                    #cnt += 1
 
     def iter_rows(self, *args):
         """
@@ -97,15 +97,16 @@ class HaloStatFile(object):
                 raw_args+=self._column_translations[arg].inputs()
             else:
                 raw_args.append(arg)
-
+        cnt = 0
         for raw_values in self.iter_rows_raw(*raw_args):
-            values = [raw_values[0]]
+            values = [cnt, raw_values[0]]
             for arg in args:
                 if arg in self._column_translations:
                     values.append(self._column_translations[arg](raw_args, raw_values[1:]))
                 else:
                     values.append(raw_values[1:][raw_args.index(arg)])
             yield values
+            cnt += 1
 
     def read(self, *args):
         """Read the halo ID and requested columns from the entire file, returning each column as a separate array"""
@@ -135,7 +136,7 @@ class HaloStatFile(object):
                     this_cast = this_str
 
             results.append(this_cast)
-        results[0] += self._id_offset
+        #results[0] += self._id_offset
         return results
 
     def _read_column_names(self, f):
@@ -145,8 +146,8 @@ class HaloStatFile(object):
 
 
 class AHFStatFile(HaloStatFile):
-    _id_offset = 1
-    _id_from_file_pos = True
+    _catalog_id_offset = 1
+#    _id_from_file_pos = True
 
     _column_translations = {'n_gas': translations.DefaultValue('n_gas', 0),
                             'n_star': translations.DefaultValue('n_star', 0),

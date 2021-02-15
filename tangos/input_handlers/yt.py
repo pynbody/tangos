@@ -65,7 +65,7 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                 NGas = len(obj["Gas","Mass"])
                 NStar = len(obj["Stars","Mass"])
                 if NDM > min_halo_particles:
-                    yield i, NDM, NStar, NGas
+                    yield i, i, NDM, NStar, NGas
 
 
     def _load_halo_cat(self, ts_extension, object_typetag):

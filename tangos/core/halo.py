@@ -18,6 +18,7 @@ class Halo(Base):
     id = Column(Integer, primary_key=True)
     halo_number = Column(Integer)
     finder_id = Column(Integer)
+    catalog_pos = Column(Integer)
     timestep_id = Column(Integer, ForeignKey('timesteps.id'))
     timestep = relationship(TimeStep, backref=backref(
         'objects', order_by=halo_number, cascade='all', lazy='dynamic'), cascade='save-update, merge')
@@ -72,10 +73,11 @@ class Halo(Base):
                     return c.tag
         raise ValueError("Unknown object typecode %d",typecode)
 
-    def __init__(self, timestep, halo_number, finder_id, NDM, NStar, NGas, object_typecode=0):
+    def __init__(self, timestep, halo_number, finder_id, catalog_index, NDM, NStar, NGas, object_typecode=0):
         self.timestep = timestep
         self.halo_number = int(halo_number)
         self.finder_id = int(finder_id)
+        self.catalog_index = int(catalog_index)
         self.NDM = int(NDM)
         self.NStar = int(NStar)
         self.NGas = int(NGas)
@@ -120,12 +122,23 @@ class Halo(Base):
         handler this can be None or 'partial' (in a normal session) and, when running inside an MPI session,
         'server' or 'server-partial'. See https://pynbody.github.io/tangos/mpi.html.
         """
-        if self.finder_id is None:
+        halo_number = self.halo_number
+        if not hasattr(self, "finder_id"):
             finder_id = self.halo_number # backward compatibility
         else:
-            finder_id = self.finder_id 
+            if self.finder_id is None:
+                finder_id = self.halo_number
+            else:
+                finder_id = self.finder_id
+        if not hasattr(self, "catalog_index"):
+            catalog_index = self.finder_id
+        else:
+            if self.catalog_index is None:
+                catalog_index = finder_id
+            else:
+                catalog_index = self.catalog_pos
 
-        return self.handler.load_object(self.timestep.extension, finder_id, object_typetag=self.tag, mode=mode)
+        return self.handler.load_object(self.timestep.extension, halo_number, finder_id, catalog_index, object_typetag=self.tag, mode=mode)
 
     def calculate(self, calculation, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.
