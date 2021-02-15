@@ -11,6 +11,7 @@ from pyramid.response import Response
 from six import BytesIO, string_types
 from ...log import logger
 from ... import core
+from ...config import webview_default_image_format
 import threading
 import time
 
@@ -132,25 +133,50 @@ def get_property(request):
             'is_array': is_array(result)}
 
 
-def start(request) :
+def start(request):
     p.ioff()
     p.clf()
-    request.canvas =  p.get_current_fig_manager().canvas
+    request.canvas = p.get_current_fig_manager().canvas
 
-def finish(request, getImage=True) :
+
+CONTENT_TYPES = {
+    'png': 'image/png',
+    'svg': 'image/svg+xml',
+    'pdf': 'application/pdf'
+}
+
+def finish(request, getImage=True):
+    extension = request.matchdict.get("ext", webview_default_image_format)
+    print(f'Got extension: {extension}')
     if getImage:
         enter_finish_time = time.time()
         request.canvas.draw()
         draw_time = time.time()
         buffer = BytesIO()
-        p.savefig(buffer, format='png')
+        p.savefig(buffer, format=extension)
         end_time = time.time()
-        logger.info("Image rendering: matplotlib %.2fs; PNG conversion %.3fs",draw_time-enter_finish_time, end_time-draw_time)
+
+        logger.info(
+            "Image rendering: matplotlib %.2fs; %s conversion %.3fs",
+            draw_time - enter_finish_time, 
+            extension.upper(),
+            end_time - draw_time
+        )
 
     p.close()
 
-    if getImage :
-        return Response(content_type='image/png',body=buffer.getvalue())
+    if getImage:
+        try:
+            return Response(
+                content_type=CONTENT_TYPES[extension],
+                body=buffer.getvalue()
+            )
+        except KeyError:
+            raise NotImplementedError(
+                'Tangos does not support the provided image format: '
+                f'{ext}. '
+                'This can be changed in the config.'
+            )
 
 
 def rescale_plot(request):
@@ -250,9 +276,12 @@ def image_plot(request, val, property_info):
         else:
             data =val
 
-        if width is not None :
-            p.imshow(data,extent=(-width/2,width/2,-width/2,width/2))
-        else :
+        if width is not None:
+            if hasattr(width, '__len__'):
+                p.imshow(data, extent=width)
+            else:
+                p.imshow(data, extent=(-width/2, width/2, -width/2, width/2))
+        else:
             p.imshow(data)
 
         if property_info:

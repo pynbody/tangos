@@ -3,7 +3,7 @@ import numpy as np
 
 import tangos
 from tangos.util import consistent_collection
-from .. import BuiltinFunction, FixedInput, FixedNumericInput, StoredProperty
+from .. import BuiltinFunction, FixedInput, FixedNumericInput, StoredProperty, LiveProperty
 from ... import core
 from ...core import extraction_patterns
 
@@ -40,13 +40,14 @@ earlier.set_input_options(0, provide_proxy=True, assert_class = FixedNumericInpu
 
 @BuiltinFunction.register
 def latest(source_halos):
-    timestep = consistent_collection.ConsistentCollection(source_halos).timestep.get_final()
-    return match(source_halos, timestep)
+    from .search import find_descendant
+    return find_descendant(source_halos, LiveProperty('t').proxy_value(), 'max')
+
 
 @BuiltinFunction.register
 def earliest(source_halos):
-    timestep = consistent_collection.ConsistentCollection(source_halos).timestep.get_final(-1)
-    return match(source_halos, timestep)
+    from .search import find_progenitor
+    return find_progenitor(source_halos, LiveProperty('t').proxy_value(), 'min')
 
 @BuiltinFunction.register
 def has_property(source_halos, property):

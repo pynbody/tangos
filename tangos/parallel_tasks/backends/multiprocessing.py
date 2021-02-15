@@ -3,8 +3,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 import multiprocessing
 import threading
-import warnings
-import time
+import sys
 import os
 import signal
 from six.moves import range
@@ -18,6 +17,13 @@ _recv_lock = None
 _recv_buffer = []
 
 _print_exceptions = True
+
+# Compatibility fix for python >=3.8 on MacOS, where the default process start
+# method changed:
+if sys.version_info[:2]>=(3,3):
+    mp_context = multiprocessing.get_context('fork')
+else :
+    mp_context = multiprocessing
 
 class NoMatchingItem(Exception):
     pass
@@ -113,8 +119,9 @@ def launch_functions(functions, args):
 
     num_procs = len(functions)
 
-    child_connections, parent_connections = list(zip(*[multiprocessing.Pipe() for rank in range(num_procs)]))
-    processes = [multiprocessing.Process(target=launch_wrapper, args=(function, rank, num_procs, pipe, args_i))
+
+    child_connections, parent_connections = list(zip(*[mp_context.Pipe() for rank in range(num_procs)]))
+    processes = [mp_context.Process(target=launch_wrapper, args=(function, rank, num_procs, pipe, args_i))
                  for rank, (pipe, function, args_i) in
                  enumerate(zip(child_connections, functions, args))]
 

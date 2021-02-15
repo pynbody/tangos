@@ -8,6 +8,7 @@ import warnings
 import functools
 from .. import input_handlers
 from .. import util
+import pkg_resources
 
 
 class PropertyCalculationMetaClass(type):
@@ -179,6 +180,24 @@ class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object
 
     def plot_xdelta(self):
         return 1.0
+
+    def get_interpolated_value(self, at_x_position, property_array):
+        """Return the value of the property at the given x position"""
+        x0 = self.plot_x0()
+        delta_x = self.plot_xdelta()
+
+        # linear interpolation
+        i0 = int((at_x_position - x0) / delta_x)
+        i1 = i0 + 1
+
+        i0_loc = float(i0) * delta_x + x0
+        i1_weight = (at_x_position - i0_loc) / delta_x
+        i0_weight = 1.0 - i1_weight
+
+        if i1 >= len(property_array) or i0 < 0:
+            return None
+        else:
+            return property_array[i0] * i0_weight + property_array[i1] * i1_weight
 
     def plot_xlabel(self):
         return None
@@ -449,6 +468,8 @@ def _import_configured_property_modules():
         except ImportError:
             warnings.warn("Failed to import requested property module %r. Some properties may be unavailable."%pm,
                           ImportWarning)
+    for module in pkg_resources.iter_entry_points('tangos.property_modules'):
+        module.load()
 
 _import_configured_property_modules()
 from . import intrinsic, live_profiles, pynbody, yt

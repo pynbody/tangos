@@ -1,3 +1,3 @@
 # This file automatically created by pynbody
-families: gas dm star
-dtype: float32
+families: gas dm star 
+dtype: int32

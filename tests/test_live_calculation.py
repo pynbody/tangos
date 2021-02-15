@@ -32,6 +32,8 @@ def setup():
     angmom[:,:] = np.arange(0,100.0).reshape((100,1))
     ts1_h1['dummy_property_2'] = angmom
 
+    ts1_h1['dummy_property_3'] = -2.5
+
 
     ts1_h1_bh1 = tangos.core.halo.BH(ts1, 1)
     ts1_h1_bh1["BH_mass"]=1000.0
@@ -94,6 +96,15 @@ class LivePropertyRequiringRedirectedProperty(properties.LivePropertyCalculation
     def live_calculate(self, db_halo_entry, *input_values):
         return db_halo_entry["BH"][0]["BH_mass"]
 
+class LivePropertyWithCustomInterpolator(properties.LivePropertyCalculation):
+    names = "property_with_custom_interpolator"
+
+    def live_calculate(self, halo_entry, *input_values):
+        return np.arange(10,20) # irrelevant
+
+    def get_interpolated_value(self, at_x_position, property_array):
+        return at_x_position
+
 
 def test_simple_retrieval():
     BH = tangos.get_halo("sim/ts1/1.1")
@@ -103,9 +114,20 @@ def test_at_function():
     halo = tangos.get_halo("sim/ts1/1")
     assert np.allclose(halo.calculate("at(3.0,dummy_property_1)"), 30.0)
 
-def test_abs_function():
+def test_custom_at_function():
     halo = tangos.get_halo("sim/ts1/1")
+    assert np.allclose(halo.calculate("at(3.0,property_with_custom_interpolator())"), 3.0)
+
+def test_abs_array_function():
+    halo = tangos.get_halo("sim/ts1/1")
+    assert np.allclose(halo.calculate("abs(dummy_property_2)"), halo.calculate("abs(dummy_property_2 * (-1))"))
     assert np.allclose(halo.calculate("abs(dummy_property_2)"), np.arange(0,100.0)*np.sqrt(3))
+
+def test_abs_scalar_function():
+    # Test that abs also works on a single scalar (issue 110)
+    halo = tangos.get_halo("sim/ts1/1")
+    assert np.allclose(halo.calculate("abs(dummy_property_3)"), - halo.calculate("dummy_property_3"))
+    assert np.allclose(halo.calculate("abs(dummy_property_3)"), 2.5)
 
 def test_nested_abs_at_function():
     halo = tangos.get_halo("sim/ts1/1")
@@ -246,6 +268,10 @@ def test_empty_timestep_live_calculation():
     vals, = tangos.get_timestep("sim/ts3").calculate_all("BH_mass")
     assert len(vals)==0
 
+def test_calculate_all_object_restriction():
+    assert np.all(tangos.get_timestep("sim/ts1").calculate_all("dbid()")[0] == [1,2,3,4])
+    assert np.all(tangos.get_timestep("sim/ts1").calculate_all("dbid()",object_type='halo')[0] == [1,2])
+    assert np.all(tangos.get_timestep("sim/ts1").calculate_all("dbid()", object_type='BH')[0] == [3, 4])
 
 def test_non_existent_redirection_multihalo():
     # See issue #46

@@ -127,7 +127,7 @@ class TimeStep(Base):
         from .halo import Halo
 
         object_typecode = None
-        object_typetag = kwargs.get('object_typetag',None)
+        object_typetag = kwargs.get('object_type', kwargs.get('object_typetag',None))
         limit = kwargs.get('limit', None)
         if object_typetag:
             object_typecode = Halo.object_typecode_from_tag(object_typetag)

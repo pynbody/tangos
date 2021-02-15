@@ -29,6 +29,14 @@ default_backend = 'null'
 
 
 # names of property modules to import; default is for backwards compatibility on systems with N-Body-Shop extensions
+# N.B. since version 1.0.10 it is also possible to use entry point tangos.property_modules. For example, in your
+# my_fab_tangos_properties package setup.py's call to setup() add the keyword argument:
+#
+#       entry_points={"tangos.property_modules" : [
+#           "fab = my_fab_tangos_properties"
+#       ]}
+#
+
 property_modules = os.environ.get("TANGOS_PROPERTY_MODULES","tangos_nbodyshop_properties")
 property_modules = property_modules.split(",")
 property_modules = map(str.strip, property_modules)
@@ -53,6 +61,9 @@ max_relative_time_difference = 1e-4     # the maximum fractional difference in t
 # allow a significant time delay. This variable controls that delay.
 DEFAULT_SLEEP_BEFORE_ALLOWING_NEXT_LOCK = 1.0
 # number of seconds to sleep after a lock is released before reallocating it
+
+# Default format to use in the webview. Can be either svg or png
+webview_default_image_format = 'svg'
 
 try:
     from .config_local import *

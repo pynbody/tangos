@@ -34,11 +34,36 @@ This corresponds to a property in the database with the name `myproperty` which 
 Note that the classes you create _must_ be derived from `tangos.properties.PropertyCalculation` as above, 
 otherwise _tangos_ will not understand your intention. 
 
+Letting tangos know about your property
+---------------------------------------
+
 Now we need to make your class visible to _tangos_.
 The easiest way to do this is to set the environment variable `TANGOS_PROPERTY_MODULES`. With
 bash-like shells this corresponds to `export TANGOS_PROPERTY_MODULES=mytangosproperty`. With csh-like shells,
 you'd instead use `setenv TANGOS_PROPERTY_MODULES mytangosproperty`.  (If you are using `tangos` from within a
 single python session, you can also just type `import mytangosproperty` in that python session.)
+
+*Alternatively*, since version 1.0.10, you can use the [egg entry point](https://packaging.python.org/specifications/entry-points/) 
+`tangos.property_modules`. This requires creating a `setup.py` for your new package. Within `setup.py`, your
+`setup` call will look something like this:
+
+```
+setup(name='my_tangos_properties',
+      version=...,
+      description=...,
+      ...,
+      entry_points={"tangos.property_modules" : [
+          "mytangosproperty = mytangosproperty"
+      ]}
+      )
+```
+
+In case you prefer not to have a `setup.py` for your properties, the environment variable option will remain
+for the foreseeable future.
+
+
+Using your property
+-------------------
 
 Now you can start using your property right away. In fact, because this property does not require any of the
 simulation data to be loaded you can use it in a live session. In the web interface, anywhere that you can type

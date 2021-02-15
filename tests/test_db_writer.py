@@ -7,6 +7,7 @@ from tangos.tools import property_writer
 from tangos.input_handlers import output_testing
 from tangos import parallel_tasks, log, testing
 from tangos import properties
+from tangos.util import proxy_object
 
 def setup():
     parallel_tasks.use('null')
@@ -28,6 +29,19 @@ class DummyPropertyCausingException(properties.PropertyCalculation):
 
     def calculate(self, data, entry):
         raise RuntimeError("Test of exception handling")
+
+class DummyPropertyWithReconstruction(properties.PropertyCalculation):
+    names = "dummy_property_with_reconstruction",
+    requries_particle_data = False
+    callback = None
+
+    def calculate(self, data, entry):
+        return 1.0,
+
+    def reassemble(self, property_name):
+        if self.callback:
+            self.callback() # hook to allow us to know reassemble has been called
+        return 2.0
 
 def init_blank_simulation():
     testing.init_blank_db_for_testing(timeout=0.0)
@@ -106,3 +120,46 @@ def test_no_duplication():
     assert db.get_default_session().query(db.core.HaloProperty).count() == 15
     run_writer_with_args("dummy_property", "--force")  # should create duplicates
     assert db.get_default_session().query(db.core.HaloProperty).count() == 30
+
+
+
+class DummyLink(DummyProperty):
+    names = "dummy_link"
+
+    def calculate(self, data, entry):
+        return proxy_object.IncompleteProxyObjectFromFinderId(1,'halo')
+
+class DummyPropertyRequiringLink(DummyProperty):
+    names = "dummy_property_requiring_link",
+
+    def requires_property(self):
+        return ["dummy_link"]
+
+def test_link_property():
+    init_blank_simulation()
+    run_writer_with_args("dummy_link")
+    assert db.get_default_session().query(db.core.HaloLink).count() == 15
+    db.testing.assert_halolists_equal([db.get_halo(2)['dummy_link']], [db.get_halo(1)])
+
+def test_link_dependency():
+    init_blank_simulation()
+    run_writer_with_args("dummy_property_requiring_link")
+    assert db.get_default_session().query(db.core.HaloProperty).count() == 0
+
+
+    run_writer_with_args("dummy_link")
+    run_writer_with_args("dummy_property_requiring_link")
+    assert db.get_default_session().query(db.core.HaloProperty).count() == 15
+
+def test_writer_sees_raw_properties():
+    # regression test for issue #121
+    init_blank_simulation()
+    run_writer_with_args("dummy_property_with_reconstruction")
+    assert db.get_halo(2)['dummy_property_with_reconstruction']==2.0
+    assert db.get_halo(2).calculate('raw(dummy_property_with_reconstruction)')==1.0
+
+    def raise_exception(obj):
+        raise RuntimeError("reconstruct has been called")
+
+    DummyPropertyWithReconstruction.callback = raise_exception
+    run_writer_with_args("dummy_property_with_reconstruction") # should not try to reconstruct the existing data stream

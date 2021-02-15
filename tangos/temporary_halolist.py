@@ -51,13 +51,23 @@ def _get_connection_for(table):
     return _temp_sessions[id(table)].connection()
 
 def halo_query(table):
+    """Query that returns all halos referred to from the temporary table.
+
+    Note that due to SQLALchemy's de-dup behaviour, the return is not guaranteed to be in
+    1-1 correspondence with the rows in the temporary table. For this, you need to use
+    enumerated_halo_query"""
     session = _get_session_for(table)
     return session.query(core.halo.Halo).select_from(table).join(core.halo.Halo)
 
-def all_halos_with_duplicates(table):
+def enumerated_halo_query(table):
+    """Query that returns tuples of id, halo for each row in the temporary table"""
     session = _get_session_for(table)
-    return [x[1] for x in session.query(table.c.id, core.halo.Halo).select_from(table).outerjoin(
-        core.halo.Halo).all()]
+    return session.query(table.c.id, core.halo.Halo).select_from(table).outerjoin(core.halo.Halo)
+
+def all_halos_with_duplicates(table):
+    """Return all halos in the temporary table, including duplicates"""
+    session = _get_session_for(table)
+    return [x[1] for x in enumerated_halo_query(table).all()]
 
 def halolink_query(table):
     session = _get_session_for(table)

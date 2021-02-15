@@ -219,7 +219,13 @@ class PropertyWriter(GenericTangosTool):
         for x in existing_properties:
             if x.name_id in need_data_ids:
                 name = need_data[need_data_ids.index(x.name_id)]
-                existing_properties_data[name] = x.data
+                existing_properties_data[name] = x.data_raw
+
+        existing_links = db_halo.all_links
+        for x in existing_links:
+            if x.relation_id in need_data_ids:
+                name = need_data[need_data_ids.index(x.relation_id)]
+                existing_properties_data[name] = x.halo_to
 
         existing_properties_data.halo_number = db_halo.halo_number
         existing_properties_data.NDM = db_halo.NDM
