@@ -11,7 +11,7 @@ from six.moves import zip
 
 class HaloStatFile(object):
     """Manages and reads a halo stat file of unspecified format."""
-    _catalog_id_offset = 0
+    _catalog_index_offset = 0
 #    _id_from_file_pos = False
     _column_translations = {}
 
@@ -74,7 +74,7 @@ class HaloStatFile(object):
             for l in f:
                 if not l.startswith("#"):
                     col_data = self._get_values_for_columns(ids, l)
-                    col_data.insert(0, cnt+self._catalog_id_offset)
+                    col_data.insert(0, cnt+self._catalog_index_offset)
                     #if self._id_from_file_pos:
                     #    col_data[0] = cnt
                     #col_data[0] += self._id_offset
@@ -145,7 +145,7 @@ class HaloStatFile(object):
 
 
 class AHFStatFile(HaloStatFile):
-    _catalog_id_offset = 1
+    _catalog_index_offset = 1
 #    _id_from_file_pos = True
 
     _column_translations = {'n_gas': translations.DefaultValue('n_gas', 0),
