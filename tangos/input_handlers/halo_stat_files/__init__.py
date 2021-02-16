@@ -64,7 +64,7 @@ class HaloStatFile(object):
         """
         with open(self.filename) as f:
             header = self._read_column_names(f)
-            #cnt = 0
+            cnt = 0
             ids = [0]
             for a in args:
                 try:
@@ -74,11 +74,12 @@ class HaloStatFile(object):
             for l in f:
                 if not l.startswith("#"):
                     col_data = self._get_values_for_columns(ids, l)
+                    col_data.insert(0, cnt+self._catalog_id_offset)
                     #if self._id_from_file_pos:
                     #    col_data[0] = cnt
                     #col_data[0] += self._id_offset
                     yield col_data
-                    #cnt += 1
+                    cnt += 1
 
     def iter_rows(self, *args):
         """
@@ -97,16 +98,14 @@ class HaloStatFile(object):
                 raw_args+=self._column_translations[arg].inputs()
             else:
                 raw_args.append(arg)
-        cnt = 0
         for raw_values in self.iter_rows_raw(*raw_args):
-            values = [cnt, raw_values[0]]
+            values = [raw_values[0], raw_values[1]]
             for arg in args:
                 if arg in self._column_translations:
                     values.append(self._column_translations[arg](raw_args, raw_values[1:]))
                 else:
-                    values.append(raw_values[1:][raw_args.index(arg)])
+                    values.append(raw_values[2:][raw_args.index(arg)])
             yield values
-            cnt += 1
 
     def read(self, *args):
         """Read the halo ID and requested columns from the entire file, returning each column as a separate array"""
@@ -154,7 +153,7 @@ class AHFStatFile(HaloStatFile):
                             'n_dm': translations.Function(lambda ngas, nstar, npart: npart - (ngas or 0) - (nstar or 0),
                                                           'n_gas', 'n_star', 'npart'),
                             'hostHalo': translations.Function(
-                                lambda id: None if id==-1 else proxy_object.IncompleteProxyObjectFromFinderId(id+AHFStatFile._id_offset, 'halo'),
+                                lambda id: None if id==-1 else proxy_object.IncompleteProxyObjectFromFinderId(id, 'halo'),
                                 'hostHalo')}
 
     def __init__(self, timestep_filename):
@@ -182,12 +181,11 @@ class AHFStatFile(HaloStatFile):
     def _calculate_children(self):
         # use hostHalo column to calculate virtual childHalo entries
         self._children_map = {}
-        for h_id, host_id_raw in self.iter_rows_raw("hostHalo"):
-            if host_id_raw!=-1:
-                host_id = host_id_raw + self._id_offset
-                cmap = self._children_map.get(host_id, [])
-                cmap.append(proxy_object.IncompleteProxyObjectFromFinderId(h_id,'halo'))
-                self._children_map[host_id] = cmap
+        for c_id, f_id, host_f_id in self.iter_rows_raw("hostHalo"):
+            if host_f_id!=-1:
+                cmap = self._children_map.get(host_f_id, [])
+                cmap.append(proxy_object.IncompleteProxyObjectFromFinderId(f_id,'halo'))
+                self._children_map[host_f_id] = cmap
 
     def _calculate_children_if_required(self):
         if not hasattr(self, "_children_map"):
@@ -195,8 +193,8 @@ class AHFStatFile(HaloStatFile):
 
     def _child_halo_entry(self, this_id_raw):
         self._calculate_children_if_required()
-        this_id = this_id_raw + self._id_offset
-        children = self._children_map.get(this_id, [])
+        #this_id = this_id_raw + self._id_offset
+        children = self._children_map.get(this_id_raw, [])
         return children
 
 class RockstarStatFile(HaloStatFile):
