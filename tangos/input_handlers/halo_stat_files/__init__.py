@@ -214,7 +214,7 @@ class RockstarStatFile(HaloStatFile):
             return "CannotComputeRockstarFilename"
 
 class AmigaIDLStatFile(HaloStatFile):
-    _id_offset = 0
+#    _id_offset = 0
 
     _column_translations = {'n_dm': translations.Rename('N_dark'),
                             'n_gas': translations.Rename('N_gas'),
@@ -226,4 +226,27 @@ class AmigaIDLStatFile(HaloStatFile):
     def filename(cls, timestep_filename):
         return timestep_filename + '.amiga.stat'
 
-
+    def iter_rows_raw(self, *args):
+        """
+        Yield the halo ID and requested columns from each line of the stat file, without any emulation.
+        If _id_from_file_pos is True, the ID is not taken from the stat file, but rather from the order in which
+        the halos appear.
+        :param args: strings for the column names
+        :return: id, arg1, arg2, arg3 where ID is the halo ID and argN is the value of the Nth named column
+        """
+        with open(self.filename) as f:
+            header = self._read_column_names(f)
+            ids = [0]
+            for a in args:
+                try:
+                    ids.append(header.index(a))
+                except ValueError:
+                    ids.append(None)
+            for l in f:
+                if not l.startswith("#"):
+                    col_data = self._get_values_for_columns(ids, l)
+                    col_data.insert(0, col_data[0])
+                    #if self._id_from_file_pos:
+                    #    col_data[0] = cnt
+                    #col_data[0] += self._id_offset
+                    yield col_data

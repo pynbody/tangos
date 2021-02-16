@@ -49,8 +49,9 @@ def test_statfile_identity():
     assert isinstance(stat.HaloStatFile(ts3.filename), stat.AHFStatFile)
 
 def test_ahf_values():
-    h_id, ngas, nstar, ndm, ntot,  rvir = stat.HaloStatFile(ts1.filename).read("n_gas", "n_star", "n_dm", "npart", "Rvir")
-    assert all(h_id==[1,2,3,4])
+    cat_index, finder_id, ngas, nstar, ndm, ntot,  rvir = stat.HaloStatFile(ts1.filename).read("n_gas", "n_star", "n_dm", "npart", "Rvir")
+    assert all(cat_index==[1,2,3,4])
+    assert all(finder_id==[0,1,2,3])
     assert all(ngas==[324272,  47634,  53939,  19920])
     assert all(nstar==[1227695,   55825,   24561,    7531])
     assert all(ntot==[5900575,  506026,  498433,  226976])
@@ -58,16 +59,18 @@ def test_ahf_values():
     npt.assert_allclose(rvir, [195.87, 88.75, 90.01, 69.41])
 
 def test_idl_values():
-    h_id, ntot, mvir = stat.HaloStatFile(ts2.filename).read("npart","Mvir")
-    assert all(h_id==[1,49,52,58,94,121,127,148,163])
+    cat_index, finder_id, ntot, mvir = stat.HaloStatFile(ts2.filename).read("npart","Mvir")
+    assert all(finder_id==[1,49,52,58,94,121,127,148,163])
+    assert all(cat_index==[1,49,52,58,94,121,127,148,163])
     assert all(ntot==[3273314, 27631, 24654, 22366, 12915, 9831, 9498, 8200, 7256])
     npt.assert_almost_equal(mvir,   [  1.12282280e+12 ,  1.19939950e+10 ,  1.19538740e+10  , 3.07825010e+10,
                                        1.76325820e+10 ,  1.33353700e+10  , 1.28836660e+10 ,  1.11229900e+10,
                                        9.84248220e+09], decimal=5)
 
 def test_mpi_ahf_values():
-    h_id, ntot, mvir = stat.AHFStatFile(ts3.filename).read("npart","Mvir")
-    assert all(h_id==[1,2,3,4])
+    cat_index, finder_id, ntot, mvir = stat.AHFStatFile(ts3.filename).read("npart","Mvir")
+    assert all(cat_index==[1,2,3,4])
+    assert all(finder_id==[32425324, 8712365, 3478612, 907234568])
     assert all(ntot==[5900575,506026,498433,226976])
     npt.assert_almost_equal(mvir,   [5.02432e+11,4.67419e+10, 4.87598e+10, 2.23568e+10  ], decimal=5)
 
