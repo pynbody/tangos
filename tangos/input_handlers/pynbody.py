@@ -112,11 +112,11 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         elif mode=='server':
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps
-            return timestep.get_view(ps.ObjectSpecification(catalog_index, object_typetag))
+            return timestep.get_view(ps.ObjectSpecification(finder_id, catalog_index, object_typetag))
         elif mode=='server-partial':
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps
-            view = timestep.get_view(ps.ObjectSpecification(catalog_index, object_typetag))
+            view = timestep.get_view(ps.ObjectSpecification(finder_id, catalog_index, object_typetag))
             load_index = view['remote-index-list']
             logger.info("Partial load %r, taking %d particles", ts_extension, len(load_index))
             f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
@@ -335,7 +335,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
         except (IOError, RuntimeError):
             return False
 
-    def load_object(self, ts_extension, halo_number, finder_id, catalog_index, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, finder_id, catalog_index, object_typetag='halo', mode=None):
         if mode=='subfind_properties':
             h = self._construct_halo_cat(ts_extension, object_typetag)
             return h.get_halo_properties(finder_id,with_unit=False)
