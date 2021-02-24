@@ -108,7 +108,7 @@ def test_default_value():
         _column_translations = {'nonexistent_column': translations.DefaultValue('nonexistent_column', 42),
                                 'existent_column': translations.DefaultValue('n_gas', 43)}
 
-    h_id, fortytwo, n_gas = AHFStatFileWithDefaultValues(ts1.filename).read('nonexistent_column', 'existent_column')
+    cat_index, finder_id, fortytwo, n_gas = AHFStatFileWithDefaultValues(ts1.filename).read('nonexistent_column', 'existent_column')
 
     assert (fortytwo==42).all()
     assert all(n_gas == [324272,  47634,  53939,  19920])

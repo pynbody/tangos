@@ -42,7 +42,7 @@ class TestInputHandler(HandlerBase):
         nhalos_string = self._get_ts_property(ts_extension, object_typetag+"s")
         nhalos = 0 if nhalos_string is None else int(nhalos_string)
         for i in range(nhalos):
-            yield i+1, 2000-i, 0, 0
+            yield i+1, i+1, 2000-i, 0, 0
 
     def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=False, threshold=0.005,
                       object_typetag='halo', output_handler_for_ts2=None):
@@ -92,4 +92,4 @@ class TestInputHandlerReverseHaloNDM(TestInputHandler):
         nhalos_string = self._get_ts_property(ts_extension, object_typetag+"s")
         nhalos = 0 if nhalos_string is None else int(nhalos_string)
         for i in range(nhalos):
-            yield i+1, 2000+i, 0, 0
+            yield i+1, i+1, 2000+i, 0, 0

@@ -138,7 +138,7 @@ class Halo(Base):
             else:
                 catalog_index = self.catalog_pos
 
-        return self.handler.load_object(self.timestep.extension, halo_number, finder_id, catalog_index, object_typetag=self.tag, mode=mode)
+        return self.handler.load_object(self.timestep.extension, finder_id, catalog_index, object_typetag=self.tag, mode=mode)
 
     def calculate(self, calculation, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.

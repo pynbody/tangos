@@ -109,7 +109,7 @@ class HaloStatFile(object):
 
     def read(self, *args):
         """Read the halo ID and requested columns from the entire file, returning each column as a separate array"""
-        return_values = [[] for _ in range(len(args)+1)]
+        return_values = [[] for _ in range(len(args)+2)]
         for row in self.iter_rows(*args):
             for return_array, value in zip(return_values, row):
                 return_array.append(value)

@@ -18,9 +18,9 @@ def setup():
     sim1 = tangos.core.simulation.Simulation("sim1")
     sim2 = tangos.core.simulation.Simulation("sim2")
     ts1 = tangos.core.timestep.TimeStep(sim1, "ts")
-    h1  = tangos.core.halo.Halo(ts1, 1, 1000, 0, 0, 0)
+    h1  = tangos.core.halo.Halo(ts1, 1, 1, 1, 1000, 0, 0, 0)
     ts2 = tangos.core.timestep.TimeStep(sim2, "ts")
-    h2  = tangos.core.halo.Halo(ts2, 1, 1000, 0, 0, 0)
+    h2  = tangos.core.halo.Halo(ts2, 1, 1, 1, 1000, 0, 0, 0)
 
     session.add_all([sim1,sim2,ts1,ts2,h1,h2])
 

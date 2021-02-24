@@ -60,7 +60,7 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             num_objects = len(catalogue_data["halos", "virial_radius"])
 
             for i in range(num_objects):
-                obj = self.load_object(ts_extension, i, object_typetag)
+                obj = self.load_object(ts_extension, i, i, object_typetag)
                 NDM = len(obj["DarkMatter","Mass"])
                 NGas = len(obj["Gas","Mass"])
                 NStar = len(obj["Stars","Mass"])

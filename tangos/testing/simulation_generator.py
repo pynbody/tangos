@@ -24,7 +24,7 @@ class TestSimulationGenerator(object):
                 NDM_halo = 1000-i*100
             else:
                 NDM_halo = NDM[i-1]
-            halo = core.halo.Halo(ts, i, i, NDM_halo, 0, 0, 0)
+            halo = core.halo.Halo(ts, i, i, i, NDM_halo, 0, 0, 0)
             halo.object_typecode = object_typecode
             returned_halos.append(self.session.merge(halo))
 
