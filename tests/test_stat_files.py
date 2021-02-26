@@ -78,7 +78,7 @@ def test_mpi_ahf_values():
 def test_insert_halos():
     #stat.HaloStatFile(ts1.filename).add_halos(min_NDM=200000)
     adder = add_simulation.SimulationAdderUpdater(sim.get_output_handler())
-    adder.min_halo_particles = 200000
+    adder.min_halo_particles = 300000
     adder.add_objects_to_timestep(ts1)
     assert ts1.halos.count()==3
     assert ts1.halos[0].NDM==4348608

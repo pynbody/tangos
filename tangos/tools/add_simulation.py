@@ -85,7 +85,7 @@ class SimulationAdderUpdater(object):
         def adapted(*args, **kwargs):
             for result in enumerate_fn(*args, **kwargs):
                 if not hasattr(result, "__len__"):
-                    yield result, 0, 0, 0
+                    yield result, result, 0, 0, 0
                 else:
                     yield result
         return adapted
