@@ -59,10 +59,10 @@ class AHFTree(object):
         while i < len(data):
             for j in range(data[i][2]):
                 idx = i+1+j
-                if data[idx][1]+1 in self._fid: # check if this halo was loaded in case a minimum number of particles different to AHF was used to load halos into DB
+                if data[idx][1] in self._fid: # check if this halo was loaded in case a minimum number of particles different to AHF was used to load halos into DB
                 # keep in mind finder id and AHF id have an offset of 1
-                    results['id_desc'] = np.append(results['id_desc'],data[i][0]+1)
-                    results['id_this'] = np.append(results['id_this'],data[idx][1]+1)
+                    results['id_desc'] = np.append(results['id_desc'],data[i][0])
+                    results['id_this'] = np.append(results['id_this'],data[idx][1])
                     results['f_share'] = np.append(results['f_share'], float(data[idx][0] * data[idx][0]) / (data[i][1] * data[idx][2]) )
             i += data[i][2] + 1
         

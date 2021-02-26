@@ -111,7 +111,7 @@ class SimulationAdderUpdater(object):
                                                                  enumerator(ts.extension, object_typetag=create_class.tag,
                                                                             min_halo_particles=self.min_halo_particles)):
             if database_number is None:
-                database_number = finder_id
+                database_number = catalog_id
 
             if (NDM+Nstar+Ngas >= self.min_halo_particles or NDM==0) \
                     and (self.max_num_objects is None or database_number<=self.max_num_objects ):

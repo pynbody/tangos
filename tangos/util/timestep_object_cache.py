@@ -18,15 +18,15 @@ class TimestepObjectCache(object):
             typetag = obj.object_typetag_from_code(obj.object_typecode)
             if typetag not in self._map:
                 self._map[typetag] = {}
-            self._map[typetag][obj.finder_id] = obj
+            self._map[typetag][obj.catalog_index] = obj
 
     def _ensure_cache(self):
         if not hasattr(self, "_map"):
             self._initialise_cache()
 
-    def resolve(self, finder_id, typetag):
+    def resolve(self, catalog_index, typetag):
         self._ensure_cache()
         try:
-            return self._map[typetag][finder_id]
+            return self._map[typetag][catalog_index]
         except KeyError:
             return None

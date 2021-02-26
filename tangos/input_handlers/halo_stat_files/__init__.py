@@ -102,7 +102,7 @@ class HaloStatFile(object):
             values = [raw_values[0], raw_values[1]]
             for arg in args:
                 if arg in self._column_translations:
-                    values.append(self._column_translations[arg](raw_args, raw_values[1:]))
+                    values.append(self._column_translations[arg](raw_args, raw_values[2:]))
                 else:
                     values.append(raw_values[2:][raw_args.index(arg)])
             yield values
