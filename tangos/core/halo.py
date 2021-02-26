@@ -18,7 +18,7 @@ class Halo(Base):
     id = Column(Integer, primary_key=True)
     halo_number = Column(Integer)
     finder_id = Column(Integer)
-    catalog_pos = Column(Integer)
+    catalog_index = Column(Integer)
     timestep_id = Column(Integer, ForeignKey('timesteps.id'))
     timestep = relationship(TimeStep, backref=backref(
         'objects', order_by=halo_number, cascade='all', lazy='dynamic'), cascade='save-update, merge')
@@ -136,7 +136,7 @@ class Halo(Base):
             if self.catalog_index is None:
                 catalog_index = finder_id
             else:
-                catalog_index = self.catalog_pos
+                catalog_index = self.catalog_index
 
         return self.handler.load_object(self.timestep.extension, finder_id, catalog_index, object_typetag=self.tag, mode=mode)
 
@@ -403,7 +403,7 @@ class Tracker(Halo):
     tag = "tracker"
 
     def __init__(self, timestep, halo_number):
-        super(Tracker, self).__init__(timestep, halo_number, halo_number, 0,0,0,
+        super(Tracker, self).__init__(timestep, halo_number, halo_number, halo_number, 0,0,0,
                                  self.__mapper_args__['polymorphic_identity'])
 
     @property
@@ -462,7 +462,7 @@ class PhantomHalo(Halo):
     tag = "phantom"
 
     def __init__(self, timestep, halo_number, finder_id):
-        super(PhantomHalo, self).__init__(timestep, halo_number, finder_id, 0,0,0,
+        super(PhantomHalo, self).__init__(timestep, halo_number, finder_id, finder_id, 0,0,0,
                                  self.__mapper_args__['polymorphic_identity'])
 
 TimeStep.phantoms = orm.relationship(Halo, cascade='all', lazy='dynamic',
