@@ -64,7 +64,7 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                 NDM = len(obj["DarkMatter","Mass"])
                 NGas = len(obj["Gas","Mass"])
                 NStar = len(obj["Stars","Mass"])
-                if NDM > min_halo_particles:
+                if NDM + NGas + NStar> min_halo_particles:
                     yield i, i, NDM, NStar, NGas
 
 
