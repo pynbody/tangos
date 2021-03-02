@@ -83,13 +83,14 @@ class HaloStatFile(object):
 
     def iter_rows(self, *args):
         """
-        Yield the halo ID and requested columns from each line of the stat file, emulating the existence of some columns.
+        Yield the requested column values from the halo catalog stat file, as well as the catalog_index (index associated
+        with halo's position within the catalog) and finder_id (raw halo id listed in the stat file).
 
-        For example, AHF stat files do not contain n_dm; however, its value can be automatically inferred by this
-        function. Meanwhile IDL .amiga.stat files rename n_gas as N_gas.
+        Returned halo properties are emulated when necessary. For example, AHF stat files do not contain n_dm; however,
+        its value can be automatically inferred by this function. Meanwhile IDL .amiga.stat files rename n_gas as N_gas.
 
         :param args: strings for the column names
-        :return: id, arg1, arg2, arg3 where ID is the halo ID and argN is the value of the Nth named column
+        :return: catalog_index, finder_id, arg1, arg2, arg3 where argN is the value of the Nth named column
         """
 
         raw_args = []
@@ -232,16 +233,7 @@ class AmigaIDLStatFile(HaloStatFile):
         :return: finder_id, finder_id, arg1, arg2, arg3, ... where finder_id is the halo's ID number read directly
         from the stat file and argN is the value associated with the Nth column name given as arguments.
         """
-        with open(self.filename) as f:
-            header = self._read_column_names(f)
-            ids = [0]
-            for a in args:
-                try:
-                    ids.append(header.index(a))
-                except ValueError:
-                    ids.append(None)
-            for l in f:
-                if not l.startswith("#"):
-                    col_data = self._get_values_for_columns(ids, l)
-                    col_data.insert(0, col_data[0])
-                    yield col_data
+
+        for row in super().iter_rows_raw(*args):
+            row[0] = row[1]  # sequential catalog index not right in this case; overwrite to match finder id
+            yield row
