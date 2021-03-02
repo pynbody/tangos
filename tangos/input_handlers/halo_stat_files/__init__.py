@@ -12,7 +12,6 @@ from six.moves import zip
 class HaloStatFile(object):
     """Manages and reads a halo stat file of unspecified format."""
     _catalog_index_offset = 0
-#    _id_from_file_pos = False
     _column_translations = {}
 
     def __new__(cls, timestep):
@@ -56,11 +55,15 @@ class HaloStatFile(object):
 
     def iter_rows_raw(self, *args):
         """
-        Yield the halo ID and requested columns from each line of the stat file, without any emulation.
-        If _id_from_file_pos is True, the ID is not taken from the stat file, but rather from the order in which
-        the halos appear.
+        Yield
+        1) the index in which each halo appears in the catalog (starting from 0 unless _catalog_index_offset is set)
+        2) the raw halo ID (finder_id) included in the halo stat file without any emulation
+        3) the rest of the requested parameters
+
         :param args: strings for the column names
-        :return: id, arg1, arg2, arg3 where ID is the halo ID and argN is the value of the Nth named column
+        :return: catalog_index, finder_id, arg1, arg2, arg3, ... where catalog_index is the index of the halo within
+        the stat file, finder_id is the raw halo ID read from the stat file, and argN is the value associated with the
+        Nth column name provided as input.
         """
         with open(self.filename) as f:
             header = self._read_column_names(f)
@@ -75,9 +78,6 @@ class HaloStatFile(object):
                 if not l.startswith("#"):
                     col_data = self._get_values_for_columns(ids, l)
                     col_data.insert(0, cnt+self._catalog_index_offset)
-                    #if self._id_from_file_pos:
-                    #    col_data[0] = cnt
-                    #col_data[0] += self._id_offset
                     yield col_data
                     cnt += 1
 
@@ -135,7 +135,6 @@ class HaloStatFile(object):
                     this_cast = this_str
 
             results.append(this_cast)
-        #results[0] += self._id_offset
         return results
 
     def _read_column_names(self, f):
@@ -146,7 +145,6 @@ class HaloStatFile(object):
 
 class AHFStatFile(HaloStatFile):
     _catalog_index_offset = 1
-#    _id_from_file_pos = True
 
     _column_translations = {'n_gas': translations.DefaultValue('n_gas', 0),
                             'n_star': translations.DefaultValue('n_star', 0),
@@ -193,7 +191,6 @@ class AHFStatFile(HaloStatFile):
 
     def _child_halo_entry(self, this_id_raw):
         self._calculate_children_if_required()
-        #this_id = this_id_raw + self._id_offset
         children = self._children_map.get(this_id_raw, [])
         return children
 
@@ -214,7 +211,6 @@ class RockstarStatFile(HaloStatFile):
             return "CannotComputeRockstarFilename"
 
 class AmigaIDLStatFile(HaloStatFile):
-#    _id_offset = 0
 
     _column_translations = {'n_dm': translations.Rename('N_dark'),
                             'n_gas': translations.Rename('N_gas'),
@@ -228,11 +224,13 @@ class AmigaIDLStatFile(HaloStatFile):
 
     def iter_rows_raw(self, *args):
         """
-        Yield the halo ID and requested columns from each line of the stat file, without any emulation.
-        If _id_from_file_pos is True, the ID is not taken from the stat file, but rather from the order in which
-        the halos appear.
+        Yield the halo ID along with the values associated with each of the given arguments. The halo ID is output twice
+        in order to be consistent with other stat file readers. In this case, the catalog_index that is normally output
+        is just equal to the finder_id.
+
         :param args: strings for the column names
-        :return: id, arg1, arg2, arg3 where ID is the halo ID and argN is the value of the Nth named column
+        :return: finder_id, finder_id, arg1, arg2, arg3, ... where finder_id is the halo's ID number read directly
+        from the stat file and argN is the value associated with the Nth column name given as arguments.
         """
         with open(self.filename) as f:
             header = self._read_column_names(f)
@@ -246,7 +244,4 @@ class AmigaIDLStatFile(HaloStatFile):
                 if not l.startswith("#"):
                     col_data = self._get_values_for_columns(ids, l)
                     col_data.insert(0, col_data[0])
-                    #if self._id_from_file_pos:
-                    #    col_data[0] = cnt
-                    #col_data[0] += self._id_offset
                     yield col_data

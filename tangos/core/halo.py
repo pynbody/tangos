@@ -126,17 +126,11 @@ class Halo(Base):
         if not hasattr(self, "finder_id"):
             finder_id = self.halo_number # backward compatibility
         else:
-            if self.finder_id is None:
-                finder_id = self.halo_number
-            else:
-                finder_id = self.finder_id
+            finder_id = self.finder_id
         if not hasattr(self, "catalog_index"):
-            catalog_index = self.finder_id
+            catalog_index = finder_id
         else:
-            if self.catalog_index is None:
-                catalog_index = finder_id
-            else:
-                catalog_index = self.catalog_index
+            catalog_index = self.catalog_index
 
         return self.handler.load_object(self.timestep.extension, finder_id, catalog_index, object_typetag=self.tag, mode=mode)
 
