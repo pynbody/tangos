@@ -15,10 +15,10 @@ import six
 class Halo(Base):
     __tablename__= "halos"
 
-    id = Column(Integer, primary_key=True)
-    halo_number = Column(Integer)
-    finder_id = Column(Integer)
-    catalog_index = Column(Integer)
+    id = Column(Integer, primary_key=True) #the unique ID value of the database object created for this halo
+    halo_number = Column(Integer) #by default this will be the halo's rank in terms of particle count
+    finder_id = Column(Integer) #raw halo ID from the halo catalog
+    catalog_index = Column(Integer) #index of the halo within the halo catalog
     timestep_id = Column(Integer, ForeignKey('timesteps.id'))
     timestep = relationship(TimeStep, backref=backref(
         'objects', order_by=halo_number, cascade='all', lazy='dynamic'), cascade='save-update, merge')
