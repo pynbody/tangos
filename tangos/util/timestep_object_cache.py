@@ -24,13 +24,20 @@ class TimestepObjectCache(object):
             self._map_catalog[typetag][obj.catalog_index] = obj
             self._map_finder[typetag][obj.finder_id] = obj
 
-    def _ensure_cache(self, type):
-        if not hasattr(self, "_map_"+type):
+    def _ensure_cache(self):
+        if not hasattr(self, "_map_finder") or not hasattr(self, "_map_catalog"):
             self._initialise_cache()
 
-    def resolve(self, identifier, typetag, type='catalog'):
-        self._ensure_cache(type)
+    def resolve_from_catalog_index(self, catalog_index, typetag):
+        self._ensure_cache()
         try:
-            return getattr(self, '_map_'+type)[typetag][identifier]
+            return self._map_catalog[typetag][catalog_index]
+        except KeyError:
+            return None
+
+    def resolve_from_finder_id(self, finder_id, typetag):
+        self._ensure_cache()
+        try:
+            return self._map_finder[typetag][finder_id]
         except KeyError:
             return None
