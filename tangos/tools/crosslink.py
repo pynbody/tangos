@@ -55,10 +55,6 @@ class GenericLinker(GenericTangosTool):
     def _generate_timestep_pairs(self):
         raise NotImplementedError("No implementation found for generating the timestep pairs")
 
-    def get_halo_entry(self, ts, halo_number):
-        h = ts.halos.filter_by(halo_number=halo_number).first()
-        return h
-
     def need_crosslink_ts(self, ts1, ts2, object_typecode=0):
         num_sources = ts1.halos.count()
         num_targets = ts2.halos.count()
