@@ -31,12 +31,12 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         f = yt.load(self._extension_to_filename(ts_extension))
         return f
 
-    def load_object(self, ts_extension, finder_id, catalog_index, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         f = self.load_timestep(ts_extension, mode)
         cat, cat_dat = self._load_halo_cat(ts_extension, object_typetag)
-        center = cat_dat["halos","particle_position"][catalog_index]
+        center = cat_dat["halos","particle_position"][finder_offset]
         center+=f.domain_left_edge-cat.domain_left_edge
-        radius = cat_dat["halos","virial_radius"][catalog_index]
+        radius = cat_dat["halos","virial_radius"][finder_offset]
         return f.sphere(center.in_cgs(), radius.in_cgs())
 
 

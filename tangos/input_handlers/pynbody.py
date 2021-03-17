@@ -103,20 +103,20 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
-    def load_object(self, ts_extension, finder_id, catalog_index, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         if mode=='partial':
             h = self._construct_halo_cat(ts_extension, object_typetag)
-            h_file = h.load_copy(catalog_index)
+            h_file = h.load_copy(finder_offset)
             h_file.physical_units()
             return h_file
         elif mode=='server':
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps
-            return timestep.get_view(ps.ObjectSpecification(finder_id, catalog_index, object_typetag))
+            return timestep.get_view(ps.ObjectSpecification(finder_id, finder_offset, object_typetag))
         elif mode=='server-partial':
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps
-            view = timestep.get_view(ps.ObjectSpecification(finder_id, catalog_index, object_typetag))
+            view = timestep.get_view(ps.ObjectSpecification(finder_id, finder_offset, object_typetag))
             load_index = view['remote-index-list']
             logger.info("Partial load %r, taking %d particles", ts_extension, len(load_index))
             f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
@@ -124,7 +124,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             return f
         elif mode is None:
             h = self._construct_halo_cat(ts_extension, object_typetag)
-            return h[catalog_index]
+            return h[finder_offset]
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
@@ -335,12 +335,12 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
         except (IOError, RuntimeError):
             return False
 
-    def load_object(self, ts_extension, finder_id, catalog_index, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         if mode=='subfind_properties':
             h = self._construct_halo_cat(ts_extension, object_typetag)
-            return h.get_halo_properties(catalog_index,with_unit=False)
+            return h.get_halo_properties(finder_offset,with_unit=False)
         else:
-            return super(GadgetSubfindInputHandler, self).load_object(ts_extension, finder_id, catalog_index, object_typetag, mode)
+            return super(GadgetSubfindInputHandler, self).load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
 
     def _construct_group_cat(self, ts_extension):
         f = self.load_timestep(ts_extension)

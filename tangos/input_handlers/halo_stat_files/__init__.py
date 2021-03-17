@@ -11,7 +11,7 @@ from six.moves import zip
 
 class HaloStatFile(object):
     """Manages and reads a halo stat file of unspecified format."""
-    _catalog_index_offset = 0
+    _finder_offset_start = 0 #whether finder_offset should start at 0 (default) or N (typically either 0 or 1)
     _column_translations = {}
 
     def __new__(cls, timestep):
@@ -56,12 +56,12 @@ class HaloStatFile(object):
     def iter_rows_raw(self, *args):
         """
         Yield
-        1) the index in which each halo appears in the catalog (starting from 0 unless _catalog_index_offset is set)
+        1) the index in which each halo appears in the catalog (starting from 0 unless _finder_offset_start is set)
         2) the raw halo ID (finder_id) included in the halo stat file without any emulation
         3) the rest of the requested parameters
 
         :param args: strings for the column names
-        :return: catalog_index, finder_id, arg1, arg2, arg3, ... where catalog_index is the index of the halo within
+        :return: finder_offset_start, finder_id, arg1, arg2, arg3, ... where finder_offset_start is the index of the halo within
         the stat file, finder_id is the raw halo ID read from the stat file, and argN is the value associated with the
         Nth column name provided as input.
         """
@@ -77,20 +77,20 @@ class HaloStatFile(object):
             for l in f:
                 if not l.startswith("#"):
                     col_data = self._get_values_for_columns(ids, l)
-                    col_data.insert(0, cnt+self._catalog_index_offset)
+                    col_data.insert(0, cnt+self._finder_offset_start)
                     yield col_data
                     cnt += 1
 
     def iter_rows(self, *args):
         """
-        Yield the requested column values from the halo catalog stat file, as well as the catalog_index (index associated
+        Yield the requested column values from the halo catalog stat file, as well as the finder_offset (index associated
         with halo's position within the catalog) and finder_id (raw halo id listed in the stat file).
 
         Returned halo properties are emulated when necessary. For example, AHF stat files do not contain n_dm; however,
         its value can be automatically inferred by this function. Meanwhile IDL .amiga.stat files rename n_gas as N_gas.
 
         :param args: strings for the column names
-        :return: catalog_index, finder_id, arg1, arg2, arg3 where argN is the value of the Nth named column
+        :return: finder_offset, finder_id, arg1, arg2, arg3 where argN is the value of the Nth named column
         """
 
         raw_args = []
@@ -145,7 +145,7 @@ class HaloStatFile(object):
 
 
 class AHFStatFile(HaloStatFile):
-    _catalog_index_offset = 1
+    _finder_offset_start = 1
 
     _column_translations = {'n_gas': translations.DefaultValue('n_gas', 0),
                             'n_star': translations.DefaultValue('n_star', 0),
@@ -226,7 +226,7 @@ class AmigaIDLStatFile(HaloStatFile):
     def iter_rows_raw(self, *args):
         """
         Yield the halo ID along with the values associated with each of the given arguments. The halo ID is output twice
-        in order to be consistent with other stat file readers. In this case, the catalog_index that is normally output
+        in order to be consistent with other stat file readers. In this case, the finder_offset that is normally output
         is just equal to the finder_id.
 
         :param args: strings for the column names

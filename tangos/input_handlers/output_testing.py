@@ -71,12 +71,12 @@ class TestInputHandler(HandlerBase):
         data.message = data.message[region_specification]
         return data
 
-    def load_object(self, ts_extension, finder_id, catalog_index, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         assert object_typetag=='halo'
         return DummyTimestepData("Test string - this would contain the data for %s halo %d"%(ts_extension ,finder_id),
                                  float(self._get_ts_property(ts_extension, 'time')),
                                  int(self._get_ts_property(ts_extension, 'halos')),
-                                 catalog_index)
+                                 finder_offset)
 
     def _get_ts_property(self, ts_extension, property):
         ts_filename = self._extension_to_filename(ts_extension)

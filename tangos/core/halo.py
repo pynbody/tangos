@@ -18,7 +18,7 @@ class Halo(Base):
     id = Column(Integer, primary_key=True) #the unique ID value of the database object created for this halo
     halo_number = Column(Integer) #by default this will be the halo's rank in terms of particle count
     finder_id = Column(Integer) #raw halo ID from the halo catalog
-    catalog_index = Column(Integer) #index of the halo within the halo catalog
+    finder_offset = Column(Integer) #index of halo within halo catalog, primary identifier used when reading catalog/simulation data
     timestep_id = Column(Integer, ForeignKey('timesteps.id'))
     timestep = relationship(TimeStep, backref=backref(
         'objects', order_by=halo_number, cascade='all', lazy='dynamic'), cascade='save-update, merge')
@@ -73,11 +73,11 @@ class Halo(Base):
                     return c.tag
         raise ValueError("Unknown object typecode %d",typecode)
 
-    def __init__(self, timestep, halo_number, finder_id, catalog_index, NDM, NStar, NGas, object_typecode=0):
+    def __init__(self, timestep, halo_number, finder_id, finder_offset, NDM, NStar, NGas, object_typecode=0):
         self.timestep = timestep
         self.halo_number = int(halo_number)
         self.finder_id = int(finder_id)
-        self.catalog_index = int(catalog_index)
+        self.finder_offset = int(finder_offset)
         self.NDM = int(NDM)
         self.NStar = int(NStar)
         self.NGas = int(NGas)
@@ -127,12 +127,12 @@ class Halo(Base):
             finder_id = self.halo_number # backward compatibility
         else:
             finder_id = self.finder_id
-        if not hasattr(self, "catalog_index"):
-            catalog_index = finder_id
+        if not hasattr(self, "finder_offset"):
+            finder_offset = finder_id
         else:
-            catalog_index = self.catalog_index
+            finder_offset = self.finder_offset
 
-        return self.handler.load_object(self.timestep.extension, finder_id, catalog_index, object_typetag=self.tag, mode=mode)
+        return self.handler.load_object(self.timestep.extension, finder_id, finder_offset, object_typetag=self.tag, mode=mode)
 
     def calculate(self, calculation, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.

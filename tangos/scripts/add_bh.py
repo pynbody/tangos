@@ -145,7 +145,7 @@ def assign_bh_to_halos(bh_halo_assignment, bh_iord, timestep, linkname, hostname
     halos = timestep.halos.filter_by(object_typecode=0).all()
 
     halo_nums = [h.halo_number for h in halos]
-    halo_catind = [h.catalog_index for h in halos]
+    halo_catind = [h.finder_offset for h in halos]
     halo_ids = np.array([h.id for h in halos])
 
     logger.info("Gathering bh halo information for %r", timestep)
