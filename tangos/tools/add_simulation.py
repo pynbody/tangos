@@ -85,7 +85,7 @@ class SimulationAdderUpdater(object):
         def adapted(*args, **kwargs):
             for result in enumerate_fn(*args, **kwargs):
                 if not hasattr(result, "__len__"):
-                    yield result, 0, 0, 0
+                    yield result, result, 0, 0, 0
                 else:
                     yield result
         return adapted
@@ -95,7 +95,7 @@ class SimulationAdderUpdater(object):
         n_tot = []
         enumerator = self._autoadd_zeros(self.simulation_output.enumerate_objects)
 
-        for finder_id, NDM, Nstar, Ngas in enumerator(ts.extension, object_typetag=create_class.tag,
+        for catalog_id, finder_id, NDM, Nstar, Ngas in enumerator(ts.extension, object_typetag=create_class.tag,
                                                       min_halo_particles=self.min_halo_particles):
             n_tot.append(NDM+Nstar+Ngas)
 
@@ -107,15 +107,15 @@ class SimulationAdderUpdater(object):
         else:
             database_id = [None]*len(n_tot)
 
-        for database_number,(finder_id, NDM, Nstar, Ngas) in zip(database_id,
+        for database_number, (catalog_id, finder_id, NDM, Nstar, Ngas) in zip(database_id,
                                                                  enumerator(ts.extension, object_typetag=create_class.tag,
                                                                             min_halo_particles=self.min_halo_particles)):
             if database_number is None:
-                database_number = finder_id
+                database_number = catalog_id
 
-            if (NDM >= self.min_halo_particles or NDM==0) \
+            if (NDM+Nstar+Ngas >= self.min_halo_particles or NDM==0) \
                     and (self.max_num_objects is None or database_number<=self.max_num_objects ):
-                h = create_class(ts, database_number, finder_id, NDM, Nstar, Ngas)
+                h = create_class(ts, database_number, finder_id, catalog_id, NDM, Nstar, Ngas)
                 halos.append(h)
 
         logger.info("Add %d %ss to timestep %r", len(halos), create_class.__name__, ts)

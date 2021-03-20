@@ -73,7 +73,7 @@ class ProxyObjectFromFinderIdAndTimestepCache(ProxyObjectBase):
     def resolve(self, session):
         if session!=self._timestep_cache.session:
             raise ProxyResolutionException("The session for the cache must match the session for the object resolution")
-        return self._timestep_cache.resolve(self._finder_id, self._typetag)
+        return self._timestep_cache.resolve_from_finder_id(self._finder_id, self._typetag)
 
 class IncompleteProxyObjectFromFinderId(ProxyObjectBase):
     """A proxy object that stores an object's finder ID and type, but requires the timestep still to be specified.

@@ -27,7 +27,7 @@ def setup():
     ts1 = tangos.core.timestep.TimeStep(sim, "ts1")
     session.add(ts1)
 
-    halo_1 = tangos.core.halo.Halo(ts1, 1, 0, 0, 0, 0)
+    halo_1 = tangos.core.halo.Halo(ts1, 1, 1, 1, 0, 0, 0, 0)
     session.add_all([halo_1])
 
     session.commit()
@@ -44,7 +44,7 @@ def _multiprocess_block():
     session = db.core.get_default_session()
 
     ts = tangos.get_timestep("sim/ts1")
-    new_halo = tangos.core.halo.Halo(ts, 5, 0, 0, 0, 0)
+    new_halo = tangos.core.halo.Halo(ts, 5, 5, 5, 0, 0, 0, 0)
 
     session.merge(new_halo)
     session.flush()
@@ -63,7 +63,7 @@ def _multiprocess_test():
 
 
 
-    new_halo = tangos.core.halo.Halo(ts, 6, 0, 0, 0, 0)
+    new_halo = tangos.core.halo.Halo(ts, 6, 6, 6, 0, 0, 0, 0)
 
     db.core.get_default_session().merge(new_halo)
 

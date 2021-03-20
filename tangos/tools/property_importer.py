@@ -87,9 +87,9 @@ class PropertyImporter(GenericTangosTool):
                              property_names]
         rows_to_store = []
         for values in self.handler.iterate_object_properties_for_timestep(ts.extension, object_typetag, property_names):
-            db_object = self._object_cache.resolve(values[0], object_typetag)
+            db_object = self._object_cache.resolve_from_finder_offset(values[0], object_typetag)
             if db_object is not None:
-                for db_name, value in zip(property_db_names, values[1:]):
+                for db_name, value in zip(property_db_names, values[2:]):
                     rows_to_store+=self._create_properties(db_name, db_object, value)
 
 

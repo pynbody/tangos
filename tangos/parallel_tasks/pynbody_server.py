@@ -13,12 +13,13 @@ class ConfirmLoadPynbodySnapshot(Message):
     pass
 
 class ObjectSpecification(object):
-    def __init__(self, object_number, object_typetag='halo'):
+    def __init__(self, object_number, object_index, object_typetag='halo'):
         self.object_number = object_number
+        self.object_index = object_index
         self.object_typetag = object_typetag
 
     def __repr__(self):
-        return "ObjectSpecification(%d,%r)"%(self.object_number, self.object_typetag)
+        return "ObjectSpecification(%d, %d, %r)"%(self.object_number, self.object_index, self.object_typetag)
 
     def __eq__(self, other):
         if not isinstance(other, ObjectSpecification):
@@ -26,7 +27,7 @@ class ObjectSpecification(object):
         return self.object_number==other.object_number and self.object_typetag==other.object_typetag
 
     def __hash__(self):
-        return hash((self.object_number, self.object_typetag))
+        return hash((self.object_number, self.object_index, self.object_typetag))
 
 class PynbodySnapshotQueue(object):
     def __init__(self):
@@ -78,6 +79,7 @@ class PynbodySnapshotQueue(object):
             snap = snap[filter_or_object_spec]
         elif isinstance(filter_or_object_spec, ObjectSpecification):
             snap = self.current_handler.load_object(self.current_timestep, filter_or_object_spec.object_number,
+                                                    filter_or_object_spec.object_index,
                                                     filter_or_object_spec.object_typetag)
         else:
             raise TypeError("filter_or_object_spec must be either a pynbody filter or an ObjectRequestInformation object")

@@ -109,7 +109,7 @@ def _db_import_export(target_session, from_session, *sims):
 
             logger.info("Transferring objects for %s", ts_ext)
             for h_ext in ts_ext.objects:
-                h = Halo(ts, h_ext.halo_number, h_ext.finder_id, h_ext.NDM,
+                h = Halo(ts, h_ext.halo_number, h_ext.finder_id, h_ext.finder_offset, h_ext.NDM,
                          h_ext.NStar, h_ext.NGas, h_ext.object_typecode)
                 h.external_id = h_ext.id
                 halos_this_ts.append(h)

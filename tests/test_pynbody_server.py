@@ -13,12 +13,12 @@ from six.moves import zip
 
 
 class TestHandler(tangos.input_handlers.pynbody.ChangaInputHandler):
-    def load_object(self, ts_extension, halo_number, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         # Specialised object 'catalogue' to check this works ok when loading remotely
         if object_typetag=='test-objects' and mode is None:
-            return self.load_timestep(ts_extension)[[halo_number]]
+            return self.load_timestep(ts_extension)[[finder_offset]]
         else:
-            return super(TestHandler, self).load_object(ts_extension, halo_number, object_typetag, mode)
+            return super(TestHandler, self).load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
 
 def setup():
     global handler
@@ -89,7 +89,7 @@ def test_nonexistent_array():
 
 def _test_halo_array():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.ObjectSpecification(1))
+    f = conn.get_view(ps.ObjectSpecification(1, 1))
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
     assert len(f)==len(f_local)
     assert (f['x'] == f_local['x']).all()
@@ -101,7 +101,7 @@ def test_halo_array():
 
 def _test_remote_file_index():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.ObjectSpecification(1))
+    f = conn.get_view(ps.ObjectSpecification(1, 1))
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
     local_index_list = f_local.get_index_list(f_local.ancestor)
     index_list = f['remote-index-list']
@@ -116,7 +116,7 @@ def _debug_print_arrays(*arrays):
 
 def _test_lazy_evaluation_is_local():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.ObjectSpecification(1))
+    f = conn.get_view(ps.ObjectSpecification(1, 1))
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
     f_local.physical_units()
 
@@ -144,7 +144,7 @@ def tipsy_specific_derived_array(sim):
 
 def _test_underlying_class():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.ObjectSpecification(1))
+    f = conn.get_view(ps.ObjectSpecification(1, 1))
     f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[1]
     f_local.physical_units()
     npt.assert_almost_equal(f['tipsy_specific_derived_array'],f_local['tipsy_specific_derived_array'], decimal=4)
@@ -155,11 +155,11 @@ def test_underlying_class():
 
 
 def _test_correct_object_loading():
-    f_remote = handler.load_object('tiny.000640', 1, mode='server')
-    f_local = handler.load_object('tiny.000640', 1, mode=None)
+    f_remote = handler.load_object('tiny.000640', 1, 1, mode='server')
+    f_local = handler.load_object('tiny.000640', 1, 1, mode=None)
     assert (f_remote['iord']==f_local['iord']).all()
-    f_remote = handler.load_object('tiny.000640', 1, 'test-objects', mode='server')
-    f_local = handler.load_object('tiny.000640', 1, 'test-objects', mode=None)
+    f_remote = handler.load_object('tiny.000640', 1, 1, 'test-objects', mode='server')
+    f_local = handler.load_object('tiny.000640', 1, 1, 'test-objects', mode=None)
     assert (f_remote['iord'] == f_local['iord']).all()
 
 def test_correct_object_loading():

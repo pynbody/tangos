@@ -134,12 +134,14 @@ class HandlerBase(object):
         """Creates and returns an object that connects to the data for a timestep on disk"""
         raise NotImplementedError
 
-    def load_object(self, ts_extension, halo_number, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, finder_id, catalog_pos, object_typetag='halo', mode=None):
         """Creates and returns an object that connects to the data for a halo on disk.
 
         :arg ts_extension - the timestep path (relative to the simulation basename)
 
-        :arg halo_number - the halo number in the raw halo finder output
+        :arg finder_id - the halo id in the raw halo finder output
+
+        :arg catalog_pos - the position of the raw halo finder output
 
         :arg object_typetag - the type of halo catalogue (normally 'halo' or, for Subfind, might be 'group' to get
                                                      the top-level groups)
