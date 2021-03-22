@@ -14,14 +14,14 @@ class BHLogData(object):
     _n_cols = 0
 
     @classmethod
-    def can_load(cls, timestep_filename):
+    def can_load(cls, simname):
         try:
-            return os.path.exists(cls.filename(timestep_filename))
+            return os.path.exists(cls.filename(simname))
         except (ValueError, TypeError):
             return False
 
     @classmethod
-    def filename(cls, timestep_filename):
+    def filename(cls, simname):
         raise ValueError("Unknown path to stat file")
 
     @classmethod
@@ -49,7 +49,7 @@ class BHLogData(object):
         f = pynbody.load(filename)
         self.boxsize = float(f.properties['boxsize'].in_units('kpc', a=f.properties['a']))
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$", filename).groups()
-        wrapped_ars = self.read_data(self.filename(filename), f)
+        wrapped_ars = self.read_data(self.filename(name), f)
         iord, time, step, mass, x, y, z, vx, vy, vz, mdot, mdotmean, dMaccum, scalefac = wrapped_ars
 
         logger.info("Loaded a BH log with %d entries", len(time))
@@ -137,8 +137,8 @@ class BlackHolesLog(BHLogData):
                      float, float, float, float, float, float]
 
     @classmethod
-    def filename(cls, timestep_filename):
-        return timestep_filename + '.BlackHoles'
+    def filename(cls, simname):
+        return simname + '.BlackHoles'
 
     def read_data(self, filename, sim):
         ars = [[] for i in range(self._n_cols)]
