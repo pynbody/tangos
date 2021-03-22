@@ -158,7 +158,7 @@ class BlackHolesLog(BHLogData):
 
         unique_step, unique_ind, unique_step_inv = np.unique(step[osort], return_inverse=True, return_index=True)
         dt_ustep = time[osort[unique_ind[1:]]] - time[osort[unique_ind[:-1]]]
-        dt_ustep = np.insert(0, dt_ustep[0])
+        dt_ustep = np.insert(dt_ustep, 0, dt_ustep[0])
         dt_out[osort] = dt_ustep[unique_step_inv]
 
         mdotmean = dMaccum/dt_out
