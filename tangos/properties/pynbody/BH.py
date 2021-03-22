@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import tangos.core.halo
-from tangos.input_handlers.changa_bh import BHShortenedLog
+from tangos.input_handlers.changa_bh import ShortenedOrbitLog, BlackHolesLog
 from . import PynbodyPropertyCalculation
 from .. import LivePropertyCalculation, TimeChunkedProperty
 import numpy as np
@@ -22,7 +22,12 @@ class BH(PynbodyPropertyCalculation):
         return True
 
     def preloop(self, f, db_timestep):
-        self.log = BHShortenedLog.get_existing_or_new(db_timestep.filename)
+        if BlackHolesLog.can_load(db_timestep.filename):
+            self.log = BlackHolesLog.get_existing_or_new(db_timestep.filename)
+        elif ShortenedOrbitLog.can_load(db_timestep.filename):
+            self.log = ShortenedOrbitLog.get_existing_or_new(db_timestep.filename)
+        else:
+            raise RuntimeError("cannot find recognizable log file")
         self.filename = db_timestep.filename
         print(self.log)
 
@@ -33,7 +38,7 @@ class BH(PynbodyPropertyCalculation):
 
         vars = self.log.get_for_named_snapshot(self.filename)
 
-        mask = vars['bhid'] == properties.halo_number
+        mask = vars['iord'] == properties.halo_number
         if (mask.sum() == 0):
             raise RuntimeError("Can't find BH in .orbit file")
 
