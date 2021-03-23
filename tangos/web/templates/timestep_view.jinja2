@@ -27,17 +27,21 @@
             </tr>
 
         <script>
-            window.dataTables['{{ object_type }}'] = {}
-            window.dataTables['{{ object_type }}']['*halo_number'] = [
-                {% for h in objects %}
-                    {{ h.halo_number }},
-                {% endfor %}
-            ];
-            window.dataTables['{{ object_type }}']['*go_link'] = [
-                {% for h in objects %}
-                    '<a href="{{ h.url }}">Go &rarr;</a>',
-                {% endfor %}
-            ];
+            if(window.dataTables['{{  object_type }}']===undefined) {
+                window.dataTables['{{ object_type }}'] = {}
+                window.dataTables['{{ object_type }}']['*halo_number'] = Object();
+                window.dataTables['{{ object_type }}']['*halo_number'].data_formatted = [
+                    {% for h in objects %}
+                        {{ h.halo_number }},
+                    {% endfor %}
+                ];
+                window.dataTables['{{ object_type }}']['*go_link'] = Object();
+                window.dataTables['{{ object_type }}']['*go_link'].data_formatted = [
+                    {% for h in objects %}
+                        '<a href="{{ h.url }}">Go &rarr;</a>',
+                    {% endfor %}
+                ];
+            }  // otherwise it has been restored from session storage.
         </script>
 
         </table>
@@ -47,7 +51,24 @@
 {% block content %}
 
     <script>
-     window.dataTables = {}
+
+    function persistTableData() {
+        sessionStorage['timestep-data-'+window.location.href] =JSON.stringify(window.dataTables);
+    }
+
+    function restoreTableData() {
+        if(sessionStorage['timestep-data-'+window.location.href]!==undefined)
+        {
+            window.dataTables = JSON.parse(sessionStorage['timestep-data-'+window.location.href])
+        } else {
+            window.dataTables = {}
+        }
+    }
+
+    $(window).on('beforeunload',persistTableData);
+    restoreTableData();
+
+
     </script>
     <h1>Timestep: {{ timestep }}</h1>
 
@@ -82,24 +103,31 @@ $.fn.markAsColumnInsertPoint = function(editable_tag) {
 
 
 function updateColumnData(miniLanguageQuery, columnId, editable_tag) {
-    $('#header-'+columnId).html("<img src='/static/spinner.gif'/>"+miniLanguageQuery);
+
     $('#header-'+columnId).data('miniLanguageQuery', miniLanguageQuery);
-    updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, false, false);
-    $.ajax({
-        type: "GET",
-        url: "{{ gather_url }}"+uriEncodeQuery(miniLanguageQuery)+".json",
-        success: function (data) {
-            $("."+columnId).html("");
-            if(data.error) {
-                 $('#header-'+columnId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
-            } else {
-                $('#header-'+columnId).html(miniLanguageQuery);
-                updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, data.can_use_as_filter, false, true);
-                window.dataTables[editable_tag][miniLanguageQuery] = data.data_formatted
+
+    if(window.dataTables[editable_tag][miniLanguageQuery]!==undefined) {
+        data = window.dataTables[editable_tag][miniLanguageQuery]
+        $('#header-' + columnId).html(miniLanguageQuery);
+        updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, data.can_use_as_filter, false, true);
+    } else {
+        $('#header-'+columnId).html("<img src='/static/spinner.gif'/>"+miniLanguageQuery);
+        updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, false, false);
+        $.ajax({
+            type: "GET",
+            url: "{{ gather_url }}" + uriEncodeQuery(miniLanguageQuery) + ".json",
+            success: function (data) {
+                if (data===undefined || data.error) {
+                    $('#header-' + columnId).html("<span class='load_table_failed'>" + miniLanguageQuery + " (failed)</span>")
+                } else {
+                    window.dataTables[editable_tag][miniLanguageQuery] = data;
+                    updateColumnData(miniLanguageQuery, columnId, editable_tag);
+                }
+
             }
-            updateTableDisplay(editable_tag);
-        }
-    });
+        });
+    }
+    updateTableDisplay(editable_tag);
 }
 
 function addBlankColumn(after, object_tag) {
@@ -109,6 +137,7 @@ function addBlankColumn(after, object_tag) {
         $(this).find("#plotctl-"+after).after("<th id='plotctl-"+new_name+"'></th>");
     })
     $('#header-'+new_name).markAsColumnInsertPoint(object_tag);
+    updateTableDisplay(object_tag);
     return new_name;
 }
 
@@ -151,9 +180,13 @@ function updateTableDisplay(object_tag) {
     var columns = [];
     $("tr#header-row-"+object_tag+" th").each(function() {
        var miniLanguageQ = $(this).data('miniLanguageQuery');
-       columns.push(window.dataTables[object_tag][miniLanguageQ]);
-       if(columnsToFilterOn.includes(this.id) && window.dataTables[object_tag][miniLanguageQ]!==undefined ) {
-           dataToFilterOn.push(window.dataTables[object_tag][miniLanguageQ]);
+       if(window.dataTables[object_tag][miniLanguageQ]!==undefined) {
+           columns.push(window.dataTables[object_tag][miniLanguageQ].data_formatted);
+           if (columnsToFilterOn.includes(this.id)) {
+               dataToFilterOn.push(window.dataTables[object_tag][miniLanguageQ].data_formatted);
+           }
+       } else {
+           columns.push(undefined);
        }
     });
 

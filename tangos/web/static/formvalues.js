@@ -45,6 +45,7 @@ function persistFormStates() {
 
     sessionStorage['formstates'] = JSON.stringify(formState);
 
+
 }
 
 function restoreFormStates() {
@@ -56,6 +57,8 @@ function restoreFormStates() {
     $('form.autorestore').each(function () {
         $(this).values(formState[this.id]);
     });
+
+    $('form.autorestore').trigger('change');
 }
 
 
