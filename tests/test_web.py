@@ -140,7 +140,7 @@ def test_simulation_with_slash():
     assert "Timestep: ts1" in ts_response
     # Unfortunately timestep page is now generated in javascript, so we can
     # no longer test ts_response.click("Go")
-    halo_response = app.get("/simname%has%slashes/ts1/1")
+    halo_response = app.get("/simname_has_slashes/ts1/1")
     assert "halo 1 of ts1" in halo_response
     calculate_url = halo_response.pyquery("#calculate_url").text()
     calculate_url = parse.unquote(calculate_url)
