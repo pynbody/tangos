@@ -10,7 +10,7 @@ import scipy, scipy.interpolate
 
 class BH(PynbodyPropertyCalculation):
 
-    names = "BH_mdot", "BH_mdot_ave", "BH_mdot_std", "BH_central_offset", "BH_central_distance", "BH_mass"
+    names = "BH_mdot", "BH_mdot_ave", "BH_central_offset", "BH_central_distance", "BH_mass"
     requires_particle_data = True
 
 
@@ -78,7 +78,7 @@ class BH(PynbodyPropertyCalculation):
             bad, = np.where(np.abs(offset) > boxsize / 2.)
             offset[bad] = -1.0 * (offset[bad] / np.abs(offset[bad])) * np.abs(boxsize - np.abs(offset[bad]))
 
-        return final['mdot'], final['mdotmean'], final['mdotsig'], offset, np.linalg.norm(offset), final['mass']
+        return final['mdot'], final['mdotmean'], offset, np.linalg.norm(offset), final['mass']
 
 
 class BHAccHistogram(TimeChunkedProperty):
@@ -93,7 +93,10 @@ class BHAccHistogram(TimeChunkedProperty):
         return []
 
     def preloop(self, f, db_timestep):
-        self.log = BHShortenedLog.get_existing_or_new(db_timestep.filename)
+        if BlackHolesLog.can_load(db_timestep.filename):
+            self.log = BlackHolesLog.get_existing_or_new(db_timestep.filename)
+        elif ShortenedOrbitLog.can_load(db_timestep.filename):
+            self.log = ShortenedOrbitLog.get_existing_or_new(db_timestep.filename)
 
     @classmethod
     def no_proxies(self):
