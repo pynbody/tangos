@@ -131,11 +131,13 @@ class Calculation(object):
         values, desc = self.values_and_description(halos)
         return self._sanitize_values(values, load_into_session), desc
 
-    def values(self, halos):
+    def values(self, halos, load_into_session=None):
         """Return the values of this calculation applied to halos.
 
         The size of the returned numpy object array is self.n_columns() x len(halos) """
         values, _ = self.values_and_description(halos)
+        if load_into_session is not None:
+            self._refetch_halos_from_original_session(values, load_into_session)
         return values
 
     def value(self, halo):

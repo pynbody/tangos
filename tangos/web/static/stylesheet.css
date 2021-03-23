@@ -41,9 +41,18 @@ table#objects-container tr td {
     vertical-align: top;
 }
 
-tr.odd {
+tr.tangos-data:nth-child(odd) {
     background-color: #eeeef3;
 }
+
+tr.tangos-data:nth-child(even):hover {
+    background-color: #eaeaea;
+}
+
+tr.tangos-data:nth-child(odd):hover {
+    background-color: #dadae1;
+}
+
 
 td, th {
     padding: 2px;
@@ -70,13 +79,6 @@ a:hover {
     color: #cc5511;
 }
 
-tr.even:hover {
-    background-color: #eaeaea;
-}
-
-tr.odd:hover {
-    background-color: #dadae1;
-}
 
 
 th {

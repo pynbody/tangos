@@ -203,6 +203,15 @@ def test_earlier():
     testing.assert_halolists_equal(ts1_halos, ['sim/ts1/1', 'sim/ts1/2', 'sim/ts1/3', 'sim/ts1/1.1'])
     testing.assert_halolists_equal(ts3_halos, ['sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts3/1.1'])
 
+def test_return_nones():
+    dbids, masses = tangos.get_timestep("sim/ts3").calculate_all("dbid()","hole_mass")
+    assert len(masses)==4 # only the BHs have a hole_mass
+    assert len(dbids)==4
+
+    dbids, masses = tangos.get_timestep("sim/ts3").calculate_all("dbid()", "hole_mass", sanitize=False)
+    assert len(masses)==7 # BHs + halos all now returning a row
+    assert len(dbids)==7
+
 def test_earlier_equal_weight():
     """Regression test for problem where earlier(x) or later(x) failed when there was more than one link
     with the identical same weight, meaning the major progenitor was undefined. An interim fix picks one or the
