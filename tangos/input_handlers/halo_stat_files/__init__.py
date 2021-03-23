@@ -11,7 +11,7 @@ from six.moves import zip
 
 class HaloStatFile(object):
     """Manages and reads a halo stat file of unspecified format."""
-    _id_offset = 0
+    _finder_offset_start = 0 #whether finder_offset should start at 0 (default) or N (typically either 0 or 1)
     _column_translations = {}
 
     def __new__(cls, timestep):
@@ -55,33 +55,42 @@ class HaloStatFile(object):
 
     def iter_rows_raw(self, *args):
         """
-        Yield the halo ID and requested columns from each line of the stat file, without any emulation.
+        Yield
+        1) the index in which each halo appears in the catalog (starting from 0 unless _finder_offset_start is set)
+        2) the raw halo ID (finder_id) included in the halo stat file without any emulation
+        3) the rest of the requested parameters
 
         :param args: strings for the column names
-        :return: id, arg1, arg2, arg3 where ID is the halo ID and argN is the value of the Nth named column
+        :return: finder_offset_start, finder_id, arg1, arg2, arg3, ... where finder_offset_start is the index of the halo within
+        the stat file, finder_id is the raw halo ID read from the stat file, and argN is the value associated with the
+        Nth column name provided as input.
         """
         with open(self.filename) as f:
             header = self._read_column_names(f)
+            cnt = 0
             ids = [0]
             for a in args:
                 try:
                     ids.append(header.index(a))
                 except ValueError:
                     ids.append(None)
-
             for l in f:
                 if not l.startswith("#"):
-                    yield self._get_values_for_columns(ids, l)
+                    col_data = self._get_values_for_columns(ids, l)
+                    col_data.insert(0, cnt+self._finder_offset_start)
+                    yield col_data
+                    cnt += 1
 
     def iter_rows(self, *args):
         """
-        Yield the halo ID and requested columns from each line of the stat file, emulating the existence of some columns.
+        Yield the requested column values from the halo catalog stat file, as well as the finder_offset (index associated
+        with halo's position within the catalog) and finder_id (raw halo id listed in the stat file).
 
-        For example, AHF stat files do not contain n_dm; however, its value can be automatically inferred by this
-        function. Meanwhile IDL .amiga.stat files rename n_gas as N_gas.
+        Returned halo properties are emulated when necessary. For example, AHF stat files do not contain n_dm; however,
+        its value can be automatically inferred by this function. Meanwhile IDL .amiga.stat files rename n_gas as N_gas.
 
         :param args: strings for the column names
-        :return: id, arg1, arg2, arg3 where ID is the halo ID and argN is the value of the Nth named column
+        :return: finder_offset, finder_id, arg1, arg2, arg3 where argN is the value of the Nth named column
         """
 
         raw_args = []
@@ -90,19 +99,18 @@ class HaloStatFile(object):
                 raw_args+=self._column_translations[arg].inputs()
             else:
                 raw_args.append(arg)
-
         for raw_values in self.iter_rows_raw(*raw_args):
-            values = [raw_values[0]]
+            values = [raw_values[0], raw_values[1]]
             for arg in args:
                 if arg in self._column_translations:
-                    values.append(self._column_translations[arg](raw_args, raw_values[1:]))
+                    values.append(self._column_translations[arg](raw_args, raw_values[2:]))
                 else:
-                    values.append(raw_values[1:][raw_args.index(arg)])
+                    values.append(raw_values[2:][raw_args.index(arg)])
             yield values
 
     def read(self, *args):
         """Read the halo ID and requested columns from the entire file, returning each column as a separate array"""
-        return_values = [[] for _ in range(len(args)+1)]
+        return_values = [[] for _ in range(len(args)+2)]
         for row in self.iter_rows(*args):
             for return_array, value in zip(return_values, row):
                 return_array.append(value)
@@ -128,7 +136,6 @@ class HaloStatFile(object):
                     this_cast = this_str
 
             results.append(this_cast)
-        results[0] += self._id_offset
         return results
 
     def _read_column_names(self, f):
@@ -138,14 +145,14 @@ class HaloStatFile(object):
 
 
 class AHFStatFile(HaloStatFile):
-    _id_offset = 1
+    _finder_offset_start = 1
 
     _column_translations = {'n_gas': translations.DefaultValue('n_gas', 0),
                             'n_star': translations.DefaultValue('n_star', 0),
                             'n_dm': translations.Function(lambda ngas, nstar, npart: npart - (ngas or 0) - (nstar or 0),
                                                           'n_gas', 'n_star', 'npart'),
                             'hostHalo': translations.Function(
-                                lambda id: None if id==-1 else proxy_object.IncompleteProxyObjectFromFinderId(id+AHFStatFile._id_offset, 'halo'),
+                                lambda id: None if id==-1 else proxy_object.IncompleteProxyObjectFromFinderId(id, 'halo'),
                                 'hostHalo')}
 
     def __init__(self, timestep_filename):
@@ -169,17 +176,15 @@ class AHFStatFile(HaloStatFile):
             return "CannotFindAHFHaloFilename"
         else:
             return file_list[0]
-        return file
 
     def _calculate_children(self):
         # use hostHalo column to calculate virtual childHalo entries
         self._children_map = {}
-        for h_id, host_id_raw in self.iter_rows_raw("hostHalo"):
-            if host_id_raw!=-1:
-                host_id = host_id_raw + self._id_offset
-                cmap = self._children_map.get(host_id, [])
-                cmap.append(proxy_object.IncompleteProxyObjectFromFinderId(h_id,'halo'))
-                self._children_map[host_id] = cmap
+        for c_id, f_id, host_f_id in self.iter_rows_raw("hostHalo"):
+            if host_f_id!=-1:
+                cmap = self._children_map.get(host_f_id, [])
+                cmap.append(proxy_object.IncompleteProxyObjectFromFinderId(f_id,'halo'))
+                self._children_map[host_f_id] = cmap
 
     def _calculate_children_if_required(self):
         if not hasattr(self, "_children_map"):
@@ -187,8 +192,7 @@ class AHFStatFile(HaloStatFile):
 
     def _child_halo_entry(self, this_id_raw):
         self._calculate_children_if_required()
-        this_id = this_id_raw + self._id_offset
-        children = self._children_map.get(this_id, [])
+        children = self._children_map.get(this_id_raw, [])
         return children
 
 class RockstarStatFile(HaloStatFile):
@@ -208,7 +212,6 @@ class RockstarStatFile(HaloStatFile):
             return "CannotComputeRockstarFilename"
 
 class AmigaIDLStatFile(HaloStatFile):
-    _id_offset = 0
 
     _column_translations = {'n_dm': translations.Rename('N_dark'),
                             'n_gas': translations.Rename('N_gas'),
@@ -220,4 +223,17 @@ class AmigaIDLStatFile(HaloStatFile):
     def filename(cls, timestep_filename):
         return timestep_filename + '.amiga.stat'
 
+    def iter_rows_raw(self, *args):
+        """
+        Yield the halo ID along with the values associated with each of the given arguments. The halo ID is output twice
+        in order to be consistent with other stat file readers. In this case, the finder_offset that is normally output
+        is just equal to the finder_id.
 
+        :param args: strings for the column names
+        :return: finder_id, finder_id, arg1, arg2, arg3, ... where finder_id is the halo's ID number read directly
+        from the stat file and argN is the value associated with the Nth column name given as arguments.
+        """
+
+        for row in super().iter_rows_raw(*args):
+            row[0] = row[1]  # sequential catalog index not right in this case; overwrite to match finder id
+            yield row

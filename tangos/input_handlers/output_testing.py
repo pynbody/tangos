@@ -42,7 +42,7 @@ class TestInputHandler(HandlerBase):
         nhalos_string = self._get_ts_property(ts_extension, object_typetag+"s")
         nhalos = 0 if nhalos_string is None else int(nhalos_string)
         for i in range(nhalos):
-            yield i+1, 2000-i, 0, 0
+            yield i+1, i+1, 2000-i, 0, 0
 
     def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=False, threshold=0.005,
                       object_typetag='halo', output_handler_for_ts2=None):
@@ -71,12 +71,12 @@ class TestInputHandler(HandlerBase):
         data.message = data.message[region_specification]
         return data
 
-    def load_object(self, ts_extension, halo_number, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         assert object_typetag=='halo'
-        return DummyTimestepData("Test string - this would contain the data for %s halo %d"%(ts_extension ,halo_number),
+        return DummyTimestepData("Test string - this would contain the data for %s halo %d"%(ts_extension ,finder_id),
                                  float(self._get_ts_property(ts_extension, 'time')),
                                  int(self._get_ts_property(ts_extension, 'halos')),
-                                 halo_number)
+                                 finder_offset)
 
     def _get_ts_property(self, ts_extension, property):
         ts_filename = self._extension_to_filename(ts_extension)
@@ -92,4 +92,4 @@ class TestInputHandlerReverseHaloNDM(TestInputHandler):
         nhalos_string = self._get_ts_property(ts_extension, object_typetag+"s")
         nhalos = 0 if nhalos_string is None else int(nhalos_string)
         for i in range(nhalos):
-            yield i+1, 2000+i, 0, 0
+            yield i+1, i+1, 2000+i, 0, 0

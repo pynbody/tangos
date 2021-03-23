@@ -49,8 +49,8 @@ def test_timestep_properties():
 def test_enumerate_objects():
     halos = list(output_manager.enumerate_objects("tiny.000640"))
     assert len(halos)==9
-    assert halos[0]==[1,2041986, 364232, 198355]
-    assert halos[1]==[2, 421027, 30282, 57684]
+    assert halos[0]==[1, 0, 2041986, 364232, 198355]
+    assert halos[1]==[2, 1, 421027, 30282, 57684]
 
 def test_properties():
     props = output_manager.get_properties()
@@ -60,13 +60,13 @@ def test_properties():
 
 def test_enumerate_objects_using_statfile():
     halos = list(output_manager.enumerate_objects("tiny.000640"))
-    assert halos[0]==[1,2041986,364232, 198355]
+    assert halos[0]==[1,0, 2041986,364232, 198355]
     assert len(halos)==9
 
 def test_enumerate_objects_using_pynbody():
     config.min_halo_particles = 400
     halos = list(output_manager.enumerate_objects("tiny.000832", min_halo_particles=200))
-    npt.assert_equal(halos[0], [1,477,80, 48])
+    npt.assert_equal(halos[0], [1, 1, 477,80, 48])
     assert len(halos)==1
 
 def test_load_timestep():

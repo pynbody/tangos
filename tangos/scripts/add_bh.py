@@ -143,7 +143,9 @@ def assign_bh_to_halos(bh_halo_assignment, bh_iord, timestep, linkname, hostname
 
     links, link_id_from, link_id_to = db.tracking.get_tracker_links(session, linkname_dict_id)
     halos = timestep.halos.filter_by(object_typecode=0).all()
-    halo_nums = [h.finder_id for h in halos]
+
+    halo_nums = [h.halo_number for h in halos]
+    halo_catind = [h.finder_offset for h in halos]
     halo_ids = np.array([h.id for h in halos])
 
     logger.info("Gathering bh halo information for %r", timestep)
@@ -156,7 +158,7 @@ def assign_bh_to_halos(bh_halo_assignment, bh_iord, timestep, linkname, hostname
         for bhi, haloi in zip(bh_iord, bh_halo_assignment):
             haloi = int(haloi)
             bhi = int(bhi)
-            if haloi not in halo_nums:
+            if haloi not in halo_catind:
                 logger.warn("Skipping BH in halo %d as no corresponding halo found in the database", haloi)
                 continue
             if bhi not in existing_bh_nums:
@@ -166,7 +168,7 @@ def assign_bh_to_halos(bh_halo_assignment, bh_iord, timestep, linkname, hostname
                 continue
 
             bh_index_in_list = existing_bh_nums.index(bhi)
-            halo_index_in_list = halo_nums.index(haloi)
+            halo_index_in_list = halo_catind.index(haloi)
             bh_obj = bh_database_object[bh_index_in_list]
             halo_obj = halos[halo_index_in_list]
 
