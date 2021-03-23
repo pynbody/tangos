@@ -11,7 +11,7 @@
         <th>Value</th>
     </tr>
     {% for (p,v) in properties %}
-        <tr class="{{ loop.cycle('odd','even') }}">
+        <tr class="tangos-data">
             <td>{{ p }}</td><td>{{ v }}</td>
         </tr>
     {% endfor %}
@@ -28,7 +28,7 @@
         <th>Go</th>
     </tr>
     {% for t,c,l in zip(timesteps, counts, links) %}
-        <tr class="{{ loop.cycle('odd','even') }}">
+        <tr class="tangos-data">
             <td>{{ "%.2f"%t.redshift }}</td>
             <td sorttable_customkey="{{'%.3f'%t.time_gyr}}">
                 {% if t.time_gyr<1 %}
