@@ -4,7 +4,6 @@ import re
 import numpy as np
 import six
 from ..log import logger
-import pynbody
 import os
 
 
@@ -46,6 +45,7 @@ class BHLogData(object):
         raise NotImplementedError
 
     def __init__(self, filename):
+        import pynbody
         f = pynbody.load(filename)
         self.boxsize = float(f.properties['boxsize'].in_units('kpc', a=f.properties['a']))
         name, stepnum = re.match("^(.*)\.(0[0-9]*)$", filename).groups()
@@ -141,6 +141,7 @@ class BlackHolesLog(BHLogData):
         return simname + '.BlackHoles'
 
     def read_data(self, filename, sim):
+        import pynbody
         ars = [[] for i in range(self._n_cols)]
         for line in open(filename):
             line_split = line.split()
@@ -178,6 +179,7 @@ class ShortenedOrbitLog(BHLogData):
         return timestep_filename + '.shortened.orbit'
 
     def read_data(self, filename, sim):
+        import pynbody
         ars = [[] for i in range(self._n_cols)]
         for line in open(filename):
             line_split = line.split()
