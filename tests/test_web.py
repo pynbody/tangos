@@ -114,7 +114,7 @@ def test_json_gather_array():
     assert response.status_int == 200
     result = json.loads(response.body.decode('utf-8'))
     assert result['timestep']=='ts1'
-    assert result['data_formatted']==["Array"]
+    assert result['data_formatted'][0]=="Array"
     assert result['can_use_in_plot'] is False
     assert result['can_use_as_filter'] is False
     assert result['is_array'] is True
@@ -138,7 +138,9 @@ def test_simulation_with_slash():
     assert "Simulation: simname/has/slashes" in simpage_response
     ts_response = simpage_response.click("Go", index=1)
     assert "Timestep: ts1" in ts_response
-    halo_response = ts_response.click("Go")
+    # Unfortunately timestep page is now generated in javascript, so we can
+    # no longer test ts_response.click("Go")
+    halo_response = app.get("/simname_has_slashes/ts1/1")
     assert "halo 1 of ts1" in halo_response
     calculate_url = halo_response.pyquery("#calculate_url").text()
     calculate_url = parse.unquote(calculate_url)
