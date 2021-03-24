@@ -122,7 +122,7 @@ def _check_and_upgrade_database(engine):
         log.logger.warn("The database uses an old schema, missing the finder_offset column from halos. Attempting to update.")
         engine.execute("alter table halos add column finder_offset integer;")
         engine.execute("update halos set finder_offset = finder_id;")
-
+        log.logger.warn("The database update appeared to complete without any problems.")
 
 
 def init_db(db_uri=None, timeout=30, verbose=None):
