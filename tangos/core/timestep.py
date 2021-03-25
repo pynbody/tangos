@@ -153,7 +153,7 @@ class TimeStep(Base):
         try:
             raw_query = session.query(Halo).filter_by(timestep_id=self.id)
             if order_by_halo_number:
-                raw_query = raw_query.order_by(Halo.id)
+                raw_query = raw_query.order_by(Halo.halo_number)
             if object_typecode is not None:
                 raw_query = raw_query.filter_by(object_typecode=object_typecode)
             if limit:
