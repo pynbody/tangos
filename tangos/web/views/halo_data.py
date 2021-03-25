@@ -108,7 +108,8 @@ def calculate_all(request):
     ts = timestep_from_request(request)
 
     try:
-        data, = ts.calculate_all(decode_property_name(request.matchdict['nameid']), sanitize=False)
+        data, = ts.calculate_all(decode_property_name(request.matchdict['nameid']),
+                                 sanitize=False, order_by_halo_number=True)
     except Exception as e:
         return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
 
