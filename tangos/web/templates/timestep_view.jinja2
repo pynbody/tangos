@@ -209,7 +209,7 @@ function updateTableDisplay(object_tag) {
     for(var i=0; i<nData; i++) {
         var shouldDisplay = true;
         $.each(dataToFilterOn, function(j,c) {
-            if(c[i] === 'False') shouldDisplay = false;
+            if(c[i] !== 'True') shouldDisplay = false;
         });
         if(shouldDisplay) {
             if (nRowsTotal<endRow && nRowsTotal>=startRow) {
