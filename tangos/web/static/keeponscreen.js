@@ -3,7 +3,6 @@
 var scrollTop = {};
 
 function initScrollOffsetData() {
-    console.info("initScrollOffsetData");
     $(".keeponscreen").each(function() {
         if($(this).css('position')!='absolute') {
             // generate clone that keeps the space for this element

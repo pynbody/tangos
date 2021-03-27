@@ -8,6 +8,50 @@ $.fn.markAsRowInsertPoint = function () {
   return $(this).makeEditableTemplate(addBlankRow, removeRow, updateRowData, $('#object_typetag').text())
 }
 
+function renderNavToAnother(previous, next) {
+   var el = $("#nav-to-another");
+   el.text("");
+   var link = $("#timestep_url").text()+$("#object_typetag").text()
+   if(previous!==undefined && previous>0)
+       el.append(`<a href="${link}_${previous}" class="ajaxenabled">${previous}</a> | `);
+   el.append($('#halo_number').text());
+   if(next!==undefined && next>0)
+       el.append(` | <a href="${link}_${next}" class="ajaxenabled">${next}</a>`);
+}
+
+function autoUpdateNavToAnother() {
+  // Work out what the previous and next halos are, using the selected filters if possible
+  $("#nav-to-another").html("<img src='/static/spinner.gif'>");
+  let object_tag = $("#object_typetag").text()
+  let filter = getFilterArray(object_tag,'td', autoUpdateNavToAnother);
+  if(filter === undefined) {
+    // callback for when required ata is ready has been put in place
+    return;
+  }
+  let thisNum = parseInt($('#halo_number').text());
+  let nums = window.dataTables[object_tag]['halo_number()'];
+  if(nums === undefined) {
+    requestColumnData(object_tag,'halo_number()',autoUpdateNavToAnother); // try again later
+    return;
+  }
+  nums = nums.data_formatted;
+
+  let previous = undefined, next = undefined;
+  for(i=0; i<filter.length; i++) {
+    if(!filter[i]) continue;
+    let num_i = parseInt(nums[i]);
+    if (num_i < thisNum) {
+      previous = nums[i];
+    }
+    if (num_i > thisNum) {
+      next = nums[i];
+      break;
+    }
+  }
+  renderNavToAnother(previous, next);
+}
+
+
 function updateRowData (miniLanguageQuery, rowId) {
   plotFetchingDisabled = true
   $('#nametg-' + rowId).html("<img src='/static/spinner.gif'/>" + miniLanguageQuery)
@@ -34,6 +78,8 @@ function updateRowData (miniLanguageQuery, rowId) {
         // See above for why the plot controls are put in place then updated
         updatePlotControlElements('#plotctl-' + rowId, miniLanguageQuery,
           data.can_use_in_plot, data.can_use_as_filter, data.is_array)
+        if(data.can_use_as_filter)
+          autoUpdateNavToAnother();
         plotFetchingDisabled = false
         fetchPlot(true)
       }
@@ -93,7 +139,7 @@ function getPlotUriTwoVariables (name1, name2, typetag, extension) {
   var uri
   var plotformvals = $('#image_form').values()
   var plotType = plotformvals.type
-  if (plotType === 'gather') { uri = $('#gather_url').text() + name1 + '/vs/' + name2 + '.' + extension } else if (plotType === 'cascade') {
+  if (plotType === 'gather') { uri = $('#timestep_url').text() + name1 + '/vs/' + name2 + '.' + extension } else if (plotType === 'cascade') {
     uri = $('#cascade_url').text() +
             name1 + '/vs/' + name2 + '.' + extension
   }
@@ -215,28 +261,35 @@ function ensurePlotTypeIsNotTree () {
   }
 }
 function plotSelectionUpdate () {
-  ensurePlotTypeIsNotTree()
+  // ensurePlotTypeIsNotTree()
   fetchPlot(true)
+  autoUpdateNavToAnother();
 }
 
-$('#nametg-custom-row-1').markAsRowInsertPoint()
-ajaxEnableLinks()
 
 $(function () {
+
   prePageUpdate(function () {
-    persistAllEditables()
-    persistFormStates()
-  })
+    persistAllEditables();
+    persistFormStates();
+  });
 
-  postPageUpdate(function () {
-    allEditables = []
-    $('#nametg-custom-row-1').markAsRowInsertPoint()
-    restoreAllEditables()
-    restoreFormStates()
-    fetchPlot(true)
-    ajaxEnableLinks()
-    updatePositionsAfterScroll()
-  })
+  function restoreInteractiveElements(isUpdate=true) {
+    allEditables = [];
+    $('#nametg-custom-row-1').markAsRowInsertPoint();
+    restoreAllEditables();
+    restoreFormStates();
+    fetchPlot(isUpdate);
+    updatePositionsAfterScroll();
+    var haloNum = parseInt($('#halo_number').text());
+    autoUpdateNavToAnother();
+    ajaxEnableLinks();
+  }
 
-  fetchPlot()
+  // make sure interactivity is restored after ajax update
+  postPageUpdate(restoreInteractiveElements);
+
+  // put in interactivity for first time
+  setupTimestepTables($("#gather_url").text())
+  restoreInteractiveElements(false);
 })

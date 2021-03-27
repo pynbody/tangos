@@ -60,8 +60,9 @@ function ajaxNavigate(rel, isPoppingFromHistory) {
     return false;
 }
 
-function ajaxEnableLinks() {
-    $('a.ajaxenabled').click(function() {
+function ajaxEnableLinks(inElement="") {
+    if (inElement.length>0) inElement=inElement+" "
+    $(inElement+'a.ajaxenabled').click(function() {
         ajaxNavigate(this.href);
         return false;
     })

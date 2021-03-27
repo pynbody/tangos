@@ -14,6 +14,7 @@ from ... import core
 from ...config import webview_default_image_format
 import threading
 import time
+import functools
 
 _matplotlib_lock = threading.RLock()
 
@@ -102,6 +103,7 @@ def elements_are_arrays(data_array):
         return False
     else:
         return is_array(data_array[0])
+
 
 @view_config(route_name='calculate_all', renderer='json')
 def calculate_all(request):
