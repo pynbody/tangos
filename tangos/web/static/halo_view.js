@@ -21,7 +21,8 @@ function renderNavToAnother(previous, next) {
 
 function autoUpdateNavToAnother() {
   // Work out what the previous and next halos are, using the selected filters if possible
-  $("#nav-to-another").html("<div class='progress-spinner'></div>");
+  if($("#nav-to-another .progress-spinner").length===0)
+    $("#nav-to-another").html("<div class='progress-spinner'></div>");
   let object_tag = $("#object_typetag").text()
   let filter = getFilterArray(object_tag,'td', autoUpdateNavToAnother);
   if(filter === undefined) {
@@ -153,7 +154,12 @@ var plotFetchingDisabled = false
 var existingImgSrc
 
 function fetchTree (isUpdate) {
-  if (!isUpdate) { $('#imgbox').empty().html("<div class='progress-spinner'></div>&nbsp;Generating tree...") } else { $('#imgbox').append("<div class='progress-spinner'></div>&nbsp;Updating tree...") }
+  if (!isUpdate) {
+    $('#imgbox').empty().html("<h3><div class='progress-spinner'></div>&nbsp;Generating tree...</h3>");
+  } else {
+    if($('#imgbox_container .progress-spinner').length === 0)
+      $('#imgbox').append("<h3><div class='progress-spinner'></div>&nbsp;Updating tree...</h3>");
+  }
   var url = $('#tree_url').text()
 
   $.ajax({
