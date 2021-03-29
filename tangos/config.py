@@ -65,6 +65,9 @@ DEFAULT_SLEEP_BEFORE_ALLOWING_NEXT_LOCK = 1.0
 # Default format to use in the webview. Can be either svg or png
 webview_default_image_format = 'svg'
 
+# Caching time in seconds for image and data in the web server
+webview_cache_time = 3600
+
 try:
     from .config_local import *
 except:
