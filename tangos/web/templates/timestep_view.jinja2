@@ -80,7 +80,7 @@ function updateColumnData(miniLanguageQuery, columnId, editable_tag) {
             updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, data.can_use_as_filter, false, true);
         }
     } else {
-        $('#header-'+columnId).html("<img src='/static/spinner.gif'/>"+miniLanguageQuery);
+        $('#header-'+columnId).html("<div class='progress-spinner'></div>"+miniLanguageQuery);
         updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, false, false);
         requestColumnData(editable_tag, miniLanguageQuery, function() {
             updateColumnData(miniLanguageQuery, columnId, editable_tag);

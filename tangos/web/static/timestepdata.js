@@ -25,7 +25,7 @@ function requestColumnData(editable_tag, miniLanguageQuery, callback) {
     if(window.dataTables[editable_tag][miniLanguageQuery] === undefined) {
         var updateMarker = $("#update-marker-" + editable_tag);
         if(updateMarker!==undefined)
-            updateMarker.html("<img src='/static/spinner.gif'>");
+            updateMarker.html("<div class='progress-spinner'></div>");
         let reqs = updateMarker.data("pending-requests")
         if (reqs === undefined) reqs = 0;
         updateMarker.data("pending-requests", reqs + 1)

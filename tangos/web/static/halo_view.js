@@ -21,7 +21,7 @@ function renderNavToAnother(previous, next) {
 
 function autoUpdateNavToAnother() {
   // Work out what the previous and next halos are, using the selected filters if possible
-  $("#nav-to-another").html("<img src='/static/spinner.gif'>");
+  $("#nav-to-another").html("<div class='progress-spinner'></div>");
   let object_tag = $("#object_typetag").text()
   let filter = getFilterArray(object_tag,'td', autoUpdateNavToAnother);
   if(filter === undefined) {
@@ -55,7 +55,7 @@ function autoUpdateNavToAnother() {
 
 function updateRowData (miniLanguageQuery, rowId) {
   plotFetchingDisabled = true
-  $('#nametg-' + rowId).html("<img src='/static/spinner.gif'/>" + miniLanguageQuery)
+  $('#nametg-' + rowId).html("<div class='progress-spinner'></div>" + miniLanguageQuery)
 
   // Plot controls need to be in DOM immediately, then rejigged later if they are not appropriate.
   // This is so that the correct radio buttons get ticked after a page update (otherwise the
@@ -152,7 +152,7 @@ var plotFetchingDisabled = false
 var existingImgSrc
 
 function fetchTree (isUpdate) {
-  if (!isUpdate) { $('#imgbox').empty().html("<img src='/static/spinner.gif' />&nbsp;Generating tree...") } else { $('#imgbox').append("<img src='/static/spinner.gif' />&nbsp;Updating tree...") }
+  if (!isUpdate) { $('#imgbox').empty().html("<div class='progress-spinner'></div>&nbsp;Generating tree...") } else { $('#imgbox').append("<div class='progress-spinner'></div>&nbsp;Updating tree...") }
   var url = $('#tree_url').text()
 
   $.ajax({
@@ -213,7 +213,7 @@ function fetchPlot (isUpdate) {
   if (existingImgSrc === uri) { return }
 
   loadImage(uri, extension)
-  if (isUpdate === undefined || isUpdate === false) { $('#imgbox').empty().html("<img src='/static/spinner.gif' />&nbsp;Generating plot...") } else { $('#imgbox').append("<img src='/static/spinner.gif' />&nbsp;Updating...") }
+  if (isUpdate === undefined || isUpdate === false) { $('#imgbox').empty().html("<div class='progress-spinner'></div>&nbsp;Generating plot...") } else { $('#imgbox').append("<div class='progress-spinner'></div>&nbsp;Updating...") }
   return true
 }
 
