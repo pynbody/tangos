@@ -111,7 +111,7 @@ function removeColumn(name, object_tag) {
 
 function setupDynamicTables() {
 
-    setupTimestepTables('{{ gather_url }}');
+    setupTimestepTables('{{ timestep_url }}');
 
     {% for this_object in objects %}
         if(window.dataTables['{{ this_object['typetag'] }}']===undefined) {

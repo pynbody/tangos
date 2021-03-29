@@ -11,7 +11,7 @@ $.fn.markAsRowInsertPoint = function () {
 function renderNavToAnother(previous, next) {
    var el = $("#nav-to-another");
    el.text("");
-   var link = $("#timestep_url").text()+$("#object_typetag").text()
+   var link = $("#timestep_url").text()+"/"+$("#object_typetag").text()
    if(previous!==undefined && previous>0)
        el.append(`<a href="${link}_${previous}" class="ajaxenabled">${previous}</a> | `);
    el.append($('#halo_number').text());
@@ -49,6 +49,7 @@ function autoUpdateNavToAnother() {
     }
   }
   renderNavToAnother(previous, next);
+  ajaxEnableLinks("#nav-to-another");
 }
 
 
@@ -277,19 +278,21 @@ $(function () {
   function restoreInteractiveElements(isUpdate=true) {
     allEditables = [];
     $('#nametg-custom-row-1').markAsRowInsertPoint();
+    console.log($("#timestep_url").text());
+    setupTimestepTables($("#timestep_url").text());
     restoreAllEditables();
     restoreFormStates();
     fetchPlot(isUpdate);
     updatePositionsAfterScroll();
     var haloNum = parseInt($('#halo_number').text());
-    autoUpdateNavToAnother();
     ajaxEnableLinks();
+    autoUpdateNavToAnother();
   }
 
   // make sure interactivity is restored after ajax update
   postPageUpdate(restoreInteractiveElements);
 
   // put in interactivity for first time
-  setupTimestepTables($("#gather_url").text())
+  setupTimestepTables($("#timestep_url").text())
   restoreInteractiveElements(false);
 })

@@ -1,12 +1,14 @@
 
 
-function setupTimestepTables(gather_url) {
-    window.dataTables = {}
-    window.gather_url = gather_url
+function setupTimestepTables(timestep_url) {
+    if(timestep_url!==window.timestep_url) {
+        window.dataTables = {}
+        window.timestep_url = timestep_url
+    }
 }
 
 function getGatherUrl(typetag, miniLanguageQuery) {
-    return gather_url+"/gather/"+typetag+"/"+uriEncodeQuery(miniLanguageQuery)+".json";
+    return timestep_url+"/gather/"+typetag+"/"+uriEncodeQuery(miniLanguageQuery)+".json";
 }
 
 function requestColumnData(editable_tag, miniLanguageQuery, callback) {
@@ -64,16 +66,17 @@ function getFilterArray(object_tag, get_id_from='th', callbackAfterFetch = undef
     });
 
 
-    $.each(columnsToFilterOn, function() {
-       if(window.dataTables[object_tag][this]!==undefined) {
-           dataToFilterOn.push(window.dataTables[object_tag][this].data_formatted);
-       } else {
+    for(i=0; i<columnsToFilterOn.length; i++) {
+        col = columnsToFilterOn[i];
+        if(window.dataTables[object_tag][col]!==undefined) {
+           dataToFilterOn.push(window.dataTables[object_tag][col].data_formatted);
+        } else {
            if (callbackAfterFetch!==undefined) {
-               requestColumnData(object_tag, this, callbackAfterFetch);
+               requestColumnData(object_tag, col, callbackAfterFetch);
                return undefined;
            } // if no callback supplied, we carry on and get the best answer we can
-       }
-    });
+        }
+    }
 
     let nData = 0;
 

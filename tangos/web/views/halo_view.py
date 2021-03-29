@@ -127,7 +127,6 @@ def halo_view(request):
             'tree_url': request.route_url('merger_tree',simid=request.matchdict['simid'],
                                             timestepid=request.matchdict['timestepid'],
                                             halonumber=request.matchdict['halonumber']),
-            'gather_url': request.route_url('timestep_view',simid=request.matchdict['simid'],
+            'timestep_url': request.route_url('timestep_view',simid=request.matchdict['simid'],
                                             timestepid=request.matchdict['timestepid']),
-            'timestep_url': "/%s/%s/" % (sim.escaped_basename, ts.escaped_extension),
             'cascade_url': "/%s/%s/%s/"%(sim.escaped_basename,ts.escaped_extension,halo.basename)}
