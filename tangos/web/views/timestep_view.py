@@ -42,6 +42,5 @@ def timestep_view(request):
 
     return {'timestep': ts.extension,
             'objects': all_objects,
-            'gather_url': request.route_url('calculate_all',simid=request.matchdict['simid'],
-                                            timestepid=request.matchdict['timestepid'],
-                                            nameid="")[:-5]}
+            'gather_url': request.route_url('timestep_view',simid=request.matchdict['simid'],
+                                            timestepid=request.matchdict['timestepid'])}

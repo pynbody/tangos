@@ -105,13 +105,13 @@ def elements_are_arrays(data_array):
         return is_array(data_array[0])
 
 
-@view_config(route_name='calculate_all', renderer='json')
+@view_config(route_name='calculate_all', renderer='json', http_cache=3600)
 def calculate_all(request):
     ts = timestep_from_request(request)
-
+    typetag = request.matchdict['typetag']
     try:
         data, = ts.calculate_all(decode_property_name(request.matchdict['nameid']),
-                                 sanitize=False, order_by_halo_number=True)
+                                 sanitize=False, order_by_halo_number=True, object_type=typetag)
     except Exception as e:
         return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
 

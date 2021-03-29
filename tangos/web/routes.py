@@ -18,7 +18,7 @@ def includeme(config):
     config.add_route('halo_later', '/{simid}/{timestepid}/{halonumber}/later/{n}')
     config.add_route('halo_earlier', '/{simid}/{timestepid}/{halonumber}/earlier/{n}')
     config.add_route('halo_in', '/{simid}/{timestepid}/{halonumber}/in/{n}')
-    config.add_route('calculate_all', '/{simid}/{timestepid}/gather/{nameid}.json')
+    config.add_route('calculate_all', '/{simid}/{timestepid}/gather/{typetag}/{nameid}.json')
     config.add_route('get_property', '/{simid}/{timestepid}/{halonumber}/{nameid}.json')
     config.add_route('gathered_csv', '/{simid}/{timestepid}/{nameid1}/vs/{nameid2}.csv')
     config.add_route('gathered_plot', '/{simid}/{timestepid}/{nameid1}/vs/{nameid2}.{ext}')

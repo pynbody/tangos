@@ -1,28 +1,13 @@
 
 
 function setupTimestepTables(gather_url) {
-    function persistTableData() {
-        sessionStorage['timestep-data-'+gather_url] =JSON.stringify(window.dataTables);
-    }
-
-    function restoreTableData() {
-        if(sessionStorage['timestep-data-'+gather_url] !== undefined)
-        {
-            try {
-                window.dataTables = JSON.parse(sessionStorage['timestep-data-' + gather_url]);
-            } catch(SyntaxError) {
-                window.dataTables = {};
-            }
-        } else {
-            window.dataTables = {}
-        }
-    }
-
-    $(window).on('beforeunload',persistTableData);
-    restoreTableData();
+    window.dataTables = {}
     window.gather_url = gather_url
 }
 
+function getGatherUrl(typetag, miniLanguageQuery) {
+    return gather_url+"/gather/"+typetag+"/"+uriEncodeQuery(miniLanguageQuery)+".json";
+}
 
 function requestColumnData(editable_tag, miniLanguageQuery, callback) {
     if(window.dataTables === undefined ) {
@@ -45,7 +30,7 @@ function requestColumnData(editable_tag, miniLanguageQuery, callback) {
         console.log("Requesting "+miniLanguageQuery+" for "+editable_tag+"...");
         $.ajax({
             type: "GET",
-            url: gather_url + uriEncodeQuery(miniLanguageQuery) + ".json",
+            url: getGatherUrl(editable_tag, miniLanguageQuery),
             success: function (data) {
                 if(updateMarker!==undefined) {
                     let reqs = updateMarker.data("pending-requests")
