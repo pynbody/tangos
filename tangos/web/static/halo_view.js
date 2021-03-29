@@ -163,8 +163,6 @@ function fetchTree (isUpdate) {
   var url = $('#tree_url').text()
 
   $.ajax({
-    type: 'POST',
-    data: { evaluate: JSON.stringify(getAllEditables()) },
     url: url,
     success: function (data) {
       $('#imgbox').empty()
