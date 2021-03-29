@@ -218,7 +218,12 @@ function fetchPlot (isUpdate) {
   if (existingImgSrc === uri) { return }
 
   loadImage(uri, extension)
-  if (isUpdate === undefined || isUpdate === false) { $('#imgbox').empty().html("<div class='progress-spinner'></div>&nbsp;Generating plot...") } else { $('#imgbox').append("<div class='progress-spinner'></div>&nbsp;Updating...") }
+  if (isUpdate === undefined || isUpdate === false) {
+    $('#imgbox').empty().html("<div class='progress-spinner'></div>&nbsp;Generating plot...")
+  } else {
+    if($('#imgbox .progress-spinner').length===0)
+      $('#imgbox').append("<div class='progress-spinner'></div>&nbsp;Updating...")
+  }
   return true
 }
 
