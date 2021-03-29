@@ -98,7 +98,8 @@ function addBlankRow (after) {
 }
 
 function removeRow (name) {
-  $('#' + name).remove()
+  $('#' + name).remove();
+  autoUpdateNavToAnother();
 }
 
 function findInOtherSimulation () {
