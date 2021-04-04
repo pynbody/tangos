@@ -109,7 +109,7 @@ def test_image_plot():
     assert response.content_type == 'image/png'
 
 def test_json_gather_float():
-    response = app.get("/sim/ts1/gather/test_value.json")
+    response = app.get("/sim/ts1/gather/halo/test_value.json")
     assert response.content_type == 'application/json'
     assert response.status_int == 200
     result = json.loads(response.body.decode('utf-8'))
@@ -120,7 +120,7 @@ def test_json_gather_float():
     assert result['is_array'] is False
 
 def test_json_gather_array():
-    response = app.get("/sim/ts1/gather/test_image.json")
+    response = app.get("/sim/ts1/gather/halo/test_image.json")
     assert response.content_type == 'application/json'
     assert response.status_int == 200
     result = json.loads(response.body.decode('utf-8'))
@@ -131,7 +131,7 @@ def test_json_gather_array():
     assert result['is_array'] is True
 
 def test_json_gather_bool():
-    response = app.get("/sim/ts1/gather/has_property(test_image).json")
+    response = app.get("/sim/ts1/gather/halo/has_property(test_image).json")
     assert response.content_type == 'application/json'
     assert response.status_int == 200
     result = json.loads(response.body.decode('utf-8'))
@@ -166,7 +166,7 @@ def test_ordering_as_expected():
     assert (tangos.get_item("sim/ts4").calculate_all("halo_number()") == np.array([10,2,3])).all()
     assert (tangos.get_item("sim/ts4").calculate_all("halo_number()",order_by_halo_number=True) == np.array([2,3,10])).all()
 
-    response = app.get("/sim/ts4/gather/test_value.json")
+    response = app.get("/sim/ts4/gather/halo/test_value.json")
     assert response.content_type == 'application/json'
     assert response.status_int == 200
     result = json.loads(response.body.decode('utf-8'))
