@@ -158,7 +158,7 @@ def finish(request, getImage=True):
 
         logger.info(
             "Image rendering: matplotlib %.2fs; %s conversion %.3fs",
-            draw_time - enter_finish_time, 
+            draw_time - enter_finish_time,
             extension.upper(),
             end_time - draw_time
         )
@@ -258,9 +258,10 @@ def cascade_plot_data(request):
     return name1, name2, v1, v2
 
 
-def image_plot(request, val, property_info):
-
-    log=request.GET.get('logimage',False)
+def image_plot(request, data, property_info):
+    log = request.GET.get('logimage', False)
+    vmin, vmax = (request.GET.get(_, None) for _ in ("vmin", "vmax"))
+    cmap = request.GET.get("cmap", None)
     with _matplotlib_lock:
         start(request)
 
@@ -268,29 +269,46 @@ def image_plot(request, val, property_info):
             width = property_info.plot_extent()
         else:
             width = 1.0
+        if log:
+            data = np.where(data > 0, np.log10(data), np.nan)
 
-        if log and len(val.shape)==2:
-            data = np.log10(val)
-            data[data!=data]=data[data==data].min()
+        if data.ndim == 2:
+            if vmin is None: vmin = 0
+            if vmax is None: vmax = 100
 
-        else:
-            data =val
+            vmin = float(vmin)
+            vmax = float(vmax)
+
+            vmin = max(min(vmin, 100), 0)
+            vmax = max(min(vmax, 100), 0)
+            vmin, vmax = min(vmin, vmax), max(vmin, vmax)
+
+            vmin, vmax = np.nanpercentile(data, (vmin, vmax))
+
+            logger.critical("vmin=%s, vmax=%s", vmin, vmax)
+
+        kwa = {"vmin": vmin, "vmax": vmax, "cmap": cmap}
 
         if width is not None:
             if hasattr(width, '__len__'):
-                p.imshow(data, extent=width)
+                kwa["extent"] = width
             else:
-                p.imshow(data, extent=(-width/2, width/2, -width/2, width/2))
-        else:
-            p.imshow(data)
+                kwa["extent"] = (-width/2, width/2, -width/2, width/2)
+
+        p.imshow(data, **kwa)
 
         if property_info:
             add_xy_labels(property_info, request)
 
-        if len(val.shape) is 2 :
+        if data.ndim == 2:
             cb = p.colorbar()
             if property_info and property_info.plot_clabel() :
                 cb.set_label(property_info.plot_clabel())
+
+            if log:
+                cb.ax.set_yticklabels(
+                    ["$10^{%.0f}$" % v for v in cb.get_ticks()]
+                )
 
         return finish(request)
 
