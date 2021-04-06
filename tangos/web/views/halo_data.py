@@ -269,10 +269,12 @@ def image_plot(request, data, property_info):
             width = property_info.plot_extent()
         else:
             width = 1.0
-        if log:
-            data = np.where(data > 0, np.log10(data), np.nan)
+
+        # This is required to properly use log norms with ranges larger than 10^7
+        data = data.astype(np.float64)
 
         if data.ndim == 2:
+
             if vmin is None: vmin = 0
             if vmax is None: vmax = 100
 
@@ -283,11 +285,17 @@ def image_plot(request, data, property_info):
             vmax = max(min(vmax, 100), 0)
             vmin, vmax = min(vmin, vmax), max(vmin, vmax)
 
-            vmin, vmax = np.nanpercentile(data, (vmin, vmax))
+            if log:
+                vmin, vmax = np.nanpercentile(data[data>0], (vmin, vmax))
+            else:
+                vmin, vmax = np.nanpercentile(data, (vmin, vmax))
 
-            logger.critical("vmin=%s, vmax=%s", vmin, vmax)
+        kwa = {"cmap": cmap}
 
-        kwa = {"vmin": vmin, "vmax": vmax, "cmap": cmap}
+        if log:
+            kwa["norm"] = p.matplotlib.colors.LogNorm(vmin, vmax)
+        else:
+            kwa["norm"] = p.matplotlib.colors.Normalize(vmin, vmax)
 
         if width is not None:
             if hasattr(width, '__len__'):
@@ -304,11 +312,6 @@ def image_plot(request, data, property_info):
             cb = p.colorbar()
             if property_info and property_info.plot_clabel() :
                 cb.set_label(property_info.plot_clabel())
-
-            if log:
-                cb.ax.set_yticklabels(
-                    ["$10^{%.0f}$" % v for v in cb.get_ticks()]
-                )
 
         return finish(request)
 
