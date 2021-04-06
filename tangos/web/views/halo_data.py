@@ -258,10 +258,24 @@ def cascade_plot_data(request):
     return name1, name2, v1, v2
 
 
+def _sanitize_lims(val, absolute, data, default, log):
+    if val is None:
+        val = default
+    val = float(val)
+
+    if absolute:
+        return val
+    elif log:
+        return np.nanpercentile(data[data>0], val)
+    else:
+        return np.nanpercentile(data, val)
+
+
 def image_plot(request, data, property_info):
-    log = request.GET.get('logimage', False)
+    log = request.GET.get('logimage', "0") == "1"
     vmin, vmax = (request.GET.get(_, None) for _ in ("vmin", "vmax"))
     cmap = request.GET.get("cmap", None)
+    absolute = request.GET.get("absolute", "0") == "1"
     with _matplotlib_lock:
         start(request)
 
@@ -274,21 +288,10 @@ def image_plot(request, data, property_info):
         data = data.astype(np.float64)
 
         if data.ndim == 2:
+            vmin = _sanitize_lims(vmin, absolute, data, 0, log)
+            vmax = _sanitize_lims(vmax, absolute, data, 100, log)
 
-            if vmin is None: vmin = 0
-            if vmax is None: vmax = 100
-
-            vmin = float(vmin)
-            vmax = float(vmax)
-
-            vmin = max(min(vmin, 100), 0)
-            vmax = max(min(vmax, 100), 0)
             vmin, vmax = min(vmin, vmax), max(vmin, vmax)
-
-            if log:
-                vmin, vmax = np.nanpercentile(data[data>0], (vmin, vmax))
-            else:
-                vmin, vmax = np.nanpercentile(data, (vmin, vmax))
 
         kwa = {"cmap": cmap}
 
