@@ -13,7 +13,8 @@ class BHLogData(object):
     _n_cols = 0
 
     @classmethod
-    def can_load(cls, simname):
+    def can_load(cls, filename):
+        simname, stepnum = re.match("^(.*)\.(0[0-9]*)$", filename).groups()
         try:
             return os.path.exists(cls.filename(simname))
         except (ValueError, TypeError):
