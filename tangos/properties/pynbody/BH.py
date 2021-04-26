@@ -68,7 +68,7 @@ class BH(PynbodyPropertyCalculation):
 
         print("target entry is", entry)
         final = {}
-        for t in 'x', 'y', 'z', 'vx', 'vy', 'vz', 'mdot', 'mass', 'mdotmean', 'mdotsig':
+        for t in 'x', 'y', 'z', 'vx', 'vy', 'vz', 'mdot', 'mass', 'mdotmean':
             final[t] = float(vars[t][entry])
 
         if main_halo_ssc is None:
