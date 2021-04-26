@@ -85,6 +85,11 @@
 
     <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="autorestore" onchange="plotSelectionUpdate();" >
     <input type="hidden" name="object_typetag" value="{{ halo_typetag }}"/>
+    <!-- next two hidden input types are just to keep track of the pagination
+    on the timestep view, since the form states are carried between pages using
+    session storage -->
+    <input type="hidden" name="page" />
+    <input type="hidden" name="per_page" />
     <table>
         <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
         <tr id="custom-row-1">

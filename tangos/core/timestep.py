@@ -120,6 +120,13 @@ class TimeStep(Base):
                             types are included.
 
         :param limit: maximum number of objects to use. If None (default), all are included.
+
+        :param sanitize: if True (default), remove all rows where a result was not found for
+                         any of the specified properties/live-calculations. Otherwise, return
+                         None where no result could be obtained, guaranteeing the return of a row for
+                         every object.
+
+        :param order_by_halo_number: if True, order by halo number; otherwise by database ID (default)
         """
 
         from .. import live_calculation
@@ -129,6 +136,9 @@ class TimeStep(Base):
         object_typecode = None
         object_typetag = kwargs.get('object_type', kwargs.get('object_typetag',None))
         limit = kwargs.get('limit', None)
+        sanitize = kwargs.get('sanitize', True)
+        order_by_halo_number = kwargs.get('order_by_halo_number', False)
+
         if object_typetag:
             object_typecode = Halo.object_typecode_from_tag(object_typetag)
 
@@ -142,13 +152,19 @@ class TimeStep(Base):
         session = Session()
         try:
             raw_query = session.query(Halo).filter_by(timestep_id=self.id)
+            if order_by_halo_number:
+                raw_query = raw_query.order_by(Halo.halo_number)
             if object_typecode is not None:
                 raw_query = raw_query.filter_by(object_typecode=object_typecode)
             if limit:
                 raw_query = raw_query.limit(limit).from_self() # from_self required for onwards joins
             query = property_description.supplement_halo_query(raw_query)
             sql_query_results = query.all()
-            calculation_results = property_description.values_sanitized(sql_query_results, Session.object_session(self))
+            if sanitize:
+                calculation_results = property_description.values_sanitized(sql_query_results,
+                                                                            Session.object_session(self))
+            else:
+                calculation_results = property_description.values(sql_query_results, Session.object_session(self))
         finally:
             session.close()
         return calculation_results

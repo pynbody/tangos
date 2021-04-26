@@ -108,12 +108,12 @@ def calculate_all(request):
     ts = timestep_from_request(request)
 
     try:
-        data, db_id = ts.calculate_all(decode_property_name(request.matchdict['nameid']), 'dbid()')
+        data, = ts.calculate_all(decode_property_name(request.matchdict['nameid']),
+                                 sanitize=False, order_by_halo_number=True)
     except Exception as e:
         return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
 
     return {'timestep': ts.escaped_extension, 'data_formatted': [format_data(d, request) for d in data],
-           'db_id': [int(x) for x in db_id],  # problems with jsonifying np.int64; needs to be native int?
             'can_use_in_plot': can_use_elements_in_plot(data),
             'can_use_as_filter': can_use_elements_as_filter(data),
             'is_array': elements_are_arrays(data)}

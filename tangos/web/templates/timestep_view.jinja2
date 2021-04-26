@@ -2,35 +2,74 @@
 
 {% macro make_table(objects, object_type) %}
     <form id="properties_form_{{ object_type }}" class="autorestore">
-    <table class="data-table" id="table-{{ object_type }}">
-        <tr id="header-row-{{ object_type }}">
-            <th>Number</th>
-            <th>NDM()</th>
-            <th class="editable" id="header-colid-1-{{ object_type }}"></th>
-            <th>Go</th>
-        </tr>
-        <tr>
-            <th></th>
-            <th></th>
-            <th id="plotctl-colid-1-{{ object_type }}"></th>
-            <th></th>
-        </tr>
-
-        {% for h in objects %}
-            <tr class="{{ loop.cycle('odd','even') }}" id="dbid-{{ h.id }}">
-                <td>{{ h.halo_number }}</td>
-                <td>{{ h.NDM }}</td>
-                <td class="colid-1-{{ object_type }}"></td>
-                <td><a href="{{ h.url }}">Go &rarr;</a></td>
+        <p>Page
+            <select name="page" id="page-{{ object_type }}">
+                <option value="1" selected>1</option>
+            </select> of <span id="num-pages-{{ object_type }}">1</span>.
+            Total <span id="num-objects-{{ object_type }}">...</span>;
+            maximum
+            <select name="per_page" id="per-page-{{ object_type }}">
+                {% for perpage in [10,20,50,100,200] %}
+                    <option value="{{ perpage }}" {%  if perpage == 50 %}selected{% endif %}>{{ perpage }}</option>
+                {% endfor %}
+            </select>
+            per page.</p>
+        <table class="data-table" id="table-{{ object_type }}">
+            <tr id="header-row-{{ object_type }}">
+                <th id="header-number-{{ object_type }}">Number</th>
+                <th class="editable" id="header-colid-1-{{ object_type }}"></th>
+                <th id="header-go-{{ object_type }}">Go</th>
             </tr>
-        {% endfor %}
+            <tr>
+                <th></th>
+                <th id="plotctl-colid-1-{{ object_type }}"></th>
+                <th></th>
+            </tr>
 
-    </table>
+        <script>
+            if(window.dataTables['{{  object_type }}']===undefined) {
+                window.dataTables['{{ object_type }}'] = {}
+                window.dataTables['{{ object_type }}']['*halo_number'] = Object();
+                window.dataTables['{{ object_type }}']['*halo_number'].data_formatted = [
+                    {% for h in objects %}
+                        {{ h.halo_number }},
+                    {% endfor %}
+                ];
+                window.dataTables['{{ object_type }}']['*go_link'] = Object();
+                window.dataTables['{{ object_type }}']['*go_link'].data_formatted = [
+                    {% for h in objects %}
+                        '<a href="{{ h.url }}">Go &rarr;</a>',
+                    {% endfor %}
+                ];
+            }  // otherwise it has been restored from session storage.
+        </script>
+
+        </table>
     </form>
 {% endmacro %}
 
 {% block content %}
 
+    <script>
+
+    function persistTableData() {
+        sessionStorage['timestep-data-'+window.location.href] =JSON.stringify(window.dataTables);
+    }
+
+    function restoreTableData() {
+        if(sessionStorage['timestep-data-'+window.location.href]!==undefined)
+        {
+            window.dataTables = JSON.parse(sessionStorage['timestep-data-'+window.location.href])
+        } else {
+            window.dataTables = {}
+        }
+    }
+
+    $(window).on('beforeunload',persistTableData);
+    restoreTableData();
+
+
+    </script>
     <h1>Timestep: {{ timestep }}</h1>
 
     <table id="objects-container"><tr>
@@ -39,6 +78,7 @@
         {%  if len(this_object['items'])>0 %}
         <td>
             <h2>{{ this_object['title'] }}</h2>
+
             {{ make_table(this_object['items'], this_object['typetag']) }}
         </td>
         {% endif %}
@@ -46,39 +86,48 @@
 
     </tr></table>
 
-<script language="JavaScript">
+
+
+<script>
+
 
 $.fn.markAsColumnInsertPoint = function(editable_tag) {
     if(this.length===0)
         return;
     $(this).closest('form').on('change', function() {
-        filterTable(editable_tag);
+        updateTableDisplay(editable_tag);
     });
     return $(this).makeEditableTemplate(addBlankColumn, removeColumn, updateColumnData, editable_tag);
 
 }
 
-function updateColumnData(miniLanguageQuery, columnId) {
-    $('#header-'+columnId).html("<img src='/static/spinner.gif'/>"+miniLanguageQuery)
-    updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, false, false);
-    $.ajax({
-        type: "GET",
-        url: "{{ gather_url }}"+uriEncodeQuery(miniLanguageQuery)+".json",
-        success: function (data) {
-            $("."+columnId).html("");
-            if(data.error) {
-                 $('#header-'+columnId).html("<span class='load_table_failed'>"+miniLanguageQuery+"</span>")
-            } else {
-                $('#header-'+columnId).html(miniLanguageQuery);
-                updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, data.can_use_as_filter, false, true);
-                $.each(data.data_formatted, function(i, item) {
-                    var dbid = data.db_id[i];
-                    $('#dbid-'+dbid).find('.'+columnId).html(item);
-                })
+
+function updateColumnData(miniLanguageQuery, columnId, editable_tag) {
+
+    $('#header-'+columnId).data('miniLanguageQuery', miniLanguageQuery);
+
+    if(window.dataTables[editable_tag][miniLanguageQuery]!==undefined) {
+        data = window.dataTables[editable_tag][miniLanguageQuery]
+        $('#header-' + columnId).html(miniLanguageQuery);
+        updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, data.can_use_as_filter, false, true);
+    } else {
+        $('#header-'+columnId).html("<img src='/static/spinner.gif'/>"+miniLanguageQuery);
+        updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, false, false);
+        $.ajax({
+            type: "GET",
+            url: "{{ gather_url }}" + uriEncodeQuery(miniLanguageQuery) + ".json",
+            success: function (data) {
+                if (data===undefined || data.error) {
+                    $('#header-' + columnId).html("<span class='load_table_failed'>" + miniLanguageQuery + " (failed)</span>")
+                } else {
+                    window.dataTables[editable_tag][miniLanguageQuery] = data;
+                    updateColumnData(miniLanguageQuery, columnId, editable_tag);
+                }
+
             }
-            $("#header-"+columnId).closest('form').change();
-        }
-    });
+        });
+    }
+    updateTableDisplay(editable_tag);
 }
 
 function addBlankColumn(after, object_tag) {
@@ -86,30 +135,35 @@ function addBlankColumn(after, object_tag) {
     $('.data-table tr').each(function(index) {
         $(this).find("#header-"+after).after("<th id='header-"+new_name+"' class='editable'></th>");
         $(this).find("#plotctl-"+after).after("<th id='plotctl-"+new_name+"'></th>");
-        $(this).find("."+after).after("<td class='"+new_name+"'></td>");
     })
     $('#header-'+new_name).markAsColumnInsertPoint(object_tag);
+    updateTableDisplay(object_tag);
     return new_name;
 }
 
-function removeColumn(name) {
+function removeColumn(name, object_tag) {
      $('.data-table tr').each(function(index) {
         $(this).find("#header-"+name).remove();
         $(this).find("#plotctl-"+name).remove();
-        $(this).find("."+name).remove();
     })
+    updateTableDisplay(object_tag);
 }
 
-function setupInsertionPoint() {
+
+function setupDynamicTables() {
+
     {% for this_object in objects %}
-        $('#header-colid-1-{{ this_object["typetag"] }}').markAsColumnInsertPoint('{{ this_object["typetag"] }}')
+        $('#header-number-{{ this_object['typetag'] }}').data('miniLanguageQuery', "*halo_number");
+        $('#header-go-{{ this_object['typetag'] }}').data('miniLanguageQuery', "*go_link");
+        $('#header-colid-1-{{ this_object["typetag"] }}').markAsColumnInsertPoint('{{ this_object["typetag"] }}');
+        updateTableDisplay('{{ this_object['typetag']  }}');
     {% endfor %}
+
 }
 
-function filterTable(object_tag) {
-    var allRows = $('#table-'+object_tag+' tr');
+function updateTableDisplay(object_tag) {
     var columnsToFilterOn = [];
-    allRows.css('display','table-row');
+    var dataToFilterOn = [];
 
     var re = new RegExp("plotctl-(.*)");
     $('#properties_form_'+object_tag+' input[type="checkbox"]').each(function() {
@@ -117,35 +171,83 @@ function filterTable(object_tag) {
         if($this.prop('checked') && $this.is(":visible")) {
             var control_id = $this.closest('th').attr('id');
             var column_id = re.exec(control_id)[1];
-            columnsToFilterOn.push(column_id);
+            columnsToFilterOn.push("header-"+column_id);
+        }
+    });
+
+    $("#table-"+object_tag+" tr.tangos-data").remove();
+
+    var columns = [];
+    $("tr#header-row-"+object_tag+" th").each(function() {
+       var miniLanguageQ = $(this).data('miniLanguageQuery');
+       if(window.dataTables[object_tag][miniLanguageQ]!==undefined) {
+           columns.push(window.dataTables[object_tag][miniLanguageQ].data_formatted);
+           if (columnsToFilterOn.includes(this.id)) {
+               dataToFilterOn.push(window.dataTables[object_tag][miniLanguageQ].data_formatted);
+           }
+       } else {
+           columns.push(undefined);
+       }
+    });
+
+    var nData = 0;
+    $.each(columns, function(i,c) {
+        if(c !== undefined && c.length>nData) {
+            nData=c.length;
         }
     });
 
 
-    var nRows=0;
-    allRows.each(function() {
+    var rowsPerPage = parseInt($("#per-page-"+object_tag+" option:selected").text());
+    var page = parseInt($("#page-"+object_tag+" option:selected").text());
+    var startRow = (page-1)*rowsPerPage;
+    var endRow = startRow+rowsPerPage;
+
+    var nRowsTotal=0;
+    var displayRows = [];
+
+    for(var i=0; i<nData; i++) {
         var shouldDisplay = true;
-        var $this=$(this);
-        columnsToFilterOn.forEach(function(columnId) {
-            var cell = $this.find('td.' + columnId)
-            if(cell.text()!=='True' && cell[0]!==undefined)
-                shouldDisplay=false;
+        $.each(dataToFilterOn, function(j,c) {
+            if(c[i] !== 'True') shouldDisplay = false;
         });
-        if(!shouldDisplay)
-            $this.css('display','none');
-        else {
-            nRows+=1;
-            var parity = ((nRows%2)===0)?"even":"odd";
-            if (nRows>2) {
-                $this.attr('class', parity);
+        if(shouldDisplay) {
+            if (nRowsTotal<endRow && nRowsTotal>=startRow) {
+                display = "<tr class='tangos-data'>"
+                $.each(columns, function(j,c) {
+                    if(c!==undefined)
+                        display+="<td>"+c[i]+"</td>";
+                    else
+                        display+="<td></td>";
+                });
+                display +="</tr>";
+                displayRows.push(display);
             }
+
+            nRowsTotal++;
         }
-    });
+    }
+
+
+    var numPages = Math.ceil(nRowsTotal/rowsPerPage);
+    $("#num-pages-"+object_tag).text(numPages);
+    $("#num-objects-"+object_tag).text(nRowsTotal);
+
+    var pageSelector = $("#page-"+object_tag)
+    pageSelector.find("option").remove();
+    for(var i=1; i<numPages+1; i++) {
+        selected = (i==page)?" selected":"";
+        pageSelector.append("<option name='"+i+"'"+selected+">"+i+"</option>")
+    }
+
+    $("#table-"+object_tag).append(displayRows);
+
 
 }
 
 
-setupInsertionPoint();
+setupDynamicTables();
+
 
 </script>
 

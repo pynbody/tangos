@@ -102,7 +102,7 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
         },
         'deleteEditable': function() {
             unpopupControls($this);
-            remove(column_id);
+            remove(column_id, editable_tag);
             allEditables.removeItem($this);
         },
         'revertEditable': function() {
@@ -121,7 +121,7 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
             if(content==="") {
                 $this.trigger('deleteEditable');
             } else {
-                update(content, column_id);
+                update(content, column_id, editable_tag);
             }
         }
     });
@@ -204,7 +204,7 @@ function restoreAllEditables() {
                 var add_fn = editable.data('editable_add');
                 var update_fn = editable.data('editable_update');
 
-                update_fn(name_to_add, old_column_id);
+                update_fn(name_to_add, old_column_id, type_tag);
                 old_column_id = add_fn(old_column_id, type_tag);
 
             });

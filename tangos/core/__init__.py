@@ -1,8 +1,9 @@
 from __future__ import absolute_import
-from sqlalchemy import Index, create_engine
+from sqlalchemy import Index, create_engine, inspect
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, clear_mappers
 from .. import config
+from .. import log
 
 _verbose = False
 _internal_session=None
@@ -111,6 +112,18 @@ def process_options(argparser_options):
         config.db = argparser_options.db_filename
     _verbose = argparser_options.db_verbose
 
+def _check_and_upgrade_database(engine):
+    inspector = inspect(engine)
+    if 'halos' in inspector.get_table_names():
+        cols = inspector.get_columns('halos')
+        for c in cols:
+            if c['name']=='finder_offset':
+                return
+        log.logger.warn("The database uses an old schema, missing the finder_offset column from halos. Attempting to update.")
+        engine.execute("alter table halos add column finder_offset integer;")
+        engine.execute("update halos set finder_offset = finder_id;")
+        log.logger.warn("The database update appeared to complete without any problems.")
+
 
 def init_db(db_uri=None, timeout=30, verbose=None):
     global _verbose, _internal_session, _engine, Session
@@ -123,9 +136,7 @@ def init_db(db_uri=None, timeout=30, verbose=None):
     _engine = create_engine(db_uri, echo=verbose or _verbose,
                             isolation_level='READ UNCOMMITTED', connect_args={'timeout': timeout})
 
-    #with _engine.connect() as connection:
-        # the following auto-adaptation of the table names is required for backwards compatibility
-        # Halo._adapt_schema(_engine, connection)
+    _check_and_upgrade_database(_engine)
 
     Session = sessionmaker(bind=_engine)
     _internal_session=Session()
