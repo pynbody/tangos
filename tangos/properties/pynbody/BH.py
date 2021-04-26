@@ -97,6 +97,8 @@ class BHAccHistogram(TimeChunkedProperty):
             self.log = BlackHolesLog.get_existing_or_new(db_timestep.filename)
         elif ShortenedOrbitLog.can_load(db_timestep.filename):
             self.log = ShortenedOrbitLog.get_existing_or_new(db_timestep.filename)
+        else:
+            raise RuntimeError("cannot find recognizable log file")
 
     @classmethod
     def no_proxies(self):
