@@ -13,7 +13,7 @@ install_requires = [
     'PasteDeploy >= 1.5.0', # py3 compat
     'plaster',
     'plaster_pastedeploy',
-    'pyramid',
+    'pyramid <= 2',
     'waitress',
     'pyramid_debugtoolbar',
     'pyramid_jinja2',
