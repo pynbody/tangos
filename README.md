@@ -1,7 +1,7 @@
 Tangos - The agile numerical galaxy organisation system
 -------------------------------------------------------
 
-[![Build Status](https://travis-ci.org/pynbody/tangos.svg?branch=master)](https://travis-ci.org/pynbody/tangos)[![DOI](https://zenodo.org/badge/105990932.svg)](https://zenodo.org/badge/latestdoi/105990932)
+[![Build Status](https://github.com/pynbody/tangos/actions/workflows/build-test.yaml/badge.svg?branch=master)](https://github.com/pynbody/tangos/actions) [![DOI](https://zenodo.org/badge/105990932.svg)](https://zenodo.org/badge/latestdoi/105990932)
 
 _Tangos_ lets you build a database (along the lines of [Eagle](http://icc.dur.ac.uk/Eagle/database.php) 
 or [MultiDark](https://www.cosmosim.org/cms/documentation/projects/multidark-bolshoi-project/))
