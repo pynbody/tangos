@@ -4,7 +4,7 @@ import matplotlib
 matplotlib.use('agg')
 import pylab as p
 from pyramid.view import view_config
-from pyramid.compat import escape
+from html import escape
 import numpy as np
 from . import halo_from_request, timestep_from_request, simulation_from_request
 from pyramid.response import Response
