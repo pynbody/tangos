@@ -132,10 +132,19 @@ function getFilterUri () {
 }
 
 function getPlotUriOneVariable (name, extension) {
-  uri = $('#cascade_url').text() + name + '.' + extension
-  var plotformvals = $('#image_form').values()
-  if (plotformvals.logimage) { uri += '?logimage=1' }
-  return uri
+  let uri = $('#cascade_url').text() + name + '.' + extension
+  var plotformvals = {};
+  $('#image_form').serializeArray().forEach(val => {
+    plotformvals[val.name] = val.value;
+  });
+  let args = {};
+  if (plotformvals.logimage === "on") { args["logimage"] = 1 }
+  if (plotformvals.use_range === "on") {
+    if (Number(plotformvals.vmin) >= 0) { args["vmin"] = plotformvals.vmin }
+    if (Number(plotformvals.vmax) <= 100) { args["vmax"] = plotformvals.vmax }
+  }
+
+  return uri + "?" + $.param(args);
 }
 
 function getPlotUriTwoVariables (name1, name2, typetag, extension) {
@@ -204,7 +213,9 @@ function fetchPlot (isUpdate) {
   var namethis = formvals.justthis
   var extension = $('#image_format').val()
   var uri
-  if (namethis !== undefined) { uri = getPlotUriOneVariable(namethis, extension) } else {
+  if (namethis !== undefined) {
+    uri = getPlotUriOneVariable(namethis, extension)
+  } else {
     if (name1 === undefined || name2 === undefined) { return }
 
     uri = getPlotUriTwoVariables(name1, name2, formvals.object_typetag, extension)
@@ -278,6 +289,19 @@ function plotSelectionUpdate () {
 }
 
 
+function rangeDisplay(element) {
+  if ($(element).is(':checked')) {
+    $("#vmin-vmax-range").show();
+  } else {
+    $("#vmin-vmax-range").hide();
+  }
+}
+
+$('#use_range').click(function(){
+  rangeDisplay(this);
+});
+
+
 $(function () {
 
   prePageUpdate(function () {
@@ -296,6 +320,7 @@ $(function () {
     updatePositionsAfterScroll();
     var haloNum = parseInt($('#halo_number').text());
     ajaxEnableLinks();
+    rangeDisplay($("#use_range"));
     autoUpdateNavToAnother();
   }
 

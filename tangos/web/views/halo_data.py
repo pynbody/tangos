@@ -4,7 +4,7 @@ import matplotlib
 matplotlib.use('agg')
 import pylab as p
 from pyramid.view import view_config
-from pyramid.compat import escape
+from html import escape
 import numpy as np
 from . import halo_from_request, timestep_from_request, simulation_from_request
 from pyramid.response import Response
@@ -160,7 +160,7 @@ def finish(request, getImage=True):
 
         logger.info(
             "Image rendering: matplotlib %.2fs; %s conversion %.3fs",
-            draw_time - enter_finish_time, 
+            draw_time - enter_finish_time,
             extension.upper(),
             end_time - draw_time
         )
@@ -262,9 +262,24 @@ def cascade_plot_data(request):
     return name1, name2, v1, v2
 
 
-def image_plot(request, val, property_info):
+def _sanitize_lims(val, absolute, data, default, log):
+    if val is None:
+        val = default
+    val = float(val)
 
-    log=request.GET.get('logimage',False)
+    if absolute:
+        return val
+    elif log:
+        return np.nanpercentile(data[data>0], val)
+    else:
+        return np.nanpercentile(data, val)
+
+
+def image_plot(request, data, property_info):
+    log = request.GET.get('logimage', "0") == "1"
+    vmin, vmax = (request.GET.get(_, None) for _ in ("vmin", "vmax"))
+    cmap = request.GET.get("cmap", None)
+    absolute = request.GET.get("absolute", "0") == "1"
     with _matplotlib_lock:
         start(request)
 
@@ -273,25 +288,34 @@ def image_plot(request, val, property_info):
         else:
             width = 1.0
 
-        if log and len(val.shape)==2:
-            data = np.log10(val)
-            data[data!=data]=data[data==data].min()
+        # This is required to properly use log norms with ranges larger than 10^7
+        data = data.astype(np.float64)
 
+        if data.ndim == 2:
+            vmin = _sanitize_lims(vmin, absolute, data, 0, log)
+            vmax = _sanitize_lims(vmax, absolute, data, 100, log)
+
+            vmin, vmax = min(vmin, vmax), max(vmin, vmax)
+
+        kwa = {"cmap": cmap}
+
+        if log:
+            kwa["norm"] = p.matplotlib.colors.LogNorm(vmin, vmax)
         else:
-            data =val
+            kwa["norm"] = p.matplotlib.colors.Normalize(vmin, vmax)
 
         if width is not None:
             if hasattr(width, '__len__'):
-                p.imshow(data, extent=width)
+                kwa["extent"] = width
             else:
-                p.imshow(data, extent=(-width/2, width/2, -width/2, width/2))
-        else:
-            p.imshow(data)
+                kwa["extent"] = (-width/2, width/2, -width/2, width/2)
+
+        p.imshow(data, **kwa)
 
         if property_info:
             add_xy_labels(property_info, request)
 
-        if len(val.shape) is 2 :
+        if data.ndim == 2:
             cb = p.colorbar()
             if property_info and property_info.plot_clabel() :
                 cb.set_label(property_info.plot_clabel())
