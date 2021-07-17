@@ -24,8 +24,10 @@ class UnsignedInteger(types.TypeDecorator):
         return np.uint64(value).astype(np.int64)
 
     def process_result_value(self, value, dialect):
-        return np.frombuffer(value, dtype=np.uint64)[0]
-
+        if value:
+            return np.frombuffer(value, dtype=np.uint64)[0]
+        else:
+            return None
 
 class Halo(Base):
     __tablename__= "halos"
