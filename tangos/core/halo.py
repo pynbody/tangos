@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 import weakref
+import numpy as np
 
-from sqlalchemy import Column, Integer, ForeignKey, orm
+from sqlalchemy import Column, Integer, ForeignKey, orm, types
 from sqlalchemy.orm import relationship, backref, Session
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -12,12 +13,26 @@ from .dictionary import get_dict_id, get_or_create_dictionary_item
 from .timestep import TimeStep
 import six
 
+class UnsignedInteger(types.TypeDecorator):
+    """Stores an unsigned int64 as a signed int64"""
+
+    impl = types.Integer
+
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return np.uint64(value).astype(np.int64)
+
+    def process_result_value(self, value, dialect):
+        return int(np.int64(value).astype(np.uint64))
+
+
 class Halo(Base):
     __tablename__= "halos"
 
     id = Column(Integer, primary_key=True) #the unique ID value of the database object created for this halo
     halo_number = Column(Integer) #by default this will be the halo's rank in terms of particle count
-    finder_id = Column(Integer) #raw halo ID from the halo catalog
+    finder_id = Column(UnsignedInteger) #raw halo ID from the halo catalog
     finder_offset = Column(Integer) #index of halo within halo catalog, primary identifier used when reading catalog/simulation data
     timestep_id = Column(Integer, ForeignKey('timesteps.id'))
     timestep = relationship(TimeStep, backref=backref(
