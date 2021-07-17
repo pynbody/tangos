@@ -18,3 +18,7 @@ def test_big_integer_halo():
     session.add(h)
     session.commit()
 
+    h = db.get_halo("sim/ts1/1")
+
+    assert h.finder_id == crazy_number
+

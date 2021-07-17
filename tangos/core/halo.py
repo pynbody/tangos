@@ -24,7 +24,7 @@ class UnsignedInteger(types.TypeDecorator):
         return np.uint64(value).astype(np.int64)
 
     def process_result_value(self, value, dialect):
-        return int(np.int64(value).astype(np.uint64))
+        return np.frombuffer(value, dtype=np.uint64)[0]
 
 
 class Halo(Base):
