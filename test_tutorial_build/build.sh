@@ -2,7 +2,7 @@
 
 get_tutorial_data() {
     if [ ! -d tutorial_$1 ]; then
-	wget -O - ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_$1.tar.gz | tar -xz
+	wget -O - https://zenodo.org/record/5155467/files/tutorial_$1.tar.gz?download=1 | tar -xz
     fi
 }
 

@@ -4,7 +4,7 @@ Data exploration with tango's web interface
 
 Before completing this tutorial, you need to have set up _tangos_ and added the 
 tutorial data to your first database. To skip adding the data, you can download the
-[sample database](http://www.star.ucl.ac.uk/~app/tangos/tangos_data.db) here. Make sure the environment variable `TANGOS_DB_CONNECTION` 
+[sample database](https://zenodo.org/record/5168449/files/tangos_data.db?download=1) here. Make sure the environment variable `TANGOS_DB_CONNECTION` 
 contains the full path to this database (or just put it in your home folder as
 `tangos_data.db`). 
 

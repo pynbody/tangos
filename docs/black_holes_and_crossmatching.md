@@ -10,7 +10,7 @@ Download, add and process the new simulation
 --------------------------------------------
 
 First, download the
-[raw simulation data](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_changa_blackholes.tar.gz) required
+[raw simulation data](https://zenodo.org/record/5155467/files/tutorial_changa_blackholes.tar.gz?download=1) required
 for this tutorial.
 Unpack the tar file either in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` 
 environment
