@@ -3,7 +3,6 @@ name: Push to PyPI
 on:
   push:
     tags: v*
-    branches: pypi-deploy
 
   workflow_dispatch:
 
@@ -41,7 +40,7 @@ jobs:
       - name: Twine upload
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TEST_TOKEN }}
-        run: twine upload --repository testpypi dist/tangos-${{ env.VERSION_TAG }}.tar.gz
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: twine upload dist/tangos-${{ env.VERSION_TAG }}.tar.gz
         
           
