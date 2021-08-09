@@ -34,8 +34,11 @@ jobs:
               exit 1;
           fi
           
+      - name: Install twine
+        run: pip3 install twine
+          
       - name: Build source distribution
-        run: python setup.py sdist
+        run: python3 setup.py sdist
         
       - name: Twine upload
         run: twine upload --repository testpypi --username __token__ --password ${{ secrets.PYPI_TEST_TOKEN }} dist/tangos-${{ env.VERSION_TAG }}.tar.gz
