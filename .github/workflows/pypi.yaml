@@ -41,6 +41,9 @@ jobs:
         run: python3 setup.py sdist
         
       - name: Twine upload
-        run: twine upload --repository testpypi --username __token__ --password ${{ secrets.PYPI_TEST_TOKEN }} dist/tangos-${{ env.VERSION_TAG }}.tar.gz
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TEST_TOKEN }}
+        run: twine upload --repository testpypi dist/tangos-${{ env.VERSION_TAG }}.tar.gz
         
           
