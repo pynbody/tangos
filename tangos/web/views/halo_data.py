@@ -11,9 +11,10 @@ from pyramid.response import Response
 from six import BytesIO, string_types
 from ...log import logger
 from ... import core
-from ...config import webview_default_image_format
+from ...config import webview_default_image_format, webview_cache_time
 import threading
 import time
+import functools
 
 _matplotlib_lock = threading.RLock()
 
@@ -103,13 +104,14 @@ def elements_are_arrays(data_array):
     else:
         return is_array(data_array[0])
 
-@view_config(route_name='calculate_all', renderer='json')
+
+@view_config(route_name='calculate_all', renderer='json', http_cache=webview_cache_time)
 def calculate_all(request):
     ts = timestep_from_request(request)
-
+    typetag = request.matchdict['typetag']
     try:
         data, = ts.calculate_all(decode_property_name(request.matchdict['nameid']),
-                                 sanitize=False, order_by_halo_number=True)
+                                 sanitize=False, order_by_halo_number=True, object_type=typetag)
     except Exception as e:
         return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
 
@@ -118,7 +120,7 @@ def calculate_all(request):
             'can_use_as_filter': can_use_elements_as_filter(data),
             'is_array': elements_are_arrays(data)}
 
-@view_config(route_name='get_property', renderer='json')
+@view_config(route_name='get_property', renderer='json', http_cache=webview_cache_time)
 def get_property(request):
     halo = halo_from_request(request)
 
@@ -167,10 +169,12 @@ def finish(request, getImage=True):
 
     if getImage:
         try:
-            return Response(
+            r = Response(
                 content_type=CONTENT_TYPES[extension],
                 body=buffer.getvalue()
             )
+            r.cache_expires(webview_cache_time)
+            return r
         except KeyError:
             raise NotImplementedError(
                 'Tangos does not support the provided image format: '

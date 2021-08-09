@@ -144,6 +144,12 @@ function uriEncodeQuery(name) {
     return name;
 }
 
+function uriDecodeQuery(name) {
+    name = name.replace(/_slash_/g,"/")
+    name = decodeURIComponent(name);
+    return name;
+}
+
 function getAllEditables() {
     var editables = [];
     forEach(allEditables, function(row) {
