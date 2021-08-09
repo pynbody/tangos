@@ -3,6 +3,7 @@ name: Push to PyPI
 on:
   push:
     tags: v*
+    branches: pypi-deploy
 
   workflow_dispatch:
 
