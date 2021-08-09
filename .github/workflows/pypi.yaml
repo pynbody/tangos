@@ -1,0 +1,43 @@
+name: Push to PyPI
+
+on:
+  push:
+    tags: v*
+
+  workflow_dispatch:
+
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: PyPI
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Determine version tag
+        run: echo "VERSION_TAG=`git describe --tags | cut -c 2-`" >> $GITHUB_ENV
+        
+      - name: Display version tag
+        run: 
+        
+      - name: Verify version naming is consistent
+        run: |
+          SETUP_VERSION = `python setup.py --version`
+          if [ "${{ env.VERSION_TAG }}" == "$SETUP_VERSION" ]; then
+              echo Versions match
+              echo Version is ${{ env.VERSION_TAG }}
+          else
+              echo Version label mismatch
+              echo Git tag-derived version is ${{ env.VERSION_TAG }}
+              echo setup.py-derived version is $SETUP_VERSION
+              exit 1;
+          fi
+          
+          
+          
+      - name: Login to Dockerhub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
