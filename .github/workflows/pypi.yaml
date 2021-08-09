@@ -15,13 +15,16 @@ jobs:
     environment: PyPI
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: refs/tags/v1.1.1 # temporary
       
       - name: Determine version tag
-        run: echo "VERSION_TAG=`git describe --tags | cut -c 2-`" >> $GITHUB_ENV
+        run: |
+          echo "SETUP_VERSION = `python setup.py --version`" >> $GITHUB_ENV
+          echo "VERSION_TAG=`git describe --tags | cut -c 2-`" >> $GITHUB_ENV
         
       - name: Verify version naming is consistent
         run: |
-          echo "SETUP_VERSION = `python setup.py --version`" >> $GITHUB_ENV
           if [ "${{ env.VERSION_TAG }}" == "${{ env.SETUP_VERSION }}" ]; then
               echo Versions match
               echo Version is ${{ env.VERSION_TAG }}
