@@ -20,7 +20,7 @@ jobs:
       
       - name: Determine version tag
         run: |
-          echo "SETUP_VERSION = `python setup.py --version`" >> $GITHUB_ENV
+          echo "SETUP_VERSION=`python setup.py --version`" >> $GITHUB_ENV
           echo "VERSION_TAG=`git describe --tags | cut -c 2-`" >> $GITHUB_ENV
         
       - name: Verify version naming is consistent
