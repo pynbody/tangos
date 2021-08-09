@@ -22,4 +22,4 @@ from .core import *
 from .query import *
 from . import properties
 
-__version__ = '1.1.1'
+__version__ = '1.2'
