@@ -15,8 +15,6 @@ jobs:
     environment: PyPI
     steps:
       - uses: actions/checkout@v2
-        with:
-          ref: refs/tags/v1.1.1 # temporary
       
       - name: Determine version tag
         run: |
