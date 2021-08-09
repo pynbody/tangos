@@ -21,14 +21,14 @@ jobs:
         
       - name: Verify version naming is consistent
         run: |
-          SETUP_VERSION = `python setup.py --version`
-          if [ "${{ env.VERSION_TAG }}" == "$SETUP_VERSION" ]; then
+          echo "SETUP_VERSION = `python setup.py --version`" >> $GITHUB_ENV
+          if [ "${{ env.VERSION_TAG }}" == "${{ env.SETUP_VERSION }}" ]; then
               echo Versions match
               echo Version is ${{ env.VERSION_TAG }}
           else
               echo Version label mismatch
               echo Git tag-derived version is ${{ env.VERSION_TAG }}
-              echo setup.py-derived version is $SETUP_VERSION
+              echo setup.py-derived version is ${{ env.SETUP_VERSION }}
               exit 1;
           fi
           
