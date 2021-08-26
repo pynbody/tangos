@@ -19,7 +19,7 @@ class Contamination(PynbodyPropertyCalculation):
         # ensure backward compatibility by setting the min mass to infinity
         import numpy as np
         import pynbody.array as array
-        simulation_min_dm_mass = array.SimArray(self._simulation.get("approx_resolution_Msol", default=np.inf),
+        simulation_min_dm_mass = array.SimArray(self.get_simulation_property("approx_resolution_Msol", default=np.inf),
                                                 units="Msol")
 
         if np.isclose(loaded_data_min_dm_mass, simulation_min_dm_mass, rtol=1e-1, atol=1):

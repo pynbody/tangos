@@ -9,7 +9,7 @@ class HaloDensityProfile(SphericalRegionPropertyCalculation):
 
     def __init__(self, simulation):
         super().__init__(simulation)
-        self._xdelta = self._simulation.get("approx_resolution_kpc", 0.1)
+        self._xdelta = self.get_simulation_property("approx_resolution_kpc", 0.1)
 
     def plot_x0(self):
         return self.plot_xdelta()/2
