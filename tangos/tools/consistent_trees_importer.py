@@ -12,6 +12,7 @@ from .. import config
 from . import GenericTangosTool
 from six.moves import xrange
 import re
+import numpy as np
 
 class ConsistentTreesImporter(GenericTangosTool):
     tool_name = 'import-consistent-trees'
@@ -49,8 +50,8 @@ class ConsistentTreesImporter(GenericTangosTool):
         new_phantoms = []
 
         for i in xrange(1,n_phantoms+1):
-            if -i not in existing_phantom_ids:
-                new_ph = PhantomHalo(timestep, i, -i)
+            if i not in existing_phantom_ids:
+                new_ph = PhantomHalo(timestep, i, i)
                 new_phantoms.append(new_ph)
 
         session = db.core.get_default_session()
@@ -67,7 +68,7 @@ class ConsistentTreesImporter(GenericTangosTool):
         for h in halos:
             out[h.finder_id] = h
         for p in phantoms:
-            out[p.finder_id] = p
+            out[-p.finder_id.astype(np.int64)] = p
         return out
 
     def create_links(self, ts, ts_next, link_dictionary):
@@ -92,7 +93,10 @@ class ConsistentTreesImporter(GenericTangosTool):
         dict_obj = get_or_create_dictionary_item(session, "consistent_trees_id")
         props = []
         for o in objs.values():
-            tree_id = id_to_tree_id.get(o.finder_id, None)
+            if isinstance(o, PhantomHalo):
+                tree_id = id_to_tree_id.get(-o.finder_id, None)
+            else:
+                tree_id = id_to_tree_id.get(o.finder_id, None)
             if tree_id is not None:
                 props.append(HaloProperty(o, dict_obj, tree_id))
         session.add_all(props)
