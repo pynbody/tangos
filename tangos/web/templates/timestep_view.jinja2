@@ -1,8 +1,8 @@
 {% extends "layout.jinja2" %}
 
-{% macro make_table(objects, object_type) %}
+{% macro make_table(object_type) %}
     <form id="properties_form_{{ object_type }}" class="autorestore">
-        <p>Page
+        <p><span id="update-marker-{{ object_type }}"></span>Page
             <select name="page" id="page-{{ object_type }}">
                 <option value="1" selected>1</option>
             </select> of <span id="num-pages-{{ object_type }}">1</span>.
@@ -18,7 +18,7 @@
             <tr id="header-row-{{ object_type }}">
                 <th id="header-number-{{ object_type }}">Number</th>
                 <th class="editable" id="header-colid-1-{{ object_type }}"></th>
-                <th id="header-go-{{ object_type }}">Go</th>
+                <th id="header-go-{{ object_type }}">Go &rarr;</th>
             </tr>
             <tr>
                 <th></th>
@@ -26,60 +26,24 @@
                 <th></th>
             </tr>
 
-        <script>
-            if(window.dataTables['{{  object_type }}']===undefined) {
-                window.dataTables['{{ object_type }}'] = {}
-                window.dataTables['{{ object_type }}']['*halo_number'] = Object();
-                window.dataTables['{{ object_type }}']['*halo_number'].data_formatted = [
-                    {% for h in objects %}
-                        {{ h.halo_number }},
-                    {% endfor %}
-                ];
-                window.dataTables['{{ object_type }}']['*go_link'] = Object();
-                window.dataTables['{{ object_type }}']['*go_link'].data_formatted = [
-                    {% for h in objects %}
-                        '<a href="{{ h.url }}">Go &rarr;</a>',
-                    {% endfor %}
-                ];
-            }  // otherwise it has been restored from session storage.
-        </script>
 
         </table>
     </form>
 {% endmacro %}
 
 {% block content %}
+    <script type="text/javascript" src="{{ request.static_url('tangos.web:static/timestepdata.js') }}"></script>
 
-    <script>
-
-    function persistTableData() {
-        sessionStorage['timestep-data-'+window.location.href] =JSON.stringify(window.dataTables);
-    }
-
-    function restoreTableData() {
-        if(sessionStorage['timestep-data-'+window.location.href]!==undefined)
-        {
-            window.dataTables = JSON.parse(sessionStorage['timestep-data-'+window.location.href])
-        } else {
-            window.dataTables = {}
-        }
-    }
-
-    $(window).on('beforeunload',persistTableData);
-    restoreTableData();
-
-
-    </script>
     <h1>Timestep: {{ timestep }}</h1>
 
     <table id="objects-container"><tr>
 
     {% for this_object in objects %}
-        {%  if len(this_object['items'])>0 %}
+        {%  if this_object['n_items']>0 %}
         <td>
             <h2>{{ this_object['title'] }}</h2>
 
-            {{ make_table(this_object['items'], this_object['typetag']) }}
+            {{ make_table(this_object['typetag']) }}
         </td>
         {% endif %}
     {% endfor %}
@@ -102,29 +66,24 @@ $.fn.markAsColumnInsertPoint = function(editable_tag) {
 }
 
 
+
 function updateColumnData(miniLanguageQuery, columnId, editable_tag) {
 
     $('#header-'+columnId).data('miniLanguageQuery', miniLanguageQuery);
 
     if(window.dataTables[editable_tag][miniLanguageQuery]!==undefined) {
         data = window.dataTables[editable_tag][miniLanguageQuery]
-        $('#header-' + columnId).html(miniLanguageQuery);
-        updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, data.can_use_as_filter, false, true);
+        if (data===undefined || data.error) {
+            $('#header-' + columnId).html("<span class='load_table_failed'>" + miniLanguageQuery + " (failed)</span>")
+        } else {
+            $('#header-' + columnId).html(miniLanguageQuery);
+            updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, data.can_use_as_filter, false, true);
+        }
     } else {
-        $('#header-'+columnId).html("<img src='/static/spinner.gif'/>"+miniLanguageQuery);
+        $('#header-'+columnId).html("<div class='progress-spinner'></div>"+miniLanguageQuery);
         updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, false, false);
-        $.ajax({
-            type: "GET",
-            url: "{{ gather_url }}" + uriEncodeQuery(miniLanguageQuery) + ".json",
-            success: function (data) {
-                if (data===undefined || data.error) {
-                    $('#header-' + columnId).html("<span class='load_table_failed'>" + miniLanguageQuery + " (failed)</span>")
-                } else {
-                    window.dataTables[editable_tag][miniLanguageQuery] = data;
-                    updateColumnData(miniLanguageQuery, columnId, editable_tag);
-                }
-
-            }
+        requestColumnData(editable_tag, miniLanguageQuery, function() {
+            updateColumnData(miniLanguageQuery, columnId, editable_tag);
         });
     }
     updateTableDisplay(editable_tag);
@@ -152,69 +111,76 @@ function removeColumn(name, object_tag) {
 
 function setupDynamicTables() {
 
+    setupTimestepTables('{{ timestep_url }}');
+
     {% for this_object in objects %}
-        $('#header-number-{{ this_object['typetag'] }}').data('miniLanguageQuery', "*halo_number");
+        if(window.dataTables['{{ this_object['typetag'] }}']===undefined) {
+            window.dataTables['{{ this_object['typetag'] }}'] = {};
+        }
+
+        $('#header-number-{{ this_object['typetag'] }}').data('miniLanguageQuery', "halo_number()");
         $('#header-go-{{ this_object['typetag'] }}').data('miniLanguageQuery', "*go_link");
         $('#header-colid-1-{{ this_object["typetag"] }}').markAsColumnInsertPoint('{{ this_object["typetag"] }}');
         updateTableDisplay('{{ this_object['typetag']  }}');
+        requestColumnData('{{ this_object["typetag"] }}', "halo_number()", function() {
+            let tables = window.dataTables['{{ this_object["typetag"]  }}'];
+            let numbers = tables['halo_number()'].data_formatted;
+            let links = new Array(numbers.length);
+            for(i=0; i<numbers.length; i++) {
+                links[i] = `<a href="{{ this_object["object_url"] }}${numbers[i]}">Go &rarr;</a>`
+            }
+            tables['*go_link'] = Object();
+            tables['*go_link'].data_formatted = links;
+            updateTableDisplay('{{ this_object['typetag']  }}');
+        })
     {% endfor %}
 
 }
 
+
+
 function updateTableDisplay(object_tag) {
-    var columnsToFilterOn = [];
-    var dataToFilterOn = [];
-
-    var re = new RegExp("plotctl-(.*)");
-    $('#properties_form_'+object_tag+' input[type="checkbox"]').each(function() {
-        var $this = $(this);
-        if($this.prop('checked') && $this.is(":visible")) {
-            var control_id = $this.closest('th').attr('id');
-            var column_id = re.exec(control_id)[1];
-            columnsToFilterOn.push("header-"+column_id);
-        }
-    });
-
-    $("#table-"+object_tag+" tr.tangos-data").remove();
-
-    var columns = [];
+    let dataColumns = [];
     $("tr#header-row-"+object_tag+" th").each(function() {
        var miniLanguageQ = $(this).data('miniLanguageQuery');
        if(window.dataTables[object_tag][miniLanguageQ]!==undefined) {
-           columns.push(window.dataTables[object_tag][miniLanguageQ].data_formatted);
-           if (columnsToFilterOn.includes(this.id)) {
-               dataToFilterOn.push(window.dataTables[object_tag][miniLanguageQ].data_formatted);
-           }
+           dataColumns.push(window.dataTables[object_tag][miniLanguageQ].data_formatted);
        } else {
-           columns.push(undefined);
+           dataColumns.push(undefined);
        }
     });
 
-    var nData = 0;
-    $.each(columns, function(i,c) {
+    let nData = 0;
+    $.each(dataColumns, function(i,c) {
         if(c !== undefined && c.length>nData) {
             nData=c.length;
         }
     });
 
 
-    var rowsPerPage = parseInt($("#per-page-"+object_tag+" option:selected").text());
-    var page = parseInt($("#page-"+object_tag+" option:selected").text());
-    var startRow = (page-1)*rowsPerPage;
-    var endRow = startRow+rowsPerPage;
+    $("#table-"+object_tag+" tr.tangos-data").remove();
 
-    var nRowsTotal=0;
-    var displayRows = [];
+    let filterArray = getFilterArray(object_tag);
+
+    let rowsPerPage = parseInt($("#per-page-"+object_tag+" option:selected").text());
+    let page = parseInt($("#page-"+object_tag+" option:selected").text());
+    if (isNaN(page)) page=1;
+    let startRow = (page-1)*rowsPerPage;
+    let endRow = startRow+rowsPerPage;
+
+    let nRowsTotal=0;
+    let displayRows = [];
 
     for(var i=0; i<nData; i++) {
-        var shouldDisplay = true;
-        $.each(dataToFilterOn, function(j,c) {
-            if(c[i] !== 'True') shouldDisplay = false;
-        });
+        let shouldDisplay = true;
+
+        if(filterArray!==undefined)
+            shouldDisplay = filterArray[i];
+
         if(shouldDisplay) {
             if (nRowsTotal<endRow && nRowsTotal>=startRow) {
                 display = "<tr class='tangos-data'>"
-                $.each(columns, function(j,c) {
+                $.each(dataColumns, function(j,c) {
                     if(c!==undefined)
                         display+="<td>"+c[i]+"</td>";
                     else
@@ -241,6 +207,8 @@ function updateTableDisplay(object_tag) {
     }
 
     $("#table-"+object_tag).append(displayRows);
+
+
 
 
 }

@@ -7,7 +7,7 @@ Initial set up
 Make sure you have followed the [initial set up instructions](index.md).
 
 Next, download the
-[raw simulation data](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_changa.tar.gz) required for this tutorial.
+[raw simulation data](https://zenodo.org/record/5155467/files/tutorial_changa.tar.gz?download=1) required for this tutorial.
 Unpack the tar file either in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
 variable to.
 
@@ -16,7 +16,7 @@ unpack it in the correct location:
 
 ```bash
 cd $TANGOS_SIMULATION_FOLDER
-curl ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_changa.tar.gz | tar -xz
+curl https://zenodo.org/record/5155467/files/tutorial_changa.tar.gz?download=1 | tar -xz
 ```
 
 

@@ -418,13 +418,19 @@ class LiveProperty(Calculation):
     def _evaluate_function(self, halos, input_descriptions, input_values):
         from .. import properties
         sim = consistent_collection.consistent_simulation_from_halos(halos)
-        results = []
         calculator = properties.providing_class(self.name())(sim, *input_descriptions)
-        for inputs in zip(halos, *input_values):
-            if self._has_required_properties(inputs[0]) and all([x is not None for x in inputs]):
-                results.append(calculator.live_calculate_named(self.name(), *inputs))
-            else:
-                results.append(None)
+        timestep_ordering = np.argsort([h.timestep.id for h in halos])
+        results = [None for i in range(len(halos))]
+        current_ts = None
+        for i in timestep_ordering:
+            inputs = [input[i] for input in input_values]
+            halo = halos[i]
+            if self._has_required_properties(halo) and all([x is not None for x in inputs]):
+                if halo.timestep != current_ts:
+                    current_ts = halo.timestep
+                    calculator.preloop(None, current_ts)
+                results[i] = calculator.live_calculate_named(self.name(), halo, *inputs)
+
         return calculator, self._as_1xn_array(results)
 
     @classmethod

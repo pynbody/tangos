@@ -41,6 +41,25 @@ table#objects-container tr td {
     vertical-align: top;
 }
 
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+}
+
+div.progress-spinner {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-image: url('/static/tangos-50x50.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    animation: rotation 2s infinite;
+    animation-timing-function: linear;
+}
 tr.tangos-data:nth-child(odd) {
     background-color: #eeeef3;
 }

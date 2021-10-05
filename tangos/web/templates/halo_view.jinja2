@@ -3,9 +3,11 @@
 {% block content %}
     <!-- Following are hidden elements to allow scripts to fetch new information -->
     <div id="calculate_url" class="dynamic-update hidden">{{ calculate_url }}</div>
-    <div id="gather_url" class="dynamic-update hidden">{{ gather_url }}</div>
+    <div id="timestep_url" class="dynamic-update hidden">{{ timestep_url }}</div>
+    <div id="calculate_all_url" class="dynamic-update hidden">{{ calculate_all_url }}</div>
     <div id="cascade_url" class="dynamic-update hidden">{{ cascade_url }}</div>
     <div id="tree_url" class="dynamic-update hidden">{{ tree_url }}</div>
+    <div id="halo_number" class="dynamic-update hidden">{{ halo_number }}</div>
     <div id="object_typetag" class="dynamic-update hidden">{{ halo_typetag }}</div>
 
     <h1 class="dynamic-update" id="halo-title">{{ halo_typetag  }} {{ halo_number }} of {{ timestep }}</h1>
@@ -24,12 +26,8 @@
                   </td>
                 </tr>
                <tr><td>Look at another {{ halo_typetag }}:</td>
-               <td>
-                    {% if halo_number>1 %}
-                       <a href="{{ gather_url }}{{ halo_typetag }}_{{ halo_number-1 }}" class="ajaxenabled">{{ halo_number-1 }}</a> |
-                    {% endif %} {{ halo_number }} |
-                    <a href="{{ gather_url }}{{ halo_typetag }}_{{ halo_number+1 }}" class="ajaxenabled">{{ halo_number+1 }}</a>
-               </td></tr>
+               <td id="nav-to-another"><img src="/static/spinner.gif"></td>
+               </tr>
             <tr><td><label for="target_sim_id">Find in another simulation:</label></td>
             <td><select name="target_sim_id" id="target_sim_id" onchange="findInOtherSimulation();">
                         {% for sim in all_simulations %}
@@ -71,6 +69,13 @@
                 <option value='pdf'>PDF</option>
             </select>
             <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>.
+            <input type="checkbox" name="use_range" id="use_range" onclick="rangeDisplay()"/><label for="use_range">Use range</label>
+            <p id="vmin-vmax-range">
+                <label for="vmin">Vmin</label>
+                <input name="vmin" type="range" id="vmin" min="0", vmax="100" value="0" onchange="fetchPlot()">
+                <label for="vmax">Vmax</label>
+                <input name="vmax" type="range" id="vmax" min="0", vmax="100" value="100" onchange="fetchPlot()">
+            </p>
             <span class="download-area-csv"><a href="#" id="download-csv-link">&#x25BC; Download CSV</a></span>
             <span class="download-area-tree"><a href="#" id="download-merger-tree">&#x25BC; Download Merger Tree</a></span>
         </form>
@@ -114,7 +119,6 @@
     </div>
     </form>
 
-
+    <script type="text/javascript" src="{{ request.static_url('tangos.web:static/timestepdata.js') }}"></script>
     <script type="text/javascript" src="{{ request.static_url('tangos.web:static/halo_view.js') }}"></script>
-
 {% endblock content %}

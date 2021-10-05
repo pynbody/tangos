@@ -3,6 +3,7 @@ from __future__ import print_function
 from pyramid.view import view_config
 from . import halo_from_request
 from ...relation_finding import tree
+from ...config import webview_cache_time
 
 class WebMergerTree(tree.MergerTree):
     def __init__(self, halo, request):
@@ -33,7 +34,7 @@ def _construct_mergertree(halo, request):
     return tree._treedata
 
 
-@view_config(route_name='merger_tree', renderer='json')
+@view_config(route_name='merger_tree', renderer='json', http_cache=webview_cache_time)
 def merger_tree(request):
     halo = halo_from_request(request)
     return {'tree': _construct_mergertree(halo, request)}

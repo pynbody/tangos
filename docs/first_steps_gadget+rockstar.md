@@ -12,8 +12,8 @@ Make sure you have followed the [initial set up instructions](index.md).
 Then download the raw simulation data
 required for this tutorial. You need two files:
 
- - the simulations snapshots, [tutorial_gadget.tar.gz](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_gadget.tar.gz)
- - the rockstar catalogues, [tutorial_gadget_rockstar.tar.gz](ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_gadget_rockstar.tar.gz)
+ - the simulations snapshots, [tutorial_gadget.tar.gz](https://zenodo.org/record/5155467/files/tutorial_gadget.tar.gz?download=1)
+ - the rockstar catalogues, [tutorial_gadget_rockstar.tar.gz](https://zenodo.org/record/5155467/files/tutorial_gadget_rockstar.tar.gz?download=1)
 
 required for this tutorial.
 
@@ -25,8 +25,8 @@ unpack it in the correct location:
 
 ```bash
 cd $TANGOS_SIMULATION_FOLDER
-curl ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_gadget.tar.gz | tar -xz
-curl ftp://ftp.star.ucl.ac.uk/app/tangos/tutorial_gadget_rockstar.tar.gz | tar -xz
+curl https://zenodo.org/record/5155467/files/tutorial_gadget.tar.gz?download=1 | tar -xz
+curl https://zenodo.org/record/5155467/files/tutorial_gadget_rockstar.tar.gz?download=1 | tar -xz
 ```
 
 Import the simulation
