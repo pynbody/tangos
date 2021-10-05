@@ -116,7 +116,8 @@ class BHLogData(object):
         mask = self.vars['bhid'] == bhid
         if mask.sum()==0:
             raise ValueError("No entries for BH %d"%bhid)
-        return dict((k, v[mask][-1]) for k, v in six.iteritems(self.vars))
+        ilast = np.argmax(self.vars['time'][mask])
+        return dict((k, v[mask][ilast]) for k, v in six.iteritems(self.vars))
 
     def determine_merger_ratio(self, bhid_eaten, bhid_survivor):
         eaten_entries = self.get_last_entry_for_id(bhid_eaten)
