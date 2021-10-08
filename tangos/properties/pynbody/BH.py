@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import tangos.core.halo
-from tangos.input_handlers.changa_bh import BHShortenedLog
+from tangos.input_handlers.changa_bh import ShortenedOrbitLog, BlackHolesLog
 from . import PynbodyPropertyCalculation
 from .. import LivePropertyCalculation, TimeChunkedProperty
 import numpy as np
@@ -10,7 +10,7 @@ import scipy, scipy.interpolate
 
 class BH(PynbodyPropertyCalculation):
 
-    names = "BH_mdot", "BH_mdot_ave", "BH_mdot_std", "BH_central_offset", "BH_central_distance", "BH_mass"
+    names = "BH_mdot", "BH_mdot_ave", "BH_central_offset", "BH_central_distance", "BH_mass"
     requires_particle_data = True
 
 
@@ -22,7 +22,12 @@ class BH(PynbodyPropertyCalculation):
         return True
 
     def preloop(self, f, db_timestep):
-        self.log = BHShortenedLog.get_existing_or_new(db_timestep.filename)
+        if BlackHolesLog.can_load(db_timestep.filename):
+            self.log = BlackHolesLog.get_existing_or_new(db_timestep.filename)
+        elif ShortenedOrbitLog.can_load(db_timestep.filename):
+            self.log = ShortenedOrbitLog.get_existing_or_new(db_timestep.filename)
+        else:
+            raise RuntimeError("cannot find recognizable log file")
         self.filename = db_timestep.filename
         print(self.log)
 
@@ -63,7 +68,7 @@ class BH(PynbodyPropertyCalculation):
 
         print("target entry is", entry)
         final = {}
-        for t in 'x', 'y', 'z', 'vx', 'vy', 'vz', 'mdot', 'mass', 'mdotmean', 'mdotsig':
+        for t in 'x', 'y', 'z', 'vx', 'vy', 'vz', 'mdot', 'mass', 'mdotmean':
             final[t] = float(vars[t][entry])
 
         if main_halo_ssc is None:
@@ -73,7 +78,7 @@ class BH(PynbodyPropertyCalculation):
             bad, = np.where(np.abs(offset) > boxsize / 2.)
             offset[bad] = -1.0 * (offset[bad] / np.abs(offset[bad])) * np.abs(boxsize - np.abs(offset[bad]))
 
-        return final['mdot'], final['mdotmean'], final['mdotsig'], offset, np.linalg.norm(offset), final['mass']
+        return final['mdot'], final['mdotmean'], offset, np.linalg.norm(offset), final['mass']
 
 
 class BHAccHistogram(TimeChunkedProperty):
@@ -88,7 +93,12 @@ class BHAccHistogram(TimeChunkedProperty):
         return []
 
     def preloop(self, f, db_timestep):
-        self.log = BHShortenedLog.get_existing_or_new(db_timestep.filename)
+        if BlackHolesLog.can_load(db_timestep.filename):
+            self.log = BlackHolesLog.get_existing_or_new(db_timestep.filename)
+        elif ShortenedOrbitLog.can_load(db_timestep.filename):
+            self.log = ShortenedOrbitLog.get_existing_or_new(db_timestep.filename)
+        else:
+            raise RuntimeError("cannot find recognizable log file")
 
     @classmethod
     def no_proxies(self):
@@ -121,7 +131,7 @@ class BHAccHistogram(TimeChunkedProperty):
         t_max = properties.timestep.time_gyr
 
         grid_tmax_Gyr = 20.0
-        nbins = grid_tmax_Gyr/self.pixel_delta_t_Gyr
+        nbins = int(grid_tmax_Gyr/self.pixel_delta_t_Gyr)
         t_grid = np.linspace(0, grid_tmax_Gyr, nbins)
 
         Mdot_grid = scipy.interpolate.interp1d(t_orbit[order], Mdot_orbit[order], bounds_error=False)(t_grid)

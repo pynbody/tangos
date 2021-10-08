@@ -12,7 +12,7 @@ import tangos.core.tracking
 import tangos.parallel_tasks as parallel_tasks
 import tangos.parallel_tasks.database
 import tangos.tracking
-from tangos.input_handlers.changa_bh import BHShortenedLog
+from tangos.input_handlers.changa_bh import ShortenedOrbitLog, BlackHolesLog
 from sqlalchemy.orm import Session
 from tangos.log import logger
 import sys
@@ -218,7 +218,13 @@ def resolve_multiple_mergers(bh_map):
 
 def generate_halolinks(session, fname, pairs):
     for ts1, ts2 in parallel_tasks.distributed(pairs):
-        bh_log = BHShortenedLog(ts2.filename)
+        bh_log = None
+        if BlackHolesLog.can_load(ts2.filename):
+            bh_log = BlackHolesLog(ts2.filename)
+        elif ShortenedOrbitLog.can_load(ts2.filename):
+            bh_log = ShortenedOrbitLog(ts2.filename)
+        if bh_log is None:
+            logger.error("Warning! No orbit file found!")
         links = []
         mergers_links = []
         bh_map = {}
@@ -258,17 +264,17 @@ def generate_halolinks(session, fname, pairs):
         logger.info("Generating BH Merger information for steps %r and %r", ts1, ts2)
         for l in open(fname[0]):
             l_split = l.split()
-            t = float(l_split[0])
-            bh_dest_id = int(l_split[2])
-            bh_src_id = int(l_split[3])
+            t = float(l_split[6])
+            bh_dest_id = int(l_split[0])
+            bh_src_id = int(l_split[1])
             ratio = float(l_split[4])
 
             # ratios in merger file are ambiguous (since major progenitor may be "source" rather than "destination")
             # re-establish using the log file:
             try:
                 ratio = bh_log.determine_merger_ratio(bh_src_id, bh_dest_id)
-            except ValueError:
-                logger.debug("Could not calculate merger ratio for %d->%d from the BH log; assuming the .mergers-asserted value is accurate",
+            except (ValueError, AttributeError) as e:
+                logger.debug("Could not calculate merger ratio for %d->%d from the BH log; assuming the .BHmergers-asserted value is accurate",
                             bh_src_id, bh_dest_id)
 
             if t>ts1.time_gyr and t<=ts2.time_gyr:
@@ -301,7 +307,7 @@ def timelink_bh(sims, session):
     query = db.sim_query_from_name_list(sims, session)
     for sim in query.all():
         pairs = list(zip(sim.timesteps[:-1],sim.timesteps[1:]))
-        fname = glob.glob(db.config.base+"/"+sim.basename+"/*.mergers")
+        fname = glob.glob(db.config.base+"/"+sim.basename+"/*.BHmergers")
         if len(fname)==0:
             logger.error("No merger file for "+sim.basename)
             return
