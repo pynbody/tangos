@@ -14,7 +14,7 @@ class HaloDensityProfile(YtPropertyCalculation):
         return self.plot_xdelta()/2
 
     def plot_xdelta(self):
-        return self._simulation.get("approx_resolution_kpc", 0.1)
+        return self.get_simulation_property("approx_resolution_kpc", 0.1)
 
     def plot_xlabel(self):
         return "r/kpc"

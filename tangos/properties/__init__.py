@@ -8,6 +8,7 @@ import warnings
 import functools
 from .. import input_handlers
 from .. import util
+from .. import parallel_tasks
 import pkg_resources
 
 
@@ -41,18 +42,58 @@ class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object
     # Specifies a tuple of names of properties that will be calculated by this class.
     names = None
 
+    # object to help cache recognise that there is no result in the database
+    # (avoids re-querying the database for missing objects)
+    __no_result = object()
+
     @classmethod
     def all_classes(cls):
         return cls._all_classes
 
-    def __init__(self, simulation):
+    def __init__(self, simulation, use_database_lock=False):
         """Initialise a PropertyCalculation calculation object
 
         :param simulation: The simulation from which the properties will be derived
         :type simulation: tangos.core.simulation.Simulation
+
+        :param use_database_lock: If True,
         """
-        self._simulation = simulation
+        self.__simulation = simulation
+        self.__use_database_lock = use_database_lock
+        self.__simulation_property_cache = {}
         self.timing_monitor = timing_monitor.TimingMonitor()
+
+    def get_simulation_property(self, name, default):
+        """Gets a property of the simulation on which this calculation is being computed
+
+        :param name: The name of the property to retrieve
+        :param default: The default value to return if no such property exists
+
+        This is safe to call even if the database might be locked. It also implements a
+        cache at the object level, so in the unlikely event that a simulation property is
+        updated mid-calculation, it may return old results."""
+        if name not in self.__simulation_property_cache:
+            self.__simulation_property_cache[name] = \
+                self._get_simulation_property_uncached(name, self.__no_result)
+        result = self.__simulation_property_cache[name]
+        if result is self.__no_result:
+            return default
+        else:
+            return result
+
+    def _get_simulation_property_uncached(self, name, default):
+        """Query the database for a property of the simulation on which this calculation is being computed
+
+        :param name: The name of the property to retrieve
+        :param default: The default value to return if no such property exists
+
+        This is safe to call even if the database might be locked.
+        """
+        if self.__use_database_lock:
+            with parallel_tasks.lock.SharedLock("insert_list"):
+                return self.__simulation.get(name, default)
+        else:
+            return self.__simulation.get(name, default)
 
     @classmethod
     def index_of_name(cls, name):
@@ -443,16 +484,22 @@ def providing_classes(property_name_list, handler_class, silent_fail=False):
     return classes
 
 def instantiate_classes(simulation, property_name_list, silent_fail=False):
-    """Instantiate appropriate property calculation classes for a given simulation and list of property names"""
+    """Instantiate appropriate property calculation classes for a given simulation and list of property names.
+
+    Assumes that these will be used in a parallel_tasks session (most likely by the property_writer),
+    and accordingly activates the parallel_tasks database locking mechanism."""
     instances = []
     handler_class = type(simulation.get_output_handler())
     for property_identifier in property_name_list:
-        instances.append(providing_class(property_identifier, handler_class, silent_fail)(simulation))
+        instances.append(providing_class(property_identifier, handler_class, silent_fail)(simulation, True))
 
     return instances
 
 def instantiate_class(simulation, property_name, silent_fail=False):
-    """Instantiate an appropriate property calculation class for a given simulation and property name"""
+    """Instantiate an appropriate property calculation class for a given simulation and property name
+
+    Assumes that these will be used in a parallel_tasks session (most likely by the property_writer),
+    and accordingly activates the parallel_tasks database locking mechanism."""
     instance = instantiate_classes(simulation, [property_name], silent_fail)
     if len(instance)==0:
         return None

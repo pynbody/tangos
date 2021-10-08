@@ -23,7 +23,7 @@ class BaryonicImages(SphericalRegionPropertyCalculation):
         size = self.plot_extent()
         g, s = self._render_gas(particle_data, size), self._render_stars(particle_data, size)
         with angmom.sideon(particle_data, return_transform=True,
-                               cen_size=self._simulation.get("approx_resolution_kpc", 0.1)*10.):
+                               cen_size=self.get_simulation_property("approx_resolution_kpc", 0.1)*10.):
             g_side, s_side = self._render_gas(particle_data, size), self._render_stars(particle_data, size)
             with particle_data.rotate_x(90):
                 g_face, s_face = self._render_gas(particle_data, size), self._render_stars(particle_data, size)

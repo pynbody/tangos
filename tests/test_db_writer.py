@@ -8,6 +8,7 @@ from tangos.input_handlers import output_testing
 from tangos import parallel_tasks, log, testing
 from tangos import properties
 from tangos.util import proxy_object
+from numpy import testing as npt
 
 def setup():
     parallel_tasks.use('null')
@@ -42,6 +43,30 @@ class DummyPropertyWithReconstruction(properties.PropertyCalculation):
         if self.callback:
             self.callback() # hook to allow us to know reassemble has been called
         return 2.0
+
+class DummyPropertyAccessingSimulationProperty(properties.PropertyCalculation):
+    names = "dummy_property_accessing_simulation_property",
+    requires_particle_data = False
+
+    def preloop(self, sim_data, db_timestep):
+        self._num_queries = 0
+
+    def calculate(self, data, entry):
+        with tangos.testing.SqlExecutionTracker() as ctr:
+            result = self.get_simulation_property("dummy_sim_property", None)
+        assert result == '42'
+        self._num_queries += ctr.count_statements_containing("simulationproperties")
+        assert self._num_queries<=1 # don't want to see simulationproperties queried more than once
+
+        check_null_result = object()
+        result2 = self.get_simulation_property("nonexistent_sim_property",check_null_result)
+        assert result2 is check_null_result
+
+        # store the value 1 to indicate that everything above passed (assertion errors will be
+        # caught by the db_writer so wouldn't directly result in a failure)
+        return 1,
+
+
 
 def init_blank_simulation():
     testing.init_blank_db_for_testing(timeout=0.0)
@@ -163,3 +188,24 @@ def test_writer_sees_raw_properties():
 
     DummyPropertyWithReconstruction.callback = raise_exception
     run_writer_with_args("dummy_property_with_reconstruction") # should not try to reconstruct the existing data stream
+
+def test_writer_handles_sim_properties():
+    """Test for issue where simulation properties could be queried from within a calculation.
+
+    This could lead to unexpected database locks. Tangos 1.3 provides a safe route to doing this.
+    The test ensures that the results are cached to prevent hammering the database
+
+    However it does not directly test that the parallel_tasks locking mechanism is called,
+    which is hard. Ideally this test would therefore be completed at some point..."""
+    init_blank_simulation()
+
+    parallel_tasks.use('multiprocessing')
+    try:
+        parallel_tasks.launch(run_writer_with_args, 3, ["dummy_property_accessing_simulation_property"])
+    finally:
+        parallel_tasks.use('null')
+
+    for i in range(1,3):
+        ts = db.get_timestep("dummy_sim_1/step.%d"%i)
+        x, = ts.calculate_all("dummy_property_accessing_simulation_property")
+        npt.assert_equal(x,[1]*ts.halos.count())
