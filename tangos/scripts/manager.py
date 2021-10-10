@@ -296,9 +296,9 @@ def add_tracker(halo, size=None):
     core.get_default_session().commit()
 
 
-def grep_run(st):
+def grep_run(opts):
     run = core.get_default_session().query(Creator).filter(
-        Creator.command_line.like("%" + st + "%")).all()
+        Creator.command_line.like("%" + opts.query + "%")).all()
     for r in run:
         print(r.id, end=' ')
 
@@ -446,6 +446,12 @@ def get_argument_parser_and_subparsers():
     subparse_recentruns.set_defaults(func=list_recent_runs)
     subparse_recentruns.add_argument("num", type=int,
                                      help="The number of runs to display, starting with the most recent")
+
+    subparse_greprun = subparse.add_parser("grep-runs",
+                                              help="List IDs of runs matching command line")
+    subparse_greprun.set_defaults(func=grep_run)
+    subparse_greprun.add_argument("query", type=str,
+                                     help="The sub-string to search for in the command line")
 
     # The following subcommands currently do not work and is disabled:
     """

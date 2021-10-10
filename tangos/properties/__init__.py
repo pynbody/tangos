@@ -50,16 +50,13 @@ class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object
     def all_classes(cls):
         return cls._all_classes
 
-    def __init__(self, simulation, use_database_lock=False):
+    def __init__(self, simulation):
         """Initialise a PropertyCalculation calculation object
 
         :param simulation: The simulation from which the properties will be derived
         :type simulation: tangos.core.simulation.Simulation
-
-        :param use_database_lock: If True,
         """
         self.__simulation = simulation
-        self.__use_database_lock = use_database_lock
         self.__simulation_property_cache = {}
         self.timing_monitor = timing_monitor.TimingMonitor()
 
@@ -89,10 +86,7 @@ class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object
 
         This is safe to call even if the database might be locked.
         """
-        if self.__use_database_lock:
-            with parallel_tasks.lock.SharedLock("insert_list"):
-                return self.__simulation.get(name, default)
-        else:
+        with parallel_tasks.lock.SharedLock("insert_list"):
             return self.__simulation.get(name, default)
 
     @classmethod
@@ -484,22 +478,16 @@ def providing_classes(property_name_list, handler_class, silent_fail=False):
     return classes
 
 def instantiate_classes(simulation, property_name_list, silent_fail=False):
-    """Instantiate appropriate property calculation classes for a given simulation and list of property names.
-
-    Assumes that these will be used in a parallel_tasks session (most likely by the property_writer),
-    and accordingly activates the parallel_tasks database locking mechanism."""
+    """Instantiate appropriate property calculation classes for a given simulation and list of property names."""
     instances = []
     handler_class = type(simulation.get_output_handler())
     for property_identifier in property_name_list:
-        instances.append(providing_class(property_identifier, handler_class, silent_fail)(simulation, True))
+        instances.append(providing_class(property_identifier, handler_class, silent_fail)(simulation))
 
     return instances
 
 def instantiate_class(simulation, property_name, silent_fail=False):
-    """Instantiate an appropriate property calculation class for a given simulation and property name
-
-    Assumes that these will be used in a parallel_tasks session (most likely by the property_writer),
-    and accordingly activates the parallel_tasks database locking mechanism."""
+    """Instantiate an appropriate property calculation class for a given simulation and property name."""
     instance = instantiate_classes(simulation, [property_name], silent_fail)
     if len(instance)==0:
         return None
