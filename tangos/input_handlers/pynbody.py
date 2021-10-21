@@ -368,9 +368,16 @@ def RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
         if h._read_contamination:
             halo_attributes.extend(h._halo_attributes_contam)
 
-        return list(chain.from_iterable(
+        attrs = chain.from_iterable(
             tuple(always_iterable(attr)) for (attr, _len, _dtype) in halo_attributes
-        ))
+        )
+
+        # We return all properties but the ids of the particles contained in the halo
+        return [
+            attr
+            for attr in attrs
+            if attr != "members"
+        ]
 
 class GadgetSubfindInputHandler(PynbodyInputHandler):
     patterns = ["snapshot_???"]
