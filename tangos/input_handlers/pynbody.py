@@ -312,24 +312,22 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         logger.warn(" -- it will certainly be wrong for e.g. zoom simulations")
         return estimated_part_mass
 
+
 class RamsesHOPInputHandler(PynbodyInputHandler):
     patterns = ["output_0????"]
+    auxiliary_file_patterns = ["grp*.tag"]
 
-    def _is_able_to_load(self, ts_extension):
-        filepath = self._extension_to_filename(ts_extension)
-        try:
-            f = pynbody.load(filepath)
-            if self.quicker:
-                logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
-            else:
-                h = pynbody.halo.HOPCatalogue(f)
-            return True
-        except (IOError, RuntimeError):
-            return False
-
-    def match_objects(self, ts1, ts2, halo_min, halo_max,
-                      dm_only=False, threshold=0.005, object_typetag='halo',
-                      output_handler_for_ts2=None):
+    def match_objects(
+        self,
+        ts1,
+        ts2,
+        halo_min,
+        halo_max,
+        dm_only=False,
+        threshold=0.005,
+        object_typetag="halo",
+        output_handler_for_ts2=None,
+    ):
 
         f1 = self.load_timestep(ts1).dm
         h1 = self._construct_halo_cat(ts1, object_typetag)
@@ -341,26 +339,25 @@ class RamsesHOPInputHandler(PynbodyInputHandler):
             f2 = output_handler_for_ts2.load_timestep(ts2).dm
             h2 = output_handler_for_ts2._construct_halo_cat(ts2, object_typetag)
 
-        bridge = pynbody.bridge.OrderBridge(f1,f2, monotonic=False)
+        bridge = pynbody.bridge.OrderBridge(f1, f2, monotonic=False)
 
-        return bridge.fuzzy_match_catalog(halo_min, halo_max, threshold=threshold,
-                                          only_family=pynbody.family.dm, groups_1=h1, groups_2=h2)
+        return bridge.fuzzy_match_catalog(
+            halo_min,
+            halo_max,
+            threshold=threshold,
+            only_family=pynbody.family.dm,
+            groups_1=h1,
+            groups_2=h2,
+        )
 
 
 def RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
-    def _is_able_to_load(self, ts_extension):
-        filepath = self._extension_to_filename(ts_extension)
-        try:
-            f = pynbody.load(filepath)
-            if self.quicker:
-                logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
-            else:
-                h = f.halos()
-            return isinstance(h, pynbody.halo.adaptahop.BaseAdaptaHOPCatalogue)
-        except (IOError, RuntimeError):
-            return False
+    patterns = ["output_0????"]
+    auxiliary_file_patterns = ["tree_bricks???"]
 
-    def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
+    def available_object_property_names_for_timestep(
+        self, ts_extension, object_typetag
+    ):
         f = self._load_timestep(ts_extension)
         h = self._construct_halo_cat(ts_extension, object_typetag)
 
@@ -373,11 +370,8 @@ def RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
         )
 
         # We return all properties but the ids of the particles contained in the halo
-        return [
-            attr
-            for attr in attrs
-            if attr != "members"
-        ]
+        return [attr for attr in attrs if attr != "members"]
+
 
 class GadgetSubfindInputHandler(PynbodyInputHandler):
     patterns = ["snapshot_???"]
