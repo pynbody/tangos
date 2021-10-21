@@ -5,13 +5,14 @@ import os
 import os.path
 import time
 import weakref
-import re
 import numpy as np
+from itertools import chain
+from more_itertools import always_iterable
 from ..util import proxy_object
 
 pynbody = None # deferred import; occurs when a PynbodyInputHandler is constructed
 
-from . import halo_stat_files, finding
+from . import finding
 from . import HandlerBase
 from .. import config
 from ..log import logger
@@ -314,6 +315,18 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 class RamsesHOPInputHandler(PynbodyInputHandler):
     patterns = ["output_0????"]
 
+    def _is_able_to_load(self, ts_extension):
+        filepath = self._extension_to_filename(ts_extension)
+        try:
+            f = pynbody.load(filepath)
+            if self.quicker:
+                logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
+            else:
+                h = pynbody.halo.HOPCatalogue(f)
+            return True
+        except (IOError, RuntimeError):
+            return False
+
     def match_objects(self, ts1, ts2, halo_min, halo_max,
                       dm_only=False, threshold=0.005, object_typetag='halo',
                       output_handler_for_ts2=None):
@@ -334,7 +347,30 @@ class RamsesHOPInputHandler(PynbodyInputHandler):
                                           only_family=pynbody.family.dm, groups_1=h1, groups_2=h2)
 
 
+def RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
+    def _is_able_to_load(self, ts_extension):
+        filepath = self._extension_to_filename(ts_extension)
+        try:
+            f = pynbody.load(filepath)
+            if self.quicker:
+                logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
+            else:
+                h = f.halos()
+            return isinstance(h, pynbody.halo.adaptahop.BaseAdaptaHOPCatalogue)
+        except (IOError, RuntimeError):
+            return False
 
+    def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
+        f = self._load_timestep(ts_extension)
+        h = self._construct_halo_cat(ts_extension, object_typetag)
+
+        halo_attributes = list(h._halo_attributes)
+        if h._read_contamination:
+            halo_attributes.extend(h._halo_attributes_contam)
+
+        return list(chain.from_iterable(
+            tuple(always_iterable(attr)) for (attr, _len, _dtype) in halo_attributes
+        ))
 
 class GadgetSubfindInputHandler(PynbodyInputHandler):
     patterns = ["snapshot_???"]
