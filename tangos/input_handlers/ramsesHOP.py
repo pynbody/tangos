@@ -24,7 +24,7 @@ class RamsesHOPInputHandler(PynbodyInputHandler):
                                           groups_1=h1, groups_2=h2)
 
 
-def RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
+class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
     """ Handling Ramses outputs with AdaptaHOP halo and subhalo finding """
 
     patterns = ["output_0????"]
