@@ -47,8 +47,17 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
         return halo_children
 
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
-        return ['m200', 'r200']
+        h = self._construct_halo_cat(ts_extension, object_typetag)
 
+        halo_attributes = list(h._halo_attributes)
+        if h._read_contamination:
+            halo_attributes.extend(h._halo_attributes_contam)
+
+        attrs = chain.from_iterable(tuple(always_iterable(attr)) for (attr, _len, _dtype) in halo_attributes)
+
+        # We return all properties but the ids of the particles contained in the halo
+        return [attr for attr in attrs if attr != "members"]
+    
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         h = self._construct_halo_cat(ts_extension, object_typetag)
 
@@ -63,5 +72,4 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
                     data = float(data)
 
                 all_data.append(data)
-            print(all_data)
             yield all_data
