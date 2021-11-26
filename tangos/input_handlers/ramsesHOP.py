@@ -2,6 +2,7 @@ from more_itertools import always_iterable
 from ..util import proxy_object
 from itertools import chain
 from .pynbody import PynbodyInputHandler
+import numpy as np
 
 class RamsesHOPInputHandler(PynbodyInputHandler):
     """ Handling Ramses outputs with HOP halo finding (Eisenstein and Hut 1998)"""
@@ -46,6 +47,23 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
                 halo_children[parent].append(i)
         return halo_children
 
+    def _exclude_adaptahop_precalculated_properties(self):
+        return ["members", "timestep", "level", "host_id", "first_subhalo_id", "next_subhalo_id",
+                "x", "y", "z", "vx", "vy", "vz", "lx", "ly", "lz",
+                "contaminated", "m_contam", "mtot_contam", "n_contam", "ntot_contam"]
+
+    def _include_additional_properties_derived_from_adaptahop(self):
+        # I don't know what actually are vx, vy, vz and lx, ly, lz, but they could be added as 3D arrays here
+        return ["parent", "child", "shrink_center", "contamination_fraction"]
+
+    @staticmethod
+    def _reformat_center(adaptahop_halo):
+        return np.array([adaptahop_halo.properties['x'], adaptahop_halo.properties['y'], adaptahop_halo.properties['z']])
+
+    @staticmethod
+    def _compute_contamination_fraction(adaptahop_halo):
+        return float(adaptahop_halo.properties['ntot_contam'] / adaptahop_halo.properties['ntot'])
+
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
         h = self._construct_halo_cat(ts_extension, object_typetag)
 
@@ -55,21 +73,46 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
 
         attrs = chain.from_iterable(tuple(always_iterable(attr)) for (attr, _len, _dtype) in halo_attributes)
 
-        # We return all properties but the ids of the particles contained in the halo
-        return [attr for attr in attrs if attr != "members"]
-    
+        # Import all precalculated properties except conflicting ones with Tangos syntax
+        property_list = [attr for attr in attrs if attr not in self._exclude_adaptahop_precalculated_properties()]
+        # Add additional properties that are baisc to most Tangos databases derived
+        property_list += self._include_additional_properties_derived_from_adaptahop()
+        return property_list
+
+    @staticmethod
+    def _resolve_units(value):
+        import pynbody
+        if (pynbody.units.is_unit(value)):
+            return float(value)
+        else:
+            return value
+
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         h = self._construct_halo_cat(ts_extension, object_typetag)
 
         for halo_i in range(1, len(h)+1):  # AdaptaHOP catalogues start at 1
-            all_data = [halo_i, halo_i]
-            for k in property_names:
-                pynbody_properties = h[halo_i].properties
 
-                if k in pynbody_properties:
-                    data = pynbody_properties[k]
+            # Tangos expects data to have a finder offset, and a finder id following the stat file logic
+            # I think these are irrelevant for AdaptaHOP catalogues which are derived directly from pynbody
+            # Putting the finder ID twice seems to produce consistent results
+            all_data = [halo_i, halo_i]
+
+            for k in property_names:
+
+                adaptahop_halo = h[halo_i]
+                precalculated_properties = h[halo_i].properties
+
+                if k in self._include_additional_properties_derived_from_adaptahop():
+                    if k == "parent": data = None # TODO Code children and parent map
+                    if k == "child": data = None # TODO Code children and parent map
+                    if k == "shrink_center": data = self._reformat_center(adaptahop_halo)
+                    if k == "contamination_fraction": data = self._compute_contamination_fraction(adaptahop_halo)
+                elif k in precalculated_properties:
+                    data = precalculated_properties[k]
                     # Strip the unit as Tangos expects it to be a raw number
-                    data = float(data)
+                    data = self._resolve_units(data)
+                else:
+                    data = None
 
                 all_data.append(data)
             yield all_data
