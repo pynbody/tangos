@@ -1,3 +1,6 @@
+from more_itertools import always_iterable
+from ..util import proxy_object
+from itertools import chain
 from .pynbody import PynbodyInputHandler
 
 class RamsesHOPInputHandler(PynbodyInputHandler):
@@ -30,47 +33,35 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
     patterns = ["output_0????"]
     auxiliary_file_patterns = ["tree_bricks???"]
 
+    def _get_halo_children(self, ts_extension):
+        # TODO
+        h = self._construct_halo_cat(ts_extension, 'halo')
+        halo_children = {}
+        for i in range(len(h)):
+            halo_props = h.get_halo_properties(i,with_unit=False)
+            if 'next_subhalo_id' in halo_props:
+                parent = halo_props['sub_parent']
+                if parent not in halo_children:
+                    halo_children[parent] = []
+                halo_children[parent].append(i)
+        return halo_children
+
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
-        f = self._load_timestep(ts_extension)
+        return ['m200', 'r200']
+
+    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         h = self._construct_halo_cat(ts_extension, object_typetag)
 
-        halo_attributes = list(h._halo_attributes)
-        if h._read_contamination:
-            halo_attributes.extend(h._halo_attributes_contam)
+        for halo_i in range(1, len(h)+1):  # AdaptaHOP catalogues start at 1
+            all_data = [halo_i, halo_i]
+            for k in property_names:
+                pynbody_properties = h[halo_i].properties
 
-        attrs = chain.from_iterable(
-            tuple(always_iterable(attr)) for (attr, _len, _dtype) in halo_attributes)
+                if k in pynbody_properties:
+                    data = pynbody_properties[k]
+                    # Strip the unit as Tangos expects it to be a raw number
+                    data = float(data)
 
-        # We return all properties but the ids of the particles contained in the halo
-        return [attr for attr in attrs if attr != "members"]
-
-
-    # def _construct_group_cat(self, ts_extension):
-    #     f = self.load_timestep(ts_extension)
-    #     h = _loaded_halocats.get(id(f)+1, lambda: None)()
-    #     if h is None:
-    #         h = f.halos()
-    #         assert isinstance(h, pynbody.halo.SubfindCatalogue)
-    #         _loaded_halocats[id(f)+1] = weakref.ref(h)
-    #         f._db_current_groupcat = h  # keep alive for lifetime of simulation
-    #     return h
-
-
-
-    # def _construct_halo_cat(self, ts_extension, object_typetag):
-    #     if object_typetag== 'halo':
-    #         return super(RamsesHOPInputHandler, self)._construct_halo_cat(ts_extension, object_typetag)
-    #     elif object_typetag== 'group':
-    #         return self._construct_group_cat(ts_extension)
-    #     else:
-    #         raise ValueError("Unknown halo type %r" % object_typetag)
-
-
-    # def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
-    #     if object_typetag=='halo':
-    #         return ["CM","HalfMassRad","VMax","VMaxRad","mass","pos","spin","vel","veldisp","parent"]
-    #     elif object_typetag=='group':
-    #         return ["mass","mcrit_200","mmean_200","mtop_200","rcrit_200","rmean_200","rtop_200","child"]
-    #     else:
-    #         raise ValueError("Unknown object typetag %r"%object_typetag)
-
+                all_data.append(data)
+            print(all_data)
+            yield all_data
