@@ -28,24 +28,12 @@ class RamsesHOPInputHandler(PynbodyInputHandler):
                                           groups_1=h1, groups_2=h2)
 
 
+
 class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
     """ Handling Ramses outputs with AdaptaHOP halo and subhalo finding """
 
     patterns = ["output_0????"]
     auxiliary_file_patterns = ["tree_bricks???"]
-
-    def _get_halo_children(self, ts_extension):
-        # TODO
-        h = self._construct_halo_cat(ts_extension, 'halo')
-        halo_children = {}
-        for i in range(len(h)):
-            halo_props = h.get_halo_properties(i,with_unit=False)
-            if 'next_subhalo_id' in halo_props:
-                parent = halo_props['sub_parent']
-                if parent not in halo_children:
-                    halo_children[parent] = []
-                halo_children[parent].append(i)
-        return halo_children
 
     def _exclude_adaptahop_precalculated_properties(self):
         return ["members", "timestep", "level", "host_id", "first_subhalo_id", "next_subhalo_id",
@@ -53,7 +41,7 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
                 "contaminated", "m_contam", "mtot_contam", "n_contam", "ntot_contam"]
 
     def _include_additional_properties_derived_from_adaptahop(self):
-        # I don't know what actually are vx, vy, vz and lx, ly, lz, but they could be added as 3D arrays here
+        # I don't know what actually are vx, vy, vz and lx, ly, lz, but they could be added as reformatted 3D arrays here
         return ["parent", "child", "shrink_center", "contamination_fraction"]
 
     @staticmethod
@@ -82,10 +70,23 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
     @staticmethod
     def _resolve_units(value):
         import pynbody
+        # TODO Solve the fact that AdapataHOP stores distances in Mpc, when Tangos physical units are kpc
         if (pynbody.units.is_unit(value)):
             return float(value)
         else:
             return value
+
+    def _get_map_child_subhalos(self, ts_extension):
+        h = self._construct_halo_cat(ts_extension, 'halo')
+        halo_children = {}
+        for halo_i in range(1, len(h)+1):  # AdaptaHOP catalogues start at 1
+            halo_props = h[halo_i].properties
+            if halo_props['next_subhalo_id'] != -1:
+                parent = halo_props['host_id']
+                if parent not in halo_children:
+                    halo_children[parent] = []
+                halo_children[parent].append(halo_i)
+        return halo_children
 
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         h = self._construct_halo_cat(ts_extension, object_typetag)
@@ -97,14 +98,28 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
             # Putting the finder ID twice seems to produce consistent results
             all_data = [halo_i, halo_i]
 
+            # Construct the mapping between parent and subhalos
+            map_child_parent = self._get_map_child_subhalos(ts_extension)
+
+            # Loop over all properties we wish to import
             for k in property_names:
 
                 adaptahop_halo = h[halo_i]
                 precalculated_properties = h[halo_i].properties
 
                 if k in self._include_additional_properties_derived_from_adaptahop():
-                    if k == "parent": data = None # TODO Code children and parent map
-                    if k == "child": data = None # TODO Code children and parent map
+                    if k == "parent":
+                        data = proxy_object.IncompleteProxyObjectFromFinderId(precalculated_properties['host_id'], 'halo')
+                    if k == "child":
+                        data = self._get_map_child_subhalos(ts_extension)
+
+                        # Determine whether halo has childs and create halo objects to it
+                        try:
+                            list_of_child = data[halo_i]
+                            data = [proxy_object.IncompleteProxyObjectFromFinderId(data_i, 'halo') for data_i in list_of_child]
+                        except KeyError:
+                            data = None
+
                     if k == "shrink_center": data = self._reformat_center(adaptahop_halo)
                     if k == "contamination_fraction": data = self._compute_contamination_fraction(adaptahop_halo)
                 elif k in precalculated_properties:
@@ -116,3 +131,4 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
 
                 all_data.append(data)
             yield all_data
+
