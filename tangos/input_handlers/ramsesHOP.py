@@ -81,7 +81,8 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
         halo_children = {}
         for halo_i in range(1, len(h)+1):  # AdaptaHOP catalogues start at 1
             halo_props = h[halo_i].properties
-            if halo_props['next_subhalo_id'] != -1:
+           
+            if halo_props['host_id'] != halo_i: # If halo isn't its own host, it is a subhalo
                 parent = halo_props['host_id']
                 if parent not in halo_children:
                     halo_children[parent] = []
@@ -91,15 +92,17 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         h = self._construct_halo_cat(ts_extension, object_typetag)
 
+        if "child" in property_names:
+            # Construct the mapping between parent and subhalos
+            map_child_parent = self._get_map_child_subhalos(ts_extension)
+            print(map_child_parent)
+    
         for halo_i in range(1, len(h)+1):  # AdaptaHOP catalogues start at 1
 
             # Tangos expects data to have a finder offset, and a finder id following the stat file logic
             # I think these are irrelevant for AdaptaHOP catalogues which are derived directly from pynbody
             # Putting the finder ID twice seems to produce consistent results
             all_data = [halo_i, halo_i]
-
-            # Construct the mapping between parent and subhalos
-            map_child_parent = self._get_map_child_subhalos(ts_extension)
 
             # Loop over all properties we wish to import
             for k in property_names:
