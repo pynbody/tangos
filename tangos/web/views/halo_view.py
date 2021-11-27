@@ -6,6 +6,7 @@ import numpy as np
 from .halo_data import format_number, _relative_description
 import sqlalchemy, sqlalchemy.orm
 from six.moves import zip
+import urllib.parse
 from . import halo_from_request
 
 class TimestepInfo(object):
@@ -129,4 +130,4 @@ def halo_view(request):
                                             halonumber=request.matchdict['halonumber']),
             'timestep_url': request.route_url('timestep_view',simid=request.matchdict['simid'],
                                             timestepid=request.matchdict['timestepid']),
-            'cascade_url': "/%s/%s/%s/"%(sim.escaped_basename,ts.escaped_extension,halo.basename)}
+            'cascade_url': urllib.parse.quote("/%s/%s/%s/"%(sim.escaped_basename,ts.escaped_extension,halo.basename))}
