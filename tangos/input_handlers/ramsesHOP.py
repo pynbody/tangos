@@ -63,7 +63,7 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
 
         # Import all precalculated properties except conflicting ones with Tangos syntax
         property_list = [attr for attr in attrs if attr not in self._exclude_adaptahop_precalculated_properties()]
-        # Add additional properties that are baisc to most Tangos databases derived
+        # Add additional properties that are basic to most Tangos databases derived
         property_list += self._include_additional_properties_derived_from_adaptahop()
         return property_list
 
