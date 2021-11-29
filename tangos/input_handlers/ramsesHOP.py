@@ -37,16 +37,15 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
 
     def _exclude_adaptahop_precalculated_properties(self):
         return ["members", "timestep", "level", "host_id", "first_subhalo_id", "next_subhalo_id",
-                "x", "y", "z", "vx", "vy", "vz", "lx", "ly", "lz",
+                "pos_x", "pos_y", "pos_z", "pos", "vx", "vy", "vz", "lx", "ly", "lz",
                 "contaminated", "m_contam", "mtot_contam", "n_contam", "ntot_contam"]
 
     def _include_additional_properties_derived_from_adaptahop(self):
-        # I don't know what actually are vx, vy, vz and lx, ly, lz, but they could be added as reformatted 3D arrays here
-        return ["parent", "shrink_center", "contamination_fraction"]
+        return ["parent", "shrink_center", "bulk_velocity", "contamination_fraction"]
 
-    @staticmethod
-    def _reformat_center(adaptahop_halo):
-        return np.array([adaptahop_halo.properties['pos_x'], adaptahop_halo.properties['pos_y'], adaptahop_halo.properties['pos_z']])
+    # @staticmethod
+    # def _name_map_center(adaptahop_halo):
+    #     return np.array([adaptahop_halo.properties['pos_x'], adaptahop_halo.properties['pos_y'], adaptahop_halo.properties['pos_z']])
 
     @staticmethod
     def _compute_contamination_fraction(adaptahop_halo):
@@ -76,7 +75,6 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
     @staticmethod
     def _resolve_units(value):
         import pynbody
-        # TODO Solve the fact that AdapataHOP stores distances in Mpc, when Tangos physical units are kpc
         if (pynbody.units.is_unit(value)):
             return float(value)
         else:
@@ -129,7 +127,9 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
                         except KeyError:
                             data = None
 
-                    if k == "shrink_center": data = self._reformat_center(adaptahop_halo)
+                    # Avoid naming confusions with already defined PynbodyProperties
+                    if k == "shrink_center": data = adaptahop_halo['pos']
+                    if k == "bulk_velocity": data = adaptahop_halo['vel']
                     if k == "contamination_fraction": data = self._compute_contamination_fraction(adaptahop_halo)
                 elif k in precalculated_properties:
                     data = precalculated_properties[k]
