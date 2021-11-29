@@ -43,10 +43,6 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
     def _include_additional_properties_derived_from_adaptahop(self):
         return ["parent", "shrink_center", "bulk_velocity", "contamination_fraction"]
 
-    # @staticmethod
-    # def _name_map_center(adaptahop_halo):
-    #     return np.array([adaptahop_halo.properties['pos_x'], adaptahop_halo.properties['pos_y'], adaptahop_halo.properties['pos_z']])
-
     @staticmethod
     def _compute_contamination_fraction(adaptahop_halo):
         # Deal with the potential case that contamination fraction has not been computed through AdaptaHOP
@@ -128,8 +124,8 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
                             data = None
 
                     # Avoid naming confusions with already defined PynbodyProperties
-                    if k == "shrink_center": data = adaptahop_halo['pos']
-                    if k == "bulk_velocity": data = adaptahop_halo['vel']
+                    if k == "shrink_center": data = (adaptahop_halo.properties['pos']).view(np.ndarray)
+                    if k == "bulk_velocity": data = (adaptahop_halo.properties['vel']).view(np.ndarray)
                     if k == "contamination_fraction": data = self._compute_contamination_fraction(adaptahop_halo)
                 elif k in precalculated_properties:
                     data = precalculated_properties[k]
