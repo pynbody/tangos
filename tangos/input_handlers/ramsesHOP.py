@@ -50,7 +50,12 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
 
     @staticmethod
     def _compute_contamination_fraction(adaptahop_halo):
-        return float(adaptahop_halo.properties['ntot_contam'] / adaptahop_halo.properties['ntot'])
+        # Deal with the potential case that contamination fraction has not been computed through AdaptaHOP
+        try:
+            contamination_fraction = float(adaptahop_halo.properties['ntot_contam'] / adaptahop_halo.properties['ntot'])
+        except KeyError:
+            contamination_fraction = None
+        return contamination_fraction
 
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
         h = self._construct_halo_cat(ts_extension, object_typetag)
