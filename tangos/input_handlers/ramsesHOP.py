@@ -54,6 +54,7 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
         try:
             contamination_fraction = float(adaptahop_halo.properties['ntot_contam'] / adaptahop_halo.properties['ntot'])
         except KeyError:
+            logger.warn("Ignoring import of contamination fraction which has not been stored on disk by AdaptaHOP")
             contamination_fraction = None
         return contamination_fraction
 
