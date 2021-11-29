@@ -46,7 +46,7 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
 
     @staticmethod
     def _reformat_center(adaptahop_halo):
-        return np.array([adaptahop_halo.properties['x'], adaptahop_halo.properties['y'], adaptahop_halo.properties['z']])
+        return np.array([adaptahop_halo.properties['pos_x'], adaptahop_halo.properties['pos_y'], adaptahop_halo.properties['pos_z']])
 
     @staticmethod
     def _compute_contamination_fraction(adaptahop_halo):
@@ -101,7 +101,6 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
         if "child" in property_names:
             # Construct the mapping between parent and subhalos
             map_child_parent = self._get_map_child_subhalos(ts_extension)
-            print(map_child_parent)
     
         for halo_i in range(1, len(h)+1):  # AdaptaHOP catalogues start at 1
 
@@ -112,6 +111,7 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
 
             adaptahop_halo = h[halo_i]
             precalculated_properties = h[halo_i].properties
+            adaptahop_halo.physical_units() # make sure all units are physical before storing to database
 
             # Loop over all properties we wish to import
             for k in property_names:
