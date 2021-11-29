@@ -42,7 +42,7 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
 
     def _include_additional_properties_derived_from_adaptahop(self):
         # I don't know what actually are vx, vy, vz and lx, ly, lz, but they could be added as reformatted 3D arrays here
-        return ["parent", "child", "shrink_center", "contamination_fraction"]
+        return ["parent", "shrink_center", "contamination_fraction"]
 
     @staticmethod
     def _reformat_center(adaptahop_halo):
@@ -104,11 +104,11 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
             # Putting the finder ID twice seems to produce consistent results
             all_data = [halo_i, halo_i]
 
+            adaptahop_halo = h[halo_i]
+            precalculated_properties = h[halo_i].properties
+
             # Loop over all properties we wish to import
             for k in property_names:
-
-                adaptahop_halo = h[halo_i]
-                precalculated_properties = h[halo_i].properties
 
                 if k in self._include_additional_properties_derived_from_adaptahop():
                     if k == "parent":
