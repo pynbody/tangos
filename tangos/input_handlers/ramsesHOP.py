@@ -138,6 +138,6 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
                     data = None
 
                 all_data.append(data)
-            logger.warn("Done with Halo %i" % halo_i)
+            logger.info("Done with Halo %i" % halo_i)
             yield all_data
 
