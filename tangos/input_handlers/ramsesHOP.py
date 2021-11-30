@@ -3,6 +3,8 @@ from ..util import proxy_object
 from itertools import chain
 from .pynbody import PynbodyInputHandler
 import numpy as np
+from ..log import logger
+
 
 class RamsesHOPInputHandler(PynbodyInputHandler):
     """ Handling Ramses outputs with HOP halo finding (Eisenstein and Hut 1998)"""
@@ -42,7 +44,7 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
                 "contaminated", "m_contam", "mtot_contam", "n_contam", "ntot_contam"]
 
     def _include_additional_properties_derived_from_adaptahop(self):
-        return ["parent", "shrink_center", "bulk_velocity", "contamination_fraction"]
+        return ["parent", "child", "shrink_center", "bulk_velocity", "contamination_fraction"]
 
     @staticmethod
     def _compute_contamination_fraction(adaptahop_halo):
@@ -136,5 +138,6 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
                     data = None
 
                 all_data.append(data)
+            logger.warn("Done with Halo %i" % halo_i)
             yield all_data
 
