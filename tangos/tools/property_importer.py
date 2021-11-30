@@ -8,6 +8,7 @@ from . import GenericTangosTool
 from ..util import proxy_object
 from ..util import timestep_object_cache
 import numpy as np
+import numbers
 
 class PropertyImporter(GenericTangosTool):
     tool_name = 'import-properties'
