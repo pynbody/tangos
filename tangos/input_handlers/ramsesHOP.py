@@ -37,7 +37,8 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
 
     def _exclude_adaptahop_precalculated_properties(self):
         return ["members", "timestep", "level", "host_id", "first_subhalo_id", "next_subhalo_id",
-                "pos_x", "pos_y", "pos_z", "pos", "vx", "vy", "vz", "lx", "ly", "lz",
+                "pos_x", "pos_y", "pos_z", "pos", "vel_x", "vel_y", "vel_z",
+                "angular_momentum_x", "angular_momentum_y", "angular_momentum_z",
                 "contaminated", "m_contam", "mtot_contam", "n_contam", "ntot_contam"]
 
     def _include_additional_properties_derived_from_adaptahop(self):
@@ -64,7 +65,7 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
 
         # Import all precalculated properties except conflicting ones with Tangos syntax
         property_list = [attr for attr in attrs if attr not in self._exclude_adaptahop_precalculated_properties()]
-        # Add additional properties that are basic to most Tangos databases derived
+        # Add additional properties that can be derived from adaptahop
         property_list += self._include_additional_properties_derived_from_adaptahop()
         return property_list
 
