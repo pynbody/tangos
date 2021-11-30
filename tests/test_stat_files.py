@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import os
 
+import numpy as np
 import numpy.testing as npt
 import copy
 import tangos as db
@@ -14,7 +15,7 @@ from tangos import testing, parallel_tasks
 
 
 def setup():
-    global ts1, ts2, ts3, sim
+    global ts1, ts2, ts3, sim, session
     testing.init_blank_db_for_testing()
     db.config.base = os.path.dirname(os.path.abspath(__file__))+"/"
 
@@ -113,4 +114,38 @@ def test_default_value():
     assert (fortytwo==42).all()
     assert all(n_gas == [324272,  47634,  53939,  19920])
 
+def test_import_properties_is_only_numeric_or_array():
+    import tangos.core as core
+    
+    # Pick a random existing property name and halo for testing the import of properties
+    halo = ts1.halos[0]
+    db_name = core.dictionary.get_or_create_dictionary_item(session, "Rvir")
 
+    # Numeric types should create a property successfully
+    importer = property_importer.PropertyImporter()
+    property = importer._create_property(db_name, halo, int(42))
+    assert property.data == 42
+
+    property = importer._create_property(db_name, halo, float(42.0))
+    assert property.data == 42.0
+
+    # Arrays of numerics should now create a property successfully 
+    property = importer._create_property(db_name, halo, np.array([42, 42, 42]))
+    assert property.data_is_array() == True
+    assert property.data.dtype == np.int
+    npt.assert_allclose(property.data, np.array([42, 42, 42]))
+
+    property = importer._create_property(db_name, halo, np.array([42.0, 42.0, 42.0]))
+    assert property.data_is_array() == True
+    assert property.data.dtype == np.floating
+    npt.assert_allclose(property.data, np.array([42.0, 42.0, 42.0]))
+
+    # Importing a string should fail
+    property = importer._create_property(db_name, halo, "42.0")
+    assert property is None
+    # Importing an object should fail
+    property = importer._create_property(db_name, halo, halo)
+    assert property is None
+    # Importing an array of non-numeric types should fail
+    property = importer._create_property(db_name, halo, np.array(["42.0", "42.0", "42.0"]))
+    assert property is None
