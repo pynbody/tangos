@@ -158,16 +158,13 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
 
             # Loop over all properties we wish to import
             for k in property_names:
-
                 if k in self._include_additional_properties_derived_from_adaptahop():
                     if k == "parent":
                         data = proxy_object.IncompleteProxyObjectFromFinderId(precalculated_properties['host_id'], 'halo')
                     if k == "child":
-                        data = self._get_map_child_subhalos(ts_extension)
-
                         # Determine whether halo has childs and create halo objects to it
                         try:
-                            list_of_child = data[halo_i]
+                            list_of_child = map_child_parent[halo_i]
                             data = [proxy_object.IncompleteProxyObjectFromFinderId(data_i, 'halo') for data_i in list_of_child]
                         except KeyError:
                             data = None
