@@ -4,7 +4,7 @@ from itertools import chain
 from .pynbody import PynbodyInputHandler
 import numpy as np
 from ..log import logger
-
+from .. import config
 
 class RamsesHOPInputHandler(PynbodyInputHandler):
     """ Handling Ramses outputs with HOP halo finding (Eisenstein and Hut 1998)"""
@@ -13,7 +13,7 @@ class RamsesHOPInputHandler(PynbodyInputHandler):
 
     def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=False, threshold=0.005,
                       object_typetag="halo", output_handler_for_ts2=None):
-
+        import pynbody
         f1 = self.load_timestep(ts1).dm
         h1 = self._construct_halo_cat(ts1, object_typetag)
 
@@ -29,13 +29,58 @@ class RamsesHOPInputHandler(PynbodyInputHandler):
         return bridge.fuzzy_match_catalog(halo_min, halo_max, threshold=threshold, only_family=pynbody.family.dm,
                                           groups_1=h1, groups_2=h2)
 
+    def _is_able_to_load(self, ts_extension):
+        import pynbody
+        filepath = self._extension_to_filename(ts_extension)
+        try:
+            f = pynbody.load(filepath)
+            if self.quicker:
+                logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
+            else:
+                h = pynbody.halo.hop.HOPCatalogue(f)
+            return True
+        except (IOError, RuntimeError):
+            return False
 
 
-class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
+
+class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
     """ Handling Ramses outputs with AdaptaHOP halo and subhalo finding """
 
     patterns = ["output_0????"]
     auxiliary_file_patterns = ["tree_bricks???"]
+
+    def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=False, threshold=0.005,
+                      object_typetag="halo", output_handler_for_ts2=None):
+        import pynbody
+        f1 = self.load_timestep(ts1).dm
+        h1 = self._construct_halo_cat(ts1, object_typetag)
+
+        if output_handler_for_ts2 is None:
+            f2 = self.load_timestep(ts2).dm
+            h2 = self._construct_halo_cat(ts2, object_typetag)
+        else:
+            f2 = output_handler_for_ts2.load_timestep(ts2).dm
+            h2 = output_handler_for_ts2._construct_halo_cat(ts2, object_typetag)
+
+        bridge = pynbody.bridge.OrderBridge(f1, f2, monotonic=False)
+
+        return bridge.fuzzy_match_catalog(halo_min, halo_max, threshold=threshold, only_family=pynbody.family.dm,
+                                          groups_1=h1, groups_2=h2)
+
+    def _is_able_to_load(self, ts_extension):
+        import pynbody
+        filepath = self._extension_to_filename(ts_extension)
+        try:
+            f = pynbody.load(filepath)
+            if self.quicker:
+                logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
+            else:
+                h = f.halos(index_parent=False)
+                return isinstance(h, pynbody.halo.adaptahop.BaseAdaptaHOPCatalogue)
+            return True
+        except (IOError, RuntimeError):
+            return False
 
     def _exclude_adaptahop_precalculated_properties(self):
         return ["members", "timestep", "level", "host_id", "first_subhalo_id", "next_subhalo_id",
@@ -84,7 +129,7 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
         halo_children = {}
         for halo_i in range(1, len(h)+1):  # AdaptaHOP catalogues start at 1
             halo_props = h[halo_i].properties
-           
+
             if halo_props['host_id'] != halo_i: # If halo isn't its own host, it is a subhalo
                 parent = halo_props['host_id']
                 if parent not in halo_children:
@@ -92,13 +137,14 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
                 halo_children[parent].append(halo_i)
         return halo_children
 
-    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
+    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names, index_parent=True):
         h = self._construct_halo_cat(ts_extension, object_typetag)
+        h._index_parent = index_parent
 
         if "child" in property_names:
             # Construct the mapping between parent and subhalos
             map_child_parent = self._get_map_child_subhalos(ts_extension)
-    
+
         for halo_i in range(1, len(h)+1):  # AdaptaHOP catalogues start at 1
 
             # Tangos expects data to have a finder offset, and a finder id following the stat file logic
@@ -141,3 +187,28 @@ class RamsesAdaptaHOPInputHandler(RamsesHOPInputHandler):
             logger.info("Done with Halo %i" % halo_i)
             yield all_data
 
+    def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
+        if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
+            for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
+                yield X
+        else:
+            logger.warn("No halo statistics file found for timestep %r",ts_extension)
+
+            try:
+                h = self._construct_halo_cat(ts_extension, object_typetag)
+                h._index_parent = False
+            except:
+                logger.warn("Unable to read %ss using pynbody; assuming step has none", object_typetag)
+                return
+
+            logger.warn(" => enumerating %ss directly using pynbody", object_typetag)
+            istart = 1
+
+            for i in range(istart, len(h)+istart):
+                try:
+                    hi = h[i]
+                    hi.properties
+                    if hi.properties["npart"] > min_halo_particles:
+                        yield i, i, hi.properties["npart"], 0, 0
+                except (ValueError, KeyError) as e:
+                    pass
