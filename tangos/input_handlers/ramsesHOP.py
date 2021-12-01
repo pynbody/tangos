@@ -153,6 +153,9 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
             all_data = [halo_i, halo_i]
 
             adaptahop_halo = h[halo_i]
+
+            if not self._select_halo(adaptahop_halo, min_halo_particles=0):
+                continue
             precalculated_properties = h[halo_i].properties
             adaptahop_halo.physical_units() # make sure all units are physical before storing to database
 
@@ -205,7 +208,17 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
                 try:
                     hi = h[i]
                     hi.properties
-                    if hi.properties["npart"] > min_halo_particles:
+
+                    if self._select_halo(hi, min_halo_particles):
                         yield i, i, hi.properties["npart"], 0, 0
                 except (ValueError, KeyError) as e:
                     pass
+
+    @staticmethod
+    def _select_halo(halo, min_halo_particles):
+        properties = halo.properties
+        n_contam = properties.get("n_contam", 0)
+        npart = properties["npart"]
+
+        # Filter out halos that are 100% contaminated
+        return (npart > min_halo_particles) and (npart > n_contam)
