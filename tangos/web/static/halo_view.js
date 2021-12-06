@@ -151,7 +151,12 @@ function getPlotUriTwoVariables (name1, name2, typetag, extension) {
   var uri
   var plotformvals = $('#image_form').values()
   var plotType = plotformvals.type
-  if (plotType === 'gather') { uri = $('#timestep_url').text() + name1 + '/vs/' + name2 + '.' + extension } else if (plotType === 'cascade') {
+  if (plotType === 'gather') {
+    uri = $('#timestep_url').text()
+    if (uri.substr(uri.length - 1)!="/")
+      uri += "/";
+    uri += name1 + '/vs/' + name2 + '.' + extension
+  } else if (plotType === 'cascade') {
     uri = $('#cascade_url').text() +
             name1 + '/vs/' + name2 + '.' + extension
   }
@@ -244,6 +249,7 @@ function updateDownloadLink (url, extension) {
 }
 
 function loadImage (url, extension) {
+  console.log("loadImage",url);
   existingImgSrc = url
   if (extension === 'pdf') {
     objImg = $('<object type="application/pdf" data="' + url + '" height="100%" width="100%">')
