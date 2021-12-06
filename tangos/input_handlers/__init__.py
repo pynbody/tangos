@@ -35,6 +35,8 @@ class HandlerBase(object):
     Subclasses provide implementations for different formats and situations.
     """
 
+    halo_stat_file_class_name = "HaloStatFile"
+
     def __init__(self, basename):
         self.basename = self.strip_slashes(basename)
         self.quicker = False # a flag to indicate that corners may be cut in the interest of efficiency
@@ -86,7 +88,7 @@ class HandlerBase(object):
         #ts = DummyTimeStep()
         #ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
         from . import caterpillar
-        statfile = halo_stat_files.HaloStatFile(self._extension_to_filename(ts_extension))
+        statfile = getattr(halo_stat_files, self.halo_stat_file_class_name)(self._extension_to_filename(ts_extension))
         return statfile
 
 
