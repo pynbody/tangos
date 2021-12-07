@@ -11,23 +11,22 @@ class RamsesHOPInputHandler(PynbodyInputHandler):
     patterns = ["output_0????"]
     auxiliary_file_patterns = ["grp*.tag"]
 
-    def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=False, threshold=0.005,
+    def load_timestep(self, ts_extension, mode=None):
+        timestep = super().load_timestep(ts_extension, mode=mode)
+        return timestep.dm
+
+    def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=True, threshold=0.005,
                       object_typetag="halo", output_handler_for_ts2=None):
-        import pynbody
-        f1 = self.load_timestep(ts1).dm
-        h1 = self._construct_halo_cat(ts1, object_typetag)
-
-        if output_handler_for_ts2 is None:
-            f2 = self.load_timestep(ts2).dm
-            h2 = self._construct_halo_cat(ts2, object_typetag)
-        else:
-            f2 = output_handler_for_ts2.load_timestep(ts2).dm
-            h2 = output_handler_for_ts2._construct_halo_cat(ts2, object_typetag)
-
-        bridge = pynbody.bridge.OrderBridge(f1, f2, monotonic=False)
-
-        return bridge.fuzzy_match_catalog(halo_min, halo_max, threshold=threshold, only_family=pynbody.family.dm,
-                                          groups_1=h1, groups_2=h2)
+        return super().match_objects(
+            ts1,
+            ts2,
+            halo_min,
+            halo_max,
+            dm_only=dm_only,
+            threshold=threshold,
+            object_typetag=object_typetag,
+            output_handler_for_ts2=output_handler_for_ts2
+        )
 
     def _is_able_to_load(self, ts_extension):
         import pynbody
@@ -60,23 +59,20 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
         "parent", "child", "shrink_center", "bulk_velocity", "contamination_fraction"
     )
 
-    def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=False, threshold=0.005,
+    def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=True, threshold=0.005,
                       object_typetag="halo", output_handler_for_ts2=None):
-        import pynbody
-        f1 = self.load_timestep(ts1).dm
-        h1 = self._construct_halo_cat(ts1, object_typetag)
+        return super().match_objects(
+            ts1,
+            ts2,
+            halo_min,
+            halo_max,
+            dm_only=dm_only,
+            threshold=threshold,
+            object_typetag=object_typetag,
+            output_handler_for_ts2=output_handler_for_ts2,
+            fuzzy_match_kwa={"only_family": "dm"}
+        )
 
-        if output_handler_for_ts2 is None:
-            f2 = self.load_timestep(ts2).dm
-            h2 = self._construct_halo_cat(ts2, object_typetag)
-        else:
-            f2 = output_handler_for_ts2.load_timestep(ts2).dm
-            h2 = output_handler_for_ts2._construct_halo_cat(ts2, object_typetag)
-
-        bridge = pynbody.bridge.OrderBridge(f1, f2, monotonic=False)
-
-        return bridge.fuzzy_match_catalog(halo_min, halo_max, threshold=threshold, only_family=pynbody.family.dm,
-                                          groups_1=h1, groups_2=h2)
 
     def _is_able_to_load(self, ts_extension):
         import pynbody
@@ -204,7 +200,7 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
             for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
                 yield X
         else:
-            logger.warn("No halo statistics file found for timestep %r",ts_extension)
+            logger.warn("No halo statistics file found for timestep %r", ts_extension)
 
             try:
                 h = self._construct_halo_cat(ts_extension, object_typetag)
@@ -219,7 +215,6 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
             for i in range(istart, len(h)+istart):
                 try:
                     hi = h[i]
-                    hi.properties
 
                     if self._select_halo(hi, min_halo_particles):
                         yield i, i, hi.properties["npart"], 0, 0
