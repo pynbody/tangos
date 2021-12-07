@@ -94,12 +94,7 @@ class PropertyImporter(GenericTangosTool):
         property_db_names = [core.dictionary.get_or_create_dictionary_item(self._session, name) for name in
                              property_names]
         rows_to_store = []
-        kwa = {}
-        # For AdaptaHOP handler, we do not need to load the entire snaphshot to enumerate
-        # properties in the halo catalogue
-        if isinstance(self.handler, RamsesAdaptaHOPInputHandler):
-            kwa["index_parent"] = False
-        for values in self.handler.iterate_object_properties_for_timestep(ts.extension, object_typetag, property_names, **kwa):
+        for values in self.handler.iterate_object_properties_for_timestep(ts.extension, object_typetag, property_names):
             db_object = self._object_cache.resolve_from_finder_offset(values[0], object_typetag)
             if db_object is not None:
                 for db_name, value in zip(property_db_names, values[2:]):
