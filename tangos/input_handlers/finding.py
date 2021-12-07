@@ -65,7 +65,6 @@ class PatternBasedFileDiscovery(object):
         logger.info("Enumerate timestep extensions base=%r patterns=%s", base, self.patterns)
         for e in extensions:
             if self._is_able_to_load(e):
-                logger.info("Could load %s with class %s", e, self)
                 yield e[len(base) + 1:]
             else:
                 logger.info("Could not load %s with class %s", e, self)
