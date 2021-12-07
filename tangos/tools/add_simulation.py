@@ -72,14 +72,13 @@ class SimulationAdderUpdater(object):
         with pt.ExclusiveLock("add_simulation"):
             return self.session.merge(ex)
 
-    @pt.root_only
     def add_simulation(self):
         sim = Simulation(self.basename)
 
         self.session.add(sim)
-        self.session.commit()
+        with pt.ExclusiveLock("add_simulation"):
+            self.session.commit()
 
-    @pt.root_only
     def add_simulation_properties(self):
         sim = self._get_simulation()
         properties_dict = self.simulation_output.get_properties()
