@@ -196,11 +196,10 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         return h  # pynbody.halo.AmigaGrpCatalogue(f)
 
 
-
-
     def match_objects(self, ts1, ts2, halo_min, halo_max,
                       dm_only=False, threshold=0.005, object_typetag='halo',
-                      output_handler_for_ts2=None):
+                      output_handler_for_ts2=None,
+                      fuzzy_match_kwa={}):
         if dm_only:
             only_family='dm'
         else:
@@ -220,8 +219,15 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         if halo_max is None:
             halo_max = max(len(h2), len(h1))
 
-        return f1.bridge(f2).fuzzy_match_catalog(halo_min, halo_max, threshold=threshold,
-                                                 only_family=only_family, groups_1=h1, groups_2=h2)
+        return f1.bridge(f2).fuzzy_match_catalog(
+            halo_min,
+            halo_max,
+            threshold=threshold,
+            only_family=only_family,
+            groups_1=h1,
+            groups_2=h2,
+            **fuzzy_match_kwa,
+        )
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
