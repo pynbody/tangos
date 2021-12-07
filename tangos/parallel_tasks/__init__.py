@@ -120,26 +120,5 @@ def _shutdown_parallelism():
     _backend_name = 'null'
 
 
-def root_first(fun):
-    global backend, _backend_name
-    @wraps(fun)
-    def wrapped(*args, **kwargs):
-        log.logger.debug("Entering root_first %s", fun)
-        if _backend_name == "null":
-            return fun(*args, **kwargs)
-
-        ret = None
-        if backend and backend.rank() == 1:
-            ret = fun(*args, **kwargs)
-            barrier()
-        elif backend and backend.rank() > 1:
-            barrier()
-            ret = fun(*args, **kwargs)
-        return ret
-
-    return wrapped
-
-
-
 from .lock import ExclusiveLock
 from . import remote_import, jobs
