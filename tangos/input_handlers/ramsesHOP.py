@@ -54,7 +54,7 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
         "members", "timestep", "level", "host_id", "first_subhalo_id", "next_subhalo_id",
         "pos_x", "pos_y", "pos_z", "pos", "vel_x", "vel_y", "vel_z",
         "angular_momentum_x", "angular_momentum_y", "angular_momentum_z",
-        "contaminated", "m_contam", "mtot_contam", "n_contam", "ntot_contam"
+        "contaminated", "m_contam", "mtot_contam", "n_contam", "ntot_contam",
     )
     _included_adaptahop_additional_properties = (
         "parent", "child", "shrink_center", "bulk_velocity", "contamination_fraction"
@@ -139,9 +139,11 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
                 halo_children[parent].append(halo_i)
         return halo_children
 
-    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names, index_parent=True):
+    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         h = self._construct_halo_cat(ts_extension, object_typetag)
-        h._index_parent = index_parent
+        # For AdaptaHOP handler, we do not need to load the entire snaphshot to enumerate
+        # properties in the halo catalogue. If pynbody supports this, ask it to do so.
+        h._index_parent = False
 
         if "child" in property_names:
             # Construct the mapping between parent and subhalos
