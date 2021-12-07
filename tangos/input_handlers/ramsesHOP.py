@@ -165,18 +165,26 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
                 if k in self._included_adaptahop_additional_properties:
                     if k == "parent":
                         data = proxy_object.IncompleteProxyObjectFromFinderId(precalculated_properties['host_id'], 'halo')
-                    if k == "child":
+                    elif k == "child":
                         # Determine whether halo has childs and create halo objects to it
                         try:
                             list_of_child = map_child_parent[halo_i]
                             data = [proxy_object.IncompleteProxyObjectFromFinderId(data_i, 'halo') for data_i in list_of_child]
                         except KeyError:
                             data = None
-
-                    # Avoid naming confusions with already defined PynbodyProperties
-                    if k == "shrink_center": data = (adaptahop_halo.properties['pos']).view(np.ndarray)
-                    if k == "bulk_velocity": data = (adaptahop_halo.properties['vel']).view(np.ndarray)
-                    if k == "contamination_fraction": data = self._compute_contamination_fraction(adaptahop_halo)
+                    elif k == "shrink_center":
+                        # Avoid naming confusions with already defined PynbodyProperties
+                        data = (adaptahop_halo.properties['pos']).view(np.ndarray)
+                    elif k == "bulk_velocity":
+                        data = (adaptahop_halo.properties['vel']).view(np.ndarray)
+                    elif k == "contamination_fraction":
+                        data = self._compute_contamination_fraction(adaptahop_halo)
+                    else:
+                        raise NotImplementedError(
+                            "Cannot handle property %s for halo catalogue %r" % (
+                                k, self
+                            )
+                        )
                 elif k in precalculated_properties:
                     data = precalculated_properties[k]
                     # Strip the unit as Tangos expects it to be a raw number
