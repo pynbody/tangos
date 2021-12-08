@@ -139,6 +139,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
         # For AdaptaHOP handler, we do not need to load the entire snaphshot to enumerate
         # properties in the halo catalogue. If pynbody supports this, ask it to do so.
         h._index_parent = False
+        h.physical_units()  # make sure all units are physical before storing to database
 
         if "child" in property_names:
             # Construct the mapping between parent and subhalos
@@ -152,8 +153,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
             all_data = [halo_i, halo_i]
 
             adaptahop_halo = h[halo_i]
-            precalculated_properties = h[halo_i].properties
-            adaptahop_halo.physical_units() # make sure all units are physical before storing to database
+            precalculated_properties = adaptahop_halo.properties
 
             # Loop over all properties we wish to import
             for k in property_names:
