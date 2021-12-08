@@ -219,7 +219,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         if halo_max is None:
             halo_max = max(len(h2), len(h1))
 
-        return f1.bridge(f2).fuzzy_match_catalog(
+        return self.create_bridge(f1, f2).fuzzy_match_catalog(
             halo_min,
             halo_max,
             threshold=threshold,
@@ -228,6 +228,10 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             groups_2=h2,
             **fuzzy_match_kwa,
         )
+
+    @classmethod
+    def create_bridge(f1, f2):
+        return f1.bridge(f2)
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
@@ -257,7 +261,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             for i in range(istart, len(h)+istart):
                 try:
                     hi = h[i]
-                    if len(hi.dm)+len(hi.star)+len(hi.gas) > min_halo_particles:
+                    if len(hi.dm) + len(hi.star) + len(hi.gas) >= min_halo_particles:
                         yield i, i, len(hi.dm), len(hi.star), len(hi.gas)
                 except (ValueError, KeyError) as e:
                     pass

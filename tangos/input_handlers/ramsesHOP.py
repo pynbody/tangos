@@ -17,6 +17,13 @@ class RamsesHOPInputHandler(PynbodyInputHandler):
 
     def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=True, threshold=0.005,
                       object_typetag="halo", output_handler_for_ts2=None):
+        import pynbody
+        if not dm_only:
+            logger.warn(
+                "`match_objects` was called with dm_only=%s, but AdaptaHOP only supports DM-only"
+                " catalogues at the moment. Falling back to DM-only.", dm_only
+            )
+            dm_only = True
         return super().match_objects(
             ts1,
             ts2,
@@ -25,7 +32,8 @@ class RamsesHOPInputHandler(PynbodyInputHandler):
             dm_only=dm_only,
             threshold=threshold,
             object_typetag=object_typetag,
-            output_handler_for_ts2=output_handler_for_ts2
+            output_handler_for_ts2=output_handler_for_ts2,
+            fuzzy_match_kwa={"use_family": pynbody.family.dm}
         )
 
     def _is_able_to_load(self, ts_extension):
@@ -59,8 +67,24 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
         "parent", "child", "shrink_center", "bulk_velocity", "contamination_fraction"
     )
 
+    def create_bridge(self, f1, f2):
+        import pynbody
+        # Ensure that f1.dm and f2.dm are not garbage-collected
+        self._f1dm = f1.dm
+        self._f2dm = f2.dm
+
+        return pynbody.bridge.OrderBridge(self._f1dm, self._f2dm, monotonic=False)
+
     def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=True, threshold=0.005,
                       object_typetag="halo", output_handler_for_ts2=None):
+        import pynbody
+        if not dm_only:
+            logger.warn(
+                "`match_objects` was called with dm_only=%s, but AdaptaHOP only supports DM-only"
+                " catalogues at the moment. Falling back to DM-only.", dm_only
+            )
+            dm_only = True
+
         return super().match_objects(
             ts1,
             ts2,
@@ -70,7 +94,7 @@ class RamsesAdaptaHOPInputHandler(PynbodyInputHandler):
             threshold=threshold,
             object_typetag=object_typetag,
             output_handler_for_ts2=output_handler_for_ts2,
-            fuzzy_match_kwa={"only_family": "dm"}
+            fuzzy_match_kwa={"use_family": pynbody.family.dm}
         )
 
 
