@@ -1,8 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-from ..input_handlers.ramsesHOP import RamsesAdaptaHOPInputHandler
-
 from .. import parallel_tasks
 from ..log import logger
 from .. import core
