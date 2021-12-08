@@ -37,7 +37,7 @@ class RamsesCatalogueMixin:
             fuzzy_match_kwa={"use_family": pynbody.family.dm}
         )
 
-class RamsesHOPInputHandler(PynbodyInputHandler, RamsesCatalogueMixin):
+class RamsesHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
     """ Handling Ramses outputs with HOP halo finding (Eisenstein and Hut 1998)"""
     patterns = ["output_0????"]
     auxiliary_file_patterns = ["grp*.tag"]
@@ -57,7 +57,7 @@ class RamsesHOPInputHandler(PynbodyInputHandler, RamsesCatalogueMixin):
 
 
 
-class RamsesAdaptaHOPInputHandler(PynbodyInputHandler, RamsesCatalogueMixin):
+class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
     """ Handling Ramses outputs with AdaptaHOP halo and subhalo finding """
 
     patterns = ["output_0????"]
