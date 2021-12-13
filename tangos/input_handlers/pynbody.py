@@ -583,3 +583,4 @@ class ChangaUseIDLInputHandler(ChangaInputHandler):
     auxiliary_file_patterns = ["*.amiga.grp"]
 
 from . import caterpillar, eagle, ramsesHOP
+RamsesHOPInputHandler = ramsesHOP.RamsesHOPInputHandler
