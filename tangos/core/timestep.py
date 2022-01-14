@@ -14,7 +14,7 @@ class TimeStep(Base):
     __tablename__ = 'timesteps'
 
     id = Column(Integer, primary_key=True)
-    extension = Column(String)
+    extension = Column(String(128))
     simulation_id = Column(Integer, ForeignKey('simulations.id'))
     redshift = Column(Float)
     time_gyr = Column(Float)

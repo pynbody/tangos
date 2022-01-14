@@ -10,11 +10,11 @@ class Creator(Base):
     __tablename__ = 'creators'
 
     id = Column(Integer, primary_key=True)
-    command_line = Column(String)
+    command_line = Column(String(128))
     dtime = Column(DateTime)
-    host = Column(String)
-    username = Column(String)
-    cwd = Column(String)
+    host = Column(String(128))
+    username = Column(String(128))
+    cwd = Column(String(128))
 
     def __repr__(self):
         return "<Creator " + self.username + " on " + self.host + " @ " + self.dtime.strftime("%d/%m/%y %H:%M") + " via " + self.command_line.split(" ")[0].split("/")[-1] + ">"

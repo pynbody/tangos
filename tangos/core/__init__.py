@@ -134,7 +134,9 @@ def init_db(db_uri=None, timeout=30, verbose=None):
         db_uri = 'sqlite:///' + db_uri
 
     _engine = create_engine(db_uri, echo=verbose or _verbose,
-                            isolation_level='READ UNCOMMITTED', connect_args={'timeout': timeout})
+                            isolation_level='READ UNCOMMITTED',
+                            connect_args={'connect_timeout': timeout}
+                            )
 
     _check_and_upgrade_database(_engine)
 

@@ -18,7 +18,7 @@ class Simulation(Base):
     # __table_args__ = {'useexisting': True}
 
     id = Column(Integer, primary_key=True)
-    basename = Column(String)
+    basename = Column(String(128))
     creator = relationship(
         creator.Creator, backref=backref('simulations', cascade='all'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
@@ -111,7 +111,7 @@ class SimulationProperty(Base):
     data_float = Column(Float)
     data_int = Column(Integer)
     data_time = Column(DateTime)
-    data_string = Column(String)
+    data_string = Column(String(128))
     data_array = Column(LargeBinary)
 
 
