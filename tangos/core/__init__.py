@@ -133,10 +133,17 @@ def init_db(db_uri=None, timeout=30, verbose=None):
     if '//' not in db_uri:
         db_uri = 'sqlite:///' + db_uri
 
-    _engine = create_engine(db_uri, echo=verbose or _verbose,
-                            isolation_level='READ UNCOMMITTED',
-                            connect_args={'connect_timeout': timeout}
-                            )
+    if db_uri.startswith("sqlite:///"):
+        connect_args = {"timeout": timeout}
+    else:
+        connect_args = {"connect_timeout": timeout}
+
+    _engine = create_engine(
+        db_uri,
+        echo=verbose or _verbose,
+        isolation_level='READ UNCOMMITTED',
+        connect_args=connect_args
+    )
 
     _check_and_upgrade_database(_engine)
 
