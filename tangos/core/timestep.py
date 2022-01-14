@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import weakref
 import os, os.path
 import sqlalchemy
-from sqlalchemy import Column, Integer, String, ForeignKey, Float, Boolean, and_
+from sqlalchemy import Column, Integer, Text, ForeignKey, Float, Boolean, and_
 from sqlalchemy.orm import relationship, backref, aliased
 
 from . import Base
@@ -14,7 +14,7 @@ class TimeStep(Base):
     __tablename__ = 'timesteps'
 
     id = Column(Integer, primary_key=True)
-    extension = Column(String(128))
+    extension = Column(Text)
     simulation_id = Column(Integer, ForeignKey('simulations.id'))
     redshift = Column(Float)
     time_gyr = Column(Float)
