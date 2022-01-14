@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import datetime
 
 import numpy as np
-from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime, LargeBinary, Text
+from sqlalchemy import Column, Integer, ForeignKey, Float, DateTime, LargeBinary, Text
 from sqlalchemy.orm import relationship, backref, Session
 
 from . import data_attribute_mapper
