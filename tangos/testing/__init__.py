@@ -171,10 +171,18 @@ def init_blank_db_for_testing(**init_kwargs):
 
         core.init_db(f"sqlite:///{db_name}", **init_kwargs)
     else:
+        from sqlalchemy import create_engine
         user = os.environ.get("DB_USER")
         password = os.environ.get("DB_PASSWORD")
         port = os.environ.get("DB_PORT")
         backend = DB_BACKEND.lower()
+
+        db_url = f"{backend}://{user}:{password}@localhost:{port}"
+        engine = create_engine(db_url)
+        with engine.connect() as conn:
+            conn.execute("commit")
+            # Do not substitute user-supplied database names here.
+            conn.execute(f"CREATE DATABASE {testing_db_name}")
 
         url = f"{backend}://{user}:{password}@localhost:{port}/{testing_db_name}"
         core.init_db(url, **init_kwargs)
