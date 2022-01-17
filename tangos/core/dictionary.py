@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import sqlalchemy, sqlalchemy.exc
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, Text
 
 from . import Base, get_default_session
 
@@ -12,7 +12,7 @@ class DictionaryItem(Base):
     __tablename__ = 'dictionary'
 
     id = Column(Integer, primary_key=True)
-    text = Column(String(128), unique=True)
+    text = Column(Text, unique=True)
 
     def __repr__(self):
         return "<DictionaryItem " + self.text + ">"

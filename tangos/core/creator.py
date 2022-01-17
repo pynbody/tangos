@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from sqlalchemy import Column, Integer, String, DateTime, Text
+from sqlalchemy import Column, Integer, DateTime, Text
 
 from . import Base, get_default_session
 
@@ -12,8 +12,8 @@ class Creator(Base):
     id = Column(Integer, primary_key=True)
     command_line = Column(Text)
     dtime = Column(DateTime)
-    host = Column(String(128))
-    username = Column(String(128))
+    host = Column(Text)
+    username = Column(Text)
     cwd = Column(Text)
 
     def __repr__(self):
