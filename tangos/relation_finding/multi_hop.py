@@ -211,7 +211,14 @@ class MultiHopStrategy(HopStrategy):
 
         self._table = multi_hop_link_table
         self._prelim_table = multi_hop_link_prelim_table
-        self._table.create(checkfirst=True, bind=self._connection)
+        try:
+            self._table.create(checkfirst=True, bind=self._connection)
+        except sqlalchemy.exc.IntegrityError:
+            # This is required to work with MySQL databases that do not support foreign keys in
+            # temporary tables
+            self._table._prefixes = []
+            self._prelim_table._prefixes = []
+            self._table.create(checkfirst=True, bind=self._connection)
 
         self._prelim_table.create(checkfirst=True, bind=self._connection)
 
