@@ -90,6 +90,12 @@ class MultiHopStrategy(HopStrategy):
         self._connection = self.session.connection()
         self._combine_routes = combine_routes
 
+        try:
+            # This is to ensure that we don't use ONLY_FULL_GROUP_BY which causes issues with MySQL databases
+            self.session.execute("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));")
+        except sqlalchemy.exc.OperationalError:
+            pass
+
     def temp_table(self):
         """Execute the strategy and return results as a temp_table (see temporary_halolist module)"""
         if self._all is None:
