@@ -14,11 +14,17 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.6, 3.7, 3.8, 3.9]
+        DB_BACKEND: [sqlite, mysql]
 
     runs-on: ${{ matrix.os }}
     env:
       C: gcc-10
       CXX: g++-10
+      DB_USER: root
+      DB_PASSWORD: dummy
+      DB_HOST: localhost
+      DB_PORT: 3306
+      DB_DEFAULT_NAME: test
     steps:
     - name: Install Python
       uses: actions/setup-python@v2
@@ -42,7 +48,15 @@ jobs:
          python -c "import tangos"
     - name: Install pynbody and yt
       run: python -m pip install pynbody yt --no-build-isolation
+    - uses: samin/mysql-action@v1
+      if: ${{ env.DB_BACKEND == 'mysql' }}
+      with:
+        character set server: 'utf8' # Optional, default value is 'utf8mb4'. The '--character-set-server' option for mysqld
+        collation server: 'utf8_general_ci' # Optional, default value is 'utf8mb4_general_ci'. The '--collation-server' option for mysqld
+        mysql version: '8.0' # Optional, default value is "latest". The version of the MySQL
+        mysql database: ${{ env.DB_DEFAULT_NAME }} # Optional, default value is "test". The specified database which will be create
+        mysql user: ${{ env.DB_USER }} # Required if "mysql root password" is empty, default is empty. The superuser for the specified database. Of course you can use secrets, too
+        mysql password: ${{ env.DB_PASSWORD }} # Required if "mysql user" exists. The password for the "mysql user"
     - name: Run all tests
       working-directory: tests
       run: python -m nose
-

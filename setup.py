@@ -30,7 +30,8 @@ tests_require = [
     'webtest >= 2.0',
     'pyquery >= 1.3.0',
     'pynbody >= 0.46',
-    'yt>=3.4.0'
+    'yt>=3.4.0',
+    'PyMySQL>=1.0.2',
     ]
 
 from setuptools import setup, find_packages
