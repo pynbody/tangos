@@ -15,7 +15,6 @@ jobs:
         os: [ubuntu-latest]
         python-version: [3.6, 3.7, 3.8, 3.9]
         DB_BACKEND: [sqlite, mysql+pymysql]
-
     runs-on: ${{ matrix.os }}
     env:
       C: gcc-10
@@ -26,6 +25,17 @@ jobs:
       DB_PORT: 3306
       DB_DEFAULT_NAME: test
       DB_BACKEND: ${{ matrix.DB_BACKEND }}
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_DATABASE: test
+          MYSQL_USER: root
+          MYSQL_PASSWORD: dummy
+          MYSQL_ROOT_PASSWORD: dummy
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
     - name: Install Python
       uses: actions/setup-python@v2
@@ -49,12 +59,6 @@ jobs:
          python -c "import tangos"
     - name: Install pynbody and yt
       run: python -m pip install pynbody yt --no-build-isolation
-    - uses: samin/mysql-action@v1
-      if: ${{ matrix.DB_BACKEND == 'mysql+pymysql' }}
-      with:
-        mysql database: ${{ env.DB_DEFAULT_NAME }}
-        mysql user: ${{ env.DB_USER }}
-        mysql password: ${{ env.DB_PASSWORD }}
     - name: Run all tests
       working-directory: tests
       run: python -m nose
