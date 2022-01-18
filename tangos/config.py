@@ -10,6 +10,18 @@ import os
 home = os.environ['HOME']
 db = os.environ.get("TANGOS_DB_CONNECTION", home+"/tangos_data.db")
 base = os.environ.get("TANGOS_SIMULATION_FOLDER", home+"/")
+db_backend = os.environ.get("TANGOS_DB_BACKEND", None)
+if "+" in db_backend:
+    db_backend = db_backend.split("+")[0]
+elif db_backend is None and "//" in db:
+    db_backend = db_backend.split("+")[0].lower()
+else:
+    db_backend = "sqlite"
+
+from sqlalchemy import Float as DOUBLE_PRECISION
+if db_backend == "mysql":
+    from sqlalchemy.dialects.mysql import DOUBLE as DOUBLE_PRECISION
+
 
 default_fileset_handler_class = "pynbody.PynbodyInputHandler"
 

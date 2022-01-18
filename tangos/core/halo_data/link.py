@@ -1,11 +1,12 @@
 from __future__ import absolute_import
-from sqlalchemy import Column, Integer, ForeignKey, Float, LargeBinary, Boolean
+from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
 from .. import Base
 from .. import creator
 from ..dictionary import DictionaryItem
 from ..halo import Halo
+from ...config import DOUBLE_PRECISION
 
 
 class HaloLink(Base):
@@ -27,7 +28,7 @@ class HaloLink(Base):
                                            primaryjoin=halo_to_id == Halo.id),
                            cascade='')
 
-    weight = Column(Float)
+    weight = Column(DOUBLE_PRECISION)
 
     creator_id = Column(Integer, ForeignKey('creators.id'))
     creator = relationship(creator.Creator, backref=backref(

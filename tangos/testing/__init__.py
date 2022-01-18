@@ -151,7 +151,7 @@ class SqlExecutionTracker(object):
         self._stacks.append("".join(traceback.format_list(traceback.extract_stack()[:-2])))
 
 def init_blank_db_for_testing(**init_kwargs):
-    DB_BACKEND = os.environ.get("DB_BACKEND", "sqlite")
+    TANGOS_DB_BACKEND = os.environ.get("TANGOS_DB_BACKEND", "sqlite")
 
     try:
         os.mkdir("test_dbs")
@@ -162,7 +162,7 @@ def init_blank_db_for_testing(**init_kwargs):
 
     testing_db_name = init_kwargs.pop("testing_db_name", caller_fname)
 
-    if DB_BACKEND == "sqlite":
+    if TANGOS_DB_BACKEND == "sqlite":
         db_name = f"test_dbs/%s.db"%testing_db_name
         try:
             os.remove(db_name)
@@ -175,7 +175,7 @@ def init_blank_db_for_testing(**init_kwargs):
         user = os.environ.get("DB_USER")
         password = os.environ.get("DB_PASSWORD")
         port = os.environ.get("DB_PORT")
-        backend = DB_BACKEND.lower()
+        backend = TANGOS_DB_BACKEND.lower()
 
         db_url = f"{backend}://{user}:{password}@localhost:{port}"
         engine = create_engine(db_url)

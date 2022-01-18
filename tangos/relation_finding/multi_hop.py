@@ -9,7 +9,7 @@ import sqlalchemy.exc
 import sqlalchemy.orm
 import sqlalchemy.orm.dynamic
 import sqlalchemy.orm.query
-from sqlalchemy import and_, Table, Index, Column, Integer, Float, ForeignKey
+from sqlalchemy import and_, Table, Index, Column, Integer
 from sqlalchemy.orm import relationship
 
 from .. import core
@@ -18,6 +18,7 @@ from .one_hop import HopStrategy
 
 from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
 from ..config import max_relative_time_difference as SMALL_FRACTION
+from ..config import DOUBLE_PRECISION
 from six.moves import range
 
 class MultiHopStrategy(HopStrategy):
@@ -220,7 +221,7 @@ class MultiHopStrategy(HopStrategy):
             # Foreign keys below NOT declared at schema-level, see note above re MySQL
             Column('halo_from_id', Integer),
             Column('halo_to_id', Integer),
-            Column('weight', Float),
+            Column('weight', DOUBLE_PRECISION),
             Column('nhops', Integer),
             prefixes = prefixes
         )
@@ -233,7 +234,7 @@ class MultiHopStrategy(HopStrategy):
             # Foreign keys below NOT declared at schema-level, see note above re MySQL
             Column('halo_from_id', Integer),
             Column('halo_to_id', Integer),
-            Column('weight', Float),
+            Column('weight', DOUBLE_PRECISION),
             Column('nhops', Integer),
             prefixes = prefixes
         )

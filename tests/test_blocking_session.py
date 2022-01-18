@@ -95,7 +95,7 @@ def _suppress_exception_report():
     backend._print_exceptions = True
 
 def test_non_blocking_exception():
-    if os.environ.get("DB_BACKEND", "sqlite") != "sqlite":
+    if os.environ.get("TANGOS_DB_BACKEND", "sqlite") != "sqlite":
         raise SkipTest("Skipping for MySQL databases")
 
     with _suppress_exception_report():
@@ -108,7 +108,7 @@ def test_non_blocking_exception():
 
 
 def test_blocking_avoids_exception():
-    if os.environ.get("DB_BACKEND", "sqlite") != "sqlite":
+    if os.environ.get("TANGOS_DB_BACKEND", "sqlite") != "sqlite":
         raise SkipTest("Skipping for MySQL databases")
 
     assert tangos.get_halo("sim/ts1/6") is None

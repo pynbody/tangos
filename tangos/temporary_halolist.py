@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from . import core
-from sqlalchemy import Column, Table, String, Integer, Float, ForeignKey
+from sqlalchemy import Column, Table, Integer
 import sqlalchemy
 import random
 import string

@@ -1,13 +1,14 @@
 from __future__ import absolute_import
 import os, os.path
 import sqlalchemy
-from sqlalchemy import Column, Integer, Text, ForeignKey, Float, Boolean, and_
+from sqlalchemy import Column, Integer, Text, ForeignKey, Boolean, and_
 from sqlalchemy.orm import relationship, backref, aliased
 
 from . import Base
 from .creator import Creator
 from .simulation import Simulation
 from .. import config
+from ..config import DOUBLE_PRECISION
 
 class TimeStep(Base):
     __tablename__ = 'timesteps'
@@ -15,8 +16,8 @@ class TimeStep(Base):
     id = Column(Integer, primary_key=True)
     extension = Column(Text)
     simulation_id = Column(Integer, ForeignKey('simulations.id'))
-    redshift = Column(Float)
-    time_gyr = Column(Float)
+    redshift = Column(DOUBLE_PRECISION)
+    time_gyr = Column(DOUBLE_PRECISION)
     creator = relationship(Creator, backref=backref(
         'timesteps', cascade='delete', lazy='dynamic'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))

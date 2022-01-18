@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from sqlalchemy import Column, Integer, ForeignKey, Float, LargeBinary, Boolean
+from sqlalchemy import Column, Integer, ForeignKey, LargeBinary, Boolean
 from sqlalchemy.orm import relationship, backref, deferred
 
 from .. import data_attribute_mapper, extraction_patterns
@@ -7,6 +7,7 @@ from .. import Base
 from .. import creator
 from ..dictionary import DictionaryItem
 from ..halo import Halo
+from ...config import DOUBLE_PRECISION
 
 
 class HaloProperty(Base):
@@ -17,7 +18,7 @@ class HaloProperty(Base):
     # n.b. backref defined below
     halo = relationship(Halo, cascade='none', backref=backref('all_properties'))
 
-    data_float = Column(Float)
+    data_float = Column(DOUBLE_PRECISION)
     data_array = deferred(Column(LargeBinary), group='data')
     data_int = Column(Integer)
 
