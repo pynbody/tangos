@@ -10,7 +10,7 @@ import sqlalchemy.orm
 import sqlalchemy.orm.dynamic
 import sqlalchemy.orm.query
 from sqlalchemy import and_, Table, Index, Column, Integer
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, defer
 
 from .. import core
 from .. import temporary_halolist
@@ -112,9 +112,14 @@ class MultiHopStrategy(HopStrategy):
         except:
             tt.__exit__(*sys.exc_info())
             raise
+        halo_to_query = self._query_ordered.options(defer('id'),
+                                                    defer('source_id'),
+                                                    defer('halo_from_id'),
+                                                    defer('weight'),
+                                                    defer('nhops'))
+
         thl = temporary_halolist.temporary_halolist_table(self.session,
-                                                          self._query_ordered.from_self(
-                                                              self._link_orm_class.halo_to_id),
+                                                          halo_to_query,
                                                           callback=lambda: tt.__exit__(None, None, None)
                                                           )
         return thl
