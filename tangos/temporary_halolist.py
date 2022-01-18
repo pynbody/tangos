@@ -11,19 +11,13 @@ _temp_sessions = {}
 
 def _create_temp_halolist(session):
     global _temp_sessions
-
-    dialect = session.connection().dialect.dialect_description.split("+")[0].lower()
-    if dialect == 'mysql':
-        prefixes = []
-    else:
-        prefixes = ['TEMPORARY']
     rstr = ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
     halolist_table = Table(
             'halolist_'+rstr,
             core.Base.metadata,
             Column('id',Integer, primary_key=True),
             Column('halo_id',Integer), # don't declare ForeignKey, as MySQL can't handle it
-            prefixes = prefixes
+            prefixes = ['TEMPORARY']
         )
 
     halolist_table.create(bind=session.connection())
