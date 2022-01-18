@@ -184,5 +184,4 @@ def init_blank_db_for_testing(**init_kwargs):
             # Do not substitute user-supplied database names here.
             conn.execute(f"CREATE DATABASE {testing_db_name}")
 
-        url = f"{backend}://{user}:{password}@localhost:{port}/{testing_db_name}"
-        core.init_db(url, **init_kwargs)
+        core.init_db(db_url, **init_kwargs)
