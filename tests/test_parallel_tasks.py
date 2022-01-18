@@ -20,7 +20,7 @@ def setup():
 
 def teardown():
     tangos.core.close_db()
-    pt.launch(tangos.core.close_db)
+    pt.launch(tangos.core.close_db, 6)
 
 
 def _add_property():
