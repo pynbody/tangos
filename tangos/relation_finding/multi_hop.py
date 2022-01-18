@@ -113,10 +113,20 @@ class MultiHopStrategy(HopStrategy):
             tt.__exit__(*sys.exc_info())
             raise
 
-        thl = temporary_halolist.temporary_halolist_table(self.session,
-                                                          self._query_ordered,
-                                                          callback=lambda: tt.__exit__(None, None, None)
-                                                          )
+        # Add back the columns required
+        self.query = self.query.add_columns(
+            self._table.c.id,
+            self._table.c.source_id,
+            self._table.c.halo_from_id,
+            self._table.c.weight,
+        )
+        subquery = self._query_ordered.subquery()
+        q = self.session.query(subquery.c.halo_to_id)
+        thl = temporary_halolist.temporary_halolist_table(
+            self.session,
+            q,
+            callback=lambda: tt.__exit__(None, None, None)
+        )
         return thl
 
     def _generate_multihop_results(self, halo_ids_only=False):
