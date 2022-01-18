@@ -189,16 +189,40 @@ class MultiHopStrategy(HopStrategy):
     def _create_temp_table(self):
         rstr = ''.join(random.choice(string.ascii_lowercase) for _ in range(4))
 
+        # The intent of the following two tables is that they are temporary. With SQLite, it is
+        # essential that they are implemented literally as TEMPORARY tables as otherwise the performance
+        # is hugely degraded. However, MySQL places two crippling limitations on TEMPORARY tables:
+        #  1) No foreign keys allowed referring to columns in the permanent database
+        #  2) Cannot join a TEMPORARY table to itself
+        #
+        # Restriction (1) can be evaded by not declaring the foreign key in the schema, and then
+        # providing foreign_keys information in _construct_orm_class. However restriction (2) is
+        # completely debilitating. Luckily the performance in MySQL is fine even if we don't
+        # declare these tables as TEMPORARY, so we simply switch off the prefix.
+        #
+        # There is a strange third issue with MySQL which is that, if we declare the foreign key
+        # when creating a table, the connection hangs. This seems to be because of a deadlock;
+        # other open connections prevent creating the association to the existing tables (the
+        # MySQL 'metadata lock'). So, even though MySQL will NOT be using temporary tables,
+        # we still don't declare the foreign key dependence.
+
+        dialect = self._connection.dialect.dialect_description.split("+")[0].lower()
+        if dialect == 'mysql':
+            prefixes = []
+        else:
+            prefixes = ['TEMPORARY']
+
         multi_hop_link_table = Table(
             'multihoplink_final_' + rstr,
             core.Base.metadata,
             Column('id', Integer, primary_key=True),
             Column('source_id', Integer),
-            Column('halo_from_id', Integer, ForeignKey('halos.id')),
-            Column('halo_to_id', Integer, ForeignKey('halos.id')),
+            # Foreign keys below NOT declared at schema-level, see note above re MySQL
+            Column('halo_from_id', Integer),
+            Column('halo_to_id', Integer),
             Column('weight', Float),
             Column('nhops', Integer),
-            prefixes=['TEMPORARY']
+            prefixes = prefixes
         )
 
         multi_hop_link_prelim_table = Table(
@@ -206,26 +230,20 @@ class MultiHopStrategy(HopStrategy):
             core.Base.metadata,
             Column('id', Integer, primary_key=True),
             Column('source_id', Integer),
-            Column('halo_from_id', Integer, ForeignKey('halos.id')),
-            Column('halo_to_id', Integer, ForeignKey('halos.id')),
+            # Foreign keys below NOT declared at schema-level, see note above re MySQL
+            Column('halo_from_id', Integer),
+            Column('halo_to_id', Integer),
             Column('weight', Float),
             Column('nhops', Integer),
-            prefixes=['TEMPORARY']
+            prefixes = prefixes
         )
 
         self._table_index = Index('temp.source_id_index_' + rstr, multi_hop_link_table.c.source_id, multi_hop_link_table.c.nhops)
 
         self._table = multi_hop_link_table
         self._prelim_table = multi_hop_link_prelim_table
-        try:
-            self._table.create(checkfirst=True, bind=self._connection)
-        except sqlalchemy.exc.IntegrityError:
-            # This is required to work with MySQL databases that do not support foreign keys in
-            # temporary tables
-            self._table._prefixes = []
-            self._prelim_table._prefixes = []
-            self._table.create(checkfirst=True, bind=self._connection)
 
+        self._table.create(checkfirst=True, bind=self._connection)
         self._prelim_table.create(checkfirst=True, bind=self._connection)
 
     @contextlib.contextmanager
@@ -327,8 +345,10 @@ class MultiHopStrategy(HopStrategy):
         class_name = "MultiHopHaloLink_"+rstr
         class_base = (core.Base,)
         class_attrs = {"__table__": self._table,
-                       "halo_from": relationship(core.halo.Halo, primaryjoin=self._table.c.halo_from_id == core.halo.Halo.id),
-                       "halo_to"  : relationship(core.halo.Halo, primaryjoin=(self._table.c.halo_to_id == core.halo.Halo.id)),
+                       "halo_from": relationship(core.halo.Halo, primaryjoin=self._table.c.halo_from_id == core.halo.Halo.id,
+                                                 foreign_keys = [self._table.c.halo_from_id]),
+                       "halo_to"  : relationship(core.halo.Halo, primaryjoin=(self._table.c.halo_to_id == core.halo.Halo.id),
+                                                 foreign_keys = [self._table.c.halo_to_id]),
                        "source_id" : self._table.c.source_id,
                        "nhops" : self._table.c.nhops
                        }
