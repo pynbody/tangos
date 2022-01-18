@@ -69,7 +69,7 @@ class DummyPropertyAccessingSimulationProperty(properties.PropertyCalculation):
 
 
 def init_blank_simulation():
-    testing.init_blank_db_for_testing(timeout=0.0)
+    testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
     manager = add_simulation.SimulationAdderUpdater(output_testing.TestInputHandler("dummy_sim_1"))
     with log.LogCapturer():

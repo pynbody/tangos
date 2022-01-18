@@ -182,6 +182,7 @@ def init_blank_db_for_testing(**init_kwargs):
         with engine.connect() as conn:
             conn.execute("commit")
             # Do not substitute user-supplied database names here.
+            conn.execute(f"DROP DATABASE IF EXISTS {testing_db_name}")
             conn.execute(f"CREATE DATABASE {testing_db_name}")
 
         core.init_db(db_url, **init_kwargs)
