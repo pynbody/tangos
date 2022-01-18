@@ -2,6 +2,9 @@ import tangos, tangos.testing as testing, tangos.scripts.manager as manager
 import tangos.testing.simulation_generator
 import tangos.testing.db_diff as diff
 
+from nose.plugins.skip import SkipTest
+import os
+
 def setup():
     testing.init_blank_db_for_testing()
 
@@ -28,6 +31,8 @@ def setup():
             creator.link_last_bhs_using_mapping({1:1})
 
 def test_import():
+    if os.environ.get("DB_BACKEND", "sqlite") != "sqlite":
+        raise SkipTest("Skipping for MySQL databases")
     existing_session = tangos.get_default_session()
     testing.init_blank_db_for_testing(testing_db_name='imported_db_test')
     new_session = tangos.get_default_session()
