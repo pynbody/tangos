@@ -152,6 +152,19 @@ def init_db(db_uri=None, timeout=30, verbose=None):
     Base.metadata.create_all(_engine)
     creator.set_creator(None)
 
+def close_db():
+    global _engine
+    close_session()
+    if _engine is not None:
+        _engine.dispose()
+        _engine = None
+
+def close_session():
+    global Session, _internal_session
+    if Session is not None:
+        Session.close_all()
+        Session = None
+        _internal_session = None
 
 from .dictionary import _get_dict_cache_for_session, get_dict_id, get_or_create_dictionary_item
 
