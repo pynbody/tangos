@@ -16,7 +16,8 @@ def setup():
         generator.add_timestep()
         generator.add_objects_to_timestep(3)
 
-
+def teardown():
+    tangos.core.close_db()
 
 def test_setitem():
     tangos.get_halo("sim/ts1/1")['bla'] = 23

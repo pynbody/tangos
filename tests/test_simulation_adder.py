@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 import tangos as db
-import tangos.config
 from tangos import log
 import os
 from tangos.tools import add_simulation

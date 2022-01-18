@@ -18,6 +18,10 @@ def setup():
 
     tangos.core.get_default_session().commit()
 
+def teardown():
+    tangos.core.close_db()
+    pt.launch(tangos.core.close_db)
+
 
 def _add_property():
     for i in pt.distributed(list(range(1,10))):

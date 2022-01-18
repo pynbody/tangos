@@ -42,6 +42,9 @@ def setup():
     generator.add_objects_to_timestep(1)
     generator.link_last_halos_using_mapping({1:1, 2:1}, adjust_masses=True)
 
+def teardown():
+    tangos.core.close_db()
+
 def test_setup():
     ndm_test = [[x.NDM for x in tangos.get_timestep(ts).halos] for ts in range(1,6)]
     assert np.all(ndm_test[0] == [1000, 600])

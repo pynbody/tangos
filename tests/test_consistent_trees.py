@@ -46,6 +46,9 @@ def setup():
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()
 
+def teardown():
+    tangos.core.close_db()
+
 
 def test_property_import():
     importer = tools.property_importer.PropertyImporter()

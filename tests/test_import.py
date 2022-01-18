@@ -30,6 +30,10 @@ def setup():
             creator.link_last_halos()
             creator.link_last_bhs_using_mapping({1:1})
 
+def teardown():
+    tangos.core.close_db()
+
+
 def test_import():
     if os.environ.get("DB_BACKEND", "sqlite") != "sqlite":
         raise SkipTest("Skipping for MySQL databases")

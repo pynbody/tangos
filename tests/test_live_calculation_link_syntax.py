@@ -66,6 +66,9 @@ def setup():
 
     db.core.get_default_session().commit()
 
+def teardown():
+    tangos.core.close_db()
+
 def test_ambiguous_link():
     with warnings.catch_warnings(record=True) as w:
         assert db.get_halo("sim/ts1/1").calculate('testlink.testval')==1.0

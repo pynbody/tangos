@@ -77,8 +77,8 @@ def setup():
     generator.add_mass_transfer(4,2,0.05)
 
 
-
-
+def teardown():
+    tangos.core.close_db()
 
 
 def test_ts_next():

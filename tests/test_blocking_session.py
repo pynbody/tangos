@@ -33,6 +33,7 @@ def setup():
     session.commit()
 
 def teardown():
+    tangos.core.close_db()
     try:
         os.remove("test.db")
     except OSError:

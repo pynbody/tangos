@@ -21,6 +21,9 @@ def setup():
 
     db.core.get_default_session().commit()
 
+def teardown():
+    tangos.core.close_db()
+
 def test_bh_identity():
     assert isinstance(tangos.get_halo(1), tangos.core.halo.Halo)
     assert not isinstance(tangos.get_halo(1), tangos.core.halo.BH)

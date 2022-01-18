@@ -9,6 +9,9 @@ def setup():
     creator = testing.simulation_generator.TestSimulationGenerator()
     creator.add_timestep()
 
+def teardown():
+    tangos.core.close_db()
+
 def test_big_integer_halo():
     crazy_number = np.iinfo(np.dtype('uint64')).max - 10 # close to maximum but not the actual max, avoiding special case
 

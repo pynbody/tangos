@@ -50,7 +50,8 @@ def setup():
     generator.add_timestep() # intentionally empty final timestep
 
 
-
+def teardown():
+    tangos.core.close_db()
 
 
 class DummyProperty1(properties.PropertyCalculation):

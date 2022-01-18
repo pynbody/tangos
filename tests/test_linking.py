@@ -6,6 +6,7 @@ from tangos import log, parallel_tasks, live_calculation, testing
 from tangos.core.halo_data import link
 from nose.tools import assert_raises
 import os, os.path
+import tangos
 
 def setup():
     parallel_tasks.use('null')
@@ -16,6 +17,9 @@ def setup():
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()
         manager2.scan_simulation_and_add_all_descendants()
+
+def teardown():
+    tangos.core.close_db()
 
 def test_issue_77():
     # tests that the input handler caching does not deliver the wrong timestep when it has the same name

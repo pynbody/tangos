@@ -8,12 +8,16 @@ import os
 import numpy.testing as npt
 import pynbody
 import gc
+import tangos
 
 def setup():
     global output_manager
     testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
     output_manager = pynbody_outputs.ChangaInputHandler("test_tipsy")
+
+def teardown():
+    tangos.core.close_db()
 
 def test_get_handler():
     assert db.input_handlers.get_named_handler_class('pynbody.ChangaInputHandler') == pynbody_outputs.ChangaInputHandler
