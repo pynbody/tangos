@@ -108,24 +108,19 @@ class MultiHopStrategy(HopStrategy):
         tt = self._manage_temp_table()
         tt.__enter__()
         try:
-            self._generate_multihop_results()
+            self._generate_multihop_results(halo_ids_only=True)
         except:
             tt.__exit__(*sys.exc_info())
             raise
-        halo_to_query = self._query_ordered.options(defer('id'),
-                                                    defer('source_id'),
-                                                    defer('halo_from_id'),
-                                                    defer('weight'),
-                                                    defer('nhops'))
 
         thl = temporary_halolist.temporary_halolist_table(self.session,
-                                                          halo_to_query,
+                                                          self._query_ordered,
                                                           callback=lambda: tt.__exit__(None, None, None)
                                                           )
         return thl
 
-    def _generate_multihop_results(self):
-        self._generate_query()
+    def _generate_multihop_results(self, halo_ids_only=False):
+        self._generate_query(halo_ids_only)
         self._seed_temp_table()
         self._filter_query_for_target(self._target)
         self._make_hops()
@@ -362,9 +357,12 @@ class MultiHopStrategy(HopStrategy):
         return type(class_name,class_base,class_attrs)
 
 
-    def _generate_query(self):
+    def _generate_query(self, halo_ids_only):
         self._link_orm_class = self._construct_orm_class()
-        self.query = self.session.query(self._link_orm_class)
+        if halo_ids_only:
+            self.query = self.session.query(self._link_orm_class.halo_to_id)
+        else:
+            self.query = self.session.query(self._link_orm_class)
 
         if not self._include_startpoint:
             self.query = self.query.filter(self._table.c.nhops>0)
