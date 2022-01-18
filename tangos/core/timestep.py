@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-import weakref
 import os, os.path
 import sqlalchemy
 from sqlalchemy import Column, Integer, Text, ForeignKey, Float, Boolean, and_
@@ -217,7 +216,12 @@ class TimeStep(Base):
             first_order = TimeStep.time_gyr.desc()
 
         successors_query = session.query(TimeStep).filter(
-               and_(direction_comparison, TimeStep.simulation == self.simulation)
+               and_(direction_comparison, TimeStep.simulation == self.simulation,
+                    # Strictly the below condition shouldn't be required. However,
+                    # MySQL returns rows where Timestep.time_gyr == self.time_gyr when we ask for a
+                    # strict inequality. Probably this is to do with a roundoff error in the round-trip
+                    # to the database. We have to prevent this, otherwise one gets incorrect results.
+                    TimeStep.id != self.id)
             ).order_by(first_order).limit(abs(steps))
 
         if successors_query.count()<abs(steps):

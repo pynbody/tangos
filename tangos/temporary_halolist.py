@@ -17,7 +17,7 @@ def _create_temp_halolist(session):
             'halolist_'+rstr,
             core.Base.metadata,
             Column('id',Integer, primary_key=True),
-            Column('halo_id',Integer,ForeignKey('halos.id')),
+            Column('halo_id',Integer), # don't declare ForeignKey, as MySQL can't handle it
             prefixes = ['TEMPORARY']
         )
 
@@ -57,12 +57,12 @@ def halo_query(table):
     1-1 correspondence with the rows in the temporary table. For this, you need to use
     enumerated_halo_query"""
     session = _get_session_for(table)
-    return session.query(core.halo.Halo).select_from(table).join(core.halo.Halo)
+    return session.query(core.halo.Halo).select_from(table).join(core.halo.Halo, table.c.halo_id == core.halo.Halo.id)
 
 def enumerated_halo_query(table):
     """Query that returns tuples of id, halo for each row in the temporary table"""
     session = _get_session_for(table)
-    return session.query(table.c.id, core.halo.Halo).select_from(table).outerjoin(core.halo.Halo)
+    return session.query(table.c.id, core.halo.Halo).select_from(table).outerjoin(core.halo.Halo, table.c.halo_id == core.halo.Halo.id)
 
 def all_halos_with_duplicates(table):
     """Return all halos in the temporary table, including duplicates"""
