@@ -19,8 +19,8 @@ def test_handler():
 
 def test_timestep():
     ts = db.get_timestep("test_tipsy_yt/tiny.000640")
-    npt.assert_allclose(ts.time_gyr, 2.173594670375)
-    npt.assert_allclose(ts.redshift, 2.96382819878)
+    npt.assert_allclose(ts.time_gyr, 2.173594670375, rtol=1e-5)
+    npt.assert_allclose(ts.redshift, 2.96382819878, rtol=1e-5)
 
 def test_halos():
     ts = db.get_timestep("test_tipsy_yt/tiny.000640")
