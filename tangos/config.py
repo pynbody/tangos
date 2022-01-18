@@ -11,7 +11,7 @@ home = os.environ['HOME']
 db = os.environ.get("TANGOS_DB_CONNECTION", home+"/tangos_data.db")
 base = os.environ.get("TANGOS_SIMULATION_FOLDER", home+"/")
 db_backend = os.environ.get("TANGOS_DB_BACKEND", None)
-if "+" in db_backend:
+if db_backend and "+" in db_backend:
     db_backend = db_backend.split("+")[0]
 elif db_backend is None and "//" in db:
     db_backend = db_backend.split("+")[0].lower()

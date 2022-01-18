@@ -28,7 +28,7 @@ class HaloLink(Base):
                                            primaryjoin=halo_to_id == Halo.id),
                            cascade='')
 
-    weight = Column(DOUBLE_PRECISION)
+    weight = Column(DOUBLE_PRECISION(asdecimal=False))
 
     creator_id = Column(Integer, ForeignKey('creators.id'))
     creator = relationship(creator.Creator, backref=backref(

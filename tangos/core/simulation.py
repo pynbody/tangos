@@ -108,7 +108,7 @@ class SimulationProperty(Base):
     creator = relationship(creator.Creator, backref=backref(
         'simproperties', cascade='all, delete', lazy='dynamic'), cascade='save-update')
 
-    data_float = Column(DOUBLE_PRECISION)
+    data_float = Column(DOUBLE_PRECISION(asdecimal=False))
     data_int = Column(Integer)
     data_time = Column(DateTime)
     data_string = Column(Text)

@@ -18,7 +18,7 @@ class HaloProperty(Base):
     # n.b. backref defined below
     halo = relationship(Halo, cascade='none', backref=backref('all_properties'))
 
-    data_float = Column(DOUBLE_PRECISION)
+    data_float = Column(DOUBLE_PRECISION(asdecimal=False))
     data_array = deferred(Column(LargeBinary), group='data')
     data_int = Column(Integer)
 

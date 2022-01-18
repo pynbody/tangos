@@ -16,8 +16,8 @@ class TimeStep(Base):
     id = Column(Integer, primary_key=True)
     extension = Column(Text)
     simulation_id = Column(Integer, ForeignKey('simulations.id'))
-    redshift = Column(DOUBLE_PRECISION)
-    time_gyr = Column(DOUBLE_PRECISION)
+    redshift = Column(DOUBLE_PRECISION(asdecimal=False))
+    time_gyr = Column(DOUBLE_PRECISION(asdecimal=False))
     creator = relationship(Creator, backref=backref(
         'timesteps', cascade='delete', lazy='dynamic'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
