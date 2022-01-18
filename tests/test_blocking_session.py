@@ -14,6 +14,7 @@ import sqlalchemy.exc
 import contextlib
 import tangos
 
+from nose.plugins.skip import SkipTest
 
 def setup():
     pt.use("multiprocessing")
@@ -94,6 +95,8 @@ def _suppress_exception_report():
     backend._print_exceptions = True
 
 def test_non_blocking_exception():
+    if os.environ.get("DB_BACKEND", "sqlite") != "sqlite":
+        raise SkipTest("Skipping for MySQL databases")
 
     with _suppress_exception_report():
         with assert_raises(sqlalchemy.exc.OperationalError):
@@ -104,8 +107,9 @@ def test_non_blocking_exception():
 
 
 
-
 def test_blocking_avoids_exception():
+    if os.environ.get("DB_BACKEND", "sqlite") != "sqlite":
+        raise SkipTest("Skipping for MySQL databases")
 
     assert tangos.get_halo("sim/ts1/6") is None
     db.core.get_default_session().commit()
