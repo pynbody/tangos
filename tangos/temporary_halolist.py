@@ -18,6 +18,7 @@ def _create_temp_halolist(session):
             core.Base.metadata,
             Column('id',Integer, primary_key=True),
             Column('halo_id',Integer), # don't declare ForeignKey, as MySQL can't handle it
+            prefixes = ["TEMPORARY"]
         )
 
     halolist_table.create(bind=session.connection())

@@ -107,28 +107,26 @@ class MultiHopStrategy(HopStrategy):
         tt = self._manage_temp_table()
         tt.__enter__()
         try:
-            self._generate_multihop_results(halo_ids_only=True)
+            self._generate_multihop_results()
         except:
             tt.__exit__(*sys.exc_info())
             raise
 
         thl = temporary_halolist.temporary_halolist_table(self.session,
-                                                          self._query_ordered,
+                                                          self._order_query(self._generate_query(halo_ids_only=True)),
                                                           callback=lambda: tt.__exit__(None, None, None)
                                                           )
         return thl
 
-    def _generate_multihop_results(self, halo_ids_only=False):
-        self._generate_query(halo_ids_only)
+    def _generate_multihop_results(self):
         self._seed_temp_table()
-        self._filter_query_for_target(self._target)
         self._make_hops()
 
     def _execute_query(self):
         with self._manage_temp_table():
             self._generate_multihop_results()
             try:
-                results = self._query_ordered.all()
+                results = self._order_query(self._generate_query(halo_ids_only=False)).all()
             except sqlalchemy.exc.ResourceClosedError:
                 results = []
 
@@ -249,6 +247,7 @@ class MultiHopStrategy(HopStrategy):
     @contextlib.contextmanager
     def _manage_temp_table(self):
         self._create_temp_table()
+        self._link_orm_class = self._construct_orm_class()
         yield
         self._delete_temp_table()
 
@@ -350,6 +349,7 @@ class MultiHopStrategy(HopStrategy):
                        "halo_to"  : relationship(core.halo.Halo, primaryjoin=(self._table.c.halo_to_id == core.halo.Halo.id),
                                                  foreign_keys = [self._table.c.halo_to_id]),
                        "source_id" : self._table.c.source_id,
+                       "weight" : self._table.c.weight,
                        "nhops" : self._table.c.nhops
                        }
 
@@ -357,14 +357,17 @@ class MultiHopStrategy(HopStrategy):
 
 
     def _generate_query(self, halo_ids_only):
-        self._link_orm_class = self._construct_orm_class()
         if halo_ids_only:
-            self.query = self.session.query(self._link_orm_class.halo_to_id)
+            query = self.session.query(self._link_orm_class.halo_to_id)
         else:
-            self.query = self.session.query(self._link_orm_class)
+            query = self.session.query(self._link_orm_class)
 
         if not self._include_startpoint:
-            self.query = self.query.filter(self._table.c.nhops>0)
+            query = query.filter(self._table.c.nhops>0)
+
+        query = self._filter_query_for_target(query, self._target)
+
+        return query
 
     def _generate_order_arg_from_name(self, name, halo_alias, timestep_alias):
         if name == 'nhops':

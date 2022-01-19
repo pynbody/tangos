@@ -95,10 +95,17 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
 
         # return only the highest weight link from each halo
         # (the following join is basically a work-around for the lack of an 'argmax' type functionality in sql)
-        subq = query.add_columns(func.max(table.c.weight).label("max_weight")). \
+
+        # we're going to have a subquery that looks very much like the main query,
+        # but which serves to pick out the argmax
+        argmax_subquery = query
+
+        argmax_subquery = argmax_subquery.add_columns(func.max(table.c.weight).label("max_weight")). \
             group_by(table.c.halo_from_id, table.c.source_id).subquery()
-        query = query.join(subq, sqlalchemy.and_(table.c.halo_from_id == subq.c.halo_from_id,
-                                                 table.c.weight == subq.c.max_weight))
+
+        # the main query will join to the subquery to pick out all details of the selected row
+        query = query.join(argmax_subquery, sqlalchemy.and_(table.c.halo_from_id == argmax_subquery.c.halo_from_id,
+                                                 table.c.weight == argmax_subquery.c.max_weight))
 
         # there may be rare occasions where two links have exactly the same weight, in which case the above query
         # currently generates more than one row. Avoid by grouping. Note in this case SQL will return
@@ -108,11 +115,16 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         return query
 
     def _should_halt(self):
-        return self.query.count()>0
+        # should halt if there are some results available. We can tell this with the parent classes's
+        # _generate_query. (Our own _generate_query always returns one result per source_id.)
+        return super()._generate_query(True).count()>0
 
     def _order_by_clause(self, halo_alias, timestep_alias):
-        return [self._link_orm_class.source_id] \
-               + super(MultiSourceMultiHopStrategy, self)._order_by_clause(halo_alias, timestep_alias)
+        if self._return_only_highest_weights:
+            return [] # _return_only_highest weights is already ordered
+        else:
+            return [self._link_orm_class.source_id] \
+               + super()._order_by_clause(halo_alias, timestep_alias)
 
     def all(self):
         results = self._get_query_all()
@@ -135,36 +147,42 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         else:
             return [x.source_id for x in results]
 
-    @property
-    def _query_ordered(self):
-        query = super(MultiSourceMultiHopStrategy, self)._query_ordered
+    def _generate_query(self, halo_ids_only):
+
         if self._return_only_highest_weights:
-            query = self._extract_max_weight_rows_from_query(query, self._table)
+            # need to find the highest weight result for each source_id
+            subquery = self._extract_max_weight_rows_from_query(super()._generate_query(halo_ids_only=False),
+                                                                self._table).subquery()
 
             # we now need to restructure the results such that they appear in the same order as the input
             # halo list, and a NULL result is returned for 'missing' halos. This way, the result is
             # guaranteed to be in 1-1 correspondence with the input.
             #
             # We do this by joining to the initial seeds in the temp table
-            #
-            # the query has to explicitly include the source_id, otherwise the sqlalchemy dedup
-            # process removes duplicates rows (e.g. if there are several null results, only the
-            # first will be returned!) resulting in a query result that is too short and unrecoverable
-            # errors in functions that rely on getting back a 1-1 mapping
 
-            original_query_alias = query.subquery()
-            original_orm_alias = orm.aliased(self._link_orm_class, original_query_alias)
+            subquery_orm_alias = orm.aliased(self._link_orm_class, subquery)
             source_ids = orm.aliased(self._link_orm_class)
 
-            sources_query = self.session.query(source_ids.source_id,original_orm_alias).\
-                select_from(source_ids).\
-                filter(source_ids.nhops==0).order_by(source_ids.source_id)
+            if halo_ids_only:
+                # if going straight into a temptable, we only want to see the halo_to_id
+                query = self.session.query(subquery_orm_alias.halo_to_id).select_from(source_ids)
+            else:
+                # if going back to SQLAlchemy ORM, we explicitly include the source_id, otherwise the sqlalchemy dedup
+                # process removes duplicates rows (e.g. if there are several null results, only the
+                # first will be returned!) resulting in a query result that is too short and unrecoverable
+                # errors in functions that rely on getting back a 1-1 mapping
+                query = self.session.query(source_ids.source_id,subquery_orm_alias).\
+                    select_from(source_ids)
 
-            query = sources_query.outerjoin(original_orm_alias,
-                                            source_ids.source_id==original_orm_alias.source_id)
-            query = query.options(orm.joinedload(original_orm_alias.halo_to))
+            query = query.filter(source_ids.nhops==0).order_by(source_ids.source_id)
 
+            query = query.outerjoin(subquery_orm_alias,
+                                    source_ids.source_id==subquery_orm_alias.source_id)
 
+            if not halo_ids_only:
+                query = query.options(orm.joinedload(subquery_orm_alias.halo_to))
+        else:
+            query = super()._generate_query(halo_ids_only)
 
         return query
 
@@ -172,8 +190,8 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
 class MultiSourceAllMajorProgenitorsStrategy(MultiSourceMultiHopStrategy):
 
     def __init__(self, halos_from, **kwargs):
-        super(MultiSourceAllMajorProgenitorsStrategy, self).__init__(halos_from, None, one_match_per_input=False,
-                                                                     directed='backwards', include_startpoint=True)
+        super().__init__(halos_from, None, one_match_per_input=False, directed='backwards',
+                         include_startpoint=True)
 
     def _should_halt(self):
         return False
@@ -181,8 +199,8 @@ class MultiSourceAllMajorProgenitorsStrategy(MultiSourceMultiHopStrategy):
 class MultiSourceAllMajorDescendantsStrategy(MultiSourceMultiHopStrategy):
 
     def __init__(self, halos_from, **kwargs):
-        super(MultiSourceAllMajorDescendantsStrategy, self).__init__(halos_from, None, one_match_per_input=False,
-                                                                     directed='forwards', include_startpoint=True)
+        super().__init__(halos_from, None, one_match_per_input=False, directed='forwards',
+                         include_startpoint=True)
 
     def _should_halt(self):
         return False
