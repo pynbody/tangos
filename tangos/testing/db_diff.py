@@ -10,6 +10,7 @@ class TangosDbDiff(object):
     def __init__(self, uri1, uri2, max_objects=10):
         if isinstance(uri1, Session):
             self.session1 = uri1
+            uri1 = str(uri1.connection().engine)
         else:
             core.init_db(uri1)
             self.session1 = core.get_default_session()
@@ -17,6 +18,7 @@ class TangosDbDiff(object):
 
         if isinstance(uri2, Session):
             self.session2 = uri2
+            uri2 = str(uri2.connection().engine)
         else:
             core.init_db(uri2)
             self.session2 = core.get_default_session()

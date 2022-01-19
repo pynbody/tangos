@@ -35,8 +35,6 @@ def teardown():
 
 
 def test_import():
-    if os.environ.get("TANGOS_DB_BACKEND", "sqlite") != "sqlite":
-        raise SkipTest("Skipping for MySQL databases")
     existing_session = tangos.get_default_session()
     testing.init_blank_db_for_testing(testing_db_name='imported_db_test')
     new_session = tangos.get_default_session()
