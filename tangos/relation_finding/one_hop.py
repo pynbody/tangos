@@ -13,37 +13,38 @@ class HopStrategy(object):
 
     def __init__(self, halo_from, target=None, order_by=None):
         """Construct a HopStrategy starting from the specified halo"""
-        query = halo_from.links
         assert isinstance(halo_from, core.halo.Halo)
-        assert isinstance(query, sqlalchemy.orm.query.Query)
         self.session = Session.object_session(halo_from)
         self.halo_from = halo_from
         self._initialise_order_by(order_by)
-        self.query = query
         self._link_orm_class = core.halo_data.HaloLink
         self._target = target
         self._all = None
 
-    def _target_timestep(self, ts):
+    def _target_timestep(self, query, ts):
         """Only return those hops which reach the specified timestep"""
         if ts is None:
-            self.query = self.query.filter(0 == 1)
+            query = query.filter(0 == 1)
         else:
-            self.query = self.query.join("halo_to").filter(core.halo.Halo.timestep_id == ts.id)
+            query = query.join("halo_to").filter(core.halo.Halo.timestep_id == ts.id)
 
-    def _target_simulation(self, sim):
+        return query
+
+    def _target_simulation(self, query, sim):
         """Only return those hops which reach the specified simulation"""
-        self.query = self.query.join("halo_to", "timestep").filter(
+        query = query.join("halo_to", "timestep").filter(
             core.timestep.TimeStep.simulation_id == sim.id)
 
-    def _filter_query_for_target(self, db_obj):
+        return query
+
+    def _filter_query_for_target(self, query, db_obj):
         """Only return those hops which reach the specifid simulation or timestep"""
         if db_obj is None:
-            return
+            return query
         elif isinstance(db_obj, core.timestep.TimeStep):
-            self._target_timestep(db_obj)
+            return self._target_timestep(query, db_obj)
         elif isinstance(db_obj, core.simulation.Simulation):
-            self._target_simulation(db_obj)
+            return self._target_simulation(query, db_obj)
         else:
             raise ValueError("Unknown target type")
 
@@ -74,8 +75,8 @@ class HopStrategy(object):
 
     def _execute_query(self):
         try:
-            self._filter_query_for_target(self._target)
-            results = self._query_ordered.all()
+            query = self._filter_query_for_target(self.halo_from.links, self._target)
+            results = self._order_query(query).all()
         except sqlalchemy.exc.ResourceClosedError:
             results = []
 
@@ -140,9 +141,7 @@ class HopStrategy(object):
                or 'halo_number_asc' in self._order_by_names \
                or 'halo_number_desc' in self._order_by_names
 
-    @property
-    def _query_ordered(self):
-        query = self.query
+    def _order_query(self, query):
         assert isinstance(query, sqlalchemy.orm.query.Query)
         timestep_alias = None
         halo_alias = None

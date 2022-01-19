@@ -181,7 +181,7 @@ def test_temptable_exceptions():
     class TestException(Exception):
         pass
 
-    def raise_exception(halo_ids_only):
+    def raise_exception(halo_ids_only=False):
         raise TestException
 
     strategy._generate_multihop_results = raise_exception
