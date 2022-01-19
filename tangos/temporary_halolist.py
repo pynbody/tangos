@@ -6,17 +6,23 @@ import random
 import string
 import contextlib
 from six.moves import range
+from .config import db_backend
 
 _temp_sessions = {}
 
 def _create_temp_halolist(session):
     global _temp_sessions
+    if db_backend == "sqlite":
+        prefixes = ["temporary"]
+    else:
+        prefixes = []
     rstr = ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
     halolist_table = Table(
             'halolist_'+rstr,
             core.Base.metadata,
             Column('id',Integer, primary_key=True),
             Column('halo_id',Integer), # don't declare ForeignKey, as MySQL can't handle it
+            prefixes=prefixes,
         )
 
     halolist_table.create(bind=session.connection())
