@@ -2,11 +2,14 @@ from __future__ import absolute_import
 from sqlalchemy import Index, create_engine, inspect
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, clear_mappers
+import os
 from .. import config
 from .. import log
 
 _verbose = False
 _internal_session=None
+_internal_session_args=None
+_internal_session_pid=None
 _engine=None
 Session=None
 
@@ -14,9 +17,14 @@ def get_default_session():
     """Get the default ORM session to be used when no other is specified.
 
     :rtype: sqlalchemy.orm.Session"""
-    global _internal_session
+    global _internal_session, _internal_session_pid, _internal_session_args
     if _internal_session is None:
         init_db()
+    elif _internal_session_pid!=os.getpid():
+        if _internal_session_args is None:
+            raise RuntimeError("The process has been forked, but no information is available to open a new connection to the database")
+        else:
+            init_db(*_internal_session_args)
     return _internal_session
 
 def set_default_session(session):
@@ -26,6 +34,8 @@ def set_default_session(session):
     will subsequently fail. """
     global _internal_session
     _internal_session = session
+    _internal_session_pid = os.getpid()
+    _internal_session_args = None
 
 def get_default_engine():
     """Get the default sqlalchemy engine to be used when no other is specified."""
@@ -126,7 +136,7 @@ def _check_and_upgrade_database(engine):
 
 
 def init_db(db_uri=None, timeout=30, verbose=None):
-    global _verbose, _internal_session, _engine, Session
+    global _verbose, _internal_session, _engine, Session, _internal_session_args, _internal_session_pid
     if db_uri is None:
         db_uri = config.db
 
@@ -151,6 +161,8 @@ def init_db(db_uri=None, timeout=30, verbose=None):
     _internal_session=Session()
     Base.metadata.create_all(_engine)
     creator.set_creator(None)
+    _internal_session_args = (db_uri, timeout, verbose)
+    _internal_session_pid = os.getpid() # stored so that we can detect when a fork happens
 
 def close_db():
     global _engine

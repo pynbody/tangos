@@ -32,8 +32,6 @@ def _add_property():
 
 
 def test_add_property():
-    if tangos.config.db_backend != "sqlite":
-        raise SkipTest("Not functional at the moment for non-SQLite backends")
     pt.launch(_add_property,3)
     for i in range(1,10):
         assert tangos.get_halo(i)['my_test_property']==i
@@ -50,8 +48,6 @@ def _add_two_properties_different_ranges():
         tangos.core.get_default_session().commit()
 
 def test_add_two_properties_different_ranges():
-    if tangos.config.db_backend != "sqlite":
-        raise SkipTest("Not functional at the moment for non-SQLite backends")
 
     pt.launch(_add_two_properties_different_ranges,3)
     for i in range(1,10):
@@ -113,10 +109,6 @@ def _test_synchronize_db_creator():
     tangos.core.get_default_session().commit()
 
 def test_synchronize_db_creator():
-    if tangos.config.db_backend != "sqlite":
-        raise SkipTest("Not functional at the moment for non-SQLite backends")
-
-
     pt.launch(_test_synchronize_db_creator,3)
     assert tangos.get_halo(1)['db_creator_test_property']==1.0
     assert tangos.get_halo(2)['db_creator_test_property'] == 1.0

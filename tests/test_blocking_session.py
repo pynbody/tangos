@@ -96,7 +96,7 @@ def _suppress_exception_report():
 
 def test_non_blocking_exception():
     if os.environ.get("TANGOS_DB_BACKEND", "sqlite") != "sqlite":
-        raise SkipTest("Skipping for MySQL databases")
+        raise SkipTest("This test is only relevant for sqlite databases")
 
     with _suppress_exception_report():
         with assert_raises(sqlalchemy.exc.OperationalError):
@@ -109,7 +109,7 @@ def test_non_blocking_exception():
 
 def test_blocking_avoids_exception():
     if os.environ.get("TANGOS_DB_BACKEND", "sqlite") != "sqlite":
-        raise SkipTest("Skipping for MySQL databases")
+        raise SkipTest("This test is only relevant for sqlite databases")
 
     assert tangos.get_halo("sim/ts1/6") is None
     db.core.get_default_session().commit()
