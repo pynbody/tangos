@@ -14,7 +14,7 @@ db_backend = os.environ.get("TANGOS_DB_BACKEND", None)
 if db_backend and "+" in db_backend:
     db_backend = db_backend.split("+")[0]
 elif db_backend is None and "//" in db:
-    db_backend = db_backend.split("+")[0].lower()
+    db_backend = db.split("+")[0].lower()
 else:
     db_backend = "sqlite"
 
