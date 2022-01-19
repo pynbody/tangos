@@ -90,29 +90,14 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         return query
 
     def _extract_max_weight_rows_from_query(self, query, table):
+        from ..util.sql_argmax import sql_argmax
+
         if table is None:
             table = core.halo_data.HaloLink.__table__
 
-        # return only the highest weight link from each halo
-        # (the following join is basically a work-around for the lack of an 'argmax' type functionality in sql)
+        return sql_argmax(query, table.c.weight,
+                          [table.c.halo_from_id, table.c.source_id])
 
-        # we're going to have a subquery that looks very much like the main query,
-        # but which serves to pick out the argmax
-        argmax_subquery = query
-
-        argmax_subquery = argmax_subquery.add_columns(func.max(table.c.weight).label("max_weight")). \
-            group_by(table.c.halo_from_id, table.c.source_id).subquery()
-
-        # the main query will join to the subquery to pick out all details of the selected row
-        query = query.join(argmax_subquery, sqlalchemy.and_(table.c.halo_from_id == argmax_subquery.c.halo_from_id,
-                                                 table.c.weight == argmax_subquery.c.max_weight))
-
-        # there may be rare occasions where two links have exactly the same weight, in which case the above query
-        # currently generates more than one row. Avoid by grouping. Note in this case SQL will return
-        # basically a random choice of which row to return, so this is not a perfect solution - TODO.
-        query = query.group_by(table.c.source_id)
-
-        return query
 
     def _should_halt(self):
         # should halt if there are some results available. We can tell this with the parent classes's

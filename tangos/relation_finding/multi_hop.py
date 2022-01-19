@@ -254,7 +254,7 @@ class MultiHopStrategy(HopStrategy):
 
     def _seed_temp_table(self):
         insert_statement = self._table.insert().values(halo_from_id=self.halo_from.id, halo_to_id=self.halo_from.id,
-                                    weight=1.0, nhops=0)
+                                    weight=1.0, nhops=0, source_id=0)
 
         self._connection.execute(insert_statement)
 
@@ -277,16 +277,13 @@ class MultiHopStrategy(HopStrategy):
 
         new_weight = self._table.c.weight * core.halo_data.HaloLink.weight
 
-        if self._combine_routes:
-            new_weight = sqlalchemy.func.max(new_weight)
-
         recursion_query = \
             self.session.query(
-                core.halo_data.HaloLink.halo_from_id,
+                core.halo_data.HaloLink.halo_from_id.label('halo_from_id'),
                 core.halo_data.HaloLink.halo_to_id.label("halo_to_id"),
-                new_weight,
+                new_weight.label('new_weight'),
                 (self._table.c.nhops + sqlalchemy.literal(1)).label("nhops"),
-                self._table.c.source_id). \
+                self._table.c.source_id.label('source_id')). \
                 select_from(self._table). \
                 join(core.halo_data.HaloLink, and_(self._table.c.nhops == from_nhops,
                                                            self._table.c.halo_to_id == core.halo_data.HaloLink.halo_from_id)). \
@@ -294,7 +291,9 @@ class MultiHopStrategy(HopStrategy):
                        )
 
         if self._combine_routes:
-            recursion_query = recursion_query.group_by(core.halo_data.HaloLink.halo_to_id, self._table.c.source_id)
+            from ..util.sql_argmax import sql_argmax
+            recursion_query = sql_argmax(recursion_query, new_weight,
+                                        [core.halo_data.HaloLink.halo_to_id, self._table.c.source_id])
 
         insert = self._prelim_table.insert().from_select(
             ['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'source_id'],
