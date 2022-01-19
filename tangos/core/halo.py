@@ -24,7 +24,7 @@ class UnsignedInteger(types.TypeDecorator):
         return np.uint64(value).astype(np.int64)
 
     def process_result_value(self, value, dialect):
-        if value:
+        if value is not None:
             if type(value) is bytes:
                 return np.frombuffer(value, dtype=np.uint64)[0]
             else:
