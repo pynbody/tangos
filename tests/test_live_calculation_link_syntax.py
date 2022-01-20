@@ -13,7 +13,7 @@ from tangos.testing import assert_halolists_equal
 
 
 def setup():
-    testing.init_blank_db_for_testing()
+    testing.init_blank_db_for_testing(verbose=True)
 
     generator = tangos.testing.simulation_generator.TestSimulationGenerator()
     generator.add_timestep()
@@ -106,6 +106,7 @@ def test_link_returned_halo_is_usable():
 
 def test_multi_calculation_link_returned_halo_is_usable():
     all_links = db.get_timestep("sim/ts1").calculate_all('link(testlink)')
+    print("returned -->",all_links[0][0])
     assert all_links[0][0]['testval']==1.0
 
     all_links = db.get_halo("sim/ts1/1").calculate_for_progenitors('link(testlink)')

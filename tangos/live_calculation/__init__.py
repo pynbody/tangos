@@ -599,6 +599,8 @@ class Link(Calculation):
         mask.mark_nones_as_masked(target_halos)
         target_halo_masked = mask.mask(target_halos)
 
+        print("target_halo_masked --> ", target_halo_masked)
+
         if self._expect_multivalues:
             if self._multi_selection_basis=='first':
                 for i in range(len(target_halo_masked)):
