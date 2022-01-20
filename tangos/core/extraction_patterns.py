@@ -156,8 +156,6 @@ class HaloLinkGetter(HaloPropertyGetter):
     """As HaloPropertyGetter, but retrieve HaloLinks instead of HaloProperties"""
     def get_from_cache(self, halo, property_id):
         return_vals = []
-
-        print("get_from_cache -->", halo.all_links)
         for x in halo.all_links:
             if x.relation_id == property_id:
                 return_vals.append(x)
@@ -168,7 +166,6 @@ class HaloLinkGetter(HaloPropertyGetter):
         from . import halo_data
         query_links = session.query(halo_data.HaloLink).filter_by(relation_id=property_id, halo_from_id=halo.id).order_by(
             halo_data.HaloLink.id)
-        print("get_from_session -->",query_links)
         return self.postprocess_data_objects(query_links.all())
 
     def cache_contains(self, halo, property_id):

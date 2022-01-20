@@ -224,6 +224,7 @@ class Calculation(object):
         name_targets = self.retrieves_dict_ids()
         halo_alias = tangos.core.halo.Halo
         augmented_query = halo_query
+        order_bys = []
         for i in range(self.n_join_levels()):
             halo_property_alias = aliased(tangos.core.halo_data.HaloProperty)
             halo_link_alias = aliased(tangos.core.halo_data.HaloLink)
@@ -256,6 +257,8 @@ class Calculation(object):
                                                 contains_eager(*path_to_links, alias=halo_link_alias),
                                                 defaultload(*path_to_properties).undefer_group("data"))
 
+            order_bys+=[halo_link_alias.id,halo_property_alias.id]
+
             if i<self.n_join_levels()-1:
                 next_level_halo_alias = aliased(tangos.core.halo.Halo)
                 path_to_new_halo = path_to_links + [tangos.core.halo_data.HaloLink.halo_to]
@@ -264,7 +267,7 @@ class Calculation(object):
                                         options(contains_eager(*path_to_new_halo, alias=next_level_halo_alias))
 
                 halo_alias = next_level_halo_alias
-
+        augmented_query = augmented_query.order_by(*order_bys)
         return augmented_query
 
     def proxy_value(self):
@@ -599,7 +602,6 @@ class Link(Calculation):
         mask.mark_nones_as_masked(target_halos)
         target_halo_masked = mask.mask(target_halos)
 
-        print("target_halo_masked --> ", target_halo_masked)
 
         if self._expect_multivalues:
             if self._multi_selection_basis=='first':
