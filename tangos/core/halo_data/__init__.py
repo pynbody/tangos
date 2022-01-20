@@ -32,7 +32,7 @@ def _initialise_halo_property_relationships():
                                        primaryjoin=(
                                            Halo.timestep_id == TimeStep.id),
                                        cascade='none', lazy='dynamic',
-                                       order_by=HaloProperty.id,
+                                       order_by=HaloLink.id,
                                        viewonly=True)
 
 
@@ -42,7 +42,7 @@ def _initialise_halo_property_relationships():
                                          HaloLink.halo_to_id == Halo.id),
                                      primaryjoin=(Halo.timestep_id == TimeStep.id),
                                      cascade='none', lazy='dynamic',
-                                     order_by=HaloProperty.id,
+                                     order_by=HaloLink.id,
                                      viewonly=True)
 
 
