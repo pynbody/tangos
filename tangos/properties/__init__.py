@@ -146,7 +146,7 @@ class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object
         :type particle_data: pynbody.snapshot.SimSnap (when the pynbody backend is in use, otherwise could be a yt snapshot etc)
 
         :param halo_entry: The database object associated with the halo, if available
-        :type halo_entry: tangos.core.halo.Halo
+        :type halo_entry: tangos.core.halo.SimulationObjectBase
         :return: All properties as named by names()
         """
         raise NotImplementedError
@@ -155,7 +155,7 @@ class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object
         """Calculate the result of a function, using the existing data in the database alone
 
         :param halo_entry: The database object associated with the halo
-        :type halo_entry: tangos.core.halo.Halo
+        :type halo_entry: tangos.core.halo.SimulationObjectBase
 
         :param input_values: Input values for the function
         :return: All function values as named by self.names
@@ -169,7 +169,7 @@ class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object
 
         :param name: The name of the one property to return (which must be one of the values specified by self.names)
         :param halo_entry: The database object associated with the halo
-        :type halo_entry: tangos.core.halo.Halo
+        :type halo_entry: tangos.core.halo.SimulationObjectBase
 
         :param input_values: Input values for the function
         :return: The single named value
@@ -283,7 +283,7 @@ class TimeChunkedProperty(PropertyCalculation):
     def reassemble(self, property, reassembly_type='major'):
         """Reassemble a histogram by suitable treatment of the merger tree leading up to the current halo.
 
-        This function is normally called by the framework (see Halo.get_data_with_reassembly_options) and you would
+        This function is normally called by the framework (see SimulationObjectBase.get_data_with_reassembly_options) and you would
         rarely call it directly yourself. From within a live-calculation, it can be accessed using the
         reassemble(halo_property, options...) function. See live_calculation.md for more information.
 

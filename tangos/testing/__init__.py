@@ -18,7 +18,7 @@ def _as_halos(hlist, session=None):
     for h in hlist:
         if h is None:
             rvals.append(None)
-        elif isinstance(h, core.halo.Halo):
+        elif isinstance(h, core.halo.SimulationObjectBase):
             rvals.append(h)
         elif isinstance(h, list) or isinstance(h, tuple):
             rvals.append(_as_halos(h, session))

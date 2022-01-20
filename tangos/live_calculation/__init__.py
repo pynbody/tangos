@@ -1,4 +1,4 @@
-"""The live calculation system, used by Halo.calculate, Halo.calculate_for_descendants and TimeStep.calculate_all.
+"""The live calculation system, used by SimulationObjectBase.calculate, SimulationObjectBase.calculate_for_descendants and TimeStep.calculate_all.
 
 For more overview information, see live_calculation.md. """
 
@@ -187,7 +187,7 @@ class Calculation(object):
         output_halos = []
         unsanitized_values_ravel = unsanitized_values.flat
         for item in unsanitized_values_ravel:
-            if isinstance(item, core.Halo):
+            if isinstance(item, core.SimulationObjectBase):
                 output_halos.append(item.id)
         if len(output_halos) > 0:
             with thl.temporary_halolist_table(session, output_halos) as tab:
@@ -197,7 +197,7 @@ class Calculation(object):
             results = self._add_entries_for_duplicates(results, output_halos)
 
             for i in range(len(unsanitized_values_ravel)):
-                if isinstance(unsanitized_values_ravel[i], core.Halo):
+                if isinstance(unsanitized_values_ravel[i], core.SimulationObjectBase):
                     refetched_halo = results[output_halos.index(unsanitized_values_ravel[i].id)]
                     unsanitized_values_ravel[i] = refetched_halo
 
@@ -222,17 +222,17 @@ class Calculation(object):
     def supplement_halo_query(self, halo_query):
         """Return a sqlalchemy query with a supplemental join to allow this calculation to run efficiently"""
         name_targets = self.retrieves_dict_ids()
-        halo_alias = tangos.core.halo.Halo
+        halo_alias = tangos.core.halo.SimulationObjectBase
         augmented_query = halo_query
         order_bys = []
         for i in range(self.n_join_levels()):
             halo_property_alias = aliased(tangos.core.halo_data.HaloProperty)
             halo_link_alias = aliased(tangos.core.halo_data.HaloLink)
 
-            path_to_properties = [tangos.core.halo.Halo.all_links, tangos.core.halo_data.HaloLink.halo_to] * i + [
-                tangos.core.halo.Halo.all_properties]
-            path_to_links = [tangos.core.halo.Halo.all_links, tangos.core.halo_data.HaloLink.halo_to] * i + [
-                tangos.core.halo.Halo.all_links]
+            path_to_properties = [tangos.core.halo.SimulationObjectBase.all_links, tangos.core.halo_data.HaloLink.halo_to] * i + [
+                tangos.core.halo.SimulationObjectBase.all_properties]
+            path_to_links = [tangos.core.halo.SimulationObjectBase.all_links, tangos.core.halo_data.HaloLink.halo_to] * i + [
+                tangos.core.halo.SimulationObjectBase.all_links]
 
 
             if len(name_targets)>0:
@@ -260,7 +260,7 @@ class Calculation(object):
             order_bys+=[halo_link_alias.id,halo_property_alias.id]
 
             if i<self.n_join_levels()-1:
-                next_level_halo_alias = aliased(tangos.core.halo.Halo)
+                next_level_halo_alias = aliased(tangos.core.halo.SimulationObjectBase)
                 path_to_new_halo = path_to_links + [tangos.core.halo_data.HaloLink.halo_to]
                 augmented_query = augmented_query.outerjoin(next_level_halo_alias,
                                                             (halo_link_alias.halo_to_id==next_level_halo_alias.id)).\

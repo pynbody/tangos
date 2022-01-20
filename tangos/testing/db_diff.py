@@ -70,7 +70,7 @@ class TangosDbDiff(object):
         ts1 = get_timestep(str(ts), self.session1)
         ts2 = get_timestep(str(ts), self.session2)
 
-        obj_filter = (core.Halo.halo_number < self.max_objects) | (core.Halo.object_typecode == core.Halo.object_typecode_from_tag('bh'))
+        obj_filter = (core.SimulationObjectBase.halo_number < self.max_objects) | (core.SimulationObjectBase.object_typecode == core.SimulationObjectBase.object_typecode_from_tag('bh'))
 
         objects1 = dict([(o.path, o) for o in ts1.objects.filter(obj_filter).all()])
         objects2 = dict([(o.path, o) for o in ts2.objects.filter(obj_filter).all()])

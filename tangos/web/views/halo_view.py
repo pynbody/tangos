@@ -97,7 +97,7 @@ def halo_links(halo, request):
     links = []
     links_query = request.dbsession.query(core.HaloLink).filter_by(halo_from_id=halo.id).\
             order_by(core.HaloLink.weight.desc()).\
-            options(sqlalchemy.orm.joinedload(core.HaloLink.halo_to).joinedload(core.Halo.timestep).joinedload(core.TimeStep.simulation))
+            options(sqlalchemy.orm.joinedload(core.HaloLink.halo_to).joinedload(core.SimulationObjectBase.timestep).joinedload(core.TimeStep.simulation))
 
     for lk in links_query.all():
         links.append(HaloLinkInfo(lk, request))

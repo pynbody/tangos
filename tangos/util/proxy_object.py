@@ -48,7 +48,7 @@ class ProxyObjectFromDatabaseId(ProxyObjectBase):
         self._dbid = dbid
 
     def resolve(self, session):
-        return session.query(core.Halo).filter_by(id=self._dbid).first()
+        return session.query(core.SimulationObjectBase).filter_by(id=self._dbid).first()
 
 class ProxyObjectFromFinderIdAndTimestep(ProxyObjectBase):
     """A proxy object that resolves into the object with given finder ID in the specified timestep"""
@@ -59,8 +59,8 @@ class ProxyObjectFromFinderIdAndTimestep(ProxyObjectBase):
         self._timestep_id = timestep_id
 
     def resolve(self, session):
-        return session.query(core.Halo).filter_by(timestep_id=self._timestep_id, finder_id=self._finder_id,
-                                                  object_typecode=core.Halo.object_typecode_from_tag(self._typetag)).first()
+        return session.query(core.SimulationObjectBase).filter_by(timestep_id=self._timestep_id, finder_id=self._finder_id,
+                                                  object_typecode=core.SimulationObjectBase.object_typecode_from_tag(self._typetag)).first()
 
 class ProxyObjectFromFinderIdAndTimestepCache(ProxyObjectBase):
     """A proxy object that resolves into the object with given finder ID in the specified timestep cache"""

@@ -13,7 +13,7 @@ class HopStrategy(object):
 
     def __init__(self, halo_from, target=None, order_by=None):
         """Construct a HopStrategy starting from the specified halo"""
-        assert isinstance(halo_from, core.halo.Halo)
+        assert isinstance(halo_from, core.halo.SimulationObjectBase)
         self.session = Session.object_session(halo_from)
         self.halo_from = halo_from
         self._initialise_order_by(order_by)
@@ -26,7 +26,7 @@ class HopStrategy(object):
         if ts is None:
             query = query.filter(0 == 1)
         else:
-            query = query.join("halo_to").filter(core.halo.Halo.timestep_id == ts.id)
+            query = query.join("halo_to").filter(core.halo.SimulationObjectBase.timestep_id == ts.id)
 
         return query
 

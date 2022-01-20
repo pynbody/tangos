@@ -25,7 +25,7 @@ class HaloPropertyGetter(object):
         """Get the specified property, from the in-memory cache if it exists otherwise from the database
         using the specified session
 
-        :type halo: Halo
+        :type halo: SimulationObjectBase
         :type property_id: int
         :type session: sqlalchemy.orm.session.Session
         """
@@ -38,7 +38,7 @@ class HaloPropertyGetter(object):
         """Get a list of keys, from the in-memory cache if it exists otherwise from the database
             using the specified session
 
-        :type halo: Halo
+        :type halo: SimulationObjectBase
         :type session: sqlalchemy.orm.session.Session
         """
         if self.use_fixed_cache(halo):
@@ -49,7 +49,7 @@ class HaloPropertyGetter(object):
     def get_from_cache(self, halo, property_id):
         """Get the specified property from an existing in-memory cache
 
-        :type halo: Halo
+        :type halo: SimulationObjectBase
         :type property_id: int"""
 
         return_vals = []
@@ -64,7 +64,7 @@ class HaloPropertyGetter(object):
     def get_from_session(self, halo, property_id, session):
         """Get the specified property from the database using the specified session
 
-        :type halo: Halo
+        :type halo: SimulationObjectBase
         :type property_id: int
         :type session: sqlalchemy.orm.session.Session"""
         from . import halo_data
@@ -88,7 +88,7 @@ class HaloPropertyGetter(object):
     def cache_contains(self, halo, property_id):
         """Return True if the existing in-memory cache has the specified property
 
-        :type halo: Halo
+        :type halo: SimulationObjectBase
         :type property_id: int"""
 
         for x in halo.all_properties:

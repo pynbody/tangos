@@ -1,4 +1,4 @@
-from tangos.core import Halo
+from tangos.core.halo import Halo
 from tangos import testing
 import tangos as db
 import tangos.testing.simulation_generator

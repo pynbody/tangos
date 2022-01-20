@@ -13,7 +13,7 @@ import tangos as db
 from tangos import all_simulations
 from tangos import core, config
 from tangos.core import Base, get_or_create_dictionary_item, \
-    Creator, Simulation, TimeStep, Halo, HaloProperty, HaloLink
+    Creator, Simulation, TimeStep, SimulationObjectBase, HaloProperty, HaloLink
 from tangos.core.simulation import SimulationProperty
 from tangos.core.tracking import TrackData
 from tangos.query import get_simulation, get_halo
@@ -109,7 +109,7 @@ def _db_import_export(target_session, from_session, *sims):
 
             logger.info("Transferring objects for %s", ts_ext)
             for h_ext in ts_ext.objects:
-                h = Halo(ts, h_ext.halo_number, h_ext.finder_id, h_ext.finder_offset, h_ext.NDM,
+                h = SimulationObjectBase(ts, h_ext.halo_number, h_ext.finder_id, h_ext.finder_offset, h_ext.NDM,
                          h_ext.NStar, h_ext.NGas, h_ext.object_typecode)
                 h.external_id = h_ext.id
                 halos_this_ts.append(h)

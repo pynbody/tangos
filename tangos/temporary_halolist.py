@@ -57,12 +57,12 @@ def halo_query(table):
     1-1 correspondence with the rows in the temporary table. For this, you need to use
     enumerated_halo_query"""
     session = _get_session_for(table)
-    return session.query(core.halo.Halo).select_from(table).join(core.halo.Halo, table.c.halo_id == core.halo.Halo.id).order_by(table.c.id)
+    return session.query(core.halo.SimulationObjectBase).select_from(table).join(core.halo.SimulationObjectBase, table.c.halo_id == core.halo.SimulationObjectBase.id).order_by(table.c.id)
 
 def enumerated_halo_query(table):
     """Query that returns tuples of id, halo for each row in the temporary table"""
     session = _get_session_for(table)
-    return session.query(table.c.id, core.halo.Halo).select_from(table).outerjoin(core.halo.Halo, table.c.halo_id == core.halo.Halo.id).order_by(table.c.id)
+    return session.query(table.c.id, core.halo.SimulationObjectBase).select_from(table).outerjoin(core.halo.SimulationObjectBase, table.c.halo_id == core.halo.SimulationObjectBase.id).order_by(table.c.id)
 
 def all_halos_with_duplicates(table):
     """Return all halos in the temporary table, including duplicates"""

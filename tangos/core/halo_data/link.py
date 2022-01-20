@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship, backref
 from .. import Base
 from .. import creator
 from ..dictionary import DictionaryItem
-from ..halo import Halo
+from ..halo import SimulationObjectBase
 from ...config import DOUBLE_PRECISION
 
 
@@ -16,16 +16,16 @@ class HaloLink(Base):
     halo_from_id = Column(Integer, ForeignKey('halos.id'))
     halo_to_id = Column(Integer, ForeignKey('halos.id'))
 
-    halo_from = relationship(Halo, primaryjoin=halo_from_id == Halo.id,
+    halo_from = relationship(SimulationObjectBase, primaryjoin=halo_from_id == SimulationObjectBase.id,
                              backref=backref('links', cascade='all',
                                              lazy='dynamic',
-                                             primaryjoin=halo_from_id == Halo.id),
+                                             primaryjoin=halo_from_id == SimulationObjectBase.id),
                              cascade='')
 
-    halo_to = relationship(Halo, primaryjoin=(halo_to_id == Halo.id),
+    halo_to = relationship(SimulationObjectBase, primaryjoin=(halo_to_id == SimulationObjectBase.id),
                            backref=backref('reverse_links', cascade='all, delete-orphan',
                                            lazy='dynamic',
-                                           primaryjoin=halo_to_id == Halo.id),
+                                           primaryjoin=halo_to_id == SimulationObjectBase.id),
                            cascade='')
 
     weight = Column(DOUBLE_PRECISION(asdecimal=False))

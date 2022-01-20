@@ -17,14 +17,14 @@ def timestep_view(request):
     typecode = 0
     while True:
         try:
-            typetag = core.Halo.object_typetag_from_code(typecode)
+            typetag = core.SimulationObjectBase.object_typetag_from_code(typecode)
         except ValueError:
             break
 
-        n_objects = request.dbsession.query(core.Halo).\
-            filter_by(timestep_id=ts.id, object_typecode=typecode).order_by(core.Halo.halo_number).count()
+        n_objects = request.dbsession.query(core.SimulationObjectBase).\
+            filter_by(timestep_id=ts.id, object_typecode=typecode).order_by(core.SimulationObjectBase.halo_number).count()
 
-        title = core.Halo.class_from_tag(typetag).__name__+"s"
+        title = core.SimulationObjectBase.class_from_tag(typetag).__name__+"s"
 
         if title=="BHs":
             title="Black holes"

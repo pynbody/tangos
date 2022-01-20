@@ -173,20 +173,20 @@ class PropertyWriter(GenericTangosTool):
 
 
     def _build_halo_list(self, db_timestep):
-        query = core.halo.Halo.timestep == db_timestep
+        query = core.halo.SimulationObjectBase.timestep == db_timestep
         if self.options.htype is not None:
-            query = sqlalchemy.and_(query, core.halo.Halo.object_typecode
-                                    == core.halo.Halo.object_typecode_from_tag(self.options.htype))
+            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.object_typecode
+                                    == core.halo.SimulationObjectBase.object_typecode_from_tag(self.options.htype))
 
         if self.options.hmin is not None:
-            query = sqlalchemy.and_(query, core.halo.Halo.halo_number>=self.options.hmin)
+            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.halo_number>=self.options.hmin)
 
         if self.options.hmax is not None:
-            query = sqlalchemy.and_(query, core.halo.Halo.halo_number<=self.options.hmax)
+            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.halo_number<=self.options.hmax)
 
         needed_properties = self._required_and_calculated_property_names()
 
-        halo_query = core.get_default_session().query(core.halo.Halo).order_by(core.halo.Halo.halo_number).filter(query)
+        halo_query = core.get_default_session().query(core.halo.SimulationObjectBase).order_by(core.halo.SimulationObjectBase.halo_number).filter(query)
         if self._include:
             needed_properties.append(self._include)
 

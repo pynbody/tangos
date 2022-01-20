@@ -6,7 +6,7 @@ from .. import data_attribute_mapper, extraction_patterns
 from .. import Base
 from .. import creator
 from ..dictionary import DictionaryItem
-from ..halo import Halo
+from ..halo import SimulationObjectBase
 from ...config import DOUBLE_PRECISION
 
 
@@ -16,7 +16,9 @@ class HaloProperty(Base):
     id = Column(Integer, primary_key=True)
     halo_id = Column(Integer, ForeignKey('halos.id'))
     # n.b. backref defined below
-    halo = relationship(Halo, cascade='none', backref=backref('all_properties'))
+    halo = relationship(SimulationObjectBase, cascade='none',
+                        backref=backref('all_properties',overlaps='properties,deprecated_properties'),
+                        overlaps='properties,deprecated_properties')
 
     data_float = Column(DOUBLE_PRECISION(asdecimal=False))
     data_array = deferred(Column(LargeBinary), group='data')
@@ -32,7 +34,7 @@ class HaloProperty(Base):
     creator_id = Column(Integer, ForeignKey('creators.id'))
 
     def __init__(self, halo, name, data):
-        if isinstance(halo, Halo):
+        if isinstance(halo, SimulationObjectBase):
             self.halo = halo
         else:
             self.halo_id = halo

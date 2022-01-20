@@ -17,7 +17,7 @@ def simulation_view(request):
 
     timesteps = session.query(tangos.core.TimeStep).filter_by(simulation_id=sim.id).\
         order_by(tangos.core.timestep.TimeStep.time_gyr.desc()).all()
-    counts = session.query(func.count(core.Halo.id)).\
+    counts = session.query(func.count(core.SimulationObjectBase.id)).\
         join(core.TimeStep).\
         filter(core.TimeStep.simulation_id==sim.id).\
         group_by(core.TimeStep.id). \

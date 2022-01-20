@@ -25,8 +25,8 @@ class MultiHopStrategy(HopStrategy):
     """An extension of the HopStrategy class that takes multiple hops across
     HaloLinks, up to a specified maximum, before finding the target halo."""
 
-    halo_old = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_old")
-    halo_new = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_new")
+    halo_old = sqlalchemy.orm.aliased(core.halo.SimulationObjectBase, name="halo_old")
+    halo_new = sqlalchemy.orm.aliased(core.halo.SimulationObjectBase, name="halo_new")
     timestep_old = sqlalchemy.orm.aliased(core.timestep.TimeStep, name="timestep_old")
     timestep_new = sqlalchemy.orm.aliased(core.timestep.TimeStep, name="timestep_new")
 
@@ -37,7 +37,7 @@ class MultiHopStrategy(HopStrategy):
         """Construct a strategy for finding Halos via multiple "hops" along HaloLinks
 
         :param halo_from:   The halo to start hopping from
-        :type halo_from:    core.Halo
+        :type halo_from:    core.SimulationObjectBase
 
         :param nhops_max:   The maximum number of hops to take
 
@@ -167,7 +167,7 @@ class MultiHopStrategy(HopStrategy):
             elif directed == 'forwards':
                 recursion_filter &= (timestep_new.time_gyr > timestep_old.time_gyr*(1.0+SMALL_FRACTION))
             elif directed == 'across':
-                existing_timestep_ids = self.session.query(core.Halo.timestep_id).\
+                existing_timestep_ids = self.session.query(core.SimulationObjectBase.timestep_id).\
                     select_from(self._link_orm_class).join(self._link_orm_class.halo_to).distinct()
                 recursion_filter &= ~timestep_new.id.in_(existing_timestep_ids)
                 recursion_filter &= sqlalchemy.func.abs(timestep_new.time_gyr - timestep_old.time_gyr) \
@@ -344,9 +344,9 @@ class MultiHopStrategy(HopStrategy):
         class_name = "MultiHopHaloLink_"+rstr
         class_base = (core.Base,)
         class_attrs = {"__table__": self._table,
-                       "halo_from": relationship(core.halo.Halo, primaryjoin=self._table.c.halo_from_id == core.halo.Halo.id,
+                       "halo_from": relationship(core.halo.SimulationObjectBase, primaryjoin=self._table.c.halo_from_id == core.halo.SimulationObjectBase.id,
                                                  foreign_keys = [self._table.c.halo_from_id]),
-                       "halo_to"  : relationship(core.halo.Halo, primaryjoin=(self._table.c.halo_to_id == core.halo.Halo.id),
+                       "halo_to"  : relationship(core.halo.SimulationObjectBase, primaryjoin=(self._table.c.halo_to_id == core.halo.SimulationObjectBase.id),
                                                  foreign_keys = [self._table.c.halo_to_id]),
                        "source_id" : self._table.c.source_id,
                        "weight" : self._table.c.weight,
