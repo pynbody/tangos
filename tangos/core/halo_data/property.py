@@ -20,7 +20,7 @@ class HaloProperty(Base):
                         backref=backref('all_properties',overlaps='properties,deprecated_properties'),
                         overlaps='properties,deprecated_properties')
 
-    data_float = Column(DOUBLE_PRECISION(asdecimal=False))
+    data_float = Column(DOUBLE_PRECISION)
     data_array = deferred(Column(LargeBinary), group='data')
     data_int = Column(Integer)
 

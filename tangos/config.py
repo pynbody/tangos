@@ -18,10 +18,10 @@ elif db_backend is None and "//" in db:
 else:
     db_backend = "sqlite"
 
-from sqlalchemy import Float as DOUBLE_PRECISION
-if db_backend == "mysql":
-    from sqlalchemy.dialects.mysql import DOUBLE as DOUBLE_PRECISION
+import sqlalchemy.dialects.mysql
 
+DOUBLE_PRECISION = sqlalchemy.Float().\
+    with_variant(sqlalchemy.dialects.mysql.DOUBLE(asdecimal=False), "mysql")
 
 default_fileset_handler_class = "pynbody.PynbodyInputHandler"
 

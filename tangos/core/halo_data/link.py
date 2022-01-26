@@ -28,7 +28,7 @@ class HaloLink(Base):
                                            primaryjoin=halo_to_id == SimulationObjectBase.id),
                            cascade='')
 
-    weight = Column(DOUBLE_PRECISION(asdecimal=False))
+    weight = Column(DOUBLE_PRECISION)
 
     creator_id = Column(Integer, ForeignKey('creators.id'))
     creator = relationship(creator.Creator, backref=backref(

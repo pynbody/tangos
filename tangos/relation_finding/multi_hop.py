@@ -219,7 +219,7 @@ class MultiHopStrategy(HopStrategy):
             # Foreign keys below NOT declared at schema-level, see note above re MySQL
             Column('halo_from_id', Integer),
             Column('halo_to_id', Integer),
-            Column('weight', DOUBLE_PRECISION(asdecimal=False)),
+            Column('weight', DOUBLE_PRECISION),
             Column('nhops', Integer),
             prefixes = prefixes
         )
@@ -232,7 +232,7 @@ class MultiHopStrategy(HopStrategy):
             # Foreign keys below NOT declared at schema-level, see note above re MySQL
             Column('halo_from_id', Integer),
             Column('halo_to_id', Integer),
-            Column('weight', DOUBLE_PRECISION(asdecimal=False)),
+            Column('weight', DOUBLE_PRECISION),
             Column('nhops', Integer),
             prefixes = prefixes
         )
