@@ -6,19 +6,15 @@ want to override and it will automatically take precedence.
 
 from __future__ import absolute_import
 import os
+import sqlalchemy.dialects.mysql
 
 home = os.environ['HOME']
 db = os.environ.get("TANGOS_DB_CONNECTION", home+"/tangos_data.db")
 base = os.environ.get("TANGOS_SIMULATION_FOLDER", home+"/")
-db_backend = os.environ.get("TANGOS_DB_BACKEND", None)
-if db_backend and "+" in db_backend:
-    db_backend = db_backend.split("+")[0]
-elif db_backend is None and "//" in db:
-    db_backend = db.split("+")[0].lower()
-else:
-    db_backend = "sqlite"
 
-import sqlalchemy.dialects.mysql
+testing_db_user = os.environ.get("TANGOS_TESTING_DB_USER", None)
+testing_db_password = os.environ.get("TANGOS_TESTING_DB_PASSWORD", None)
+testing_db_backend = os.environ.get("TANGOS_TESTING_DB_BACKEND", None)
 
 DOUBLE_PRECISION = sqlalchemy.Float().\
     with_variant(sqlalchemy.dialects.mysql.DOUBLE(asdecimal=False), "mysql")
@@ -51,7 +47,7 @@ default_backend = 'null'
 #       ]}
 #
 
-property_modules = os.environ.get("TANGOS_PROPERTY_MODULES","tangos_nbodyshop_properties")
+property_modules = os.environ.get("TANGOS_PROPERTY_MODULES", "tangos_nbodyshop_properties")
 property_modules = property_modules.split(",")
 property_modules = map(str.strip, property_modules)
 

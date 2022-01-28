@@ -13,6 +13,7 @@ import os
 import sqlalchemy.exc
 import contextlib
 import tangos
+from tangos.config import testing_db_backend
 
 from nose.plugins.skip import SkipTest
 
@@ -95,7 +96,7 @@ def _suppress_exception_report():
     backend._print_exceptions = True
 
 def test_non_blocking_exception():
-    if os.environ.get("TANGOS_DB_BACKEND", "sqlite") != "sqlite":
+    if testing_db_backend != "sqlite":
         raise SkipTest("This test is only relevant for sqlite databases")
 
     with _suppress_exception_report():
@@ -108,7 +109,7 @@ def test_non_blocking_exception():
 
 
 def test_blocking_avoids_exception():
-    if os.environ.get("TANGOS_DB_BACKEND", "sqlite") != "sqlite":
+    if testing_db_backend != "sqlite":
         raise SkipTest("This test is only relevant for sqlite databases")
 
     assert tangos.get_halo("sim/ts1/6") is None
