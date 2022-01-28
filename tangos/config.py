@@ -22,6 +22,8 @@ import sqlalchemy.dialects.mysql
 
 DOUBLE_PRECISION = sqlalchemy.Float().\
     with_variant(sqlalchemy.dialects.mysql.DOUBLE(asdecimal=False), "mysql")
+LARGE_BINARY = sqlalchemy.LargeBinary().\
+    with_variant(sqlalchemy.dialects.mysql.LONGBLOB(), "mysql")
 
 default_fileset_handler_class = "pynbody.PynbodyInputHandler"
 
