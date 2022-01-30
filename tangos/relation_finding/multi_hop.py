@@ -285,23 +285,42 @@ class MultiHopStrategy(HopStrategy):
                 (self._table.c.nhops + sqlalchemy.literal(1)).label("nhops"),
                 self._table.c.source_id.label('source_id')). \
                 select_from(self._table). \
-                join(core.halo_data.HaloLink, and_(self._table.c.nhops == from_nhops,
+                outerjoin(core.halo_data.HaloLink, and_(self._table.c.nhops == from_nhops,
                                                            self._table.c.halo_to_id == core.halo_data.HaloLink.halo_from_id)). \
                 filter(core.halo_data.HaloLink.weight > self._min_onehop_weight
                        )
-
-        if self._combine_routes:
-            from ..util.sql_argmax import sql_argmax
-            recursion_query = sql_argmax(recursion_query, new_weight,
-                                        [core.halo_data.HaloLink.halo_to_id, self._table.c.source_id])
 
         insert = self._prelim_table.insert().from_select(
             ['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'source_id'],
             recursion_query)
 
-        result = self._connection.execute(insert)
+        num_inserted = self._connection.execute(insert).rowcount
 
-        return result.rowcount
+        if self._combine_routes:
+            # Ideally, before self._prelim_table.insert(), one would adapt recursion_query to return the argmax of
+            # new_weight, grouped by halo_to_id and source_id. That could have been achieved using:
+            #
+            #   from ..util.sql_argmax import sql_argmax
+            #   recursion_query = sql_argmax(recursion_query, "new_weight",
+            #                               ["halo_to_id", "source_id"])
+            #
+            # However, this turns out to be very slow and there are no obvious ways to optimise it. It's essentially
+            # using a huge CTE/subquery to replace a native argmax facility in SQL. Originally, with sqlite, we simply did:
+            #
+            #   recursion_query = recursion_query.group_by(core.halo_data.HaloLink.halo_to_id, self._table.c.source_id)
+            #
+            # It is actually unclear to me now why this ever worked, but anyway it doesn't work in MySQL. The balance of
+            # remaining correct without killing performance is to actually insert all the rows into prelim_table, and
+            # then delete the ones which are not wanted afterwards. This is presumably faster because the temp table
+            # has relevant indices.
+            from ..util.sql_argmax import delete_non_maximal_rows
+
+            deleted_count = delete_non_maximal_rows(self._connection, self._prelim_table,
+                                                    self._prelim_table.c.weight,
+                                                    [self._prelim_table.c.halo_to_id, self._prelim_table.c.source_id])
+            num_inserted-=deleted_count
+
+        return num_inserted
 
     def _filter_prelim_links_into_final(self):
 

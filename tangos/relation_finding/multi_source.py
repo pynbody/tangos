@@ -8,7 +8,7 @@ from six.moves import range
 from six.moves import zip
 
 import sqlalchemy
-from sqlalchemy import func, orm
+from sqlalchemy import orm
 
 class MultiSourceMultiHopStrategy(MultiHopStrategy):
     """A variant of MultiHopStrategy that finds halos corresponding to multiple start points.
@@ -84,19 +84,14 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         query = super(MultiSourceMultiHopStrategy, self)._supplement_halolink_query_with_filter(query,table)
 
         if self._keep_only_highest_weights_per_hop:
-
             query = self._extract_max_weight_rows_from_query(query, table)
 
         return query
 
     def _extract_max_weight_rows_from_query(self, query, table):
-        from ..util.sql_argmax import sql_argmax
-
-        if table is None:
-            table = core.halo_data.HaloLink.__table__
-
-        return sql_argmax(query, table.c.weight,
-                          [table.c.halo_from_id, table.c.source_id])
+        from ..util.sql_argmax import argmax
+        return argmax(query, table.c.weight,
+                      [table.c.halo_from_id, table.c.source_id])
 
 
     def _should_halt(self):
