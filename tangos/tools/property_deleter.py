@@ -45,7 +45,7 @@ class PropertyDeleter(GenericTangosTool):
                 print(f"  from {obj} ({q.count():d} total properties)")
 
                 # it's not permitted to delete from an expression with a join, so now we need to create a wrapping query
-                q = session.query(core.HaloProperty).filter(core.HaloProperty.id.in_(q))
+                q = session.query(core.HaloProperty).filter(core.HaloProperty.id.in_(q.from_self()))
                 queries.append(q)
         else:
             queries = [session.query(core.HaloProperty).filter(core.HaloProperty.name_id.in_(dictids))]
