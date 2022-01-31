@@ -21,6 +21,9 @@ def setup():
 
     db.core.get_default_session().commit()
 
+def teardown():
+    tangos.core.close_db()
+
 def test_bh_identity():
     assert isinstance(tangos.get_halo(1), tangos.core.halo.Halo)
     assert not isinstance(tangos.get_halo(1), tangos.core.halo.BH)
@@ -32,17 +35,17 @@ def test_bh_mapping():
     assert tangos.get_halo(3) in tangos.get_halo(1)['BH']
 
 def test_tags():
-    from tangos.core.halo import Halo, BH, Group, Tracker
-    assert Halo.class_from_tag('halo') is Halo
-    assert Halo.class_from_tag('BH') is BH
-    assert Halo.class_from_tag('group') is Group
-    assert Halo.class_from_tag('tracker') is Tracker
-    assert Halo.object_typecode_from_tag('halo')==0
-    assert Halo.object_typecode_from_tag('BH')==1
-    assert Halo.object_typecode_from_tag('group')==2
-    assert Halo.object_typecode_from_tag('tracker')==3
-    assert Halo.object_typecode_from_tag(1)==1
-    assert Halo.object_typetag_from_code(0)=='halo'
-    assert Halo.object_typetag_from_code(1)=='BH'
-    assert Halo.object_typetag_from_code(2)=='group'
-    assert Halo.object_typetag_from_code(3)=='tracker'
+    from tangos.core.halo import SimulationObjectBase, Halo, BH, Group, Tracker
+    assert SimulationObjectBase.class_from_tag('halo') is Halo
+    assert SimulationObjectBase.class_from_tag('BH') is BH
+    assert SimulationObjectBase.class_from_tag('group') is Group
+    assert SimulationObjectBase.class_from_tag('tracker') is Tracker
+    assert SimulationObjectBase.object_typecode_from_tag('halo')==0
+    assert SimulationObjectBase.object_typecode_from_tag('BH')==1
+    assert SimulationObjectBase.object_typecode_from_tag('group')==2
+    assert SimulationObjectBase.object_typecode_from_tag('tracker')==3
+    assert SimulationObjectBase.object_typecode_from_tag(1)==1
+    assert SimulationObjectBase.object_typetag_from_code(0)=='halo'
+    assert SimulationObjectBase.object_typetag_from_code(1)=='BH'
+    assert SimulationObjectBase.object_typetag_from_code(2)=='group'
+    assert SimulationObjectBase.object_typetag_from_code(3)=='tracker'

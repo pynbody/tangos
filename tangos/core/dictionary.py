@@ -12,7 +12,7 @@ class DictionaryItem(Base):
     __tablename__ = 'dictionary'
 
     id = Column(Integer, primary_key=True)
-    text = Column(String, unique=True)
+    text = Column(String(128), unique=True)
 
     def __repr__(self):
         return "<DictionaryItem " + self.text + ">"

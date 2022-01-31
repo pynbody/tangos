@@ -11,7 +11,7 @@ class TimestepObjectCache(object):
         self._timestep_id = timestep.id
 
     def _initialise_cache(self):
-        all_objects = self.session.query(core.Halo).filter_by(timestep_id=self._timestep_id).all()
+        all_objects = self.session.query(core.SimulationObjectBase).filter_by(timestep_id=self._timestep_id).all()
 
         self._map_finder_offset = {}
         self._map_finder_id = {}

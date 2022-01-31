@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import datetime
 
 import numpy as np
-from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime, LargeBinary
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship, backref, Session
 
 from . import data_attribute_mapper
@@ -10,15 +10,15 @@ from . import Base
 from . import creator
 from .. import input_handlers, config
 from .dictionary import DictionaryItem, get_dict_id, get_or_create_dictionary_item
+from ..config import DOUBLE_PRECISION, LARGE_BINARY
 import six
-
 
 class Simulation(Base):
     __tablename__ = 'simulations'
     # __table_args__ = {'useexisting': True}
 
     id = Column(Integer, primary_key=True)
-    basename = Column(String)
+    basename = Column(Text)
     creator = relationship(
         creator.Creator, backref=backref('simulations', cascade='all'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
@@ -108,11 +108,11 @@ class SimulationProperty(Base):
     creator = relationship(creator.Creator, backref=backref(
         'simproperties', cascade='all, delete', lazy='dynamic'), cascade='save-update')
 
-    data_float = Column(Float)
+    data_float = Column(DOUBLE_PRECISION)
     data_int = Column(Integer)
     data_time = Column(DateTime)
-    data_string = Column(String)
-    data_array = Column(LargeBinary)
+    data_string = Column(Text)
+    data_array = Column(LARGE_BINARY)
 
 
     def __init__(self, sim, name, data):

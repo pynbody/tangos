@@ -24,7 +24,7 @@ class UnsignedInteger(types.TypeDecorator):
         return np.uint64(value).astype(np.int64)
 
     def process_result_value(self, value, dialect):
-        if value:
+        if value is not None:
             if type(value) is bytes:
                 return np.frombuffer(value, dtype=np.uint64)[0]
             else:
@@ -32,7 +32,7 @@ class UnsignedInteger(types.TypeDecorator):
         else:
             return None
 
-class Halo(Base):
+class SimulationObjectBase(Base):
     __tablename__= "halos"
 
     id = Column(Integer, primary_key=True) #the unique ID value of the database object created for this halo
@@ -51,11 +51,10 @@ class Halo(Base):
     object_typecode = Column(Integer, nullable=False,
                          name='halo_type') # name for backwards compatibility
 
-    tag = "halo" # used identifying this default object type, as opposed to other object types,
-                 # e.g. a group/BH defined below
+    tag = "abstract_base_class_for_halos_etc" # tag will be halo, bh, tracker etc. Don't use the base class!
 
     __mapper_args__ = {
-        'polymorphic_identity':0,
+        'polymorphic_identity':-1,
         'polymorphic_on':object_typecode
     }
 
@@ -69,9 +68,7 @@ class Halo(Base):
     @staticmethod
     def class_from_tag(match_tag):
         match_tag = match_tag.lower()
-        if match_tag == Halo.tag.lower():
-            return Halo
-        for c in Halo._all_subclasses():
+        for c in SimulationObjectBase._all_subclasses():
             if match_tag == c.tag.lower():
                 return c
         raise ValueError("Unknown object type %r"%match_tag)
@@ -79,18 +76,15 @@ class Halo(Base):
     @staticmethod
     def object_typecode_from_tag(match_tag):
         if isinstance(match_tag, six.string_types):
-            return Halo.class_from_tag(match_tag).__mapper_args__['polymorphic_identity']
+            return SimulationObjectBase.class_from_tag(match_tag).__mapper_args__['polymorphic_identity']
         else:
             return match_tag
 
     @staticmethod
     def object_typetag_from_code(typecode):
-        if typecode==0:
-            return Halo.tag
-        else:
-            for c in Halo._all_subclasses():
-                if c.__mapper_args__['polymorphic_identity'] == typecode:
-                    return c.tag
+        for c in SimulationObjectBase._all_subclasses():
+            if c.__mapper_args__['polymorphic_identity'] == typecode:
+                return c.tag
         raise ValueError("Unknown object typecode %d",typecode)
 
     def __init__(self, timestep, halo_number, finder_id, finder_offset, NDM, NStar, NGas, object_typecode=0):
@@ -245,9 +239,9 @@ class Halo(Base):
 
 
     def __setitem__(self, key, obj):
-        if isinstance(obj, Halo):
+        if isinstance(obj, SimulationObjectBase):
             self._setitem_one_halo(key, obj)
-        elif hasattr(obj, '__len__') and all([isinstance(x,Halo) for x in obj]):
+        elif hasattr(obj, '__len__') and all([isinstance(x,SimulationObjectBase) for x in obj]):
             self._setitem_multiple_halos(key, obj)
         else:
             self._setitem_property(key, obj)
@@ -404,12 +398,14 @@ class Halo(Base):
     def short(self):
         return "<Halo " + str(self.halo_number) + " of ...>"
 
-TimeStep.halos = orm.relationship(Halo, cascade='all', lazy='dynamic',
-                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==0)),
-                                  foreign_keys=Halo.timestep_id,
-                                  order_by=Halo.halo_number)
+class Halo(SimulationObjectBase):
+    __mapper_args__ = {
+        'polymorphic_identity': 0
+    }
 
-class Tracker(Halo):
+    tag = "halo"
+    
+class Tracker(SimulationObjectBase):
     __mapper_args__ = {
         'polymorphic_identity':3
     }
@@ -429,14 +425,6 @@ class Tracker(Halo):
         return handler.load_tracked_region(self.timestep.extension, self.tracker, mode=mode)
 
 
-TimeStep.trackers = orm.relationship(Halo, cascade='all', lazy='dynamic',
-                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==3)),
-                                  foreign_keys=Halo.timestep_id,
-                                  order_by=Halo.halo_number)
-
-
-
-
 class BH(Tracker):
     __mapper_args__ = {
         'polymorphic_identity': 1
@@ -445,13 +433,7 @@ class BH(Tracker):
     tag = "BH"
 
 
-TimeStep.bhs = orm.relationship(Halo, cascade='all', lazy='dynamic',
-                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==1)),
-                                  foreign_keys=Halo.timestep_id,
-                                  order_by=Halo.halo_number)
-
-
-class Group(Halo):
+class Group(SimulationObjectBase):
     __mapper_args__ = {
         'polymorphic_identity':2
     }
@@ -462,13 +444,10 @@ class Group(Halo):
         super(Group, self).__init__(*args)
         self.object_typecode = 2
 
-TimeStep.groups = orm.relationship(Halo, cascade='all', lazy='dynamic',
-                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==2)),
-                                  foreign_keys=Halo.timestep_id,
-                                  order_by=Halo.halo_number)
 
 
-class PhantomHalo(Halo):
+
+class PhantomHalo(SimulationObjectBase):
     __mapper_args__ = {
         'polymorphic_identity': 4
     }
@@ -479,7 +458,14 @@ class PhantomHalo(Halo):
         super(PhantomHalo, self).__init__(timestep, halo_number, finder_id, finder_id, 0,0,0,
                                  self.__mapper_args__['polymorphic_identity'])
 
-TimeStep.phantoms = orm.relationship(Halo, cascade='all', lazy='dynamic',
-                                  primaryjoin=((Halo.timestep_id==TimeStep.id) & (Halo.object_typecode==4)),
-                                  foreign_keys=Halo.timestep_id,
-                                  order_by=Halo.halo_number)
+
+TimeStep.halos = orm.relationship(Halo, lazy='dynamic',viewonly=True,
+                                  order_by=SimulationObjectBase.halo_number)
+TimeStep.trackers = orm.relationship(Tracker,lazy='dynamic',viewonly=True,
+                                  order_by=Tracker.halo_number)
+TimeStep.bhs = orm.relationship(BH, lazy='dynamic',viewonly=True,
+                                  order_by=BH.halo_number)
+TimeStep.groups = orm.relationship(Group, lazy='dynamic',viewonly=True,
+                                  order_by=Group.halo_number)
+TimeStep.phantoms = orm.relationship(PhantomHalo, lazy='dynamic',viewonly=True,
+                                  order_by=PhantomHalo.halo_number)

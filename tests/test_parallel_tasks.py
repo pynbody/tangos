@@ -8,6 +8,8 @@ import sys
 import time
 from six.moves import range
 
+from nose.plugins.skip import SkipTest
+
 def setup():
     pt.use("multiprocessing")
     testing.init_blank_db_for_testing(timeout=5.0, verbose=False)
@@ -18,11 +20,16 @@ def setup():
 
     tangos.core.get_default_session().commit()
 
+def teardown():
+    tangos.core.close_db()
+    pt.launch(tangos.core.close_db, 6)
+
 
 def _add_property():
     for i in pt.distributed(list(range(1,10))):
         tangos.get_halo(i)['my_test_property']=i
         tangos.core.get_default_session().commit()
+
 
 def test_add_property():
     pt.launch(_add_property,3)
@@ -41,6 +48,7 @@ def _add_two_properties_different_ranges():
         tangos.core.get_default_session().commit()
 
 def test_add_two_properties_different_ranges():
+
     pt.launch(_add_two_properties_different_ranges,3)
     for i in range(1,10):
         assert tangos.get_halo(i)['my_test_property_2']==i

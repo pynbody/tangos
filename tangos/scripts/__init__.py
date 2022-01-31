@@ -36,12 +36,12 @@ def add_commands(subparse):
     tangos.tools.GenericTangosTool.add_tools(subparse)
     add_serve_tool(subparse)
 
-def main():
+def main(argv=None):
     parser, subparse = manager.get_argument_parser_and_subparsers()
 
     add_commands(subparse)
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     from .. import core
     core.process_options(args)

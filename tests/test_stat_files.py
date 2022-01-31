@@ -43,6 +43,9 @@ def setup():
 
     parallel_tasks.use('null')
 
+def teardown():
+    tangos.core.close_db()
+
 def test_statfile_identity():
     global ts1,ts2, ts3
     assert isinstance(stat.HaloStatFile(ts1.filename), stat.AHFStatFile)

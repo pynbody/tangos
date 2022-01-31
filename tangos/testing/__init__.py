@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from .. import core, get_halo
+from ..config import testing_db_backend, testing_db_password, testing_db_user
 import sqlalchemy, sqlalchemy.event
 import contextlib
 import gc
@@ -9,6 +10,7 @@ import os
 import inspect
 import six
 from six.moves import zip
+from sqlalchemy import create_engine
 
 
 def _as_halos(hlist, session=None):
@@ -18,7 +20,7 @@ def _as_halos(hlist, session=None):
     for h in hlist:
         if h is None:
             rvals.append(None)
-        elif isinstance(h, core.halo.Halo):
+        elif isinstance(h, core.halo.SimulationObjectBase):
             rvals.append(h)
         elif isinstance(h, list) or isinstance(h, tuple):
             rvals.append(_as_halos(h, session))
@@ -160,12 +162,20 @@ def init_blank_db_for_testing(**init_kwargs):
 
     testing_db_name = init_kwargs.pop("testing_db_name", caller_fname)
 
-    db_name = "test_dbs/%s.db"%testing_db_name
-    try:
+    if testing_db_backend == "sqlite":
+        db_name = f"test_dbs/%s.db"%testing_db_name
+        try:
+            os.remove(db_name)
+        except OSError:
+            pass
 
-        os.remove(db_name)
-    except OSError:
-        pass
+        core.init_db(f"sqlite:///{db_name}", **init_kwargs)
+    else:
+        db_url = f"{testing_db_backend}://{testing_db_user}:{testing_db_password}@localhost"
+        engine = create_engine(db_url)
+        with engine.connect() as conn:
+            conn.execute("COMMIT")
+            conn.execute(f"DROP DATABASE IF EXISTS {testing_db_name}")
+            conn.execute(f"CREATE DATABASE {testing_db_name}")
 
-    core.init_db("sqlite:///"+db_name,**init_kwargs)
-
+        core.init_db(f"{db_url}/{testing_db_name}", **init_kwargs)

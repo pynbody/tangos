@@ -6,6 +6,7 @@ from tangos import config
 from tangos import log, testing
 import os
 import numpy.testing as npt
+import tangos
 
 def setup():
     global output_manager
@@ -13,6 +14,9 @@ def setup():
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
     output_manager = yt_outputs.YtChangaAHFInputHandler("test_tipsy_yt")
     add.SimulationAdderUpdater(output_manager).scan_simulation_and_add_all_descendants()
+
+def teardown():
+    tangos.core.close_db()
 
 def test_handler():
     assert isinstance(db.get_simulation("test_tipsy_yt").get_output_handler(), yt_outputs.YtChangaAHFInputHandler)

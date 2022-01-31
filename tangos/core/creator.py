@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, DateTime, Text
 
 from . import Base, get_default_session
 
@@ -10,11 +10,11 @@ class Creator(Base):
     __tablename__ = 'creators'
 
     id = Column(Integer, primary_key=True)
-    command_line = Column(String)
+    command_line = Column(Text)
     dtime = Column(DateTime)
-    host = Column(String)
-    username = Column(String)
-    cwd = Column(String)
+    host = Column(Text)
+    username = Column(Text)
+    cwd = Column(Text)
 
     def __repr__(self):
         return "<Creator " + self.username + " on " + self.host + " @ " + self.dtime.strftime("%d/%m/%y %H:%M") + " via " + self.command_line.split(" ")[0].split("/")[-1] + ">"

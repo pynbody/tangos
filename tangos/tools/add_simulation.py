@@ -4,6 +4,7 @@ from ..core import Simulation, TimeStep
 from ..log import logger
 import six
 import numpy as np
+import numbers
 
 class SimulationAdderUpdater(object):
     """This class contains the necessary tools to add a new simulation to the database"""
@@ -67,6 +68,8 @@ class SimulationAdderUpdater(object):
         properties_dict = self.simulation_output.get_properties()
         properties_dict['handler'] = self.simulation_output.handler_class_name()
         for k, v in six.iteritems(properties_dict):
+            if isinstance(v, numbers.Number) and np.isnan(v):
+                continue
             if k not in list(sim.keys()):
                 logger.info("Add simulation property %r",k)
                 sim[k] = v

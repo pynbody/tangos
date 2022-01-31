@@ -3,7 +3,7 @@ from __future__ import print_function
 from sqlalchemy import and_
 
 from tangos import get_default_session, Creator, Base
-from tangos.core import Simulation, TimeStep, Halo, HaloProperty
+from tangos.core import Simulation, TimeStep, SimulationObjectBase, HaloProperty
 from six.moves import map
 import six
 
@@ -68,7 +68,7 @@ def get_object(id, session=None):
 
     Optionally, use the specified session.
 
-    :rtype: Halo
+    :rtype: SimulationObjectBase
     """
     if session is None:
         session = get_default_session()
@@ -78,7 +78,7 @@ def get_object(id, session=None):
         ts = get_timestep(sim + "/" + ts, session)
         return ts[halo]
     else:
-        return session.query(Halo).filter_by(id=int(id)).first()
+        return session.query(SimulationObjectBase).filter_by(id=int(id)).first()
 
 get_halo = get_object # old naming convention - to be deprecated
 

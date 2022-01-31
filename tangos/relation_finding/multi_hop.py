@@ -9,8 +9,8 @@ import sqlalchemy.exc
 import sqlalchemy.orm
 import sqlalchemy.orm.dynamic
 import sqlalchemy.orm.query
-from sqlalchemy import and_, Table, Index, Column, Integer, Float, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import and_, Table, Index, Column, Integer
+from sqlalchemy.orm import relationship, defer
 
 from .. import core
 from .. import temporary_halolist
@@ -18,14 +18,15 @@ from .one_hop import HopStrategy
 
 from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
 from ..config import max_relative_time_difference as SMALL_FRACTION
+from ..config import DOUBLE_PRECISION
 from six.moves import range
 
 class MultiHopStrategy(HopStrategy):
     """An extension of the HopStrategy class that takes multiple hops across
     HaloLinks, up to a specified maximum, before finding the target halo."""
 
-    halo_old = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_old")
-    halo_new = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_new")
+    halo_old = sqlalchemy.orm.aliased(core.halo.SimulationObjectBase, name="halo_old")
+    halo_new = sqlalchemy.orm.aliased(core.halo.SimulationObjectBase, name="halo_new")
     timestep_old = sqlalchemy.orm.aliased(core.timestep.TimeStep, name="timestep_old")
     timestep_new = sqlalchemy.orm.aliased(core.timestep.TimeStep, name="timestep_new")
 
@@ -36,7 +37,7 @@ class MultiHopStrategy(HopStrategy):
         """Construct a strategy for finding Halos via multiple "hops" along HaloLinks
 
         :param halo_from:   The halo to start hopping from
-        :type halo_from:    core.Halo
+        :type halo_from:    core.SimulationObjectBase
 
         :param nhops_max:   The maximum number of hops to take
 
@@ -90,6 +91,12 @@ class MultiHopStrategy(HopStrategy):
         self._connection = self.session.connection()
         self._combine_routes = combine_routes
 
+        dialect = self._connection.engine.dialect.dialect_description.split("+")[0].lower()
+        if dialect == 'mysql':
+            # ONLY_FULL_GROUP_BY causes issues with the current implementation of argmax-like functionality
+            # See commentary in util/sql_argmax.py
+            self.session.execute("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));")
+
     def temp_table(self):
         """Execute the strategy and return results as a temp_table (see temporary_halolist module)"""
         if self._all is None:
@@ -105,24 +112,22 @@ class MultiHopStrategy(HopStrategy):
         except:
             tt.__exit__(*sys.exc_info())
             raise
+
         thl = temporary_halolist.temporary_halolist_table(self.session,
-                                                          self._query_ordered.from_self(
-                                                              self._link_orm_class.halo_to_id),
+                                                          self._order_query(self._generate_query(halo_ids_only=True)),
                                                           callback=lambda: tt.__exit__(None, None, None)
                                                           )
         return thl
 
     def _generate_multihop_results(self):
-        self._generate_query()
         self._seed_temp_table()
-        self._filter_query_for_target(self._target)
         self._make_hops()
 
     def _execute_query(self):
         with self._manage_temp_table():
             self._generate_multihop_results()
             try:
-                results = self._query_ordered.all()
+                results = self._order_query(self._generate_query(halo_ids_only=False)).all()
             except sqlalchemy.exc.ResourceClosedError:
                 results = []
 
@@ -162,7 +167,7 @@ class MultiHopStrategy(HopStrategy):
             elif directed == 'forwards':
                 recursion_filter &= (timestep_new.time_gyr > timestep_old.time_gyr*(1.0+SMALL_FRACTION))
             elif directed == 'across':
-                existing_timestep_ids = self.session.query(core.Halo.timestep_id).\
+                existing_timestep_ids = self.session.query(core.SimulationObjectBase.timestep_id).\
                     select_from(self._link_orm_class).join(self._link_orm_class.halo_to).distinct()
                 recursion_filter &= ~timestep_new.id.in_(existing_timestep_ids)
                 recursion_filter &= sqlalchemy.func.abs(timestep_new.time_gyr - timestep_old.time_gyr) \
@@ -183,16 +188,40 @@ class MultiHopStrategy(HopStrategy):
     def _create_temp_table(self):
         rstr = ''.join(random.choice(string.ascii_lowercase) for _ in range(4))
 
+        # The intent of the following two tables is that they are temporary. With SQLite, it is
+        # essential that they are implemented literally as TEMPORARY tables as otherwise the performance
+        # is hugely degraded. However, MySQL places two crippling limitations on TEMPORARY tables:
+        #  1) No foreign keys allowed referring to columns in the permanent database
+        #  2) Cannot join a TEMPORARY table to itself
+        #
+        # Restriction (1) can be evaded by not declaring the foreign key in the schema, and then
+        # providing foreign_keys information in _construct_orm_class. However restriction (2) is
+        # completely debilitating. Luckily the performance in MySQL is fine even if we don't
+        # declare these tables as TEMPORARY, so we simply switch off the prefix.
+        #
+        # There is a strange third issue with MySQL which is that, if we declare the foreign key
+        # when creating a table, the connection hangs. This seems to be because of a deadlock;
+        # other open connections prevent creating the association to the existing tables (the
+        # MySQL 'metadata lock'). So, even though MySQL will NOT be using temporary tables,
+        # we still don't declare the foreign key dependence.
+
+        dialect = self._connection.dialect.dialect_description.split("+")[0].lower()
+        if dialect == 'mysql':
+            prefixes = []
+        else:
+            prefixes = ['TEMPORARY']
+
         multi_hop_link_table = Table(
             'multihoplink_final_' + rstr,
             core.Base.metadata,
             Column('id', Integer, primary_key=True),
             Column('source_id', Integer),
-            Column('halo_from_id', Integer, ForeignKey('halos.id')),
-            Column('halo_to_id', Integer, ForeignKey('halos.id')),
-            Column('weight', Float),
+            # Foreign keys below NOT declared at schema-level, see note above re MySQL
+            Column('halo_from_id', Integer),
+            Column('halo_to_id', Integer),
+            Column('weight', DOUBLE_PRECISION),
             Column('nhops', Integer),
-            prefixes=['TEMPORARY']
+            prefixes = prefixes
         )
 
         multi_hop_link_prelim_table = Table(
@@ -200,30 +229,32 @@ class MultiHopStrategy(HopStrategy):
             core.Base.metadata,
             Column('id', Integer, primary_key=True),
             Column('source_id', Integer),
-            Column('halo_from_id', Integer, ForeignKey('halos.id')),
-            Column('halo_to_id', Integer, ForeignKey('halos.id')),
-            Column('weight', Float),
+            # Foreign keys below NOT declared at schema-level, see note above re MySQL
+            Column('halo_from_id', Integer),
+            Column('halo_to_id', Integer),
+            Column('weight', DOUBLE_PRECISION),
             Column('nhops', Integer),
-            prefixes=['TEMPORARY']
+            prefixes = prefixes
         )
 
         self._table_index = Index('temp.source_id_index_' + rstr, multi_hop_link_table.c.source_id, multi_hop_link_table.c.nhops)
 
         self._table = multi_hop_link_table
         self._prelim_table = multi_hop_link_prelim_table
-        self._table.create(checkfirst=True, bind=self._connection)
 
+        self._table.create(checkfirst=True, bind=self._connection)
         self._prelim_table.create(checkfirst=True, bind=self._connection)
 
     @contextlib.contextmanager
     def _manage_temp_table(self):
         self._create_temp_table()
+        self._link_orm_class = self._construct_orm_class()
         yield
         self._delete_temp_table()
 
     def _seed_temp_table(self):
         insert_statement = self._table.insert().values(halo_from_id=self.halo_from.id, halo_to_id=self.halo_from.id,
-                                    weight=1.0, nhops=0)
+                                    weight=1.0, nhops=0, source_id=0)
 
         self._connection.execute(insert_statement)
 
@@ -246,32 +277,50 @@ class MultiHopStrategy(HopStrategy):
 
         new_weight = self._table.c.weight * core.halo_data.HaloLink.weight
 
-        if self._combine_routes:
-            new_weight = sqlalchemy.func.max(new_weight)
-
         recursion_query = \
             self.session.query(
-                core.halo_data.HaloLink.halo_from_id,
+                core.halo_data.HaloLink.halo_from_id.label('halo_from_id'),
                 core.halo_data.HaloLink.halo_to_id.label("halo_to_id"),
-                new_weight,
+                new_weight.label('new_weight'),
                 (self._table.c.nhops + sqlalchemy.literal(1)).label("nhops"),
-                self._table.c.source_id). \
+                self._table.c.source_id.label('source_id')). \
                 select_from(self._table). \
-                join(core.halo_data.HaloLink, and_(self._table.c.nhops == from_nhops,
+                outerjoin(core.halo_data.HaloLink, and_(self._table.c.nhops == from_nhops,
                                                            self._table.c.halo_to_id == core.halo_data.HaloLink.halo_from_id)). \
                 filter(core.halo_data.HaloLink.weight > self._min_onehop_weight
                        )
-
-        if self._combine_routes:
-            recursion_query = recursion_query.group_by(core.halo_data.HaloLink.halo_to_id, self._table.c.source_id)
 
         insert = self._prelim_table.insert().from_select(
             ['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'source_id'],
             recursion_query)
 
-        result = self._connection.execute(insert)
+        num_inserted = self._connection.execute(insert).rowcount
 
-        return result.rowcount
+        if self._combine_routes:
+            # Ideally, before self._prelim_table.insert(), one would adapt recursion_query to return the argmax of
+            # new_weight, grouped by halo_to_id and source_id. That could have been achieved using:
+            #
+            #   from ..util.sql_argmax import sql_argmax
+            #   recursion_query = sql_argmax(recursion_query, "new_weight",
+            #                               ["halo_to_id", "source_id"])
+            #
+            # However, this turns out to be very slow and there are no obvious ways to optimise it. It's essentially
+            # using a huge CTE/subquery to replace a native argmax facility in SQL. Originally, with sqlite, we simply did:
+            #
+            #   recursion_query = recursion_query.group_by(core.halo_data.HaloLink.halo_to_id, self._table.c.source_id)
+            #
+            # It is actually unclear to me now why this ever worked, but anyway it doesn't work in MySQL. The balance of
+            # remaining correct without killing performance is to actually insert all the rows into prelim_table, and
+            # then delete the ones which are not wanted afterwards. This is presumably faster because the temp table
+            # has relevant indices.
+            from ..util.sql_argmax import delete_non_maximal_rows
+
+            deleted_count = delete_non_maximal_rows(self._connection, self._prelim_table,
+                                                    self._prelim_table.c.weight,
+                                                    [self._prelim_table.c.halo_to_id, self._prelim_table.c.source_id])
+            num_inserted-=deleted_count
+
+        return num_inserted
 
     def _filter_prelim_links_into_final(self):
 
@@ -314,21 +363,30 @@ class MultiHopStrategy(HopStrategy):
         class_name = "MultiHopHaloLink_"+rstr
         class_base = (core.Base,)
         class_attrs = {"__table__": self._table,
-                       "halo_from": relationship(core.halo.Halo, primaryjoin=self._table.c.halo_from_id == core.halo.Halo.id),
-                       "halo_to"  : relationship(core.halo.Halo, primaryjoin=(self._table.c.halo_to_id == core.halo.Halo.id)),
+                       "halo_from": relationship(core.halo.SimulationObjectBase, primaryjoin=self._table.c.halo_from_id == core.halo.SimulationObjectBase.id,
+                                                 foreign_keys = [self._table.c.halo_from_id]),
+                       "halo_to"  : relationship(core.halo.SimulationObjectBase, primaryjoin=(self._table.c.halo_to_id == core.halo.SimulationObjectBase.id),
+                                                 foreign_keys = [self._table.c.halo_to_id]),
                        "source_id" : self._table.c.source_id,
+                       "weight" : self._table.c.weight,
                        "nhops" : self._table.c.nhops
                        }
 
         return type(class_name,class_base,class_attrs)
 
 
-    def _generate_query(self):
-        self._link_orm_class = self._construct_orm_class()
-        self.query = self.session.query(self._link_orm_class)
+    def _generate_query(self, halo_ids_only):
+        if halo_ids_only:
+            query = self.session.query(self._link_orm_class.halo_to_id)
+        else:
+            query = self.session.query(self._link_orm_class)
 
         if not self._include_startpoint:
-            self.query = self.query.filter(self._table.c.nhops>0)
+            query = query.filter(self._table.c.nhops>0)
+
+        query = self._filter_query_for_target(query, self._target)
+
+        return query
 
     def _generate_order_arg_from_name(self, name, halo_alias, timestep_alias):
         if name == 'nhops':

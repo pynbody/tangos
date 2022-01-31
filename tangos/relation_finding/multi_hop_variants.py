@@ -43,13 +43,14 @@ class MultiHopMostRecentMergerStrategy(MultiHopAllProgenitorsStrategy):
         self._last_filtered_count = filtered_count
         return filtered_count != 1
 
-    def _make_hops(self):
-        super(MultiHopMostRecentMergerStrategy, self)._make_hops()
+    def _generate_query(self, halo_ids_only):
+        query = super()._generate_query(halo_ids_only)
         if self._last_filtered_count>1:
-            self.query = self.query.filter(self._table.c.nhops==self._nhops_taken+1)
+            query = query.filter(self._table.c.nhops==self._nhops_taken+1)
         else:
             # no merger was found
-            self.query = self.query.filter(0==1)
+            query = query.filter(0==1)
+        return query
 
 
 

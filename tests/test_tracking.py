@@ -9,6 +9,7 @@ from tangos import tracking
 import numpy.testing as npt
 import copy
 import numpy as np
+import tangos
 
 def setup():
     global output_manager, iord_expected_s960, iord_expected_s832
@@ -27,6 +28,9 @@ def setup():
     # because the tiny test files are downsampled, only a small number of particles are actually
     # in common between the two steps
     iord_expected_s832 = np.intersect1d(iord_expected_s960, db.get_timestep("test_tipsy/%832").load()['iord'])
+
+def teardown():
+    tangos.core.close_db()
 
 
 def test_get_tracker():

@@ -52,6 +52,9 @@ def setup():
     global app
     app = TestApp(tangos.web.main({}))
 
+def teardown():
+    tangos.core.close_db()
+
 
 def test_root_page():
     response = app.get("/")

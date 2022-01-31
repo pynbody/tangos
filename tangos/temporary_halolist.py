@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from . import core
-from sqlalchemy import Column, Table, String, Integer, Float, ForeignKey
+from sqlalchemy import Column, Table, Integer
 import sqlalchemy
 import random
 import string
@@ -11,17 +11,17 @@ _temp_sessions = {}
 
 def _create_temp_halolist(session):
     global _temp_sessions
-
     rstr = ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
     halolist_table = Table(
             'halolist_'+rstr,
             core.Base.metadata,
             Column('id',Integer, primary_key=True),
-            Column('halo_id',Integer,ForeignKey('halos.id')),
-            prefixes = ['TEMPORARY']
+            Column('halo_id',Integer), # don't declare ForeignKey, as MySQL can't handle it
+            prefixes = ["TEMPORARY"]
         )
 
     halolist_table.create(bind=session.connection())
+
     _temp_sessions[id(halolist_table)] = session
     return halolist_table
 
@@ -57,12 +57,12 @@ def halo_query(table):
     1-1 correspondence with the rows in the temporary table. For this, you need to use
     enumerated_halo_query"""
     session = _get_session_for(table)
-    return session.query(core.halo.Halo).select_from(table).join(core.halo.Halo)
+    return session.query(core.halo.SimulationObjectBase).select_from(table).join(core.halo.SimulationObjectBase, table.c.halo_id == core.halo.SimulationObjectBase.id).order_by(table.c.id)
 
 def enumerated_halo_query(table):
     """Query that returns tuples of id, halo for each row in the temporary table"""
     session = _get_session_for(table)
-    return session.query(table.c.id, core.halo.Halo).select_from(table).outerjoin(core.halo.Halo)
+    return session.query(table.c.id, core.halo.SimulationObjectBase).select_from(table).outerjoin(core.halo.SimulationObjectBase, table.c.halo_id == core.halo.SimulationObjectBase.id).order_by(table.c.id)
 
 def all_halos_with_duplicates(table):
     """Return all halos in the temporary table, including duplicates"""
@@ -71,7 +71,7 @@ def all_halos_with_duplicates(table):
 
 def halolink_query(table):
     session = _get_session_for(table)
-    return session.query(core.halo_data.HaloLink).select_from(table).join(core.halo_data.HaloLink, core.halo_data.HaloLink.halo_from_id == table.c.halo_id)
+    return session.query(core.halo_data.HaloLink).select_from(table).join(core.halo_data.HaloLink, core.halo_data.HaloLink.halo_from_id == table.c.halo_id).order_by(table.c.id)
 
 @contextlib.contextmanager
 def temporary_halolist_table(session, ids=None, callback=None):

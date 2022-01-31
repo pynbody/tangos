@@ -13,7 +13,7 @@ from tangos.testing import assert_halolists_equal
 
 
 def setup():
-    testing.init_blank_db_for_testing()
+    testing.init_blank_db_for_testing(verbose=True)
 
     generator = tangos.testing.simulation_generator.TestSimulationGenerator()
     generator.add_timestep()
@@ -65,6 +65,9 @@ def setup():
     ts3_h2['testval'] = 1000.0
 
     db.core.get_default_session().commit()
+
+def teardown():
+    tangos.core.close_db()
 
 def test_ambiguous_link():
     with warnings.catch_warnings(record=True) as w:

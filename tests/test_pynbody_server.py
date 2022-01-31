@@ -26,6 +26,10 @@ def setup():
     tangos.config.base = os.path.dirname(__file__)+"/"
     handler = TestHandler("test_simulations/test_tipsy")
 
+def teardown():
+    tangos.core.close_db()
+
+
 def _get_array():
     test_filter = pynbody.filt.Sphere('5000 kpc')
     for fname in pt.distributed(["tiny.000640", "tiny.000832"]):

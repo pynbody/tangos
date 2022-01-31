@@ -24,6 +24,9 @@ def setup():
 
     db.core.get_default_session().commit()
 
+def teardown():
+    tangos.core.close_db()
+
 def test_proxy_object_by_id():
     assert po.ProxyObjectFromDatabaseId(1).resolve(tangos.get_default_session())==tangos.get_object(1)
 

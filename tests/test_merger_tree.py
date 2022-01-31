@@ -46,6 +46,9 @@ def setup():
     tree.mergertree_timeout = 15.0
     tree.mergertree_max_hops = 500
 
+def teardown():
+    tangos.core.close_db()
+
 def test_default_tree_has_correct_structure():
     mt = tree.MergerTree(tangos.get_halo("%/ts6/1"))
     mt.construct()

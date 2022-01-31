@@ -1,23 +1,23 @@
 from __future__ import absolute_import
-import weakref
 import os, os.path
 import sqlalchemy
-from sqlalchemy import Column, Integer, String, ForeignKey, Float, Boolean, and_
+from sqlalchemy import Column, Integer, Text, ForeignKey, Boolean, and_
 from sqlalchemy.orm import relationship, backref, aliased
 
 from . import Base
 from .creator import Creator
 from .simulation import Simulation
 from .. import config
+from ..config import DOUBLE_PRECISION
 
 class TimeStep(Base):
     __tablename__ = 'timesteps'
 
     id = Column(Integer, primary_key=True)
-    extension = Column(String)
+    extension = Column(Text)
     simulation_id = Column(Integer, ForeignKey('simulations.id'))
-    redshift = Column(Float)
-    time_gyr = Column(Float)
+    redshift = Column(DOUBLE_PRECISION)
+    time_gyr = Column(DOUBLE_PRECISION)
     creator = relationship(Creator, backref=backref(
         'timesteps', cascade='delete', lazy='dynamic'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
@@ -68,7 +68,7 @@ class TimeStep(Base):
         return "<TimeStep(... z=%.2f ...)>" % self.redshift
 
     def __getitem__(self, halo_identifier):
-        from . import Session, Halo
+        from . import Session, SimulationObjectBase
         session = Session.object_session(self)
         if isinstance(halo_identifier, int):
             object_typecode, halo_number = 0, halo_identifier
@@ -76,11 +76,11 @@ class TimeStep(Base):
             object_typecode, halo_number = list(map(int, halo_identifier.split(".")))
         elif "_" in halo_identifier:
             object_typecode, halo_number = halo_identifier.split("_")
-            object_typecode = Halo.class_from_tag(object_typecode).__mapper_args__['polymorphic_identity']
+            object_typecode = SimulationObjectBase.class_from_tag(object_typecode).__mapper_args__['polymorphic_identity']
             halo_number = int(halo_number)
         else:
             object_typecode, halo_number = 0, int(halo_identifier)
-        return session.query(Halo).filter_by(timestep_id=self.id, halo_number=halo_number, object_typecode=object_typecode).first()
+        return session.query(SimulationObjectBase).filter_by(timestep_id=self.id, halo_number=halo_number, object_typecode=object_typecode).first()
 
     @property
     def path(self):
@@ -131,7 +131,7 @@ class TimeStep(Base):
 
         from .. import live_calculation
         from . import Session
-        from .halo import Halo
+        from .halo import SimulationObjectBase
 
         object_typecode = None
         object_typetag = kwargs.get('object_type', kwargs.get('object_typetag',None))
@@ -140,7 +140,7 @@ class TimeStep(Base):
         order_by_halo_number = kwargs.get('order_by_halo_number', False)
 
         if object_typetag:
-            object_typecode = Halo.object_typecode_from_tag(object_typetag)
+            object_typecode = SimulationObjectBase.object_typecode_from_tag(object_typetag)
 
         if isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]
@@ -151,9 +151,9 @@ class TimeStep(Base):
         # objects with incomplete lazy-loaded properties
         session = Session()
         try:
-            raw_query = session.query(Halo).filter_by(timestep_id=self.id)
+            raw_query = session.query(SimulationObjectBase).filter_by(timestep_id=self.id)
             if order_by_halo_number:
-                raw_query = raw_query.order_by(Halo.halo_number)
+                raw_query = raw_query.order_by(SimulationObjectBase.halo_number)
             if object_typecode is not None:
                 raw_query = raw_query.filter_by(object_typecode=object_typecode)
             if limit:
@@ -217,7 +217,12 @@ class TimeStep(Base):
             first_order = TimeStep.time_gyr.desc()
 
         successors_query = session.query(TimeStep).filter(
-               and_(direction_comparison, TimeStep.simulation == self.simulation)
+               and_(direction_comparison, TimeStep.simulation == self.simulation,
+                    # Strictly the below condition shouldn't be required. However,
+                    # MySQL returns rows where Timestep.time_gyr == self.time_gyr when we ask for a
+                    # strict inequality. Probably this is to do with a roundoff error in the round-trip
+                    # to the database. We have to prevent this, otherwise one gets incorrect results.
+                    TimeStep.id != self.id)
             ).order_by(first_order).limit(abs(steps))
 
         if successors_query.count()<abs(steps):

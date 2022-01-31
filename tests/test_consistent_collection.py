@@ -32,6 +32,9 @@ def setup():
     sim2['inconsistent_property'] = 1.0
     collection = cc.ConsistentCollection([sim1, sim2])
 
+def teardown():
+    tangos.core.close_db()
+
 
 def test_consistent():
     global collection

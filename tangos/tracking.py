@@ -2,15 +2,15 @@ from __future__ import absolute_import
 from __future__ import print_function
 from sqlalchemy.orm import Session
 import numpy as np
-from .core import get_or_create_dictionary_item, Halo, HaloLink, TrackData
+from .core import get_or_create_dictionary_item, SimulationObjectBase, HaloLink, TrackData
 from . import query
 import six
 import tangos.parallel_tasks as parallel_tasks
 from six.moves import zip
 
 def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, weight=1.0):
-    assert isinstance(halo_1, Halo)
-    assert isinstance(halo_2, Halo)
+    assert isinstance(halo_1, SimulationObjectBase)
+    assert isinstance(halo_2, SimulationObjectBase)
     session = Session.object_session(halo_1)
     if session.query(HaloLink).filter_by(halo_from_id=halo_1.id, halo_to_id=halo_2.id).count()>0:
         return
@@ -26,7 +26,7 @@ def get_trackers(sim):
     return trackers, np.array(nums)
 
 def get_tracker_halos(ts):
-    halos = ts.trackers.order_by(Halo.halo_number).all()
+    halos = ts.trackers.order_by(SimulationObjectBase.halo_number).all()
     hid = [h.id for h in halos]
     num = [h.halo_number for h in halos]
     return halos, np.array(num), np.array(hid)

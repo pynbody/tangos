@@ -2,6 +2,9 @@ import tangos, tangos.testing as testing, tangos.scripts.manager as manager
 import tangos.testing.simulation_generator
 import tangos.testing.db_diff as diff
 
+from nose.plugins.skip import SkipTest
+import os
+
 def setup():
     testing.init_blank_db_for_testing()
 
@@ -26,6 +29,10 @@ def setup():
         if ts>1:
             creator.link_last_halos()
             creator.link_last_bhs_using_mapping({1:1})
+
+def teardown():
+    tangos.core.close_db()
+
 
 def test_import():
     existing_session = tangos.get_default_session()

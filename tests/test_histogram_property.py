@@ -23,6 +23,8 @@ def setup():
 
     _setup_dummy_histogram_data(ts1, ts2)
 
+def teardown():
+    tangos.core.close_db()
 
 
 def _setup_dummy_histogram_data(ts1, ts2):

@@ -9,6 +9,8 @@ import tangos as db
 def setup():
     testing.init_blank_db_for_testing()
 
+def teardown():
+    tangos.core.close_db()
 
 def test_set():
     bh_obj = tangos.core.dictionary.get_or_create_dictionary_item(db.core.get_default_session(), "BH")

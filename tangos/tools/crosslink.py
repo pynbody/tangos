@@ -45,7 +45,7 @@ class GenericLinker(GenericTangosTool):
 
         pair_list = parallel_tasks.distributed(pair_list)
 
-        object_type = core.halo.Halo.object_typecode_from_tag(self.args.type_)
+        object_type = core.halo.SimulationObjectBase.object_typecode_from_tag(self.args.type_)
 
         for s_x, s in pair_list:
             logger.info("Linking %r and %r",s_x,s)
@@ -65,8 +65,8 @@ class GenericLinker(GenericTangosTool):
             logger.warn("Will not link: no halos in source timestep %r", ts1)
             return False
 
-        halo_source = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_source")
-        halo_target = sqlalchemy.orm.aliased(core.halo.Halo, name="halo_target")
+        halo_source = sqlalchemy.orm.aliased(core.halo.SimulationObjectBase, name="halo_source")
+        halo_target = sqlalchemy.orm.aliased(core.halo.SimulationObjectBase, name="halo_target")
         same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common").id
         exists = self.session.query(core.halo_data.HaloLink).join(halo_source, core.halo_data.HaloLink.halo_from). \
                     join(halo_target, core.halo_data.HaloLink.halo_to). \
@@ -130,10 +130,10 @@ class GenericLinker(GenericTangosTool):
 
         try:
             cat = output_handler_1.match_objects(ts1.extension, ts2.extension, halo_min, halo_max, dmonly, threshold,
-                                                 core.halo.Halo.object_typetag_from_code(object_typecode),
+                                                 core.halo.SimulationObjectBase.object_typetag_from_code(object_typecode),
                                                  output_handler_for_ts2=output_handler_2)
             back_cat = output_handler_2.match_objects(ts2.extension, ts1.extension, halo_min, halo_max, dmonly, threshold,
-                                                      core.halo.Halo.object_typetag_from_code(object_typecode),
+                                                      core.halo.SimulationObjectBase.object_typetag_from_code(object_typecode),
                                                       output_handler_for_ts2= output_handler_1)
         except Exception as e:
             if isinstance(e, KeyboardInterrupt):

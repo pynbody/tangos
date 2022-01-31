@@ -3,6 +3,7 @@ import tangos as db
 import tangos.testing
 import tangos
 from six.moves import range
+import numpy as np
 
 import tangos.testing.simulation_generator
 
@@ -16,7 +17,8 @@ def setup():
         generator.add_timestep()
         generator.add_objects_to_timestep(3)
 
-
+def teardown():
+    tangos.core.close_db()
 
 def test_setitem():
     tangos.get_halo("sim/ts1/1")['bla'] = 23
@@ -33,3 +35,16 @@ def test_update_item():
     tangos.get_halo("sim/ts1/1")['bla'] = 96
     db.core.get_default_session().commit()
     assert tangos.get_halo("sim/ts1/1")['bla'] == 96
+
+def test_set_large_item():
+    "Test inserting arrays with size up to a few MiB"
+    for length in [2**i for i in range(8, 20)]:
+        value = np.random.rand(length)
+
+        tangos.get_halo("sim/ts1/2")['this_is_large'] = value
+        db.core.get_default_session().commit()
+
+        np.testing.assert_array_equal(
+            tangos.get_halo("sim/ts1/2")['this_is_large'],
+            value
+        )

@@ -10,8 +10,20 @@ from tangos import properties
 from tangos.util import proxy_object
 from numpy import testing as npt
 
-def setup():
+from nose import with_setup
+
+def setup_func():
     parallel_tasks.use('null')
+
+    testing.init_blank_db_for_testing()
+    db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
+    manager = add_simulation.SimulationAdderUpdater(output_testing.TestInputHandler("dummy_sim_1"))
+    with log.LogCapturer():
+        manager.scan_simulation_and_add_all_descendants()
+
+def teardown_func():
+    db.core.close_db()
+
 
 class DummyProperty(properties.PropertyCalculation):
     names = "dummy_property",
@@ -67,14 +79,6 @@ class DummyPropertyAccessingSimulationProperty(properties.PropertyCalculation):
         return 1,
 
 
-
-def init_blank_simulation():
-    testing.init_blank_db_for_testing(timeout=0.0)
-    db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
-    manager = add_simulation.SimulationAdderUpdater(output_testing.TestInputHandler("dummy_sim_1"))
-    with log.LogCapturer():
-        manager.scan_simulation_and_add_all_descendants()
-
 def run_writer_with_args(*args):
     stored_log = log.LogCapturer()
     writer = property_writer.PropertyWriter()
@@ -83,17 +87,17 @@ def run_writer_with_args(*args):
         writer.run_calculation_loop()
     return stored_log.get_output()
 
+@with_setup(setup_func, teardown_func)
 def test_basic_writing():
-    init_blank_simulation()
     run_writer_with_args("dummy_property")
     _assert_properties_as_expected()
 
 
+@with_setup(setup_func, teardown_func)
 def test_parallel_writing():
-    init_blank_simulation()
     parallel_tasks.use('multiprocessing')
     try:
-        parallel_tasks.launch(run_writer_with_args,3,["dummy_property"])
+        parallel_tasks.launch(run_writer_with_args, 3, ["dummy_property"])
     finally:
         parallel_tasks.use('null')
     _assert_properties_as_expected()
@@ -104,8 +108,8 @@ def _assert_properties_as_expected():
     assert db.get_halo("dummy_sim_1/step.1/2")['dummy_property'] == 2.0
     assert db.get_halo("dummy_sim_1/step.2/1")['dummy_property'] == 2.0
 
+@with_setup(setup_func, teardown_func)
 def test_error_ignoring():
-    init_blank_simulation()
     log = run_writer_with_args("dummy_property", "dummy_property_with_exception")
     assert "Uncaught exception during property calculation" in log
 
@@ -131,14 +135,14 @@ class DummyRegionProperty(properties.PropertyCalculation):
         assert data.message=="Test string"[1:5]
         return 100.0,
 
+@with_setup(setup_func, teardown_func)
 def test_region_property():
-    init_blank_simulation()
     run_writer_with_args("dummy_property","dummy_region_property")
     _assert_properties_as_expected()
     assert db.get_halo("dummy_sim_1/step.2/1")['dummy_region_property']==100.0
 
+@with_setup(setup_func, teardown_func)
 def test_no_duplication():
-    init_blank_simulation()
     run_writer_with_args("dummy_property")
     assert db.get_default_session().query(db.core.HaloProperty).count()==15
     run_writer_with_args("dummy_property") # should not create duplicates
@@ -160,14 +164,14 @@ class DummyPropertyRequiringLink(DummyProperty):
     def requires_property(self):
         return ["dummy_link"]
 
+@with_setup(setup_func, teardown_func)
 def test_link_property():
-    init_blank_simulation()
     run_writer_with_args("dummy_link")
     assert db.get_default_session().query(db.core.HaloLink).count() == 15
     db.testing.assert_halolists_equal([db.get_halo(2)['dummy_link']], [db.get_halo(1)])
 
+@with_setup(setup_func, teardown_func)
 def test_link_dependency():
-    init_blank_simulation()
     run_writer_with_args("dummy_property_requiring_link")
     assert db.get_default_session().query(db.core.HaloProperty).count() == 0
 
@@ -176,9 +180,9 @@ def test_link_dependency():
     run_writer_with_args("dummy_property_requiring_link")
     assert db.get_default_session().query(db.core.HaloProperty).count() == 15
 
+@with_setup(setup_func, teardown_func)
 def test_writer_sees_raw_properties():
     # regression test for issue #121
-    init_blank_simulation()
     run_writer_with_args("dummy_property_with_reconstruction")
     assert db.get_halo(2)['dummy_property_with_reconstruction']==2.0
     assert db.get_halo(2).calculate('raw(dummy_property_with_reconstruction)')==1.0
@@ -189,6 +193,7 @@ def test_writer_sees_raw_properties():
     DummyPropertyWithReconstruction.callback = raise_exception
     run_writer_with_args("dummy_property_with_reconstruction") # should not try to reconstruct the existing data stream
 
+@with_setup(setup_func, teardown_func)
 def test_writer_handles_sim_properties():
     """Test for issue where simulation properties could be queried from within a calculation.
 
@@ -197,7 +202,6 @@ def test_writer_handles_sim_properties():
 
     However it does not directly test that the parallel_tasks locking mechanism is called,
     which is hard. Ideally this test would therefore be completed at some point..."""
-    init_blank_simulation()
 
     parallel_tasks.use('multiprocessing')
     try:

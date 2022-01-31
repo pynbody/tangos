@@ -3,7 +3,7 @@ from __future__ import print_function
 import weakref
 
 import numpy as np
-from sqlalchemy import Column, Integer, LargeBinary, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
 from . import Base
@@ -14,13 +14,14 @@ from .timestep import TimeStep
 from .halo_data import HaloLink
 from .dictionary import get_or_create_dictionary_item
 from ..log import logger
+from ..config import LARGE_BINARY
 
 
 class TrackData(Base):
     __tablename__ = 'trackdata'
 
     id = Column(Integer, primary_key=True)
-    particle_array = Column(LargeBinary)
+    particle_array = Column(LARGE_BINARY)
 
     use_iord = Column(Boolean, default=True, nullable=False)
     halo_number = Column(Integer, nullable=False, default=0)

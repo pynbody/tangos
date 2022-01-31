@@ -49,6 +49,9 @@ def setup():
     creator.add_objects_to_timestep(1, NDM=[10])
     creator.link_last_halos_using_mapping({1:1, 2:1})
 
+def teardown():
+    tangos.core.close_db()
+
 class TestProperty(properties.LivePropertyCalculation):
     names = "RvirPlusMvir"
 
