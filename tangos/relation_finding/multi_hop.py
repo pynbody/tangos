@@ -91,11 +91,11 @@ class MultiHopStrategy(HopStrategy):
         self._connection = self.session.connection()
         self._combine_routes = combine_routes
 
-        try:
-            # This is to ensure that we don't use ONLY_FULL_GROUP_BY which causes issues with MySQL databases
+        dialect = self._connection.engine.dialect.dialect_description.split("+")[0].lower()
+        if dialect == 'mysql':
+            # ONLY_FULL_GROUP_BY causes issues with the current implementation of argmax-like functionality
+            # See commentary in util/sql_argmax.py
             self.session.execute("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));")
-        except sqlalchemy.exc.OperationalError:
-            pass
 
     def temp_table(self):
         """Execute the strategy and return results as a temp_table (see temporary_halolist module)"""

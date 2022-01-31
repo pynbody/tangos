@@ -27,6 +27,7 @@ def argmax(query, maximise_column, group_bys):
     # there may be rare occasions where two links have exactly the same weight, in which case the above query
     # currently generates more than one row. Avoid by grouping. Note in this case SQL will return
     # basically a random choice of which row to return, so this is not a perfect solution - long term TODO.
+    # This also ends up necessitating using MySQL without ONLY_FULL_GROUP_BY mode enabled
     query = query.group_by(*group_bys)
 
     return query
@@ -52,7 +53,12 @@ def delete_non_maximal_rows(connection, table, maximise_column, group_bys):
         join(source_and_max_weight,and_(*[a==b for a,b in zip(group_bys, group_bys_subquery)])).\
         filter(maximise_column < source_and_max_weight.c.max_weight)
 
-    delete_statement = table.delete(table.primary_key.columns[0].in_(ids_to_eliminate.subquery()))
+    # with sqlite it's OK to just do in_(ids_to_eliminate) but MySQL needs a subquery construction, otherwise
+    # it complains it can't do the delete
+    ids_to_eliminate_cte = ids_to_eliminate.subquery()
+    ids_to_eliminate_select = select(ids_to_eliminate_cte.c.id)
+
+    delete_statement = table.delete(table.primary_key.columns[0].in_(ids_to_eliminate_select))
     deleted_count = connection.execute(delete_statement).rowcount
 
     return deleted_count

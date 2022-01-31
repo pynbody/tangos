@@ -14,7 +14,7 @@ base = os.environ.get("TANGOS_SIMULATION_FOLDER", home+"/")
 
 testing_db_user = os.environ.get("TANGOS_TESTING_DB_USER", None)
 testing_db_password = os.environ.get("TANGOS_TESTING_DB_PASSWORD", None)
-testing_db_backend = os.environ.get("TANGOS_TESTING_DB_BACKEND", None)
+testing_db_backend = os.environ.get("TANGOS_TESTING_DB_BACKEND", 'sqlite')
 
 DOUBLE_PRECISION = sqlalchemy.Float().\
     with_variant(sqlalchemy.dialects.mysql.DOUBLE(asdecimal=False), "mysql")
