@@ -201,7 +201,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                       output_handler_for_ts2=None,
                       fuzzy_match_kwa={}):
         if dm_only:
-            only_family='dm'
+            only_family=pynbody.family.dm
         else:
             only_family=None
 
