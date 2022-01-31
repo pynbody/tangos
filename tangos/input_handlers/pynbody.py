@@ -230,7 +230,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         )
 
     @classmethod
-    def create_bridge(f1, f2):
+    def create_bridge(cls, f1, f2):
         return f1.bridge(f2)
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
