@@ -201,7 +201,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                       output_handler_for_ts2=None,
                       fuzzy_match_kwa={}):
         if dm_only:
-            only_family='dm'
+            only_family=pynbody.family.dm
         else:
             only_family=None
 
@@ -230,7 +230,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         )
 
     @classmethod
-    def create_bridge(f1, f2):
+    def create_bridge(cls, f1, f2):
         return f1.bridge(f2)
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):

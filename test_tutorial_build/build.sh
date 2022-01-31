@@ -41,7 +41,7 @@ build_ramses() {
     tangos add tutorial_ramses --min-particles 100 --no-renumber
     $MPI tangos link --for tutorial_ramses $MPIBACKEND
     $MPI tangos write contamination_fraction --for tutorial_ramses $MPIBACKEND
-    $MPI tangos write dm_density_profile --with-prerequisites --include-only="contamination_fraction<0.01" $MPIBACKEND
+    $MPI tangos write dm_density_profile --with-prerequisites --include-only="contamination_fraction<0.01" --for tutorial_ramses $MPIBACKEND
 }
 
 build_changa() {

@@ -71,10 +71,39 @@ The top line in each example points to the parent directory for all of your simu
 If you don't have any simulations (i.e. you are just using a database object already created) then you
 should not have to worry about this variable. The second line points to the database object you wish to analyze;
 by default this will be a sqlite file but you can also specify a
-[sqlalchemy URL](http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls).
+[sqlalchemy URL](http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls); see also the notes on 
+MySQL / MariaDB below.
 
 Remember, you will need to set these environment variables *every* time you start a new session on your computer prior
-to booting up the database, either with the webserver or the python interface (see below).
+to booting up the database, either with the webserver or the python interface (see below). 
+
+Using MySQL (or MariaDB)
+---------------------
+
+As stated above, tangos is agnostic to the underlying SQL flavour. It is most likely to work well
+(other than with SQLite) with [MySQL](https://www.mysql.com) and [MariaDB](https://mariadb.org). 
+Since version 1.5.0, tangos is routinely tested with MySQL as well as SQLite.  
+
+To try this out, if you have [docker](https://docker.com), you can run a test
+MySQL server very easily:
+
+```bash
+docker pull mysql
+docker run -d --name=mysql-server -p3306:3306 -e MYSQL_ROOT_PASSWORD=my_secret_password mysql
+echo "create database database_name;" | docker exec -i mysql-server mysql -pmy_secret_password
+```
+
+To be sure that python can connect to MySQL, install the PyMySQL module:
+```bash
+pip install PyMySQL
+```
+
+Tangos can now connect to your test server using the connection:
+```bash
+export TANGOS_DB_CONNECTION=mysql+pymysql://root:my_secret_password@localhost:3306/database_name
+```
+You can now use all the tangos tools as normal, and they will populate the MySQL database instead of a SQLite file.
+
 
 Where next?
 -----------

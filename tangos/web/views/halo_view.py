@@ -69,7 +69,10 @@ def format_property_data(property):
         """
         return "Array"
     else:
-        return format_number(property.data)
+        try:
+            return format_number(property.data)
+        except:
+            return "(Exception while formatting data)"
 
 class SimulationInfo(object):
     def __init__(self, sim, request):

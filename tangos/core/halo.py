@@ -87,7 +87,7 @@ class SimulationObjectBase(Base):
                 return c.tag
         raise ValueError("Unknown object typecode %d",typecode)
 
-    def __init__(self, timestep, halo_number, finder_id, finder_offset, NDM, NStar, NGas, object_typecode=0):
+    def __init__(self, timestep, halo_number, finder_id, finder_offset, NDM, NStar, NGas, object_typecode=None):
         self.timestep = timestep
         self.halo_number = int(halo_number)
         self.finder_id = int(finder_id)
@@ -95,7 +95,8 @@ class SimulationObjectBase(Base):
         self.NDM = int(NDM)
         self.NStar = int(NStar)
         self.NGas = int(NGas)
-        self.object_typecode = int(object_typecode)
+        if object_typecode is not None:
+            self.object_typecode = int(object_typecode)
         self.init_on_load()
         self.creator_id = creator.get_creator_id()
 
