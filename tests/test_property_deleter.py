@@ -86,16 +86,16 @@ def test_delete_property_entire_db():
 @with_setup(setup_func, teardown_func)
 def test_delete_one_of_two_properties_whole_db():
     writer = property_writer.PropertyWriter()
-    writer.parse_command_line(['dummy_property_2'])
+    writer.parse_command_line(['another_dummy_property'])
     writer.run_calculation_loop()
 
     assert 'dummy_property' in db.get_halo("dummy_sim_1/step.1/halo_1")
-    assert 'dummy_property_2' in db.get_halo("dummy_sim_1/step.1/halo_1")
+    assert 'another_dummy_property' in db.get_halo("dummy_sim_1/step.1/halo_1")
 
     tool = property_deleter.PropertyDeleter()
-    tool.parse_command_line("dummy_property_2 -f".split())
+    tool.parse_command_line("another_dummy_property -f".split())
     tool.run_calculation_loop()
 
     assert 'dummy_property' in db.get_halo("dummy_sim_1/step.1/halo_1")
-    assert 'dummy_property_2' not in db.get_halo("dummy_sim_1/step.1/halo_1")
+    assert 'another_dummy_property' not in db.get_halo("dummy_sim_1/step.1/halo_1")
 

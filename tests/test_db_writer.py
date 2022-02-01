@@ -37,7 +37,7 @@ class DummyProperty(properties.PropertyCalculation):
 
 class DummyProperty2(properties.PropertyCalculation):
     """Used by test_property_deleter"""
-    names = "dummy_property_2",
+    names = "another_dummy_property",
     requires_particle_data = True
 
     def requires_property(self):
