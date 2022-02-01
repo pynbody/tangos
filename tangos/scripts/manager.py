@@ -296,12 +296,19 @@ def add_tracker(halo, size=None):
     core.get_default_session().commit()
 
 
-def grep_run(opts):
-    run = core.get_default_session().query(Creator).filter(
+def grep_run_id(opts):
+    matching_runs = core.get_default_session().query(Creator).filter(
         Creator.command_line.like("%" + opts.query + "%")).all()
-    for r in run:
+    for r in matching_runs:
         print(r.id, end=' ')
+    print('\n')
 
+def grep_run_info(opts):
+    matching_runs = core.get_default_session().query(Creator).filter(
+        Creator.command_line.like("%" + opts.query + "%")).all()
+    for r in matching_runs:
+        r.print_info()
+    return matching_runs
 
 def list_recent_runs(opts):
     n = opts.num
@@ -310,6 +317,17 @@ def list_recent_runs(opts):
     for r in run:
         r.print_info()
 
+
+def _erase_run_content(run):
+    run.halolinks.delete()
+    run.halos.delete()
+    run.properties.delete()
+    run.timesteps.delete()
+    for s in run.simulations:
+        core.get_default_session().delete(s)
+    core.get_default_session().commit()
+    core.get_default_session().delete(run)
+    core.get_default_session().commit()
 
 def rem_run(id, confirm=True):
     run = core.get_default_session().query(Creator).filter_by(id=id).first()
@@ -324,21 +342,27 @@ def rem_run(id, confirm=True):
         print(""">>> type "yes" to continue""")
 
     if (not confirm) or input(":").lower() == "yes":
-        #for y in run.halolinks:
-        #    core.get_default_session().delete(y)
-        run.halolinks.delete()
-        run.halos.delete()
-        run.properties.delete()
-        run.timesteps.delete()
-        for s in run.simulations:
-            print(s)
-            core.get_default_session().delete(s)
-        core.get_default_session().commit()
-        core.get_default_session().delete(run)
-        core.get_default_session().commit()
+        _erase_run_content(run)
         print("OK")
     else:
         print("aborted")
+
+def grep_remove_runs(opts):
+    print('Will remove the following run(s): ')
+    matching_runs = grep_run_info(opts)
+
+    # Always ask for confirmation, as this action could be very destructive
+    print("You want to delete everything created by the above run(s)?")
+    print(""">>> type "yes" to continue""")
+
+    if input(":").lower() == "yes":
+        for r, run in enumerate(matching_runs):
+            print('Removing run ',r+1,' of ',len(matching_runs))
+            _erase_run_content(run)
+        print("Done")
+    else:
+        print("aborted")
+
 
 def rollback(options):
     if len(options.ids)>0:
@@ -447,11 +471,24 @@ def get_argument_parser_and_subparsers():
     subparse_recentruns.add_argument("num", type=int,
                                      help="The number of runs to display, starting with the most recent")
 
-    subparse_greprun = subparse.add_parser("grep-runs",
-                                              help="List IDs of runs matching command line")
-    subparse_greprun.set_defaults(func=grep_run)
+    subparse_greprun = subparse.add_parser("grep-run-ids",
+                                          help="List IDs of runs matching command line input")
+    subparse_greprun.set_defaults(func=grep_run_id)
     subparse_greprun.add_argument("query", type=str,
                                      help="The sub-string to search for in the command line")
+                                     
+    subparse_grepruninfo = subparse.add_parser("grep-runs",
+                                          help="List details of runs matching command line input")
+    subparse_grepruninfo.set_defaults(func=grep_run_info)
+    subparse_grepruninfo.add_argument("query", type=str,
+                                     help="The sub-string to search for in the command line")
+                                                              
+    subparse_grepremove = subparse.add_parser("grep-remove",
+                                           help="Remove runs matching command line input")
+    subparse_grepremove.set_defaults(func=grep_remove_runs)
+    subparse_grepremove.add_argument("query", type=str,
+                                      help="The sub-string to search for in the command line")
+
 
     # The following subcommands currently do not work and is disabled:
     """
