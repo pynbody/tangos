@@ -35,6 +35,16 @@ class DummyProperty(properties.PropertyCalculation):
     def calculate(self, data, entry):
         return data.time*data.halo,
 
+class DummyProperty2(properties.PropertyCalculation):
+    """Used by test_property_deleter"""
+    names = "another_dummy_property",
+    requires_particle_data = True
+
+    def requires_property(self):
+        return []
+
+    def calculate(self, data, entry):
+        return data.time*data.halo+1,
 
 class DummyPropertyCausingException(properties.PropertyCalculation):
     names = "dummy_property_with_exception",
