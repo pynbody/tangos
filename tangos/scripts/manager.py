@@ -423,11 +423,14 @@ def diff(options):
         differ.compare_object(options.object)
     else:
         differ.compare()
-    return differ.failed
+    result = differ.failed
 
-    diff = db_diff.diff(options.uri1, options.uri2)
-    if diff:
+    if result:
+        logger.info("Differences found. Exiting with status 1.")
         sys.exit(1)
+    else:
+        logger.info("No differences found.")
+
 
 def main():
     print("""
@@ -439,7 +442,6 @@ def main():
 
     args = parser.parse_args()
     core.process_options(args)
-    core.init_db()
     args.func(args)
 
 
