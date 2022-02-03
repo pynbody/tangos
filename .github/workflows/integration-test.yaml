@@ -42,7 +42,9 @@ jobs:
 
     - name: Fetch test datasets
       working-directory: test_tutorial_build
-      run: wget --no-verbose -O - ftp://zuserver2.star.ucl.ac.uk/app/tangos/mini_tutorial_test.tar.gz | tar -xzv
+      run: |
+        wget ftp://zuserver2.star.ucl.ac.uk/app/tangos/mini_tutorial_test.tar.gz 
+        tar -xzvf mini_tutorial_test.tar.gz
 
     - name: Build test database
       working-directory: test_tutorial_build
