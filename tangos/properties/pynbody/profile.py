@@ -28,7 +28,7 @@ class HaloDensityProfile(SphericalRegionPropertyCalculation):
 
         delta = self.plot_xdelta()
         nbins = int(maxrad / delta)
-        maxrad = delta * (nbins + 1)
+        maxrad = delta * nbins
 
         pro = pynbody.analysis.profile.Profile(halo, type='lin', ndim=3,
                                                min=0, max=maxrad, nbins=nbins)
