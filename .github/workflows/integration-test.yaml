@@ -49,6 +49,11 @@ jobs:
     - name: Build test database
       working-directory: test_tutorial_build
       run: bash build.sh
+      
+    - uses: actions/upload-artifact@v2
+      with:
+        name: Tangos database
+        path: test_tutorial_build/data.db
 
     - name: Verify database
       working-directory: test_tutorial_build
