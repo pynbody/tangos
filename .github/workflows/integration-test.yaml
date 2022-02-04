@@ -40,7 +40,7 @@ jobs:
     - name: Install latest pynbody
       run: python -m pip install pynbody
 
-    - name: Catch test datasets
+    - name: Cache test datasets
       id: cache-test-datasets
       uses: actions/cache@v2
       with:
@@ -67,5 +67,6 @@ jobs:
 
     - name: Verify database
       working-directory: test_tutorial_build
-      run: tangos diff data.db reference_database.db
+      run: tangos diff data.db reference_database.db --ignore-value-of gas_map gas_map_faceon gas_map_sideon uvi_image uvi_image_sideon uvi_image_faceon
+      # ignore-value-of above is a clunky fix for the use of 'approximate fast' images. Better solution would be good in the long term.
 
