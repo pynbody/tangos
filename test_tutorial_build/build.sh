@@ -73,8 +73,8 @@ echo "Starting process in 5 seconds..."
 
 sleep 5
 
-TANGOS_DB_CONNECTION=`pwd`/data.db
-TANGOS_SIMULATION_FOLDER=`pwd`
+export TANGOS_DB_CONNECTION=`pwd`/data.db
+export TANGOS_SIMULATION_FOLDER=`pwd`
 
 detect_mpi
 

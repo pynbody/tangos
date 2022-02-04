@@ -1,0 +1,72 @@
+name: Perform test database build and verification
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.9]
+        TANGOS_TESTING_DB_BACKEND: [sqlite]
+    runs-on: ${{ matrix.os }}
+    env:
+      C: gcc-10
+      CXX: g++-10
+    steps:
+    - name: Install Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - uses: actions/checkout@v2
+
+    - name: Update python pip/setuptools/wheel
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+
+    - name: Build and install tangos
+      run: |
+        pip install -e .
+
+    - name: Install latest pynbody
+      run: python -m pip install pynbody
+
+    - name: Cache test datasets
+      id: cache-test-datasets
+      uses: actions/cache@v2
+      with:
+        path: |
+          test_tutorial_build/tutorial_*
+          test_tutorial_build/reference_database.db
+        key: replace-later-with-md5 # need to work out a way to generate a key here at some point if test data changes
+
+    - name: Fetch test datasets
+      if: steps.cache-test-datasets.outputs.cache-hit != 'true'
+      working-directory: test_tutorial_build
+      run: |
+        wget -T 60 -nv ftp://zuserver2.star.ucl.ac.uk/app/tangos/mini_tutorial_test.tar.gz 
+        tar -xzvf mini_tutorial_test.tar.gz
+
+    - name: Build test database
+      working-directory: test_tutorial_build
+      run: bash build.sh
+      
+    - uses: actions/upload-artifact@v2
+      with:
+        name: Tangos database
+        path: test_tutorial_build/data.db
+
+    - name: Verify database
+      working-directory: test_tutorial_build
+      run: tangos diff data.db reference_database.db --ignore-value-of gas_map gas_map_faceon gas_map_sideon uvi_image uvi_image_sideon uvi_image_faceon
+      # ignore-value-of above is a clunky fix for the use of 'approximate fast' images. Better solution would be good in the long term.
+

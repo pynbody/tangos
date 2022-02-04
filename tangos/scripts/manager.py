@@ -414,7 +414,7 @@ def list_available_properties(options):
 
 def diff(options):
     from ..testing import db_diff
-    differ = db_diff.TangosDbDiff(options.uri1, options.uri2)
+    differ = db_diff.TangosDbDiff(options.uri1, options.uri2, ignore_keys=options.ignore_value_of)
     if options.simulation:
         differ.compare_simulation(options.simulation)
     elif options.timestep:
@@ -423,11 +423,14 @@ def diff(options):
         differ.compare_object(options.object)
     else:
         differ.compare()
-    return differ.failed
+    result = differ.failed
 
-    diff = db_diff.diff(options.uri1, options.uri2)
-    if diff:
+    if result:
+        logger.info("Differences found. Exiting with status 1.")
         sys.exit(1)
+    else:
+        logger.info("No differences found.")
+
 
 def main():
     print("""
@@ -439,7 +442,6 @@ def main():
 
     args = parser.parse_args()
     core.process_options(args)
-    core.init_db()
     args.func(args)
 
 
@@ -533,6 +535,7 @@ def get_argument_parser_and_subparsers():
     subparse_diff.add_argument("--simulation", type=str, help="Only compare the specified simulation", default=None)
     subparse_diff.add_argument("--timestep", type=str, help="Only compare the specified timestep", default=None)
     subparse_diff.add_argument("--object", type=str, help="Only compare the specified object", default=None)
+    subparse_diff.add_argument("--ignore-value-of", nargs="*", type=str, help="Ignore the value of the specified properties", default=None)
     subparse_diff.set_defaults(func=diff)
 
     subparse_list_available_properties = subparse.add_parser("list-possible-properties",
