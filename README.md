@@ -7,13 +7,12 @@ _Tangos_ lets you build a database (along the lines of [Eagle](http://icc.dur.ac
 or [MultiDark](https://www.cosmosim.org/cms/documentation/projects/multidark-bolshoi-project/))
  for your own cosmological and zoom simulations. 
  
-It's a python 2.7/3.5+ modular system for generating and querying databases 
-and:
+It's a modular system for Python 3.6+, capable of generating and querying databases. _Tangos_:
 
  - is designed to store and manage results from your own analysis code;
  - provides web and python interfaces;
  - allows users to construct science-focussed queries, including across entire merger trees, 
-   without requiring knowledge of SQL;
+   without requiring any knowledge of SQL;
    
 When building databases, _tangos_:   
 
@@ -22,8 +21,9 @@ When building databases, _tangos_:
  - can be customised to work with multiple python modules such as 
    [pynbody](http://pynbody.github.io/pynbody/) or [yt](http://yt-project.org) to 
    process raw simulation data;
- - can use your favourite database as the underlying store 
-   (by default, [sqlite](https://sqlite.org)), thanks to [sqlalchemy](https://www.sqlalchemy.org).
+ - can use your favourite database as the underlying store, thanks to [sqlalchemy](https://www.sqlalchemy.org).
+   By default, _tangos_ uses the file-based database [sqlite](https://sqlite.org), but it is also routinely 
+   tested against the server-based MySQL.
 
  
  Getting started
