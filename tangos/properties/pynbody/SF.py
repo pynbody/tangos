@@ -28,7 +28,7 @@ class StarFormHistogram(TimeChunkedProperty):
         M/=self.pixel_delta_t_Gyr
         M = M[self.store_slice(t_now)]
 
-        return M
+        return M,
 
     def reassemble(self, *options):
         reassembled = super(StarFormHistogram, self).reassemble(*options)

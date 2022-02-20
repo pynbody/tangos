@@ -133,7 +133,7 @@ class BHAccHistogram(TimeChunkedProperty):
 
         Mdot_grid = scipy.interpolate.interp1d(t_orbit[order], Mdot_orbit[order], bounds_error=False)(t_grid)
 
-        return Mdot_grid[self.store_slice(t_max)]
+        return Mdot_grid[self.store_slice(t_max)],
 
 
 class BHAccHistogramMerged(PynbodyPropertyCalculation):
