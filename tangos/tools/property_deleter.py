@@ -25,8 +25,8 @@ class PropertyDeleter(GenericTangosTool):
         self.options = options
 
     def run_calculation_loop(self):
-        dictids = [core.get_dict_id(p) for p in self.options.properties]
         session = core.get_default_session()
+        dictids = [core.get_dict_id(p) for p in self.options.properties]
 
         if self.options.for_ is not None:
             base_query = session.query(core.HaloProperty.id).filter(core.HaloProperty.name_id.in_(dictids))
