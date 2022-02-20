@@ -34,7 +34,7 @@ def setup():
         creator.add_bhs_to_timestep(4)
         creator.add_properties_to_bhs(hole_mass = lambda i: float(i*100))
         creator.add_properties_to_bhs(hole_spin = lambda i: 1000-float(i)*100)
-
+        creator.add_properties_to_bhs(test_array = lambda i: np.array([1.0,2.0,3.0]))
         creator.assign_bhs_to_halos({1:1, 2:2, 3:3, 4:3})
 
 
@@ -113,6 +113,10 @@ def test_calculate_all():
     Mv, Rv  = tangos.get_timestep("sim/ts1").calculate_all("Mvir", "Rvir")
     npt.assert_allclose(Mv,[1,2,3,4])
     npt.assert_allclose(Rv,[0.1,0.2,0.3,0.4])
+
+def test_calculate_all_limit():
+    Mv, = tangos.get_timestep("sim/ts2").calculate_all("Mvir",limit=3)
+    npt.assert_allclose(Mv, [5, 6, 7])
 
 def test_gather_function():
 
@@ -238,6 +242,12 @@ def test_redirection_cascade_closes_connections():
     h = tangos.get_halo("sim/ts3/1")
     with db.testing.assert_connections_all_closed():
         h.calculate_for_progenitors("my_BH('hole_spin').hole_mass")
+
+def test_redirection_cascade_efficiency():
+    h = tangos.get_halo("sim/ts3/1")
+    with testing.SqlExecutionTracker(db.core.get_default_engine()) as track:
+        h.calculate_for_progenitors("my_BH('hole_spin').test_array")
+    assert "select haloproperties" not in track # array should have been loaded as part of a big join
 
 def test_gather_closes_connections():
     ts = tangos.get_timestep("sim/ts1")

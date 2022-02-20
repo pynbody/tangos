@@ -1,7 +1,6 @@
 from __future__ import absolute_import
-from sqlalchemy import Index, create_engine, inspect
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, clear_mappers
+from sqlalchemy import Index, create_engine, inspect, event
+from sqlalchemy.orm import sessionmaker, clear_mappers, declarative_base
 import os
 from .. import config
 from .. import log
@@ -152,12 +151,13 @@ def init_db(db_uri=None, timeout=30, verbose=None):
         db_uri,
         echo=verbose or _verbose,
         isolation_level='READ UNCOMMITTED',
-        connect_args=connect_args
+        connect_args=connect_args,
+        future=True
     )
 
     _check_and_upgrade_database(_engine)
 
-    Session = sessionmaker(bind=_engine)
+    Session = sessionmaker(bind=_engine, future=True)
     _internal_session=Session()
     Base.metadata.create_all(_engine)
     creator.set_creator(None)

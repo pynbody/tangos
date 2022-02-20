@@ -19,10 +19,12 @@ class PropertyCalculationMetaClass(type):
     def __init__(cls, name, bases, dict):
         type.__init__(cls, name, bases, dict)
         if hasattr(cls, 'name'):
-            warnings.warn("%r defines a name() class method which is deprecated. Use instead a class static variable 'names'."%cls, DeprecationWarning)
+            warnings.warn("%r defines a name() class method which is deprecated. "
+                          "Use instead a class static variable 'names'."%cls, DeprecationWarning, stacklevel=2)
             cls.names = cls.name()
         if callable(cls.requires_particle_data):
-            warnings.warn("%r defines a requires_particle_data() class method which is deprecated; it should instead be a class static variable", DeprecationWarning)
+            warnings.warn("%r defines a requires_particle_data() class method which is deprecated; "
+                          "it should instead be a class static variable", DeprecationWarning, stacklevel=2)
             cls.requires_particle_data = cls.requires_particle_data()
         if cls.names is not None:
             cls._all_classes.append(cls)

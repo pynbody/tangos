@@ -92,8 +92,8 @@ def get_or_create_dictionary_item(session, name):
         # try to create it
         try:
             obj = DictionaryItem(name)
-            obj = session.merge(obj)
-            session.commit()
+            session.add(obj)
+            #session.commit()
         except sqlalchemy.exc.IntegrityError:
             session.rollback()
             obj = session.query(DictionaryItem).filter_by(text=name).first()

@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import warnings
 
 import numpy as np
-from sqlalchemy.orm import contains_eager, aliased, defaultload
+from sqlalchemy.orm import contains_eager, aliased, defaultload, Load
 
 import tangos.core.dictionary
 import tangos.core.halo
@@ -219,21 +219,19 @@ class Calculation(object):
         The return from values_sanitized has shape n_columns() x n_halos"""
         return 1
 
-    def supplement_halo_query(self, halo_query):
-        """Return a sqlalchemy query with a supplemental join to allow this calculation to run efficiently"""
+    def supplement_halo_query(self, halo_query, halo_alias=None):
+        """Return a sqlalchemy query with a supplemental join to allow this calculation to run efficiently
+
+        halo_query: The query that returns the simulation objects on which calculations are going to be made
+        halo_alias: The alias for the simulation object class being referenced (or None to use SimulationObjectBase)"""
         name_targets = self.retrieves_dict_ids()
-        halo_alias = tangos.core.halo.SimulationObjectBase
+        if halo_alias is None:
+            halo_alias = tangos.core.halo.SimulationObjectBase
         augmented_query = halo_query
         order_bys = []
         for i in range(self.n_join_levels()):
             halo_property_alias = aliased(tangos.core.halo_data.HaloProperty)
             halo_link_alias = aliased(tangos.core.halo_data.HaloLink)
-
-            path_to_properties = [tangos.core.halo.SimulationObjectBase.all_links, tangos.core.halo_data.HaloLink.halo_to] * i + [
-                tangos.core.halo.SimulationObjectBase.all_properties]
-            path_to_links = [tangos.core.halo.SimulationObjectBase.all_links, tangos.core.halo_data.HaloLink.halo_to] * i + [
-                tangos.core.halo.SimulationObjectBase.all_links]
-
 
             if len(name_targets)>0:
                 property_name_condition = halo_property_alias.name_id.in_(name_targets)
@@ -252,19 +250,21 @@ class Calculation(object):
                                                   & property_name_condition).\
                                         outerjoin(halo_link_alias,
                                                   (halo_alias.id==halo_link_alias.halo_from_id)
-                                                  & link_name_condition).\
-                                        options(contains_eager(*path_to_properties, alias=halo_property_alias),
-                                                contains_eager(*path_to_links, alias=halo_link_alias),
-                                                defaultload(*path_to_properties).undefer_group("data"))
+                                                  & link_name_condition)
+            augmented_query = augmented_query.options(
+                Load(halo_alias).contains_eager(halo_alias.all_properties, alias=halo_property_alias).undefer("*"),
+                Load(halo_alias).contains_eager(halo_alias.all_links, alias=halo_link_alias),
+            )
 
             order_bys+=[halo_link_alias.id,halo_property_alias.id]
 
             if i<self.n_join_levels()-1:
                 next_level_halo_alias = aliased(tangos.core.halo.SimulationObjectBase)
-                path_to_new_halo = path_to_links + [tangos.core.halo_data.HaloLink.halo_to]
                 augmented_query = augmented_query.outerjoin(next_level_halo_alias,
                                                             (halo_link_alias.halo_to_id==next_level_halo_alias.id)).\
-                                        options(contains_eager(*path_to_new_halo, alias=next_level_halo_alias))
+                                                  options(Load(halo_link_alias).\
+                                                          contains_eager(halo_link_alias.halo_to, alias=next_level_halo_alias)
+                                                          )
 
                 halo_alias = next_level_halo_alias
         augmented_query = augmented_query.order_by(*order_bys)

@@ -6,10 +6,7 @@ import numpy as np
 class StarFormHistogram(TimeChunkedProperty):
     works_with_handler = pynbody_handler_module.PynbodyInputHandler
     requires_particle_data = True
-
-    @classmethod
-    def name(self):
-        return "SFR_histogram"
+    names = "SFR_histogram",
 
     def plot_xlabel(self):
         return "t/Gyr"

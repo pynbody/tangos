@@ -8,6 +8,7 @@ class TestSimulationGenerator(object):
 
         self.session = session
         self.sim = core.simulation.Simulation(sim_name)
+        self.session.add(self.sim)
         self._ptcls_in_common_dict = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
         self._BH_dict = core.dictionary.get_or_create_dictionary_item(self.session, "BH")
         self._host_dict = core.dictionary.get_or_create_dictionary_item(self.session, "host")
@@ -26,7 +27,8 @@ class TestSimulationGenerator(object):
                 NDM_halo = NDM[i-1]
             halo = core.halo.SimulationObjectBase(ts, i, i, i, NDM_halo, 0, 0, 0)
             halo.object_typecode = object_typecode
-            returned_halos.append(self.session.merge(halo))
+            self.session.add(halo)
+            returned_halos.append(halo)
 
         self.session.commit()
         return returned_halos

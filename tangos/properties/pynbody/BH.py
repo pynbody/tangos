@@ -84,10 +84,7 @@ class BH(PynbodyPropertyCalculation):
 class BHAccHistogram(TimeChunkedProperty):
 
     requires_particle_data = True
-
-    @classmethod
-    def name(self):
-        return "BH_mdot_histogram"
+    names = "BH_mdot_histogram",
 
     def requires_property(self):
         return []

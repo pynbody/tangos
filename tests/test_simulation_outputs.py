@@ -143,13 +143,13 @@ def add_test_simulation_to_db():
         tx = db.core.tracking.TrackData(db.get_simulation("test_tipsy"))
         tx.particles = tracked_particles
         tx.use_iord = False
-        tx = db.core.get_default_session().merge(tx)
+        db.core.get_default_session().add(tx)
         tx.create_objects()
 
         tx = db.core.tracking.TrackData(db.get_simulation("test_tipsy"))
         tx.particles = tracked_iord
         tx.use_iord = True
-        tx = db.core.get_default_session().merge(tx)
+        db.core.get_default_session().add(tx)
         tx.create_objects()
         _added_to_db=True
 

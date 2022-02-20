@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from sqlalchemy import Column, Integer, ForeignKey, Boolean
-from sqlalchemy.orm import relationship, backref, deferred
+from sqlalchemy.orm import relationship, backref, deferred, Session
 
 from .. import data_attribute_mapper, extraction_patterns
 from .. import Base
@@ -16,8 +16,9 @@ class HaloProperty(Base):
     id = Column(Integer, primary_key=True)
     halo_id = Column(Integer, ForeignKey('halos.id'))
     # n.b. backref defined below
-    halo = relationship(SimulationObjectBase, cascade='none',
-                        backref=backref('all_properties',overlaps='properties,deprecated_properties'),
+    halo = relationship(SimulationObjectBase, cascade='',
+                        backref=backref('all_properties',overlaps='properties,deprecated_properties',
+                                        cascade_backrefs=False),
                         overlaps='properties,deprecated_properties')
 
     data_float = Column(DOUBLE_PRECISION)
@@ -30,7 +31,7 @@ class HaloProperty(Base):
     deprecated = Column(Boolean, default=False, nullable=False)
 
     creator = relationship(creator.Creator, backref=backref(
-        'properties', cascade='all', lazy='dynamic'), cascade='save-update')
+        'properties', cascade_backrefs=False, lazy='dynamic'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
 
     def __init__(self, halo, name, data):
@@ -41,7 +42,7 @@ class HaloProperty(Base):
 
         self.name = name
         self.data = data
-        self.creator_id = creator.get_creator_id()
+        self.creator = creator.get_creator(Session.object_session(halo))
 
     def __repr__(self):
         if self.deprecated:

@@ -1,8 +1,7 @@
 from __future__ import absolute_import
 import os, os.path
-import sqlalchemy
 from sqlalchemy import Column, Integer, Text, ForeignKey, Boolean, and_
-from sqlalchemy.orm import relationship, backref, aliased
+from sqlalchemy.orm import relationship, backref, aliased, Session
 
 from . import Base
 from .creator import Creator
@@ -19,14 +18,14 @@ class TimeStep(Base):
     redshift = Column(DOUBLE_PRECISION)
     time_gyr = Column(DOUBLE_PRECISION)
     creator = relationship(Creator, backref=backref(
-        'timesteps', cascade='delete', lazy='dynamic'), cascade='save-update')
+        'timesteps', cascade_backrefs=False, lazy='dynamic'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
 
     available = Column(Boolean, default=True)
 
     simulation = relationship(Simulation, backref=backref('timesteps', order_by=time_gyr,
-                                                          cascade='delete, merge'),
-                              cascade='save-update, merge')
+                                                          cascade_backrefs=False),
+                              cascade='')
 
     @property
     def escaped_extension(self):
@@ -52,7 +51,7 @@ class TimeStep(Base):
         from . import creator
         self.extension = str(extension)
         self.simulation = simulation
-        self.creator_id = creator.get_creator_id()
+        self.creator = creator.get_creator(Session.object_session(simulation))
 
     def __repr__(self):
         extra = ""
@@ -84,7 +83,8 @@ class TimeStep(Base):
 
     @property
     def path(self):
-        return self.simulation.path+"/"+self.extension
+        with Session.object_session(self).no_autoflush:
+            return self.simulation.path+"/"+self.extension
 
     @property
     def redshift_cascade(self):
@@ -151,14 +151,19 @@ class TimeStep(Base):
         # objects with incomplete lazy-loaded properties
         session = Session()
         try:
+            halo_alias = SimulationObjectBase
             raw_query = session.query(SimulationObjectBase).filter_by(timestep_id=self.id)
             if order_by_halo_number:
                 raw_query = raw_query.order_by(SimulationObjectBase.halo_number)
             if object_typecode is not None:
                 raw_query = raw_query.filter_by(object_typecode=object_typecode)
             if limit:
-                raw_query = raw_query.limit(limit).from_self() # from_self required for onwards joins
-            query = property_description.supplement_halo_query(raw_query)
+                # old-style sqlalchemy: from_self required for onwards joins
+                # raw_query = raw_query.limit(limit).from_self()
+                halo_alias = aliased(SimulationObjectBase, raw_query.limit(limit).subquery())
+                raw_query = session.query(halo_alias)
+
+            query = property_description.supplement_halo_query(raw_query, halo_alias)
             sql_query_results = query.all()
             if sanitize:
                 calculation_results = property_description.values_sanitized(sql_query_results,

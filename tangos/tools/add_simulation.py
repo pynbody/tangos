@@ -56,7 +56,8 @@ class SimulationAdderUpdater(object):
     def add_timestep(self, ts_extension):
         logger.info("Add timestep %r to simulation %r",ts_extension,self.basename)
         ex = TimeStep(self._get_simulation(), ts_extension)
-        return self.session.merge(ex)
+        self.session.add(ex)
+        return ex
 
     def add_simulation(self):
         sim = Simulation(self.basename)

@@ -20,7 +20,7 @@ class Simulation(Base):
     id = Column(Integer, primary_key=True)
     basename = Column(Text)
     creator = relationship(
-        creator.Creator, backref=backref('simulations', cascade='all'), cascade='save-update')
+        creator.Creator, backref=backref('simulations', cascade_backrefs=False), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
 
     def __init__(self, basename):
@@ -79,7 +79,8 @@ class Simulation(Base):
         name = get_or_create_dictionary_item(session, st)
         propobj = self.properties.filter_by(name_id=name.id).first()
         if propobj is None:
-            propobj = session.merge(SimulationProperty(self, name, data))
+            propobj = SimulationProperty(self, name, data)
+            session.add(propobj)
 
         propobj.data = data
         session.commit()
@@ -101,12 +102,12 @@ class SimulationProperty(Base):
     name = relationship(DictionaryItem)
 
     simulation_id = Column(Integer, ForeignKey('simulations.id'))
-    simulation = relationship(Simulation, backref=backref('properties', cascade='all, delete-orphan',
-                                                          lazy='dynamic', order_by=name_id), cascade='save-update')
+    simulation = relationship(Simulation, backref=backref('properties', cascade_backrefs=False,
+                                                          lazy='dynamic', order_by=name_id, cascade=''), cascade='delete')
 
     creator_id = Column(Integer, ForeignKey('creators.id'))
     creator = relationship(creator.Creator, backref=backref(
-        'simproperties', cascade='all, delete', lazy='dynamic'), cascade='save-update')
+        'simproperties', cascade_backrefs=False, lazy='dynamic', cascade=''), cascade='save-update', cascade_backrefs=False)
 
     data_float = Column(DOUBLE_PRECISION)
     data_int = Column(Integer)
@@ -116,12 +117,14 @@ class SimulationProperty(Base):
 
 
     def __init__(self, sim, name, data):
+        session = Session.object_session(sim)
         self.simulation = sim
         if not isinstance(name, DictionaryItem):
-            name = get_or_create_dictionary_item(Session.object_session(self), name)
+            name = get_or_create_dictionary_item(session, name)
         self.name = name
         self.data = data
-        self.creator_id = creator.get_creator().id
+        self.creator = creator.get_creator(session)
+        assert session == Session.object_session(self.creator)
 
     def data_repr(self):
         f = self.data

@@ -4,7 +4,8 @@ import weakref
 
 import numpy as np
 from sqlalchemy import Column, Integer, Boolean, ForeignKey
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, Session
+from sqlalchemy import func
 
 from . import Base
 from .halo import Tracker
@@ -26,24 +27,25 @@ class TrackData(Base):
     use_iord = Column(Boolean, default=True, nullable=False)
     halo_number = Column(Integer, nullable=False, default=0)
     creator = relationship(creator.Creator, backref=backref(
-        'trackdata', cascade='delete', lazy='dynamic'), cascade='save-update')
+        'trackdata', cascade_backrefs=False, lazy='dynamic'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
 
     simulation_id = Column(Integer, ForeignKey('simulations.id'))
-    simulation = relationship(Simulation, backref=backref('trackers', cascade='all, delete-orphan, merge',
-                                                          lazy='dynamic', order_by=halo_number), cascade='save-update')
+    simulation = relationship(Simulation, backref=backref('trackers', cascade_backrefs=False,
+                                                          lazy='dynamic', order_by=halo_number), cascade='')
 
     def __init__(self, sim, halo_num=None):
+        session = Session.object_session(sim)
         self.simulation = sim
-        self.creator_id = creator.get_creator_id()
+        self.creator = creator.get_creator()
         if halo_num is None:
-            hs = []
-            for h in sim.trackers.all():
-                hs.append(h.halo_number)
-            if len(hs) > 0:
-                halo_num = max(hs) + 1
-            else:
-                halo_num = 1
+            with session.no_autoflush:
+                hmax, = session.query(func.max(TrackData.halo_number)).filter_by(simulation_id=sim.id).first()
+                if hmax is None:
+                    halo_num = 1
+                else:
+                    halo_num = hmax+1
+
         self.halo_number = halo_num
         self.use_iord = True
         self.particles = []
@@ -104,7 +106,7 @@ class TrackData(Base):
         all_ = session.query(class_).join(TimeStep, TimeStep.id==class_.timestep_id).\
                                           filter((class_.halo_number == self.halo_number) &
                                                  (TimeStep.simulation_id == self.simulation_id)).\
-                                          order_by(TimeStep.time_gyr)
+                                          order_by(TimeStep.time_gyr).all()
 
         connection_name = get_or_create_dictionary_item(session, 'tracker_connection')
         for h1,h2 in zip(all_[1:],all_[:-1]):

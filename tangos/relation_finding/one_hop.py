@@ -26,13 +26,13 @@ class HopStrategy(object):
         if ts is None:
             query = query.filter(0 == 1)
         else:
-            query = query.join("halo_to").filter(core.halo.SimulationObjectBase.timestep_id == ts.id)
+            query = query.join(self._link_orm_class.halo_to).filter(core.halo.SimulationObjectBase.timestep_id == ts.id)
 
         return query
 
     def _target_simulation(self, query, sim):
         """Only return those hops which reach the specified simulation"""
-        query = query.join("halo_to", "timestep").filter(
+        query = query.join(self._link_orm_class.halo_to).join(core.SimulationObjectBase.timestep).filter(
             core.timestep.TimeStep.simulation_id == sim.id)
 
         return query
@@ -148,9 +148,12 @@ class HopStrategy(object):
         if self._ordering_requires_join():
             timestep_alias = sqlalchemy.orm.aliased(core.timestep.TimeStep)
             halo_alias = sqlalchemy.orm.aliased(core.halo.SimulationObjectBase)
-            query = query.join(halo_alias, self._link_orm_class.halo_to_id == halo_alias.id).join(timestep_alias)
-            query = query.options(contains_eager("halo_to", alias=halo_alias))
-            query = query.options(contains_eager("halo_to", "timestep", alias=timestep_alias))
+            query = query.join(halo_alias, self._link_orm_class.halo_to_id == halo_alias.id)\
+                .join(timestep_alias)\
+                .options(
+                  contains_eager(self._link_orm_class.halo_to.of_type(halo_alias))\
+                  .contains_eager(halo_alias.timestep.of_type(timestep_alias))
+            )
         query = query.order_by(*self._order_by_clause(halo_alias, timestep_alias))
         return query
 

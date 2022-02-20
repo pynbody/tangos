@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from sqlalchemy import Column, Integer, ForeignKey
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, Session
 
 from .. import Base
 from .. import creator
@@ -17,13 +17,13 @@ class HaloLink(Base):
     halo_to_id = Column(Integer, ForeignKey('halos.id'))
 
     halo_from = relationship(SimulationObjectBase, primaryjoin=halo_from_id == SimulationObjectBase.id,
-                             backref=backref('links', cascade='all',
+                             backref=backref('links', cascade_backrefs=False,
                                              lazy='dynamic',
                                              primaryjoin=halo_from_id == SimulationObjectBase.id),
                              cascade='')
 
     halo_to = relationship(SimulationObjectBase, primaryjoin=(halo_to_id == SimulationObjectBase.id),
-                           backref=backref('reverse_links', cascade='all, delete-orphan',
+                           backref=backref('reverse_links', cascade_backrefs=False,
                                            lazy='dynamic',
                                            primaryjoin=halo_to_id == SimulationObjectBase.id),
                            cascade='')
@@ -32,11 +32,11 @@ class HaloLink(Base):
 
     creator_id = Column(Integer, ForeignKey('creators.id'))
     creator = relationship(creator.Creator, backref=backref(
-        'halolinks', cascade='all, delete', lazy='dynamic'), cascade='save-update')
+        'halolinks', cascade_backrefs=False, lazy='dynamic'), cascade='save-update')
 
     relation_id = Column(Integer, ForeignKey('dictionary.id'))
     relation = relationship(DictionaryItem, primaryjoin=(
-        relation_id == DictionaryItem.id), cascade='save-update,merge')
+        relation_id == DictionaryItem.id), cascade='')
 
 
 
@@ -47,7 +47,7 @@ class HaloLink(Base):
         self.relation = relationship
         self.weight = weight
 
-        self.creator_id = creator.get_creator_id()
+        self.creator = creator.get_creator(Session.object_session(halo_from))
 
     def __repr__(self):
         if self.weight is None:
