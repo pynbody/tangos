@@ -191,6 +191,11 @@ def test_calculate_for_progenitors():
     assert len(objs)==3
     assert all([objs[i] == tangos.get_halo(x).id for i, x in enumerate(("sim/ts3/1", "sim/ts2/1", "sim/ts1/1"))])
 
+def test_calculate_for_progenitors_bh():
+    h = tangos.get_halo("sim/ts3/bh_1")
+    objs, = h.calculate_for_progenitors("dbid()")
+    testing.assert_halolists_equal(objs, ['sim/ts3/BH_1', 'sim/ts2/BH_1', 'sim/ts1/BH_1'])
+
 def test_match_gather():
     ts1_halos, ts3_halos = tangos.get_timestep("sim/ts1").calculate_all('dbid()', 'match("sim/ts3").dbid()')
     testing.assert_halolists_equal(ts1_halos, ['sim/ts1/1','sim/ts1/2','sim/ts1/3', 'sim/ts1/1.1'])

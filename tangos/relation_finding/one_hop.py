@@ -147,7 +147,7 @@ class HopStrategy(object):
         halo_alias = None
         if self._ordering_requires_join():
             timestep_alias = sqlalchemy.orm.aliased(core.timestep.TimeStep)
-            halo_alias = sqlalchemy.orm.aliased(core.halo.Halo)
+            halo_alias = sqlalchemy.orm.aliased(core.halo.SimulationObjectBase)
             query = query.join(halo_alias, self._link_orm_class.halo_to_id == halo_alias.id).join(timestep_alias)
             query = query.options(contains_eager("halo_to", alias=halo_alias))
             query = query.options(contains_eager("halo_to", "timestep", alias=timestep_alias))
