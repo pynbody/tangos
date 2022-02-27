@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from sqlalchemy import Column, Integer, DateTime, Text
+from sqlalchemy.orm import Session
+from sqlalchemy import event
 
 from . import Base, get_default_session
 
@@ -60,22 +62,38 @@ def get_creator(session=None):
     """Get a Creator object for this process, for the specified session.
 
     If session is None, return the object for the default session."""
-    from sqlalchemy import inspect
+
     global _current_creator
+
+    _ensure_current_creator_is_valid()
 
     if session is None:
         session = get_default_session()
-
-    if _current_creator is None:
-        _current_creator = get_default_session().merge(Creator())
-    if not inspect(_current_creator).persistent:
-        get_default_session().commit()
-    assert inspect(_current_creator).persistent
     
     if session is get_default_session():
         return _current_creator
     else:
         return session.query(Creator).filter_by(id=_current_creator.id).first()
+
+
+def _ensure_current_creator_is_valid():
+    from sqlalchemy import inspect
+    global _current_creator
+    default_session = get_default_session()
+
+    if _current_creator is None:
+        _current_creator = Creator()
+        default_session.add(_current_creator)
+        default_session.commit()
+    else:
+        current_creator_session = Session.object_session(_current_creator)
+        if  current_creator_session is not default_session:
+            if not inspect(_current_creator).persistent:
+                current_creator_session.commit()
+            with default_session.no_autoflush:
+                _current_creator = default_session.query(Creator).filter_by(id=_current_creator.id).first()
+
+    assert inspect(_current_creator).persistent
 
 
 def get_creator_id():

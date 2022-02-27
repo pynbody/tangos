@@ -13,13 +13,13 @@ def _initialise_halo_property_relationships():
     from ..halo import SimulationObjectBase
     from ..timestep import TimeStep
 
-    SimulationObjectBase.properties = relationship(HaloProperty, cascade='all', lazy='dynamic',
+    SimulationObjectBase.properties = relationship(HaloProperty, cascade='', lazy='dynamic',
                                    primaryjoin=(HaloProperty.halo_id == SimulationObjectBase.id) & (
                                        HaloProperty.deprecated == False),
                                    order_by=HaloProperty.id,
                                    uselist=True,overlaps='deprecated_properties')
 
-    SimulationObjectBase.deprecated_properties = relationship(HaloProperty, cascade='all', lazy='dynamic',
+    SimulationObjectBase.deprecated_properties = relationship(HaloProperty, cascade='', lazy='dynamic',
                                               primaryjoin=(HaloProperty.halo_id == SimulationObjectBase.id) & (
                                                   HaloProperty.deprecated == True),
                                               order_by=HaloProperty.id,
@@ -30,7 +30,7 @@ def _initialise_halo_property_relationships():
                                            HaloLink.halo_from_id == SimulationObjectBase.id),
                                        primaryjoin=(
                                            SimulationObjectBase.timestep_id == TimeStep.id),
-                                       cascade='none', lazy='dynamic',
+                                       cascade='', lazy='dynamic',
                                        order_by=HaloLink.id,
                                        viewonly=True)
 
@@ -40,7 +40,7 @@ def _initialise_halo_property_relationships():
                                      secondaryjoin=(
                                          HaloLink.halo_to_id == SimulationObjectBase.id),
                                      primaryjoin=(SimulationObjectBase.timestep_id == TimeStep.id),
-                                     cascade='none', lazy='dynamic',
+                                     cascade='', lazy='dynamic',
                                      order_by=HaloLink.id,
                                      viewonly=True)
 

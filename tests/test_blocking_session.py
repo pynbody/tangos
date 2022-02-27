@@ -47,9 +47,10 @@ def _multiprocess_block():
     session = db.core.get_default_session()
 
     ts = tangos.get_timestep("sim/ts1")
+    tangos.core.creator.get_creator(session) # this stops a warning being issued if the creator object is created during creation of Halo
     new_halo = tangos.core.halo.Halo(ts, 5, 5, 5, 0, 0, 0, 0)
 
-    session.merge(new_halo)
+    session.add(new_halo)
     session.flush()
 
 
@@ -59,18 +60,18 @@ def _multiprocess_block():
 
 
 def _multiprocess_test():
+    session = db.core.get_default_session()
 
     time.sleep(0.5)
 
     ts = tangos.get_timestep("sim/ts1")
 
-
-
+    tangos.core.creator.get_creator(session) # this stops a warning being issued if the creator object is created during creation of Halo
     new_halo = tangos.core.halo.Halo(ts, 6, 6, 6, 0, 0, 0, 0)
 
-    db.core.get_default_session().merge(new_halo)
+    session.add(new_halo)
 
-    db.core.get_default_session().commit()
+    session.commit()
 
 
 

@@ -58,7 +58,7 @@ def delete_non_maximal_rows(connection, table, maximise_column, group_bys):
     ids_to_eliminate_cte = ids_to_eliminate.subquery()
     ids_to_eliminate_select = select(ids_to_eliminate_cte.c.id)
 
-    delete_statement = table.delete(table.primary_key.columns[0].in_(ids_to_eliminate_select))
+    delete_statement = table.delete().where(table.primary_key.columns[0].in_(ids_to_eliminate_select))
     deleted_count = connection.execute(delete_statement).rowcount
 
     return deleted_count

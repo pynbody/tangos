@@ -36,9 +36,11 @@ def setup():
 
 
     ts1_h1_bh1 = tangos.core.halo.BH(ts1, 1)
+    tangos.get_default_session().add(ts1_h1_bh1)
     ts1_h1_bh1["BH_mass"]=1000.0
 
     ts1_h1_bh2 = tangos.core.halo.BH(ts1, 2)
+    tangos.get_default_session().add(ts1_h1_bh2)
     ts1_h1_bh2["BH_mass"]=900.0
     ts1_h1["BH"] = ts1_h1_bh1, ts1_h1_bh2
 

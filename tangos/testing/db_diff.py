@@ -89,12 +89,12 @@ class TangosDbDiff(object):
 
 
     def _joined_links_load(self, parent):
-        return object_session(parent).query(core.HaloLink).with_parent(parent, "all_links").\
-            options(joinedload("halo_to"))
+        return object_session(parent).query(core.HaloLink).with_parent(parent, type(parent).all_links).\
+            options(joinedload(core.HaloLink.halo_to))
 
     def _joined_properties_load(self, parent):
-        return object_session(parent).query(core.HaloProperty).with_parent(parent, "all_properties").\
-            options(undefer("*")).options(joinedload("name"))
+        return object_session(parent).query(core.HaloProperty).with_parent(parent, type(parent).all_properties).\
+            options(undefer("*")).options(joinedload(core.HaloProperty.name))
 
     def compare_object(self, obj):
         obj1 = get_object(obj, self.session1)
@@ -126,8 +126,8 @@ class TangosDbDiff(object):
 
     def _check_setdiff_null(self, name_of_db_1, objects1, objects2,  name_of_object, name_of_things):
         if len(objects1 - objects2) > 0:
-            self.fail("When comparing %s, %s has %d additional %s", name_of_object, name_of_db_1,
-                      len(objects1 - objects2), name_of_things)
+            self.fail("When comparing %s, %s has %d additional %s (of total %d)", name_of_object, name_of_db_1,
+                      len(objects1 - objects2), name_of_things, len(objects1))
             self._print_objects(objects1 - objects2)
 
     def _print_objects(self, objects):

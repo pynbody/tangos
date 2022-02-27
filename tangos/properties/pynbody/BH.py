@@ -84,10 +84,7 @@ class BH(PynbodyPropertyCalculation):
 class BHAccHistogram(TimeChunkedProperty):
 
     requires_particle_data = True
-
-    @classmethod
-    def name(self):
-        return "BH_mdot_histogram"
+    names = "BH_mdot_histogram",
 
     def requires_property(self):
         return []
@@ -136,7 +133,7 @@ class BHAccHistogram(TimeChunkedProperty):
 
         Mdot_grid = scipy.interpolate.interp1d(t_orbit[order], Mdot_orbit[order], bounds_error=False)(t_grid)
 
-        return Mdot_grid[self.store_slice(t_max)]
+        return Mdot_grid[self.store_slice(t_max)],
 
 
 class BHAccHistogramMerged(PynbodyPropertyCalculation):

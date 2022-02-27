@@ -4,7 +4,8 @@ import tangos.core.simulation
 import tangos
 import tangos.testing as testing
 import tangos.testing.simulation_generator
-from tangos import properties
+from tangos import properties, log
+from tangos.tools import property_writer
 import numpy as np
 
 import numpy.testing as npt
@@ -30,21 +31,39 @@ def teardown():
 def _setup_dummy_histogram_data(ts1, ts2):
     global test_histogram
     test_histogram = np.arange(0.0,1000.0,1.0)
-    ts1_h1 = db.get_halo("sim/ts1/1")
-    ts1_h2 = db.get_halo("sim/ts1/2")
-    ts2_h1 = db.get_halo("sim/ts2/1")
 
-    property = DummyHistogramProperty(db.get_simulation("sim"))
-    ts1_h1['dummy_histogram'] = test_histogram[property.store_slice(ts1.time_gyr)]
-    ts1_h2['dummy_histogram'] = test_histogram[property.store_slice(ts1.time_gyr)] * 0.5
-    ts2_h1['dummy_histogram'] = test_histogram[property.store_slice(ts2.time_gyr)]
-    db.core.get_default_session().commit()
+    stored_log = log.LogCapturer()
+    writer = property_writer.PropertyWriter()
+    writer.parse_command_line(["dummy_histogram"])
+    with stored_log:
+        writer.run_calculation_loop()
 
 
 class DummyHistogramProperty(properties.TimeChunkedProperty):
     minimum_store_Gyr = 1.0
     names = "dummy_histogram"
 
+    def preloop(self, _, timestep):
+        self.time = timestep.time_gyr
+
+    def calculate(self, halo, existing_properties):
+        global test_histogram
+        hist = test_histogram[self.store_slice(self.time)]/existing_properties.halo_number
+        return hist
+
+def test_histogram_written_as_expected():
+    dumhistprop = DummyHistogramProperty(db.get_simulation("sim"))
+    ts1 = db.get_timestep("sim/ts1")
+    ts2 = db.get_timestep("sim/ts2")
+    ts1_h1 = db.get_halo("sim/ts1/1")
+    ts1_h2 = db.get_halo("sim/ts1/2")
+    ts2_h1 = db.get_halo("sim/ts2/1")
+    npt.assert_almost_equal(ts1_h1.calculate('raw(dummy_histogram)'),
+                            test_histogram[dumhistprop.store_slice(ts1.time_gyr)])
+    npt.assert_almost_equal(ts1_h2.calculate('raw(dummy_histogram)'),
+                            test_histogram[dumhistprop.store_slice(ts1.time_gyr)] * 0.5)
+    npt.assert_almost_equal(ts2_h1.calculate('raw(dummy_histogram)'),
+                            test_histogram[dumhistprop.store_slice(ts2.time_gyr)])
 
 def test_default_reconstruction():
     ts2_h1 = db.get_halo("sim/ts2/1")

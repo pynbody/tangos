@@ -61,7 +61,9 @@ def db_export(remote_db, *sims):
     _xcurrent_creator = core.creator.get_creator()
 
     core.set_default_session(ext_session)
-    core.set_creator(ext_session.merge(Creator()))
+    creator = Creator()
+    ext_session.add(creator)
+    core.set_creator(creator)
 
     _db_import_export(ext_session, int_session, *sims)
 
@@ -70,7 +72,7 @@ def db_export(remote_db, *sims):
 
 
 def _db_import_export(target_session, from_session, *sims):
-    external_to_internal_halo_id = {}
+    external_id_to_internal_halo = {}
     translated_halolink_ids = []
 
     if len(sims)==0:
@@ -79,7 +81,7 @@ def _db_import_export(target_session, from_session, *sims):
     for sim in sims:
         ext_sim = get_simulation(sim, from_session)
         sim = Simulation(ext_sim.basename)
-        sim = target_session.merge(sim)
+        target_session.add(sim)
         logger.info("Transferring simulation %s", ext_sim)
 
         halos_this_ts = []
@@ -103,7 +105,7 @@ def _db_import_export(target_session, from_session, *sims):
             ts.redshift = ts_ext.redshift
             ts.time_gyr = ts_ext.time_gyr
             ts.available = True
-            ts = target_session.merge(ts)
+            target_session.add(ts)
 
             halos_this_ts = []
 
@@ -119,55 +121,47 @@ def _db_import_export(target_session, from_session, *sims):
 
             for h in halos_this_ts:
                 assert h.id is not None and h.id > 0
-                external_to_internal_halo_id[h.external_id] = h.id
+                external_id_to_internal_halo[h.external_id] = h
 
             properties_this_ts = []
             logger.info("Transferring object properties for %s", ts_ext)
             for h_ext in ts_ext.objects:
-                h_new_id = external_to_internal_halo_id[h_ext.id]
+                h_new = external_id_to_internal_halo[h_ext.id]
                 for p_ext in h_ext.properties:
                     dic = get_or_create_dictionary_item(
                         target_session, p_ext.name.text)
                     dat = p_ext.data_raw
                     if dat is not None:
-                        p = HaloProperty(h_new_id, dic, dat)
-                        properties_this_ts.append(p)
+                        p = HaloProperty(h_new, dic, dat)
+                        target_session.add(p)
 
-            target_session.add_all(properties_this_ts)
             target_session.commit()
 
         for ts_ext in ext_sim.timesteps:
             logger.info("Transferring halolinks for timestep %s", ts_ext)
             sys.stdout.flush()
             _translate_halolinks(
-                target_session, ts_ext.links_from, external_to_internal_halo_id, translated_halolink_ids)
+                target_session, ts_ext.links_from, external_id_to_internal_halo, translated_halolink_ids)
             _translate_halolinks(
-                target_session, ts_ext.links_to, external_to_internal_halo_id, translated_halolink_ids)
+                target_session, ts_ext.links_to, external_id_to_internal_halo, translated_halolink_ids)
             target_session.commit()
 
         logger.info("Done")
 
 
 
-def _translate_halolinks(target_session, halolinks, external_to_internal_halo_id, translated):
+def _translate_halolinks(target_session, halolinks, external_id_to_internal_halo, translated):
     for hl_ext in halolinks:
         if hl_ext.id in translated:
             continue
 
         dic = get_or_create_dictionary_item(
             target_session, hl_ext.relation.text)
-        hl_new = target_session.merge(HaloLink(None, None, dic))
+        hl_new = HaloLink(external_id_to_internal_halo[hl_ext.halo_from_id],
+                          external_id_to_internal_halo[hl_ext.halo_to_id],
+                          dic)
 
-        try:
-            hl_new.halo_from_id = external_to_internal_halo_id[
-                hl_ext.halo_from_id]
-        except KeyError:
-            continue
-
-        try:
-            hl_new.halo_to_id = external_to_internal_halo_id[hl_ext.halo_to_id]
-        except KeyError:
-            continue
+        target_session.add(hl_new)
 
         translated.append(hl_ext.id)
 

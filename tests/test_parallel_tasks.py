@@ -27,8 +27,9 @@ def teardown():
 
 def _add_property():
     for i in pt.distributed(list(range(1,10))):
-        tangos.get_halo(i)['my_test_property']=i
-        tangos.core.get_default_session().commit()
+        with pt.ExclusiveLock('insert', 0.05):
+            tangos.get_halo(i)['my_test_property']=i
+            tangos.core.get_default_session().commit()
 
 
 def test_add_property():
@@ -40,12 +41,14 @@ def test_add_property():
 
 def _add_two_properties_different_ranges():
     for i in pt.distributed(list(range(1,10))):
-        tangos.get_halo(i)['my_test_property_2']=i
-        tangos.core.get_default_session().commit()
+        with pt.ExclusiveLock('insert', 0.05):
+            tangos.get_halo(i)['my_test_property_2']=i
+            tangos.core.get_default_session().commit()
 
     for i in pt.distributed(list(range(1,8))):
-        tangos.get_halo(i)['my_test_property_3'] = i
-        tangos.core.get_default_session().commit()
+        with pt.ExclusiveLock('insert', 0.05):
+            tangos.get_halo(i)['my_test_property_3'] = i
+            tangos.core.get_default_session().commit()
 
 def test_add_two_properties_different_ranges():
 
@@ -105,7 +108,8 @@ def _test_synchronize_db_creator():
     # hack: MultiProcessing backend forks so has already "synced" the current creator.
     tangos.core.creator._current_creator = None
     pt.database.synchronize_creator_object(tangos.core.get_default_session())
-    tangos.get_halo(rank)['db_creator_test_property'] = 1.0
+    with pt.ExclusiveLock('insert', 0.05):
+        tangos.get_halo(rank)['db_creator_test_property'] = 1.0
     tangos.core.get_default_session().commit()
 
 def test_synchronize_db_creator():

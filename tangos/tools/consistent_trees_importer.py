@@ -98,8 +98,7 @@ class ConsistentTreesImporter(GenericTangosTool):
             else:
                 tree_id = id_to_tree_id.get(o.finder_id, None)
             if tree_id is not None:
-                props.append(HaloProperty(o, dict_obj, tree_id))
-        session.add_all(props)
+                session.add(HaloProperty(o, dict_obj, tree_id))
         session.commit()
         logger.info("%d consistent tree IDs added to step %s", len(props), ts)
 

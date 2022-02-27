@@ -41,12 +41,12 @@ class SimulationObjectBase(Base):
     finder_offset = Column(Integer) #index of halo within halo catalog, primary identifier used when reading catalog/simulation data
     timestep_id = Column(Integer, ForeignKey('timesteps.id'))
     timestep = relationship(TimeStep, backref=backref(
-        'objects', order_by=halo_number, cascade='all', lazy='dynamic'), cascade='save-update, merge')
+        'objects', order_by=halo_number, cascade_backrefs=False, lazy='dynamic'), cascade='')
     NDM = Column(Integer)
     NStar = Column(Integer)
     NGas = Column(Integer)
     creator = relationship(creator.Creator, backref=backref(
-        'halos', cascade='all', lazy='dynamic'), cascade='save-update')
+        'halos', cascade_backrefs=False, lazy='dynamic'), cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
     object_typecode = Column(Integer, nullable=False,
                          name='halo_type') # name for backwards compatibility
@@ -98,7 +98,7 @@ class SimulationObjectBase(Base):
         if object_typecode is not None:
             self.object_typecode = int(object_typecode)
         self.init_on_load()
-        self.creator_id = creator.get_creator_id()
+        self.creator = creator.get_creator(Session.object_session(timestep))
 
     @orm.reconstructor
     def init_on_load(self):
@@ -256,9 +256,12 @@ class SimulationObjectBase(Base):
         X = self.properties.filter_by(name_id=key.id).first()
         if X is not None:
             X.data = obj
+            X.creator = creator.get_creator(session)
         else:
-            X = session.merge(HaloProperty(self, key, obj))
-        X.creator_id = creator.get_creator_id()
+            X = HaloProperty(self, key, obj)
+            X.creator = creator.get_creator(session)
+            session.add(X)
+        session.commit()
 
     def _setitem_one_halo(self, key, obj):
         from . import Session, HaloLink
@@ -266,10 +269,13 @@ class SimulationObjectBase(Base):
         key = get_or_create_dictionary_item(session, key)
         X = self.links.filter_by(halo_from_id=self.id, relation_id=key.id).first()
         if X is None:
-            X = session.merge(HaloLink(self, obj, key))
-            X.creator_id = creator.get_creator_id()
+            X = HaloLink(self, obj, key)
+            X.creator = creator.get_creator(session)
+            session.add(X)
         else:
             X.halo_to = obj
+            X.creator = creator.get_creator(session)
+        session.commit()
 
     def _setitem_multiple_halos(self, key, obj):
         from . import Session
@@ -280,6 +286,7 @@ class SimulationObjectBase(Base):
         self.links.filter_by(halo_from_id=self.id, relation_id=key.id).delete()
         links = [HaloLink(self, halo_to, key) for halo_to in obj]
         session.add_all(links)
+        session.commit()
 
 
     def keys(self, getters = None):

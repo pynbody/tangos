@@ -39,7 +39,7 @@ def _insert_into_temp_halolist(table, ids):
     else:
         connection.execute(
             table.insert(),
-            *[{'halo_id': id} for id in ids]
+            [{'halo_id': id} for id in ids]
         )
 
 def _get_session_for(table):
