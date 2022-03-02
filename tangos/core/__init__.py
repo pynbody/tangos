@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from sqlalchemy import Index, create_engine, inspect, event
+from sqlalchemy import Index, create_engine, inspect, event, text
 from sqlalchemy.orm import sessionmaker, clear_mappers, declarative_base
 import os
 from .. import config
@@ -121,16 +121,17 @@ def process_options(argparser_options):
         config.db = argparser_options.db_filename
     _verbose = argparser_options.db_verbose
 
-def _check_and_upgrade_database(engine):
+def _check_and_upgrade_database(engine, colname='finder_offset'):
     inspector = inspect(engine)
     if 'halos' in inspector.get_table_names():
         cols = inspector.get_columns('halos')
         for c in cols:
-            if c['name']=='finder_offset':
+            if c['name']==colname:
                 return
         log.logger.warn("The database uses an old schema, missing the finder_offset column from halos. Attempting to update.")
-        engine.execute("alter table halos add column finder_offset integer;")
-        engine.execute("update halos set finder_offset = finder_id;")
+        with engine.begin() as connection:
+            connection.execute(text(f"alter table halos add column {colname} integer;"))
+            connection.execute(text(f"update halos set {colname} = finder_id;"))
         log.logger.warn("The database update appeared to complete without any problems.")
 
 
