@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import sys
+from textwrap import dedent
 
 import numpy as np
 import argparse
@@ -175,18 +176,22 @@ def flag_duplicates_deprecated(opts):
 
     session.commit()
 
-def remove_duplicates(opts):
-    flag_duplicates_deprecated(None)
+def remove_duplicates(*_options):
     count = 1
-    while count>0:
-        # Order of name_id, halo_id in group clause below is important for optimisation - halo_id, name_id
-        # does *not* match the index.
-        count = db.core.get_default_session().execute("delete from haloproperties where haloproperties.id in "
-                                                 "(SELECT min(id) FROM haloproperties "
-                                                 "    GROUP BY name_id, halo_id HAVING COUNT(halo_id)>1);").rowcount
-        if count>0 :
-            print("Deleted %d rows"%count)
-            print("  checking for further duplicates...")
+
+    count = db.core.get_default_session().execute(dedent("""
+    DELETE FROM haloproperties
+    WHERE id NOT IN (
+        SELECT * FROM (
+            SELECT MAX(id)
+            FROM haloproperties
+            GROUP BY halo_id, name_id
+        ) as t
+    )
+    """)).rowcount
+    if count > 0:
+        print("Deleted %d rows" % count)
+        print("  checking for further duplicates...")
     print("Done")
     db.core.get_default_session().commit()
 
@@ -478,7 +483,7 @@ def get_argument_parser_and_subparsers():
     subparse_grepruninfo.set_defaults(func=grep_run_info)
     subparse_grepruninfo.add_argument("query", type=str,
                                      help="The sub-string to search for in the command line")
-                                                              
+
     subparse_grepremove = subparse.add_parser("grep-remove",
                                            help="Remove runs matching command line input")
     subparse_grepremove.set_defaults(func=grep_remove_runs)
