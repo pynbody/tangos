@@ -31,8 +31,6 @@ def teardown():
 
 
 def test():
-    ts = tangos.get_timestep("sim/ts1")
-
     # Before cleaning: we have two properties for halo 1
     # and one property for halo 2 and others
     halo = tangos.get_halo(1)

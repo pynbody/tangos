@@ -177,7 +177,8 @@ def flag_duplicates_deprecated(opts):
     session.commit()
 
 def remove_duplicates(options):
-    count = 1
+
+    session = db.core.get_default_session()
 
     # Note: the MySQL documentation states that “You cannot delete from a table and
     # select from the same table in a subquery.”. You can however circumvent this
@@ -186,7 +187,16 @@ def remove_duplicates(options):
     # and https://stackoverflow.com/a/45498/2601223
     # Another approach would have been to use an inner join but unfortunately
     # SQLite does not support them in deletes, so we have to resort to this approach.
-    count = db.core.get_default_session().execute(dedent("""
+    # With MySQL 5.7.6 onwards, this implicit temporary tables may be optimized away
+    # leading to the very same error we are trying to avoid. This can be fixed by
+    # setting the optimizer_switch off for the query.
+    # See https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-6.html#mysqld-5-7-6-optimizer
+    dialect = session.connection().engine.dialect.dialect_description.split("+")[0].lower()
+    if dialect == 'mysql':
+        session.execute("SET @__optimizations = @@SESSION.optimizer_switch")
+        session.execute("SET @@SESSION.optimizer_switch = 'derived_merge=off'")
+
+    count = session.execute(dedent("""
         DELETE FROM haloproperties
         WHERE id NOT IN (
             SELECT * FROM (
@@ -196,8 +206,11 @@ def remove_duplicates(options):
             ) as t
         )
     """)).rowcount
+
+    if dialect == 'mysql':
+        session.execute("SET @@SESSION.optimizer_switch = @__optimizations")
     print("Deleted %d rows" % count)
-    db.core.get_default_session().commit()
+    session.commit()
 
 
 
