@@ -176,23 +176,27 @@ def flag_duplicates_deprecated(opts):
 
     session.commit()
 
-def remove_duplicates(*_options):
+def remove_duplicates(options):
     count = 1
 
+    # Note: the MySQL documentation states that “You cannot delete from a table and
+    # select from the same table in a subquery.”. You can however circumvent this
+    # limitation by creating an implicit temporary table.
+    # See https://dev.mysql.com/doc/refman/5.6/en/delete.html
+    # and https://stackoverflow.com/a/45498/2601223
+    # Another approach would have been to use an inner join but unfortunately
+    # SQLite does not support them in deletes, so we have to resort to this approach.
     count = db.core.get_default_session().execute(dedent("""
-    DELETE FROM haloproperties
-    WHERE id NOT IN (
-        SELECT * FROM (
-            SELECT MAX(id)
-            FROM haloproperties
-            GROUP BY halo_id, name_id
-        ) as t
-    )
+        DELETE FROM haloproperties
+        WHERE id NOT IN (
+            SELECT * FROM (
+                SELECT MAX(id)
+                FROM haloproperties
+                GROUP BY halo_id, name_id
+            ) as t
+        )
     """)).rowcount
-    if count > 0:
-        print("Deleted %d rows" % count)
-        print("  checking for further duplicates...")
-    print("Done")
+    print("Deleted %d rows" % count)
     db.core.get_default_session().commit()
 
 
