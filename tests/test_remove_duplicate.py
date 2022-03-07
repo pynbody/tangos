@@ -44,8 +44,7 @@ def test():
     # Let's cleanup
     remove_duplicates(None)
 
-    # Before cleaning: we have two properties for halo 1
-    # and one property for halo 2 and others
+    # After cleaning: we have one property for all halos
     halo = tangos.get_halo(1)
     assert halo["Mvir"] == -2.
     for ihalo in range(2, 10):
