@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import sys
+from textwrap import dedent
 
 import numpy as np
 import argparse
@@ -175,20 +176,41 @@ def flag_duplicates_deprecated(opts):
 
     session.commit()
 
-def remove_duplicates(opts):
-    flag_duplicates_deprecated(None)
-    count = 1
-    while count>0:
-        # Order of name_id, halo_id in group clause below is important for optimisation - halo_id, name_id
-        # does *not* match the index.
-        count = db.core.get_default_session().execute("delete from haloproperties where haloproperties.id in "
-                                                 "(SELECT min(id) FROM haloproperties "
-                                                 "    GROUP BY name_id, halo_id HAVING COUNT(halo_id)>1);").rowcount
-        if count>0 :
-            print("Deleted %d rows"%count)
-            print("  checking for further duplicates...")
-    print("Done")
-    db.core.get_default_session().commit()
+def remove_duplicates(options):
+
+    session = db.core.get_default_session()
+
+    # Note: the MySQL documentation states that “You cannot delete from a table and
+    # select from the same table in a subquery.”. You can however circumvent this
+    # limitation by creating an implicit temporary table.
+    # See https://dev.mysql.com/doc/refman/5.6/en/delete.html
+    # and https://stackoverflow.com/a/45498/2601223
+    # Another approach would have been to use an inner join but unfortunately
+    # SQLite does not support them in deletes, so we have to resort to this approach.
+    # With MySQL 5.7.6 onwards, this implicit temporary tables may be optimized away
+    # leading to the very same error we are trying to avoid. This can be fixed by
+    # setting the optimizer_switch off for the query.
+    # See https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-6.html#mysqld-5-7-6-optimizer
+    dialect = session.connection().engine.dialect.dialect_description.split("+")[0].lower()
+    if dialect == 'mysql':
+        session.execute("SET @__optimizations = @@SESSION.optimizer_switch")
+        session.execute("SET @@SESSION.optimizer_switch = 'derived_merge=off'")
+
+    count = session.execute(dedent("""
+        DELETE FROM haloproperties
+        WHERE id NOT IN (
+            SELECT * FROM (
+                SELECT MAX(id)
+                FROM haloproperties
+                GROUP BY halo_id, name_id
+            ) as t
+        )
+    """)).rowcount
+
+    if dialect == 'mysql':
+        session.execute("SET @@SESSION.optimizer_switch = @__optimizations")
+    print("Deleted %d rows" % count)
+    session.commit()
 
 
 
@@ -478,7 +500,7 @@ def get_argument_parser_and_subparsers():
     subparse_grepruninfo.set_defaults(func=grep_run_info)
     subparse_grepruninfo.add_argument("query", type=str,
                                      help="The sub-string to search for in the command line")
-                                                              
+
     subparse_grepremove = subparse.add_parser("grep-remove",
                                            help="Remove runs matching command line input")
     subparse_grepremove.set_defaults(func=grep_remove_runs)
