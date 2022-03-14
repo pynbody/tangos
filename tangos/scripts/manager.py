@@ -372,8 +372,8 @@ def grep_remove_runs(opts):
     print(""">>> type "yes" to continue""")
 
     if input(":").lower() == "yes":
-        for r, run in enumerate(matching_runs):
-            print('Removing run ',r+1,' of ',len(matching_runs))
+        for r, run in enumerate(matching_runs[::-1]):
+            print(f'Removing run {run.id}')
             _erase_run_content(run)
         print("Done")
     else:
