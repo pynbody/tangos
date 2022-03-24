@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from collections import defaultdict
 
 import glob
 import os
@@ -439,21 +440,86 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
             return False
 
 
-class GadgetAHFInputHandler(PynbodyInputHandler):
+
+class AHFInputHandler(PynbodyInputHandler):
+    pynbody_halo_class_name = "AHFCatalogue"
+
+    _included_additional_properties = (
+        "parent", "child", "shrink_center", "bulk_velocity",
+    )
+
+    _excluded_precalculated_properties = (
+        "boxsize", "time", "hostHalo", "Xc", "Yc", "Zc",
+        "VXc", "VYc", "VZc",
+    )
+
+    def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
+        h = self._construct_halo_cat(ts_extension, object_typetag)
+
+        return (
+            [
+                key for key in h[1].properties.keys() 
+                if key not in self._excluded_precalculated_properties
+            ] + list(self._included_additional_properties)
+        )
+        
+
+    def _get_map_child_subhalos(self, ts_extension):
+        h = self._construct_halo_cat(ts_extension, 'halo')
+        halo_children = defaultdict(list)
+        for halo in h:
+            iparent = halo.properties["hostHalo"]
+            if iparent == 0:
+                continue
+
+            halo_children[iparent].append(halo.properties["halo_id"])
+        return halo_children
+
+    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
+        h = self._construct_halo_cat(ts_extension, object_typetag)
+
+        h.physical_units()
+
+        if "child" in property_names:
+            map_child_parent = self._get_map_child_subhalos(ts_extension)
+
+        for halo in h:
+            # Tangos expects data to have a finder offset, and a finder id following the stat file logic
+            # I think these are irrelevant for AdaptaHOP catalogues which are derived directly from pynbody
+            # Putting the finder ID twice seems to produce consistent results
+            halo_i = halo.properties["halo_id"]
+            all_data = [halo_i, halo_i]
+
+            halo_props = halo.properties
+            for k in property_names:
+                if k == "parent":
+                    data = proxy_object.IncompleteProxyObjectFromFinderId(
+                        halo_props['hostHalo'],
+                        'halo'
+                    )
+                elif k == "child":
+                    data = [
+                        proxy_object.IncompleteProxyObjectFromFinderId(ichild, 'halo')
+                        for ichild in map_child_parent[halo_i]
+                    ]
+                elif k == "shrink_center":
+                    data = np.array([halo_props[k] for k in ("Xc", "Yc", "Zc")])
+                elif k == "bulk_velocity":
+                    data = np.array([halo_props[k] for k in ("VXc", "VYc", "VZc")])
+                else:
+                    data = halo_props[k]
+                all_data.append(data)
+
+            yield all_data
+
+
+class GadgetAHFInputHandler(AHFInputHandler):
     patterns = ["snapshot_???"]
     auxiliary_file_patterns = ["*.AHF_particlesSTARDUST"]
 
-    def _is_able_to_load(self, filepath):
-        try:
-            f = pynbody.load(filepath)
-            h = pynbody.halo.AHFCatalogue(f)
-            return True
-        except (IOError, RuntimeError):
-            return False
-
-
-
-
+class RAMSESAHFInputHandler(AHFInputHandler):
+    patterns = ["output_?????"]
+    auxiliary_file_patterns = ["output_?????*z*AHF_halos"]
 
 class ChangaInputHandler(PynbodyInputHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",

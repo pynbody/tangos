@@ -49,7 +49,15 @@ class PatternBasedFileDiscovery(object):
         base = os.path.join(config.base, basename)
         if len(cls.__subclasses__()) == 0:
             return cls
-        all_possible_handlers = cls.__subclasses__()
+
+        # Add all subclasses and sub-subclasses
+        all_possible_handlers = []
+        subclasses = cls.__subclasses__()
+        while subclasses:
+            subclass = subclasses.pop()
+            subclasses.extend(subclass.__subclasses__())
+            all_possible_handlers.append(subclass)
+
         for possible_handler in all_possible_handlers:
             timesteps_detected = find(basename=base + "/", patterns=possible_handler.patterns)
             other_files_detected = find(basename=base+"/", patterns=possible_handler.auxiliary_file_patterns)
@@ -57,6 +65,7 @@ class PatternBasedFileDiscovery(object):
             handler_timestep_lengths.append(len(timesteps_detected)+len(other_files_detected))
         best_handler = handler_names[np.argmax(handler_timestep_lengths)]
         logger.debug("Detected best handler (of %d) is %s",len(all_possible_handlers), best_handler)
+
         return best_handler
 
     def enumerate_timestep_extensions(self):
