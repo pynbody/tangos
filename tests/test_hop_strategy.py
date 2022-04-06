@@ -15,14 +15,14 @@ import tangos, tangos.live_calculation
 import tangos.relation_finding as halo_finding
 import tangos.temporary_halolist as thl
 import tangos.testing as testing
-from nose.tools import assert_raises
+from pytest import raises as assert_raises
 
-def setup():
+def setup_module():
     testing.init_blank_db_for_testing()
 
-    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
     # A second simulation to test linking across
-    generator_2 = tangos.testing.simulation_generator.TestSimulationGenerator("sim2")
+    generator_2 = tangos.testing.simulation_generator.SimulationGeneratorForTests("sim2")
 
     generator.add_timestep()
     generator_2.add_timestep()
@@ -77,7 +77,7 @@ def setup():
     generator.add_mass_transfer(4,2,0.05)
 
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 
@@ -178,14 +178,14 @@ def test_results_as_temptable():
 def test_temptable_exceptions():
     strategy = halo_finding.MultiHopStrategy(tangos.get_item("sim/ts2/1"), 2, 'backwards')
 
-    class TestException(Exception):
+    class _TestException(Exception):
         pass
 
     def raise_exception(halo_ids_only=False):
-        raise TestException
+        raise _TestException
 
     strategy._generate_multihop_results = raise_exception
-    with assert_raises(TestException):
+    with assert_raises(_TestException):
         with strategy.temp_table() as table:
             assert False, "This point should not be reached"
 
@@ -290,7 +290,7 @@ def test_find_merger():
     testing.assert_halolists_equal(results, ["sim/ts1/6", "sim/ts1/7"])
 
 def test_major_progenitor_from_minor_progenitor():
-    generator = tangos.testing.simulation_generator.TestSimulationGenerator("sim3")
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests("sim3")
     ts1 = generator.add_timestep()
     generator.add_objects_to_timestep(4)
     ts2 = generator.add_timestep()

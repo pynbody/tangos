@@ -37,11 +37,11 @@ class QueryMultivalueFolding(object):
             results_slice = mask.mask(results_slice.T).T
             determiner_slice = mask.mask(determiner_slice)
 
-            truth_slice = np.full(len(determiner_slice),True).astype(np.bool)
+            truth_slice = np.full(len(determiner_slice),True).astype(np.bool_)
             for cc in self.constraints_columns:
                 constraint = results_slice[cc]
                 constraint = mask.mask(constraint)
-                constraint = constraint.astype(np.bool)
+                constraint = constraint.astype(np.bool_)
                 truth_slice[(constraint == False)|(constraint == None)] = False
 
             if len(determiner_slice)!=0 and True in truth_slice:

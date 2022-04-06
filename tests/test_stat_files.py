@@ -14,7 +14,7 @@ from tangos.input_handlers.halo_stat_files import translations
 from tangos import testing, parallel_tasks
 
 
-def setup():
+def setup_module():
     global ts1, ts2, ts3, sim, session
     testing.init_blank_db_for_testing()
     db.config.base = os.path.dirname(os.path.abspath(__file__))+"/"
@@ -43,7 +43,7 @@ def setup():
 
     parallel_tasks.use('null')
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_statfile_identity():

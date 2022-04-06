@@ -4,11 +4,11 @@ from tangos.input_handlers import output_testing
 from tangos.tools import crosslink, add_simulation
 from tangos import log, parallel_tasks, live_calculation, testing
 from tangos.core.halo_data import link
-from nose.tools import assert_raises
+from pytest import raises as assert_raises
 import os, os.path
 import tangos
 
-def setup():
+def setup_module():
     parallel_tasks.use('null')
     testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
@@ -18,7 +18,7 @@ def setup():
         manager.scan_simulation_and_add_all_descendants()
         manager2.scan_simulation_and_add_all_descendants()
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_issue_77():

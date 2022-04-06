@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from nose.tools import assert_raises
+from pytest import raises as assert_raises
+from pytest import skip
 import tangos as db
 import tangos.blocking
 import tangos.core.halo
@@ -15,9 +16,8 @@ import contextlib
 import tangos
 from tangos.config import testing_db_backend
 
-from nose.plugins.skip import SkipTest
 
-def setup():
+def setup_module():
     pt.use("multiprocessing")
     testing.init_blank_db_for_testing(timeout=0.1, verbose=False)
 
@@ -34,7 +34,7 @@ def setup():
 
     session.commit()
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
     try:
         os.remove("test.db")
@@ -98,7 +98,7 @@ def _suppress_exception_report():
 
 def test_non_blocking_exception():
     if testing_db_backend != "sqlite":
-        raise SkipTest("This test is only relevant for sqlite databases")
+        skip("This test is only relevant for sqlite databases")
 
     with _suppress_exception_report():
         with assert_raises(sqlalchemy.exc.OperationalError):
@@ -111,7 +111,7 @@ def test_non_blocking_exception():
 
 def test_blocking_avoids_exception():
     if testing_db_backend != "sqlite":
-        raise SkipTest("This test is only relevant for sqlite databases")
+        skip("This test is only relevant for sqlite databases")
 
     assert tangos.get_halo("sim/ts1/6") is None
     db.core.get_default_session().commit()

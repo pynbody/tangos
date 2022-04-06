@@ -10,13 +10,13 @@ import pynbody
 import gc
 import tangos
 
-def setup():
+def setup_module():
     global output_manager
     testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
     output_manager = pynbody_outputs.ChangaInputHandler("test_tipsy")
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_get_handler():

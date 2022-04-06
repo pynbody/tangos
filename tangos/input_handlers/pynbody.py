@@ -65,7 +65,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         try:
             f = pynbody.load(filepath)
             if self.quicker:
-                logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
+                logger.warning("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
             else:
                 h = self._construct_pynbody_halos(f)
 
@@ -238,16 +238,16 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
                 yield X
         else:
-            logger.warn("No halo statistics file found for timestep %r",ts_extension)
+            logger.warning("No halo statistics file found for timestep %r",ts_extension)
 
             snapshot_keep_alive = self.load_timestep(ts_extension)
             try:
                 h = self._construct_halo_cat(ts_extension, object_typetag)
             except:
-                logger.warn("Unable to read %ss using pynbody; assuming step has none", object_typetag)
+                logger.warning("Unable to read %ss using pynbody; assuming step has none", object_typetag)
                 return
 
-            logger.warn(" => enumerating %ss directly using pynbody", object_typetag)
+            logger.warning(" => enumerating %ss directly using pynbody", object_typetag)
 
             istart = 1
 
@@ -302,9 +302,9 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def _estimate_spatial_resolution_quicker(self, f):
         interparticle_distance = float(f.properties['boxsize'].in_units("kpc a",**f.conversion_context()))/(float(len(f))**(1./3))
         res = 0.01*interparticle_distance
-        logger.warn("Because 'quicker' flag is set, estimating res %.2g kpc from the file size; this could be inaccurate",
+        logger.warning("Because 'quicker' flag is set, estimating res %.2g kpc from the file size; this could be inaccurate",
                     res)
-        logger.warn(" -- it will certainly be wrong for e.g. zoom simulations")
+        logger.warning(" -- it will certainly be wrong for e.g. zoom simulations")
         return res
 
     def _estimate_mass_resolution(self, f):
@@ -318,9 +318,9 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         rho_m = cosmo.rho_M(f, z=0, unit="Msol kpc**-3 a**-3")
         volume_box = float(f.properties['boxsize'].in_units("kpc a",**f.conversion_context()) ** 3)
         estimated_part_mass = rho_m * volume_box / len(f)
-        logger.warn("Because 'quicker' flag is set, estimating mass res %.2g msol from the file size; this could be inaccurate",
+        logger.warning("Because 'quicker' flag is set, estimating mass res %.2g msol from the file size; this could be inaccurate",
                     estimated_part_mass)
-        logger.warn(" -- it will certainly be wrong for e.g. zoom simulations")
+        logger.warning(" -- it will certainly be wrong for e.g. zoom simulations")
         return estimated_part_mass
 
 
@@ -468,7 +468,7 @@ class ChangaInputHandler(PynbodyInputHandler):
         pfile = self._get_paramfile_path()
 
         if pfile is None:
-            logger.warn("Param file cannot be found - no simulation properties will be available")
+            logger.warning("Param file cannot be found - no simulation properties will be available")
             return {}
         else:
             logger.info("Param file is %s", pfile)
@@ -500,7 +500,7 @@ class ChangaInputHandler(PynbodyInputHandler):
         if os.path.exists(log_path):
             logger.info("Log file is %s", log_path)
         else:
-            logger.warn("Cannot find log file (%s)", log_path)
+            logger.warning("Cannot find log file (%s)", log_path)
             log_path = None
         return log_path, prop_dict
 

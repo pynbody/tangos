@@ -11,7 +11,7 @@ import copy
 import numpy as np
 import tangos
 
-def setup():
+def setup_module():
     global output_manager, iord_expected_s960, iord_expected_s832
     testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
@@ -29,7 +29,7 @@ def setup():
     # in common between the two steps
     iord_expected_s832 = np.intersect1d(iord_expected_s960, db.get_timestep("test_tipsy/%832").load()['iord'])
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 

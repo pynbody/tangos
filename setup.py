@@ -26,7 +26,7 @@ install_requires = [
     ]
 
 tests_require = [
-    'nose >= 1.3.0',
+    'pytest >= 5.0.0',
     'webtest >= 2.0',
     'pyquery >= 1.3.0',
     'pynbody >= 0.46',

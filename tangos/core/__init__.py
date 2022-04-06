@@ -128,11 +128,11 @@ def _check_and_upgrade_database(engine, colname='finder_offset'):
         for c in cols:
             if c['name']==colname:
                 return
-        log.logger.warn("The database uses an old schema, missing the finder_offset column from halos. Attempting to update.")
+        log.logger.warning("The database uses an old schema, missing the finder_offset column from halos. Attempting to update.")
         with engine.begin() as connection:
             connection.execute(text(f"alter table halos add column {colname} integer;"))
             connection.execute(text(f"update halos set {colname} = finder_id;"))
-        log.logger.warn("The database update appeared to complete without any problems.")
+        log.logger.warning("The database update appeared to complete without any problems.")
 
 
 def init_db(db_uri=None, timeout=30, verbose=None):
@@ -174,10 +174,11 @@ def close_db():
 
 def close_session():
     global Session, _internal_session
-    if Session is not None:
-        Session.close_all()
-        Session = None
+    if _internal_session is not None:
+        _internal_session.close()
         _internal_session = None
+    if Session is not None:
+        Session = None
 
 from .dictionary import _get_dict_cache_for_session, get_dict_id, get_or_create_dictionary_item
 

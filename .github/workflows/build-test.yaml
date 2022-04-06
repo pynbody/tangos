@@ -36,7 +36,7 @@ jobs:
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        python -m pip install numpy scipy "matplotlib<3.3.0" nose h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython pyramid ipython pyramid_mako PyMySQL
+        python -m pip install numpy scipy "matplotlib<3.3.0" pytest h5py pip webtest pyquery sphinx pygments pandas sqlalchemy cython pyramid ipython pyramid_mako PyMySQL
     - name: Build and install tangos
       run: |
         python setup.py develop
@@ -51,4 +51,4 @@ jobs:
         sudo /etc/init.d/mysql start
     - name: Run all tests
       working-directory: tests
-      run: python -m nose
+      run: python -m pytest

@@ -46,10 +46,10 @@ class PropertyImporter(GenericTangosTool):
             if np.issubdtype(value.dtype, np.number):
                 return core.halo_data.HaloProperty(object, name, value)
             else:
-                logger.warn("Ignoring stat file entry key='%s' value='%s' as the value is not a number or an array of numbers",
+                logger.warning("Ignoring stat file entry key='%s' value='%s' as the value is not a number or an array of numbers",
                         name.text, value)
         elif value is not None:
-            logger.warn("Ignoring stat file entry key='%s' value='%s' as the value is not a number or an array of numbers",
+            logger.warning("Ignoring stat file entry key='%s' value='%s' as the value is not a number or an array of numbers",
                         name.text, value)
         return None
 

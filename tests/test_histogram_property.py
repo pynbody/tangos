@@ -11,10 +11,10 @@ import numpy as np
 import numpy.testing as npt
 
 
-def setup():
+def setup_module():
     testing.init_blank_db_for_testing()
 
-    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
 
     ts1 = generator.add_timestep()
     generator.add_objects_to_timestep(2)
@@ -24,7 +24,7 @@ def setup():
 
     _setup_dummy_histogram_data(ts1, ts2)
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 

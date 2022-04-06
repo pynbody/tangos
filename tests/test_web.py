@@ -8,10 +8,10 @@ import json
 from six import StringIO
 from six.moves.urllib import parse
 
-def setup():
+def setup_module():
     testing.init_blank_db_for_testing()
 
-    creator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    creator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
 
     halo_offset = 0
     for ts in range(1,4):
@@ -38,7 +38,7 @@ def setup():
     tangos.get_default_session().commit()
 
 
-    creator = tangos.testing.simulation_generator.TestSimulationGenerator("simname/has/slashes")
+    creator = tangos.testing.simulation_generator.SimulationGeneratorForTests("simname/has/slashes")
     creator.add_timestep()
     creator.add_objects_to_timestep(1)
     creator.add_timestep()
@@ -52,7 +52,7 @@ def setup():
     global app
     app = TestApp(tangos.web.main({}))
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 

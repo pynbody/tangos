@@ -1,5 +1,5 @@
 from tangos import testing
-from tangos.testing.simulation_generator import TestSimulationGenerator
+from tangos.testing.simulation_generator import SimulationGeneratorForTests
 from tangos import core
 from tangos.cached_writer import create_property
 import tangos
@@ -7,9 +7,9 @@ import tangos
 from tangos.scripts.manager import remove_duplicates
 
 
-def setup():
+def setup_module():
     testing.init_blank_db_for_testing()
-    generator = TestSimulationGenerator()
+    generator = SimulationGeneratorForTests()
 
     generator.add_timestep()
     generator.add_objects_to_timestep(10)
@@ -26,7 +26,7 @@ def setup():
     session.commit()
 
 
-def teardown():
+def teardown_module():
     core.close_db()
 
 

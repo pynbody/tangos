@@ -1,7 +1,7 @@
 from .. import core
 import six
 
-class TestSimulationGenerator(object):
+class SimulationGeneratorForTests(object):
     def __init__(self, sim_name="sim", session=None):
         if not session:
             session = core.get_default_session()

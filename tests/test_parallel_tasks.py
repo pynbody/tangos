@@ -8,19 +8,17 @@ import sys
 import time
 from six.moves import range
 
-from nose.plugins.skip import SkipTest
-
-def setup():
+def setup_module():
     pt.use("multiprocessing")
     testing.init_blank_db_for_testing(timeout=5.0, verbose=False)
 
-    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
     generator.add_timestep()
     generator.add_objects_to_timestep(9)
 
     tangos.core.get_default_session().commit()
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
     pt.launch(tangos.core.close_db, 6)
 

@@ -53,8 +53,8 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
                 yield X
         else:
-            logger.warn("No halo statistics file found for timestep %r", ts_extension)
-            logger.warn(" => enumerating %ss directly using yt", object_typetag)
+            logger.warning("No halo statistics file found for timestep %r", ts_extension)
+            logger.warning(" => enumerating %ss directly using yt", object_typetag)
 
             catalogue, catalogue_data = self._load_halo_cat(ts_extension, object_typetag)
             num_objects = len(catalogue_data["halos", "virial_radius"])

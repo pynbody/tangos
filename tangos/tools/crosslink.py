@@ -59,10 +59,10 @@ class GenericLinker(GenericTangosTool):
         num_sources = ts1.halos.count()
         num_targets = ts2.halos.count()
         if num_targets == 0:
-            logger.warn("Will not link: no halos in target timestep %r", ts2)
+            logger.warning("Will not link: no halos in target timestep %r", ts2)
             return False
         if num_sources == 0:
-            logger.warn("Will not link: no halos in source timestep %r", ts1)
+            logger.warning("Will not link: no halos in source timestep %r", ts1)
             return False
 
         halo_source = sqlalchemy.orm.aliased(core.halo.SimulationObjectBase, name="halo_source")
@@ -77,7 +77,7 @@ class GenericLinker(GenericTangosTool):
         self.session.commit()
 
         if exists:
-            logger.warn("Will not link: links already exist between %r and %r", ts1, ts2)
+            logger.warning("Will not link: links already exist between %r and %r", ts1, ts2)
             return False
         return True
 
@@ -95,7 +95,7 @@ class GenericLinker(GenericTangosTool):
                     missing_db_object += 1
 
         if missing_db_object > 0:
-            logger.warn("%d link(s) could not be identified because the halo objects do not exist in the DB",
+            logger.warning("%d link(s) could not be identified because the halo objects do not exist in the DB",
                         missing_db_object)
         return items
 
@@ -217,7 +217,7 @@ class CrossLinker(GenericLinker):
                 logger.info("Pairing timesteps: %r and %r", ts1, ts2)
                 pairs+=[(ts1,ts2)]
             else:
-                logger.warn("No pairing found for timestep %r",ts1)
+                logger.warning("No pairing found for timestep %r",ts1)
 
         return pairs
 

@@ -12,21 +12,21 @@ import os
 from six.moves import zip
 
 
-class TestHandler(tangos.input_handlers.pynbody.ChangaInputHandler):
+class _TestHandler(tangos.input_handlers.pynbody.ChangaInputHandler):
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         # Specialised object 'catalogue' to check this works ok when loading remotely
         if object_typetag=='test-objects' and mode is None:
             return self.load_timestep(ts_extension)[[finder_offset]]
         else:
-            return super(TestHandler, self).load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
+            return super(_TestHandler, self).load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
 
-def setup():
+def setup_module():
     global handler
     pt.use("multiprocessing")
     tangos.config.base = os.path.dirname(__file__)+"/"
-    handler = TestHandler("test_simulations/test_tipsy")
+    handler = _TestHandler("test_simulations/test_tipsy")
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 

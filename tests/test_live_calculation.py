@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import numpy as np
-from nose.tools import assert_raises
+from pytest import raises as assert_raises
 
 import tangos as db
 import tangos
@@ -16,10 +16,10 @@ from tangos import properties
 from tangos.core import extraction_patterns
 
 
-def setup():
+def setup_module():
     testing.init_blank_db_for_testing()
 
-    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
 
 
     ts1 = generator.add_timestep()
@@ -52,7 +52,7 @@ def setup():
     generator.add_timestep() # intentionally empty final timestep
 
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 

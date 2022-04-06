@@ -19,7 +19,7 @@ class RamsesCatalogueMixin:
                       object_typetag="halo", output_handler_for_ts2=None):
         import pynbody
         if not dm_only:
-            logger.warn(
+            logger.warning(
                 "`match_objects` was called with dm_only=%s, but %s only supports DM-only"
                 " catalogues at the moment. Falling back to DM-only.", dm_only, self.__class__.__name__
             )
@@ -48,7 +48,7 @@ class RamsesHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
         try:
             f = pynbody.load(filepath)
             if self.quicker:
-                logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
+                logger.warning("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
             else:
                 h = pynbody.halo.hop.HOPCatalogue(f)
             return True
@@ -79,7 +79,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
         try:
             f = pynbody.load(filepath)
             if self.quicker:
-                logger.warn("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
+                logger.warning("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
             else:
                 h = f.halos()
                 return isinstance(h, pynbody.halo.adaptahop.BaseAdaptaHOPCatalogue)
@@ -94,7 +94,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
         try:
             contamination_fraction = float(adaptahop_halo.properties['ntot_contam'] / adaptahop_halo.properties['ntot'])
         except KeyError:
-            logger.warn("Ignoring import of contamination fraction which has not been stored on disk by AdaptaHOP")
+            logger.warning("Ignoring import of contamination fraction which has not been stored on disk by AdaptaHOP")
             contamination_fraction = None
         return contamination_fraction
 
@@ -196,16 +196,16 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
             for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
                 yield X
         else:
-            logger.warn("No halo statistics file found for timestep %r", ts_extension)
+            logger.warning("No halo statistics file found for timestep %r", ts_extension)
 
             try:
                 h = self._construct_halo_cat(ts_extension, object_typetag)
                 h._index_parent = False
             except:
-                logger.warn("Unable to read %ss using pynbody; assuming step has none", object_typetag)
+                logger.warning("Unable to read %ss using pynbody; assuming step has none", object_typetag)
                 return
 
-            logger.warn(" => enumerating %ss directly using pynbody", object_typetag)
+            logger.warning(" => enumerating %ss directly using pynbody", object_typetag)
             istart = 1
 
             for i in range(istart, len(h)+istart):

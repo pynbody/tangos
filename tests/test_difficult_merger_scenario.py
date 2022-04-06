@@ -17,10 +17,10 @@ from tangos.relation_finding import tree
 import tangos.testing as testing
 import numpy as np
 
-def setup():
+def setup_module():
     testing.init_blank_db_for_testing()
 
-    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
     generator.add_timestep() # ts1
     generator.add_objects_to_timestep(2, NDM=[1000,600])
 
@@ -42,7 +42,7 @@ def setup():
     generator.add_objects_to_timestep(1)
     generator.link_last_halos_using_mapping({1:1, 2:1}, adjust_masses=True)
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_setup():

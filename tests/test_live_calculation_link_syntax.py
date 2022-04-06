@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import numpy as np
 import numpy.testing as npt
-from nose.tools import assert_raises
+from pytest import raises as assert_raises
 
 import tangos as db
 import tangos.testing as testing
@@ -12,10 +12,10 @@ import tangos.testing.simulation_generator
 from tangos.testing import assert_halolists_equal
 
 
-def setup():
+def setup_module():
     testing.init_blank_db_for_testing(verbose=True)
 
-    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
     generator.add_timestep()
     ts1_h1, ts1_h2, ts1_h3, ts1_h4, ts1_h5 = generator.add_objects_to_timestep(5)
 
@@ -46,7 +46,7 @@ def setup():
     ts2_h2['testval'] = 100.0
     generator.link_last_halos_using_mapping({2: 1, 3: 2})
 
-    generator_sim2 = tangos.testing.simulation_generator.TestSimulationGenerator("sim2")
+    generator_sim2 = tangos.testing.simulation_generator.SimulationGeneratorForTests("sim2")
     # this is added to offer red herring links that should be ignored
     # We add a timestep and links that create an illusory past, but actually it's in another simulation
     # so should be ignored. It triggers a problem with the original implementation of find_progenitor.
@@ -66,7 +66,7 @@ def setup():
 
     db.core.get_default_session().commit()
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_ambiguous_link():
