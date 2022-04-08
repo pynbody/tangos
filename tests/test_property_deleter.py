@@ -4,8 +4,7 @@ from tangos.tools import add_simulation, property_deleter, property_writer
 from tangos import log, parallel_tasks, testing
 import os, os.path
 import test_db_writer # for dummy_property
-
-from nose import with_setup
+from pytest import fixture
 
 def setup_func():
     parallel_tasks.use('null')
@@ -23,8 +22,13 @@ def setup_func():
 def teardown_func():
     db.core.close_db()
 
-@with_setup(setup_func, teardown_func)
-def test_delete_property_one_halo():
+@fixture
+def fresh_database():
+    setup_func()
+    yield
+    teardown_func()
+
+def test_delete_property_one_halo(fresh_database):
    assert 'dummy_property' in db.get_halo("dummy_sim_1/step.1/halo_1")
 
    tool = property_deleter.PropertyDeleter()
@@ -39,8 +43,7 @@ def test_delete_property_one_halo():
    assert 'dummy_property' in db.get_halo("dummy_sim_1/step.1/halo_2")
    assert 'dummy_property'  in db.get_halo("dummy_sim_2/step.1/halo_1")
 
-@with_setup(setup_func, teardown_func)
-def test_delete_property_one_timestep():
+def test_delete_property_one_timestep(fresh_database):
    assert 'dummy_property' in db.get_halo("dummy_sim_1/step.1/halo_1")
 
    tool = property_deleter.PropertyDeleter()
@@ -56,8 +59,7 @@ def test_delete_property_one_timestep():
    assert 'dummy_property'  in db.get_halo("dummy_sim_2/step.1/halo_1")
 
 
-@with_setup(setup_func, teardown_func)
-def test_delete_property_one_simulation():
+def test_delete_property_one_simulation(fresh_database):
     assert 'dummy_property' in db.get_halo("dummy_sim_1/step.1/halo_1")
 
     tool = property_deleter.PropertyDeleter()
@@ -72,8 +74,7 @@ def test_delete_property_one_simulation():
     # hasn't affected other simulations:
     assert 'dummy_property' in db.get_halo("dummy_sim_2/step.1/halo_1")
 
-@with_setup(setup_func, teardown_func)
-def test_delete_property_entire_db():
+def test_delete_property_entire_db(fresh_database):
     assert 'dummy_property' in db.get_halo("dummy_sim_1/step.1/halo_1")
 
     tool = property_deleter.PropertyDeleter()
@@ -83,8 +84,7 @@ def test_delete_property_entire_db():
     s = db.core.get_default_session()
     assert s.query(db.core.HaloProperty).count() == 0
 
-@with_setup(setup_func, teardown_func)
-def test_delete_one_of_two_properties_whole_db():
+def test_delete_one_of_two_properties_whole_db(fresh_database):
     writer = property_writer.PropertyWriter()
     writer.parse_command_line(['another_dummy_property'])
     writer.run_calculation_loop()

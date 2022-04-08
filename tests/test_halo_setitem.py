@@ -8,16 +8,16 @@ import numpy as np
 import tangos.testing.simulation_generator
 
 
-def setup():
+def setup_module():
 
     tangos.testing.init_blank_db_for_testing()
 
-    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
     for i in range(3):
         generator.add_timestep()
         generator.add_objects_to_timestep(3)
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_setitem():

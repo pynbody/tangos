@@ -229,6 +229,8 @@ class Calculation(object):
             halo_alias = tangos.core.halo.SimulationObjectBase
         augmented_query = halo_query
         order_bys = []
+        current_join_path = None
+
         for i in range(self.n_join_levels()):
             halo_property_alias = aliased(tangos.core.halo_data.HaloProperty)
             halo_link_alias = aliased(tangos.core.halo_data.HaloLink)

@@ -9,8 +9,7 @@ from tangos import parallel_tasks, log, testing
 from tangos import properties
 from tangos.util import proxy_object
 from numpy import testing as npt
-
-from nose import with_setup
+from pytest import fixture
 
 def setup_func():
     parallel_tasks.use('null')
@@ -24,6 +23,11 @@ def setup_func():
 def teardown_func():
     db.core.close_db()
 
+@fixture
+def fresh_database():
+    setup_func()
+    yield
+    teardown_func()
 
 class DummyProperty(properties.PropertyCalculation):
     names = "dummy_property",
@@ -97,14 +101,12 @@ def run_writer_with_args(*args):
         writer.run_calculation_loop()
     return stored_log.get_output()
 
-@with_setup(setup_func, teardown_func)
-def test_basic_writing():
+def test_basic_writing(fresh_database):
     run_writer_with_args("dummy_property")
     _assert_properties_as_expected()
 
 
-@with_setup(setup_func, teardown_func)
-def test_parallel_writing():
+def test_parallel_writing(fresh_database):
     parallel_tasks.use('multiprocessing')
     try:
         parallel_tasks.launch(run_writer_with_args, 3, ["dummy_property"])
@@ -118,8 +120,7 @@ def _assert_properties_as_expected():
     assert db.get_halo("dummy_sim_1/step.1/2")['dummy_property'] == 2.0
     assert db.get_halo("dummy_sim_1/step.2/1")['dummy_property'] == 2.0
 
-@with_setup(setup_func, teardown_func)
-def test_error_ignoring():
+def test_error_ignoring(fresh_database):
     log = run_writer_with_args("dummy_property", "dummy_property_with_exception")
     assert "Uncaught exception during property calculation" in log
 
@@ -145,14 +146,12 @@ class DummyRegionProperty(properties.PropertyCalculation):
         assert data.message=="Test string"[1:5]
         return 100.0,
 
-@with_setup(setup_func, teardown_func)
-def test_region_property():
+def test_region_property(fresh_database):
     run_writer_with_args("dummy_property","dummy_region_property")
     _assert_properties_as_expected()
     assert db.get_halo("dummy_sim_1/step.2/1")['dummy_region_property']==100.0
 
-@with_setup(setup_func, teardown_func)
-def test_no_duplication():
+def test_no_duplication(fresh_database):
     run_writer_with_args("dummy_property")
     assert db.get_default_session().query(db.core.HaloProperty).count()==15
     run_writer_with_args("dummy_property") # should not create duplicates
@@ -174,14 +173,12 @@ class DummyPropertyRequiringLink(DummyProperty):
     def requires_property(self):
         return ["dummy_link"]
 
-@with_setup(setup_func, teardown_func)
-def test_link_property():
+def test_link_property(fresh_database):
     run_writer_with_args("dummy_link")
     assert db.get_default_session().query(db.core.HaloLink).count() == 15
     db.testing.assert_halolists_equal([db.get_halo(2)['dummy_link']], [db.get_halo(1)])
 
-@with_setup(setup_func, teardown_func)
-def test_link_dependency():
+def test_link_dependency(fresh_database):
     run_writer_with_args("dummy_property_requiring_link")
     assert db.get_default_session().query(db.core.HaloProperty).count() == 0
 
@@ -190,8 +187,7 @@ def test_link_dependency():
     run_writer_with_args("dummy_property_requiring_link")
     assert db.get_default_session().query(db.core.HaloProperty).count() == 15
 
-@with_setup(setup_func, teardown_func)
-def test_writer_sees_raw_properties():
+def test_writer_sees_raw_properties(fresh_database):
     # regression test for issue #121
     run_writer_with_args("dummy_property_with_reconstruction")
     assert db.get_halo(2)['dummy_property_with_reconstruction']==2.0
@@ -203,8 +199,7 @@ def test_writer_sees_raw_properties():
     DummyPropertyWithReconstruction.callback = raise_exception
     run_writer_with_args("dummy_property_with_reconstruction") # should not try to reconstruct the existing data stream
 
-@with_setup(setup_func, teardown_func)
-def test_writer_handles_sim_properties():
+def test_writer_handles_sim_properties(fresh_database):
     """Test for issue where simulation properties could be queried from within a calculation.
 
     This could lead to unexpected database locks. Tangos 1.3 provides a safe route to doing this.

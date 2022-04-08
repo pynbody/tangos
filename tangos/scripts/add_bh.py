@@ -159,10 +159,10 @@ def assign_bh_to_halos(bh_halo_assignment, bh_iord, timestep, linkname, hostname
             haloi = int(haloi)
             bhi = int(bhi)
             if haloi not in halo_catind:
-                logger.warn("Skipping BH in halo %d as no corresponding halo found in the database", haloi)
+                logger.warning("Skipping BH in halo %d as no corresponding halo found in the database", haloi)
                 continue
             if bhi not in existing_bh_nums:
-                logger.warn("Can't find the database object for BH %d", bhi)
+                logger.warning("Can't find the database object for BH %d", bhi)
                 print(bhi)
                 print(existing_bh_nums)
                 continue
@@ -285,7 +285,7 @@ def generate_halolinks(session, fname, pairs):
         with session.no_autoflush:
             for src,(dest,ratio) in six.iteritems(bh_map):
                 if src not in nums1 or dest not in nums2:
-                    logger.warn("Can't link BH %r -> %r; missing BH objects in database",src,dest)
+                    logger.warning("Can't link BH %r -> %r; missing BH objects in database",src,dest)
                     continue
                 bh_src_before = bh_objects_1[nums1.index(src)]
                 bh_dest_after = bh_objects_2[nums2.index(dest)]

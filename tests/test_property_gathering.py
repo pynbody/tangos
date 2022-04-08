@@ -14,13 +14,13 @@ from tangos import testing
 import os
 import six
 from six.moves import range
-from nose.tools import assert_raises
+from pytest import raises as assert_raises
 from tangos import live_calculation
 
-def setup():
+def setup_module():
     testing.init_blank_db_for_testing()
 
-    creator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    creator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
 
     halo_offset = 0
     for ts in range(1,4):
@@ -49,10 +49,10 @@ def setup():
     creator.add_objects_to_timestep(1, NDM=[10])
     creator.link_last_halos_using_mapping({1:1, 2:1})
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
-class TestProperty(properties.LivePropertyCalculation):
+class _TestProperty(properties.LivePropertyCalculation):
     names = "RvirPlusMvir"
 
     def requires_property(self):
@@ -61,7 +61,7 @@ class TestProperty(properties.LivePropertyCalculation):
     def live_calculate(self, halo):
         return halo["Mvir"]+halo["Rvir"]
 
-class TestErrorProperty(properties.LivePropertyCalculation):
+class _TestErrorProperty(properties.LivePropertyCalculation):
     names = "RvirPlusMvirMiscoded"
 
     def requires_property(self):
@@ -70,24 +70,24 @@ class TestErrorProperty(properties.LivePropertyCalculation):
     def live_calculate(self, halo):
         return halo["Mvir"]+halo["Rvir"]
 
-class TestPropertyWithParameter(properties.LivePropertyCalculation):
+class _TestPropertyWithParameter(properties.LivePropertyCalculation):
     names = "squared"
 
     def live_calculate(self, halo, value):
         return value**2
 
-class TestBrokenProperty(properties.PropertyCalculation):
+class _TestBrokenProperty(properties.PropertyCalculation):
     names = "brokenproperty"
 
     def __init__(self, simulation):
         raise RuntimeError("This intentionally breaks the property")
 
-class TestPathChoice(properties.LivePropertyCalculation):
+class _TestPathChoice(properties.LivePropertyCalculation):
     num_calls = 0
     names = "my_BH"
 
     def __init__(self, simulation, criterion="hole_mass"):
-        super(TestPathChoice, self).__init__(simulation, criterion)
+        super(_TestPathChoice, self).__init__(simulation, criterion)
         assert isinstance(criterion, six.string_types), "Criterion must be a named BH property"
         self.criterion = criterion
 
@@ -158,7 +158,7 @@ def test_gather_linked_property_with_fn():
 
 def test_path_factorisation():
 
-    TestPathChoice.num_calls = 0
+    _TestPathChoice.num_calls = 0
 
     #desc = lc.MultiCalculationDescription(
     #    'my_BH("hole_spin").hole_mass',
@@ -174,7 +174,7 @@ def test_path_factorisation():
     # once per halo. Otherwise the factorisation has been done wrong (and in particular,
     # a second call to the DB to retrieve the BH objects has been made, which could be
     # expensive)
-    assert TestPathChoice.num_calls==3
+    assert _TestPathChoice.num_calls==3
 
 
 def test_single_quotes():

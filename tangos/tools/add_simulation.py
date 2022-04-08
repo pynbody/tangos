@@ -29,7 +29,7 @@ class SimulationAdderUpdater(object):
             logger.info("... using the output handler %r", self.simulation_output.handler_class_name())
             self.add_simulation()
         else:
-            logger.warn("Simulation already exists %r", self.basename)
+            logger.warning("Simulation already exists %r", self.basename)
 
         self.add_simulation_properties()
 
@@ -40,7 +40,7 @@ class SimulationAdderUpdater(object):
                 self.add_objects_to_timestep(ts, core.halo.Halo)
                 self.add_objects_to_timestep(ts, core.halo.Group)
             else:
-                logger.warn("Timestep already exists %r", ts_filename)
+                logger.warning("Timestep already exists %r", ts_filename)
 
     def simulation_exists(self):
         num_matches = self.session.query(Simulation).filter_by(basename=self.basename).count()
@@ -78,7 +78,7 @@ class SimulationAdderUpdater(object):
                 logger.info("Update simulation property %r", k)
                 sim[k] = v
             else:
-                logger.warn("Simulation property %r already exists", k)
+                logger.warning("Simulation property %r already exists", k)
 
         self.session.commit()
 

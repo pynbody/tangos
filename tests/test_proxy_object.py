@@ -8,13 +8,13 @@ import tangos.testing
 import tangos.util.proxy_object as po
 import tangos.util.timestep_object_cache as toc
 import tangos.testing.simulation_generator
-from nose.tools import assert_raises
+from pytest import raises as assert_raises
 
 
-def setup():
+def setup_module():
     tangos.testing.init_blank_db_for_testing()
 
-    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
     generator.add_timestep()
     generator.add_objects_to_timestep(1)
     generator.add_bhs_to_timestep(2)
@@ -24,7 +24,7 @@ def setup():
 
     db.core.get_default_session().commit()
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_proxy_object_by_id():

@@ -9,10 +9,10 @@ import tangos.relation_finding as relation_finding_strategies
 import tangos.testing.simulation_generator
 
 
-def setup():
+def setup_module():
     tangos.testing.init_blank_db_for_testing()
 
-    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
     generator.add_timestep()
     halo_1, = generator.add_objects_to_timestep(1)
     bh_1, bh_2 = generator.add_bhs_to_timestep(2)
@@ -21,7 +21,7 @@ def setup():
 
     db.core.get_default_session().commit()
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_bh_identity():

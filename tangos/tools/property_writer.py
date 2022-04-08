@@ -197,7 +197,7 @@ class PropertyWriter(GenericTangosTool):
 
         if self._include:
             inclusion, = self._include.values(halos)
-            if any([not np.issubdtype(inc_i, np.bool) for inc_i in inclusion]):
+            if any([not np.issubdtype(inc_i, np.bool_) for inc_i in inclusion]):
                 raise ValueError("Specified inclusion criterion does not return a boolean")
             if len(inclusion)!=len(halos):
                 raise ValueError("Inclusion criterion did not generate results for all the halos")
@@ -372,7 +372,7 @@ class PropertyWriter(GenericTangosTool):
         try:
             snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, db_data, property_calculator)
         except IOError:
-            logger.warn("Failed to load snapshot data for %r; skipping",db_halo)
+            logger.warning("Failed to load snapshot data for %r; skipping",db_halo)
             self.tracker.register_loading_error()
             return result
 

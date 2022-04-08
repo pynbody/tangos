@@ -8,14 +8,14 @@ import os
 import numpy.testing as npt
 import tangos
 
-def setup():
+def setup_module():
     global output_manager
     testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
     output_manager = yt_outputs.YtChangaAHFInputHandler("test_tipsy_yt")
     add.SimulationAdderUpdater(output_manager).scan_simulation_and_add_all_descendants()
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_handler():

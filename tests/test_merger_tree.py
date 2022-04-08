@@ -10,12 +10,12 @@ import tangos.testing.simulation_generator
 
 from tangos.relation_finding import tree
 import tangos.testing as testing
-from nose.tools import assert_raises
+from pytest import raises as assert_raises
 
-def setup():
+def setup_module():
     testing.init_blank_db_for_testing()
 
-    generator = tangos.testing.simulation_generator.TestSimulationGenerator()
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
     generator.add_timestep() # ts1
     generator.add_objects_to_timestep(7)
 
@@ -46,7 +46,7 @@ def setup():
     tree.mergertree_timeout = 15.0
     tree.mergertree_max_hops = 500
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_default_tree_has_correct_structure():

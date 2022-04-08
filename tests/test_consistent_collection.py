@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from nose.tools import assert_raises
+from pytest import raises as assert_raises
 
 import tangos as db
 import tangos.core.halo
@@ -9,7 +9,7 @@ import tangos.util.consistent_collection as cc
 from tangos import testing
 
 
-def setup():
+def setup_module():
     global sim1, sim2, collection, h1, h2
     testing.init_blank_db_for_testing()
 
@@ -32,7 +32,7 @@ def setup():
     sim2['inconsistent_property'] = 1.0
     collection = cc.ConsistentCollection([sim1, sim2])
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 

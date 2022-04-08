@@ -36,7 +36,7 @@ def _ensure_dummy_gadgetsnaps_exist():
         f.write(pynbody.snapshot.gadget.GadgetSnap, _get_gadget_snap_path("snapshot_014"))
 
 
-def setup():
+def setup_module():
     _ensure_dummy_gadgetsnaps_exist()
 
     testing.init_blank_db_for_testing()
@@ -46,7 +46,7 @@ def setup():
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 

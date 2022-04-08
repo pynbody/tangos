@@ -6,13 +6,13 @@ import zlib
 
 import numpy as np
 import pynbody
-from nose.tools import assert_raises
+from pytest import raises as assert_raises
 
 import tangos.core.data_attribute_mapper as dam
 import six
 
 
-class TestTarget(object):
+class _TestTarget(object):
     all_types = "time","string","float","int","array"
     def __init__(self):
         self.create_placeholders()
@@ -39,7 +39,7 @@ class TestTarget(object):
         return dam.set_data_of_unknown_type(self, data)
 
 
-class TestTargetNoStrings(TestTarget):
+class _TestTargetNoStrings(_TestTarget):
     all_types = "time","float","int","array"
 
 test_values = {"string":"hello",
@@ -57,14 +57,14 @@ def assert_data_value(data, testval):
 def test_set_retrieve():
 
     for typename,testval in six.iteritems(test_values):
-        target = TestTarget()
+        target = _TestTarget()
         target.data=testval
         target.assert_datatype(typename)
         assert_data_value(target.data,testval)
 
 def test_set_retrieve_no_strings():
     for typename,testval in six.iteritems(test_values):
-        target = TestTargetNoStrings()
+        target = _TestTargetNoStrings()
 
         if typename=="string":
             assert_raises(TypeError,
@@ -77,7 +77,7 @@ def test_set_retrieve_no_strings():
 def test_set_reset_retrieve():
 
     for typename,testval in six.iteritems(test_values):
-        target = TestTarget()
+        target = _TestTarget()
         target.data=testval
         target.assert_datatype(typename)
         assert_data_value(target.data,testval)
@@ -87,27 +87,27 @@ def test_set_reset_retrieve():
             assert_data_value(target.data,testval2)
 
 def test_auto_array_from_list():
-    target = TestTarget()
+    target = _TestTarget()
     target.data=[1,2,3]
     target.assert_datatype("array")
     assert_data_value(target.data,[1,2,3])
 
 def test_simarray():
-    target = TestTarget()
+    target = _TestTarget()
     target.data=pynbody.array.SimArray([1,2,3],"kpc")
     target.assert_datatype("array")
     assert_data_value(target.data,[1,2,3])
     assert target.data.units=="kpc"
 
 def test_struct_time():
-    target = TestTarget()
+    target = _TestTarget()
     test_time = time.localtime()
     target.data=test_time
     target.assert_datatype("time")
     assert_data_value(target.data,  datetime.datetime(*test_time[:6]))
 
 def test_array_pack_format():
-    target = TestTarget()
+    target = _TestTarget()
     test_data=np.array([1,2,3])
     target.data=test_data
     assert target.data_array.startswith(b"PX")
@@ -120,7 +120,7 @@ def test_array_pack_format():
     assert np.allclose(target.data, test_data)
 
 def test_none():
-    target = TestTarget()
+    target = _TestTarget()
     assert target.data is None
     target.data=23
     assert target.data==23
@@ -131,21 +131,21 @@ def test_unknown_storage_type():
     class DummyClass(object):
         pass
 
-    target = TestTarget()
+    target = _TestTarget()
 
     with assert_raises(TypeError):
         target.data = DummyClass()
 
 def test_float_downcast_from_ndarray():
     data = np.array(3.0)
-    target = TestTarget()
+    target = _TestTarget()
     target.data = data
     assert target.data==3.0
     target.assert_datatype("float")
 
 def test_float_downcast_from_list():
     data = [3.0]
-    target = TestTarget()
+    target = _TestTarget()
     target.data = data
     assert target.data==3.0
     target.assert_datatype("float")
@@ -153,26 +153,26 @@ def test_float_downcast_from_list():
 
 def test_int_downcast_from_ndarray():
     data = np.array(3)
-    target = TestTarget()
+    target = _TestTarget()
     target.data = data
     assert target.data==3
     target.assert_datatype("int")
 
 def test_int_downcast_from_list():
     data = [3]
-    target = TestTarget()
+    target = _TestTarget()
     target.data = data
     assert target.data==3
     target.assert_datatype("int")
 
 def test_old_format():
     data = np.array([1.0,2.0,3.0])
-    target = TestTarget()
+    target = _TestTarget()
     target.data_array = data.tobytes()
     assert np.allclose(data,target.data)
 
 def test_empty_container():
-    target = TestTarget()
+    target = _TestTarget()
     assert target.data is None
 
     target.data_array = ""

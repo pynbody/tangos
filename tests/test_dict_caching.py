@@ -6,10 +6,10 @@ __author__ = 'app'
 
 import tangos as db
 
-def setup():
+def setup_module():
     testing.init_blank_db_for_testing()
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_set():

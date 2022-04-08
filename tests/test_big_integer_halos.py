@@ -4,12 +4,12 @@ import tangos as db
 import tangos.testing.simulation_generator
 import numpy as np
 
-def setup():
+def setup_module():
     testing.init_blank_db_for_testing()
-    creator = testing.simulation_generator.TestSimulationGenerator()
+    creator = testing.simulation_generator.SimulationGeneratorForTests()
     creator.add_timestep()
 
-def teardown():
+def teardown_module():
     tangos.core.close_db()
 
 def test_big_integer_halo():
