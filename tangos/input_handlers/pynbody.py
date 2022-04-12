@@ -553,8 +553,10 @@ class RAMSESAHFInputHandler(RamsesCatalogueMixin, AHFInputHandler):
 
     _excluded_precalculated_properties = (
         "boxsize", "time", "hostHalo", "Xc", "Yc", "Zc",
-        "VXc", "VYc", "VZc", "npart","n_gas", "n_star",
-        "a", "omegaM0", "omegaL0","h", "fstart", "ovdens", "nbins"
+        "VXc", "VYc", "VZc",
+        "npart","n_gas", "n_star", # will be accessible through NDM()
+        "a", "omegaM0", "omegaL0","h", "fstart", "ovdens", "nbins",
+        "halo_id", "ID" # will be accesisble through finder_id()
     )
 
 class ChangaInputHandler(PynbodyInputHandler):
