@@ -551,6 +551,11 @@ class RAMSESAHFInputHandler(RamsesCatalogueMixin, AHFInputHandler):
     patterns = ["output_?????"]
     auxiliary_file_patterns = ["output_?????*z*AHF_halos"]
 
+    _excluded_precalculated_properties = (
+        "boxsize", "time", "hostHalo", "Xc", "Yc", "Zc",
+        "VXc", "VYc", "VZc", "npart","n_gas", "n_star",
+        "a", "omegaM0", "omegaL0","h", "fstart", "ovdens", "nbins"
+    )
 
 class ChangaInputHandler(PynbodyInputHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",
