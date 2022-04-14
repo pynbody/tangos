@@ -1,41 +1,11 @@
 from more_itertools import always_iterable
 from ..util import proxy_object
 from itertools import chain
-from .pynbody import PynbodyInputHandler
+from .pynbody import PynbodyInputHandler, RamsesCatalogueMixin
 import numpy as np
 from ..log import logger
 from .. import config
 
-class RamsesCatalogueMixin:
-    def create_bridge(self, f1, f2):
-        import pynbody
-        # Ensure that f1.dm and f2.dm are not garbage-collected
-        self._f1dm = f1.dm
-        self._f2dm = f2.dm
-
-        return pynbody.bridge.OrderBridge(self._f1dm, self._f2dm, monotonic=False)
-
-    def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=True, threshold=0.005,
-                      object_typetag="halo", output_handler_for_ts2=None):
-        import pynbody
-        if not dm_only:
-            logger.warning(
-                "`match_objects` was called with dm_only=%s, but %s only supports DM-only"
-                " catalogues at the moment. Falling back to DM-only.", dm_only, self.__class__.__name__
-            )
-            dm_only = True
-
-        return super().match_objects(
-            ts1,
-            ts2,
-            halo_min,
-            halo_max,
-            dm_only=dm_only,
-            threshold=threshold,
-            object_typetag=object_typetag,
-            output_handler_for_ts2=output_handler_for_ts2,
-            fuzzy_match_kwa={"use_family": pynbody.family.dm}
-        )
 
 class RamsesHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
     """ Handling Ramses outputs with HOP halo finding (Eisenstein and Hut 1998)"""
@@ -215,3 +185,4 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
                         yield i, i, hi.properties["npart"], 0, 0
                 except (ValueError, KeyError) as e:
                     pass
+

@@ -19,8 +19,6 @@ from .. import config
 from ..log import logger
 from six.moves import range
 
-
-
 _loaded_halocats = {}
 
 class DummyTimeStep(object):
@@ -440,6 +438,37 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
             return False
 
 
+class RamsesCatalogueMixin:
+    def create_bridge(self, f1, f2):
+        import pynbody
+        # Ensure that f1.dm and f2.dm are not garbage-collected
+        self._f1dm = f1.dm
+        self._f2dm = f2.dm
+
+        return pynbody.bridge.OrderBridge(self._f1dm, self._f2dm, monotonic=False)
+
+    def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=True, threshold=0.005,
+                      object_typetag="halo", output_handler_for_ts2=None):
+        import pynbody
+        if not dm_only:
+            logger.warn(
+                "`match_objects` was called with dm_only=%s, but %s only supports DM-only"
+                " catalogues at the moment. Falling back to DM-only.", dm_only, self.__class__.__name__
+            )
+            dm_only = True
+
+        return super().match_objects(
+            ts1,
+            ts2,
+            halo_min,
+            halo_max,
+            dm_only=dm_only,
+            threshold=threshold,
+            object_typetag=object_typetag,
+            output_handler_for_ts2=output_handler_for_ts2,
+            fuzzy_match_kwa={"use_family": pynbody.family.dm}
+        )
+
 
 class AHFInputHandler(PynbodyInputHandler):
     pynbody_halo_class_name = "AHFCatalogue"
@@ -517,9 +546,11 @@ class GadgetAHFInputHandler(AHFInputHandler):
     patterns = ["snapshot_???"]
     auxiliary_file_patterns = ["*.AHF_particlesSTARDUST"]
 
-class RAMSESAHFInputHandler(AHFInputHandler):
+
+class RAMSESAHFInputHandler(RamsesCatalogueMixin, AHFInputHandler):
     patterns = ["output_?????"]
     auxiliary_file_patterns = ["output_?????*z*AHF_halos"]
+
 
 class ChangaInputHandler(PynbodyInputHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",
