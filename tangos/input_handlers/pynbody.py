@@ -437,7 +437,6 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
         except (IOError, RuntimeError):
             return False
 
-
 class RamsesCatalogueMixin:
     def create_bridge(self, f1, f2):
         import pynbody
@@ -451,7 +450,7 @@ class RamsesCatalogueMixin:
                       object_typetag="halo", output_handler_for_ts2=None):
         import pynbody
         if not dm_only:
-            logger.warn(
+            logger.warning(
                 "`match_objects` was called with dm_only=%s, but %s only supports DM-only"
                 " catalogues at the moment. Falling back to DM-only.", dm_only, self.__class__.__name__
             )
