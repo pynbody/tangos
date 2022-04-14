@@ -518,9 +518,9 @@ class AHFInputHandler(PynbodyInputHandler):
 
             # Since these changes, we need to yield the finder offset (halo_id in our case)
             # but also need to yield a second, dummy value that is then skipped by the property importer (here repeating the halo id)
-            # This needs cleaning up, as (i) the logic is slightly baffling,
-            # (ii) the behaviour of the method is not what is documented in the input_handler base class
-            # (iii) other handlers implemented before this change such as GadgetSubfind are likely broken by it
+            # This needs cleaning up,
+            # (i) the behaviour of the method is not what is documented in the input_handler base class
+            # (ii) other handlers implemented before this change such as GadgetSubfind are likely broken by it
             # (TODO fix in a different PR)
             all_data = [halo.properties["halo_id"], halo.properties["halo_id"]]
 
