@@ -100,8 +100,9 @@ class PropertyImporter(GenericTangosTool):
 
 
         logger.info("Add %d properties", len(rows_to_store))
-        self._session.add_all(rows_to_store)
-        self._session.commit()
+        with parallel_tasks.ExclusiveLock("add_properties"):
+            self._session.add_all(rows_to_store)
+            self._session.commit()
 
     def run_calculation_loop(self):
         base_sim = core.sim_query_from_name_list(self.options.sims)
