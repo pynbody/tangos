@@ -512,11 +512,17 @@ class AHFInputHandler(PynbodyInputHandler):
             map_child_parent = self._get_map_child_subhalos(ts_extension)
 
         for halo in h:
-            # Tangos expects data to have a finder offset, and a finder id following the stat file logic
-            # I think these are irrelevant for AdaptaHOP catalogues which are derived directly from pynbody
-            # Putting the finder ID twice seems to produce consistent results
-            halo_i = halo.properties["halo_id"]
-            all_data = [halo_i, halo_i]
+            # Since PR88, Tangos has a finder offset mapping the index of the halo in the pynbody catalog,
+            # and a finder id which is the intrinsic id of the halo.
+            # In general, these can be different, and in particular when using specific options or MPI with AHF
+
+            # Since these changes, we need to yield the finder offset (halo_id in our case)
+            # but also need to yield a second, dummy value that is then skipped by the property importer (here repeating the halo id)
+            # This needs cleaning up, as (i) the logic is slightly baffling,
+            # (ii) the behaviour of the method is not what is documented in the input_handler base class
+            # (iii) other handlers implemented before this change such as GadgetSubfind are likely broken by it
+            # (TODO fix in a different PR)
+            all_data = [halo.properties["halo_id"], halo.properties["halo_id"]]
 
             halo_props = halo.properties
             for k in property_names:
