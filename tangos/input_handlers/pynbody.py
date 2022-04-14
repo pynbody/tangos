@@ -523,7 +523,7 @@ class AHFInputHandler(PynbodyInputHandler):
             for k in property_names:
                 if k == "parent":
                     data = proxy_object.IncompleteProxyObjectFromFinderId(
-                        halo_props['hostHalo'],
+                        halo_props['halo_id'],
                         'halo'
                     )
                 elif k == "child":
