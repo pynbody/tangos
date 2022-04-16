@@ -7,7 +7,6 @@ For information on getting started, see README.md.
 
 """
 
-from __future__ import absolute_import
 import sqlalchemy
 import sqlalchemy.orm.session
 from sqlalchemy import Index, Column, Integer, String, Float, ForeignKey, DateTime, Boolean, create_engine, orm

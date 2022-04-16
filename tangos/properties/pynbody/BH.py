@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 import tangos.core.halo
 from tangos.input_handlers.changa_bh import ShortenedOrbitLog, BlackHolesLog
 from . import PynbodyPropertyCalculation
@@ -169,7 +167,7 @@ class BHAccHistogramMerged(PynbodyPropertyCalculation):
 
 class BHGal(LivePropertyCalculation):
     def __init__(self, simulation=None, choose='BH_mass', minmax='max', bhtype='BH_central'):
-        super(BHGal, self).__init__(simulation)
+        super().__init__(simulation)
         self._maxmin = minmax
         self._choicep = choose
         self._bhtype = bhtype
@@ -205,4 +203,4 @@ class BHCentral(BHGal):
     names = 'bhcenter'
 
     def __init__(self, simulation=None):
-        super(BHCentral, self).__init__(simulation, 'BH_central_distance', 'min', 'BH_central')
+        super().__init__(simulation, 'BH_central_distance', 'min', 'BH_central')

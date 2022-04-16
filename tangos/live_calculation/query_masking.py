@@ -1,9 +1,8 @@
-from __future__ import absolute_import
 import numpy as np
 from ..util import is_not_none, is_not_false
 
 
-class QueryMask(object):
+class QueryMask:
     """A helper class to remove rows that do not need to be queried, representing them by "None" in the final results"""
     def __init__(self):
         self.N = None

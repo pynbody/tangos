@@ -1,8 +1,6 @@
-from __future__ import absolute_import
 from .. import BuiltinFunction, FixedNumericInput
 import numpy as np
 import functools
-from six.moves import zip
 
 @BuiltinFunction.register
 def abs(halos, vals):

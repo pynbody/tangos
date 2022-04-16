@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import tangos
 import pyramid.httpexceptions as exc
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env python2.7
 
-from __future__ import absolute_import
-from __future__ import print_function
 import tangos as db
 from tangos.util.check_deleted import check_deleted
 import tangos.core.dictionary
@@ -22,7 +20,6 @@ import argparse
 import glob
 import pynbody
 import six
-from six.moves import zip
 
 def get_parser_object():
     parser = argparse.ArgumentParser()
@@ -207,7 +204,7 @@ def add_missing_trackdata_and_BH_objects(timestep, this_step_bh_iords, existing_
 
 
 def resolve_multiple_mergers(bh_map):
-    for k,v in six.iteritems(bh_map):
+    for k,v in bh_map.items():
         if v[0] in bh_map:
             old_target = v[0]
             old_weight = v[1]
@@ -283,7 +280,7 @@ def generate_halolinks(session, fname, pairs):
         resolve_multiple_mergers(bh_map)
         logger.info("Gathering BH merger links for steps %r and %r", ts1, ts2)
         with session.no_autoflush:
-            for src,(dest,ratio) in six.iteritems(bh_map):
+            for src,(dest,ratio) in bh_map.items():
                 if src not in nums1 or dest not in nums2:
                     logger.warning("Can't link BH %r -> %r; missing BH objects in database",src,dest)
                     continue

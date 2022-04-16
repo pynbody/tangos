@@ -1,7 +1,6 @@
 #!/usr/bin/env python2.7
 
 
-from __future__ import absolute_import
 from tangos import core
 from tangos import parallel_tasks
 from tangos.parallel_tasks import database

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import contextlib
 import random
 import string
@@ -19,7 +18,6 @@ from .one_hop import HopStrategy
 from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
 from ..config import max_relative_time_difference as SMALL_FRACTION
 from ..config import DOUBLE_PRECISION
-from six.moves import range
 
 class MultiHopStrategy(HopStrategy):
     """An extension of the HopStrategy class that takes multiple hops across
@@ -78,7 +76,7 @@ class MultiHopStrategy(HopStrategy):
 
         :param include_startpoint:    Return the starting halo in the results (default False)
         """
-        super(MultiHopStrategy, self).__init__(halo_from, target, order_by)
+        super().__init__(halo_from, target, order_by)
         self.nhops_max = nhops_max
         self.directed = directed
         self._min_aggregated_weight = min_aggregated_weight
@@ -392,4 +390,4 @@ class MultiHopStrategy(HopStrategy):
         if name == 'nhops':
             return self._link_orm_class.c.nhops
         else:
-            return super(MultiHopStrategy, self)._generate_order_arg_from_name(name, halo_alias, timestep_alias)
+            return super()._generate_order_arg_from_name(name, halo_alias, timestep_alias)

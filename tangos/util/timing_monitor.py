@@ -1,11 +1,10 @@
-from __future__ import absolute_import
 import contextlib
 import time
 import inspect
 import numpy as np
 import six
 
-class TimingMonitor(object):
+class TimingMonitor:
     """This class keeps track of how long a Property is taking to evaluate, and (if the Property is implemented
     to take advantage of this), the time spent on sub-tasks. It provides formatting to place this information
     into the log."""
@@ -28,7 +27,7 @@ class TimingMonitor(object):
         self.check_compatible_object(object)
         if self._monitoring is not None:
             raise RuntimeError(
-                "TimingMonitor is already monitoring %r and cannot also monitor %r" % (self._monitoring, object))
+                "TimingMonitor is already monitoring {!r} and cannot also monitor {!r}".format(self._monitoring, object))
         self._monitoring = object
         self._old_timing_monitor = object.timing_monitor
         object.timing_monitor = self
@@ -80,16 +79,16 @@ class TimingMonitor(object):
     def summarise_timing(self, logger):
         logger.info("CUMULATIVE RUNNING TIMES (just this node)")
         v_tot = 1e-10
-        for k, v in six.iteritems(self.timings_by_class):
+        for k, v in self.timings_by_class.items():
             v_tot += sum(v)
 
-        for k, v in six.iteritems(self.timings_by_class):
+        for k, v in self.timings_by_class.items():
             name = str(k)[:-2]
             name = name.split(".")[-1]
             name = "%20s " % (name[-20:])
             if len(v)>1:
                 marks_info = self.labels_by_class[k]
-                logger.info(" " + name + "%.1fs | %.1f%%" % (sum(v), 100 * sum(v) / v_tot))
+                logger.info(" " + name + "{:.1f}s | {:.1f}%".format(sum(v), 100 * sum(v) / v_tot))
                 logger.info("  ------ INTERNAL BREAKDOWN ------" )
                 for i, this_v in enumerate(v):
                     logger.info((" %8s %8s %.1fs | %.1f%% | %.1f%%") %
@@ -97,5 +96,5 @@ class TimingMonitor(object):
                                  this_v, 100 * this_v / sum(v), 100 * this_v / v_tot))
                 logger.info("  --------------------------------")
             else:
-                logger.info(name + "%.1fs | %.1f%%" % (v[0], 100 * v[0] / v_tot))
+                logger.info(name + "{:.1f}s | {:.1f}%".format(v[0], 100 * v[0] / v_tot))
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env python2.7
 
-from __future__ import absolute_import
-from __future__ import print_function
 import sys
 from textwrap import dedent
 
@@ -21,7 +19,6 @@ from tangos.query import get_simulation, get_halo
 from tangos.input_handlers import get_named_handler_class
 from tangos.tools.add_simulation import SimulationAdderUpdater
 from tangos.log import logger
-from six.moves import input
 
 
 def add_simulation_timesteps(options):
@@ -418,8 +415,8 @@ def list_available_properties(options):
         else:
             return "live".center(15)
 
-    longest_class_name = max([len(format_class_name(cl)) for cl in properties.all_property_classes()])
-    print("%s | %s | %s" % ("name".rjust(30), "handler".center(15), "property class"))
+    longest_class_name = max(len(format_class_name(cl)) for cl in properties.all_property_classes())
+    print("{} | {} | {}".format("name".rjust(30), "handler".center(15), "property class"))
     print("-"*30+"-+-"+"-"*15+"-+-"+"-"*longest_class_name)
     for p in all_properties:
         classes = properties.all_providing_classes(p)

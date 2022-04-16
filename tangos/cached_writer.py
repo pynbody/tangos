@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from . import core
 
 def create_property(halo, name, prop, session):

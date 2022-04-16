@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from sqlalchemy import Index, create_engine, inspect, event, text
 from sqlalchemy.orm import sessionmaker, clear_mappers, declarative_base
 import os

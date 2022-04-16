@@ -1,11 +1,7 @@
-from __future__ import absolute_import
-from __future__ import print_function
 import sys
 import re
 import math
 from six import StringIO
-from six.moves import range
-from six.moves import zip
 
 
 class TerminalController:
@@ -145,7 +141,7 @@ class TerminalController:
         # these, so strip them out.
         import curses
         cap = curses.tigetstr(cap_name) or b''
-        return re.sub(b'\$<\d+>[/*]?', b'', cap)
+        return re.sub(br'\$<\d+>[/*]?', b'', cap)
 
     def render(self, template):
         """
@@ -153,7 +149,7 @@ class TerminalController:
         the corresponding terminal control string (if it's defined) or
         '' (if it's not).
         """
-        return re.sub(b'\$\$|\${\w+}', self._render_sub, template)
+        return re.sub(br'\$\$|\${\w+}', self._render_sub, template)
 
     def _render_sub(self, match):
         s = match.group()
@@ -177,7 +173,7 @@ def heading(s):
 term = TerminalController()
 
 
-class RedirectStdStreams(object):
+class RedirectStdStreams:
 
     def __init__(self):
         self.enabled = True

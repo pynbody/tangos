@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from pyramid.response import Response
 from pyramid.view import view_config
 import socket

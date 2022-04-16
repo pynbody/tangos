@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
-
 import tangos as db
 import os
 from ..input_handlers import ahf_trees as at

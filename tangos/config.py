@@ -4,7 +4,6 @@ Rather than change anything directly in this file, you can create a config_local
 want to override and it will automatically take precedence.
 """
 
-from __future__ import absolute_import
 import os
 import sqlalchemy.dialects.mysql
 

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from mpi4py import MPI
 import warnings
 

@@ -1,10 +1,7 @@
-from __future__ import absolute_import
-from __future__ import print_function
 from sqlalchemy import and_
 
 from tangos import get_default_session, Creator, Base
 from tangos.core import Simulation, TimeStep, SimulationObjectBase, HaloProperty
-from six.moves import map
 import six
 
 
@@ -21,7 +18,7 @@ def all_creators():
 def get_simulation(id, session=None):
     if session is None:
         session = get_default_session()
-    if isinstance(id, str) or isinstance(id, six.text_type):
+    if isinstance(id, str) or isinstance(id, str):
         assert "/" not in id, "Replace '/' with '_' in input string."
         if "%" in id or "_" in id:
             match_clause = Simulation.basename.like(id)
@@ -43,7 +40,7 @@ def get_simulation(id, session=None):
 def get_timestep(id, session=None, sim=None):
     if session is None:
         session = get_default_session()
-    if isinstance(id, str) or isinstance(id, six.text_type):
+    if isinstance(id, str) or isinstance(id, str):
         if sim is None:
             sim, ts = id.split("/")
             sim = get_simulation(sim, session)
@@ -73,7 +70,7 @@ def get_object(id, session=None):
     if session is None:
         session = get_default_session()
 
-    if isinstance(id, str) or isinstance(id, six.text_type):
+    if isinstance(id, str) or isinstance(id, str):
         sim, ts, halo = id.split("/")
         ts = get_timestep(sim + "/" + ts, session)
         return ts[halo]

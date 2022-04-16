@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 from .. import core, get_halo
 from ..config import testing_db_backend, testing_db_password, testing_db_user
 import sqlalchemy, sqlalchemy.event
@@ -9,7 +7,6 @@ import traceback
 import os
 import inspect
 import six
-from six.moves import zip
 from sqlalchemy import create_engine
 
 
@@ -92,14 +89,14 @@ def assert_connections_all_closed():
     sqlalchemy.event.remove(core.get_default_engine().pool, 'checkout', on_checkout)
     sqlalchemy.event.remove(core.get_default_engine().pool, 'checkin', on_checkin)
 
-    for k,v in six.iteritems(connection_details):
+    for k,v in connection_details.items():
         print("object id",k,"not checked in; was created here:")
         for line in traceback.format_list(v):
             print("  ",line)
 
     assert num_connections[0]==0, "%d (of %d) connections were not closed"%(num_connections[0], num_connections[1])
 
-class SqlExecutionTracker(object):
+class SqlExecutionTracker:
     """Logs queries performed against the given sqlalchemy connection.
 
     Based on https://stackoverflow.com/questions/19073099/how-to-count-sqlalchemy-queries-in-unit-tests

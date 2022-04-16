@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import weakref
 import numpy as np
 
@@ -62,8 +61,7 @@ class SimulationObjectBase(Base):
     def _all_subclasses(cls):
         for c in cls.__subclasses__():
             yield c
-            for c_sub in c._all_subclasses():
-                yield c_sub
+            yield from c._all_subclasses()
 
     @staticmethod
     def class_from_tag(match_tag):
@@ -75,7 +73,7 @@ class SimulationObjectBase(Base):
 
     @staticmethod
     def object_typecode_from_tag(match_tag):
-        if isinstance(match_tag, six.string_types):
+        if isinstance(match_tag, str):
             return SimulationObjectBase.class_from_tag(match_tag).__mapper_args__['polymorphic_identity']
         else:
             return match_tag
@@ -421,7 +419,7 @@ class Tracker(SimulationObjectBase):
     tag = "tracker"
 
     def __init__(self, timestep, halo_number):
-        super(Tracker, self).__init__(timestep, halo_number, halo_number, halo_number, 0,0,0,
+        super().__init__(timestep, halo_number, halo_number, halo_number, 0,0,0,
                                  self.__mapper_args__['polymorphic_identity'])
 
     @property
@@ -449,7 +447,7 @@ class Group(SimulationObjectBase):
     tag = "group"
 
     def __init__(self, *args):
-        super(Group, self).__init__(*args)
+        super().__init__(*args)
         self.object_typecode = 2
 
 
@@ -463,7 +461,7 @@ class PhantomHalo(SimulationObjectBase):
     tag = "phantom"
 
     def __init__(self, timestep, halo_number, finder_id):
-        super(PhantomHalo, self).__init__(timestep, halo_number, finder_id, finder_id, 0,0,0,
+        super().__init__(timestep, halo_number, finder_id, finder_id, 0,0,0,
                                  self.__mapper_args__['polymorphic_identity'])
 
 

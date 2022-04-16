@@ -1,12 +1,9 @@
-from __future__ import absolute_import
-from __future__ import print_function
 import glob
 import os, os.path
 from .. import config
 from . import HandlerBase
-from six.moves import range
 
-class DummyTimestepData(object):
+class DummyTimestepData:
     def __init__(self, message, time, max_halos, halo=None):
         self.message = message
         self.halo = halo
@@ -19,7 +16,7 @@ class DummyTimestepData(object):
 class TestInputHandler(HandlerBase):
     def get_properties(self):
         result = {}
-        with open(os.path.join(config.base, self.basename, "sim_info"),'r') as f:
+        with open(os.path.join(config.base, self.basename, "sim_info")) as f:
             for line in f:
                 line_split = line.split()
                 result[line_split[0]] = " ".join(line_split[1:])
@@ -80,7 +77,7 @@ class TestInputHandler(HandlerBase):
 
     def _get_ts_property(self, ts_extension, property):
         ts_filename = self._extension_to_filename(ts_extension)
-        with open(ts_filename, 'r') as f:
+        with open(ts_filename) as f:
             for line in f:
                 line_split = line.split()
                 if line_split[0].lower() == property.lower():

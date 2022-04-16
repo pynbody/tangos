@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os, os.path
 from sqlalchemy import Column, Integer, Text, ForeignKey, Boolean, and_
 from sqlalchemy.orm import relationship, backref, aliased, Session
@@ -61,7 +60,7 @@ class TimeStep(Base):
         if self.redshift is None:
             return "<TimeStep %r%s>"%(path,extra)
         else:
-            return "<TimeStep %r z=%.2f t=%.2f Gyr%s>" % (path, self.redshift, self.time_gyr, extra)
+            return "<TimeStep {!r} z={:.2f} t={:.2f} Gyr{}>".format(path, self.redshift, self.time_gyr, extra)
 
     def short(self):
         return "<TimeStep(... z=%.2f ...)>" % self.redshift

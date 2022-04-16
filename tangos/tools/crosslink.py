@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import argparse
 
 import tangos as db
@@ -9,7 +8,6 @@ from tangos import core
 import sqlalchemy, sqlalchemy.orm
 from tangos.log import logger
 import numpy as np
-from six.moves import zip
 from . import GenericTangosTool
 
 class GenericLinker(GenericTangosTool):
@@ -174,7 +172,7 @@ class TimeLinker(GenericLinker):
 
     @classmethod
     def add_parser_arguments(self, parser):
-        super(TimeLinker, self).add_parser_arguments(parser)
+        super().add_parser_arguments(parser)
         parser.add_argument('--sims', '--for', action='store', nargs='*',
                             metavar='simulation_name',
                             help='Specify a simulation (or multiple simulations) to run on')
@@ -186,7 +184,7 @@ class CrossLinker(GenericLinker):
 
     @classmethod
     def add_parser_arguments(self, parser):
-        super(CrossLinker, self).add_parser_arguments(parser)
+        super().add_parser_arguments(parser)
         parser.add_argument('sims', action='store', nargs=2,
                             metavar=('name1', 'name2'),
                             help='The two simulations (or, optionally, two individual timesteps) to crosslink')

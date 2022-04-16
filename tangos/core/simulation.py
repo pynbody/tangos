@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import datetime
 
 import numpy as np
@@ -132,7 +131,7 @@ class SimulationProperty(Base):
             x = "%.2g" % f
         elif type(f) is datetime.datetime:
             x = f.strftime('%H:%M %d/%m/%y')
-        elif type(f) is str or type(f) is six.text_type:
+        elif type(f) is str or type(f) is str:
             x = "'%s'" % f
         elif f is None:
             x = "None"

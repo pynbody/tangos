@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import tangos as db
 import tangos.core.halo
 import tangos.core.simulation

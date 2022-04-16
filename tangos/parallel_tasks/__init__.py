@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import time
 import warnings
 import importlib
@@ -8,7 +7,6 @@ import re
 import tangos.core.creator
 from .. import core, config
 import traceback
-from six.moves import range
 
 backend = None
 _backend_name = config.default_backend

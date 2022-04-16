@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 import matplotlib
 matplotlib.use('agg')
 import pylab as p
@@ -327,7 +325,7 @@ def add_xy_labels(property_info, request):
     p.xlabel(property_info.plot_xlabel())
     ylabel = property_info.plot_ylabel()
     # cludge follows - should be eliminated by fixing the mess around multi-name vs single-name property classes
-    if not isinstance(ylabel, string_types):
+    if not isinstance(ylabel, str):
         try:
             ylabel = ylabel[property_info.index_of_name(decode_property_name(request.matchdict['nameid']))]
         except:

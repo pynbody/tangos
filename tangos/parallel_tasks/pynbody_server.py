@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from .message import Message, ExceptionMessage
 from . import log, parallel_backend_loaded, remote_import
 from ..util.check_deleted import check_deleted
@@ -6,13 +5,12 @@ import pynbody
 import gc
 import six.moves.cPickle as pickle
 import numpy as np
-from six.moves import zip
 import time
 
 class ConfirmLoadPynbodySnapshot(Message):
     pass
 
-class ObjectSpecification(object):
+class ObjectSpecification:
     def __init__(self, object_number, object_index, object_typetag='halo'):
         self.object_number = object_number
         self.object_index = object_index
@@ -29,7 +27,7 @@ class ObjectSpecification(object):
     def __hash__(self):
         return hash((self.object_number, self.object_index, self.object_typetag))
 
-class PynbodySnapshotQueue(object):
+class PynbodySnapshotQueue:
     def __init__(self):
         self.timestep_queue = []
         self.handler_queue = []
@@ -163,7 +161,7 @@ class ReturnPynbodyArray(Message):
 
     def send(self, destination):
         # send envelope
-        super(ReturnPynbodyArray, self).send(destination)
+        super().send(destination)
 
         # send contents
         from . import backend
@@ -212,7 +210,7 @@ class RequestPynbodyArray(Message):
 
 class ReturnPynbodySubsnapInfo(Message):
     def __init__(self, families, sizes, properties, loadable_keys, fam_loadable_keys):
-        super(ReturnPynbodySubsnapInfo, self).__init__()
+        super().__init__()
         self.families = families
         self.sizes = sizes
         self.properties = properties
@@ -232,7 +230,7 @@ class ReturnPynbodySubsnapInfo(Message):
 
 class RequestPynbodySubsnapInfo(Message):
     def __init__(self, filename, filter_):
-        super(RequestPynbodySubsnapInfo, self).__init__()
+        super().__init__()
         self.filename = filename
         self.filter_or_object_spec = filter_
 
@@ -259,7 +257,7 @@ class RequestPynbodySubsnapInfo(Message):
 
 class RemoteSubSnap(pynbody.snapshot.SimSnap):
     def __init__(self, connection, filter_or_object_spec):
-        super(RemoteSubSnap, self).__init__()
+        super().__init__()
 
         self.connection = connection
         self._filename = connection.identity
@@ -285,7 +283,7 @@ class RemoteSubSnap(pynbody.snapshot.SimSnap):
                 and name in self._derived_quantity_registry[cl]:
             return self._derived_quantity_registry[cl][name]
         else:
-            return super(RemoteSubSnap, self)._find_deriving_function(name)
+            return super()._find_deriving_function(name)
 
 
     def _load_array(self, array_name, fam=None):
@@ -296,7 +294,7 @@ class RemoteSubSnap(pynbody.snapshot.SimSnap):
             data = ReturnPynbodyArray.receive(self._server_id).contents
             log.logger.debug("Array received; waited %.2fs",time.time()-start_time)
         except KeyError:
-            raise IOError("No such array %r available from the remote"%array_name)
+            raise OSError("No such array %r available from the remote"%array_name)
         if fam is None:
             self[array_name] = data
         else:
@@ -305,7 +303,7 @@ class RemoteSubSnap(pynbody.snapshot.SimSnap):
 
 _connection_active = False
 
-class RemoteSnapshotConnection(object):
+class RemoteSnapshotConnection:
     def __init__(self, input_handler, ts_extension, server_id=0):
         global _connection_active
 
@@ -317,7 +315,7 @@ class RemoteSnapshotConnection(object):
 
         _connection_active = True
 
-        super(RemoteSnapshotConnection, self).__init__()
+        super().__init__()
 
         self._server_id = server_id
         self._input_handler = input_handler

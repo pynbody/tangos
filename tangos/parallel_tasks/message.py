@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import contextlib
 import six
 import struct
@@ -12,10 +11,10 @@ class MessageMetaClass(type):
     _message_classes = {}
 
     def __new__(meta, name, bases, dct):
-        return super(MessageMetaClass, meta).__new__(meta, name, bases, dct)
+        return super().__new__(meta, name, bases, dct)
 
     def __init__(cls, name, bases, dct):
-        super(MessageMetaClass, cls).__init__(name, bases, dct)
+        super().__init__(name, bases, dct)
         MessageMetaClass.register_class(cls)
 
 
@@ -43,7 +42,7 @@ class MessageMetaClass(type):
         cls._tag = MessageMetaClass.class_to_hash(cls)
 
 
-class Message(six.with_metaclass(MessageMetaClass, object)):
+class Message(metaclass=MessageMetaClass):
     _handler = None
 
     def __init__(self, contents=None):

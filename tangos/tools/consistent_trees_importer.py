@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
-
 import tangos as db
 import os
 from ..input_handlers import consistent_trees as ct
@@ -49,7 +46,7 @@ class ConsistentTreesImporter(GenericTangosTool):
 
         new_phantoms = []
 
-        for i in xrange(1,n_phantoms+1):
+        for i in range(1,n_phantoms+1):
             if i not in existing_phantom_ids:
                 new_ph = PhantomHalo(timestep, i, i)
                 new_phantoms.append(new_ph)

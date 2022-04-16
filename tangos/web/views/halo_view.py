@@ -1,21 +1,19 @@
-from __future__ import absolute_import
 from pyramid.view import view_config
 import tangos
 from tangos import core
 import numpy as np
 from .halo_data import format_number, _relative_description
 import sqlalchemy, sqlalchemy.orm
-from six.moves import zip
 import urllib.parse
 from . import halo_from_request
 
-class TimestepInfo(object):
+class TimestepInfo:
     def __init__(self, ts):
         self.z = "%.2f"%ts.redshift
         self.t = "%.2e Gyr"%ts.time_gyr
 
 
-class TimeLinks(object):
+class TimeLinks:
     def __init__(self, request, halo):
         link_names = ['earliest', '-10', '-1', '+1', '+10', 'latest']
         route_names = ['halo_earlier']*3 + ['halo_later']*3
@@ -32,7 +30,7 @@ class TimeLinks(object):
         self.urls = urls
         self.names = link_names
 
-class DisplayProperty(object):
+class DisplayProperty:
     def __init__(self, property):
         self.name = property.name.text
         self.value = format_property_data(property)
@@ -74,7 +72,7 @@ def format_property_data(property):
         except:
             return "(Exception while formatting data)"
 
-class SimulationInfo(object):
+class SimulationInfo:
     def __init__(self, sim, request):
         self.name = sim.basename
         self.url = request.route_url('halo_in',simid=request.matchdict['simid'],
@@ -83,7 +81,7 @@ class SimulationInfo(object):
                                             n=sim.basename)
 
 
-class HaloLinkInfo(object):
+class HaloLinkInfo:
     def __init__(self, link, request):
         halo_source = link.halo_from
         halo_dest = link.halo_to

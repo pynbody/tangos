@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import re
 import numpy as np
 import six
@@ -7,14 +5,14 @@ from ..log import logger
 import os
 
 
-class BHLogData(object):
+class BHLogData:
     """Class to load a Changa BH log files, either simname.BlackHoles or the (now deprecated) simname.shortened.orbit"""
     _cache = {}
     _n_cols = 0
 
     @classmethod
     def can_load(cls, filename):
-        simname, stepnum = re.match("^(.*)\.(0[0-9]*)$", filename).groups()
+        simname, stepnum = re.match(r"^(.*)\.(0[0-9]*)$", filename).groups()
         try:
             return os.path.exists(cls.filename(simname))
         except (ValueError, TypeError):
@@ -26,7 +24,7 @@ class BHLogData(object):
 
     @classmethod
     def get_existing_or_new(cls, filename):
-        name, stepnum = re.match("^(.*)\.(0[0-9]*)$", filename).groups()
+        name, stepnum = re.match(r"^(.*)\.(0[0-9]*)$", filename).groups()
         obj = cls._cache.get(name, None)
         if obj is not None:
             return obj
@@ -49,7 +47,7 @@ class BHLogData(object):
         import pynbody
         f = pynbody.load(filename)
         self.boxsize = float(f.properties['boxsize'].in_units('kpc', a=f.properties['a']))
-        name, stepnum = re.match("^(.*)\.(0[0-9]*)$", filename).groups()
+        name, stepnum = re.match(r"^(.*)\.(0[0-9]*)$", filename).groups()
         wrapped_ars = self.read_data(self.filename(name), f)
         iord, time, step, mass, x, y, z, vx, vy, vz, mdot, mdotmean, dMaccum, scalefac = wrapped_ars
 
@@ -101,7 +99,7 @@ class BHLogData(object):
 
     def get_at_stepnum(self, stepnum):
         mask = self.vars['step'] == stepnum
-        return dict((k, v[mask]) for k, v in six.iteritems(self.vars))
+        return {k: v[mask] for k, v in self.vars.items()}
 
     def get_at_stepnum_for_id(self, stepnum, bhid):
         vars = self.get_at_stepnum(stepnum)
@@ -109,7 +107,7 @@ class BHLogData(object):
             index = np.where(vars['bhid']==bhid)[0][0]
         except IndexError:
             raise ValueError("BH %d not found in step %d"%(bhid,stepnum))
-        vars_this = dict([(k,v[index]) for k, v in six.iteritems(vars)])
+        vars_this = {k:v[index] for k, v in vars.items()}
         return vars_this
 
     def get_last_entry_for_id(self, bhid):
@@ -117,7 +115,7 @@ class BHLogData(object):
         if mask.sum()==0:
             raise ValueError("No entries for BH %d"%bhid)
         ilast = np.argmax(self.vars['time'][mask])
-        return dict((k, v[mask][ilast]) for k, v in six.iteritems(self.vars))
+        return {k: v[mask][ilast] for k, v in self.vars.items()}
 
     def determine_merger_ratio(self, bhid_eaten, bhid_survivor):
         eaten_entries = self.get_last_entry_for_id(bhid_eaten)
@@ -128,7 +126,7 @@ class BHLogData(object):
 
 
     def get_for_named_snapshot(self, filename):
-        name, stepnum = re.match("^(.*)\.(0[0-9]*)$", filename).groups()
+        name, stepnum = re.match(r"^(.*)\.(0[0-9]*)$", filename).groups()
         stepnum = int(stepnum)
         return self.get_at_stepnum(stepnum)
 

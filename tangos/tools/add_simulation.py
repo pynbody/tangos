@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from .. import core, config
 from ..core import Simulation, TimeStep
 from ..log import logger
@@ -6,7 +5,7 @@ import six
 import numpy as np
 import numbers
 
-class SimulationAdderUpdater(object):
+class SimulationAdderUpdater:
     """This class contains the necessary tools to add a new simulation to the database"""
 
     def __init__(self, simulation_output, session=None, renumber=True):
@@ -68,7 +67,7 @@ class SimulationAdderUpdater(object):
         sim = self._get_simulation()
         properties_dict = self.simulation_output.get_properties()
         properties_dict['handler'] = self.simulation_output.handler_class_name()
-        for k, v in six.iteritems(properties_dict):
+        for k, v in properties_dict.items():
             if isinstance(v, numbers.Number) and np.isnan(v):
                 continue
             if k not in list(sim.keys()):
@@ -127,7 +126,7 @@ class SimulationAdderUpdater(object):
         self.session.commit()
 
     def add_timestep_properties(self, ts):
-        for key, value in six.iteritems(self.simulation_output.get_timestep_properties(ts.extension)):
+        for key, value in self.simulation_output.get_timestep_properties(ts.extension).items():
             setattr(ts, key, value)
 
 

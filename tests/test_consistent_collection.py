@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from pytest import raises as assert_raises
 
 import tangos as db

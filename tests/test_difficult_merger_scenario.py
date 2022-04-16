@@ -3,8 +3,6 @@ but survives; and then the remnant potentially merges later on.
 
 Further difficult scenarios could be added here in future and tested against various tools"""
 
-from __future__ import absolute_import
-from __future__ import print_function
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data
