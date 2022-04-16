@@ -1,5 +1,6 @@
 from . import PynbodyPropertyCalculation
 
+
 class SphericalRegionPropertyCalculation(PynbodyPropertyCalculation):
     """A base class for calculations which require all data within a sphere (rather than just the literal
     halo finder output)"""

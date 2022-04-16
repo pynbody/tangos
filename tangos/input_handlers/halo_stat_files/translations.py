@@ -2,6 +2,7 @@
 
 import numpy as np
 
+
 class Function:
     """Define a column which is actually a function of other columns"""
     def __init__(self, fn, *input_arg_names):

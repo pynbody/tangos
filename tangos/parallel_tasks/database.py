@@ -1,7 +1,8 @@
-from .. import core
-from . import message
-from . import remote_import
 import sys
+
+from .. import core
+from . import message, remote_import
+
 
 class MessageRequestCreatorId(message.Message):
     def process(self):

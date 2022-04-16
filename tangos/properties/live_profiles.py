@@ -1,7 +1,9 @@
 # Live properties suitable for calculations on underlying profiles, e.g. density profiles, mass profiles etc
 
-from . import LivePropertyCalculation
 import numpy as np
+
+from . import LivePropertyCalculation
+
 
 class AtPosition(LivePropertyCalculation):
     def __init__(self, simulation, position, array):

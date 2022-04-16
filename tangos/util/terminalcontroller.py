@@ -1,6 +1,7 @@
-import sys
-import re
 import math
+import re
+import sys
+
 from six import StringIO
 
 

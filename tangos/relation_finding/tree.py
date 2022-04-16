@@ -1,12 +1,16 @@
-from ..config import mergertree_timeout, mergertree_max_nhalos, mergertree_min_fractional_NDM, mergertree_min_fractional_weight, mergertree_max_hops
-from . import MultiHopAllProgenitorsStrategy
-from .. import live_calculation
-from .. import temporary_halolist
-from sqlalchemy.orm import object_session
-from .. import core
-from ..log import logger
-import time, math
+import math
+import time
+
 import numpy as np
+from sqlalchemy.orm import object_session
+
+from .. import core, live_calculation, temporary_halolist
+from ..config import (mergertree_max_hops, mergertree_max_nhalos,
+                      mergertree_min_fractional_NDM,
+                      mergertree_min_fractional_weight, mergertree_timeout)
+from ..log import logger
+from . import MultiHopAllProgenitorsStrategy
+
 
 class MergerTree:
     """Construct a merger tree from a given starting halo.

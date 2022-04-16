@@ -1,5 +1,6 @@
 from . import core
 
+
 def create_property(halo, name, prop, session):
 
     name = core.dictionary.get_or_create_dictionary_item(session, name)

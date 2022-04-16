@@ -1,6 +1,9 @@
-from .. import BuiltinFunction, FixedNumericInput
-import numpy as np
 import functools
+
+import numpy as np
+
+from .. import BuiltinFunction, FixedNumericInput
+
 
 @BuiltinFunction.register
 def abs(halos, vals):

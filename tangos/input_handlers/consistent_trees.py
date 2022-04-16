@@ -1,9 +1,12 @@
 """Code to read Peter Behroozi's Rockstar/consistent-trees output"""
 
 import os
+
 import numpy as np
 from six.moves import xrange
+
 from ..log import logger
+
 
 class ConsistentTrees:
     def __init__(self, path):

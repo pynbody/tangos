@@ -5,6 +5,7 @@ want to override and it will automatically take precedence.
 """
 
 import os
+
 import sqlalchemy.dialects.mysql
 
 home = os.environ['HOME']

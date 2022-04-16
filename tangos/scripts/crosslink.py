@@ -1,11 +1,11 @@
 #!/usr/bin/env python2.7
 
 
-from tangos import core
-from tangos import parallel_tasks
+import sys
+
+from tangos import core, parallel_tasks
 from tangos.parallel_tasks import database
 from tangos.tools.crosslink import CrossLinker
-import sys
 
 
 def run_dbwriter(argv):

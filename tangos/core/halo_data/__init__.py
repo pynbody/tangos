@@ -1,10 +1,7 @@
 from sqlalchemy.orm import relationship
 
-
-
-from .property import HaloProperty
 from .link import HaloLink
-
+from .property import HaloProperty
 
 
 def _initialise_halo_property_relationships():

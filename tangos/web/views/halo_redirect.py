@@ -1,7 +1,10 @@
-from pyramid.view import view_config
 import pyramid.httpexceptions as exc
+from pyramid.view import view_config
+
 import tangos
+
 from . import halo_from_request
+
 
 def halo_later_earlier(request, rel='later'):
     halo = halo_from_request(request)

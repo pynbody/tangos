@@ -8,16 +8,15 @@ import sqlalchemy.exc
 import sqlalchemy.orm
 import sqlalchemy.orm.dynamic
 import sqlalchemy.orm.query
-from sqlalchemy import and_, Table, Index, Column, Integer
-from sqlalchemy.orm import relationship, defer
+from sqlalchemy import Column, Index, Integer, Table, and_
+from sqlalchemy.orm import defer, relationship
 
-from .. import core
-from .. import temporary_halolist
+from .. import core, temporary_halolist
+from ..config import DOUBLE_PRECISION
+from ..config import max_relative_time_difference as SMALL_FRACTION
+from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
 from .one_hop import HopStrategy
 
-from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
-from ..config import max_relative_time_difference as SMALL_FRACTION
-from ..config import DOUBLE_PRECISION
 
 class MultiHopStrategy(HopStrategy):
     """An extension of the HopStrategy class that takes multiple hops across

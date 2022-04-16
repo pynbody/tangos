@@ -1,7 +1,10 @@
 import glob
-import os, os.path
+import os
+import os.path
+
 from .. import config
 from . import HandlerBase
+
 
 class DummyTimestepData:
     def __init__(self, message, time, max_halos, halo=None):

@@ -1,20 +1,20 @@
-import time
-import warnings
 import importlib
-import sys
 import re
+import sys
+import time
+import traceback
+import warnings
 
 import tangos.core.creator
-from .. import core, config
-import traceback
+
+from .. import config, core
 
 backend = None
 _backend_name = config.default_backend
 from .. import log
-from . import message, jobs, backends
-
-
 from ..log import logger
+from . import backends, jobs, message
+
 
 def _process_command_line():
     command_line = " ".join(sys.argv)
@@ -123,6 +123,6 @@ def _shutdown_parallelism():
 
 
 
-from .lock import ExclusiveLock
-from .barrier import barrier
 from . import remote_import
+from .barrier import barrier
+from .lock import ExclusiveLock

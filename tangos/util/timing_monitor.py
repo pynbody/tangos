@@ -1,8 +1,10 @@
 import contextlib
-import time
 import inspect
+import time
+
 import numpy as np
 import six
+
 
 class TimingMonitor:
     """This class keeps track of how long a Property is taking to evaluate, and (if the Property is implemented

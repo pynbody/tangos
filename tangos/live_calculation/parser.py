@@ -1,11 +1,13 @@
-import pyparsing as pp
 import functools
 import threading
 
+import pyparsing as pp
+
 _parsing_lock = threading.Lock() # pyparsing is NOT thread safe
 
-from . import StoredProperty, LiveProperty, FixedNumericInput, \
-    FixedInput, Link, MultiCalculation, Calculation
+from . import (Calculation, FixedInput, FixedNumericInput, Link, LiveProperty,
+               MultiCalculation, StoredProperty)
+
 
 def pack_args(for_function):
     """Return a version of for_function that takes a single argument instead of multiple arguments"""

@@ -7,12 +7,15 @@ overriding the functionality.
 For an introduction, see https://pynbody.github.io/tangos/input_handlers.html
 """
 
-import os, os.path
+import importlib
+import os
+import os.path
+import warnings
+import weakref
+
 from .. import config
 from ..log import logger
-import importlib
-import weakref
-import warnings
+
 
 class DummyTimeStep:
     def __init__(self, filename):

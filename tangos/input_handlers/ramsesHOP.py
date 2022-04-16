@@ -1,14 +1,18 @@
-from more_itertools import always_iterable
-from ..util import proxy_object
 from itertools import chain
-from .pynbody import PynbodyInputHandler
+
 import numpy as np
-from ..log import logger
+from more_itertools import always_iterable
+
 from .. import config
+from ..log import logger
+from ..util import proxy_object
+from .pynbody import PynbodyInputHandler
+
 
 class RamsesCatalogueMixin:
     def create_bridge(self, f1, f2):
         import pynbody
+
         # Ensure that f1.dm and f2.dm are not garbage-collected
         self._f1dm = f1.dm
         self._f2dm = f2.dm

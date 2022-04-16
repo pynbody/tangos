@@ -1,5 +1,7 @@
 import numpy as np
-from . query_masking import QueryMask
+
+from .query_masking import QueryMask
+
 
 class QueryMultivalueFolding:
     """This class manages a situation where a query returns multiple outputs per input, and one temporarily wants

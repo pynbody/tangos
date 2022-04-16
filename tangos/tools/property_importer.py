@@ -1,11 +1,12 @@
-from .. import parallel_tasks
-from ..log import logger
-from .. import core
-from . import GenericTangosTool
-from ..util import proxy_object
-from ..util import timestep_object_cache
-import numpy as np
 import numbers
+
+import numpy as np
+
+from .. import core, parallel_tasks
+from ..log import logger
+from ..util import proxy_object, timestep_object_cache
+from . import GenericTangosTool
+
 
 class PropertyImporter(GenericTangosTool):
     tool_name = 'import-properties'

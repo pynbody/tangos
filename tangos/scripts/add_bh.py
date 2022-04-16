@@ -1,7 +1,16 @@
 #!/usr/bin/env python2.7
 
+import argparse
+import gc
+import glob
+import sys
+
+import numpy as np
+import pynbody
+import six
+from sqlalchemy.orm import Session
+
 import tangos as db
-from tangos.util.check_deleted import check_deleted
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data
@@ -10,16 +19,10 @@ import tangos.core.tracking
 import tangos.parallel_tasks as parallel_tasks
 import tangos.parallel_tasks.database
 import tangos.tracking
-from tangos.input_handlers.changa_bh import ShortenedOrbitLog, BlackHolesLog
-from sqlalchemy.orm import Session
+from tangos.input_handlers.changa_bh import BlackHolesLog, ShortenedOrbitLog
 from tangos.log import logger
-import sys
-import numpy as np
-import gc
-import argparse
-import glob
-import pynbody
-import six
+from tangos.util.check_deleted import check_deleted
+
 
 def get_parser_object():
     parser = argparse.ArgumentParser()

@@ -4,7 +4,9 @@ import sqlalchemy.orm
 import sqlalchemy.orm.dynamic
 import sqlalchemy.orm.query
 from sqlalchemy.orm import Session, contains_eager
+
 from .. import core, temporary_halolist
+
 
 class HopStrategy:
     """HopStrategy and its descendants define methods helpful for finding related halos, e.g. progenitors/descendants,

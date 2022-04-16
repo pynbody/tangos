@@ -1,9 +1,11 @@
-from .. import core, all_simulations, get_simulation, get_timestep, get_object
-from ..log import logger
-import six
-import numpy.testing as npt
-from sqlalchemy.orm import joinedload, object_session, undefer, Session
 import numpy as np
+import numpy.testing as npt
+import six
+from sqlalchemy.orm import Session, joinedload, object_session, undefer
+
+from .. import all_simulations, core, get_object, get_simulation, get_timestep
+from ..log import logger
+
 
 class TangosDbDiff:
     """Class to compare two databases, used by the tangos diff command line tool"""

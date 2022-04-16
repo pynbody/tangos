@@ -1,9 +1,13 @@
-from sqlalchemy.orm import Session
 import numpy as np
-from .core import get_or_create_dictionary_item, SimulationObjectBase, HaloLink, TrackData
-from . import query
 import six
+from sqlalchemy.orm import Session
+
 import tangos.parallel_tasks as parallel_tasks
+
+from . import query
+from .core import (HaloLink, SimulationObjectBase, TrackData,
+                   get_or_create_dictionary_item)
+
 
 def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, weight=1.0):
     assert isinstance(halo_1, SimulationObjectBase)

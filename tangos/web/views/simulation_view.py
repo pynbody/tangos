@@ -1,10 +1,13 @@
+import socket
+
 from pyramid.view import view_config
 from sqlalchemy import func
 
-from . import simulation_from_request
-import socket
 import tangos
 from tangos import core
+
+from . import simulation_from_request
+
 
 @view_config(route_name='simulation_view', renderer='../templates/simulation_view.jinja2')
 def simulation_view(request):

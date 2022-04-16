@@ -3,19 +3,18 @@ import os
 import os.path
 import time
 import weakref
-import numpy as np
 from itertools import chain
+
+import numpy as np
 from more_itertools import always_iterable
+
 from ..util import proxy_object
 
 pynbody = None # deferred import; occurs when a PynbodyInputHandler is constructed
 
-from . import finding
-from . import HandlerBase
 from .. import config
 from ..log import logger
-
-
+from . import HandlerBase, finding
 
 _loaded_halocats = {}
 
@@ -579,4 +578,5 @@ class ChangaUseIDLInputHandler(ChangaInputHandler):
     auxiliary_file_patterns = ["*.amiga.grp"]
 
 from . import caterpillar, eagle, ramsesHOP
+
 RamsesHOPInputHandler = ramsesHOP.RamsesHOPInputHandler

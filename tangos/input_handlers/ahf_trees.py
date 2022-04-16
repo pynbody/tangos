@@ -1,12 +1,15 @@
 """ Code to read AHF's mtree files """
 
 
-import re
 import os
+import re
+
 import numpy as np
-from .. import config
 from six.moves import xrange
+
+from .. import config
 from ..log import logger
+
 
 class AHFTree:
     def __init__(self, path, ts):

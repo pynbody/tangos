@@ -1,6 +1,6 @@
-import tangos as db
 import sqlalchemy
 
+import tangos as db
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data

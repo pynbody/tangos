@@ -1,9 +1,12 @@
-import tangos.core.halo
-from tangos.input_handlers.changa_bh import ShortenedOrbitLog, BlackHolesLog
-from . import PynbodyPropertyCalculation
-from .. import LivePropertyCalculation, TimeChunkedProperty
 import numpy as np
-import scipy, scipy.interpolate
+import scipy
+import scipy.interpolate
+
+import tangos.core.halo
+from tangos.input_handlers.changa_bh import BlackHolesLog, ShortenedOrbitLog
+
+from .. import LivePropertyCalculation, TimeChunkedProperty
+from . import PynbodyPropertyCalculation
 
 
 class BH(PynbodyPropertyCalculation):

@@ -1,14 +1,18 @@
 import argparse
 
-import tangos as db
-import tangos.core, tangos.parallel_tasks.database
-from .. import config
-from tangos import parallel_tasks
-from tangos import core
-import sqlalchemy, sqlalchemy.orm
-from tangos.log import logger
 import numpy as np
+import sqlalchemy
+import sqlalchemy.orm
+
+import tangos as db
+import tangos.core
+import tangos.parallel_tasks.database
+from tangos import core, parallel_tasks
+from tangos.log import logger
+
+from .. import config
 from . import GenericTangosTool
+
 
 class GenericLinker(GenericTangosTool):
     def __init__(self, session=None):

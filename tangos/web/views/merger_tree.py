@@ -1,7 +1,9 @@
 from pyramid.view import view_config
-from . import halo_from_request
-from ...relation_finding import tree
+
 from ...config import webview_cache_time
+from ...relation_finding import tree
+from . import halo_from_request
+
 
 class WebMergerTree(tree.MergerTree):
     def __init__(self, halo, request):

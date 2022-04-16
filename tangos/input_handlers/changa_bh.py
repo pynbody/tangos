@@ -1,8 +1,10 @@
+import os
 import re
+
 import numpy as np
 import six
+
 from ..log import logger
-import os
 
 
 class BHLogData:

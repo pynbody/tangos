@@ -1,5 +1,5 @@
-from .multi_hop import MultiHopStrategy
 from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
+from .multi_hop import MultiHopStrategy
 
 
 class MultiHopAllProgenitorsStrategy(MultiHopStrategy):

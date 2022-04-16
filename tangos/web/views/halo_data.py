@@ -1,18 +1,21 @@
 import matplotlib
+
 matplotlib.use('agg')
-import pylab as p
-from pyramid.view import view_config
-from html import escape
-import numpy as np
-from . import halo_from_request, timestep_from_request, simulation_from_request
-from pyramid.response import Response
-from six import BytesIO, string_types
-from ...log import logger
-from ... import core
-from ...config import webview_default_image_format, webview_cache_time
+import functools
 import threading
 import time
-import functools
+from html import escape
+
+import numpy as np
+import pylab as p
+from pyramid.response import Response
+from pyramid.view import view_config
+from six import BytesIO, string_types
+
+from ... import core
+from ...config import webview_cache_time, webview_default_image_format
+from ...log import logger
+from . import halo_from_request, simulation_from_request, timestep_from_request
 
 _matplotlib_lock = threading.RLock()
 
