@@ -6,7 +6,6 @@ import sys
 import tangos.parallel_tasks as pt
 import time
 import numpy as np
-from six.moves import zip
 
 
 def test_function():

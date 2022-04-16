@@ -1,13 +1,14 @@
 """Specialised input handler for the caterpillar project
 http://www.caterpillarproject.org"""
 
-from __future__ import absolute_import
 
-import re
-from .. import config
-from .pynbody import PynbodyInputHandler
-from . import halo_stat_files
 import os.path
+import re
+
+from .. import config
+from . import halo_stat_files
+from .pynbody import PynbodyInputHandler
+
 
 class CaterpillarInputHandler(PynbodyInputHandler):
     patterns = ["snapdir_???"]
@@ -26,7 +27,7 @@ class CaterpillarInputHandler(PynbodyInputHandler):
         if snap_id:
             return os.path.join(path, "snap_%.3d" % snap_id)
         else:
-            raise IOError("Cannot infer correct path to pass to pynbody")
+            raise OSError("Cannot infer correct path to pass to pynbody")
 
     @classmethod
     def _rockstar_path_from_snapdir_path(cls, path):
@@ -35,7 +36,7 @@ class CaterpillarInputHandler(PynbodyInputHandler):
             return os.path.join(os.path.dirname(os.path.dirname(path)),
                                 "halos", "halos_%d"%snap_id)
         else:
-            raise IOError("Cannot infer path of halos")
+            raise OSError("Cannot infer path of halos")
 
     def _extension_to_filename(self, ts_extension):
         return str(os.path.join(config.base, self.basename, self._pynbody_path_from_snapdir_path(ts_extension)))
@@ -47,7 +48,7 @@ class CaterpillarInputHandler(PynbodyInputHandler):
             h = pynbody.halo.RockstarCatalogue(f, pathname=self._rockstar_path_from_snapdir_path(filepath),
                                                format_revision='caterpillar')
             return True
-        except (IOError, RuntimeError):
+        except (OSError, RuntimeError):
             return False
 
 class CaterpillarRockstarStatFile(halo_stat_files.RockstarStatFile):

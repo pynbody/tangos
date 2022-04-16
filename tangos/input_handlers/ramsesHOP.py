@@ -1,14 +1,18 @@
-from more_itertools import always_iterable
-from ..util import proxy_object
 from itertools import chain
-from .pynbody import PynbodyInputHandler
+
 import numpy as np
-from ..log import logger
+from more_itertools import always_iterable
+
 from .. import config
+from ..log import logger
+from ..util import proxy_object
+from .pynbody import PynbodyInputHandler
+
 
 class RamsesCatalogueMixin:
     def create_bridge(self, f1, f2):
         import pynbody
+
         # Ensure that f1.dm and f2.dm are not garbage-collected
         self._f1dm = f1.dm
         self._f2dm = f2.dm
@@ -52,7 +56,7 @@ class RamsesHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
             else:
                 h = pynbody.halo.hop.HOPCatalogue(f)
             return True
-        except (IOError, RuntimeError):
+        except (OSError, RuntimeError):
             return False
 
 
@@ -84,7 +88,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
                 h = f.halos()
                 return isinstance(h, pynbody.halo.adaptahop.BaseAdaptaHOPCatalogue)
             return True
-        except (IOError, RuntimeError):
+        except (OSError, RuntimeError):
             return False
 
 
@@ -176,7 +180,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
                         data = self._compute_contamination_fraction(adaptahop_halo)
                     else:
                         raise NotImplementedError(
-                            "Cannot handle property %s for halo catalogue %r" % (
+                            "Cannot handle property {} for halo catalogue {!r}".format(
                                 k, self
                             )
                         )
@@ -193,8 +197,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
-            for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
-                yield X
+            yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
         else:
             logger.warning("No halo statistics file found for timestep %r", ts_extension)
 

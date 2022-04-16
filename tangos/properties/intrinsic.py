@@ -1,5 +1,5 @@
-from __future__ import absolute_import
 from . import LivePropertyCalculation
+
 
 class IntrinsicProperties(LivePropertyCalculation):
     names = "t","z","a","dbid", "halo_number", "finder_id", "NDM", "NStar", "NGas", "type", "step_path", "path"

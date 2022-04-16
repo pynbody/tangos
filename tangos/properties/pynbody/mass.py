@@ -1,5 +1,6 @@
 from . import PynbodyPropertyCalculation
 
+
 class Masses(PynbodyPropertyCalculation):
     names = "finder_mass"
 

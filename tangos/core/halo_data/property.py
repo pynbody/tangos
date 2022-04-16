@@ -1,13 +1,10 @@
-from __future__ import absolute_import
-from sqlalchemy import Column, Integer, ForeignKey, Boolean
-from sqlalchemy.orm import relationship, backref, deferred, Session
+from sqlalchemy import Boolean, Column, ForeignKey, Integer
+from sqlalchemy.orm import Session, backref, deferred, relationship
 
-from .. import data_attribute_mapper, extraction_patterns
-from .. import Base
-from .. import creator
+from ...config import DOUBLE_PRECISION, LARGE_BINARY
+from .. import Base, creator, data_attribute_mapper, extraction_patterns
 from ..dictionary import DictionaryItem
 from ..halo import SimulationObjectBase
-from ...config import DOUBLE_PRECISION, LARGE_BINARY
 
 
 class HaloProperty(Base):

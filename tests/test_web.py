@@ -5,8 +5,8 @@ from webtest import TestApp
 import numpy as np
 import csv
 import json
-from six import StringIO
-from six.moves.urllib import parse
+from io import StringIO
+from urllib import parse
 
 def setup_module():
     testing.init_blank_db_for_testing()
@@ -159,7 +159,7 @@ def test_simulation_with_slash():
     calculate_url = halo_response.pyquery("#calculate_url").text()
     calculate_url = parse.unquote(calculate_url)
     assert "simname_has_slashes" in calculate_url
-    halo_next_step_response = halo_response.click("\+1$").follow()
+    halo_next_step_response = halo_response.click(r"\+1$").follow()
     assert "halo 1 of ts2" in halo_next_step_response
 
 

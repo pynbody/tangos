@@ -1,12 +1,11 @@
-from __future__ import absolute_import
-from __future__ import print_function
+import fnmatch
 import glob
 import os.path
-import fnmatch
+
+import numpy as np
+
 from .. import config
 from ..log import logger
-from six.moves import range
-import numpy as np
 
 
 def find(extension=None, mtd=None, ignore=None, basename="", patterns=[]):
@@ -32,7 +31,7 @@ def find(extension=None, mtd=None, ignore=None, basename="", patterns=[]):
     return set(out)
 
 
-class PatternBasedFileDiscovery(object):
+class PatternBasedFileDiscovery:
     """Provides methods for pattern-based file discovery, i.e. glob-ing for specific patterns of file in this
     folder and sub-folders"""
 

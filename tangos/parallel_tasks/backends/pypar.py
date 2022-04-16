@@ -1,9 +1,11 @@
-from __future__ import absolute_import
-
-import pypar, pypar.mpiext
 import warnings
+
 import numpy as np
+import pypar
+import pypar.mpiext
+
 from ..message import Message
+
 
 def send(data, destination, tag=0):
     pypar.send(data, destination=destination, tag = tag)

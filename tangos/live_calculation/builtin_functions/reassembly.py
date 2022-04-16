@@ -1,7 +1,7 @@
-from __future__ import absolute_import
 from tangos.core import extraction_patterns
+
+from .. import FixedInput, StoredProperty
 from . import BuiltinFunction
-from .. import StoredProperty, FixedInput
 
 
 @BuiltinFunction.register

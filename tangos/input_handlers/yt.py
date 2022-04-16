@@ -1,16 +1,13 @@
-from __future__ import absolute_import
-
 yt = None # deferred import; occurs when a YtInputHandler is constructed
 
-from . import finding
-from . import HandlerBase
 from .. import config
 from ..log import logger
-from six.moves import range
+from . import HandlerBase, finding
+
 
 class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __init__(self, *args, **kwargs):
-        super(YtInputHandler, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         global yt
         import yt as yt_local
         yt = yt_local
@@ -50,8 +47,7 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         if object_typetag!="halo":
             return
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
-            for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
-                yield X
+            yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
         else:
             logger.warning("No halo statistics file found for timestep %r", ts_extension)
             logger.warning(" => enumerating %ss directly using yt", object_typetag)

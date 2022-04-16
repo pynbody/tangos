@@ -1,6 +1,7 @@
 from .. import core
 
-class TimestepObjectCache(object):
+
+class TimestepObjectCache:
     """A temporary store for all objects in a timestep, allowing objects to be resolved without a further database query"""
     def __init__(self, timestep):
         """Query the database for all objects in this timestep

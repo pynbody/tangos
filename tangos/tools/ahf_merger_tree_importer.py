@@ -1,16 +1,15 @@
-from __future__ import absolute_import
-from __future__ import print_function
+import os
+import re
 
 import tangos as db
-import os
-from ..input_handlers import ahf_trees as at
-from ..log import logger
+
+from .. import config
 from ..core import get_or_create_dictionary_item
 from ..core.halo_data import HaloLink, HaloProperty
-from .. import config
+from ..input_handlers import ahf_trees as at
+from ..log import logger
 from . import GenericTangosTool
-from six.moves import xrange
-import re
+
 
 class AHFTreeImporter(GenericTangosTool):
     tool_name = 'import-ahf-trees'

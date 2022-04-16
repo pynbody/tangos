@@ -2,9 +2,9 @@
 # Currently used by the pynbody server (which cannot be loaded by default as it
 # in turn imports pynbody, which cannot be a dependency)
 
-from __future__ import absolute_import
-from .message import Message
 import importlib
+
+from .message import Message
 
 
 class ImportRequestMessage(Message):

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data

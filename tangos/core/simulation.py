@@ -1,17 +1,15 @@
-from __future__ import absolute_import
 import datetime
 
 import numpy as np
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, Text
-from sqlalchemy.orm import relationship, backref, Session
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text
+from sqlalchemy.orm import Session, backref, relationship
 
-from . import data_attribute_mapper
-from . import Base
-from . import creator
-from .. import input_handlers, config
-from .dictionary import DictionaryItem, get_dict_id, get_or_create_dictionary_item
+from .. import config, input_handlers
 from ..config import DOUBLE_PRECISION, LARGE_BINARY
-import six
+from . import Base, creator, data_attribute_mapper
+from .dictionary import (DictionaryItem, get_dict_id,
+                         get_or_create_dictionary_item)
+
 
 class Simulation(Base):
     __tablename__ = 'simulations'
@@ -132,7 +130,7 @@ class SimulationProperty(Base):
             x = "%.2g" % f
         elif type(f) is datetime.datetime:
             x = f.strftime('%H:%M %d/%m/%y')
-        elif type(f) is str or type(f) is six.text_type:
+        elif type(f) is str or type(f) is str:
             x = "'%s'" % f
         elif f is None:
             x = "None"

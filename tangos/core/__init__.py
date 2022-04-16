@@ -1,9 +1,9 @@
-from __future__ import absolute_import
-from sqlalchemy import Index, create_engine, inspect, event, text
-from sqlalchemy.orm import sessionmaker, clear_mappers, declarative_base
 import os
-from .. import config
-from .. import log
+
+from sqlalchemy import Index, create_engine, event, inspect, text
+from sqlalchemy.orm import clear_mappers, declarative_base, sessionmaker
+
+from .. import config, log
 
 _verbose = False
 _internal_session=None
@@ -50,13 +50,13 @@ clear_mappers()  # remove existing maps
 Base = declarative_base()
 
 
-from .dictionary import DictionaryItem
 from .creator import Creator
-from .simulation import Simulation, SimulationProperty
-from .tracking import TrackData, update_tracker_halos
-from .timestep import TimeStep
+from .dictionary import DictionaryItem
 from .halo import SimulationObjectBase
-from .halo_data import HaloProperty, HaloLink
+from .halo_data import HaloLink, HaloProperty
+from .simulation import Simulation, SimulationProperty
+from .timestep import TimeStep
+from .tracking import TrackData, update_tracker_halos
 
 Index("halo_index", HaloProperty.__table__.c.halo_id)
 Index("name_halo_index", HaloProperty.__table__.c.name_id,
@@ -180,9 +180,8 @@ def close_session():
     if Session is not None:
         Session = None
 
-from .dictionary import _get_dict_cache_for_session, get_dict_id, get_or_create_dictionary_item
-
-
+from .dictionary import (_get_dict_cache_for_session, get_dict_id,
+                         get_or_create_dictionary_item)
 
 __all__ = ['DictionaryItem',
            'sim_query_from_name_list', 'sim_query_from_args',

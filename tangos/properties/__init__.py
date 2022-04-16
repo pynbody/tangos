@@ -1,15 +1,13 @@
-from __future__ import absolute_import, print_function
-import numpy as np
-from tangos.util import timing_monitor
-import six
-from six.moves import zip
+import functools
 import importlib
 import warnings
-import functools
-from .. import input_handlers
-from .. import util
-from .. import parallel_tasks
+
+import numpy as np
 import pkg_resources
+
+from tangos.util import timing_monitor
+
+from .. import input_handlers, parallel_tasks, util
 
 
 class PropertyCalculationMetaClass(type):
@@ -29,7 +27,7 @@ class PropertyCalculationMetaClass(type):
         if cls.names is not None:
             cls._all_classes.append(cls)
 
-class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object)):
+class PropertyCalculation(metaclass=PropertyCalculationMetaClass):
     _all_classes = []
 
     # In child class, defines the most general handler that this property is compatible with.
@@ -178,7 +176,7 @@ class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object
         """
         values = self.live_calculate(halo_entry, *input_values)
         names = self.names
-        if isinstance(names, six.string_types):
+        if isinstance(names, str):
             return values
         else:
             return values[self.names.index(name)]
@@ -267,7 +265,7 @@ class TimeChunkedProperty(PropertyCalculation):
 
     def __init__(self, simulation):
         self.pixel_delta_t_Gyr = simulation.get("histogram_delta_t_Gyr", self.pixel_delta_t_Gyr)
-        super(TimeChunkedProperty, self).__init__(simulation)
+        super().__init__(simulation)
 
 
     def bin_index(self, time):
@@ -358,7 +356,7 @@ class LivePropertyCalculation(PropertyCalculation):
     requires_particle_data = False
 
     def __init__(self, simulation, *args):
-        super(LivePropertyCalculation, self).__init__(simulation)
+        super().__init__(simulation)
         self._nargs = len(args)
 
     def calculate(self, _, halo):
@@ -375,7 +373,7 @@ class LivePropertyCalculationInheritingMetaProperties(LivePropertyCalculation):
         :param inherits_from: The PropertyCalculation description from which the metadata should be inherited
         :type inherits_from: PropertyCalculation
         """
-        super(LivePropertyCalculationInheritingMetaProperties, self).__init__(simulation)
+        super().__init__(simulation)
         self._inherits_from = inherits_from(simulation)
 
     def plot_x0(self):
@@ -409,7 +407,7 @@ def all_properties(with_particle_data=True):
             continue
 
         name = c.names
-        if isinstance(name, six.string_types):
+        if isinstance(name, str):
             _check_class_provided_name(name)
             pr.append(name)
         else:

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import tangos as db
 from tangos.input_handlers import output_testing
 from tangos.tools import crosslink, add_simulation

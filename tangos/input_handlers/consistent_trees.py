@@ -1,12 +1,13 @@
 """Code to read Peter Behroozi's Rockstar/consistent-trees output"""
-from __future__ import print_function
 
 import os
+
 import numpy as np
-from six.moves import xrange
+
 from ..log import logger
 
-class ConsistentTrees(object):
+
+class ConsistentTrees:
     def __init__(self, path):
         self._path = self._infer_subpath(path)
         self._load_raw_trees()
@@ -19,7 +20,7 @@ class ConsistentTrees(object):
         elif os.path.exists(os.path.join(rootpath, 'halos', 'trees')):
             return os.path.join(rootpath, 'halos')
         else:
-            raise IOError("Cannot find the consistent-trees output")
+            raise OSError("Cannot find the consistent-trees output")
 
     def _load_raw_trees(self):
         filename = os.path.join(self._path, "trees", "tree_0_0_0.dat")
@@ -53,7 +54,7 @@ class ConsistentTrees(object):
         maxval = self.links['id_this'].max()
         self._id_to_finder_id = np.zeros(maxval + 1, dtype=np.int64)
         self._id_to_snap_num = np.zeros(maxval + 1, dtype=np.int32) - 1
-        for snapnum in xrange(self._snap_min, self._snap_max + 1):
+        for snapnum in range(self._snap_min, self._snap_max + 1):
             ctid, original_id = self._load_original_catalogue(snapnum)
             self._id_to_finder_id[ctid] = original_id
             self._id_to_snap_num[ctid] = snapnum

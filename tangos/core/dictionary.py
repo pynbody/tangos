@@ -1,5 +1,5 @@
-from __future__ import absolute_import
-import sqlalchemy, sqlalchemy.exc
+import sqlalchemy
+import sqlalchemy.exc
 from sqlalchemy import Column, Integer, String
 
 from . import Base, get_default_session

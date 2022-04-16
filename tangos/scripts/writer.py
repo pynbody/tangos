@@ -1,10 +1,10 @@
 #!/usr/bin/env python2.7
 
-from __future__ import absolute_import
 import sys
 
+
 def run_dbwriter(argv):
-    from tangos import parallel_tasks, core
+    from tangos import core, parallel_tasks
     from tangos.tools.property_writer import PropertyWriter
     writer = PropertyWriter()
     writer.parse_command_line(argv)

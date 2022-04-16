@@ -1,7 +1,8 @@
-from .. import TimeChunkedProperty
-from . import pynbody_handler_module, PynbodyPropertyCalculation
-
 import numpy as np
+
+from .. import TimeChunkedProperty
+from . import PynbodyPropertyCalculation, pynbody_handler_module
+
 
 class StarFormHistogram(TimeChunkedProperty):
     works_with_handler = pynbody_handler_module.PynbodyInputHandler
@@ -31,7 +32,7 @@ class StarFormHistogram(TimeChunkedProperty):
         return M,
 
     def reassemble(self, *options):
-        reassembled = super(StarFormHistogram, self).reassemble(*options)
+        reassembled = super().reassemble(*options)
         return reassembled/1e9 # Msol per Gyr -> Msol per yr
 
 class StarForm(PynbodyPropertyCalculation):
