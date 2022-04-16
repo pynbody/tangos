@@ -1,9 +1,9 @@
 import gc
+import pickle
 import time
 
 import numpy as np
 import pynbody
-import six.moves.cPickle as pickle
 
 from ..util.check_deleted import check_deleted
 from . import log, parallel_backend_loaded, remote_import

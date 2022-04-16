@@ -1,8 +1,7 @@
 import math
 import re
 import sys
-
-from six import StringIO
+from io import StringIO
 
 
 class TerminalController:

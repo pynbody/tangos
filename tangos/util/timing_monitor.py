@@ -3,7 +3,6 @@ import inspect
 import time
 
 import numpy as np
-import six
 
 
 class TimingMonitor:

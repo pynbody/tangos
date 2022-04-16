@@ -1,23 +1,16 @@
 import argparse
-import contextlib
-import gc
 import pdb
 import random
 import sys
 import time
 import traceback
-import warnings
-import weakref
 
 import numpy as np
-import six
 import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
 
-from tangos import live_calculation
-
-from .. import core, parallel_tasks, properties
+from .. import core, live_calculation, parallel_tasks, properties
 from ..cached_writer import insert_list
 from ..log import logger
 from ..util import proxy_object, terminalcontroller, timing_monitor

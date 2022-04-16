@@ -1,5 +1,4 @@
 import numpy as np
-import six
 from sqlalchemy.orm import Session
 
 import tangos.parallel_tasks as parallel_tasks

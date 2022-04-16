@@ -2,7 +2,6 @@ import os
 import re
 
 import numpy as np
-from six.moves import xrange
 
 import tangos as db
 

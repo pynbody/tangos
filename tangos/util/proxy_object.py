@@ -5,8 +5,6 @@ point to objects that have not yet been created in the database at the time they
 
 import abc
 
-import six
-
 from .. import core
 
 

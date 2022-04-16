@@ -1,8 +1,6 @@
 import os
 import re
 
-from six.moves import xrange
-
 import tangos as db
 
 from .. import config

@@ -1,7 +1,6 @@
 import numbers
 
 import numpy as np
-import six
 
 from .. import config, core
 from ..core import Simulation, TimeStep

@@ -1,8 +1,6 @@
 import abc
 import argparse
 
-import six
-
 from .. import core, parallel_tasks
 
 

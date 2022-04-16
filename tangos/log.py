@@ -1,7 +1,6 @@
 import copy
 import logging
-
-from six import StringIO
+from io import StringIO
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,6 @@ import sys
 
 import numpy as np
 import pynbody
-import six
 from sqlalchemy.orm import Session
 
 import tangos as db

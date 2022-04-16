@@ -5,7 +5,6 @@ from __future__ import print_function
 import sys
 import tangos.parallel_tasks as pt
 import time
-from six.moves import range
 
 
 def test_function():

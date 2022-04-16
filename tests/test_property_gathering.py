@@ -9,10 +9,7 @@ import tangos
 import tangos.testing.simulation_generator
 from tangos import properties
 from tangos import testing
-import os
-import six
-from pytest import raises as assert_raises
-from tangos import live_calculation
+
 
 def setup_module():
     testing.init_blank_db_for_testing()

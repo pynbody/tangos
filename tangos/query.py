@@ -1,4 +1,3 @@
-import six
 from sqlalchemy import and_
 
 from tangos import Base, Creator, get_default_session

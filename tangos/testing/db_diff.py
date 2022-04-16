@@ -1,6 +1,5 @@
 import numpy as np
 import numpy.testing as npt
-import six
 from sqlalchemy.orm import Session, joinedload, object_session, undefer
 
 from .. import all_simulations, core, get_object, get_simulation, get_timestep
