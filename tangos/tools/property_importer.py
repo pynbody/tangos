@@ -107,7 +107,7 @@ class PropertyImporter(GenericTangosTool):
 
         names = self.options.properties
         object_typetag = self.options.typetag
-    
+
         for x in base_sim:
             timesteps = core.get_default_session().query(core.timestep.TimeStep).filter_by(
                 simulation_id=x.id, available=True).order_by(core.timestep.TimeStep.redshift.desc()).all()

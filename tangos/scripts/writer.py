@@ -16,5 +16,3 @@ def main():
     'tangos_writer' may be removed in future versions.
     """)
     run_dbwriter(sys.argv[1:])
-
-

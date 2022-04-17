@@ -1,10 +1,8 @@
-from tangos import testing
-from tangos.testing.simulation_generator import SimulationGeneratorForTests
-from tangos import core
-from tangos.cached_writer import create_property
 import tangos
-
+from tangos import core, testing
+from tangos.cached_writer import create_property
 from tangos.scripts.manager import remove_duplicates
+from tangos.testing.simulation_generator import SimulationGeneratorForTests
 
 
 def setup_module():

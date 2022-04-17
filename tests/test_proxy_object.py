@@ -1,13 +1,14 @@
+from pytest import raises as assert_raises
+
+import tangos
 import tangos as db
 import tangos.core.halo
 import tangos.core.simulation
 import tangos.core.timestep
-import tangos
 import tangos.testing
+import tangos.testing.simulation_generator
 import tangos.util.proxy_object as po
 import tangos.util.timestep_object_cache as toc
-import tangos.testing.simulation_generator
-from pytest import raises as assert_raises
 
 
 def setup_module():

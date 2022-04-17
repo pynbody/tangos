@@ -48,7 +48,7 @@ Special case use for histogram properties
 For *histogram* properties (currently these are just `SFR_histogram` and `BH_mdot_histogram`), the live calculation language is also the interface to special use of the stored histograms.
 
 Let's take the SFR as an example. If you have a halo `h`, and ask for `h['SFR_histogram']`, you just get a SFR histogram back as you'd expect, one bin per 20 Myr by default. However, the database is actually storing *chunks* of the star formation history and automatically recreating it for you on the *major progenitor* branch.
- 
+
 You can instead request the SFR summed over *all* branches by typing `h.calculate("reassemble(SFR_histogram, 'sum')")`. Similarly, for a BH accretion history you could do `h.calculate("BH.reassemble(BH_mdot_histogram, 'sum')")`._
 
 If you want to manually handle the reassembly, one useful option is `h.calculate("reassemble(SFR_histogram, 'place')")`. This correctly zero-pads the histogram, but does not fill in any of the data from preceding steps, so you are free to do that yourself.
@@ -125,8 +125,8 @@ Note that _string_ inputs must have quotes when used, but property names and _ex
 
 **Intrinsic object information**
 
-* `halo_number()`:returns halo number of target 
-* `t()`: returns simulation time of target 
+* `halo_number()`:returns halo number of target
+* `t()`: returns simulation time of target
 * `z()`: returns simulation redshift of target
 * `a()`: returns simulation scalefactor of target
 * `NDM()`: returns number of DM particles in halo
@@ -139,45 +139,45 @@ Note that _string_ inputs must have quotes when used, but property names and _ex
 
 * Binary operators: `*`, `/`, `+`, `-`, `**` (power)
 * Binary logic operators: `<`, `>`, `&`, `|`
-* Unary operators: `abs`, `sqrt`, `log`, `log10` 
+* Unary operators: `abs`, `sqrt`, `log`, `log10`
 * Unary logic operator: `!` (not)
 
 **Links**
 
 *  `earlier(n)`: returns main progenitor halo n snapshots previous to current snapshot.
     Inputs:
-    
+
     - *n* (integer): number of snapshots
-        
+
 * `later(n)`: returns descendant halo n snapshots forward in time.
     Inputs:
-        
+
     - *n* (integer): number of snapshots
-        
+
 * `match(s)`: returns the best match for an object in the named simulation or timestep.
    Inputs:
-   
+
     - *s* (string): the name of the simulation or timestep to link to
-        
+
 * `link(link_name, [property_name, property_criterion, [constraint1, ...]])`: Finds a named
    link where the linked object satisfies a criterion and, optionally, some constraints.
    Inputs:
-   
+
     - *link_name* (expression): the name of the link to follow, e.g. `BH`.
     - *property_name* (expression): the name of the target property to base a decision on, e.g. `BH_mass`
-    - *property_criterion* (string): either `'max'` or `'min'` to pick out either the link with 
+    - *property_criterion* (string): either `'max'` or `'min'` to pick out either the link with
        maximum or minimum value of the target property
     - *constraint1*, ... (expression): an expression returning a boolean that the object must satisfy,
        e.g. `BH_mass>1e8`
-           
-* `find_progenitor(property_name, property_criterion)`: Finds the progenitor which satisfies the 
+
+* `find_progenitor(property_name, property_criterion)`: Finds the progenitor which satisfies the
    given criterion.
    Inputs:
-   
+
     - *property_name* (expression): the name of the property to evaluate, e.g. `SFR`.
     - *property_criterion* (string): either `'max'` or `'min'` to pick out either the progenitor with
       the maximum or minimum value of the target property
-        
+
 * Redirection operator `.`: finds a property in the linked object, e.g. `find_progenitor(SFR, 'max').mass` gets `mass`
   at the time of maximum `SFR`.
 
@@ -188,7 +188,7 @@ Note that _string_ inputs must have quotes when used, but property names and _ex
 * `at(position, property_name)`: Get the value of the array at a given position.
    The meaning of the position is determined by the property implementer, but could be a physical radius
    for example. Inputs:
-   
+
    - *position* (float or expression): the location to evaluate at
    - *property_name* (expression): the array to interpolate
 
@@ -196,18 +196,17 @@ Note that _string_ inputs must have quotes when used, but property names and _ex
 
     - *property* (expression): the name of the array to operate on, e.g. `SFR_histogram`
     - *npix* (integer): the number of pixels FWHM for the Gaussian smoothing kernel
-    
+
 **Array reassembly**
 
 * `raw(property)`: returns the raw value as stored in the database. Currently only used for histogram properties; see discussion of these above.
   Inputs:
-  
+
   - *property* (expression)
-     
+
 * `reassemble(property, reassembly_type)`: controls the way the raw value is turned into a science-ready value. Currently only used for histogram properties; see discussion of these above. Inputs:
 
   - *property* (expression)
   - *reassembly_type*: the default choice is `'major'` which returns the
   property evaluated over the major progenitor branch. The most useful alternative is
   `'sum'` which instead sums over all progenitors.
-

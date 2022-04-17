@@ -1,11 +1,15 @@
-import tangos as db
-from tangos.input_handlers import output_testing
-from tangos.tools import crosslink, add_simulation
-from tangos import log, parallel_tasks, live_calculation, testing
-from tangos.core.halo_data import link
+import os
+import os.path
+
 from pytest import raises as assert_raises
-import os, os.path
+
 import tangos
+import tangos as db
+from tangos import live_calculation, log, parallel_tasks, testing
+from tangos.core.halo_data import link
+from tangos.input_handlers import output_testing
+from tangos.tools import add_simulation, crosslink
+
 
 def setup_module():
     parallel_tasks.use('null')

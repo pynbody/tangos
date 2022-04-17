@@ -66,7 +66,7 @@ def get_creator(session=None):
 
     if session is None:
         session = get_default_session()
-    
+
     if session is get_default_session():
         return _current_creator
     else:
@@ -104,5 +104,3 @@ def set_creator(creator):
     written by one process."""
     global _current_creator
     _current_creator = creator
-
-

@@ -1,6 +1,6 @@
 import os
-import sys
 import subprocess
+import sys
 
 
 def _check_import_is_clean():

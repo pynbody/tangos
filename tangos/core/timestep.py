@@ -63,7 +63,7 @@ class TimeStep(Base):
         if self.redshift is None:
             return "<TimeStep %r%s>"%(path,extra)
         else:
-            return "<TimeStep {!r} z={:.2f} t={:.2f} Gyr{}>".format(path, self.redshift, self.time_gyr, extra)
+            return f"<TimeStep {path!r} z={self.redshift:.2f} t={self.time_gyr:.2f} Gyr{extra}>"
 
     def short(self):
         return "<TimeStep(... z=%.2f ...)>" % self.redshift
@@ -262,5 +262,3 @@ class TimeStep(Base):
             q = q.order_by(TimeStep.time_gyr.desc())
 
         return q.first()
-
-

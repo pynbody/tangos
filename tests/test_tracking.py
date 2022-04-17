@@ -1,14 +1,15 @@
-import tangos as db
-import tangos.tools.add_simulation as add
-import tangos.input_handlers.pynbody as pynbody_outputs
-from tangos import config
-from tangos import log, testing
-import os
-from tangos import tracking
-import numpy.testing as npt
 import copy
+import os
+
 import numpy as np
+import numpy.testing as npt
+
 import tangos
+import tangos as db
+import tangos.input_handlers.pynbody as pynbody_outputs
+import tangos.tools.add_simulation as add
+from tangos import config, log, testing, tracking
+
 
 def setup_module():
     global output_manager, iord_expected_s960, iord_expected_s832

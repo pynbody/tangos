@@ -1,16 +1,17 @@
+import copy
 import os
 
 import numpy as np
 import numpy.testing as npt
-import copy
+
 import tangos as db
 import tangos.core.simulation
 import tangos.core.timestep
+import tangos.input_handlers.halo_stat_files as stat
 import tangos.tools.add_simulation as add_simulation
 import tangos.tools.property_importer as property_importer
-import tangos.input_handlers.halo_stat_files as stat
+from tangos import parallel_tasks, testing
 from tangos.input_handlers.halo_stat_files import translations
-from tangos import testing, parallel_tasks
 
 
 def setup_module():
@@ -118,7 +119,7 @@ def test_default_value():
 
 def test_import_properties_is_only_numeric_or_array():
     import tangos.core as core
-    
+
     # Pick a random existing property name and halo for testing the import of properties
     halo = ts1.halos[0]
     db_name = core.dictionary.get_or_create_dictionary_item(session, "Rvir")
@@ -131,7 +132,7 @@ def test_import_properties_is_only_numeric_or_array():
     property = importer._create_property(db_name, halo, float(42.0))
     assert property.data == 42.0
 
-    # Arrays of numerics should now create a property successfully 
+    # Arrays of numerics should now create a property successfully
     property = importer._create_property(db_name, halo, np.array([42, 42, 42]))
     assert property.data_is_array() == True
     assert property.data.dtype == np.int

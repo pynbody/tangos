@@ -183,7 +183,7 @@ class HaloLinkGetter(HaloPropertyGetter):
         from . import halo_data
         query_properties = session.query(halo_data.HaloLink).filter_by(halo_from_id=halo.id)
         return [x.relation.text for x in query_properties.all()]
-    
+
 
 
 
@@ -191,4 +191,3 @@ class HaloLinkTargetGetter(HaloLinkGetter):
     """As HaloLinkGetter, but retrieve the target of the links instead of the HaloLink objects themselves"""
     def postprocess_data_objects(self, outputs):
         return [o.halo_to for o in outputs]
-

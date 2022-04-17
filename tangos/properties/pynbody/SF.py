@@ -37,7 +37,7 @@ class StarFormHistogram(TimeChunkedProperty):
 
 class StarForm(PynbodyPropertyCalculation):
     names = "SFR_10Myr", "SFR_100Myr"
-    
+
     def calculate(self, halo, existing_properties):
         halo = halo.star
 

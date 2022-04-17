@@ -32,4 +32,3 @@ def simulation_list(request):
 
     return {'simulations':simulations, 'titles':titles, 'links':links,
             'hostname':socket.gethostname()}
-

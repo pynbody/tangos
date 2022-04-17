@@ -31,5 +31,3 @@ def insert_list(property_list):
             _insert_list_unlocked(property_list)
     else:
         _insert_list_unlocked(property_list)
-
-
