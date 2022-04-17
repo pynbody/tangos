@@ -21,4 +21,3 @@ def main():
     'tangos_crosslink' may be removed in future versions.
     """)
     parallel_tasks.launch(run_dbwriter, 2, [sys.argv[1:]])
-

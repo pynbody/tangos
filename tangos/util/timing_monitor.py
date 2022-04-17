@@ -28,7 +28,7 @@ class TimingMonitor:
         self.check_compatible_object(object)
         if self._monitoring is not None:
             raise RuntimeError(
-                "TimingMonitor is already monitoring {!r} and cannot also monitor {!r}".format(self._monitoring, object))
+                f"TimingMonitor is already monitoring {self._monitoring!r} and cannot also monitor {object!r}")
         self._monitoring = object
         self._old_timing_monitor = object.timing_monitor
         object.timing_monitor = self
@@ -89,7 +89,7 @@ class TimingMonitor:
             name = "%20s " % (name[-20:])
             if len(v)>1:
                 marks_info = self.labels_by_class[k]
-                logger.info(" " + name + "{:.1f}s | {:.1f}%".format(sum(v), 100 * sum(v) / v_tot))
+                logger.info(" " + name + f"{sum(v):.1f}s | {100 * sum(v) / v_tot:.1f}%")
                 logger.info("  ------ INTERNAL BREAKDOWN ------" )
                 for i, this_v in enumerate(v):
                     logger.info((" %8s %8s %.1fs | %.1f%% | %.1f%%") %
@@ -97,5 +97,4 @@ class TimingMonitor:
                                  this_v, 100 * this_v / sum(v), 100 * this_v / v_tot))
                 logger.info("  --------------------------------")
             else:
-                logger.info(name + "{:.1f}s | {:.1f}%".format(v[0], 100 * v[0] / v_tot))
-
+                logger.info(name + f"{v[0]:.1f}s | {100 * v[0] / v_tot:.1f}%")

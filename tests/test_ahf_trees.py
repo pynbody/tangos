@@ -1,10 +1,13 @@
 import os
-import pynbody
+
 import numpy as np
+import numpy.testing as npt
+import pynbody
+
 import tangos
 import tangos.input_handlers.pynbody
-from tangos import testing, input_handlers, tools, log, parallel_tasks
-import numpy.testing as npt
+from tangos import input_handlers, log, parallel_tasks, testing, tools
+
 
 def setup_module():
 

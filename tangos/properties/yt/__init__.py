@@ -44,4 +44,3 @@ class HaloDensityProfile(YtPropertyCalculation):
         den_profile = mass_per_bin/vol_per_bin
 
         return den_profile, mass_profile
-

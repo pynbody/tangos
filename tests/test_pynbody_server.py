@@ -1,12 +1,13 @@
-import tangos.parallel_tasks.pynbody_server as ps
-import pynbody
-import tangos.parallel_tasks as pt
-import tangos.input_handlers.pynbody
-import tangos
-import numpy.testing as npt
-
-import sys
 import os
+import sys
+
+import numpy.testing as npt
+import pynbody
+
+import tangos
+import tangos.input_handlers.pynbody
+import tangos.parallel_tasks as pt
+import tangos.parallel_tasks.pynbody_server as ps
 
 
 class _TestHandler(tangos.input_handlers.pynbody.ChangaInputHandler):

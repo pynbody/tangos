@@ -6,20 +6,20 @@ While the primary method for getting time series of data is through the
 `Halo` objects (see [data exploration tutorial](data_exploration.md)) the time resolution of
 such methods is limited by the number of timesteps you have accessible.
 
-Some information needs to be sampled on shorter timescales for good physical insight. 
+Some information needs to be sampled on shorter timescales for good physical insight.
 An example is the star formation rate of galaxies which can vary on very short timescales. For
 this purpose, _tangos_ offers histogram properties which are explored from the science
 perspective in the [data exploration tutorials](data_exploration.md). This document aims to
 explain a bit more about how they work by examining the star formation rate class provided
 in the example properties.
 
-You can find the class in `tangos.properties.pynbody.SF` or view it online 
-[here](https://github.com/pynbody/tangos/blob/master/tangos/properties/pynbody/SF.py). 
+You can find the class in `tangos.properties.pynbody.SF` or view it online
+[here](https://github.com/pynbody/tangos/blob/master/tangos/properties/pynbody/SF.py).
 
 Examining a  time-histogram class
 ---------------------------------
 
-The first thing you'll notice is that `StarFormHistogram` is derived 
+The first thing you'll notice is that `StarFormHistogram` is derived
 from `tangos.properties.TimeChunkedProperty`. That class provides the technical underpinnings
 for _reassembly_ which we'll look at shortly. First, however, look at the `calculate` method
 of the `StarFormHistogram` class:
@@ -41,7 +41,7 @@ it has been provided. This is stored into `M` on the first line. However, it the
 only a slice of that information (provided by the `TimeChunkedProperty.store_slice` method).
 
 That slice represents the most recent star formation history of the object, and only that
-recent activity is stored in the database. 
+recent activity is stored in the database.
 
 You can see this for yourself; starting from the [sample database](data_exploration.md), try
 the following:
@@ -67,8 +67,8 @@ p.plot(halo['SFR_histogram'])
 What is happening to reassemble the full history?
 --------------------------------------------------
 
-Under the hood, when a property is accessed without the `raw()` invocation above, the 
-property description is offered the opportunity to _reassemble_ the property. 
+Under the hood, when a property is accessed without the `raw()` invocation above, the
+property description is offered the opportunity to _reassemble_ the property.
 The `TimeChunkedProperty` class takes responsibility for that, working its way back through
 the merger tree and assembling the full history from the individual chunks.
 
@@ -79,7 +79,7 @@ It is possible to control its approach to this reassembly through another live p
  - `sum`: sums over all progenitors
  - `place`: places the raw data from this timestep in a correctly padded array for comparison
    with the two modes above.
-   
+
 Try plotting the three modes over each other:
 
 ```python
@@ -112,8 +112,8 @@ before your first `tangos write`.
 Exercising caution
 -------------------
 
-Since the merger tree and the raw histogram data are stored with 
-different time resolutions, there is a 
+Since the merger tree and the raw histogram data are stored with
+different time resolutions, there is a
 caveat: specifically,
 star formation (or other histogramed activity) in the `major` and `sum` branches cannot be
 distinguished between the penultimate and final timesteps. For that last time interval,

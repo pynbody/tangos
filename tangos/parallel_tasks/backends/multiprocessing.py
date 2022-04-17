@@ -163,5 +163,3 @@ def launch(function, num_procs, args):
         raise RuntimeError("To launch a parallel session using multiprocessing backend, you need to specify the number of processors")
 
     launch_functions([function]*num_procs, [args]*num_procs)
-
-

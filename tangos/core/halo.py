@@ -116,7 +116,7 @@ class SimulationObjectBase(Base):
         if not hasattr(self, "_handler"):
             self._handler = self.timestep.simulation.get_output_handler()
         return self._handler
-        
+
     @property
     def handler_class(self):
         if not hasattr(self, "_handler_class"):
@@ -405,7 +405,7 @@ class Halo(SimulationObjectBase):
     }
 
     tag = "halo"
-    
+
 class Tracker(SimulationObjectBase):
     __mapper_args__ = {
         'polymorphic_identity':3

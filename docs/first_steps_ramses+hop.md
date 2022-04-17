@@ -28,11 +28,11 @@ At the unix command line type:
 tangos add tutorial_ramses --min-particles 100 --no-renumber
 ```
 
-The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
+The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages
 scroll up the screen.
- 
+
  Let's pick this command apart
- 
+
   * `tangos` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial` identifies the simulation we're adding
@@ -42,9 +42,9 @@ scroll up the screen.
     since it is all handled internally, but it can be confusing if you are used to dealing with the
     raw catalogues, so we switch it off here.
 
- 
+
 Note that all _tangos_ command-line tools provide help. For example `tangos --help` will show you all subcommands, and `tangos add --help` will tell you more about the possible options for adding a simulation.
-  
+
 At this point, the database knows about the existence of timesteps and their halos and groups in our simulation, but nothing about the properties of those halos or groups. We need to add more information before the database is useful.
 
 Generate the merger trees
@@ -62,7 +62,7 @@ If you want to speed up this process, it can be [MPI parallelised](mpi.md).
 
 Add the first property
 ----------------------
- 
+
 Next, we will add some properties to the halos so that we can start to do some science. Because this is a _zoom_ simulation,
 we only want to do science on the highest resolution regions. The first thing to calculate is therefore which halos fall
 in that region. From your shell type:
@@ -74,7 +74,7 @@ Here,
  * `tangos write` is the main script for adding properties to a tangos database;
  * `contamination_fraction` is the name of a built-in property which returns the fraction of dark matter particles
    which come from outside the high resolution region.
-   
+
 If you want to speed up this process, it can be [MPI parallelised](mpi.md).
 
 Once the command terminates, you can check that each halo now has a `contamination_fraction` associated with it, either
@@ -89,9 +89,9 @@ Add some more interesting properties
 ------------------------------------
 
 Let's finally do some science. We'll add dark matter density profiles; from your shell type:
- 
+
  ```bash
-tangos write dm_density_profile --with-prerequisites --include-only="contamination_fraction<0.01"  
+tangos write dm_density_profile --with-prerequisites --include-only="contamination_fraction<0.01"
 ```
 
 If you want to speed up this process, it can be [MPI parallelised](mpi.md).
@@ -106,9 +106,9 @@ Here,
  * `--include-only` allows an arbitrary filter to be applied, specifying which halos the properties should be calculated
    for. In the present case, we use that to insist that only "high resolution" halos are included (specifically, those
    with a fraction of low-res particles smaller than 1%)
- 
- 
+
+
 Explore what's possible
 -----------------------
- 
+
 Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.

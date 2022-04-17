@@ -135,5 +135,3 @@ class SimulationAdderUpdater:
 
     def _get_simulation(self):
         return self.session.query(Simulation).filter_by(basename=self.basename).first()
-
-

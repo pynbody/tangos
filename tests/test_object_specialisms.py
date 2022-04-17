@@ -1,10 +1,10 @@
+import tangos
 import tangos as db
 import tangos.core.halo
 import tangos.core.simulation
 import tangos.core.timestep
-import tangos
-import tangos.testing
 import tangos.relation_finding as relation_finding_strategies
+import tangos.testing
 import tangos.testing.simulation_generator
 
 
@@ -34,7 +34,7 @@ def test_bh_mapping():
     assert tangos.get_halo(3) in tangos.get_halo(1)['BH']
 
 def test_tags():
-    from tangos.core.halo import SimulationObjectBase, Halo, BH, Group, Tracker
+    from tangos.core.halo import BH, Group, Halo, SimulationObjectBase, Tracker
     assert SimulationObjectBase.class_from_tag('halo') is Halo
     assert SimulationObjectBase.class_from_tag('BH') is BH
     assert SimulationObjectBase.class_from_tag('group') is Group

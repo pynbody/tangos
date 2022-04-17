@@ -1,19 +1,23 @@
+import numpy as np
+
+import tangos
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data
 import tangos.core.simulation
 import tangos.core.timestep
-import tangos
 import tangos.testing.simulation_generator
-import numpy as np
 
 __author__ = 'app'
 
-import tangos, tangos.live_calculation
+from pytest import raises as assert_raises
+
+import tangos
+import tangos.live_calculation
 import tangos.relation_finding as halo_finding
 import tangos.temporary_halolist as thl
 import tangos.testing as testing
-from pytest import raises as assert_raises
+
 
 def setup_module():
     testing.init_blank_db_for_testing()

@@ -175,4 +175,3 @@ def test_empty_container():
 
     target.data_array = ""
     assert target.data is None
-

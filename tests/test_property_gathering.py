@@ -1,14 +1,15 @@
-import tangos as db
+import warnings
+
 import numpy as np
 import numpy.testing as npt
-import warnings
+
+import tangos
+import tangos as db
 import tangos.core.halo
 import tangos.core.simulation
 import tangos.core.timestep
-import tangos
 import tangos.testing.simulation_generator
-from tangos import properties
-from tangos import testing
+from tangos import properties, testing
 
 
 def setup_module():
@@ -144,7 +145,7 @@ def test_gather_linked_property():
 def test_gather_linked_property_with_fn():
     BH_mass, Mv = tangos.get_timestep("sim/ts1").calculate_all('my_BH().hole_mass', "Mvir")
     npt.assert_allclose(BH_mass, [100.,200.,400.])
-    npt.assert_allclose(Mv, [1.,2.,3.]) 
+    npt.assert_allclose(Mv, [1.,2.,3.])
 
     BH_mass, Mv = tangos.get_timestep("sim/ts1").calculate_all('my_BH("hole_spin").hole_mass', "Mvir")
     npt.assert_allclose(BH_mass, [100.,200.,300.])

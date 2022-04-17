@@ -1,8 +1,10 @@
+from sqlalchemy import inspect
+
+import tangos
 import tangos.testing.simulation_generator
 from tangos import parallel_tasks as pt
 from tangos import testing
-import tangos
-from sqlalchemy import inspect
+
 
 def setup_module():
     pt.use("multiprocessing")
@@ -24,4 +26,3 @@ def test_database_update():
     if 'halos' in inspector.get_table_names():
         cols = inspector.get_columns('halos')
         assert 'test_add_column' in [c['name'] for c in cols]
-

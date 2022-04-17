@@ -1,12 +1,12 @@
-_Tangos_ lets you build a database (along the lines of [Eagle](http://icc.dur.ac.uk/Eagle/database.php) 
+_Tangos_ lets you build a database (along the lines of [Eagle](http://icc.dur.ac.uk/Eagle/database.php)
 or [MultiDark](https://www.cosmosim.org/cms/documentation/projects/multidark-bolshoi-project/))
- for your own cosmological and zoom simulations. 
- 
+ for your own cosmological and zoom simulations.
+
 Once tangos is set up, you'll be able to access your simulations from a web browser:
 
 [![Tangos and its web server](images/video_play.png)](https://www.youtube.com/watch?v=xHyzJmNsVMw)
 
- 
+
 Acknowledging the code
 ----------------------
 When using _tangos_, please acknowledge it by citing the release paper:
@@ -35,7 +35,7 @@ For all current tutorials, _pynbody_ is the preferred reading system and so for 
 Installation with tests and ancillary dependencies
 --------------------------------------------------
 
-If you wish to run the test suite (which is advised) or are planning to develop using tangos, 
+If you wish to run the test suite (which is advised) or are planning to develop using tangos,
 it is preferable to keep the source repository handy, in which case instead of the instructions
 above use:
 ```
@@ -44,7 +44,7 @@ cd tangos
 python setup.py develop
 ```
 
-To run the tests, you will also need to install _yt_, _nose_, _webtest_, _pyquery and _pynbody_ e.g. using `pip install yt pyquery nose webtest pynbody`. 
+To run the tests, you will also need to install _yt_, _nose_, _webtest_, _pyquery and _pynbody_ e.g. using `pip install yt pyquery nose webtest pynbody`.
 
 Once installed, you should check that _tangos_ is functioning correctly by entering the `tests` folder and
 typing `nosetests`. You should see a bunch of text scrolling by, ultimately finishing with the simple message `OK`.
@@ -71,18 +71,18 @@ The top line in each example points to the parent directory for all of your simu
 If you don't have any simulations (i.e. you are just using a database object already created) then you
 should not have to worry about this variable. The second line points to the database object you wish to analyze;
 by default this will be a sqlite file but you can also specify a
-[sqlalchemy URL](http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls); see also the notes on 
+[sqlalchemy URL](http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls); see also the notes on
 MySQL / MariaDB below.
 
 Remember, you will need to set these environment variables *every* time you start a new session on your computer prior
-to booting up the database, either with the webserver or the python interface (see below). 
+to booting up the database, either with the webserver or the python interface (see below).
 
 Using MySQL (or MariaDB)
 ---------------------
 
 As stated above, tangos is agnostic to the underlying SQL flavour. It is most likely to work well
-(other than with SQLite) with [MySQL](https://www.mysql.com) and [MariaDB](https://mariadb.org). 
-Since version 1.5.0, tangos is routinely tested with MySQL as well as SQLite.  
+(other than with SQLite) with [MySQL](https://www.mysql.com) and [MariaDB](https://mariadb.org).
+Since version 1.5.0, tangos is routinely tested with MySQL as well as SQLite.
 
 To try this out, if you have [docker](https://docker.com), you can run a test
 MySQL server very easily:
