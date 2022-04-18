@@ -1,6 +1,6 @@
 import socket
 
-from urllib import parse
+from six.moves.urllib import parse
 
 
 class BreadCrumbs:

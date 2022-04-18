@@ -3,6 +3,7 @@
 import os
 
 import numpy as np
+from six.moves import xrange
 
 from ..log import logger
 

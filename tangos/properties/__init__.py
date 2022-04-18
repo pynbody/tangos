@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 import pkg_resources
+import six
 
 from tangos.util import timing_monitor
 

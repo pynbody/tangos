@@ -1,6 +1,7 @@
 import datetime
 
 import numpy as np
+import six
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text
 from sqlalchemy.orm import Session, backref, relationship
 

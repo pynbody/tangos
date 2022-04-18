@@ -1,5 +1,5 @@
 import datetime
-import pickle
+from six.moves import cPickle as pickle
 import time
 import zlib
 
@@ -8,6 +8,7 @@ import pynbody
 from pytest import raises as assert_raises
 
 import tangos.core.data_attribute_mapper as dam
+import six
 
 
 class _TestTarget:

@@ -1,5 +1,8 @@
+import contextlib
 import hashlib
 import struct
+
+import six
 
 
 def _stable_hash(string):

@@ -4,12 +4,13 @@ of different types has to be stored in different attributes.
 
 import datetime
 import functools
-import pickle
 import sys
 import time
 import zlib
 
 import numpy as np
+import six
+from six.moves import cPickle as pickle
 
 pickle_loads = pickle.loads
 if int(sys.version[0])==3:

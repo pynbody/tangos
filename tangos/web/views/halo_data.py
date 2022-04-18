@@ -1,15 +1,16 @@
 import matplotlib
 
 matplotlib.use('agg')
+import functools
 import threading
 import time
 from html import escape
-from io import BytesIO
 
 import numpy as np
 import pylab as p
 from pyramid.response import Response
 from pyramid.view import view_config
+from six import BytesIO, string_types
 
 from ... import core
 from ...config import webview_cache_time, webview_default_image_format

@@ -5,8 +5,8 @@ from webtest import TestApp
 import numpy as np
 import csv
 import json
-from io import StringIO
-from urllib import parse
+from six import StringIO
+from six.moves.urllib import parse
 
 def setup_module():
     testing.init_blank_db_for_testing()

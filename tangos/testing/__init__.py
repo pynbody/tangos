@@ -4,6 +4,7 @@ import inspect
 import os
 import traceback
 
+import six
 import sqlalchemy
 import sqlalchemy.event
 from sqlalchemy import create_engine

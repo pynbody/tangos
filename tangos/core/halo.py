@@ -1,5 +1,9 @@
+import weakref
+
 import numpy as np
+import six
 from sqlalchemy import Column, ForeignKey, Integer, orm, types
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Session, backref, relationship
 
 from . import Base, creator, extraction_patterns
