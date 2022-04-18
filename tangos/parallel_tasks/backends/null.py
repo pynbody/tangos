@@ -1,6 +1,5 @@
 import warnings
 
-
 def send(data, destination, tag=0):
     raise RuntimeError("Cannot send data to another CPU: parallelism is disabled")
 

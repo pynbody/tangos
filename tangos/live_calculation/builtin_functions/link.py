@@ -1,9 +1,7 @@
-import numpy as np
-
-from ...core import extraction_patterns
-from .. import FixedInput, Link, MultiCalculation, ReturnInputHalos
 from . import BuiltinFunction, StoredProperty
-
+from .. import Link, MultiCalculation, ReturnInputHalos, FixedInput
+from ...core import extraction_patterns
+import numpy as np
 
 @BuiltinFunction.register
 def has_link(source_halos, link):

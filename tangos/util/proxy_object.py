@@ -4,11 +4,8 @@ This is used during property calculations to minimise the number of queries made
 point to objects that have not yet been created in the database at the time they are referred to."""
 
 import abc
-
 import six
-
 from .. import core
-
 
 class ProxyResolutionException(Exception):
     """Unified exception raised when a proxy cannot be translated into an actual database object"""

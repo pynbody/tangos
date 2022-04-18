@@ -1,8 +1,8 @@
 import multiprocessing
+import threading
+import sys
 import os
 import signal
-import sys
-import threading
 
 _slave = False
 _rank = None
@@ -95,8 +95,7 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
         target_fn(*args_in)
         finalize()
     except Exception as e:
-        import sys
-        import traceback
+        import sys, traceback
         exc_type, exc_value, exc_traceback = sys.exc_info()
         global _print_exceptions
         if _print_exceptions:

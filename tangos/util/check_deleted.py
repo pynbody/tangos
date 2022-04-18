@@ -1,10 +1,5 @@
-import contextlib
-import gc
-import sys
-import weakref
-
+import contextlib, weakref, sys, gc
 from ..log import logger
-
 
 class CheckDeleted:
     def __init__(self, obj):

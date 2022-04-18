@@ -1,15 +1,12 @@
-import os
-import os.path
+import os, os.path
+from sqlalchemy import Column, Integer, Text, ForeignKey, Boolean, and_
+from sqlalchemy.orm import relationship, backref, aliased, Session
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, Text, and_
-from sqlalchemy.orm import Session, aliased, backref, relationship
-
-from .. import config
-from ..config import DOUBLE_PRECISION
 from . import Base
 from .creator import Creator
 from .simulation import Simulation
-
+from .. import config
+from ..config import DOUBLE_PRECISION
 
 class TimeStep(Base):
     __tablename__ = 'timesteps'

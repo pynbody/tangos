@@ -1,11 +1,9 @@
-import fnmatch
 import glob
 import os.path
-
-import numpy as np
-
+import fnmatch
 from .. import config
 from ..log import logger
+import numpy as np
 
 
 def find(extension=None, mtd=None, ignore=None, basename="", patterns=[]):

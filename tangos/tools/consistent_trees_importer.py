@@ -1,19 +1,15 @@
-import os
-import re
-
-import numpy as np
-from six.moves import xrange
-
 import tangos as db
-
-from .. import config
+import os
+from ..input_handlers import consistent_trees as ct
+from ..log import logger
 from ..core import get_or_create_dictionary_item
 from ..core.halo import PhantomHalo
 from ..core.halo_data import HaloLink, HaloProperty
-from ..input_handlers import consistent_trees as ct
-from ..log import logger
+from .. import config
 from . import GenericTangosTool
-
+from six.moves import xrange
+import re
+import numpy as np
 
 class ConsistentTreesImporter(GenericTangosTool):
     tool_name = 'import-consistent-trees'

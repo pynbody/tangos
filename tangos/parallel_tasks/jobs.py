@@ -1,5 +1,5 @@
-from .. import log
 from . import message
+from .. import log
 
 j = -1
 num_jobs = None

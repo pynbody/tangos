@@ -1,10 +1,9 @@
-import copy
 import os
-
+import copy
 import numpy as np
 
-from ...util import proxy_object
 from . import translations
+from ...util import proxy_object
 
 
 class HaloStatFile:

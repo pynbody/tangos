@@ -1,9 +1,7 @@
-import numpy as np
-
+from . import PynbodyPropertyCalculation
 from ...input_handlers import eagle
 from ...log import logger
-from . import PynbodyPropertyCalculation
-
+import numpy as np
 
 class EagleBH(PynbodyPropertyCalculation):
     works_with_handler = eagle.EagleLikeInputHandler

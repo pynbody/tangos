@@ -1,6 +1,5 @@
 from . import PynbodyPropertyCalculation
 
-
 class MeanGasProperties(PynbodyPropertyCalculation):
     names = "mean_temp", "mean_rho"
 

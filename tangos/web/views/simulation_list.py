@@ -1,8 +1,6 @@
-import socket
-
 from pyramid.response import Response
 from pyramid.view import view_config
-
+import socket
 import tangos
 from tangos import core
 

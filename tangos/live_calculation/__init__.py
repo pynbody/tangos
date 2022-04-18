@@ -5,20 +5,17 @@ For more overview information, see live_calculation.md. """
 import warnings
 
 import numpy as np
-from sqlalchemy.orm import Load, aliased, contains_eager, defaultload
+from sqlalchemy.orm import contains_eager, aliased, defaultload, Load
 
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data
 from tangos.core import extraction_patterns
 from tangos.live_calculation.query_masking import QueryMask
-from tangos.live_calculation.query_multivalue_folding import \
-    QueryMultivalueFolding
+from tangos.live_calculation.query_multivalue_folding import QueryMultivalueFolding
 from tangos.util import consistent_collection
-
 from .. import core
 from .. import temporary_halolist as thl
-
 
 class UnknownValue:
     """A dummy object returned by Calculation.proxy_value when the value of the calculation cannot be predicted"""
@@ -725,4 +722,5 @@ class StoredProperty(Calculation):
 
 
 
-from . import builtin_functions, parser
+from . import parser
+from . import builtin_functions

@@ -2,14 +2,13 @@
 of different types has to be stored in different attributes.
 """
 
-import datetime
-import functools
-import sys
-import time
-import zlib
-
 import numpy as np
+import zlib
+import time
+import datetime
 import six
+import sys
+import functools
 from six.moves import cPickle as pickle
 
 pickle_loads = pickle.loads

@@ -1,24 +1,24 @@
 #!/usr/bin/env python2.7
 
-import argparse
 import sys
 from textwrap import dedent
 
 import numpy as np
+import argparse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import tangos as db
-from tangos import all_simulations, config, core
-from tangos.core import (Base, Creator, HaloLink, HaloProperty, Simulation,
-                         SimulationObjectBase, TimeStep,
-                         get_or_create_dictionary_item)
+from tangos import all_simulations
+from tangos import core, config
+from tangos.core import Base, get_or_create_dictionary_item, \
+    Creator, Simulation, TimeStep, SimulationObjectBase, HaloProperty, HaloLink
 from tangos.core.simulation import SimulationProperty
 from tangos.core.tracking import TrackData
+from tangos.query import get_simulation, get_halo
 from tangos.input_handlers import get_named_handler_class
-from tangos.log import logger
-from tangos.query import get_halo, get_simulation
 from tangos.tools.add_simulation import SimulationAdderUpdater
+from tangos.log import logger
 
 
 def add_simulation_timesteps(options):

@@ -1,10 +1,6 @@
-import sqlalchemy
-import sqlalchemy.engine
-import sqlalchemy.event
-
-from . import core
+import sqlalchemy, sqlalchemy.engine, sqlalchemy.event
 from . import parallel_tasks as pt
-
+from . import core
 global rlock
 
 __author__ = 'app'

@@ -1,11 +1,8 @@
-import os
-import sys
-
-import tangos.tools
-
+from . import manager, writer, timelink, crosslink
 from .. import parallel_tasks
-from . import crosslink, manager, timelink, writer
-
+import tangos.tools
+import sys
+import os
 
 def add_generic_tool(subparse, class_, command, help):
     this_subparser = subparse.add_parser(command, help=help)

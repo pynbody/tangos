@@ -1,7 +1,5 @@
-import six
-
 from .. import core
-
+import six
 
 class SimulationGeneratorForTests:
     def __init__(self, sim_name="sim", session=None):

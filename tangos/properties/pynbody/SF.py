@@ -1,8 +1,7 @@
-import numpy as np
-
 from .. import TimeChunkedProperty
-from . import PynbodyPropertyCalculation, pynbody_handler_module
+from . import pynbody_handler_module, PynbodyPropertyCalculation
 
+import numpy as np
 
 class StarFormHistogram(TimeChunkedProperty):
     works_with_handler = pynbody_handler_module.PynbodyInputHandler

@@ -2,13 +2,11 @@
 http://www.caterpillarproject.org"""
 
 
-import os.path
 import re
-
 from .. import config
-from . import halo_stat_files
 from .pynbody import PynbodyInputHandler
-
+from . import halo_stat_files
+import os.path
 
 class CaterpillarInputHandler(PynbodyInputHandler):
     patterns = ["snapdir_???"]

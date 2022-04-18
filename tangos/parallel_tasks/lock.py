@@ -1,10 +1,7 @@
+from . import message, log, parallel_backend_loaded
 import time
-
 import six
-
 from ..config import DEFAULT_SLEEP_BEFORE_ALLOWING_NEXT_LOCK
-from . import log, message, parallel_backend_loaded
-
 
 class MessageRequestLock(message.Message):
     def __init__(self, name, shared=False):

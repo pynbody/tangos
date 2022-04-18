@@ -1,11 +1,7 @@
-import math
-
-import numpy as np
-import scipy
-import scipy.stats
-
 from .. import BuiltinFunction, FixedNumericInput
-
+import scipy, scipy.stats
+import math
+import numpy as np
 
 def single_array_smooth(ar_in, npix=5, one_tailed=False) :
     kern = scipy.stats.norm.pdf(np.linspace(-3,3,npix))

@@ -1,5 +1,4 @@
 import csv
-
 from six import StringIO
 
 # CSV renderer based on pyramid example

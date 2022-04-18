@@ -1,5 +1,4 @@
-import sqlalchemy
-import sqlalchemy.exc
+import sqlalchemy, sqlalchemy.exc
 from sqlalchemy import Column, Integer, String
 
 from . import Base, get_default_session

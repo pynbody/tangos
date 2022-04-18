@@ -1,16 +1,11 @@
-import urllib.parse
-
-import numpy as np
-import sqlalchemy
-import sqlalchemy.orm
 from pyramid.view import view_config
-
 import tangos
 from tangos import core
-
+import numpy as np
+from .halo_data import format_number, _relative_description
+import sqlalchemy, sqlalchemy.orm
+import urllib.parse
 from . import halo_from_request
-from .halo_data import _relative_description, format_number
-
 
 class TimestepInfo:
     def __init__(self, ts):

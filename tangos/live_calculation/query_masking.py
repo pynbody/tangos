@@ -1,6 +1,5 @@
 import numpy as np
-
-from ..util import is_not_false, is_not_none
+from ..util import is_not_none, is_not_false
 
 
 class QueryMask:

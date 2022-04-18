@@ -1,11 +1,11 @@
-import sqlalchemy
-from sqlalchemy import orm
-
 from .. import core
 from ..util import consistent_collection
+
 from .multi_hop import MultiHopStrategy
 from .one_hop import HopStrategy
 
+import sqlalchemy
+from sqlalchemy import orm
 
 class MultiSourceMultiHopStrategy(MultiHopStrategy):
     """A variant of MultiHopStrategy that finds halos corresponding to multiple start points.

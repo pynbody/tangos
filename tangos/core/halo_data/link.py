@@ -1,10 +1,11 @@
-from sqlalchemy import Column, ForeignKey, Integer
-from sqlalchemy.orm import Session, backref, relationship
+from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy.orm import relationship, backref, Session
 
-from ...config import DOUBLE_PRECISION
-from .. import Base, creator
+from .. import Base
+from .. import creator
 from ..dictionary import DictionaryItem
 from ..halo import SimulationObjectBase
+from ...config import DOUBLE_PRECISION
 
 
 class HaloLink(Base):

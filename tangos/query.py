@@ -1,9 +1,8 @@
-import six
 from sqlalchemy import and_
 
-from tangos import Base, Creator, get_default_session
-from tangos.core import (HaloProperty, Simulation, SimulationObjectBase,
-                         TimeStep)
+from tangos import get_default_session, Creator, Base
+from tangos.core import Simulation, TimeStep, SimulationObjectBase, HaloProperty
+import six
 
 
 def all_simulations(session=None):

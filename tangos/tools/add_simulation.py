@@ -1,12 +1,9 @@
-import numbers
-
-import numpy as np
-import six
-
-from .. import config, core
+from .. import core, config
 from ..core import Simulation, TimeStep
 from ..log import logger
-
+import six
+import numpy as np
+import numbers
 
 class SimulationAdderUpdater:
     """This class contains the necessary tools to add a new simulation to the database"""

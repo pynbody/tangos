@@ -1,17 +1,19 @@
 import weakref
 
 import numpy as np
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, func
-from sqlalchemy.orm import Session, backref, relationship
+from sqlalchemy import Column, Integer, Boolean, ForeignKey
+from sqlalchemy.orm import relationship, backref, Session
+from sqlalchemy import func
 
-from ..config import LARGE_BINARY
-from ..log import logger
-from . import Base, creator
-from .dictionary import get_or_create_dictionary_item
+from . import Base
 from .halo import Tracker
-from .halo_data import HaloLink
+from . import creator
 from .simulation import Simulation
 from .timestep import TimeStep
+from .halo_data import HaloLink
+from .dictionary import get_or_create_dictionary_item
+from ..log import logger
+from ..config import LARGE_BINARY
 
 
 class TrackData(Base):
@@ -113,8 +115,8 @@ class TrackData(Base):
 
 
 def update_tracker_halos(sim=None):
-    from tangos import get_simulation
     from tangos.core import get_default_session
+    from tangos import get_simulation
     from tangos.util.terminalcontroller import heading
 
     if sim is None:

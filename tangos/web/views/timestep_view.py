@@ -1,10 +1,9 @@
 from pyramid.view import view_config
-from sqlalchemy import and_, func, or_
+from sqlalchemy import func, and_, or_
+from . import timestep_from_request
 
 import tangos
 from tangos import core
-
-from . import timestep_from_request
 
 
 @view_config(route_name='timestep_view', renderer='../templates/timestep_view.jinja2')

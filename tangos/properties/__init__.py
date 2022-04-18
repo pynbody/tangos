@@ -1,14 +1,13 @@
-import functools
+import numpy as np
+from tangos.util import timing_monitor
+import six
 import importlib
 import warnings
-
-import numpy as np
+import functools
+from .. import input_handlers
+from .. import util
+from .. import parallel_tasks
 import pkg_resources
-import six
-
-from tangos.util import timing_monitor
-
-from .. import input_handlers, parallel_tasks, util
 
 
 class PropertyCalculationMetaClass(type):

@@ -1,7 +1,5 @@
-import pyramid.httpexceptions as exc
-
 import tangos
-
+import pyramid.httpexceptions as exc
 
 def halo_from_request(request):
     ts = timestep_from_request(request)

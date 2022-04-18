@@ -1,14 +1,11 @@
-import gc
-import time
-
-import numpy as np
-import pynbody
-import six.moves.cPickle as pickle
-
-from ..util.check_deleted import check_deleted
+from .message import Message, ExceptionMessage
 from . import log, parallel_backend_loaded, remote_import
-from .message import ExceptionMessage, Message
-
+from ..util.check_deleted import check_deleted
+import pynbody
+import gc
+import six.moves.cPickle as pickle
+import numpy as np
+import time
 
 class ConfirmLoadPynbodySnapshot(Message):
     pass

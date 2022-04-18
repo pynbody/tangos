@@ -1,16 +1,14 @@
 """Support for the directory structure used by Eagle-like runs"""
 
+from .pynbody import PynbodyInputHandler
 import os
 import re
 import weakref
-
-import numpy as np
 import scipy.stats
-
+import numpy as np
 from .. import config
-from ..log import logger
 from ..util import proxy_object
-from .pynbody import PynbodyInputHandler
+from ..log import logger
 
 _eagle_underlying_subfind_cache = weakref.WeakValueDictionary()
 

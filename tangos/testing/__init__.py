@@ -1,16 +1,13 @@
-import contextlib
-import gc
-import inspect
-import os
-import traceback
-
-import six
-import sqlalchemy
-import sqlalchemy.event
-from sqlalchemy import create_engine
-
 from .. import core, get_halo
 from ..config import testing_db_backend, testing_db_password, testing_db_user
+import sqlalchemy, sqlalchemy.event
+import contextlib
+import gc
+import traceback
+import os
+import inspect
+import six
+from sqlalchemy import create_engine
 
 
 def _as_halos(hlist, session=None):

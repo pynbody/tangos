@@ -1,16 +1,16 @@
 import datetime
 
 import numpy as np
-import six
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text
-from sqlalchemy.orm import Session, backref, relationship
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, Text
+from sqlalchemy.orm import relationship, backref, Session
 
-from .. import config, input_handlers
+from . import data_attribute_mapper
+from . import Base
+from . import creator
+from .. import input_handlers, config
+from .dictionary import DictionaryItem, get_dict_id, get_or_create_dictionary_item
 from ..config import DOUBLE_PRECISION, LARGE_BINARY
-from . import Base, creator, data_attribute_mapper
-from .dictionary import (DictionaryItem, get_dict_id,
-                         get_or_create_dictionary_item)
-
+import six
 
 class Simulation(Base):
     __tablename__ = 'simulations'

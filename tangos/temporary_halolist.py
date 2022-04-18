@@ -1,11 +1,9 @@
-import contextlib
+from . import core
+from sqlalchemy import Column, Table, Integer
+import sqlalchemy
 import random
 import string
-
-import sqlalchemy
-from sqlalchemy import Column, Integer, Table
-
-from . import core
+import contextlib
 
 _temp_sessions = {}
 

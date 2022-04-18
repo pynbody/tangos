@@ -1,9 +1,9 @@
 yt = None # deferred import; occurs when a YtInputHandler is constructed
 
+from . import finding
+from . import HandlerBase
 from .. import config
 from ..log import logger
-from . import HandlerBase, finding
-
 
 class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __init__(self, *args, **kwargs):

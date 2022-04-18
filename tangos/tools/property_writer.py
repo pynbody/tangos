@@ -8,21 +8,21 @@ import time
 import traceback
 import warnings
 import weakref
-
-import numpy as np
 import six
+import numpy as np
 import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
 
-from tangos import live_calculation
-
-from .. import core, parallel_tasks, properties
+from . import GenericTangosTool
+from .. import properties
+from ..util import terminalcontroller, timing_monitor, proxy_object
+from .. import parallel_tasks, core
+from ..util.check_deleted import check_deleted
 from ..cached_writer import insert_list
 from ..log import logger
-from ..util import proxy_object, terminalcontroller, timing_monitor
-from ..util.check_deleted import check_deleted
-from . import GenericTangosTool
+from tangos import live_calculation
+
 
 
 class AttributableDict(dict):

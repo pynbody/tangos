@@ -1,5 +1,6 @@
-from sqlalchemy import Column, DateTime, Integer, Text, event
+from sqlalchemy import Column, Integer, DateTime, Text
 from sqlalchemy.orm import Session
+from sqlalchemy import event
 
 from . import Base, get_default_session
 
@@ -19,10 +20,10 @@ class Creator(Base):
         return "<Creator " + self.username + " on " + self.host + " @ " + self.dtime.strftime("%d/%m/%y %H:%M") + " via " + self.command_line.split(" ")[0].split("/")[-1] + ">"
 
     def __init__(self, argv=None):
-        import datetime
-        import getpass
-        import os
         import socket
+        import getpass
+        import datetime
+        import os
         if argv == None:
             import sys
             argv = sys.argv

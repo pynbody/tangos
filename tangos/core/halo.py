@@ -1,15 +1,16 @@
 import weakref
-
 import numpy as np
-import six
-from sqlalchemy import Column, ForeignKey, Integer, orm, types
-from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import Session, backref, relationship
 
-from . import Base, creator, extraction_patterns
+from sqlalchemy import Column, Integer, ForeignKey, orm, types
+from sqlalchemy.orm import relationship, backref, Session
+from sqlalchemy.ext.declarative import declared_attr
+
+from . import extraction_patterns
+from . import Base
+from . import creator
 from .dictionary import get_dict_id, get_or_create_dictionary_item
 from .timestep import TimeStep
-
+import six
 
 class UnsignedInteger(types.TypeDecorator):
     """Stores an unsigned int64 as a signed int64"""
@@ -261,7 +262,7 @@ class SimulationObjectBase(Base):
         session.commit()
 
     def _setitem_one_halo(self, key, obj):
-        from . import HaloLink, Session
+        from . import Session, HaloLink
         session = Session.object_session(self)
         key = get_or_create_dictionary_item(session, key)
         X = self.links.filter_by(halo_from_id=self.id, relation_id=key.id).first()
@@ -337,10 +338,10 @@ class SimulationObjectBase(Base):
         :param strategy: The class to use to find the descendants (default relation_finding.MultiHopMajorDescendantsStrategy)
         """
         from .. import live_calculation
-        from .. import query as db_query
         from .. import relation_finding
         from .. import temporary_halolist as thl
         from . import Session
+        from .. import query as db_query
 
         nmax = kwargs.get('nmax',1000)
         strategy = kwargs.get('strategy', relation_finding.MultiHopMajorDescendantsStrategy)
