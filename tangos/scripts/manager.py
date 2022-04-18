@@ -213,7 +213,7 @@ def remove_duplicates(options):
             SELECT * FROM (
                 SELECT MAX(id)
                 FROM halolink
-                GROUP BY halo_from_id, halo_to_id, weight
+                GROUP BY halo_from_id, halo_to_id, weight, relation_id
             ) as t
         )
     """)).rowcount
