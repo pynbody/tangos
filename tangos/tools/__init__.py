@@ -4,7 +4,8 @@ import argparse
 from .. import core
 from .. import parallel_tasks
 
-class GenericTangosTool(metaclass=abc.ABCMeta):
+@six.add_metaclass(abc.ABCMeta)
+class GenericTangosTool(object):
     parallel = True
     tool_name = None
     tool_description = None

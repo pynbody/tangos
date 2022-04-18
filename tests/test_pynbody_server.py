@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import tangos.parallel_tasks.pynbody_server as ps
 import pynbody
 import tangos.parallel_tasks as pt
@@ -7,6 +9,7 @@ import numpy.testing as npt
 
 import sys
 import os
+from six.moves import zip
 
 
 class _TestHandler(tangos.input_handlers.pynbody.ChangaInputHandler):
@@ -15,7 +18,7 @@ class _TestHandler(tangos.input_handlers.pynbody.ChangaInputHandler):
         if object_typetag=='test-objects' and mode is None:
             return self.load_timestep(ts_extension)[[finder_offset]]
         else:
-            return super().load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
+            return super(_TestHandler, self).load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
 
 def setup_module():
     global handler

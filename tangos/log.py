@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import logging
 from six import StringIO
 import copy
@@ -12,7 +13,7 @@ handler_stderr.setFormatter(formatter)
 logger.addHandler(handler_stderr)
 
 
-class LogCapturer:
+class LogCapturer(object):
     def __init__(self):
         self.buffer = StringIO()
         self.handler_buffer = logging.StreamHandler(self.buffer)

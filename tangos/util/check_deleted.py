@@ -1,7 +1,8 @@
+from __future__ import absolute_import
 import contextlib, weakref, sys, gc
 from ..log import logger
 
-class CheckDeleted:
+class CheckDeleted(object):
     def __init__(self, obj):
         if obj is not None:
             self._obj_weakref = weakref.ref(obj)

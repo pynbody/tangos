@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import sqlalchemy, sqlalchemy.exc
 from sqlalchemy import Column, Integer, String
 

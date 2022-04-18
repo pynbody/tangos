@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from . import message, log, parallel_backend_loaded
 import time
 import six
@@ -109,10 +110,10 @@ def _release_lock_shared(lock_id, proc):
 
 
 def _any_locks_alive():
-    return any([len(v)>0 for v in _lock_queues.values()])
+    return any([len(v)>0 for v in six.itervalues(_lock_queues)])
 
 
-class ExclusiveLock:
+class ExclusiveLock(object):
     """Named, exclusive, re-entrant lock - only one MPI process can hold a lock of a given name at once"""
     _shared=False
 

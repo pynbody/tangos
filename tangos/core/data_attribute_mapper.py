@@ -2,6 +2,7 @@
 of different types has to be stored in different attributes.
 """
 
+from __future__ import absolute_import
 import numpy as np
 import zlib
 import time
@@ -29,7 +30,7 @@ def set_data_of_unknown_type(obj, data):
     mapper.set(obj,data)
 
 
-class DataAttributeMapper:
+class DataAttributeMapper(object):
     _order = 0
     # this can be used to force a subclass to be 'found' last
     # see __all_subclasses below, and use in NullAttributeMapper
@@ -54,7 +55,8 @@ class DataAttributeMapper:
         subclasses.sort(key = lambda x: x._order)
         for X in subclasses:
             yield X
-            yield from X.__all_subclasses()
+            for Y in X.__all_subclasses():
+                yield Y
 
     @classmethod
     def __all_nonabstract_subclasses(cls):
@@ -120,7 +122,7 @@ class TimeAttributeMapper(DataAttributeMapper):
 
 class StringAttributeMapper(DataAttributeMapper):
     _attribute_name = "data_string"
-    _handled_types = [str, str]
+    _handled_types = [str, six.text_type]
 
 class ArrayDowncastingAttributeMapper(DataAttributeMapper):
     @classmethod

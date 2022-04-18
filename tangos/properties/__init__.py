@@ -1,6 +1,8 @@
+from __future__ import absolute_import, print_function
 import numpy as np
 from tangos.util import timing_monitor
 import six
+from six.moves import zip
 import importlib
 import warnings
 import functools
@@ -27,7 +29,7 @@ class PropertyCalculationMetaClass(type):
         if cls.names is not None:
             cls._all_classes.append(cls)
 
-class PropertyCalculation(metaclass=PropertyCalculationMetaClass):
+class PropertyCalculation(six.with_metaclass(PropertyCalculationMetaClass,object)):
     _all_classes = []
 
     # In child class, defines the most general handler that this property is compatible with.
@@ -176,7 +178,7 @@ class PropertyCalculation(metaclass=PropertyCalculationMetaClass):
         """
         values = self.live_calculate(halo_entry, *input_values)
         names = self.names
-        if isinstance(names, str):
+        if isinstance(names, six.string_types):
             return values
         else:
             return values[self.names.index(name)]
@@ -265,7 +267,7 @@ class TimeChunkedProperty(PropertyCalculation):
 
     def __init__(self, simulation):
         self.pixel_delta_t_Gyr = simulation.get("histogram_delta_t_Gyr", self.pixel_delta_t_Gyr)
-        super().__init__(simulation)
+        super(TimeChunkedProperty, self).__init__(simulation)
 
 
     def bin_index(self, time):
@@ -356,7 +358,7 @@ class LivePropertyCalculation(PropertyCalculation):
     requires_particle_data = False
 
     def __init__(self, simulation, *args):
-        super().__init__(simulation)
+        super(LivePropertyCalculation, self).__init__(simulation)
         self._nargs = len(args)
 
     def calculate(self, _, halo):
@@ -373,7 +375,7 @@ class LivePropertyCalculationInheritingMetaProperties(LivePropertyCalculation):
         :param inherits_from: The PropertyCalculation description from which the metadata should be inherited
         :type inherits_from: PropertyCalculation
         """
-        super().__init__(simulation)
+        super(LivePropertyCalculationInheritingMetaProperties, self).__init__(simulation)
         self._inherits_from = inherits_from(simulation)
 
     def plot_x0(self):
@@ -407,7 +409,7 @@ def all_properties(with_particle_data=True):
             continue
 
         name = c.names
-        if isinstance(name, str):
+        if isinstance(name, six.string_types):
             _check_class_provided_name(name)
             pr.append(name)
         else:

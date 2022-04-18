@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import tangos as db
 import tangos.input_handlers.yt as yt_outputs
 import tangos.tools.add_simulation as add

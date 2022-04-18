@@ -1,9 +1,12 @@
+from __future__ import absolute_import
+from __future__ import print_function
 from sqlalchemy.orm import Session
 import numpy as np
 from .core import get_or_create_dictionary_item, SimulationObjectBase, HaloLink, TrackData
 from . import query
 import six
 import tangos.parallel_tasks as parallel_tasks
+from six.moves import zip
 
 def generate_tracker_halo_link_if_not_present(halo_1, halo_2, dict_obj=None, weight=1.0):
     assert isinstance(halo_1, SimulationObjectBase)
@@ -60,7 +63,7 @@ def generate_tracker_halo_links(sim, session):
     session.commit()
 
 def new(for_simulation, using_particles):
-    if isinstance(for_simulation, str):
+    if isinstance(for_simulation, six.string_types):
         for_simulation = query.get_simulation(for_simulation)
     tracker = TrackData(for_simulation)
     use_iord = 'iord' in using_particles.loadable_keys()

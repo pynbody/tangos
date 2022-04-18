@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import glob
 import os
 import os.path
@@ -14,12 +16,13 @@ from . import finding
 from . import HandlerBase
 from .. import config
 from ..log import logger
+from six.moves import range
 
 
 
 _loaded_halocats = {}
 
-class DummyTimeStep:
+class DummyTimeStep(object):
     def __init__(self, filename):
         self.filename = filename
 
@@ -42,7 +45,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(PynbodyInputHandler, self).__init__(*args, **kwargs)
 
 
         # old versions of pynbody have no __version__!
@@ -67,7 +70,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                 h = self._construct_pynbody_halos(f)
 
             return True
-        except (OSError, RuntimeError):
+        except (IOError, RuntimeError):
             return False
 
     def get_timestep_properties(self, ts_extension):
@@ -232,7 +235,8 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
-            yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
+            for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
+                yield X
         else:
             logger.warning("No halo statistics file found for timestep %r",ts_extension)
 
@@ -329,7 +333,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
             f = pynbody.load(filepath)
             h = pynbody.halo.SubfindCatalogue(f)
             return True
-        except (OSError, RuntimeError):
+        except (IOError, RuntimeError):
             return False
 
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
@@ -337,7 +341,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
             h = self._construct_halo_cat(ts_extension, object_typetag)
             return h.get_halo_properties(finder_offset,with_unit=False)
         else:
-            return super().load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
+            return super(GadgetSubfindInputHandler, self).load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
 
     def _construct_group_cat(self, ts_extension):
         f = self.load_timestep(ts_extension)
@@ -351,7 +355,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
 
     def _construct_halo_cat(self, ts_extension, object_typetag):
         if object_typetag== 'halo':
-            return super()._construct_halo_cat(ts_extension, object_typetag)
+            return super(GadgetSubfindInputHandler, self)._construct_halo_cat(ts_extension, object_typetag)
         elif object_typetag== 'group':
             return self._construct_group_cat(ts_extension)
         else:
@@ -431,7 +435,7 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
             f = pynbody.load(filepath)
             h = pynbody.halo.RockstarCatalogue(f)
             return True
-        except (OSError, RuntimeError):
+        except (IOError, RuntimeError):
             return False
 
 
@@ -444,7 +448,7 @@ class GadgetAHFInputHandler(PynbodyInputHandler):
             f = pynbody.load(filepath)
             h = pynbody.halo.AHFCatalogue(f)
             return True
-        except (OSError, RuntimeError):
+        except (IOError, RuntimeError):
             return False
 
 
@@ -459,7 +463,7 @@ class ChangaInputHandler(PynbodyInputHandler):
 
 
     def get_properties(self):
-        parent_prop_dict = super().get_properties()
+        parent_prop_dict = super(ChangaInputHandler, self).get_properties()
 
         pfile = self._get_paramfile_path()
 
@@ -509,7 +513,7 @@ class ChangaInputHandler(PynbodyInputHandler):
 
     def _get_properties_from_log(self, log_path):
         prop_dict = {}
-        with open(log_path) as f:
+        with open(log_path, 'r') as f:
             for l in f:
                 if "# Code compiled:" in l:
                     prop_dict["compiled"] = time.strptime(

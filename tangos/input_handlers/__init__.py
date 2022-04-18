@@ -7,6 +7,7 @@ overriding the functionality.
 For an introduction, see https://pynbody.github.io/tangos/input_handlers.html
 """
 
+from __future__ import absolute_import
 import os, os.path
 from .. import config
 from ..log import logger
@@ -14,7 +15,7 @@ import importlib
 import weakref
 import warnings
 
-class DummyTimeStep:
+class DummyTimeStep(object):
     def __init__(self, filename):
         self.filename = filename
 
@@ -28,7 +29,7 @@ class DummyTimeStep:
 _loaded_timesteps = weakref.WeakValueDictionary()
 
 
-class HandlerBase:
+class HandlerBase(object):
     """This class handles the output from a simulation as it resides on disk.
 
     Subclasses provide implementations for different formats and situations.
@@ -59,7 +60,8 @@ class HandlerBase:
 
     def enumerate_objects(self, ts_extension, object_typetag='halo', min_halo_particles=None):
         """Yield halo_number, NDM, NStar, Ngas for halos in the specified timestep"""
-        yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
+        for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
+            yield X
 
     def _enumerate_objects_from_statfile(self, ts_extension, object_typetag):
         """Implementation of enumerate_objects when the information is provided by a file readable
@@ -68,20 +70,21 @@ class HandlerBase:
         Call from subclasses when this behaviour is desired"""
         statfile = self.get_stat_file(ts_extension, object_typetag)
         logger.info("Reading halos for timestep %r using a stat file", ts_extension)
-        yield from statfile.iter_rows("n_dm", "n_star", "n_gas")
+        for X in statfile.iter_rows("n_dm", "n_star", "n_gas"):
+            yield X
 
     def _can_enumerate_objects_from_statfile(self, ts_extension, object_typetag):
         """Returns True if the objects can be enumerated from a stat file"""
         try:
             self.get_stat_file(ts_extension, object_typetag)
             return True
-        except OSError:
+        except IOError:
             return False
 
     def get_stat_file(self, ts_extension, object_typetag):
         from . import halo_stat_files
         if object_typetag != 'halo':
-            raise OSError("No stat file known for object type %s"%object_typetag)
+            raise IOError("No stat file known for object type %s"%object_typetag)
         #ts = DummyTimeStep()
         #ts.redshift = self.get_timestep_properties(ts_extension)['redshift']
         from . import caterpillar
@@ -106,7 +109,8 @@ class HandlerBase:
         :arg property_names - a list of property names to retrieve (depends on catalogue file format)
         """
         statfile = self.get_stat_file(ts_extension, object_typetag)
-        yield from statfile.iter_rows(*property_names)
+        for values in statfile.iter_rows(*property_names):
+            yield values
 
 
     def load_timestep(self, ts_extension, mode=None):

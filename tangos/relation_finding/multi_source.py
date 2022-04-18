@@ -1,8 +1,11 @@
+from __future__ import absolute_import
 from .. import core
 from ..util import consistent_collection
 
 from .multi_hop import MultiHopStrategy
 from .one_hop import HopStrategy
+from six.moves import range
+from six.moves import zip
 
 import sqlalchemy
 from sqlalchemy import orm
@@ -47,7 +50,7 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         self._keep_only_highest_weights_per_hop = (directed == "forwards" or directed == "backwards")
         self._keep_only_highest_weights_per_hop&=self._return_only_highest_weights | (target is None)
 
-        super().__init__(halos_from[0], **kwargs)
+        super(MultiSourceMultiHopStrategy, self).__init__(halos_from[0], **kwargs)
         self._all_halo_from = halos_from
 
     def _infer_direction(self, halos_from, target):
@@ -75,10 +78,10 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
         if self._should_halt():
             return 0
         else:
-            return super()._generate_next_level_prelim_links(from_nhops)
+            return super(MultiSourceMultiHopStrategy, self)._generate_next_level_prelim_links(from_nhops)
 
     def _supplement_halolink_query_with_filter(self, query, table=None):
-        query = super()._supplement_halolink_query_with_filter(query,table)
+        query = super(MultiSourceMultiHopStrategy, self)._supplement_halolink_query_with_filter(query,table)
 
         if self._keep_only_highest_weights_per_hop:
             query = self._extract_max_weight_rows_from_query(query, table)

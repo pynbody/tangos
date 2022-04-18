@@ -4,7 +4,7 @@ from six import StringIO
 # CSV renderer based on pyramid example
 # https://docs.pylonsproject.org/projects/pyramid-cookbook/en/latest/templates/customrenderers.html
 
-class CSVRenderer:
+class CSVRenderer(object):
     def __init__(self, info):
         pass
 

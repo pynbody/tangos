@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 from . import message
+from six.moves import range
 
 awaiting_barrier = None
 

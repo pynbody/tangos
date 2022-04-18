@@ -1,5 +1,7 @@
 """ Code to read AHF's mtree files """
 
+from __future__ import absolute_import
+from __future__ import print_function
 
 import re
 import os
@@ -8,7 +10,7 @@ from .. import config
 from six.moves import xrange
 from ..log import logger
 
-class AHFTree:
+class AHFTree(object):
     def __init__(self, path, ts):
         self._path = self._AHF_path_from_snapdir_path(os.path.join(path,ts.extension))
         self._load_fid(ts.previous)
@@ -21,7 +23,7 @@ class AHFTree:
         if cat != []:
             return cat[0]
         else:    
-            raise OSError("Cannot infer path of merger tree files")
+            raise IOError("Cannot infer path of merger tree files")
 
     def _load_fid(self, ts):
         self._fid = np.array([x.finder_id for x in ts.halos.all()])
@@ -41,7 +43,7 @@ class AHFTree:
                 self._load_mtree_file_cropped()
             except:
                 logger.info("Could not load AHF mtree file in non-standard format either. Make sure mtree files exist.")
-                raise OSError("Could not load merger tree files")
+                raise IOError("Could not load merger tree files")
 
 
     def _load_mtree_file_standard(self):

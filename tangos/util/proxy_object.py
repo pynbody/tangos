@@ -12,7 +12,8 @@ class ProxyResolutionException(Exception):
     pass
 
 
-class ProxyObjectBase(metaclass=abc.ABCMeta):
+@six.add_metaclass(abc.ABCMeta)
+class ProxyObjectBase(object):
     """A proxy for an object (i.e. halo, group, BH etc) in the database"""
 
     @abc.abstractmethod
@@ -43,7 +44,7 @@ class ProxyObjectBase(metaclass=abc.ABCMeta):
 class ProxyObjectFromDatabaseId(ProxyObjectBase):
     """A proxy object that resolves into a database object with specified ID"""
     def __init__(self, dbid):
-        super().__init__()
+        super(ProxyObjectFromDatabaseId, self).__init__()
         self._dbid = dbid
 
     def resolve(self, session):
@@ -52,7 +53,7 @@ class ProxyObjectFromDatabaseId(ProxyObjectBase):
 class ProxyObjectFromFinderIdAndTimestep(ProxyObjectBase):
     """A proxy object that resolves into the object with given finder ID in the specified timestep"""
     def __init__(self, finder_id, typetag, timestep_id):
-        super().__init__()
+        super(ProxyObjectFromFinderIdAndTimestep, self).__init__()
         self._finder_id = finder_id
         self._typetag = typetag
         self._timestep_id = timestep_id
@@ -64,7 +65,7 @@ class ProxyObjectFromFinderIdAndTimestep(ProxyObjectBase):
 class ProxyObjectFromFinderIdAndTimestepCache(ProxyObjectBase):
     """A proxy object that resolves into the object with given finder ID in the specified timestep cache"""
     def __init__(self, finder_id, typetag, timestep_cache):
-        super().__init__()
+        super(ProxyObjectFromFinderIdAndTimestepCache, self).__init__()
         self._finder_id = finder_id
         self._typetag = typetag
         self._timestep_cache = timestep_cache
@@ -80,7 +81,7 @@ class IncompleteProxyObjectFromFinderId(ProxyObjectBase):
     By calling the method relative_to_timestep_id or relative_to_timestep_cache, a fully specified proxy object will
     be returned."""
     def __init__(self, finder_id, typetag):
-        super().__init__()
+        super(IncompleteProxyObjectFromFinderId, self).__init__()
         self._finder_id = finder_id
         self._typetag = typetag
 

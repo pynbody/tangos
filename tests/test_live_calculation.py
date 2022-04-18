@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as np
 from pytest import raises as assert_raises
 

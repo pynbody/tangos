@@ -1,8 +1,13 @@
+from __future__ import absolute_import
+
+from __future__ import print_function
 import multiprocessing
 import threading
 import sys
 import os
 import signal
+from six.moves import range
+from six.moves import zip
 
 _slave = False
 _rank = None

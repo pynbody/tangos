@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
 import matplotlib
 matplotlib.use('agg')
 

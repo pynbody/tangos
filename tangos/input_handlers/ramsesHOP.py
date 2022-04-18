@@ -52,7 +52,7 @@ class RamsesHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
             else:
                 h = pynbody.halo.hop.HOPCatalogue(f)
             return True
-        except (OSError, RuntimeError):
+        except (IOError, RuntimeError):
             return False
 
 
@@ -84,7 +84,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
                 h = f.halos()
                 return isinstance(h, pynbody.halo.adaptahop.BaseAdaptaHOPCatalogue)
             return True
-        except (OSError, RuntimeError):
+        except (IOError, RuntimeError):
             return False
 
 
@@ -176,7 +176,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
                         data = self._compute_contamination_fraction(adaptahop_halo)
                     else:
                         raise NotImplementedError(
-                            "Cannot handle property {} for halo catalogue {!r}".format(
+                            "Cannot handle property %s for halo catalogue %r" % (
                                 k, self
                             )
                         )
@@ -193,7 +193,8 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
-            yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
+            for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
+                yield X
         else:
             logger.warning("No halo statistics file found for timestep %r", ts_extension)
 

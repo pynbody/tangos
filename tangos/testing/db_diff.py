@@ -5,7 +5,7 @@ import numpy.testing as npt
 from sqlalchemy.orm import joinedload, object_session, undefer, Session
 import numpy as np
 
-class TangosDbDiff:
+class TangosDbDiff(object):
     """Class to compare two databases, used by the tangos diff command line tool"""
 
     def __init__(self, uri1, uri2, max_objects=10, ignore_keys=[]):
@@ -44,8 +44,8 @@ class TangosDbDiff:
         self.failed = True
 
     def compare(self):
-        sims1 = {s.basename for s in all_simulations(self.session1)}
-        sims2 = {s.basename for s in all_simulations(self.session2)}
+        sims1 = set([s.basename for s in all_simulations(self.session1)])
+        sims2 = set([s.basename for s in all_simulations(self.session2)])
 
         if len(sims1-sims2)>0:
             self.fail("Database 1 has additional simulations: %s", list(sims1-sims2))
@@ -61,8 +61,8 @@ class TangosDbDiff:
         sim1 = get_simulation(sim, self.session1)
         sim2 = get_simulation(sim, self.session2)
 
-        ts1 = {ts.extension for ts in sim1.timesteps}
-        ts2 = {ts.extension for ts in sim2.timesteps}
+        ts1 = set([ts.extension for ts in sim1.timesteps])
+        ts2 = set([ts.extension for ts in sim2.timesteps])
 
         self._check_same_set(ts1, ts2, str(sim), 'timesteps')
 
@@ -77,8 +77,8 @@ class TangosDbDiff:
 
         obj_filter = (core.SimulationObjectBase.halo_number < self.max_objects) | (core.SimulationObjectBase.object_typecode == core.SimulationObjectBase.object_typecode_from_tag('bh'))
 
-        objects1 = {o.path: o for o in ts1.objects.filter(obj_filter).all()}
-        objects2 = {o.path: o for o in ts2.objects.filter(obj_filter).all()}
+        objects1 = dict([(o.path, o) for o in ts1.objects.filter(obj_filter).all()])
+        objects2 = dict([(o.path, o) for o in ts2.objects.filter(obj_filter).all()])
         self._check_same_set(objects1.keys(), objects2.keys(), str(ts), 'objects')
 
 
@@ -102,13 +102,13 @@ class TangosDbDiff:
         self._compare_objects(obj1, obj2)
 
     def _compare_objects(self, obj1, obj2):
-        properties1 = {prop.name.text: prop.data_raw for prop in self._joined_properties_load(obj1)}
-        properties2 = {prop.name.text: prop.data_raw for prop in self._joined_properties_load(obj2)}
+        properties1 = dict([(prop.name.text, prop.data_raw) for prop in self._joined_properties_load(obj1)])
+        properties2 = dict([(prop.name.text, prop.data_raw) for prop in self._joined_properties_load(obj2)])
 
         self._check_dict_same(properties1, properties2, obj1.path)
 
-        links1 = {link.relation.text+"->"+link.halo_to.path: link.weight for link in self._joined_links_load(obj1)}
-        links2 = {link.relation.text+"->"+link.halo_to.path: link.weight for link in self._joined_links_load(obj2)}
+        links1 = dict([(link.relation.text+"->"+link.halo_to.path, link.weight) for link in self._joined_links_load(obj1)])
+        links2 = dict([(link.relation.text+"->"+link.halo_to.path, link.weight) for link in self._joined_links_load(obj2)])
 
         self._check_dict_same(links1, links2, obj1.path, 'links')
 
@@ -163,7 +163,7 @@ class TangosDbDiff:
         if v1 is None or v2 is None:
             assert v1 is None, "Value 2 is None but Value 1 is not None"
             assert v2 is None, "Value 1 is None but Value 2 is not None"
-        elif isinstance(v1, str):
+        elif isinstance(v1, six.string_types):
             assert v1 == v2
         elif isinstance(v1, tuple):
             for e1, e2 in zip(v1,v2):

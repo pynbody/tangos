@@ -5,7 +5,7 @@ import numpy as np
 
 class AtPosition(LivePropertyCalculation):
     def __init__(self, simulation, position, array):
-        super().__init__(simulation)
+        super(AtPosition, self).__init__(simulation)
         self._array_info = array
 
     names = "at"
@@ -17,7 +17,7 @@ class AtPosition(LivePropertyCalculation):
 
 class MaxMinProperty(LivePropertyCalculation):
     def __init__(self, simulation, array):
-        super().__init__(simulation)
+        super(MaxMinProperty, self).__init__(simulation)
         self._array_info = array
 
     names = "max", "min", "posmax", "posmin"

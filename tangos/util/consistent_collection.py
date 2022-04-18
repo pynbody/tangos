@@ -1,4 +1,4 @@
-class ConsistentCollection:
+class ConsistentCollection(object):
     """Access attributes of an underlying collection of objects, ensuring they are consistent.
 
     This class wraps a list of objects and, when getting attributes or values, behaves transparently as though it is

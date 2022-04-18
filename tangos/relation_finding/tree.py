@@ -1,3 +1,4 @@
+from __future__ import division
 from ..config import mergertree_timeout, mergertree_max_nhalos, mergertree_min_fractional_NDM, mergertree_min_fractional_weight, mergertree_max_hops
 from . import MultiHopAllProgenitorsStrategy
 from .. import live_calculation
@@ -6,9 +7,11 @@ from sqlalchemy.orm import object_session
 from .. import core
 from ..log import logger
 import time, math
+from six.moves import range
+from six.moves import zip
 import numpy as np
 
-class MergerTree:
+class MergerTree(object):
     """Construct a merger tree from a given starting halo.
 
     This is chiefly for use by the web interface, since displaying the resulting data
@@ -100,7 +103,7 @@ class MergerTree:
                 NDM_cut = None
 
             for obj in link_objs:
-                max_weight = max(o.weight for o in link_objs if o.halo_from_id == obj.halo_from_id)
+                max_weight = max([o.weight for o in link_objs if o.halo_from_id == obj.halo_from_id])
                 should_construct_onward_tree = obj.weight > max_weight * mergertree_min_fractional_weight
                 should_construct_onward_tree &= (obj.halo_to.NDM > mergertree_min_fractional_NDM * max_NDM) | (obj.halo_to.NDM==0)
                 if NDM_cut:
@@ -171,7 +174,7 @@ class MergerTree:
 
     def _get_basic_halo_node(self, halo, depth):
         """Get the dictionary of properties belonging to a node of the tree, i.e. a given halo"""
-        timeinfo = "TS ...{}; z={:.2f}; t={:.2e} Gyr".format(
+        timeinfo = "TS ...%s; z=%.2f; t=%.2e Gyr" % (
             halo.timestep.extension[-5:], halo.timestep.redshift, halo.timestep.time_gyr)
 
         if halo.NDM > 0:
@@ -185,7 +188,7 @@ class MergerTree:
         Mvir = self._properties_cache[halo.id].get("Mvir", None)
 
         if Mvir is not None:
-            moreinfo += ", {}={:.2e}".format("Mvir", Mvir)
+            moreinfo += ", %s=%.2e" % ("Mvir", Mvir)
 
         nodeclass = 'node-dot-standard'
         name = str(halo.halo_number)
@@ -248,7 +251,7 @@ class MergerTree:
         """Generate a human-readable multi-line string displaying the tree structure"""
         result = ""
         for layer in self._visit_tree_layers():
-            max_x = max(node['_x'] for node in layer)
+            max_x = max([node['_x'] for node in layer])
             this_layer_stubs = this_layer_connections = this_layer_string = " "*(max_x+self.x_step)
             need_connections = False
             for node in layer:
@@ -261,8 +264,8 @@ class MergerTree:
                 if 'contents' in node and len(node['contents'])>0 :
                     connector = "|"
 
-                    x0_min_next_layer = min(child_node['_x'] for child_node in node['contents'])
-                    x0_max_next_layer = max(child_node['_x'] for child_node in node['contents'])
+                    x0_min_next_layer = min([child_node['_x'] for child_node in node['contents']])
+                    x0_max_next_layer = max([child_node['_x'] for child_node in node['contents']])
                     line_start = x0_min_next_layer+self.x_step//2
                     line_finish = x0_max_next_layer+self.x_step//2
 
@@ -293,7 +296,8 @@ class MergerTree:
             tree = self._treedata
         yield tree
         for subtree in tree['contents']:
-            yield from self._visit_tree(subtree)
+            for item in self._visit_tree(subtree):
+                yield item
 
     def _visit_tree_layers(self):
         """Yields each layer of the tree in turn, consisting of a list of elements at each layer"""
@@ -360,7 +364,7 @@ class MergerTree:
         for node in self._visit_tree():
             x_vals[node['depth']].add(node[key])
 
-        max_entries = max(len(v) for v in x_vals)
+        max_entries = max([len(v) for v in x_vals])
         x_map = [{} for i in range(self._treedata['maxdepth'])]
         for this_vals, this_map in zip(x_vals, x_map):
             new_x = (self.x_step//2) * (max_entries - len(this_vals))

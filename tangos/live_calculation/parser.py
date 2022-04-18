@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import pyparsing as pp
 import functools
 import threading

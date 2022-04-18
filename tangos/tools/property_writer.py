@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import argparse
 import contextlib
 import gc
@@ -21,6 +22,7 @@ from .. import parallel_tasks, core
 from ..util.check_deleted import check_deleted
 from ..cached_writer import insert_list
 from ..log import logger
+from six.moves import zip
 from tangos import live_calculation
 
 
@@ -275,7 +277,7 @@ class PropertyWriter(GenericTangosTool):
     def _required_and_calculated_property_names(self):
         needed = []
         for x in self._property_calculator_instances:
-            if isinstance(x.names, str):
+            if isinstance(x.names, six.string_types):
                 needed.extend([x.names])
             else:
                 needed.extend([name for name in x.names])
@@ -310,7 +312,7 @@ class PropertyWriter(GenericTangosTool):
             # because it might be needed for the iord's if we are in partial-load mode.
             try:
                 self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
-            except OSError:
+            except IOError:
                 pass
 
         if self.options.load_mode is None:
@@ -354,7 +356,7 @@ class PropertyWriter(GenericTangosTool):
 
 
     def _get_standin_property_value(self, property_calculator):
-        if isinstance(property_calculator.names,str):
+        if isinstance(property_calculator.names,six.string_types):
             return None
         num = len(property_calculator.names)
         return [None]*num
@@ -369,7 +371,7 @@ class PropertyWriter(GenericTangosTool):
 
         try:
             snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, db_data, property_calculator)
-        except OSError:
+        except IOError:
             logger.warning("Failed to load snapshot data for %r; skipping",db_halo)
             self.tracker.register_loading_error()
             return result
@@ -401,7 +403,7 @@ class PropertyWriter(GenericTangosTool):
                     x.preloop(f, db_timestep)
             except Exception:
                 logger.exception(
-                    "Uncaught exception during property preloop {!r} applied to {!r}".format(x, db_timestep))
+                    "Uncaught exception during property preloop %r applied to %r" % (x, db_timestep))
                 if self.options.catch:
                     traceback.print_exc()
                     tbtype, value, tb = sys.exc_info()
@@ -486,7 +488,7 @@ class PropertyWriter(GenericTangosTool):
         will_calculate = []
         requirements = []
         for inst in self._property_calculator_instances:
-            if isinstance(inst.names, str):
+            if isinstance(inst.names, six.string_types):
                 will_calculate+=[inst.names]
             else:
                 will_calculate+=inst.names
@@ -514,7 +516,7 @@ class PropertyWriter(GenericTangosTool):
         self._commit_results_if_needed(True,True)
 
 
-class CalculationSuccessTracker:
+class CalculationSuccessTracker(object):
     def __init__(self):
         self._skipped_existing = 0
         self._skipped_missing_prerequisite = 0

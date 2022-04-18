@@ -9,6 +9,7 @@ import numpy as np
 from .. import config
 from ..util import proxy_object
 from ..log import logger
+from six.moves import range
 
 _eagle_underlying_subfind_cache = weakref.WeakValueDictionary()
 
@@ -29,19 +30,19 @@ class EagleLikeInputHandler(PynbodyInputHandler):
         if snap_id:
             return os.path.join(path, "snap_%s" % snap_id)
         else:
-            raise OSError("Cannot infer correct path to pass to pynbody")
+            raise IOError("Cannot infer correct path to pass to pynbody")
 
     @classmethod
     def _pynbody_subfind_extension_from_ts_extension(cls, path):
         snap_id = cls._snap_id_from_snapdir_path(path)
         if snap_id:
-            subfind_path = os.path.join(os.path.dirname(path), "particledata_{}/eagle_subfind_particles_{}".format(snap_id, snap_id))
+            subfind_path = os.path.join(os.path.dirname(path), "particledata_%s/eagle_subfind_particles_%s" % (snap_id, snap_id))
             if os.path.exists(os.path.dirname(subfind_path)):
                 return subfind_path
             else:
                 return cls._pynbody_extension_from_ts_extension(path)
         else:
-            raise OSError("Cannot infer correct subfind particledata path to pass to pynbody")
+            raise IOError("Cannot infer correct subfind particledata path to pass to pynbody")
 
     def _extension_to_filename(self, ts_extension):
         return str(os.path.join(config.base, self.basename, self._pynbody_extension_from_ts_extension(ts_extension)))
@@ -54,13 +55,13 @@ class EagleLikeInputHandler(PynbodyInputHandler):
         filepath = self._extension_to_filename(ts_extension)
         try:
             pynbody.load(filepath)
-        except (OSError, RuntimeError):
+        except (IOError, RuntimeError):
             return False
 
         halofilepath = self._extension_to_halodata_filename(ts_extension)
         try:
             pynbody.load(halofilepath)
-        except (OSError, RuntimeError):
+        except (IOError, RuntimeError):
             return False
 
         return True
@@ -122,7 +123,7 @@ class EagleLikeInputHandler(PynbodyInputHandler):
         f_subfind['TangosSubGroupNumber'] = unique_subgrp_ordered
         try:
             f_subfind['TangosSubGroupNumber'].write()
-        except OSError:
+        except IOError:
             logger.info("Unable to cache TangosSubGroupNumber on disk")
         return subgrp_max
 

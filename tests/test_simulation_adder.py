@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import tangos as db
 from tangos import log
 import os
