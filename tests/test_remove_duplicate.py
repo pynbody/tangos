@@ -1,8 +1,3 @@
-import numpy as np
-from tangos import testing
-from tangos.testing.simulation_generator import SimulationGeneratorForTests
-from tangos import core
-from tangos.cached_writer import create_property
 import tangos
 from tangos import core, testing
 from tangos.cached_writer import create_property
@@ -33,20 +28,21 @@ def setup_module():
     halo3 = tangos.get_halo(3)
     halo9 = tangos.get_halo(9)
 
-    # duplicate link between halo 1 to halo 2 with the same weight
+    # twice halo 1 to halo 2
     d_test = tangos.core.get_or_create_dictionary_item(session, "test")
     l_obj = link.HaloLink(halo, halo2, d_test, 1.0)
     session.add(l_obj)
+    d_test = tangos.core.get_or_create_dictionary_item(session, "test")
     l_obj = link.HaloLink(halo, halo2, d_test, 1.0)
     session.add(l_obj)
-    # and another time, but with different weight
-    l_obj = link.HaloLink(halo, halo2, d_test, 0.5)
-    session.add(l_obj)
-    # once more for halo 1 but to a different halo
+
+    # once halo 1 to halo 3
+    d_test = tangos.core.get_or_create_dictionary_item(session, "test")
     l_obj = link.HaloLink(halo, halo3, d_test, 1.0)
     session.add(l_obj)
 
-    # and now a completely independent link between halo 2 to halo 9
+    # once halo 2 to halo 9
+    d_test = tangos.core.get_or_create_dictionary_item(session, "test")
     l_obj = link.HaloLink(halo2, halo9, d_test, 1.0)
     session.add(l_obj)
 
@@ -65,11 +61,8 @@ def test():
         assert halo["Mvir"] == ihalo
 
     # And three links for halo 1 and one for halo 2
-    assert tangos.get_halo(1).links.count() == 4
+    assert tangos.get_halo(1).links.count() == 3
     assert tangos.get_halo(2).links.count() == 1
-    # but only 3 links in halo 1 are unique
-    triplets = [[l.halo_from.id, l.halo_to.id, l.weight] for l in tangos.get_halo(1).all_links]
-    assert len(np.unique(triplets, axis=0)) == 3
 
     # Let's cleanup
     remove_duplicates(None)
@@ -81,12 +74,6 @@ def test():
         halo = tangos.get_halo(ihalo)
         assert halo["Mvir"] == ihalo
 
-    # Now halo 1 should have one less link, which are all unique
-    assert tangos.get_halo(1).links.count() == 3
-    triplets = [[l.halo_from.id, l.halo_to.id, l.weight] for l in tangos.get_halo(1).all_links]
-    assert len(np.unique(triplets, axis=0)) == 3
-
-    # halo 2 should not have changed
+    # And two links for halo 1, pointing to different halos, still one for halo 2
+    assert tangos.get_halo(1).links.count() == 2
     assert tangos.get_halo(2).links.count() == 1
-    assert tangos.get_halo(2).all_links[0].halo_from.id == 2
-    assert tangos.get_halo(2).all_links[0].halo_to.id == 9
