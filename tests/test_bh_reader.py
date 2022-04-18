@@ -1,8 +1,7 @@
-import numpy as np
 import pynbody
-
+import numpy as np
 import tangos as db
-from tangos.input_handlers.changa_bh import BlackHolesLog, ShortenedOrbitLog
+from tangos.input_handlers.changa_bh import ShortenedOrbitLog, BlackHolesLog
 
 _sim_path = 'test_simulations/test_tipsy/tiny.000640'
 
@@ -28,3 +27,4 @@ def test_bhlog():
 
 	assert(bhlog.get_last_entry_for_id(12345)['step'] == 2.0)
 	assert(bhlog.get_last_entry_for_id(12346)['step'] == 2.0)
+

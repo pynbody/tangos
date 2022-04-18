@@ -20,7 +20,7 @@ class AHFTree:
         cat = glob.glob(ahf_path)
         if cat != []:
             return cat[0]
-        else:
+        else:    
             raise OSError("Cannot infer path of merger tree files")
 
     def _load_fid(self, ts):
@@ -63,7 +63,7 @@ class AHFTree:
                     results['id_this'] = np.append(results['id_this'],data[idx][1])
                     results['f_share'] = np.append(results['f_share'], float(data[idx][0] * data[idx][0]) / (data[i][1] * data[idx][2]) )
             i += data[i][2] + 1
-
+        
         self.links = results
 
     def _load_mtree_file_cropped(self):
@@ -71,7 +71,7 @@ class AHFTree:
         read in the AHF mtree file containing only the indices of halos and its progenitors and assume progenitors are ordered in descending weight.
         """
         filename = self._path
-        results = {'id_this':np.asarray([],dtype=np.int64), 'id_desc':np.asarray([],dtype=np.int64), 'f_share':np.asarray([],dtype=np.float64)} #'Mvir':np.asarray([],dtype=np.float64),
+        results = {'id_this':np.asarray([],dtype=np.int64), 'id_desc':np.asarray([],dtype=np.int64), 'f_share':np.asarray([],dtype=np.float64)} #'Mvir':np.asarray([],dtype=np.float64), 
 
         f = open(filename)
         lines = f.readlines()
@@ -87,11 +87,11 @@ class AHFTree:
             if nprogen > 0:
                 for n in range(nprogen):
                     _this_id = int(lines[skip+n]) # rip off the timestep which is encoded as the first 3 digits
-                    if _this_id in self._fid: # check if the halo exists in the database, this is needed if db was created with a minimum particle number per halo which does not agree with AHF definition
+                    if _this_id in self._fid: # check if the halo exists in the database, this is needed if db was created with a minimum particle number per halo which does not agree with AHF definition 
                         results['id_desc'] = np.append(results['id_desc'],np.asarray([_id],dtype=np.int64))
                         results['id_this'] = np.append(results['id_this'],np.asarray([_this_id],dtype=np.int64))
                         results['f_share'] = np.append(results['f_share'], np.asarray([(nprogen-n)/nprogen],dtype=np.float64))
-            skip += nprogen   # increment line skip by already read lines
+            skip += nprogen   # increment line skip by already read lines   
         self.links = results
 
     def _load_major_progenitor_branch(self):
@@ -112,3 +112,4 @@ class AHFTree:
         merger_ratios = self.links['f_share']
 
         return list(zip(ids_this_snap, zip(ids_next_snap, merger_ratios)))
+

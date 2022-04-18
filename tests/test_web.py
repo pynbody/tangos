@@ -1,16 +1,12 @@
+import tangos, tangos.web
+import tangos.testing.simulation_generator
+from tangos import testing
+from webtest import TestApp
+import numpy as np
 import csv
 import json
 from io import StringIO
 from urllib import parse
-
-import numpy as np
-from webtest import TestApp
-
-import tangos
-import tangos.testing.simulation_generator
-import tangos.web
-from tangos import testing
-
 
 def setup_module():
     testing.init_blank_db_for_testing()

@@ -154,3 +154,4 @@ class SharedLock(ExclusiveLock):
     """Named, shared, re-entrant lock - multiple MPI processes can hold a lock of a given name at once, but not while an
     ExclusiveLock of the same name is also held"""
     _shared=True
+

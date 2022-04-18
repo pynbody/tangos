@@ -1,12 +1,5 @@
-import contextlib
-import os
-import time
-
-import sqlalchemy.exc
 from pytest import raises as assert_raises
 from pytest import skip
-
-import tangos
 import tangos as db
 import tangos.blocking
 import tangos.core.halo
@@ -14,6 +7,11 @@ import tangos.core.simulation
 import tangos.core.timestep
 import tangos.parallel_tasks as pt
 from tangos import log, testing
+import time
+import os
+import sqlalchemy.exc
+import contextlib
+import tangos
 from tangos.config import testing_db_backend
 
 

@@ -88,3 +88,4 @@ class YtChangaAHFInputHandler(YtInputHandler):
                                                 hubble_constant = snapshot_file.hubble_constant)
         cat_data = cat.all_data()
         return cat, cat_data
+

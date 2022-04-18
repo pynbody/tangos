@@ -1,11 +1,9 @@
-import sys
-import time
-
-import tangos
 import tangos.testing.simulation_generator
 from tangos import parallel_tasks as pt
 from tangos import testing
-
+import tangos
+import sys
+import time
 
 def setup_module():
     pt.use("multiprocessing")
@@ -102,7 +100,6 @@ def test_empty_then_non_empty_loop():
 def _test_synchronize_db_creator():
     rank = pt.backend.rank()
     import tangos.parallel_tasks.database
-
     # hack: MultiProcessing backend forks so has already "synced" the current creator.
     tangos.core.creator._current_creator = None
     pt.database.synchronize_creator_object(tangos.core.get_default_session())

@@ -1,14 +1,14 @@
 Loading data with systems other than pynbody
 ============================================
 
-The core of _tangos_ is agnostic about the way in which raw simulation data is loaded and processed.
+The core of _tangos_ is agnostic about the way in which raw simulation data is loaded and processed. 
 The developers of _tangos_ use _pynbody_ for this purpose but it can be adapted for other libraries
 with relative ease.
 
-As a demonstration, embryonic _yt_ support is included; more information is in the
-[using with yt](using_with_yt.md) document.
+As a demonstration, embryonic _yt_ support is included; more information is in the 
+[using with yt](using_with_yt.md) document. 
 
-Tangos refers to systems that can load the raw simulation data as _handlers_.
+Tangos refers to systems that can load the raw simulation data as _handlers_. 
 The remainder of this page explores the requirements for such handlers, and how they can be exposed
 for use.
 
@@ -18,26 +18,26 @@ Handler classes
 Handlers are implemented by subclasses of `tangos.input_handlers.HandlerBase`.
 To write your own, start by creating such a subclass. At a minimum will need to provide a way for _tangos_:
 
- - to enumerate the available simulation timesteps. This is the method
-   `enumerate_timestep_extensions`.
+ - to enumerate the available simulation timesteps. This is the method 
+   `enumerate_timestep_extensions`. 
    It returns a list of strings that name the individual timesteps. These are known as _timestep
    extensions_ because usually the filesystem path is composed of the simulation path plus the
    timestep extension.
 
  - to enumerate the objects within each timestep. This is the method
    `enumerate_objects`.
-
+   
  - to load the data corresponding to each timestep. This is the method
-   `load_timestep_without_caching`. (Alternatively one can override `load_timestep`,
+   `load_timestep_without_caching`. (Alternatively one can override `load_timestep`, 
     but then one should also implement a caching scheme that prevents multiple reads
     of the same data over and again.)
-
+   
  - to load the data corresponding to each object. This is the method
    `load_object`.
-
+   
 Ideally, one also should have a method to link objects between steps, known as `match_objects`.
-
- So, a minimal handler, that manually exposes a simulation with two timesteps and
+   
+ So, a minimal handler, that manually exposes a simulation with two timesteps and 
  100 halos per timestep, is as follows:
 
 
@@ -115,7 +115,7 @@ class MyHandler(tangos.input_handlers.HandlerBase):
 
 ```
 
-Save this file as `myhandler.py`.
+Save this file as `myhandler.py`. 
 
 Your handler class in action
 ----------------------------
@@ -130,7 +130,7 @@ Ensure that `myhandler.py` is in your python search path. You should see that th
 with 100 and 150 halos respectively. Also from the shell, run:
 
 ```
-tangos link --for test_my_handler
+tangos link --for test_my_handler  
 ```
 
 Note that once the simulation has been created you don't need to remind _tangos_ of the handler. It stores
@@ -148,25 +148,25 @@ You should see the following string: `Data for $TANGOS_SIMULATION_FOLDER/test_my
 
  - The `tangos add` command created a record of the `test_my_handler` simulation. It called your
    `enumerate_timestep_extensions` implementation which revealed the existence of two timesteps. It then called
-   the `enumerate_objects` implementation which revealed the existence of halos in these timesteps. The
+   the `enumerate_objects` implementation which revealed the existence of halos in these timesteps. The 
    relevant database objects were created.
-
+   
  - From within python, you fetched the simulation `test_my_handler`, the timestep `my_timestep_2`, and finally
    the halo 10 within that timestep. You asked for the `earlier` halo, which used the links `tangos link` set up
    based on the information returned from your `match_objects` routine.
-
+   
  - Then you asked to `load()` the underlying data. _Tangos_ redirected this
    request to your `load_object` routine which returned a string, which is what you see printed out. Of course in a
    realistic implementation the returned object would actually contain some particle data!
-
-
+   
+   
 Adding properties that use your handler class
 ---------------------------------------------
 
 Finally, let's add a halo property using your custom loader. (More information on adding halo properties
-can be found in the [custom properties](custom_properties.md) tutorial.)
+can be found in the [custom properties](custom_properties.md) tutorial.) 
 
-Typically, calculating halo properties requires a knowledge of the data-loading
+Typically, calculating halo properties requires a knowledge of the data-loading 
 library in use. For that reason, halo properties can be tied to specific loaders. For simplicity
 you can add a new property to the bottom of your `myloader.py` file (though it doesn't have to
 be in the same file, of course) as follows:
@@ -194,7 +194,7 @@ The only thing that is different from the [custom properties](custom_properties.
 the declaration that this property `works_with_handler`, associating it specifically with your
 data handler. You can therefore be assured that `calculate` will be passed a `MyDataObject` to work
 with (and the `assert` is just there to demonstrate that fact).
-
+ 
 This new property should be available to the `tangos write`, so from your UNIX shell type:
 
 ```

@@ -5,7 +5,6 @@ __author__ = 'app'
 
 import tangos as db
 
-
 def setup_module():
     testing.init_blank_db_for_testing()
 

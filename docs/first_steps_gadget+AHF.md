@@ -38,22 +38,22 @@ At the unix command line type:
 tangos add tutorial_gadget_ahf --min-particles 100
 ```
 
-The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages
+The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
 scroll up the screen.
-
+ 
  Let's pick this command apart
-
+ 
   * `tangos` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial_gadget_ahf` identifies the simulation we're adding. Note that _tangos_ automatically spots the
     AHF outputs in this folder and adapts its behaviour accordingly. If you add `tutorial_gadget`, it'll instead
     see the SubFind catalogues (see the [alternative tutorial](first_steps_gadget+subfind.md)).
-  * `--min-particles 100` imports only halos/groups with at least 100 particles.
+  * `--min-particles 100` imports only halos/groups with at least 100 particles. 
   (The default value is 1000 particles, but this tutorial dataset is fairly low resolution so we'll keep these small halos.)
 
-
+ 
 Note that all _tangos_ command-line tools provide help. For example `tangos --help` will show you all subcommands, and `tangos add --help` will tell you more about the possible options for adding a simulation.
-
+  
 At this point, the database knows about the existence of timesteps and their halos and groups in our simulation, but nothing about the properties of those halos or groups. We need to add more information before the database is useful.
 
 
@@ -76,7 +76,7 @@ necessary to add this if you only have one simulation in your database.
 Import the merger trees
 -------------------------
 
-The merger trees can be imported from the AHF `AHF_mtree` files. Further information on how to create or handle the merger tree files with
+The merger trees can be imported from the AHF `AHF_mtree` files. Further information on how to create or handle the merger tree files with 
 the codes from the AHF toolbox see AHF's [documentation](http://popia.ft.uam.es/AHF/Download.html). To import the merger trees type
 
 ```bash
@@ -95,7 +95,7 @@ Add some more interesting properties
 ------------------------------------
 
 Let's finally do some science. We'll add dark matter density profiles; from your shell type:
-
+ 
 ```bash
 tangos write dm_density_profile --with-prerequisites --include-only="NDM()>5000" --type=halo --for tutorial_gadget_ahf
 ```
@@ -113,10 +113,10 @@ Here,
    for. In the present case, we use that to insist that only halos with more than 5000 particles have their density profiles
    calculated
  * `--type=halo` calculates the properties only for halos (as opposed to groups)
-
-
-
+ 
+ 
+ 
 Explore what's possible
 -----------------------
-
+ 
 Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.

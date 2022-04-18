@@ -1,15 +1,14 @@
-import os
-
-from numpy import testing as npt
-from pytest import fixture
-
 import tangos as db
 import tangos.config
-from tangos import log, parallel_tasks, properties, testing
+import os
+from tangos.tools import add_simulation
+from tangos.tools import property_writer
 from tangos.input_handlers import output_testing
-from tangos.tools import add_simulation, property_writer
+from tangos import parallel_tasks, log, testing
+from tangos import properties
 from tangos.util import proxy_object
-
+from numpy import testing as npt
+from pytest import fixture
 
 def setup_func():
     parallel_tasks.use('null')

@@ -1,10 +1,8 @@
-import numpy as np
-
+from tangos.core.halo import Halo
+from tangos import testing
 import tangos as db
 import tangos.testing.simulation_generator
-from tangos import testing
-from tangos.core.halo import Halo
-
+import numpy as np
 
 def setup_module():
     testing.init_blank_db_for_testing()
@@ -26,3 +24,4 @@ def test_big_integer_halo():
     h = db.get_halo("sim/ts1/1")
 
     assert h.finder_id == crazy_number
+

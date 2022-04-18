@@ -491,7 +491,7 @@ def get_argument_parser_and_subparsers():
     subparse_greprun.set_defaults(func=grep_run_id)
     subparse_greprun.add_argument("query", type=str,
                                      help="The sub-string to search for in the command line")
-
+                                     
     subparse_grepruninfo = subparse.add_parser("grep-runs",
                                           help="List details of runs matching command line input")
     subparse_grepruninfo.set_defaults(func=grep_run_info)
@@ -511,7 +511,7 @@ def get_argument_parser_and_subparsers():
     subparse_remruns.add_argument("sims", help="The path to the simulation folder relative to the database folder")
     subparse_remruns.set_defaults(func=rem_simulation_timesteps)
      """
-
+    
     subparse_import = subparse.add_parser("import",
                                           help="Import one or more simulations from another sqlite file")
     subparse_import.add_argument("file", type=str, help="The filename of the sqlite file from which to import")

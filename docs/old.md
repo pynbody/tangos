@@ -93,15 +93,15 @@ again assuming you don't want to parallelise using MPI. But these steps can be s
 Do it with MPI
 --------------
 
-With MPI, you automatically distribute the tasks between nodes. This is far preferable. But it does mean you need to get python and MPI to understand each other. If you have an MPI compiler avaiable, this is pretty easy - you just type `pip install mpi4py` and it's all done.
+With MPI, you automatically distribute the tasks between nodes. This is far preferable. But it does mean you need to get python and MPI to understand each other. If you have an MPI compiler avaiable, this is pretty easy - you just type `pip install mpi4py` and it's all done. 
 
-Now you can use `mpirun` on `tangos write` just like you would with any other parallel task. However be careful: *by default every processor will load its own copy of the data*. This is time-efficient but memory-wasteful. If you can get away with it (and you often can with zoom simulations), it's all fine.
+Now you can use `mpirun` on `tangos write` just like you would with any other parallel task. However be careful: *by default every processor will load its own copy of the data*. This is time-efficient but memory-wasteful. If you can get away with it (and you often can with zoom simulations), it's all fine. 
 
 If you can't get away with it, you can reduce the number of processes per core in the normal way (using qsub directives etc)... or, you could try selecting an appropriate *load mode*. This is done by passing the argument `--load-mode=XXX` to `tangos write`, where `XXX` is one of the following:
 
 * `--load-mode=partial`: only the data for a single halo at a time is loaded. Partial loading is pretty efficient but be aware that  calculations that need the surroundings of the halo (e.g. for outflows etc) will fail.
 * `--load-mode=server`: rank 0 of your MPI processes will load a (single) entire snapshot at a time and pass only the bits of the data needed along to all other ranks. This has the advantage over `--load-mode=partial` of allowing the calculations to request the surroundings of the halo (see above). However it has the disadvantage that rank 0 must load an entire snapshot (all arrays that are required). For really big simulations that might be tricky.
-* `--load-mode=server-partial`: a hybrid approach where rank 0 loads only what is required to help the other ranks figure out what they need to load — for example, if a property requests a sphere surrounding the halo, the entire snapshot's position arrays will be loaded on rank 0, but no other data. The data on the individual ranks is loaded via partial loading (see `--load-mode=partial` above).
+* `--load-mode=server-partial`: a hybrid approach where rank 0 loads only what is required to help the other ranks figure out what they need to load — for example, if a property requests a sphere surrounding the halo, the entire snapshot's position arrays will be loaded on rank 0, but no other data. The data on the individual ranks is loaded via partial loading (see `--load-mode=partial` above). 
 
 Here's an example qsub script from pleiades for processing a small uniform volume. Note this also shows you the use of `tangos link` to generate the merger trees.
 
@@ -122,7 +122,7 @@ mpirun tangos write stellar_image_faceon --hmax 100 --backwards --for $SIMS --lo
 mpirun tangos link --for $SIMS --backend mpi4py
 mpirun tangos_add_bh for $SIMS --backend mpi4py
 mpirun tangos write BH_mass --for $SIMS --type BH --load-mode=partial --backend mpi4py
-# type BH in the line above means "do this for the black holes, not the regular halos".
+# type BH in the line above means "do this for the black holes, not the regular halos". 
 ```
 The Python Interface for Analysis
 -----------------------------------------
@@ -163,7 +163,7 @@ The entire simulation step including all halos is loaded as `step1`. Note the sy
  u'gas_image_original',
  u'stellar_image_original']
 ```
-
+ 
 You can also load in data for all halos at once using `calculate_all`. This is *much* faster than accessing each halo in turn. Note that it returns a list even with one argument given. You can give it as many value key names as you want and it will return a list of arrays for each.
 
 ```
@@ -174,11 +174,11 @@ You can also load in data for all halos at once using `calculate_all`. This is *
 Calculations
 ------------
 
-Some properties are not inherently already saved in the database, but can be calculated on the fly from already stored properties (we call these "live calculations"). These are called a bit like functions and can be used with either `calculate_all` or the `calculate` function for a single halo.
+Some properties are not inherently already saved in the database, but can be calculated on the fly from already stored properties (we call these "live calculations"). These are called a bit like functions and can be used with either `calculate_all` or the `calculate` function for a single halo. 
 
-For example, the property `Vvir` is calculated using `Mvir` and `Rvir` that are already loaded into the database. To calculate for a single halo, `h`, one would type `h.calculate('Vvir()')`. Note the extra set of "()" in the attribute name, because this is a *function* that the database will call.  To do it for an entire step, you would do `step.calculate_all('Vvir()')`.
+For example, the property `Vvir` is calculated using `Mvir` and `Rvir` that are already loaded into the database. To calculate for a single halo, `h`, one would type `h.calculate('Vvir()')`. Note the extra set of "()" in the attribute name, because this is a *function* that the database will call.  To do it for an entire step, you would do `step.calculate_all('Vvir()')`. 
 
-Once again, the reason for using this approach is that the database is able to vastly optimise the calculation compared to the performance you'd get by manually going through each halo doing the calculation in your own code.
+Once again, the reason for using this approach is that the database is able to vastly optimise the calculation compared to the performance you'd get by manually going through each halo doing the calculation in your own code. 
 
 You can also make custom calculations on the fly. For example, `h.calculate('Mgas/Mstar')` will calculate the ratio of those two properties. In general, arithmetic involving *, +, -, and / all work for any already calculated (or live calculated) halo property.
 

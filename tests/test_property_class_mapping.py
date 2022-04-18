@@ -1,9 +1,7 @@
-from pytest import raises as assert_raises
-
 import tangos
 import tangos.input_handlers as soh
 import tangos.properties as prop
-
+from pytest import raises as assert_raises
 
 class _TestOutputHandler1(soh.HandlerBase):
     pass

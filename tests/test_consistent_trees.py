@@ -1,13 +1,10 @@
 import os
-
-import numpy as np
-import numpy.testing as npt
 import pynbody
-
+import numpy as np
 import tangos
 import tangos.input_handlers.pynbody
-from tangos import input_handlers, log, parallel_tasks, testing, tools
-
+from tangos import testing, input_handlers, tools, log, parallel_tasks
+import numpy.testing as npt
 
 def _get_gadget_snap_path(snapname):
     return os.path.join(os.path.dirname(__file__),"test_simulations",
@@ -74,3 +71,4 @@ def test_consistent_tree_import():
                                     "test_gadget_rockstar/snapshot_013/halo_4"])
 
     assert tangos.get_halo("%/%13/halo_1").next == tangos.get_halo("%/%14/phantom_1")
+

@@ -16,7 +16,7 @@ _eagle_underlying_subfind_cache = weakref.WeakValueDictionary()
 
 class EagleLikeInputHandler(PynbodyInputHandler):
     patterns = ["snapshot_???_z*"]
-
+    
     @classmethod
     def _snap_id_from_snapdir_path(cls, path):
         match = re.match(".*snapshot_([0-9]{3}_z[0-9]{3}p[0-9]{3})/?", path)
@@ -37,7 +37,7 @@ class EagleLikeInputHandler(PynbodyInputHandler):
     def _pynbody_subfind_extension_from_ts_extension(cls, path):
         snap_id = cls._snap_id_from_snapdir_path(path)
         if snap_id:
-            subfind_path = os.path.join(os.path.dirname(path), f"particledata_{snap_id}/eagle_subfind_particles_{snap_id}")
+            subfind_path = os.path.join(os.path.dirname(path), "particledata_{}/eagle_subfind_particles_{}".format(snap_id, snap_id))
             if os.path.exists(os.path.dirname(subfind_path)):
                 return subfind_path
             else:
@@ -128,7 +128,7 @@ class EagleLikeInputHandler(PynbodyInputHandler):
             logger.info("Unable to cache TangosSubGroupNumber on disk")
         return subgrp_max
 
-
+        
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
         if object_typetag=='halo':
             return ['parent', 'original_subgroup_number']
@@ -147,7 +147,7 @@ class EagleLikeInputHandler(PynbodyInputHandler):
         from .pynbody import pynbody
         if object_typetag not in ("halo","group"):
             raise ValueError("Unknown object type tag %r"%object_typetag)
-
+        
         halofilepath = self._extension_to_halodata_filename(ts_extension)
         f_subfind = pynbody.load(halofilepath)
         self._create_unique_subgroup_ids(f_subfind)
@@ -179,3 +179,4 @@ class EagleLikeInputHandler(PynbodyInputHandler):
                 else:
                     props = {'child': children_proxies}
                 yield [i]+[props.get(n, None) for n in property_names]
+

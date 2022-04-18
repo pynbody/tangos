@@ -53,13 +53,13 @@ jobs:
       if: steps.cache-test-datasets.outputs.cache-hit != 'true'
       working-directory: test_tutorial_build
       run: |
-        wget -T 60 -nv ftp://zuserver2.star.ucl.ac.uk/app/tangos/mini_tutorial_test.tar.gz
+        wget -T 60 -nv ftp://zuserver2.star.ucl.ac.uk/app/tangos/mini_tutorial_test.tar.gz 
         tar -xzvf mini_tutorial_test.tar.gz
 
     - name: Build test database
       working-directory: test_tutorial_build
       run: bash build.sh
-
+      
     - uses: actions/upload-artifact@v2
       with:
         name: Tangos database
@@ -69,3 +69,4 @@ jobs:
       working-directory: test_tutorial_build
       run: tangos diff data.db reference_database.db --ignore-value-of gas_map gas_map_faceon gas_map_sideon uvi_image uvi_image_sideon uvi_image_faceon
       # ignore-value-of above is a clunky fix for the use of 'approximate fast' images. Better solution would be good in the long term.
+

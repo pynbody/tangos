@@ -26,20 +26,20 @@ At the unix command line type:
 tangos add tutorial_gadget --min-particles 100
 ```
 
-The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages
+The process should take about a minute on a standard modern computer, during which you'll see a bunch of log messages 
 scroll up the screen.
-
+ 
  Let's pick this command apart
-
+ 
   * `tangos` is the command-line tool to administrate your tangos database
   * `add` is a subcommand to add a new simulation
   * `tutorial_gadget` identifies the simulation we're adding
-  * `--min-particles 100` imports only halos/groups with at least 100 particles.
+  * `--min-particles 100` imports only halos/groups with at least 100 particles. 
   (The default value is 1000 particles, but this tutorial dataset is fairly low resolution so we'll keep these small halos.)
 
-
+ 
 Note that all _tangos_ command-line tools provide help. For example `tangos --help` will show you all subcommands, and `tangos add --help` will tell you more about the possible options for adding a simulation.
-
+  
 At this point, the database knows about the existence of timesteps and their halos and groups in our simulation, but nothing about the properties of those halos or groups. We need to add more information before the database is useful.
 
 
@@ -70,7 +70,7 @@ which builds the merger tree for the halos, and then you probably also want to r
 ```bash
 tangos link --type group --for tutorial_gadget
 ```
-to make the merger tree for the groups. If you want to speed up these processes, they can each be
+to make the merger tree for the groups. If you want to speed up these processes, they can each be 
 [MPI parallelised](mpi.md).
 
 The construction of each merger tree should take a couple of minutes,  and again you'll see a log scroll up the screen while it happens.
@@ -80,7 +80,7 @@ Add some more interesting properties
 ------------------------------------
 
 Let's finally do some science. We'll add dark matter density profiles; from your shell type:
-
+ 
  ```bash
 tangos write dm_density_profile --with-prerequisites --include-only="NDM()>5000" --type=halo --for tutorial_gadget
 ```
@@ -98,10 +98,10 @@ Here,
    for. In the present case, we use that to insist that only halos with more than 5000 particles have their density profiles
    calculated
  * `--type=halo` calculates the properties only for halos (as opposed to groups)
-
-
-
+ 
+ 
+ 
 Explore what's possible
 -----------------------
-
+ 
 Now that you have a minimal functioning _tangos_ database, proceed to the [data exploration](data_exploration.md) tutorial.

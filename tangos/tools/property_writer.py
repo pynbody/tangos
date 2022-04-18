@@ -228,7 +228,7 @@ class PropertyWriter(GenericTangosTool):
 
     def _build_existing_properties_all_halos(self, halos):
         return [self._build_existing_properties(h) for h in halos]
-
+        
 
     def _is_commit_needed(self, end_of_timestep, end_of_simulation):
         if len(self._pending_properties)==0:
@@ -394,7 +394,7 @@ class PropertyWriter(GenericTangosTool):
                     x.preloop(f, db_timestep)
             except Exception:
                 logger.exception(
-                    f"Uncaught exception during property preloop {x!r} applied to {db_timestep!r}")
+                    "Uncaught exception during property preloop {!r} applied to {!r}".format(x, db_timestep))
                 if self.options.catch:
                     traceback.print_exc()
                     tbtype, value, tb = sys.exc_info()
@@ -456,7 +456,7 @@ class PropertyWriter(GenericTangosTool):
             logger.debug("End halo list query")
 
         self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
-
+        
         logger.info("Successfully gathered existing properties; calculating halo properties now...")
 
         logger.info("  %d halos to consider; %d property calculations for each of them",
@@ -545,3 +545,4 @@ class CalculationSuccessTracker:
 
     def register_already_exists(self):
         self._skipped_existing+=1
+

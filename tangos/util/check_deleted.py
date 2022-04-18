@@ -26,3 +26,5 @@ class CheckDeleted:
         self._obj_weakref = None
 
 check_deleted = CheckDeleted
+
+

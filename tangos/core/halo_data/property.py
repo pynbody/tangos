@@ -83,3 +83,5 @@ class HaloProperty(Base):
     @data.setter
     def data(self, data):
         data_attribute_mapper.set_data_of_unknown_type(self, data)
+
+

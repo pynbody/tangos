@@ -1,8 +1,6 @@
-import logging
-
 import tangos.util.timing_monitor as tm
+import logging
 from tangos.log import LogCapturer, logger
-
 
 class Dummy():
     pass

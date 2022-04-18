@@ -120,3 +120,4 @@ class ConsistentTreesImporter(GenericTangosTool):
                     n_phantoms = tree.get_num_phantoms_in_snapshot(snapnum+1)
                     self.create_phantoms(ts_next, n_phantoms)
                     self.create_links(ts, ts_next, tree.get_links_for_snapshot(snapnum))
+

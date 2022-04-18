@@ -1,8 +1,8 @@
-import numpy as np
-
-import tangos
 import tangos as db
 import tangos.testing
+import tangos
+import numpy as np
+
 import tangos.testing.simulation_generator
 
 

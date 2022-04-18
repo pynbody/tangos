@@ -1,15 +1,14 @@
-from pytest import raises as assert_raises
-
-import tangos
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data
 import tangos.core.simulation
 import tangos.core.timestep
-import tangos.testing as testing
+import tangos
 import tangos.testing.simulation_generator
-from tangos.relation_finding import tree
 
+from tangos.relation_finding import tree
+import tangos.testing as testing
+from pytest import raises as assert_raises
 
 def setup_module():
     testing.init_blank_db_for_testing()

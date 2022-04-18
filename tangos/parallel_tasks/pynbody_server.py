@@ -198,12 +198,12 @@ class RequestPynbodyArray(Message):
                     subarray = subsnap.get_index_list(subsnap.ancestor)
                 else:
                     subarray = subsnap[self.array]
-                    assert isinstance(subarray, pynbody.array.SimArray)
+                    assert isinstance(subarray, pynbody.array.SimArray)            
                 array_result = ReturnPynbodyArray(subarray)
 
         except Exception as e:
             array_result = ExceptionMessage(e)
-
+        
         array_result.send(self.source)
         del array_result
         gc.collect()
@@ -355,3 +355,9 @@ class RemoteSnapshotConnection:
 
     def __del__(self):
         self.disconnect()
+
+
+
+
+
+

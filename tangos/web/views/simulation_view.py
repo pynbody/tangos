@@ -43,3 +43,4 @@ def simulation_view(request):
             'counts':counts,
             'properties':props
             }
+

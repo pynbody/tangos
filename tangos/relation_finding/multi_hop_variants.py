@@ -70,3 +70,5 @@ class MultiHopMajorDescendantsStrategy(MultiHopStrategy):
         return query.filter(self.timestep_new.simulation_id == self.sim_id). \
             order_by(self.timestep_new.time_gyr, table.c.weight.desc(), self.halo_new.halo_number). \
             limit(1)
+
+

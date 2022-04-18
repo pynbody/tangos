@@ -1,13 +1,13 @@
-import numpy as np
-import numpy.testing as npt
-
-import tangos
 import tangos as db
 import tangos.core.simulation
+import tangos
 import tangos.testing as testing
 import tangos.testing.simulation_generator
-from tangos import log, properties
+from tangos import properties, log
 from tangos.tools import property_writer
+import numpy as np
+
+import numpy.testing as npt
 
 
 def setup_module():
