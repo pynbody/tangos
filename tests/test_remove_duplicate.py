@@ -41,7 +41,7 @@ def setup_module():
     diff_name = tangos.core.get_or_create_dictionary_item(session, "other_test")
     l_obj = link.HaloLink(halo, halo2, diff_name, 1.0)
     session.add(l_obj)
-    # and another time, with same name but different weight (conceptual duplicate but non-maximal)
+    # and another time, with same name but different weight (conceptual duplicate but non-maximal, does not get deleted)
     l_obj = link.HaloLink(halo, halo2, d_test, 0.5)
     session.add(l_obj)
     # and another time, with same weight and name as previous but linking to a different halo (not a duplicate)
