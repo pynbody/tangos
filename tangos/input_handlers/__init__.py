@@ -102,7 +102,8 @@ class HandlerBase(object):
         """Iterate through all objects of specified type, providing named pre-computed data.
 
         This is normally data that was calculated and stored by the halo finder such as masses or particle counts.
-        Each object yields an array with the finder_id followed by values for the requested properties.
+        Each object yields an array starting with the finder offset, followed by the finder_id,
+        followed by values for the requested properties. See also method iter_row_raw in halo_stat_file
 
         :arg ts_extension - the timestep path (relative to the simulation basename)
         :arg object_typetag - the type of halo catalogue (e.g. 'halo' or 'group')
