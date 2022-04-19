@@ -1,10 +1,11 @@
+import numpy as np
+
 import tangos
 from tangos import core, testing
 from tangos.cached_writer import create_property
+from tangos.core.halo_data import link
 from tangos.scripts.manager import remove_duplicates
 from tangos.testing.simulation_generator import SimulationGeneratorForTests
-from tangos.core.halo_data import link
-import numpy as np
 
 
 def setup_module():
