@@ -168,8 +168,11 @@ def flag_duplicates_deprecated(opts):
 
     session = db.core.get_default_session()
 
-    print("unmark all:",session.execute("update haloproperties set deprecated=0").rowcount)
-    print("      mark:",session.execute("update haloproperties set deprecated=1 where id in (SELECT min(id) FROM haloproperties GROUP BY halo_id, name_id HAVING COUNT(*)>1 ORDER BY halo_id, name_id)").rowcount)
+    print("unmark all properties:", session.execute("update haloproperties set deprecated=0").rowcount)
+    print("duplicate properties marked:", session.execute("update haloproperties set deprecated=1 where id in (SELECT min(id) FROM haloproperties GROUP BY halo_id, name_id HAVING COUNT(*)>1 ORDER BY halo_id, name_id)").rowcount)
+
+    print("unmark all links:", session.execute("update halolink set deprecated=0").rowcount)
+    print("duplicate links marked:", session.execute("update halolink set deprecated=1 where id in (SELECT min(id) FROM halolink GROUP BY halo_from_id, halo_to_id, relation_id HAVING COUNT(*)>1 ORDER BY halo_from_id, halo_to_id, weight)").rowcount)
 
     session.commit()
 
@@ -204,9 +207,21 @@ def remove_duplicates(options):
         )
     """)).rowcount
 
+    count_links = session.execute(dedent("""
+        DELETE FROM halolink
+        WHERE id NOT IN (
+            SELECT * FROM (
+                SELECT MAX(id)
+                FROM halolink
+                GROUP BY halo_from_id, halo_to_id, relation_id
+            ) as t
+        )
+    """)).rowcount
+
     if dialect == 'mysql':
         session.execute("SET @@SESSION.optimizer_switch = @__optimizations")
     print("Deleted %d rows" % count)
+    print("Deleted %d links" % count_links)
     session.commit()
 
 
@@ -522,10 +537,10 @@ def get_argument_parser_and_subparsers():
 
 
     subparse_deprecate = subparse.add_parser("flag-duplicates",
-                                             help="Flag old copies of properties (if they are present)")
+                                             help="Flag old copies of properties and duplicate links (if they are present)")
     subparse_deprecate.set_defaults(func=flag_duplicates_deprecated)
     subparse_deprecate = subparse.add_parser("remove-duplicates",
-                                             help="Remove old copies of properties (if they are present)")
+                                             help="Remove old copies of properties and duplicate links (if they are present)")
     subparse_deprecate.set_defaults(func=remove_duplicates)
 
     subparse_rollback = subparse.add_parser("rollback", help="Remove database updates")
