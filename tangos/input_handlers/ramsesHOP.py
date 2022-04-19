@@ -1,10 +1,12 @@
-from more_itertools import always_iterable
-from ..util import proxy_object
 from itertools import chain
-from .pynbody import PynbodyInputHandler, RamsesCatalogueMixin
+
 import numpy as np
-from ..log import logger
+from more_itertools import always_iterable
+
 from .. import config
+from ..log import logger
+from ..util import proxy_object
+from .pynbody import PynbodyInputHandler, RamsesCatalogueMixin
 
 
 class RamsesHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
@@ -146,7 +148,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
                         data = self._compute_contamination_fraction(adaptahop_halo)
                     else:
                         raise NotImplementedError(
-                            "Cannot handle property %s for halo catalogue %r" % (
+                            "Cannot handle property {} for halo catalogue {!r}".format(
                                 k, self
                             )
                         )

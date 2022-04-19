@@ -1,23 +1,25 @@
 from __future__ import absolute_import
-from collections import defaultdict
 
 import glob
 import os
 import os.path
 import time
 import weakref
-import numpy as np
+from collections import defaultdict
 from itertools import chain
+
+import numpy as np
 from more_itertools import always_iterable
+
 from ..util import proxy_object
 
 pynbody = None # deferred import; occurs when a PynbodyInputHandler is constructed
 
-from . import finding
-from . import HandlerBase
+from six.moves import range
+
 from .. import config
 from ..log import logger
-from six.moves import range
+from . import HandlerBase, finding
 
 _loaded_halocats = {}
 
@@ -440,6 +442,7 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
 class RamsesCatalogueMixin:
     def create_bridge(self, f1, f2):
         import pynbody
+
         # Ensure that f1.dm and f2.dm are not garbage-collected
         self._f1dm = f1.dm
         self._f2dm = f2.dm
@@ -689,4 +692,5 @@ class ChangaUseIDLInputHandler(ChangaInputHandler):
     auxiliary_file_patterns = ["*.amiga.grp"]
 
 from . import caterpillar, eagle, ramsesHOP
+
 RamsesHOPInputHandler = ramsesHOP.RamsesHOPInputHandler
