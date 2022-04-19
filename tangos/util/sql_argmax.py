@@ -1,4 +1,5 @@
-from sqlalchemy import func, and_, select
+from sqlalchemy import and_, func, select
+
 
 def argmax(query, maximise_column, group_bys):
     """Returns a modified query that emulates an argmax function for SQL

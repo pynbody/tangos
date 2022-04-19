@@ -1,11 +1,10 @@
 import abc
-import six
 import argparse
-from .. import core
-from .. import parallel_tasks
 
-@six.add_metaclass(abc.ABCMeta)
-class GenericTangosTool(object):
+from .. import core, parallel_tasks
+
+
+class GenericTangosTool(metaclass=abc.ABCMeta):
     parallel = True
     tool_name = None
     tool_description = None
@@ -64,5 +63,6 @@ class GenericTangosTool(object):
         for c in cls.__subclasses__():
             c.add_tools(subparse)
 
-from . import add_simulation, consistent_trees_importer, crosslink, property_importer, \
-    property_writer, ahf_merger_tree_importer, property_deleter
+from . import (add_simulation, ahf_merger_tree_importer,
+               consistent_trees_importer, crosslink, property_deleter,
+               property_importer, property_writer)

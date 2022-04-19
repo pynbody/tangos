@@ -1,7 +1,7 @@
-from __future__ import absolute_import
+import numpy as np
+
 import tangos as db
 import tangos.relation_finding
-import numpy as np
 
 
 def get_mergers_of_major_progenitor(input_halo):

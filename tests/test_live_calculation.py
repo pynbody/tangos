@@ -1,15 +1,13 @@
-from __future__ import absolute_import
 import numpy as np
 from pytest import raises as assert_raises
 
-import tangos as db
 import tangos
+import tangos as db
 import tangos.core.halo
 import tangos.core.simulation
 import tangos.core.timestep
 import tangos.live_calculation as lc
 import tangos.live_calculation.parser
-import tangos
 import tangos.testing as testing
 import tangos.testing.simulation_generator
 from tangos import properties

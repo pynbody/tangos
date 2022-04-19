@@ -2,25 +2,25 @@
 
 For more overview information, see live_calculation.md. """
 
-from __future__ import absolute_import
 import warnings
 
 import numpy as np
-from sqlalchemy.orm import contains_eager, aliased, defaultload, Load
+from sqlalchemy.orm import Load, aliased, contains_eager, defaultload
 
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data
 from tangos.core import extraction_patterns
 from tangos.live_calculation.query_masking import QueryMask
-from tangos.live_calculation.query_multivalue_folding import QueryMultivalueFolding
+from tangos.live_calculation.query_multivalue_folding import \
+    QueryMultivalueFolding
 from tangos.util import consistent_collection
+
 from .. import core
 from .. import temporary_halolist as thl
-from six.moves import range
-from six.moves import zip
 
-class UnknownValue(object):
+
+class UnknownValue:
     """A dummy object returned by Calculation.proxy_value when the value of the calculation cannot be predicted"""
     def __init__(self, name=None):
         self.name = name
@@ -28,7 +28,7 @@ class UnknownValue(object):
 class NoResultsError(ValueError):
     pass
 
-class Calculation(object):
+class Calculation:
     """Represents a live-calculation to be performed on database objects.
 
     A typical Calculation is composed of many different Calculation subclasses arranged in some form of tree.
@@ -104,7 +104,7 @@ class Calculation(object):
                 self._r_dict_ids_essential_cached = set()
                 retrieves = self.retrieves()
                 try:
-                    self._n_join_levels = max([r.count('.') for r in retrieves])+1
+                    self._n_join_levels = max(r.count('.') for r in retrieves)+1
                 except ValueError:
                     self._n_join_levels = 0
                 for r in retrieves:
@@ -291,7 +291,7 @@ class Calculation(object):
 class MultiCalculation(Calculation):
     """Represents a single calculation that returns the results from multiple sub-calculations."""
     def __init__(self, *calculations):
-        super(MultiCalculation, self).__init__()
+        super().__init__()
         self.calculations = [c if isinstance(c, Calculation) else parser.parse_property_name(c) for c in calculations]
 
     def retrieves(self):
@@ -327,7 +327,7 @@ class MultiCalculation(Calculation):
 class FixedInput(Calculation):
     """Represents a calculation that returns a fixed value"""
     def __init__(self, *tokens):
-        super(FixedInput, self).__init__()
+        super().__init__()
         self.value = str(tokens[0])
 
     def __str__(self):
@@ -345,7 +345,7 @@ class FixedInput(Calculation):
 class FixedNumericInput(FixedInput):
     """Represents a calculation that returns a fixed numerical value"""
     def __init__(self, *tokens):
-        super(FixedNumericInput, self).__init__()
+        super().__init__()
 
     @staticmethod
     def _process_numerical_value(t):
@@ -370,7 +370,7 @@ class LiveProperty(Calculation):
 
 
     def __init__(self, *tokens):
-        super(LiveProperty, self).__init__()
+        super().__init__()
         self._name = str(tokens[0])
         self._inputs = list(tokens[1:])
 
@@ -498,7 +498,7 @@ class BuiltinFunction(LiveProperty):
         return func_name in list(cls.__registered_functions.keys())
 
     def __init__(self, *tokens):
-        super(BuiltinFunction, self).__init__(*tokens)
+        super().__init__(*tokens)
         self._func = self.__registered_functions[self._name]['function']
         self._info = self.__registered_functions[self._name]
         for i in range(len(self._inputs)):
@@ -522,7 +522,7 @@ class BuiltinFunction(LiveProperty):
         if self._get_input_option(input_id, 'provide_proxy'):
             return self._inputs[input_id].proxy_value(), None
         else:
-            return super(BuiltinFunction, self)._input_value_and_description(input_id, halos)
+            return super()._input_value_and_description(input_id, halos)
 
     def _calculation_retrieves(self):
         return set()
@@ -539,7 +539,7 @@ class BuiltinFunction(LiveProperty):
 class Link(Calculation):
     """Represents a calculation to be made on a halo linked to the input in some way"""
     def __init__(self, *tokens):
-        super(Link, self).__init__()
+        super().__init__()
         self.locator = tokens[0]
         self.property = tokens[1]
         self._multi_selection_basis = 'first'
@@ -667,7 +667,7 @@ class StoredProperty(Calculation):
     """Represents a named property with value stored in the database"""
 
     def __init__(self, *tokens):
-        super(StoredProperty,self).__init__()
+        super().__init__()
         self._name = tokens[0]
         self._multivalued = False
 
@@ -725,5 +725,4 @@ class StoredProperty(Calculation):
 
 
 
-from . import parser
-from . import builtin_functions
+from . import builtin_functions, parser

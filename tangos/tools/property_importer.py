@@ -1,14 +1,12 @@
-from __future__ import absolute_import
-from __future__ import print_function
-
-from .. import parallel_tasks
-from ..log import logger
-from .. import core
-from . import GenericTangosTool
-from ..util import proxy_object
-from ..util import timestep_object_cache
-import numpy as np
 import numbers
+
+import numpy as np
+
+from .. import core, parallel_tasks
+from ..log import logger
+from ..util import proxy_object, timestep_object_cache
+from . import GenericTangosTool
+
 
 class PropertyImporter(GenericTangosTool):
     tool_name = 'import-properties'
@@ -100,15 +98,16 @@ class PropertyImporter(GenericTangosTool):
 
 
         logger.info("Add %d properties", len(rows_to_store))
-        self._session.add_all(rows_to_store)
-        self._session.commit()
+        with parallel_tasks.ExclusiveLock("add_properties"):
+            self._session.add_all(rows_to_store)
+            self._session.commit()
 
     def run_calculation_loop(self):
         base_sim = core.sim_query_from_name_list(self.options.sims)
 
         names = self.options.properties
         object_typetag = self.options.typetag
-    
+
         for x in base_sim:
             timesteps = core.get_default_session().query(core.timestep.TimeStep).filter_by(
                 simulation_id=x.id, available=True).order_by(core.timestep.TimeStep.redshift.desc()).all()

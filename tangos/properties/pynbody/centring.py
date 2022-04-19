@@ -1,9 +1,11 @@
-from . import PynbodyPropertyCalculation
-from .. import LivePropertyCalculation
-from .spherical_region import SphericalRegionPropertyCalculation
-import numpy as np
-import functools
 import contextlib
+import functools
+
+import numpy as np
+
+from .. import LivePropertyCalculation
+from . import PynbodyPropertyCalculation
+from .spherical_region import SphericalRegionPropertyCalculation
 
 
 class CentreAndRadius(PynbodyPropertyCalculation):

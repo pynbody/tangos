@@ -1,7 +1,7 @@
 from .. import core
-import six
 
-class SimulationGeneratorForTests(object):
+
+class SimulationGeneratorForTests:
     def __init__(self, sim_name="sim", session=None):
         if not session:
             session = core.get_default_session()
@@ -51,7 +51,7 @@ class SimulationGeneratorForTests(object):
         e.g. add_properties_to_halos(Mvir=lambda i: 100.*(10-i)) adds a Mvir value of 100*(10-halo_number)
          to each halo"""
 
-        for k, v in six.iteritems(properties):
+        for k, v in properties.items():
             for halo in self._most_recently_added_timestep().objects.filter_by(object_typecode=htype).all():
                 halo[k] = v(halo.halo_number)
 
@@ -98,10 +98,10 @@ class SimulationGeneratorForTests(object):
         if len(self.sim.timesteps)<2:
             return
         ts_source, ts_dest = self._two_most_recently_added_timesteps()
-        halo_nums_source = set([a.halo_number for a in ts_source.objects.filter_by(object_typecode=object_typecode).all()])
-        halo_nums_dest = set([a.halo_number for a in ts_dest.objects.filter_by(object_typecode=object_typecode).all()])
+        halo_nums_source = {a.halo_number for a in ts_source.objects.filter_by(object_typecode=object_typecode).all()}
+        halo_nums_dest = {a.halo_number for a in ts_dest.objects.filter_by(object_typecode=object_typecode).all()}
         halo_nums_common = halo_nums_source.intersection(halo_nums_dest)
-        mapping = dict([(a,a) for a in halo_nums_common])
+        mapping = {a:a for a in halo_nums_common}
         self.link_last_halos_using_mapping(mapping,adjust_masses, object_typecode)
 
 
@@ -114,7 +114,7 @@ class SimulationGeneratorForTests(object):
     def assign_bhs_to_halos(self, mapping):
         ts = self._most_recently_added_timestep()
 
-        for k,v in six.iteritems(mapping):
+        for k,v in mapping.items():
             source_halo = ts.halos.filter_by(halo_number=v).first()
             target_bh = ts.bhs.filter_by(halo_number=k).first()
 
@@ -159,7 +159,7 @@ class SimulationGeneratorForTests(object):
 
     def _generate_bidirectional_halolinks_for_mapping(self, mapping, ts_dest, ts_source, object_typecode):
 
-        for source_num, target_num in six.iteritems(mapping):
+        for source_num, target_num in mapping.items():
             source_halo = ts_source.objects.filter_by(halo_number=source_num, object_typecode=object_typecode).first()
             target_halo = ts_dest.objects.filter_by(halo_number=target_num, object_typecode=object_typecode).first()
 
@@ -171,10 +171,10 @@ class SimulationGeneratorForTests(object):
 
     def _adjust_halo_NDM_for_mapping(self, mapping, ts_dest, ts_source):
 
-        for source_num, target_num in six.iteritems(mapping):
+        for source_num, target_num in mapping.items():
             target_halo = ts_dest.halos.filter_by(halo_number=target_num).first()
             target_halo.NDM = 0
-        for source_num, target_num in six.iteritems(mapping):
+        for source_num, target_num in mapping.items():
             source_halo = ts_source.halos.filter_by(halo_number=source_num).first()
             target_halo = ts_dest.halos.filter_by(halo_number=target_num).first()
             target_halo.NDM += source_halo.NDM

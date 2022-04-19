@@ -1,10 +1,14 @@
+import os
+import os.path
+
+import test_db_writer  # for dummy_property
+from pytest import fixture
+
 import tangos as db
+from tangos import log, parallel_tasks, testing
 from tangos.input_handlers import output_testing
 from tangos.tools import add_simulation, property_deleter, property_writer
-from tangos import log, parallel_tasks, testing
-import os, os.path
-import test_db_writer # for dummy_property
-from pytest import fixture
+
 
 def setup_func():
     parallel_tasks.use('null')
@@ -98,4 +102,3 @@ def test_delete_one_of_two_properties_whole_db(fresh_database):
 
     assert 'dummy_property' in db.get_halo("dummy_sim_1/step.1/halo_1")
     assert 'another_dummy_property' not in db.get_halo("dummy_sim_1/step.1/halo_1")
-

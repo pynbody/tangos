@@ -1,6 +1,6 @@
 Running the database on the BlueWaters computer
 ---------------------------------------------------
-To run on BlueWaters, you will need to use the bluewaters version of halo_database, located currently in the mjt_BW branch (this will likely be merged with the master branch eventually). This branch uses mpi4py rather than pypar, which is currently default. The latter doesn't play nice with the installed MPI on BlueWaters machines. All necessary code (except for pynbody) should be installed on BlueWaters under the module called bwpy. Just as with any other computer, simply clone the halo_database repository and change branches to mjt_BW. 
+To run on BlueWaters, you will need to use the bluewaters version of halo_database, located currently in the mjt_BW branch (this will likely be merged with the master branch eventually). This branch uses mpi4py rather than pypar, which is currently default. The latter doesn't play nice with the installed MPI on BlueWaters machines. All necessary code (except for pynbody) should be installed on BlueWaters under the module called bwpy. Just as with any other computer, simply clone the halo_database repository and change branches to mjt_BW.
 
 To submit a job doing a database calculation, you need a submission script with the following general syntax. Notice that on BlueWaters aprun is used instead of mpirun and we are required to import all necessary modules and defile all necessary environment variables (as well as source the .bashrc file). This is because the environment is not automatically preserved on compute nodes.
 

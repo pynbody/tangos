@@ -1,12 +1,13 @@
-from __future__ import absolute_import
+import os
+
+import numpy.testing as npt
+
+import tangos
 import tangos as db
 import tangos.input_handlers.yt as yt_outputs
 import tangos.tools.add_simulation as add
-from tangos import config
-from tangos import log, testing
-import os
-import numpy.testing as npt
-import tangos
+from tangos import config, log, testing
+
 
 def setup_module():
     global output_manager

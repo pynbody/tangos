@@ -1,15 +1,13 @@
-from __future__ import absolute_import
-import os
 import copy
+import os
+
 import numpy as np
 
-from . import translations
 from ...util import proxy_object
-from six.moves import range
-from six.moves import zip
+from . import translations
 
 
-class HaloStatFile(object):
+class HaloStatFile:
     """Manages and reads a halo stat file of unspecified format."""
     _finder_offset_start = 0 #whether finder_offset should start at 0 (default) or N (typically either 0 or 1)
     _column_translations = {}
@@ -19,7 +17,7 @@ class HaloStatFile(object):
         if subcls:
             return object.__new__(subcls)
         else:
-            raise IOError("No stat file found for timestep %r"%timestep)
+            raise OSError("No stat file found for timestep %r"%timestep)
 
     @classmethod
     def find_loadable_subclass(cls, timestep_filename):
@@ -156,7 +154,7 @@ class AHFStatFile(HaloStatFile):
                                 'hostHalo')}
 
     def __init__(self, timestep_filename):
-        super(AHFStatFile, self).__init__(timestep_filename)
+        super().__init__(timestep_filename)
         self._column_translations = copy.copy(self._column_translations)
         self._column_translations['childHalo'] = translations.Function(self._child_halo_entry, '#ID')
 

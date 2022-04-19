@@ -60,7 +60,7 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
     $this.data('editable_add', add);
     $this.data('editable_remove', remove);
     $this.data('editable_update', update);
-    
+
     $this.html(addLabelText);
     $this[0].contentEditable=true;
     enableAutocomplete($this);

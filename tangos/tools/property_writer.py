@@ -1,30 +1,21 @@
-from __future__ import absolute_import
 import argparse
-import contextlib
-import gc
 import pdb
 import random
 import sys
 import time
 import traceback
-import warnings
-import weakref
-import six
+
 import numpy as np
 import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
 
-from . import GenericTangosTool
-from .. import properties
-from ..util import terminalcontroller, timing_monitor, proxy_object
-from .. import parallel_tasks, core
-from ..util.check_deleted import check_deleted
+from .. import core, live_calculation, parallel_tasks, properties
 from ..cached_writer import insert_list
 from ..log import logger
-from six.moves import zip
-from tangos import live_calculation
-
+from ..util import proxy_object, terminalcontroller, timing_monitor
+from ..util.check_deleted import check_deleted
+from . import GenericTangosTool
 
 
 class AttributableDict(dict):
@@ -237,7 +228,7 @@ class PropertyWriter(GenericTangosTool):
 
     def _build_existing_properties_all_halos(self, halos):
         return [self._build_existing_properties(h) for h in halos]
-        
+
 
     def _is_commit_needed(self, end_of_timestep, end_of_simulation):
         if len(self._pending_properties)==0:
@@ -277,7 +268,7 @@ class PropertyWriter(GenericTangosTool):
     def _required_and_calculated_property_names(self):
         needed = []
         for x in self._property_calculator_instances:
-            if isinstance(x.names, six.string_types):
+            if isinstance(x.names, str):
                 needed.extend([x.names])
             else:
                 needed.extend([name for name in x.names])
@@ -312,7 +303,7 @@ class PropertyWriter(GenericTangosTool):
             # because it might be needed for the iord's if we are in partial-load mode.
             try:
                 self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
-            except IOError:
+            except OSError:
                 pass
 
         if self.options.load_mode is None:
@@ -356,7 +347,7 @@ class PropertyWriter(GenericTangosTool):
 
 
     def _get_standin_property_value(self, property_calculator):
-        if isinstance(property_calculator.names,six.string_types):
+        if isinstance(property_calculator.names,str):
             return None
         num = len(property_calculator.names)
         return [None]*num
@@ -371,7 +362,7 @@ class PropertyWriter(GenericTangosTool):
 
         try:
             snapshot_data = self._get_halo_snapshot_data_if_appropriate(db_halo, db_data, property_calculator)
-        except IOError:
+        except OSError:
             logger.warning("Failed to load snapshot data for %r; skipping",db_halo)
             self.tracker.register_loading_error()
             return result
@@ -403,7 +394,7 @@ class PropertyWriter(GenericTangosTool):
                     x.preloop(f, db_timestep)
             except Exception:
                 logger.exception(
-                    "Uncaught exception during property preloop %r applied to %r" % (x, db_timestep))
+                    f"Uncaught exception during property preloop {x!r} applied to {db_timestep!r}")
                 if self.options.catch:
                     traceback.print_exc()
                     tbtype, value, tb = sys.exc_info()
@@ -465,7 +456,7 @@ class PropertyWriter(GenericTangosTool):
             logger.debug("End halo list query")
 
         self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
-        
+
         logger.info("Successfully gathered existing properties; calculating halo properties now...")
 
         logger.info("  %d halos to consider; %d property calculations for each of them",
@@ -488,7 +479,7 @@ class PropertyWriter(GenericTangosTool):
         will_calculate = []
         requirements = []
         for inst in self._property_calculator_instances:
-            if isinstance(inst.names, six.string_types):
+            if isinstance(inst.names, str):
                 will_calculate+=[inst.names]
             else:
                 will_calculate+=inst.names
@@ -516,7 +507,7 @@ class PropertyWriter(GenericTangosTool):
         self._commit_results_if_needed(True,True)
 
 
-class CalculationSuccessTracker(object):
+class CalculationSuccessTracker:
     def __init__(self):
         self._skipped_existing = 0
         self._skipped_missing_prerequisite = 0
@@ -554,4 +545,3 @@ class CalculationSuccessTracker(object):
 
     def register_already_exists(self):
         self._skipped_existing+=1
-

@@ -1,6 +1,8 @@
 import numpy as np
-from .spherical_region import SphericalRegionPropertyCalculation
+
 from .centring import centred_calculation
+from .spherical_region import SphericalRegionPropertyCalculation
+
 
 class HaloDensityProfile(SphericalRegionPropertyCalculation):
     # include

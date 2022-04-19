@@ -4,16 +4,16 @@ This is used during property calculations to minimise the number of queries made
 point to objects that have not yet been created in the database at the time they are referred to."""
 
 import abc
-import six
+
 from .. import core
+
 
 class ProxyResolutionException(Exception):
     """Unified exception raised when a proxy cannot be translated into an actual database object"""
     pass
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ProxyObjectBase(object):
+class ProxyObjectBase(metaclass=abc.ABCMeta):
     """A proxy for an object (i.e. halo, group, BH etc) in the database"""
 
     @abc.abstractmethod
@@ -44,7 +44,7 @@ class ProxyObjectBase(object):
 class ProxyObjectFromDatabaseId(ProxyObjectBase):
     """A proxy object that resolves into a database object with specified ID"""
     def __init__(self, dbid):
-        super(ProxyObjectFromDatabaseId, self).__init__()
+        super().__init__()
         self._dbid = dbid
 
     def resolve(self, session):
@@ -53,7 +53,7 @@ class ProxyObjectFromDatabaseId(ProxyObjectBase):
 class ProxyObjectFromFinderIdAndTimestep(ProxyObjectBase):
     """A proxy object that resolves into the object with given finder ID in the specified timestep"""
     def __init__(self, finder_id, typetag, timestep_id):
-        super(ProxyObjectFromFinderIdAndTimestep, self).__init__()
+        super().__init__()
         self._finder_id = finder_id
         self._typetag = typetag
         self._timestep_id = timestep_id
@@ -65,7 +65,7 @@ class ProxyObjectFromFinderIdAndTimestep(ProxyObjectBase):
 class ProxyObjectFromFinderIdAndTimestepCache(ProxyObjectBase):
     """A proxy object that resolves into the object with given finder ID in the specified timestep cache"""
     def __init__(self, finder_id, typetag, timestep_cache):
-        super(ProxyObjectFromFinderIdAndTimestepCache, self).__init__()
+        super().__init__()
         self._finder_id = finder_id
         self._typetag = typetag
         self._timestep_cache = timestep_cache
@@ -81,7 +81,7 @@ class IncompleteProxyObjectFromFinderId(ProxyObjectBase):
     By calling the method relative_to_timestep_id or relative_to_timestep_cache, a fully specified proxy object will
     be returned."""
     def __init__(self, finder_id, typetag):
-        super(IncompleteProxyObjectFromFinderId, self).__init__()
+        super().__init__()
         self._finder_id = finder_id
         self._typetag = typetag
 

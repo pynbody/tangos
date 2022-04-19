@@ -1,10 +1,10 @@
-from __future__ import absolute_import
 import numpy as np
 
-from .. import BuiltinFunction, FixedInput, FixedNumericInput, StoredProperty, MultiCalculation, ReturnInputHalos
-from ... import core
-from ... import relation_finding
+from ... import core, relation_finding
 from ... import temporary_halolist as thl
+from .. import (BuiltinFunction, FixedInput, FixedNumericInput,
+                MultiCalculation, ReturnInputHalos, StoredProperty)
+
 
 def _find_progenitor_or_descendant(source_halos, property_proxy, property_criterion, strategy):
     if property_criterion != 'min' and property_criterion != 'max':

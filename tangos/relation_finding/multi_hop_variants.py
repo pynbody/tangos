@@ -1,5 +1,5 @@
-from .multi_hop import MultiHopStrategy
 from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
+from .multi_hop import MultiHopStrategy
 
 
 class MultiHopAllProgenitorsStrategy(MultiHopStrategy):
@@ -11,7 +11,7 @@ class MultiHopAllProgenitorsStrategy(MultiHopStrategy):
         self.sim_id = halo_from.timestep.simulation_id
         if target=='auto':
             target = halo_from.timestep.simulation
-        super(MultiHopAllProgenitorsStrategy, self).__init__(halo_from, nhops_max,
+        super().__init__(halo_from, nhops_max,
                                                                directed='backwards',
                                                                include_startpoint=include_startpoint,
                                                                target=target,
@@ -21,7 +21,7 @@ class MultiHopAllProgenitorsStrategy(MultiHopStrategy):
                                                              one_simulation=one_simulation)
 
     def _supplement_halolink_query_with_filter(self, query, table):
-        query = super(MultiHopAllProgenitorsStrategy, self)._supplement_halolink_query_with_filter(query, table)
+        query = super()._supplement_halolink_query_with_filter(query, table)
         if self._target is None:
             return query
         else:
@@ -32,7 +32,7 @@ class MultiHopMajorProgenitorsStrategy(MultiHopAllProgenitorsStrategy):
     """Finds the major progenitor for a halo at every step"""
 
     def _supplement_halolink_query_with_filter(self, query, table):
-        query = super(MultiHopMajorProgenitorsStrategy, self)._supplement_halolink_query_with_filter(query, table)
+        query = super()._supplement_halolink_query_with_filter(query, table)
         return query.order_by(self.timestep_new.time_gyr.desc(), table.c.weight.desc(), self.halo_new.halo_number). \
             limit(1)
 
@@ -59,16 +59,14 @@ class MultiHopMajorDescendantsStrategy(MultiHopStrategy):
 
     def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False, **kwargs):
         self.sim_id = halo_from.timestep.simulation_id
-        super(MultiHopMajorDescendantsStrategy, self).__init__(halo_from, nhops_max,
+        super().__init__(halo_from, nhops_max,
                                                                directed='forwards',
                                                                include_startpoint=include_startpoint,
                                                                target=halo_from.timestep.simulation,
                                                                **kwargs)
 
     def _supplement_halolink_query_with_filter(self, query, table):
-        query = super(MultiHopMajorDescendantsStrategy, self)._supplement_halolink_query_with_filter(query, table)
+        query = super()._supplement_halolink_query_with_filter(query, table)
         return query.filter(self.timestep_new.simulation_id == self.sim_id). \
             order_by(self.timestep_new.time_gyr, table.c.weight.desc(), self.halo_new.halo_number). \
             limit(1)
-
-

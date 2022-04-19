@@ -1,7 +1,10 @@
-from __future__ import absolute_import
-import sqlalchemy, sqlalchemy.engine, sqlalchemy.event
-from . import parallel_tasks as pt
+import sqlalchemy
+import sqlalchemy.engine
+import sqlalchemy.event
+
 from . import core
+from . import parallel_tasks as pt
+
 global rlock
 
 __author__ = 'app'

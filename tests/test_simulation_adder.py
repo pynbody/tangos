@@ -1,11 +1,12 @@
-from __future__ import absolute_import
-import tangos as db
-from tangos import log
 import os
-from tangos.tools import add_simulation
-from tangos.input_handlers import output_testing
-from tangos import testing
+
 from pytest import fixture
+
+import tangos as db
+from tangos import log, testing
+from tangos.input_handlers import output_testing
+from tangos.tools import add_simulation
+
 
 def setup_func(add=True):
     testing.init_blank_db_for_testing()

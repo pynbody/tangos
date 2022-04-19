@@ -1,7 +1,8 @@
 import socket
-from six.moves.urllib import parse
+from urllib import parse
 
-class BreadCrumbs(object):
+
+class BreadCrumbs:
     def __init__(self, uri=None, servername="TANGOS"):
         if uri:
             self.uri = uri  # invoke uri.setter

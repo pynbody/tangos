@@ -1,13 +1,15 @@
-from __future__ import absolute_import
-import os, os.path
-from sqlalchemy import Column, Integer, Text, ForeignKey, Boolean, and_
-from sqlalchemy.orm import relationship, backref, aliased, Session
+import os
+import os.path
 
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, Text, and_
+from sqlalchemy.orm import Session, aliased, backref, relationship
+
+from .. import config
+from ..config import DOUBLE_PRECISION
 from . import Base
 from .creator import Creator
 from .simulation import Simulation
-from .. import config
-from ..config import DOUBLE_PRECISION
+
 
 class TimeStep(Base):
     __tablename__ = 'timesteps'
@@ -61,7 +63,7 @@ class TimeStep(Base):
         if self.redshift is None:
             return "<TimeStep %r%s>"%(path,extra)
         else:
-            return "<TimeStep %r z=%.2f t=%.2f Gyr%s>" % (path, self.redshift, self.time_gyr, extra)
+            return f"<TimeStep {path!r} z={self.redshift:.2f} t={self.time_gyr:.2f} Gyr{extra}>"
 
     def short(self):
         return "<TimeStep(... z=%.2f ...)>" % self.redshift
@@ -260,5 +262,3 @@ class TimeStep(Base):
             q = q.order_by(TimeStep.time_gyr.desc())
 
         return q.first()
-
-

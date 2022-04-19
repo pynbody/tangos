@@ -1,10 +1,8 @@
-from __future__ import absolute_import
-import tangos as db
-import tangos.testing
-import tangos
-from six.moves import range
 import numpy as np
 
+import tangos
+import tangos as db
+import tangos.testing
 import tangos.testing.simulation_generator
 
 

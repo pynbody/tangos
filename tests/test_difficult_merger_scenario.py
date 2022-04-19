@@ -3,19 +3,18 @@ but survives; and then the remnant potentially merges later on.
 
 Further difficult scenarios could be added here in future and tested against various tools"""
 
-from __future__ import absolute_import
-from __future__ import print_function
+import numpy as np
+
+import tangos
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data
 import tangos.core.simulation
 import tangos.core.timestep
-import tangos
-import tangos.testing.simulation_generator
-
-from tangos.relation_finding import tree
 import tangos.testing as testing
-import numpy as np
+import tangos.testing.simulation_generator
+from tangos.relation_finding import tree
+
 
 def setup_module():
     testing.init_blank_db_for_testing()

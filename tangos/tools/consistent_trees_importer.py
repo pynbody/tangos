@@ -1,18 +1,18 @@
-from __future__ import absolute_import
-from __future__ import print_function
+import os
+import re
+
+import numpy as np
 
 import tangos as db
-import os
-from ..input_handlers import consistent_trees as ct
-from ..log import logger
+
+from .. import config
 from ..core import get_or_create_dictionary_item
 from ..core.halo import PhantomHalo
 from ..core.halo_data import HaloLink, HaloProperty
-from .. import config
+from ..input_handlers import consistent_trees as ct
+from ..log import logger
 from . import GenericTangosTool
-from six.moves import xrange
-import re
-import numpy as np
+
 
 class ConsistentTreesImporter(GenericTangosTool):
     tool_name = 'import-consistent-trees'
@@ -49,7 +49,7 @@ class ConsistentTreesImporter(GenericTangosTool):
 
         new_phantoms = []
 
-        for i in xrange(1,n_phantoms+1):
+        for i in range(1,n_phantoms+1):
             if i not in existing_phantom_ids:
                 new_ph = PhantomHalo(timestep, i, i)
                 new_phantoms.append(new_ph)
@@ -120,4 +120,3 @@ class ConsistentTreesImporter(GenericTangosTool):
                     n_phantoms = tree.get_num_phantoms_in_snapshot(snapnum+1)
                     self.create_phantoms(ts_next, n_phantoms)
                     self.create_links(ts, ts_next, tree.get_links_for_snapshot(snapnum))
-

@@ -1,11 +1,13 @@
-from __future__ import absolute_import
 import numpy as np
 
 import tangos
 from tangos.util import consistent_collection
-from .. import BuiltinFunction, FixedInput, FixedNumericInput, StoredProperty, LiveProperty
+
 from ... import core
 from ...core import extraction_patterns
+from .. import (BuiltinFunction, FixedInput, FixedNumericInput, LiveProperty,
+                StoredProperty)
+
 
 @BuiltinFunction.register
 def match(source_halos, target):
@@ -61,4 +63,4 @@ def has_property_init(input):
     input.set_extraction_pattern(extraction_patterns.HaloPropertyRawValueGetter())
 
 
-from . import arithmetic, array, reassembly, link, search
+from . import arithmetic, array, link, reassembly, search

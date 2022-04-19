@@ -1,5 +1,5 @@
-from tangos.util.check_deleted import check_deleted
 from tangos.log import LogCapturer
+from tangos.util.check_deleted import check_deleted
 
 
 class DerivedList(list):
@@ -27,4 +27,3 @@ def test_hanging_ref_check_delete():
         with check_deleted(a):
             del a
     assert "check_deleted" in lc.get_output()
-

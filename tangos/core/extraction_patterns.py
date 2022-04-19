@@ -1,12 +1,12 @@
 """Routines for getting halo properties and links, and data derived from them, starting with a Halo or other object
 """
 
-from __future__ import absolute_import
 import sqlalchemy
+
 from . import data_attribute_mapper
 
 
-class HaloPropertyGetter(object):
+class HaloPropertyGetter:
     """HaloPropertyGetter and its subclasses implement efficient methods for retrieving data from sqlalchemy ORM objects.
 
     The key features are
@@ -141,7 +141,7 @@ class HaloPropertyValueGetter(HaloPropertyGetter):
 class HaloPropertyValueWithReassemblyOptionsGetter(HaloPropertyValueGetter):
     """As HaloPropertyValueGetter, but allow options to be passed to the property reassembler"""
     def __init__(self, *options):
-        super(HaloPropertyValueWithReassemblyOptionsGetter, self).__init__()
+        super().__init__()
         self._options = options
 
 class HaloPropertyRawValueGetter(HaloPropertyValueGetter):
@@ -183,7 +183,7 @@ class HaloLinkGetter(HaloPropertyGetter):
         from . import halo_data
         query_properties = session.query(halo_data.HaloLink).filter_by(halo_from_id=halo.id)
         return [x.relation.text for x in query_properties.all()]
-    
+
 
 
 
@@ -191,4 +191,3 @@ class HaloLinkTargetGetter(HaloLinkGetter):
     """As HaloLinkGetter, but retrieve the target of the links instead of the HaloLink objects themselves"""
     def postprocess_data_objects(self, outputs):
         return [o.halo_to for o in outputs]
-

@@ -2,15 +2,14 @@
 of different types has to be stored in different attributes.
 """
 
-from __future__ import absolute_import
-import numpy as np
-import zlib
-import time
 import datetime
-import six
-import sys
 import functools
-from six.moves import cPickle as pickle
+import pickle
+import sys
+import time
+import zlib
+
+import numpy as np
 
 pickle_loads = pickle.loads
 if int(sys.version[0])==3:
@@ -30,7 +29,7 @@ def set_data_of_unknown_type(obj, data):
     mapper.set(obj,data)
 
 
-class DataAttributeMapper(object):
+class DataAttributeMapper:
     _order = 0
     # this can be used to force a subclass to be 'found' last
     # see __all_subclasses below, and use in NullAttributeMapper
@@ -55,8 +54,7 @@ class DataAttributeMapper(object):
         subclasses.sort(key = lambda x: x._order)
         for X in subclasses:
             yield X
-            for Y in X.__all_subclasses():
-                yield Y
+            yield from X.__all_subclasses()
 
     @classmethod
     def __all_nonabstract_subclasses(cls):
@@ -122,7 +120,7 @@ class TimeAttributeMapper(DataAttributeMapper):
 
 class StringAttributeMapper(DataAttributeMapper):
     _attribute_name = "data_string"
-    _handled_types = [str, six.text_type]
+    _handled_types = [str, str]
 
 class ArrayDowncastingAttributeMapper(DataAttributeMapper):
     @classmethod

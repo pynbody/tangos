@@ -1,14 +1,15 @@
-from __future__ import absolute_import
+import gc
+import os
+
+import numpy.testing as npt
+import pynbody
+
+import tangos
 import tangos as db
 import tangos.input_handlers.pynbody as pynbody_outputs
 import tangos.tools.add_simulation as add
-from tangos import config
-from tangos import log, testing
-import os
-import numpy.testing as npt
-import pynbody
-import gc
-import tangos
+from tangos import config, log, testing
+
 
 def setup_module():
     global output_manager
@@ -43,7 +44,7 @@ def test_handler_properties_quicker_flag():
     npt.assert_allclose(prop['approx_resolution_Msol'], 40370039199.44858)
 
 def test_enumerate():
-    assert set(output_manager.enumerate_timestep_extensions())==set(["tiny.000640","tiny.000832"])
+    assert set(output_manager.enumerate_timestep_extensions())=={"tiny.000640","tiny.000832"}
 
 def test_timestep_properties():
     props = output_manager.get_timestep_properties("tiny.000640")

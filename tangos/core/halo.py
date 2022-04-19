@@ -1,17 +1,11 @@
-from __future__ import absolute_import
-import weakref
 import numpy as np
+from sqlalchemy import Column, ForeignKey, Integer, orm, types
+from sqlalchemy.orm import Session, backref, relationship
 
-from sqlalchemy import Column, Integer, ForeignKey, orm, types
-from sqlalchemy.orm import relationship, backref, Session
-from sqlalchemy.ext.declarative import declared_attr
-
-from . import extraction_patterns
-from . import Base
-from . import creator
+from . import Base, creator, extraction_patterns
 from .dictionary import get_dict_id, get_or_create_dictionary_item
 from .timestep import TimeStep
-import six
+
 
 class UnsignedInteger(types.TypeDecorator):
     """Stores an unsigned int64 as a signed int64"""
@@ -62,8 +56,7 @@ class SimulationObjectBase(Base):
     def _all_subclasses(cls):
         for c in cls.__subclasses__():
             yield c
-            for c_sub in c._all_subclasses():
-                yield c_sub
+            yield from c._all_subclasses()
 
     @staticmethod
     def class_from_tag(match_tag):
@@ -75,7 +68,7 @@ class SimulationObjectBase(Base):
 
     @staticmethod
     def object_typecode_from_tag(match_tag):
-        if isinstance(match_tag, six.string_types):
+        if isinstance(match_tag, str):
             return SimulationObjectBase.class_from_tag(match_tag).__mapper_args__['polymorphic_identity']
         else:
             return match_tag
@@ -123,7 +116,7 @@ class SimulationObjectBase(Base):
         if not hasattr(self, "_handler"):
             self._handler = self.timestep.simulation.get_output_handler()
         return self._handler
-        
+
     @property
     def handler_class(self):
         if not hasattr(self, "_handler_class"):
@@ -264,7 +257,7 @@ class SimulationObjectBase(Base):
         session.commit()
 
     def _setitem_one_halo(self, key, obj):
-        from . import Session, HaloLink
+        from . import HaloLink, Session
         session = Session.object_session(self)
         key = get_or_create_dictionary_item(session, key)
         X = self.links.filter_by(halo_from_id=self.id, relation_id=key.id).first()
@@ -340,10 +333,10 @@ class SimulationObjectBase(Base):
         :param strategy: The class to use to find the descendants (default relation_finding.MultiHopMajorDescendantsStrategy)
         """
         from .. import live_calculation
+        from .. import query as db_query
         from .. import relation_finding
         from .. import temporary_halolist as thl
         from . import Session
-        from .. import query as db_query
 
         nmax = kwargs.get('nmax',1000)
         strategy = kwargs.get('strategy', relation_finding.MultiHopMajorDescendantsStrategy)
@@ -412,7 +405,7 @@ class Halo(SimulationObjectBase):
     }
 
     tag = "halo"
-    
+
 class Tracker(SimulationObjectBase):
     __mapper_args__ = {
         'polymorphic_identity':3
@@ -421,7 +414,7 @@ class Tracker(SimulationObjectBase):
     tag = "tracker"
 
     def __init__(self, timestep, halo_number):
-        super(Tracker, self).__init__(timestep, halo_number, halo_number, halo_number, 0,0,0,
+        super().__init__(timestep, halo_number, halo_number, halo_number, 0,0,0,
                                  self.__mapper_args__['polymorphic_identity'])
 
     @property
@@ -449,7 +442,7 @@ class Group(SimulationObjectBase):
     tag = "group"
 
     def __init__(self, *args):
-        super(Group, self).__init__(*args)
+        super().__init__(*args)
         self.object_typecode = 2
 
 
@@ -463,7 +456,7 @@ class PhantomHalo(SimulationObjectBase):
     tag = "phantom"
 
     def __init__(self, timestep, halo_number, finder_id):
-        super(PhantomHalo, self).__init__(timestep, halo_number, finder_id, finder_id, 0,0,0,
+        super().__init__(timestep, halo_number, finder_id, finder_id, 0,0,0,
                                  self.__mapper_args__['polymorphic_identity'])
 
 

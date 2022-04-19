@@ -63,4 +63,3 @@ class PropertyDeleter(GenericTangosTool):
             print("Completed")
         else:
             print("Aborted")
-

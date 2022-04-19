@@ -1,11 +1,13 @@
 # Live properties suitable for calculations on underlying profiles, e.g. density profiles, mass profiles etc
 
-from . import LivePropertyCalculation
 import numpy as np
+
+from . import LivePropertyCalculation
+
 
 class AtPosition(LivePropertyCalculation):
     def __init__(self, simulation, position, array):
-        super(AtPosition, self).__init__(simulation)
+        super().__init__(simulation)
         self._array_info = array
 
     names = "at"
@@ -17,7 +19,7 @@ class AtPosition(LivePropertyCalculation):
 
 class MaxMinProperty(LivePropertyCalculation):
     def __init__(self, simulation, array):
-        super(MaxMinProperty, self).__init__(simulation)
+        super().__init__(simulation)
         self._array_info = array
 
     names = "max", "min", "posmax", "posmin"

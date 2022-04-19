@@ -1,13 +1,8 @@
-from __future__ import absolute_import
-
-from __future__ import print_function
 import multiprocessing
-import threading
-import sys
 import os
 import signal
-from six.moves import range
-from six.moves import zip
+import sys
+import threading
 
 _slave = False
 _rank = None
@@ -100,7 +95,8 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
         target_fn(*args_in)
         finalize()
     except Exception as e:
-        import sys, traceback
+        import sys
+        import traceback
         exc_type, exc_value, exc_traceback = sys.exc_info()
         global _print_exceptions
         if _print_exceptions:
@@ -167,5 +163,3 @@ def launch(function, num_procs, args):
         raise RuntimeError("To launch a parallel session using multiprocessing backend, you need to specify the number of processors")
 
     launch_functions([function]*num_procs, [args]*num_procs)
-
-

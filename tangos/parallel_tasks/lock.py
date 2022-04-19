@@ -1,8 +1,8 @@
-from __future__ import absolute_import
-from . import message, log, parallel_backend_loaded
 import time
-import six
+
 from ..config import DEFAULT_SLEEP_BEFORE_ALLOWING_NEXT_LOCK
+from . import log, message, parallel_backend_loaded
+
 
 class MessageRequestLock(message.Message):
     def __init__(self, name, shared=False):
@@ -110,10 +110,10 @@ def _release_lock_shared(lock_id, proc):
 
 
 def _any_locks_alive():
-    return any([len(v)>0 for v in six.itervalues(_lock_queues)])
+    return any([len(v)>0 for v in _lock_queues.values()])
 
 
-class ExclusiveLock(object):
+class ExclusiveLock:
     """Named, exclusive, re-entrant lock - only one MPI process can hold a lock of a given name at once"""
     _shared=False
 
@@ -154,4 +154,3 @@ class SharedLock(ExclusiveLock):
     """Named, shared, re-entrant lock - multiple MPI processes can hold a lock of a given name at once, but not while an
     ExclusiveLock of the same name is also held"""
     _shared=True
-

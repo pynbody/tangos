@@ -1,16 +1,15 @@
-from __future__ import absolute_import
-from __future__ import print_function
+import os
+import re
 
 import tangos as db
-import os
-from ..input_handlers import ahf_trees as at
-from ..log import logger
+
+from .. import config
 from ..core import get_or_create_dictionary_item
 from ..core.halo_data import HaloLink, HaloProperty
-from .. import config
+from ..input_handlers import ahf_trees as at
+from ..log import logger
 from . import GenericTangosTool
-from six.moves import xrange
-import re
+
 
 class AHFTreeImporter(GenericTangosTool):
     tool_name = 'import-ahf-trees'
@@ -66,10 +65,9 @@ class AHFTreeImporter(GenericTangosTool):
         for simulation in simulations:
             logger.info("Processing %s",simulation)
             for ts in simulation.timesteps:
-                ts_prev = ts.previous 
-                # ahf merger tree tool goes back in time 
+                ts_prev = ts.previous
+                # ahf merger tree tool goes back in time
                 if ts_prev is not None:
                     #additionally check if this is the first snapshot
                     tree = at.AHFTree(os.path.join(config.base,simulation.basename), ts)
                     self.create_links(ts_prev, ts, tree.get_links_for_snapshot())
-

@@ -1,8 +1,11 @@
-import tangos, tangos.testing as testing, tangos.scripts.manager as manager
-import tangos.testing.simulation_generator
-import tangos.testing.db_diff as diff
-
 import os
+
+import tangos
+import tangos.scripts.manager as manager
+import tangos.testing as testing
+import tangos.testing.db_diff as diff
+import tangos.testing.simulation_generator
+
 
 def setup_module():
     testing.init_blank_db_for_testing()

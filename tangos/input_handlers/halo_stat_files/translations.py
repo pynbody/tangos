@@ -2,7 +2,8 @@
 
 import numpy as np
 
-class Function(object):
+
+class Function:
     """Define a column which is actually a function of other columns"""
     def __init__(self, fn, *input_arg_names):
         self.fn = fn
@@ -15,7 +16,7 @@ class Function(object):
     def inputs(self):
         return self.input_arg_names
 
-class Rename(object):
+class Rename:
     """Define a column by renaming an existing column"""
     def __init__(self, name):
         self.name = name
@@ -26,7 +27,7 @@ class Rename(object):
     def inputs(self):
         return [self.name]
 
-class Value(object):
+class Value:
     """Define a column by a fixed value"""
     def __init__(self, value):
         self.value = value
@@ -37,7 +38,7 @@ class Value(object):
     def inputs(self):
         return []
 
-class DefaultValue(object):
+class DefaultValue:
     """Give a default value to a column, in case it is absent"""
     def __init__(self, name, default_value):
         self.name = name

@@ -1,6 +1,8 @@
-from .. import PropertyCalculation
-from ...input_handlers import yt as yt_handler_module
 import numpy as np
+
+from ...input_handlers import yt as yt_handler_module
+from .. import PropertyCalculation
+
 
 class YtPropertyCalculation(PropertyCalculation):
     works_with_handler = yt_handler_module.YtInputHandler
@@ -42,4 +44,3 @@ class HaloDensityProfile(YtPropertyCalculation):
         den_profile = mass_per_bin/vol_per_bin
 
         return den_profile, mass_profile
-

@@ -1,13 +1,14 @@
-from __future__ import absolute_import
 import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
 import sqlalchemy.orm.dynamic
 import sqlalchemy.orm.query
 from sqlalchemy.orm import Session, contains_eager
+
 from .. import core, temporary_halolist
 
-class HopStrategy(object):
+
+class HopStrategy:
     """HopStrategy and its descendants define methods helpful for finding related halos, e.g. progenitors/descendants,
     or corresponding halos in other simulation runs"""
 
@@ -163,7 +164,7 @@ class HopMajorDescendantStrategy(HopStrategy):
     def __init__(self, halo_from):
         target_ts = halo_from.timestep.next
         if target_ts:
-            super(HopMajorDescendantStrategy, self).__init__(halo_from, target=target_ts)
+            super().__init__(halo_from, target=target_ts)
         else:
             self._all = []
 
@@ -174,6 +175,6 @@ class HopMajorProgenitorStrategy(HopStrategy):
     def __init__(self, halo_from):
         target_ts = halo_from.timestep.previous
         if target_ts:
-            super(HopMajorProgenitorStrategy, self).__init__(halo_from, target=target_ts)
+            super().__init__(halo_from, target=target_ts)
         else:
             self._all = []

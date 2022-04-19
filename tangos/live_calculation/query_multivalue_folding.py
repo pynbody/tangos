@@ -1,8 +1,9 @@
-from six.moves import range
 import numpy as np
-from . query_masking import QueryMask
 
-class QueryMultivalueFolding(object):
+from .query_masking import QueryMask
+
+
+class QueryMultivalueFolding:
     """This class manages a situation where a query returns multiple outputs per input, and one temporarily wants
     to explore all those outputs then later fold them back to a single output per input"""
 

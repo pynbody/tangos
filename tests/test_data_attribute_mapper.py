@@ -1,6 +1,5 @@
-from __future__ import absolute_import
 import datetime
-from six.moves import cPickle as pickle
+import pickle
 import time
 import zlib
 
@@ -9,10 +8,9 @@ import pynbody
 from pytest import raises as assert_raises
 
 import tangos.core.data_attribute_mapper as dam
-import six
 
 
-class _TestTarget(object):
+class _TestTarget:
     all_types = "time","string","float","int","array"
     def __init__(self):
         self.create_placeholders()
@@ -56,14 +54,14 @@ def assert_data_value(data, testval):
 
 def test_set_retrieve():
 
-    for typename,testval in six.iteritems(test_values):
+    for typename,testval in test_values.items():
         target = _TestTarget()
         target.data=testval
         target.assert_datatype(typename)
         assert_data_value(target.data,testval)
 
 def test_set_retrieve_no_strings():
-    for typename,testval in six.iteritems(test_values):
+    for typename,testval in test_values.items():
         target = _TestTargetNoStrings()
 
         if typename=="string":
@@ -76,12 +74,12 @@ def test_set_retrieve_no_strings():
 
 def test_set_reset_retrieve():
 
-    for typename,testval in six.iteritems(test_values):
+    for typename,testval in test_values.items():
         target = _TestTarget()
         target.data=testval
         target.assert_datatype(typename)
         assert_data_value(target.data,testval)
-        for typename2,testval2 in six.iteritems(test_values):
+        for typename2,testval2 in test_values.items():
             target.data=testval2
             target.assert_datatype(typename2)
             assert_data_value(target.data,testval2)
@@ -128,7 +126,7 @@ def test_none():
     assert target.data is None
 
 def test_unknown_storage_type():
-    class DummyClass(object):
+    class DummyClass:
         pass
 
     target = _TestTarget()
@@ -177,4 +175,3 @@ def test_empty_container():
 
     target.data_array = ""
     assert target.data is None
-

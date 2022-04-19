@@ -1,20 +1,20 @@
-from __future__ import absolute_import
-from __future__ import print_function
 import matplotlib
+
 matplotlib.use('agg')
-import pylab as p
-from pyramid.view import view_config
-from html import escape
-import numpy as np
-from . import halo_from_request, timestep_from_request, simulation_from_request
-from pyramid.response import Response
-from six import BytesIO, string_types
-from ...log import logger
-from ... import core
-from ...config import webview_default_image_format, webview_cache_time
 import threading
 import time
-import functools
+from html import escape
+from io import BytesIO
+
+import numpy as np
+import pylab as p
+from pyramid.response import Response
+from pyramid.view import view_config
+
+from ... import core
+from ...config import webview_cache_time, webview_default_image_format
+from ...log import logger
+from . import halo_from_request, simulation_from_request, timestep_from_request
 
 _matplotlib_lock = threading.RLock()
 
@@ -327,7 +327,7 @@ def add_xy_labels(property_info, request):
     p.xlabel(property_info.plot_xlabel())
     ylabel = property_info.plot_ylabel()
     # cludge follows - should be eliminated by fixing the mess around multi-name vs single-name property classes
-    if not isinstance(ylabel, string_types):
+    if not isinstance(ylabel, str):
         try:
             ylabel = ylabel[property_info.index_of_name(decode_property_name(request.matchdict['nameid']))]
         except:

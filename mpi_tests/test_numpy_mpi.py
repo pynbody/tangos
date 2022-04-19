@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-from __future__ import absolute_import
-from __future__ import print_function
 import sys
-import tangos.parallel_tasks as pt
 import time
+
 import numpy as np
-from six.moves import zip
+
+import tangos.parallel_tasks as pt
 
 
 def test_function():

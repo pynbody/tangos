@@ -1,8 +1,6 @@
-from __future__ import absolute_import
-from __future__ import print_function
-import tangos as db
 import sqlalchemy
 
+import tangos as db
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data

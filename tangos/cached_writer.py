@@ -1,5 +1,5 @@
-from __future__ import absolute_import
 from . import core
+
 
 def create_property(halo, name, prop, session):
 
@@ -31,5 +31,3 @@ def insert_list(property_list):
             _insert_list_unlocked(property_list)
     else:
         _insert_list_unlocked(property_list)
-
-

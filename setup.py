@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 install_requires = [
     'setuptools',
     'numpy >= 1.10.0',
@@ -34,9 +33,11 @@ tests_require = [
     'PyMySQL>=1.0.2',
     ]
 
-from setuptools import setup, find_packages
 import codecs
 import os.path
+
+from setuptools import find_packages, setup
+
 
 def read(rel_path):
     here = os.path.abspath(os.path.dirname(__file__))
@@ -52,6 +53,7 @@ def get_version(rel_path):
         raise RuntimeError("Unable to find version string.")
 
 from os import path
+
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md')) as f:
     long_description = f.read()

@@ -1,13 +1,12 @@
-from __future__ import absolute_import
+import warnings
+
 import numpy as np
 import numpy.testing as npt
 from pytest import raises as assert_raises
 
 import tangos as db
-import tangos.testing as testing
 import tangos.live_calculation as lc
-import warnings
-
+import tangos.testing as testing
 import tangos.testing.simulation_generator
 from tangos.testing import assert_halolists_equal
 

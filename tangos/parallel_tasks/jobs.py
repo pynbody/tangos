@@ -1,6 +1,5 @@
-from __future__ import absolute_import
-from . import message
 from .. import log
+from . import message
 
 j = -1
 num_jobs = None

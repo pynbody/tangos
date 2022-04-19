@@ -1,4 +1,5 @@
 from pyramid.view import notfound_view_config
+
 from ..config import webview_default_image_format
 
 

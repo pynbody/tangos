@@ -1,27 +1,24 @@
 #!/usr/bin/env python2.7
 
-from __future__ import absolute_import
-from __future__ import print_function
+import argparse
 import sys
 from textwrap import dedent
 
 import numpy as np
-import argparse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import tangos as db
-from tangos import all_simulations
-from tangos import core, config
-from tangos.core import Base, get_or_create_dictionary_item, \
-    Creator, Simulation, TimeStep, SimulationObjectBase, HaloProperty, HaloLink
+from tangos import all_simulations, config, core
+from tangos.core import (Base, Creator, HaloLink, HaloProperty, Simulation,
+                         SimulationObjectBase, TimeStep,
+                         get_or_create_dictionary_item)
 from tangos.core.simulation import SimulationProperty
 from tangos.core.tracking import TrackData
-from tangos.query import get_simulation, get_halo
 from tangos.input_handlers import get_named_handler_class
-from tangos.tools.add_simulation import SimulationAdderUpdater
 from tangos.log import logger
-from six.moves import input
+from tangos.query import get_halo, get_simulation
+from tangos.tools.add_simulation import SimulationAdderUpdater
 
 
 def add_simulation_timesteps(options):
@@ -418,8 +415,8 @@ def list_available_properties(options):
         else:
             return "live".center(15)
 
-    longest_class_name = max([len(format_class_name(cl)) for cl in properties.all_property_classes()])
-    print("%s | %s | %s" % ("name".rjust(30), "handler".center(15), "property class"))
+    longest_class_name = max(len(format_class_name(cl)) for cl in properties.all_property_classes())
+    print("{} | {} | {}".format("name".rjust(30), "handler".center(15), "property class"))
     print("-"*30+"-+-"+"-"*15+"-+-"+"-"*longest_class_name)
     for p in all_properties:
         classes = properties.all_providing_classes(p)
@@ -494,7 +491,7 @@ def get_argument_parser_and_subparsers():
     subparse_greprun.set_defaults(func=grep_run_id)
     subparse_greprun.add_argument("query", type=str,
                                      help="The sub-string to search for in the command line")
-                                     
+
     subparse_grepruninfo = subparse.add_parser("grep-runs",
                                           help="List details of runs matching command line input")
     subparse_grepruninfo.set_defaults(func=grep_run_info)
@@ -514,7 +511,7 @@ def get_argument_parser_and_subparsers():
     subparse_remruns.add_argument("sims", help="The path to the simulation folder relative to the database folder")
     subparse_remruns.set_defaults(func=rem_simulation_timesteps)
      """
-    
+
     subparse_import = subparse.add_parser("import",
                                           help="Import one or more simulations from another sqlite file")
     subparse_import.add_argument("file", type=str, help="The filename of the sqlite file from which to import")
