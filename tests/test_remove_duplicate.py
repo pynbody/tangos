@@ -41,7 +41,8 @@ def setup_module():
     diff_name = tangos.core.get_or_create_dictionary_item(session, "other_test")
     l_obj = link.HaloLink(halo, halo2, diff_name, 1.0)
     session.add(l_obj)
-    # and another time, with same name but different weight (conceptual duplicate but non-maximal, does not get deleted)
+    # and another time, with same name but different weight
+    # (this is a non-maximal duplicate, oldest addition gets deleted and we keep the most recent link)
     l_obj = link.HaloLink(halo, halo2, d_test, 0.5)
     session.add(l_obj)
     # and another time, with same weight and name as previous but linking to a different halo (not a duplicate)
@@ -66,12 +67,15 @@ def test():
         halo = tangos.get_halo(ihalo)
         assert halo["Mvir"] == ihalo
 
-    # And three links for halo 1 and one for halo 2
+    # We also have five links for halo 1 and one for halo 2
     assert tangos.get_halo(1).links.count() == 5
     assert tangos.get_halo(2).links.count() == 1
-    # but only 4 links in halo 1 are maximally unique
+    # Only 4 links in halo 1 are maximally unique
     quads = [[l.halo_from.id, l.halo_to.id, l.weight, l.relation_id] for l in tangos.get_halo(1).all_links]
     assert len(np.unique(quads, axis=0)) == 4
+    # And 3 links are unique by name, halo from and to
+    triplets = [[l.halo_from.id, l.halo_to.id, l.relation_id] for l in tangos.get_halo(1).all_links]
+    assert len(np.unique(triplets, axis=0)) == 3
 
     # Let's cleanup
     remove_duplicates(None)
@@ -83,12 +87,20 @@ def test():
         halo = tangos.get_halo(ihalo)
         assert halo["Mvir"] == ihalo
 
-    # Now halo 1 should have one less link, which are all unique
-    assert tangos.get_halo(1).links.count() == 4
-    quads = [[l.halo_from.id, l.halo_to.id, l.weight, l.relation_id] for l in tangos.get_halo(1).all_links]
-    assert len(np.unique(quads, axis=0)) == 4
+    # Now halo 1 should have two less links
+    assert tangos.get_halo(1).links.count() == 3
+    # which are all unique according to name, halo from and to
+    triplets = [[l.halo_from.id, l.halo_to.id, l.relation_id] for l in tangos.get_halo(1).all_links]
+    assert len(np.unique(triplets, axis=0)) == tangos.get_halo(1).links.count()
 
-    # halo 2 should not have changed
+    # When deleting non-maximal duplicate (link index 1),
+    # we have kept the latest addition to the database with weight 0.5
+    test_link = tangos.get_halo(1).all_links[1]
+    assert test_link.halo_from.id == 1
+    assert test_link.halo_to.id == 2
+    assert test_link.weight == 0.5
+
+    # And links of halo 2 should not have changed
     assert tangos.get_halo(2).links.count() == 1
     assert tangos.get_halo(2).all_links[0].halo_from.id == 2
     assert tangos.get_halo(2).all_links[0].halo_to.id == 9

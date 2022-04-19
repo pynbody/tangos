@@ -172,7 +172,7 @@ def flag_duplicates_deprecated(opts):
     print("duplicate properties marked:", session.execute("update haloproperties set deprecated=1 where id in (SELECT min(id) FROM haloproperties GROUP BY halo_id, name_id HAVING COUNT(*)>1 ORDER BY halo_id, name_id)").rowcount)
 
     print("unmark all links:", session.execute("update halolink set deprecated=0").rowcount)
-    print("duplicate links marked:", session.execute("update halolink set deprecated=1 where id in (SELECT min(id) FROM halolink GROUP BY halo_from_id, halo_to_id, weight HAVING COUNT(*)>1 ORDER BY halo_from_id, halo_to_id, weight)").rowcount)
+    print("duplicate links marked:", session.execute("update halolink set deprecated=1 where id in (SELECT min(id) FROM halolink GROUP BY halo_from_id, halo_to_id, relation_id HAVING COUNT(*)>1 ORDER BY halo_from_id, halo_to_id, weight)").rowcount)
 
     session.commit()
 
@@ -213,7 +213,7 @@ def remove_duplicates(options):
             SELECT * FROM (
                 SELECT MAX(id)
                 FROM halolink
-                GROUP BY halo_from_id, halo_to_id, weight, relation_id
+                GROUP BY halo_from_id, halo_to_id, relation_id
             ) as t
         )
     """)).rowcount
