@@ -544,7 +544,7 @@ class GadgetAHFInputHandler(AHFInputHandler):
     auxiliary_file_patterns = ["*.AHF_particlesSTARDUST"]
 
 
-class RAMSESAHFInputHandler(RamsesCatalogueMixin, AHFInputHandler):
+class RamsesAHFInputHandler(RamsesCatalogueMixin, AHFInputHandler):
     patterns = ["output_?????"]
     auxiliary_file_patterns = ["output_?????*z*AHF_halos"]
 
