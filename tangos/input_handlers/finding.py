@@ -49,7 +49,7 @@ class PatternBasedFileDiscovery:
         if len(cls.__subclasses__()) == 0:
             return cls
 
-        # Add all subclasses and sub-subclasses
+        # Add all subclasses, sub-subclasses, sub-subclasses, ...
         all_possible_handlers = []
         subclasses = cls.__subclasses__()
         while subclasses:
