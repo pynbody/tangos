@@ -35,11 +35,11 @@ class AHFTree:
 
         try:
             self._load_mtree_file_standard()
-        except:
+        except Exception:
             logger.info("Could not load AHF mtree file in standard format. Trying the non-standard form.")
             try:
                 self._load_mtree_file_cropped()
-            except:
+            except Exception:
                 logger.info("Could not load AHF mtree file in non-standard format either. Make sure mtree files exist.")
                 raise OSError("Could not load merger tree files")
 

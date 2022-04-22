@@ -72,7 +72,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         f = pynbody.load(ts_filename)
         try:
             time_gyr = f.properties['time'].in_units("Gyr",**f.conversion_context())
-        except:
+        except Exception:
             time_gyr = -1
 
         results = {'time_gyr': time_gyr, 'redshift': float(f.properties['z']),
@@ -238,7 +238,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             _snapshot_keep_alive = self.load_timestep(ts_extension)
             try:
                 h = self._construct_halo_cat(ts_extension, object_typetag)
-            except:
+            except Exception:
                 logger.warning("Unable to read %ss using pynbody; assuming step has none", object_typetag)
                 return
 

@@ -93,7 +93,7 @@ class TerminalController:
         # Curses isn't available on all platforms
         try:
             import curses
-        except:
+        except ImportError:
             return
 
         # If the stream isn't a tty, then assume it has no capabilities.
@@ -104,7 +104,7 @@ class TerminalController:
         # terminal has no capabilities.
         try:
             curses.setupterm()
-        except:
+        except curses.error:
             return
 
         # Look up numeric capabilities.

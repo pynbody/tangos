@@ -106,7 +106,7 @@ class MultiHopStrategy(HopStrategy):
         tt.__enter__()
         try:
             self._generate_multihop_results()
-        except:
+        except Exception:
             tt.__exit__(*sys.exc_info())
             raise
 

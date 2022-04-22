@@ -330,7 +330,7 @@ def add_xy_labels(property_info, request):
     if not isinstance(ylabel, str):
         try:
             ylabel = ylabel[property_info.index_of_name(decode_property_name(request.matchdict['nameid']))]
-        except:
+        except Exception:
             ylabel = ""
     p.ylabel(ylabel)
 

@@ -79,7 +79,7 @@ def scan_for_BHs(files, session):
 
         try:
             timestep_particle_data = timestep.load()
-        except:
+        except Exception:
             logger.warning("File not found - continuing")
             continue
 

@@ -48,7 +48,7 @@ def get_dict_id(text, default=raise_exception, session=None, allow_query=True):
         if allow_query:
             try:
                 obj = session.query(DictionaryItem).filter_by(text=text).first()
-            except:
+            except Exception:
                 if default is raise_exception:
                     raise
                 else:

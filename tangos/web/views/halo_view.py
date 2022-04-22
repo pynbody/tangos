@@ -73,7 +73,7 @@ def format_property_data(property):
     else:
         try:
             return format_number(property.data)
-        except:
+        except Exception:
             return "(Exception while formatting data)"
 
 class SimulationInfo:

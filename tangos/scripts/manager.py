@@ -245,7 +245,7 @@ def add_tracker(halo, size=None):
 
     try:
         halo = get_halo(halo)
-    except:
+    except Exception:
 
         sim = get_simulation(halo)
         print("Adding tracker for isolated run", sim)
@@ -258,7 +258,7 @@ def add_tracker(halo, size=None):
         use_iord = True
         try:
             hfile.dm['iord']
-        except:
+        except KeyError:
             use_iord = False
 
         # get the centre
@@ -276,7 +276,7 @@ def add_tracker(halo, size=None):
         try:
             size.in_units("kpc")
             X = hfile.ancestor.dm[pynbody.filt.Sphere(size)]
-        except:
+        except Exception:
             size.in_units("kpc km s^-1")
             X = hfile.ancestor.dm[pynbody.filt.LowPass("j2", size ** 2)]
             size = str(size.in_units("kpc km s^-1")) + "_kks"

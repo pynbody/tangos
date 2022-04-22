@@ -177,9 +177,9 @@ def close_session():
     if Session is not None:
         Session = None
 
-__all__ = [DictionaryItem,
-           sim_query_from_name_list, sim_query_from_args,
-           supplement_argparser,
-           update_tracker_halos,
-           process_options, init_db, Base, Creator,
-           get_default_session]
+__all__ = ["DictionaryItem",
+           "sim_query_from_name_list", "sim_query_from_args",
+           "supplement_argparser",
+           "update_tracker_halos",
+           "process_options", "init_db", "Base", "Creator",
+           "get_default_session"]

@@ -189,4 +189,4 @@ class NullAttributeMapper(DataAttributeMapper):
     def get(self, db_object):
         return None
 
-__all__ = [get_data_of_unknown_type, set_data_of_unknown_type]
+__all__ = ["get_data_of_unknown_type", "set_data_of_unknown_type"]
