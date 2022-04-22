@@ -1,7 +1,5 @@
 """Helper classes for defining translations between .stat file of different formats."""
 
-import numpy as np
-
 
 class Function:
     """Define a column which is actually a function of other columns"""

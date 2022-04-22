@@ -21,7 +21,7 @@ class WebMergerTree(tree.MergerTree):
 def _construct_mergertree(halo, request):
     base = halo
     must_include = []
-    for i in range(5):
+    for _ in range(5):
         must_include.append(base.id)
         if base.next is not None:
             base = base.next

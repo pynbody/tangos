@@ -66,7 +66,7 @@ def enumerated_halo_query(table):
 
 def all_halos_with_duplicates(table):
     """Return all halos in the temporary table, including duplicates"""
-    session = _get_session_for(table)
+    _get_session_for(table)
     return [x[1] for x in enumerated_halo_query(table).all()]
 
 def halolink_query(table):

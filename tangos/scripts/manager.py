@@ -121,7 +121,6 @@ def _db_import_export(target_session, from_session, *sims):
                 assert h.id is not None and h.id > 0
                 external_id_to_internal_halo[h.external_id] = h
 
-            properties_this_ts = []
             logger.info("Transferring object properties for %s", ts_ext)
             for h_ext in ts_ext.objects:
                 h_new = external_id_to_internal_halo[h_ext.id]

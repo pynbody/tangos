@@ -1,6 +1,6 @@
 import os
 
-from sqlalchemy import Index, create_engine, event, inspect, text
+from sqlalchemy import Index, create_engine, inspect, text
 from sqlalchemy.orm import clear_mappers, declarative_base, sessionmaker
 
 from .. import config, log
@@ -33,8 +33,6 @@ def set_default_session(session):
     will subsequently fail. """
     global _internal_session
     _internal_session = session
-    _internal_session_pid = os.getpid()
-    _internal_session_args = None
 
 def get_default_engine():
     """Get the default sqlalchemy engine to be used when no other is specified."""
@@ -54,9 +52,8 @@ from .creator import Creator
 from .dictionary import DictionaryItem
 from .halo import SimulationObjectBase
 from .halo_data import HaloLink, HaloProperty
-from .simulation import Simulation, SimulationProperty
-from .timestep import TimeStep
-from .tracking import TrackData, update_tracker_halos
+from .simulation import Simulation
+from .tracking import update_tracker_halos
 
 Index("halo_index", HaloProperty.__table__.c.halo_id)
 Index("name_halo_index", HaloProperty.__table__.c.name_id,
@@ -180,12 +177,9 @@ def close_session():
     if Session is not None:
         Session = None
 
-from .dictionary import (_get_dict_cache_for_session, get_dict_id,
-                         get_or_create_dictionary_item)
-
-__all__ = ['DictionaryItem',
-           'sim_query_from_name_list', 'sim_query_from_args',
-           'supplement_argparser',
-           'update_tracker_halos',
-           'process_options', 'init_db', 'Base', 'Creator',
-           'get_default_session']
+__all__ = [DictionaryItem,
+           sim_query_from_name_list, sim_query_from_args,
+           supplement_argparser,
+           update_tracker_halos,
+           process_options, init_db, Base, Creator,
+           get_default_session]

@@ -14,7 +14,7 @@ from pyramid.view import view_config
 from ... import core
 from ...config import webview_cache_time, webview_default_image_format
 from ...log import logger
-from . import halo_from_request, simulation_from_request, timestep_from_request
+from . import halo_from_request, timestep_from_request
 
 _matplotlib_lock = threading.RLock()
 
@@ -178,7 +178,7 @@ def finish(request, getImage=True):
         except KeyError:
             raise NotImplementedError(
                 'Tangos does not support the provided image format: '
-                f'{ext}. '
+                f'{extension}. '
                 'This can be changed in the config.'
             )
 

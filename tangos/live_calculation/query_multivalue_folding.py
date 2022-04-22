@@ -7,7 +7,9 @@ class QueryMultivalueFolding:
     """This class manages a situation where a query returns multiple outputs per input, and one temporarily wants
     to explore all those outputs then later fold them back to a single output per input"""
 
-    def __init__(self, determiner_mode, determiner_column, constraints_columns=[]):
+    def __init__(self, determiner_mode, determiner_column, constraints_columns=None):
+        if constraints_columns is None:
+            constraints_columns = []
         assert determiner_mode in ['max', 'min']
         self.determiner_mode = determiner_mode
         self.determiner_column = determiner_column
@@ -16,9 +18,9 @@ class QueryMultivalueFolding:
     def unfold(self, input):
         input_unfolded = []
         slices_for_original_rows = []
-        for input_row_index, input_row in enumerate(input):
+        for input_row in input:
             startpoint = len(input_unfolded)
-            input_unfolded+=input_row
+            input_unfolded += input_row
             endpoint = len(input_unfolded)
             slices_for_original_rows.append(slice(startpoint,endpoint))
         self.slices_for_original_rows = slices_for_original_rows

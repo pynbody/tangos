@@ -80,5 +80,5 @@ webview_cache_time = 3600
 
 try:
     from .config_local import *
-except:
+except ImportError:
     pass

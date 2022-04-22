@@ -54,7 +54,7 @@ class RamsesHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
             if self.quicker:
                 logger.warning("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
             else:
-                h = pynbody.halo.hop.HOPCatalogue(f)
+                _h = pynbody.halo.hop.HOPCatalogue(f)
             return True
         except (OSError, RuntimeError):
             return False
@@ -216,5 +216,5 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
                     hi = h[i]
                     if hi.properties["npart"] > min_halo_particles:
                         yield i, i, hi.properties["npart"], 0, 0
-                except (ValueError, KeyError) as e:
+                except (ValueError, KeyError):
                     pass

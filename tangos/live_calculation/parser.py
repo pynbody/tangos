@@ -101,4 +101,4 @@ def parse_property_name_if_required(name):
 def parse_property_names(*names):
     return MultiCalculation(*[parse_property_name(n) for n in names])
 
-__all__ = ["parse_property_name", "parse_property_name_if_required", "parse_property_names"]
+__all__ = [parse_property_name, parse_property_name_if_required, parse_property_names]

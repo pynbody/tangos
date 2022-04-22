@@ -1,7 +1,5 @@
 from pyramid.view import notfound_view_config
 
-from ..config import webview_default_image_format
-
 
 @notfound_view_config(renderer='templates/404.jinja2')
 def notfound_view(request):

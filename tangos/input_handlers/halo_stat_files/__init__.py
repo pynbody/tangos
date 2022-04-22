@@ -178,7 +178,7 @@ class AHFStatFile(HaloStatFile):
     def _calculate_children(self):
         # use hostHalo column to calculate virtual childHalo entries
         self._children_map = {}
-        for c_id, f_id, host_f_id in self.iter_rows_raw("hostHalo"):
+        for _c_id, f_id, host_f_id in self.iter_rows_raw("hostHalo"):
             if host_f_id!=-1:
                 cmap = self._children_map.get(host_f_id, [])
                 cmap.append(proxy_object.IncompleteProxyObjectFromFinderId(f_id,'halo'))

@@ -3,8 +3,7 @@
 
 import sys
 
-from tangos import core, parallel_tasks
-from tangos.parallel_tasks import database
+from tangos import parallel_tasks
 from tangos.tools.crosslink import TimeLinker
 
 

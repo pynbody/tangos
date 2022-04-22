@@ -19,7 +19,6 @@ install_requires = [
     'pyramid_tm','pyramid_retry',
     'zope.sqlalchemy',
     'hupper',
-    'six',
     'scipy >= 0.14.0',
     'more_itertools >= 8.0.0',
     ]

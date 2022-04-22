@@ -166,8 +166,13 @@ class PropertyWriter(GenericTangosTool):
     def _build_halo_list(self, db_timestep):
         query = core.halo.SimulationObjectBase.timestep == db_timestep
         if self.options.htype is not None:
-            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.object_typecode
-                                    == core.halo.SimulationObjectBase.object_typecode_from_tag(self.options.htype))
+            query = sqlalchemy.and_(
+                query,
+                (
+                    core.halo.SimulationObjectBase.object_typecode ==
+                    core.halo.SimulationObjectBase.object_typecode_from_tag(self.options.htype)
+                ),
+            )
 
         if self.options.hmin is not None:
             query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.halo_number>=self.options.hmin)

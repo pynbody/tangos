@@ -107,7 +107,7 @@ class TimeStep(Base):
     def keys(self):
         """Return keys for which ALL halos have a data entry"""
         from . import Session
-        session = Session.object_session(self)
+        Session.object_session(self)
         raise RuntimeError("Not implemented")
 
     def calculate_all(self, *plist, **kwargs):

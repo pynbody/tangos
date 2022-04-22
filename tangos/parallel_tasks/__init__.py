@@ -1,19 +1,14 @@
 import importlib
 import re
 import sys
-import time
-import traceback
 import warnings
 
-import tangos.core.creator
-
-from .. import config, core
+from .. import config
 
 backend = None
 _backend_name = config.default_backend
 from .. import log
-from ..log import logger
-from . import backends, jobs, message
+from . import message
 
 
 def _process_command_line():
@@ -46,7 +41,9 @@ def parallel_backend_loaded():
     global _backend_name
     return _backend_name!='null'
 
-def launch(function, num_procs=None, args=[]):
+def launch(function, num_procs=None, args=None):
+    if args is None:
+        args = []
     init_backend()
     if _backend_name!='null':
         backend.launch(_exec_function_or_server, num_procs, [function, args])
@@ -95,11 +92,7 @@ def _server_thread():
     # available job and move on. Jobs are labelled through the
     # provided iterator
 
-    j = -1
-    num_jobs = None
-    current_job = None
     alive = [True for i in range(backend.size())]
-    awaiting_barrier = [False for i in range(backend.size())]
 
     while any(alive[1:]):
         obj = message.Message.receive()
@@ -108,19 +101,16 @@ def _server_thread():
         else:
             obj.process()
 
-
     log.logger.info("Terminating manager")
 
 
 def _shutdown_parallelism():
-    global backend
+    global backend, _backend_name
     log.logger.info("Shutting down parallel_tasks")
     backend.barrier()
     backend.finalize()
     backend = None
-    _bankend_name = 'null'
-
-
+    _backend_name = 'null'
 
 
 from . import remote_import

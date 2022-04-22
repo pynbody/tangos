@@ -322,7 +322,9 @@ class TimeChunkedProperty(PropertyCalculation):
         final[start:] = raw_data
         return final
 
-    def _reassemble_using_finding_strategy(self, property, strategy, strategy_kwargs={}):
+    def _reassemble_using_finding_strategy(self, property, strategy, strategy_kwargs=None):
+        if strategy_kwargs is None:
+            strategy_kwargs = {}
         name = property.name.text
         halo = property.halo
         t, stack = halo.calculate_for_descendants("t()", "raw(" + name + ")", strategy=strategy, strategy_kwargs=strategy_kwargs)

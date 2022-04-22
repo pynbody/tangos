@@ -229,7 +229,6 @@ class Calculation:
             halo_alias = tangos.core.halo.SimulationObjectBase
         augmented_query = halo_query
         order_bys = []
-        current_join_path = None
 
         for i in range(self.n_join_levels()):
             halo_property_alias = aliased(tangos.core.halo_data.HaloProperty)
@@ -247,12 +246,17 @@ class Calculation:
                 link_name_condition = halo_link_alias.relation_id==-1
 
 
-            augmented_query =augmented_query.outerjoin(halo_property_alias,
-                                                  (halo_alias.id==halo_property_alias.halo_id)
-                                                  & property_name_condition).\
-                                        outerjoin(halo_link_alias,
-                                                  (halo_alias.id==halo_link_alias.halo_from_id)
-                                                  & link_name_condition)
+            augmented_query = (
+                augmented_query
+                .outerjoin(
+                    halo_property_alias,
+                    (halo_alias.id==halo_property_alias.halo_id) & property_name_condition
+                )
+                .outerjoin(
+                    halo_link_alias,
+                    (halo_alias.id==halo_link_alias.halo_from_id) & link_name_condition
+                )
+            )
             augmented_query = augmented_query.options(
                 Load(halo_alias).contains_eager(halo_alias.all_properties, alias=halo_property_alias).undefer("*"),
                 Load(halo_alias).contains_eager(halo_alias.all_links, alias=halo_link_alias),
@@ -344,9 +348,6 @@ class FixedInput(Calculation):
 
 class FixedNumericInput(FixedInput):
     """Represents a calculation that returns a fixed numerical value"""
-    def __init__(self, *tokens):
-        super().__init__()
-
     @staticmethod
     def _process_numerical_value(t):
         if "." in t or "e" in t or "E" in t:
@@ -588,7 +589,9 @@ class Link(Calculation):
         self._multi_selection_basis = basis
         self._multi_selection_column = column
 
-    def set_constraints_columns(self, columns=[]):
+    def set_constraints_columns(self, columns=None):
+        if columns is None:
+            columns = []
         self._constraints_columns = columns
 
     def n_columns(self):

@@ -162,7 +162,7 @@ def init_blank_db_for_testing(**init_kwargs):
     testing_db_name = init_kwargs.pop("testing_db_name", caller_fname)
 
     if testing_db_backend == "sqlite":
-        db_name = f"test_dbs/%s.db"%testing_db_name
+        db_name = "test_dbs/%s.db" % testing_db_name
         try:
             os.remove(db_name)
         except OSError:

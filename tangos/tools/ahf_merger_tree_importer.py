@@ -5,7 +5,7 @@ import tangos as db
 
 from .. import config
 from ..core import get_or_create_dictionary_item
-from ..core.halo_data import HaloLink, HaloProperty
+from ..core.halo_data import HaloLink
 from ..input_handlers import ahf_trees as at
 from ..log import logger
 from . import GenericTangosTool

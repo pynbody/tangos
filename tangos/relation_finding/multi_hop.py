@@ -9,7 +9,7 @@ import sqlalchemy.orm
 import sqlalchemy.orm.dynamic
 import sqlalchemy.orm.query
 from sqlalchemy import Column, Index, Integer, Table, and_
-from sqlalchemy.orm import defer, relationship
+from sqlalchemy.orm import relationship
 
 from .. import core, temporary_halolist
 from ..config import DOUBLE_PRECISION

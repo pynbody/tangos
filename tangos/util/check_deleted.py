@@ -1,6 +1,4 @@
-import contextlib
 import gc
-import sys
 import weakref
 
 from ..log import logger

@@ -9,7 +9,9 @@ from ..log import logger
 class TangosDbDiff:
     """Class to compare two databases, used by the tangos diff command line tool"""
 
-    def __init__(self, uri1, uri2, max_objects=10, ignore_keys=[]):
+    def __init__(self, uri1, uri2, max_objects=10, ignore_keys=None):
+        if ignore_keys is None:
+            ignore_keys = []
         if isinstance(uri1, Session):
             self.session1 = uri1
             uri1 = str(uri1.connection().engine)

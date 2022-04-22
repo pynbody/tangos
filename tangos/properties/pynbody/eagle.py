@@ -1,7 +1,4 @@
-import numpy as np
-
 from ...input_handlers import eagle
-from ...log import logger
 from . import PynbodyPropertyCalculation
 
 

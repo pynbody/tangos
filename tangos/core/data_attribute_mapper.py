@@ -3,18 +3,11 @@ of different types has to be stored in different attributes.
 """
 
 import datetime
-import functools
 import pickle
-import sys
 import time
 import zlib
 
 import numpy as np
-
-pickle_loads = pickle.loads
-if int(sys.version[0])==3:
-    pickle_loads = functools.partial(pickle.loads, encoding='latin1')
-
 
 _THRESHOLD_FOR_COMPRESSION = 1000
 
@@ -68,7 +61,7 @@ class DataAttributeMapper:
                 return subclass
 
         # NullAttributeMapper should prevent the following line from being reached
-        assert False, "Internal error in data_attribute_mapper: no subclass claimed responsibility for object"
+        raise AssertionError("Internal error in data_attribute_mapper: no subclass claimed responsibility for object")
 
     @classmethod
     def _subclass_from_data(cls, data):
@@ -156,10 +149,10 @@ class ArrayAttributeMapper(DataAttributeMapper):
     _order = 1 # must be used only when downcasting mappers have failed
 
     def _unpack_compressed(self, packed):
-        return pickle_loads(zlib.decompress(packed[2:]))
+        return pickle.loads(zlib.decompress(packed[2:]), encoding="latin1")
 
     def _unpack_uncompressed(self, packed):
-        return pickle_loads(packed[2:])
+        return pickle.loads(packed[2:], encoding="latin1")
 
     def _unpack_old_format(self, packed):
         return np.frombuffer(packed)
@@ -196,4 +189,4 @@ class NullAttributeMapper(DataAttributeMapper):
     def get(self, db_object):
         return None
 
-__all__ = ['get_data_of_unknown_type', 'set_data_of_unknown_type']
+__all__ = [get_data_of_unknown_type, set_data_of_unknown_type]

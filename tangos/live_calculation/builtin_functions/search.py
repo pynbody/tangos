@@ -1,9 +1,9 @@
 import numpy as np
 
-from ... import core, relation_finding
+from ... import relation_finding
 from ... import temporary_halolist as thl
-from .. import (BuiltinFunction, FixedInput, FixedNumericInput,
-                MultiCalculation, ReturnInputHalos, StoredProperty)
+from .. import (BuiltinFunction, FixedInput, MultiCalculation,
+                ReturnInputHalos, StoredProperty)
 
 
 def _find_progenitor_or_descendant(source_halos, property_proxy, property_criterion, strategy):
@@ -57,7 +57,7 @@ def _find_progenitor_or_descendant(source_halos, property_proxy, property_criter
                 elif property_criterion == 'max':
                     index = np.argmax(vals)
                 else:
-                    assert False  # should not reach this point
+                    raise AssertionError()  # should not reach this point
                 results.append(objs[index])
             except ValueError:
                 results.append(None) # argmin/argmax of empty sequence -> no candidate results

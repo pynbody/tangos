@@ -6,7 +6,7 @@ import numpy as np
 import pynbody
 
 from ..util.check_deleted import check_deleted
-from . import log, parallel_backend_loaded, remote_import
+from . import log, remote_import
 from .message import ExceptionMessage, Message
 
 

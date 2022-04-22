@@ -3,10 +3,8 @@ import os
 import os.path
 import time
 import weakref
-from itertools import chain
 
 import numpy as np
-from more_itertools import always_iterable
 
 from ..util import proxy_object
 
@@ -63,7 +61,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             if self.quicker:
                 logger.warning("Pynbody was able to load %r, but because 'quicker' flag is set we won't check whether it can also load the halo files", filepath)
             else:
-                h = self._construct_pynbody_halos(f)
+                _h = self._construct_pynbody_halos(f)
 
             return True
         except (OSError, RuntimeError):
@@ -195,7 +193,9 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def match_objects(self, ts1, ts2, halo_min, halo_max,
                       dm_only=False, threshold=0.005, object_typetag='halo',
                       output_handler_for_ts2=None,
-                      fuzzy_match_kwa={}):
+                      fuzzy_match_kwa=None):
+        if fuzzy_match_kwa is None:
+            fuzzy_match_kwa = {}
         if dm_only:
             only_family=pynbody.family.dm
         else:
@@ -235,7 +235,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         else:
             logger.warning("No halo statistics file found for timestep %r",ts_extension)
 
-            snapshot_keep_alive = self.load_timestep(ts_extension)
+            _snapshot_keep_alive = self.load_timestep(ts_extension)
             try:
                 h = self._construct_halo_cat(ts_extension, object_typetag)
             except:
@@ -258,7 +258,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                     hi = h[i]
                     if len(hi.dm) + len(hi.star) + len(hi.gas) >= min_halo_particles:
                         yield i, i, len(hi.dm), len(hi.star), len(hi.gas)
-                except (ValueError, KeyError) as e:
+                except (ValueError, KeyError):
                     pass
 
     def get_properties(self):
@@ -326,7 +326,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
     def _is_able_to_load(self, filepath):
         try:
             f = pynbody.load(filepath)
-            h = pynbody.halo.SubfindCatalogue(f)
+            _h = pynbody.halo.SubfindCatalogue(f)
             return True
         except (OSError, RuntimeError):
             return False
@@ -428,7 +428,7 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
     def _is_able_to_load(self, filepath):
         try:
             f = pynbody.load(filepath)
-            h = pynbody.halo.RockstarCatalogue(f)
+            _h = pynbody.halo.RockstarCatalogue(f)
             return True
         except (OSError, RuntimeError):
             return False

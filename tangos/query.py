@@ -3,6 +3,7 @@ from sqlalchemy import and_
 from tangos import Base, Creator, get_default_session
 from tangos.core import (HaloProperty, Simulation, SimulationObjectBase,
                          TimeStep)
+from tangos.core.halo import Halo
 
 
 def all_simulations(session=None):
@@ -120,5 +121,5 @@ def getdb(cl) :
     return getdb_inner
 
 
-__all__ = ['all_simulations', 'all_creators', 'get_simulation', 'get_timestep',
-           'get_halo', 'get_object', 'get_item' ,'get_haloproperty', 'get_items', 'getdb']
+__all__ = [all_simulations, all_creators, get_simulation, get_timestep,
+           get_halo, get_object, get_item ,get_haloproperty, get_items, getdb]

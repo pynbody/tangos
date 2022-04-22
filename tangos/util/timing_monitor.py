@@ -80,7 +80,7 @@ class TimingMonitor:
     def summarise_timing(self, logger):
         logger.info("CUMULATIVE RUNNING TIMES (just this node)")
         v_tot = 1e-10
-        for k, v in self.timings_by_class.items():
+        for v in self.timings_by_class.values():
             v_tot += sum(v)
 
         for k, v in self.timings_by_class.items():

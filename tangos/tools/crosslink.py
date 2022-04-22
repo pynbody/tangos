@@ -1,6 +1,3 @@
-import argparse
-
-import numpy as np
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -127,8 +124,8 @@ class GenericLinker(GenericTangosTool):
             return
 
         # keep the files alive throughout (so they are not garbage-collected after the first match_objects):
-        snap1 = ts1.load()
-        snap2 = ts2.load()
+        _snap1 = ts1.load()
+        _snap2 = ts2.load()
 
         try:
             cat = output_handler_1.match_objects(ts1.extension, ts2.extension, halo_min, halo_max, dmonly, threshold,

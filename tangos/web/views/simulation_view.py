@@ -1,5 +1,3 @@
-import socket
-
 from pyramid.view import view_config
 from sqlalchemy import func
 

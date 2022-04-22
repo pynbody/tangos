@@ -1,10 +1,8 @@
-import sqlalchemy
 from sqlalchemy import orm
 
 from .. import core
 from ..util import consistent_collection
 from .multi_hop import MultiHopStrategy
-from .one_hop import HopStrategy
 
 
 class MultiSourceMultiHopStrategy(MultiHopStrategy):

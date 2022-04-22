@@ -140,10 +140,9 @@ def assign_bh_to_halos(bh_halo_assignment, bh_iord, timestep, linkname, hostname
 
     logger.info("Gathering %s links for step %r", linkname, timestep)
 
-    links, link_id_from, link_id_to = db.tracking.get_tracker_links(session, linkname_dict_id)
+    _links, link_id_from, link_id_to = db.tracking.get_tracker_links(session, linkname_dict_id)
     halos = timestep.halos.filter_by(object_typecode=0).all()
 
-    halo_nums = [h.halo_number for h in halos]
     halo_catind = [h.finder_offset for h in halos]
     halo_ids = np.array([h.id for h in halos])
 
@@ -206,11 +205,11 @@ def add_missing_trackdata_and_BH_objects(timestep, this_step_bh_iords, existing_
 
 
 def resolve_multiple_mergers(bh_map):
-    for k,v in bh_map.items():
-        if v[0] in bh_map:
-            old_target = v[0]
-            old_weight = v[1]
-            bh_map[k] = bh_map[old_target][0],v[1]*bh_map[old_target][1]
+    for k, v in bh_map.items():
+        old_target = v[0]
+        old_weight = v[1]
+        if old_target in bh_map:
+            bh_map[k] = bh_map[old_target][0], old_weight*bh_map[old_target][1]
             logger.info("Multi-merger detected; reassigning %d->%d (old) %d (new)",k,old_target,bh_map[k][0])
             resolve_multiple_mergers(bh_map)
             return
@@ -272,7 +271,7 @@ def generate_halolinks(session, fname, pairs):
             # re-establish using the log file:
             try:
                 ratio = bh_log.determine_merger_ratio(bh_src_id, bh_dest_id)
-            except (ValueError, AttributeError) as e:
+            except (ValueError, AttributeError):
                 logger.debug("Could not calculate merger ratio for %d->%d from the BH log; assuming the .BHmergers-asserted value is accurate",
                             bh_src_id, bh_dest_id)
 

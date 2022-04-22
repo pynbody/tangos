@@ -100,9 +100,12 @@ class SimulationAdderUpdater:
         n_tot = []
         enumerator = self._autoadd_zeros(self.simulation_output.enumerate_objects)
 
-        for catalog_id, finder_id, NDM, Nstar, Ngas in enumerator(ts.extension, object_typetag=create_class.tag,
-                                                      min_halo_particles=self.min_halo_particles):
-            n_tot.append(NDM+Nstar+Ngas)
+        for _catalog_id, _finder_id, NDM, Nstar, Ngas in enumerator(
+            ts.extension,
+            object_typetag=create_class.tag,
+            min_halo_particles=self.min_halo_particles
+        ):
+            n_tot.append(NDM + Nstar + Ngas)
 
         if self.renumber:
             database_id = np.zeros(len(n_tot), dtype=int)

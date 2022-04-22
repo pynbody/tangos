@@ -1,7 +1,5 @@
 from pyramid.view import view_config
-from sqlalchemy import and_, func, or_
 
-import tangos
 from tangos import core
 
 from . import timestep_from_request

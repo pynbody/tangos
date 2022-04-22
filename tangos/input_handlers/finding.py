@@ -8,7 +8,9 @@ from .. import config
 from ..log import logger
 
 
-def find(extension=None, mtd=None, ignore=None, basename="", patterns=[]):
+def find(extension=None, mtd=None, ignore=None, basename="", patterns=None):
+    if patterns is None:
+        patterns = []
     if mtd == None:
         mtd = config.max_traverse_depth
     if ignore == None:

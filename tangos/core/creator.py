@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Integer, Text, event
+from sqlalchemy import Column, DateTime, Integer, Text
 from sqlalchemy.orm import Session
 
 from . import Base, get_default_session

@@ -2,7 +2,7 @@ import functools
 
 import numpy as np
 
-from .. import BuiltinFunction, FixedNumericInput
+from .. import BuiltinFunction
 
 
 @BuiltinFunction.register

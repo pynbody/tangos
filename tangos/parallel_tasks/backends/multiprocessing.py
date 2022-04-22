@@ -3,6 +3,7 @@ import os
 import signal
 import sys
 import threading
+import traceback
 
 _slave = False
 _rank = None
@@ -15,10 +16,7 @@ _print_exceptions = True
 
 # Compatibility fix for python >=3.8 on MacOS, where the default process start
 # method changed:
-if sys.version_info[:2]>=(3,3):
-    mp_context = multiprocessing.get_context('fork')
-else :
-    mp_context = multiprocessing
+mp_context = multiprocessing.get_context('fork')
 
 class NoMatchingItem(Exception):
     pass
@@ -95,8 +93,6 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
         target_fn(*args_in)
         finalize()
     except Exception as e:
-        import sys
-        import traceback
         exc_type, exc_value, exc_traceback = sys.exc_info()
         global _print_exceptions
         if _print_exceptions:

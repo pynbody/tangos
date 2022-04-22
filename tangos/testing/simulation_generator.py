@@ -171,7 +171,7 @@ class SimulationGeneratorForTests:
 
     def _adjust_halo_NDM_for_mapping(self, mapping, ts_dest, ts_source):
 
-        for source_num, target_num in mapping.items():
+        for _source_num, target_num in mapping.items():
             target_halo = ts_dest.halos.filter_by(halo_number=target_num).first()
             target_halo.NDM = 0
         for source_num, target_num in mapping.items():

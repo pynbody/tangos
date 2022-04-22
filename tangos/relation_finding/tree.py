@@ -1,7 +1,6 @@
 import math
 import time
 
-import numpy as np
 from sqlalchemy.orm import object_session
 
 from .. import core, live_calculation, temporary_halolist
@@ -87,8 +86,6 @@ class MergerTree:
         for halo in halos:
             link_objs.extend(self._link_cache.get(halo.id,[]))
 
-
-        pairings = []
         next_level_halos = []
         next_level_halos_link_from = []
 
@@ -209,16 +206,20 @@ class MergerTree:
             name = ""
 
 
-        output = {'name': name,
-                  'nodeclass': nodeclass,
-                  'moreinfo': moreinfo,
-                  'timeinfo': timeinfo,
-                  'halo_number': halo.halo_number,
-                  'unscaled_size': unscaled_size,
-                  'contents': [],
-                  'depth': depth,
-                  'halo_number_with_phantom_offset': halo.halo_number+
-                                10000*('phantom' in nodeclass)}
+        output = {
+            'name': name,
+            'nodeclass': nodeclass,
+            'moreinfo': moreinfo,
+            'timeinfo': timeinfo,
+            'halo_number': halo.halo_number,
+            'unscaled_size': unscaled_size,
+            'contents': [],
+            'depth': depth,
+            'halo_number_with_phantom_offset': (
+                halo.halo_number +
+                10000*('phantom' in nodeclass)
+            ),
+        }
         return output
 
     def plot(self):
@@ -341,7 +342,7 @@ class MergerTree:
                 total_nodes = len(node['contents'])
                 halo_numbers = [child['halo_number_with_phantom_offset'] for child in node['contents']]
                 halo_numbers.sort()
-                for i, child in enumerate(node['contents']):
+                for child in node['contents']:
                     # create an index that starts in the middle then works outwards
                     rank = halo_numbers.index(child['halo_number_with_phantom_offset'])
                     sign = 2 * ((rank + 1) % 2) - 1

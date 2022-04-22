@@ -1,5 +1,3 @@
-import sys
-
 from .. import core
 from . import message, remote_import
 

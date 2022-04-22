@@ -103,7 +103,7 @@ class EagleLikeInputHandler(PynbodyInputHandler):
         elif object_typetag=='group':
             return h_group
         else:
-            assert False # should have been caught above
+            raise AssertionError() # should have been caught above
 
     def _create_unique_subgroup_ids(self, f_subfind):
         # see if we previously saved it:

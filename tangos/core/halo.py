@@ -130,7 +130,6 @@ class SimulationObjectBase(Base):
         handler this can be None or 'partial' (in a normal session) and, when running inside an MPI session,
         'server' or 'server-partial'. See https://pynbody.github.io/tangos/mpi.html.
         """
-        halo_number = self.halo_number
         if not hasattr(self, "finder_id"):
             finder_id = self.halo_number # backward compatibility
         else:

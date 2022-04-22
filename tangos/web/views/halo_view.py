@@ -1,6 +1,5 @@
 import urllib.parse
 
-import numpy as np
 import sqlalchemy
 import sqlalchemy.orm
 from pyramid.view import view_config

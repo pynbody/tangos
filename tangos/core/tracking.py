@@ -1,5 +1,3 @@
-import weakref
-
 import numpy as np
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, func
 from sqlalchemy.orm import Session, backref, relationship
@@ -80,8 +78,6 @@ class TrackData(Base):
         if first_timestep is not None:
             first_index = timesteps_id.index(first_timestep.id)
             timesteps = timesteps[first_index:]
-
-        object_typecode = class_.object_typecode
 
         for ts in timesteps:
             existing_query = session.query(class_).filter_by(halo_number = self.halo_number, timestep_id = ts.id)
