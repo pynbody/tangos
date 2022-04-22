@@ -1,13 +1,14 @@
 import functools
 import importlib
 import warnings
+from functools import lru_cache
 
 import numpy as np
 import pkg_resources
 
 from tangos.util import timing_monitor
 
-from .. import input_handlers, parallel_tasks, util
+from .. import input_handlers, parallel_tasks
 
 
 class PropertyCalculationMetaClass(type):
@@ -417,7 +418,7 @@ def all_properties(with_particle_data=True):
 
     return pr
 
-@util.lru_cache()
+@lru_cache()
 def providing_class(property_name, handler_class=None, silent_fail=False):
     """Return property calculator class for given property name when files will be loaded by specified handler.
 
@@ -439,7 +440,7 @@ def providing_class(property_name, handler_class=None, silent_fail=False):
     else:
         raise NameError("No providing class for property " + property_name)
 
-@util.lru_cache()
+@lru_cache()
 def all_providing_classes(property_name):
     """Return all the calculator classes for the given property name (possibly multiple, for different handlers)"""
     classes = all_property_classes()
