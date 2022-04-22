@@ -6,6 +6,7 @@ import numpy as np
 
 from .. import config
 from ..log import logger
+from ..util.subclasses import find_subclasses
 
 
 def find(extension=None, mtd=None, ignore=None, basename="", patterns=[]):
@@ -46,16 +47,11 @@ class PatternBasedFileDiscovery:
         handler_names = []
         handler_timestep_lengths = []
         base = os.path.join(config.base, basename)
-        if len(cls.__subclasses__()) == 0:
-            return cls
 
         # Add all subclasses, sub-subclasses, sub-subclasses, ...
-        all_possible_handlers = []
-        subclasses = cls.__subclasses__()
-        while subclasses:
-            subclass = subclasses.pop()
-            subclasses.extend(subclass.__subclasses__())
-            all_possible_handlers.append(subclass)
+        all_possible_handlers = find_subclasses(cls)
+        if not all_possible_handlers:
+            return cls
 
         for possible_handler in all_possible_handlers:
             timesteps_detected = find(basename=base + "/", patterns=possible_handler.patterns)
