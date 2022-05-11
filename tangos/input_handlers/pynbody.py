@@ -526,7 +526,7 @@ class AHFInputHandler(PynbodyInputHandler):
                 elif k == "child":
                     data = [
                         proxy_object.IncompleteProxyObjectFromFinderId(ichild, 'halo')
-                        for ichild in map_child_parent[halo_i]
+                        for ichild in map_child_parent[halo.properties["halo_id"]]
                     ]
                 elif k == "shrink_center":
                     data = np.array([halo_props[k] for k in ("Xc", "Yc", "Zc")])
