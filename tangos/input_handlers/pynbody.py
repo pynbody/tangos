@@ -494,12 +494,22 @@ class AHFInputHandler(PynbodyInputHandler):
         h = self._construct_halo_cat(ts_extension, 'halo')
         halo_children = defaultdict(list)
         for halo in h:
-            iparent = halo.properties["hostHalo"]
-            if iparent == 0:
+            iparent = halo.properties["hostHalo"] # Returns the unique ID (NOT the halo_id index) of the host
+            if iparent == -1: # If halo is its own host (i.e. -1), move on to next object 
                 continue
 
-            halo_children[iparent].append(halo.properties["halo_id"])
+            halo_children[iparent].append(halo.properties["halo_id"]) # Otherwise store the halo_id index of the host
         return halo_children
+
+
+    def _get_map_IDs_to_halo_ids(self, ts_extension):
+        # IDs and halo_ids are usually related by ID = halo_id - 1,
+        # but they can be entirely independent when using specific AHF options or running with MPI
+        # This allows to map between one and the other
+        h = self._construct_halo_cat(ts_extension, 'halo')
+        all_IDs = [halo.properties['ID'] for halo in h]
+        all_halo_ids = [halo.properties['halo_id'] for halo in h]
+        return dict(zip(IDs, halo_ids))
 
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         h = self._construct_halo_cat(ts_extension, object_typetag)
@@ -509,24 +519,26 @@ class AHFInputHandler(PynbodyInputHandler):
         if "child" in property_names:
             map_child_parent = self._get_map_child_subhalos(ts_extension)
 
+        if "parent" in property_names:
+            map_ID_to_halo_id = self._get_map_IDs_to_halo_ids(ts_extension)
+
         for halo in h:
             # Tangos expect us to yield first the finder offset (index in the pynbody catalogue, halo_id in our case)
             # and second the finder_id (unique number associated to the halo, ID in our case).
-            # These are usually related by ID = halo_id - 1,
-            # but can be entirely independent when using specific AHF options or running with MPI
             all_data = [halo.properties["halo_id"], halo.properties["ID"]]
 
             halo_props = halo.properties
             for k in property_names:
                 if k == "parent":
+                    parent_ID = halo_props['hostHalo']
                     data = proxy_object.IncompleteProxyObjectFromFinderId(
-                        halo_props['halo_id'],
+                        map_ID_to_halo_id[parent_ID],
                         'halo'
                     )
                 elif k == "child":
                     data = [
                         proxy_object.IncompleteProxyObjectFromFinderId(ichild, 'halo')
-                        for ichild in map_child_parent[halo.properties["halo_id"]]
+                        for ichild in map_child_parent[halo_props["ID"]]
                     ]
                 elif k == "shrink_center":
                     data = np.array([halo_props[k] for k in ("Xc", "Yc", "Zc")])
