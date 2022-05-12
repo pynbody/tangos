@@ -507,9 +507,9 @@ class AHFInputHandler(PynbodyInputHandler):
         # but they can be entirely independent when using specific AHF options or running with MPI
         # This allows to map between one and the other
         h = self._construct_halo_cat(ts_extension, 'halo')
-        all_IDs = [halo.properties['ID'] for halo in h]
-        all_halo_ids = [halo.properties['halo_id'] for halo in h]
-        return dict(zip(all_IDs, all_halo_ids))
+        return {
+            halo.properties["ID"]: halo.properties["halo_id"] for halo in h
+        }
 
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         h = self._construct_halo_cat(ts_extension, object_typetag)
