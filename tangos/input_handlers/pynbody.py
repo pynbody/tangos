@@ -509,7 +509,7 @@ class AHFInputHandler(PynbodyInputHandler):
         h = self._construct_halo_cat(ts_extension, 'halo')
         all_IDs = [halo.properties['ID'] for halo in h]
         all_halo_ids = [halo.properties['halo_id'] for halo in h]
-        return dict(zip(IDs, halo_ids))
+        return dict(zip(all_IDs, all_halo_ids))
 
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         h = self._construct_halo_cat(ts_extension, object_typetag)
@@ -531,10 +531,20 @@ class AHFInputHandler(PynbodyInputHandler):
             for k in property_names:
                 if k == "parent":
                     parent_ID = halo_props['hostHalo']
-                    data = proxy_object.IncompleteProxyObjectFromFinderId(
-                        map_ID_to_halo_id[parent_ID],
-                        'halo'
-                    )
+                    if parent_ID != -1:
+                        # If halo is not its own parent, link to parent
+                        data = proxy_object.IncompleteProxyObjectFromFinderId(
+                            map_ID_to_halo_id[parent_ID],
+                            'halo'
+                        )
+                    else:
+                        # Otherwise link to itself
+                       data = proxy_object.IncompleteProxyObjectFromFinderId(
+                            halo_props['halo_id'],
+                            'halo'
+                        )
+
+
                 elif k == "child":
                     data = [
                         proxy_object.IncompleteProxyObjectFromFinderId(ichild, 'halo')
