@@ -495,7 +495,7 @@ class AHFInputHandler(PynbodyInputHandler):
         halo_children = defaultdict(list)
         for halo in h:
             iparent = halo.properties["hostHalo"] # Returns the unique ID (NOT the halo_id index) of the host
-            if iparent == -1: # If halo is its own host (i.e. -1), move on to next object 
+            if iparent == -1: # If halo is its own host (i.e. -1), move on to next object
                 continue
 
             halo_children[iparent].append(halo.properties["halo_id"]) # Otherwise store the halo_id index of the host
