@@ -11,13 +11,12 @@ from .. import (BuiltinFunction, FixedInput, FixedNumericInput, LiveProperty,
 
 @BuiltinFunction.register
 def match(source_halos, target):
-    timestep = consistent_collection.ConsistentCollection(source_halos).timestep
     if target is None:
         results = [None]*len(source_halos)
     else:
         from ... import relation_finding
         if not isinstance(target, core.Base):
-            target = tangos.get_item(target, core.Session.object_session(timestep))
+            target = tangos.get_item(target, core.Session.object_session(source_halos[0]))
         results = relation_finding.MultiSourceMultiHopStrategy(source_halos, target).all()
     # if following assert fails, it might be duplicate links in the database which the
     # current MultiSourceMultiHop implementation cannot de-duplicate:
