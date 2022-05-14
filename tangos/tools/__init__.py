@@ -65,4 +65,4 @@ class GenericTangosTool(metaclass=abc.ABCMeta):
 
 from . import (add_simulation, ahf_merger_tree_importer,
                consistent_trees_importer, crosslink, property_deleter,
-               property_importer, property_writer)
+               property_importer, property_writer, merger_tree_patcher)
