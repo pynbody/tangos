@@ -1,16 +1,17 @@
 import os
 import re
 
+import numpy as np
+
 import tangos as db
 
-from .. import config
-from .. import core
+from .. import config, core
 from ..core import get_or_create_dictionary_item
 from ..core.halo_data import HaloLink, HaloProperty
 from ..input_handlers import ahf_trees as at
 from ..log import logger
 from . import GenericTangosTool
-import numpy as np
+
 
 class MergerTreePatcher(GenericTangosTool):
     tool_name = 'patch-trees'
@@ -158,5 +159,3 @@ class MergerTreePatcher(GenericTangosTool):
                 for dbid in dbids:
                     obj = db.get_halo(dbid)
                     self.fixup(obj)
-
-
