@@ -207,9 +207,6 @@ class MergerTreePatcher(GenericTangosTool):
             logger.info("Processing %s",simulation)
             logger.info(self.options.include_only)
             include_criterion = "(!has_link(earlier(1))) & " + (" & ".join(self.options.include_only))
-            # TODO: this is all very well when there actually isn't a link, but if a "bad" link is stored,
-            # it's not much use (e.g. if a tiny progenitor is included but not the major progenitor, the
-            # tool currently won't fix the major progenitor branch)
 
             logger.info("Query for missing links is %s",include_criterion)
             for ts in simulation.timesteps[::-1]:
