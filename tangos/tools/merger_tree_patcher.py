@@ -28,48 +28,58 @@ class MergerTreePruner(GenericTangosTool):
                             help='The minimum weight that should be associated with a descendant for retention. '
                                  'Weights close to zero are normally suspect, since they indicate the halo'
                                  'transfers only a small fraction of its mass into the descendant.')
-        # TO IMPLEMENT:
-        parser.add_argument('--max-NDM-progenitor', action='store', type=float, default=1.0,
+
+        parser.add_argument('--max-NDM-progenitor', action='store', type=float, default=2.0,
                             help='The maximum relative increase in number of dark matter particles in the progenitor'
-                                 'for retention. For example, if this is set to 1.0 (default), the link is dropped'
+                                 'for retention. For example, if this is set to 2.0 (default), the link is dropped'
                                  'if there are more than twice as many DM particles in the progenitor as in the'
+                                 'descendant, since this suggests a mis-identification.')
+
+        parser.add_argument('--min-NDM-progenitor', action='store', type=float, default=0.33,
+                            help='The maximum relative  number of dark matter particles in the progenitor'
+                                 'for retention. For example, if this is set to 0.33 (default), the link is dropped'
+                                 'if there are less than a third as many DM particles in the progenitor as in the'
                                  'descendant, since this suggests a mis-identification.')
 
 
     def process_options(self, options: argparse.ArgumentParser):
         self.options = options
 
-    def process_timestep(self, ts: core.TimeStep):
+    def process_timestep(self, early_timestep: core.TimeStep):
         session = core.get_default_session()
 
-        next_ts = ts.next
-        if next_ts is None:
+        late_timestep = early_timestep.next
+        if late_timestep is None:
             return
 
 
-        progenitor_from_alias = orm.aliased(core.halo.SimulationObjectBase)
-        progenitor_to_alias = orm.aliased(core.halo.SimulationObjectBase)
-        progenitor_halolink = orm.aliased(core.HaloLink)
-        descendant_halolink = orm.aliased(core.HaloLink)
+        descendant_alias = orm.aliased(core.halo.SimulationObjectBase, name="descendant")
+        progenitor_alias = orm.aliased(core.halo.SimulationObjectBase, name="progenitor")
+        progenitor_halolink = orm.aliased(core.HaloLink, name="descendant_to_progenitor_link")
+        descendant_halolink = orm.aliased(core.HaloLink, name="progenitor_to_descendant_link")
 
         progenitor_links = session.query(progenitor_halolink.id, descendant_halolink.id)\
-            .join(progenitor_from_alias, and_(progenitor_halolink.halo_from_id == progenitor_from_alias.id, progenitor_from_alias.timestep_id == ts.id))\
-            .join(progenitor_to_alias, and_(progenitor_halolink.halo_to_id == progenitor_to_alias.id, progenitor_to_alias.timestep_id == next_ts.id))\
-            .join(descendant_halolink, and_(progenitor_halolink.halo_to_id == descendant_halolink.halo_from_id,
+            .join(descendant_alias, and_(progenitor_halolink.halo_from_id == descendant_alias.id, descendant_alias.timestep_id == late_timestep.id))\
+            .join(progenitor_alias, and_(progenitor_halolink.halo_to_id == progenitor_alias.id, progenitor_alias.timestep_id == early_timestep.id))\
+            .outerjoin(descendant_halolink, and_(progenitor_halolink.halo_to_id == descendant_halolink.halo_from_id,
                                             progenitor_halolink.halo_from_id == descendant_halolink.halo_to_id))\
             .filter(or_(progenitor_halolink.weight < self.options.min_weight_progenitor,
                         descendant_halolink.weight < self.options.min_weight_descendant,
-                        progenitor_to_alias.NDM > (1.0 + self.options.max_NDM_progenitor) * progenitor_from_alias.NDM))
+                        progenitor_alias.NDM > self.options.max_NDM_progenitor * descendant_alias.NDM,
+                        progenitor_alias.NDM < self.options.min_NDM_progenitor * descendant_alias.NDM))
+
 
         delete_links = []
         progenitors_and_descendants = progenitor_links.all()
         for p,d in progenitors_and_descendants:
-            delete_links+=[p,d]
+            delete_links.append(p)
+            if d is not None:
+                delete_links.append(d)
 
         row_count = session.query(core.HaloLink).filter(core.HaloLink.id.in_(delete_links)).delete()
         session.commit()
         if row_count>0:
-            logger.info(f"Deleted {row_count} links between timesteps {ts} and {next_ts}")
+            logger.info(f"Deleted {row_count} links between timesteps {early_timestep} and {late_timestep}")
 
     def run_calculation_loop(self):
         simulations = core.sim_query_from_name_list(self.options.sims)
@@ -98,14 +108,15 @@ class MergerTreePatcher(GenericTangosTool):
         parser.add_argument('--relative-match', action='store',  type=str, default=['NStar()','NDM()'],
                             help='Variables to minimise when finding a halo match. If multiple expressions'
                                  'are provided, their relative differences are added in quadrature')
-        parser.add_argument('--max-for-match', action='store', type=float, default=0.02,
+        parser.add_argument('--max-for-match', action='store', type=float, default=0.1,
                             help='The maximum fractional offset in values of variables specified in relative-match'
                                  'that qualifies as a match')
         parser.add_argument('--position-variable', action='store', type=str, default='shrink_center/a()',
                             help='The name of the variable which represents the 3d position')
-        parser.add_argument('--max-position-offset', action='store', type=float, default=10.0,
-                            help='The maximum value of the position offset that is allowed')
-        parser.add_argument('--max-timesteps', action='store', type=int, default=3,
+        parser.add_argument('--max-position-offset', action='store', type=float, default=100.0,
+                            help='The maximum value of the position offset that is allowed in comoving units (i.e.'
+                                 'will be divided by scalefactor)')
+        parser.add_argument('--max-timesteps', action='store', type=int, default=6,
                             help='The maximum number of steps back in time to scan for a match')
 
 
@@ -140,25 +151,34 @@ class MergerTreePatcher(GenericTangosTool):
         session.add(core.HaloLink(matched, next, d_id, 1.0))
         session.commit()
 
+    _candidates_cache = {}
+
+    def _get_candidate_id_position_values(self, ts_candidate):
+        if ts_candidate.id not in self._candidates_cache:
+            self._candidates_cache[ts_candidate.id] = ts_candidate.calculate_all("dbid()",
+                                                                      self.options.position_variable,
+                                                                      *self.options.relative_match)
+        return self._candidates_cache[ts_candidate.id]
 
     def fixup(self, halo):
         success = False
         ts_candidate = halo.timestep.previous
+        if ts_candidate is None:
+            return
+
         source_values = [halo.calculate(m) for m in self.options.relative_match]
         source_position = halo.calculate(self.options.position_variable)
 
         for i in range(self.options.max_timesteps):
 
-            dbid, candidate_positions, *candidate_values = ts_candidate.calculate_all("dbid()",
-                                                                      self.options.position_variable,
-                                                                      *self.options.relative_match)
+            dbid, candidate_positions, *candidate_values = self._get_candidate_id_position_values(ts_candidate)
 
             offsets = [cv-sv for sv, cv in zip(source_values, candidate_values)]
             rel_offsets = [(o/sv)**2 for o, sv in zip(offsets, source_values)]
             rel_offsets = np.sqrt(sum(rel_offsets))
 
             pos_offset = np.linalg.norm(source_position - candidate_positions, axis=1)
-            mask = pos_offset < self.options.max_position_offset
+            mask = pos_offset < self.options.max_position_offset*(1.+ts_candidate.redshift)
 
             dbid = dbid[mask]
             rel_offsets = rel_offsets[mask]
@@ -180,6 +200,7 @@ class MergerTreePatcher(GenericTangosTool):
     def run_calculation_loop(self):
         simulations = core.sim_query_from_name_list(self.options.sims)
         logger.info("This tool is experimental. Use at your own risk!")
+
         for simulation in simulations:
             logger.info("Processing %s",simulation)
             logger.info(self.options.include_only)
