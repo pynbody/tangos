@@ -192,6 +192,8 @@ class MergerTreePatcher(GenericTangosTool):
                     break
 
             ts_candidate = ts_candidate.previous
+            if ts_candidate is None:
+                break
 
         if not success:
             logger.info(f"No luck in finding a match for {halo}")
