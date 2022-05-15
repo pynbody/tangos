@@ -1,21 +1,89 @@
-import os
-import re
+import argparse
 
 import numpy as np
+from sqlalchemy import and_, or_, orm
 
-import tangos as db
-
-from .. import config, core
+from .. import core, query
 from ..core import get_or_create_dictionary_item
-from ..core.halo_data import HaloLink, HaloProperty
-from ..input_handlers import ahf_trees as at
 from ..log import logger
 from . import GenericTangosTool
 
 
+class MergerTreePruner(GenericTangosTool):
+    tool_name = 'prune-trees'
+    tool_description = '[Experimental] Remove questionable links from merger trees'
+    parallel = False
+
+    @classmethod
+    def add_parser_arguments(self, parser):
+        parser.add_argument('--sims', '--for', action='store', nargs='*',
+                            metavar='simulation_name',
+                            help='Specify a simulation (or multiple simulations) to run on')
+
+        parser.add_argument('--min-weight-progenitor', action='store', type=float, default=0,
+                            help='The minimum weight that should be associated with a progenitor for retention. '
+                                 'To retain minor progenitors, this should normally be set to zero.')
+
+        parser.add_argument('--min-weight-descendant', action='store', type=float, default=0.05,
+                            help='The minimum weight that should be associated with a descendant for retention. '
+                                 'Weights close to zero are normally suspect, since they indicate the halo'
+                                 'transfers only a small fraction of its mass into the descendant.')
+        # TO IMPLEMENT:
+        parser.add_argument('--max-NDM-progenitor', action='store', type=float, default=1.0,
+                            help='The maximum relative increase in number of dark matter particles in the progenitor'
+                                 'for retention. For example, if this is set to 1.0 (default), the link is dropped'
+                                 'if there are more than twice as many DM particles in the progenitor as in the'
+                                 'descendant, since this suggests a mis-identification.')
+
+
+    def process_options(self, options: argparse.ArgumentParser):
+        self.options = options
+
+    def process_timestep(self, ts: core.TimeStep):
+        session = core.get_default_session()
+
+        next_ts = ts.next
+        if next_ts is None:
+            return
+
+
+        progenitor_from_alias = orm.aliased(core.halo.SimulationObjectBase)
+        progenitor_to_alias = orm.aliased(core.halo.SimulationObjectBase)
+        progenitor_halolink = orm.aliased(core.HaloLink)
+        descendant_halolink = orm.aliased(core.HaloLink)
+
+        progenitor_links = session.query(progenitor_halolink.id, descendant_halolink.id)\
+            .join(progenitor_from_alias, and_(progenitor_halolink.halo_from_id == progenitor_from_alias.id, progenitor_from_alias.timestep_id == ts.id))\
+            .join(progenitor_to_alias, and_(progenitor_halolink.halo_to_id == progenitor_to_alias.id, progenitor_to_alias.timestep_id == next_ts.id))\
+            .join(descendant_halolink, and_(progenitor_halolink.halo_to_id == descendant_halolink.halo_from_id,
+                                            progenitor_halolink.halo_from_id == descendant_halolink.halo_to_id))\
+            .filter(or_(progenitor_halolink.weight < self.options.min_weight_progenitor,
+                        descendant_halolink.weight < self.options.min_weight_descendant,
+                        progenitor_to_alias.NDM > (1.0 + self.options.max_NDM_progenitor) * progenitor_from_alias.NDM))
+
+        delete_links = []
+        progenitors_and_descendants = progenitor_links.all()
+        for p,d in progenitors_and_descendants:
+            delete_links+=[p,d]
+
+        row_count = session.query(core.HaloLink).filter(core.HaloLink.id.in_(delete_links)).delete()
+        session.commit()
+        if row_count>0:
+            logger.info(f"Deleted {row_count} links between timesteps {ts} and {next_ts}")
+
+    def run_calculation_loop(self):
+        simulations = core.sim_query_from_name_list(self.options.sims)
+        logger.info("This tool is experimental. Use at your own risk!")
+        for simulation in simulations:
+            logger.info("Processing %s", simulation)
+
+            for ts in simulation.timesteps[::-1]:
+                 self.process_timestep(ts)
+
+
 class MergerTreePatcher(GenericTangosTool):
     tool_name = 'patch-trees'
-    tool_description = "Attempt to patch up merger trees"
+    tool_description = "[Experimental] Attempt to patch up merger trees"
     parallel = False
 
     @classmethod
@@ -45,39 +113,8 @@ class MergerTreePatcher(GenericTangosTool):
         self.options = options
 
 
-    @staticmethod
-    def filename_to_snapnum(filename):
-        match = re.match(".*snapdir_([0-9]{3})/?", filename)
-        if match:
-            return int(match.group(1))
-        else:
-            raise ValueError("Unable to convert %s to snapshot number"%filename)
-
-    def create_timestep_halo_dictionary(self, ts):
-        halos = ts.halos.all()
-        out = {}
-        for h in halos:
-            out[h.finder_id] = h
-        return out
-
-    def create_links(self, ts, ts_next, link_dictionary):
-        session = db.get_default_session()
-        d_id = get_or_create_dictionary_item(session, "ahf_tree_link")
-        objs_this = self.create_timestep_halo_dictionary(ts)
-        objs_next = self.create_timestep_halo_dictionary(ts_next)
-        links = []
-        for this_id, (next_id, merger_ratio) in link_dictionary:
-            this_obj = objs_this.get(this_id, None)
-            next_obj = objs_next.get(next_id, None)
-            if this_obj is not None and next_obj is not None:
-                links.append(HaloLink(this_obj, next_obj, d_id, merger_ratio))
-                links.append(HaloLink(next_obj, this_obj, d_id, merger_ratio))
-        session.add_all(links)
-        session.commit()
-        logger.info("%d links created between %s and %s",len(links), ts, ts_next)
-
     def create_link(self, halo, matched):
-        session = db.get_default_session()
+        session = core.get_default_session()
         core.creator.get_creator(session) # just to prevent any commits happening later when not expected
 
         d_id = get_or_create_dictionary_item(session, "patch-trees")
@@ -129,7 +166,7 @@ class MergerTreePatcher(GenericTangosTool):
             if len(rel_offsets)>0:
                 if np.min(rel_offsets) < self.options.max_for_match:
                     match_dbid = dbid[np.argmin(rel_offsets)]
-                    match = db.get_halo(match_dbid)
+                    match = query.get_halo(match_dbid)
                     self.create_link(halo,match)
                     success = True
                     break
@@ -141,7 +178,7 @@ class MergerTreePatcher(GenericTangosTool):
 
 
     def run_calculation_loop(self):
-        simulations = db.sim_query_from_name_list(self.options.sims)
+        simulations = core.sim_query_from_name_list(self.options.sims)
         logger.info("This tool is experimental. Use at your own risk!")
         for simulation in simulations:
             logger.info("Processing %s",simulation)
@@ -157,5 +194,5 @@ class MergerTreePatcher(GenericTangosTool):
                 dbids = dbids[flag]
                 logger.info(f"Timestep {ts} has {len(dbids)} broken links to consider")
                 for dbid in dbids:
-                    obj = db.get_halo(dbid)
+                    obj = query.get_halo(dbid)
                     self.fixup(obj)
