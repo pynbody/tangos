@@ -235,6 +235,18 @@ function getFilterElements(query) {
     return '<label>Filter <input name="filter-'+uriQuery+'" type="checkbox"/></label>'
 }
 
+function sortTableColumn(element, ascending) {
+    let object_tag = $(element).parents('table').attr('id').substr(6);
+    let mini_language_query = $("#header-"+element.substr(9)).data('miniLanguageQuery');
+    reorderByColumn(object_tag, mini_language_query, ascending);
+}
+function getSorterElements(element) {
+    return '<label>' +
+        '<a href="#" onclick="sortTableColumn(\'' + element + '\', true);">&#128316;</a>' +
+        '<a href="#" onclick="sortTableColumn(\'' + element + '\', false);">&#128317;</a>'
+        +'</label>';
+}
+
 function updatePlotControlElements(element, query, isScalar, isFilter, isArray, filterOnly) {
     var controls = {};
     $(element).find("input").each(function() {
@@ -244,9 +256,10 @@ function updatePlotControlElements(element, query, isScalar, isFilter, isArray, 
     arrayControls = getPlotControlElements(query,false);
     filterControls = getFilterElements(query)
     if(filterOnly) {
-        scalarControls = "";
         arrayControls = "";
+        scalarControls = getSorterElements(element);
     }
+
     var buttonsHtml;
     if(isFilter) {
         hiddenHtml = arrayControls+scalarControls;

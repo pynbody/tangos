@@ -21,7 +21,7 @@
                 <th id="header-go-{{ object_type }}">Go &rarr;</th>
             </tr>
             <tr>
-                <th></th>
+                <th id="plotctl-number-{{ object_type }}"></th>
                 <th id="plotctl-colid-1-{{ object_type }}"></th>
                 <th></th>
             </tr>
@@ -77,7 +77,7 @@ function updateColumnData(miniLanguageQuery, columnId, editable_tag) {
             $('#header-' + columnId).html("<span class='load_table_failed'>" + miniLanguageQuery + " (failed)</span>")
         } else {
             $('#header-' + columnId).html(miniLanguageQuery);
-            updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, data.can_use_as_filter, false, true);
+            updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, data.can_use_in_plot, data.can_use_as_filter, false, true);
         }
     } else {
         $('#header-'+columnId).html("<div class='progress-spinner'></div>"+miniLanguageQuery);
@@ -126,18 +126,40 @@ function setupDynamicTables() {
             let tables = window.dataTables['{{ this_object["typetag"]  }}'];
             let numbers = tables['halo_number()'].data_formatted;
             let links = new Array(numbers.length);
+            let order = new Array(numbers.length);
             for(i=0; i<numbers.length; i++) {
+                order[i] = i;
                 links[i] = `<a href="{{ this_object["object_url"] }}${numbers[i]}">Go &rarr;</a>`
             }
             tables['*go_link'] = Object();
             tables['*go_link'].data_formatted = links;
+            tables['*ordering'] = order;
+            updatePlotControlElements('#plotctl-number-{{ this_object['typetag'] }}',
+                'halo_number()', true, false, false, true);
             updateTableDisplay('{{ this_object['typetag']  }}');
         })
     {% endfor %}
 
 }
 
+function reorderByColumn(object_tag, miniLanguageQ, ascending = true) {
+    let order = window.dataTables[object_tag]['*ordering'];
+    let data = window.dataTables[object_tag][miniLanguageQ].data_formatted;
+    let sign = ascending ? -1 : 1;
 
+    order.sort(function(a,b){
+        var tda = parseFloat(data[a]);
+        var tdb = parseFloat(data[b]);
+                // if a < b return 1
+        return tda < tdb ? sign
+               // else if a > b return -1
+               : tda > tdb ? -sign
+               // else they are equal - return 0
+               : 0;
+    });
+
+    updateTableDisplay(object_tag);
+}
 
 function updateTableDisplay(object_tag) {
     let dataColumns = [];
@@ -157,10 +179,15 @@ function updateTableDisplay(object_tag) {
         }
     });
 
+    let filterArray = getFilterArray(object_tag);
+    let order = window.dataTables[object_tag]['*ordering'];
+    if(order === undefined)
+        return; // not ready yet!
+
 
     $("#table-"+object_tag+" tr.tangos-data").remove();
 
-    let filterArray = getFilterArray(object_tag);
+
 
     let rowsPerPage = parseInt($("#per-page-"+object_tag+" option:selected").text());
     let page = parseInt($("#page-"+object_tag+" option:selected").text());
@@ -171,7 +198,9 @@ function updateTableDisplay(object_tag) {
     let nRowsTotal=0;
     let displayRows = [];
 
-    for(var i=0; i<nData; i++) {
+    for(var i_unsorted=0; i_unsorted<nData; i_unsorted++) {
+        i = order[i_unsorted];
+
         let shouldDisplay = true;
 
         if(filterArray!==undefined)
