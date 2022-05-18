@@ -36,6 +36,13 @@
 
     <h1>Timestep: {{ timestep }}</h1>
 
+    <p>
+    <span class="mono">
+    {% if previous[1]!="" %}Previous: <a href="{{ previous[1] }}">{{ previous[0] }}</a>{% endif %}
+    {% if previous[1]!="" and next[1]!="" %} | {% endif %}
+    {% if next[1]!="" %}Next: <a href="{{ next[1] }}">{{ next[0] }}</a>{% endif %}
+    </span>
+    </p>
     <table id="objects-container"><tr>
 
     {% for this_object in objects %}
