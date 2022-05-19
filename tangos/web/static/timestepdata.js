@@ -109,7 +109,7 @@ function autoReorderIfNeeded(object_tag, miniLanguageQ) {
         let res = JSON.parse(sessionStorage['last_sort_'+object_tag]);
         last = res['miniLanguageQ'];
         asc = res['ascending'];
-        if(last==miniLanguageQ) {
+        if(last == miniLanguageQ) {
             console.log("Restoring order to table "+object_tag+", sorting by "+miniLanguageQ)
             reorderByColumn(object_tag, miniLanguageQ, asc);
         }
@@ -117,16 +117,22 @@ function autoReorderIfNeeded(object_tag, miniLanguageQ) {
 
 }
 
+function getOrderArray(object_tag, length) {
+    if(window.dataTables[object_tag]['*ordering'] === undefined) {
+        let order = new Array(length);
+        for (i = 0; i < order.length; i++) {
+            order[i] = i;
+        }
+        window.dataTables[object_tag]['*ordering'] = order;
+    }
+    return window.dataTables[object_tag]['*ordering'];
+}
+
 function reorderByColumn(object_tag, miniLanguageQ, ascending = true) {
 
-    let order = window.dataTables[object_tag]['*ordering'];
     let data = window.dataTables[object_tag][miniLanguageQ].data_formatted;
     let sign = ascending ? -1 : 1;
-
-    if(order === undefined) {
-        console.log("Unable to find order information when attempting to reoder "+object_tag+" by "+miniLanguageQ);
-        return;
-    }
+    let order = getOrderArray(object_tag, data.length);
 
     order.sort(function(a,b){
         var tda = parseFloat(data[a]);

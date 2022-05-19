@@ -133,14 +133,15 @@ function setupDynamicTables() {
             let tables = window.dataTables['{{ this_object["typetag"]  }}'];
             let numbers = tables['halo_number()'].data_formatted;
             let links = new Array(numbers.length);
-            let order = new Array(numbers.length);
+
+            // ensure order array is in place; will not destroy an existing order if it's already been worked out
+            getOrderArray('{{ this_object["typetag"] }}', numbers.length);
+
             for(i=0; i<numbers.length; i++) {
-                order[i] = i;
                 links[i] = `<a href="{{ this_object["object_url"] }}${numbers[i]}">Go &rarr;</a>`
             }
             tables['*go_link'] = Object();
             tables['*go_link'].data_formatted = links;
-            tables['*ordering'] = order;
             updatePlotControlElements('#plotctl-number-{{ this_object['typetag'] }}',
                 'halo_number()', true, false, false, true);
             updateTableDisplay('{{ this_object['typetag']  }}');
