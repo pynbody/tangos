@@ -43,6 +43,7 @@ function requestColumnData(editable_tag, miniLanguageQuery, callback) {
                 window.dataTables[editable_tag][miniLanguageQuery] = data;
                 if(callback!==undefined)
                    callback(window.dataTables[editable_tag][miniLanguageQuery]);
+                autoReorderIfNeeded(editable_tag, miniLanguageQuery);
             }
         });
     } else {
@@ -99,4 +100,125 @@ function getFilterArray(object_tag, get_id_from='th', callbackAfterFetch = undef
     });
 
     return filterArray;
+}
+
+function autoReorderIfNeeded(object_tag, miniLanguageQ) {
+    let last = "";
+    let asc = false;
+    if(sessionStorage['last_sort_'+object_tag]!==undefined) {
+        let res = JSON.parse(sessionStorage['last_sort_'+object_tag]);
+        last = res['miniLanguageQ'];
+        asc = res['ascending'];
+        if(last==miniLanguageQ) {
+            console.log("Restoring order to table "+object_tag+", sorting by "+miniLanguageQ)
+            reorderByColumn(object_tag, miniLanguageQ, asc);
+        }
+    }
+
+}
+
+function reorderByColumn(object_tag, miniLanguageQ, ascending = true) {
+
+    let order = window.dataTables[object_tag]['*ordering'];
+    let data = window.dataTables[object_tag][miniLanguageQ].data_formatted;
+    let sign = ascending ? -1 : 1;
+
+    if(order === undefined) {
+        console.log("Unable to find order information when attempting to reoder "+object_tag+" by "+miniLanguageQ);
+        return;
+    }
+
+    order.sort(function(a,b){
+        var tda = parseFloat(data[a]);
+        var tdb = parseFloat(data[b]);
+                // if a < b return 1
+        return tda < tdb ? sign
+               // else if a > b return -1
+               : tda > tdb ? -sign
+               // else they are equal - return 0
+               : 0;
+    });
+
+    sessionStorage['last_sort_'+object_tag] = JSON.stringify({'miniLanguageQ': miniLanguageQ, 'ascending': ascending})
+    updateTableDisplay(object_tag);
+}
+
+
+function updateTableDisplay(object_tag) {
+    let dataColumns = [];
+    $("tr#header-row-"+object_tag+" th").each(function() {
+       var miniLanguageQ = $(this).data('miniLanguageQuery');
+       if(window.dataTables[object_tag][miniLanguageQ]!==undefined) {
+           dataColumns.push(window.dataTables[object_tag][miniLanguageQ].data_formatted);
+       } else {
+           dataColumns.push(undefined);
+       }
+    });
+
+    let nData = 0;
+    $.each(dataColumns, function(i,c) {
+        if(c !== undefined && c.length>nData) {
+            nData=c.length;
+        }
+    });
+
+    let filterArray = getFilterArray(object_tag);
+    let order = window.dataTables[object_tag]['*ordering'];
+    if(order === undefined)
+        return; // not ready yet!
+
+
+    $("#table-"+object_tag+" tr.tangos-data").remove();
+
+
+
+    let rowsPerPage = parseInt($("#per-page-"+object_tag+" option:selected").text());
+    let page = parseInt($("#page-"+object_tag+" option:selected").text());
+    if (isNaN(page)) page=1;
+    let startRow = (page-1)*rowsPerPage;
+    let endRow = startRow+rowsPerPage;
+
+    let nRowsTotal=0;
+    let displayRows = [];
+
+    for(var i_unsorted=0; i_unsorted<nData; i_unsorted++) {
+        i = order[i_unsorted];
+
+        let shouldDisplay = true;
+
+        if(filterArray!==undefined)
+            shouldDisplay = filterArray[i];
+
+        if(shouldDisplay) {
+            if (nRowsTotal<endRow && nRowsTotal>=startRow) {
+                display = "<tr class='tangos-data'>"
+                $.each(dataColumns, function(j,c) {
+                    if(c!==undefined)
+                        display+="<td>"+c[i]+"</td>";
+                    else
+                        display+="<td></td>";
+                });
+                display +="</tr>";
+                displayRows.push(display);
+            }
+
+            nRowsTotal++;
+        }
+    }
+
+
+    var numPages = Math.ceil(nRowsTotal/rowsPerPage);
+    $("#num-pages-"+object_tag).text(numPages);
+    $("#num-objects-"+object_tag).text(nRowsTotal);
+
+    var pageSelector = $("#page-"+object_tag)
+    pageSelector.find("option").remove();
+    for(var i=1; i<numPages+1; i++) {
+        selected = (i==page)?" selected":"";
+        pageSelector.append("<option name='"+i+"'"+selected+">"+i+"</option>")
+    }
+
+    $("#table-"+object_tag).append(displayRows);
+
+
 }
