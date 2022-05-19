@@ -59,8 +59,6 @@ function buildTree(containerName, treeData, customOptions)
         return d.contents && d.contents.length > 0 ? d.contents : null;
     });
 
-    console.log(minX,maxX);
-
     // size of the diagram. 50 px per timestep here.
     var size = { width: treeData['maxdepth']*50+50, height: maxX-minX+100};
 
@@ -111,7 +109,6 @@ function buildTree(containerName, treeData, customOptions)
                 return Math.min(d.source.size, d.target.size)*1.3;
             })
         .style("stroke-dasharray", function(d) {
-            console.log(d);
             if(d.source.nodeclass.includes("phantom") ||
                d.target.nodeclass.includes("phantom"))
                 return "5, 5";
@@ -146,8 +143,6 @@ function buildTree(containerName, treeData, customOptions)
             var top = bbox.top - bbox_top.top + 50;
             var left = bbox.left - bbox_top.left + 20;
             var height = 70;
-
-            // console.log(bbox.left,bbox.top)
 
 
             var box = floatRoot.append('rect');
