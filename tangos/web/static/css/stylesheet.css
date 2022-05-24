@@ -54,7 +54,7 @@ div.progress-spinner {
     display: inline-block;
     width: 1em;
     height: 1em;
-    background-image: url('/static/tangos-50x50.png');
+    background-image: url('/static/icons/tangos-50x50.png');
     background-size: cover;
     background-repeat: no-repeat;
     animation: rotation 2s infinite;
@@ -240,8 +240,15 @@ pre {
     font-size: small;
 }
 
-.load_table_failed {
-    color: gray;
+.load_table_failed::before {
+    content: " ";
+    display: inline-block;
+    width: 1.28em;
+    height: 1em;
+    margin-right: 0.2em;
+    background-image: url('/static/icons/error.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
 }
 
 .mono {
@@ -334,4 +341,67 @@ ul.ui-autocomplete {
     overflow-x: hidden;
     font-family: 'Lucida Console', 'Lucida Sans Typewriter', monaco, 'Bitstream Vera Sans Mono', monospace;
     font-size: small;
+}
+
+
+
+input[type=checkbox].filter-checkbox {
+    display: none;
+}
+
+label.filter-checkbox {
+    cursor: pointer;
+}
+
+label.filter-checkbox::before {
+    content: " ";
+    display: inline-block;
+    width: 1.27em;
+    height: 1em;
+    background-image: url('/static/icons/filter.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    cursor: pointer;
+}
+
+input[type=checkbox]:checked + label.filter-checkbox::before {
+    background-image: url('/static/icons/filter_active.svg');
+}
+
+a.sort.asc::before {
+    content: " ";
+    display: inline-block;
+    width: 1.27em;
+    height: 1em;
+    background-image: url('/static/icons/sort_up.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+a.sort.asc.active::before {
+    background-image: url('/static/icons/sort_up_active.svg');
+}
+
+a.sort.desc::before {
+    content: " ";
+    display: inline-block;
+    width: 1.27em;
+    height: 1em;
+    background-image: url('/static/icons/sort_down.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+a.sort.desc.active::before {
+    background-image: url('/static/icons/sort_down_active.svg');
+}
+
+a.delete::before {
+    content: " ";
+    display: inline-block;
+    width: 1.011em;
+    height: 1em;
+    background-image: url('/static/icons/delete.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
 }

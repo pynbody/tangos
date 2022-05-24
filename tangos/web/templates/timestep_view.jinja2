@@ -80,11 +80,12 @@ function updateColumnData(miniLanguageQuery, columnId, editable_tag) {
 
     if(window.dataTables[editable_tag][miniLanguageQuery]!==undefined) {
         data = window.dataTables[editable_tag][miniLanguageQuery]
-        if (data===undefined || data.error) {
-            $('#header-' + columnId).html("<span class='load_table_failed'>" + miniLanguageQuery + " (failed)</span>")
+        if (data===undefined || data.error!==undefined) {
+            $('#header-' + columnId).html("<span class='load_table_failed'>" + miniLanguageQuery + "</span>")
         } else {
             $('#header-' + columnId).html(miniLanguageQuery);
-            updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, data.can_use_in_plot, data.can_use_as_filter, false, true);
+            updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery,
+                data.is_number, data.is_boolean, false, true, true);
         }
     } else {
         $('#header-'+columnId).html("<div class='progress-spinner'></div>"+miniLanguageQuery);
@@ -143,7 +144,7 @@ function setupDynamicTables() {
             tables['*go_link'] = Object();
             tables['*go_link'].data_formatted = links;
             updatePlotControlElements('#plotctl-number-{{ this_object['typetag'] }}',
-                'halo_number()', true, false, false, true);
+                'halo_number()', true, false, false, false, true);
             updateTableDisplay('{{ this_object['typetag']  }}');
         })
     {% endfor %}

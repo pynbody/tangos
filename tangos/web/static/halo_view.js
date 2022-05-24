@@ -24,7 +24,7 @@ function autoUpdateNavToAnother() {
   if($("#nav-to-another .progress-spinner").length===0)
     $("#nav-to-another").html("<div class='progress-spinner'></div>");
   let object_tag = $("#object_typetag").text()
-  let filter = getFilterArray(object_tag,'td', autoUpdateNavToAnother);
+  let filter = getFilterArray(object_tag, autoUpdateNavToAnother);
   if(filter === undefined) {
     // callback for when required ata is ready has been put in place
     return;
@@ -69,18 +69,17 @@ function updateRowData (miniLanguageQuery, rowId) {
     url: $('#calculate_url').text() + uriEncodeQuery(miniLanguageQuery) + '.json',
     success: function (data) {
       var selected_row = $('#' + rowId)
-      if (data.error) {
-        $('#nametg-' + rowId).html("<span class='load_table_failed'>" + miniLanguageQuery + '</span>')
-        $('#contents-' + rowId).html("<span class='load_table_failed'>" + data.error_class + '</span>')
-        // alert(data.error_class+": "+data.error);
+      $('#nametg-' + rowId).html(miniLanguageQuery)
+      if (data.error!==undefined) {
+        $('#nametg-' + rowId).addClass('load_table_failed')
+        $('#contents-' + rowId).html(data.error_class)
       } else {
-        $('#nametg-' + rowId).html(miniLanguageQuery)
         $('#contents-' + rowId).html(data.data_formatted)
 
         // See above for why the plot controls are put in place then updated
         updatePlotControlElements('#plotctl-' + rowId, miniLanguageQuery,
-          data.can_use_in_plot, data.can_use_as_filter, data.is_array)
-        if(data.can_use_as_filter)
+          data.is_number, data.is_boolean, data.is_array)
+        if(data.is_boolean)
           autoUpdateNavToAnother();
         plotFetchingDisabled = false
         fetchPlot(true)
@@ -336,4 +335,4 @@ $(function () {
   // put in interactivity for first time
   setupTimestepTables($("#timestep_url").text())
   restoreInteractiveElements(false);
-})
+});

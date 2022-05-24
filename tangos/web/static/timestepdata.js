@@ -7,60 +7,60 @@ function setupTimestepTables(timestep_url) {
     }
 }
 
-function getGatherUrl(typetag, miniLanguageQuery) {
-    return timestep_url+"/gather/"+typetag+"/"+uriEncodeQuery(miniLanguageQuery)+".json";
+function getGatherUrl(object_tag, miniLanguageQuery) {
+    return timestep_url+"/gather/"+object_tag+"/"+uriEncodeQuery(miniLanguageQuery)+".json";
 }
 
-function requestColumnData(editable_tag, miniLanguageQuery, callback) {
+function requestColumnData(object_tag, miniLanguageQuery, callback) {
     if(window.dataTables === undefined ) {
         console.log("Attempt to request column data but the data tables have not yet been initialised")
         return undefined; // can't do anything useful
     }
 
-    if(window.dataTables[editable_tag] === undefined) {
-        window.dataTables[editable_tag] = {}
+    if(window.dataTables[object_tag] === undefined) {
+        window.dataTables[object_tag] = {}
     }
 
 
-    if(window.dataTables[editable_tag][miniLanguageQuery] === undefined) {
-        var updateMarker = $("#update-marker-" + editable_tag);
+    if(window.dataTables[object_tag][miniLanguageQuery] === undefined) {
+        var updateMarker = $("#update-marker-" + object_tag);
         if(updateMarker!==undefined)
             updateMarker.html("<div class='progress-spinner'></div>");
         let reqs = updateMarker.data("pending-requests")
         if (reqs === undefined) reqs = 0;
         updateMarker.data("pending-requests", reqs + 1)
-        console.log("Requesting "+miniLanguageQuery+" for "+editable_tag+"...");
+        console.log("Requesting "+miniLanguageQuery+" for "+object_tag+"...");
         $.ajax({
             type: "GET",
-            url: getGatherUrl(editable_tag, miniLanguageQuery),
+            url: getGatherUrl(object_tag, miniLanguageQuery),
             success: function (data) {
                 if(updateMarker!==undefined) {
                     let reqs = updateMarker.data("pending-requests")
                     if (reqs === 1)
-                        $("#update-marker-" + editable_tag).html('');
+                        $("#update-marker-" + object_tag).html('');
                     updateMarker.data("pending-requests", reqs - 1)
                 }
-                window.dataTables[editable_tag][miniLanguageQuery] = data;
+                window.dataTables[object_tag][miniLanguageQuery] = data;
                 if(callback!==undefined)
-                   callback(window.dataTables[editable_tag][miniLanguageQuery]);
-                autoReorderIfNeeded(editable_tag, miniLanguageQuery);
+                   callback(window.dataTables[object_tag][miniLanguageQuery]);
+                autoReorderIfNeeded(object_tag, miniLanguageQuery);
             }
         });
     } else {
         if(callback!==undefined)
-            callback(window.dataTables[editable_tag][miniLanguageQuery]);
+            callback(window.dataTables[object_tag][miniLanguageQuery]);
     }
 
 }
 
-function getFilterArray(object_tag, get_id_from='th', callbackAfterFetch = undefined) {
+function getFilterArray(object_tag, callbackAfterFetch = undefined) {
     let columnsToFilterOn = [];
     let dataToFilterOn = [];
 
     const re = /filter-(.*)/;
     $('#properties_form_'+object_tag+' input[type="checkbox"]').each(function() {
         let $this = $(this);
-        if($this.prop('checked') && $this.is(":visible")) {
+        if($this.prop('checked') && $this.parent().is(":visible")) {
             let name = $this.attr('name').match(re)[1];
             columnsToFilterOn.push(uriDecodeQuery(name));
         }
@@ -128,6 +128,16 @@ function getOrderArray(object_tag, length) {
     return window.dataTables[object_tag]['*ordering'];
 }
 
+function getDomIdSuffix(object_tag, miniLanguageQ) {
+    let result;
+    $("#table-"+object_tag+" th").each(function() {
+        if($(this).data('miniLanguageQuery')===miniLanguageQ) {
+            result = $(this).attr('id').substr(7);
+        }
+    });
+    return result;
+}
+
 function reorderByColumn(object_tag, miniLanguageQ, ascending = true) {
 
     let data = window.dataTables[object_tag][miniLanguageQ].data_formatted;
@@ -146,6 +156,8 @@ function reorderByColumn(object_tag, miniLanguageQ, ascending = true) {
     });
 
     sessionStorage['last_sort_'+object_tag] = JSON.stringify({'miniLanguageQ': miniLanguageQ, 'ascending': ascending})
+    $('a.sort').removeClass('active');
+    $('#plotctl-'+getDomIdSuffix(object_tag, miniLanguageQ)+' a.'+(ascending?'asc':'desc')).addClass('active');
     updateTableDisplay(object_tag);
 }
 

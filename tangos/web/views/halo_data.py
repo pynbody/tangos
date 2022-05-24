@@ -77,23 +77,23 @@ def format_halo(halo, request, relative_to=None):
                                  halonumber=halo.basename)
         return "<a href='%s'>%s</a>"%(link, _relative_description(relative_to, halo))
 
-def can_use_in_plot(data):
+def is_number(data):
     return np.issubdtype(type(data), np.number)
 
 def can_use_elements_in_plot(data_array):
     if len(data_array)==0:
         return False
     else:
-        return can_use_in_plot(data_array[0])
+        return is_number(data_array[0])
 
-def can_use_as_filter(data):
+def is_boolean(data):
     return np.issubdtype(type(data), np.bool_) and not np.issubdtype(type(data), np.number) and not hasattr(data,'__len__')
 
 def can_use_elements_as_filter(data_array):
     if len(data_array)==0:
         return False
     else:
-        return can_use_as_filter(data_array[0])
+        return is_boolean(data_array[0])
 
 def is_array(data):
     return isinstance(data, np.ndarray) and data.ndim>0
@@ -116,8 +116,8 @@ def calculate_all(request):
         return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
 
     return {'timestep': ts.escaped_extension, 'data_formatted': [format_data(d, request) for d in data],
-            'can_use_in_plot': can_use_elements_in_plot(data),
-            'can_use_as_filter': can_use_elements_as_filter(data),
+            'is_number': can_use_elements_in_plot(data),
+            'is_boolean': can_use_elements_as_filter(data),
             'is_array': elements_are_arrays(data)}
 
 @view_config(route_name='get_property', renderer='json', http_cache=webview_cache_time)
@@ -130,8 +130,8 @@ def get_property(request):
         return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
 
     return {'data_formatted': format_data(result, request, halo),
-            'can_use_in_plot': can_use_in_plot(result),
-            'can_use_as_filter': can_use_as_filter(result),
+            'is_number': is_number(result),
+            'is_boolean': is_boolean(result),
             'is_array': is_array(result)}
 
 

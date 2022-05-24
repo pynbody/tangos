@@ -14,31 +14,6 @@ Array.prototype.removeItem = function() {
     return this;
 };
 
-jQuery.fn.positionDiv = function (divToPop) {
-    var pos=$(this).offset();
-    var h=$(this).height();
-    var w=$(this).width();
-    $(divToPop).css({ left: pos.left , top: pos.top + h + 5 , position: 'absolute', align: 'right' });
-
-};
-
-function popupControls(attachTo) {
-    unpopupControls(attachTo);
-    var id = attachTo.attr('id');
-    var popupDiv = $("<div/>", {id: 'popup-controls-'+id, class: 'popup-controls'});
-    popupDiv.html("&#x1F5D1;");
-    popupDiv.appendTo('#content-container');
-    attachTo.positionDiv(popupDiv);
-    popupDiv.on('mousedown', function() {
-        attachTo.trigger('deleteEditable');
-    }).on( 'click', function() {});
-}
-
-function unpopupControls(attachedTo) {
-    var id = attachedTo.attr('id');
-    $('#popup-controls-'+id).remove();
-}
-
 $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
     /* Mark a DOM element as a place to
 
@@ -93,25 +68,21 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
         'focus': function() {
             $this.css('cursor','text');
             savedContent = $this.text();
-            if(savedContent!==addLabelText)
-                popupControls($this);
             if($this.text()===addLabelText) {
                 putCursorAt(this, 0);
                 $this.text("");
             }
+            console.log("savedContent=",savedContent);
         },
         'deleteEditable': function() {
-            unpopupControls($this);
             remove(column_id, editable_tag);
             allEditables.removeItem($this);
         },
         'revertEditable': function() {
-            unpopupControls($this);
             $this.css('cursor','pointer');
             $this.text(savedContent);
         },
         'saveEditable': function() {
-            unpopupControls($this);
             $this.css('cursor','pointer');
             var content = $this.text();
             if(savedContent===addLabelText) {
@@ -128,15 +99,6 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
 
     return this;
 }
-
-/*
-function insertNewEditable(editable_name) {
-    var previous_id = allEditables[allEditables.length-1].attr('id').substr(7);
-    var id = defaultAddFn(previous_id);
-    defaultUpdateFn(editable_name, previous_id);
-}
-*/
-
 
 function uriEncodeQuery(name) {
     name = name.replace(/\//g,"_slash_")
@@ -232,7 +194,7 @@ function getPlotControlElements(query, isScalar) {
 
 function getFilterElements(query) {
     var uriQuery = uriEncodeQuery(query);
-    return '<label>Filter <input name="filter-'+uriQuery+'" type="checkbox"/></label>'
+    return '<input id="filter-'+uriQuery+'" name="filter-'+uriQuery+'" type="checkbox" class="filter-checkbox"/><label class="filter-checkbox" for="filter-'+uriQuery+'" title="Filter"></label>'
 }
 
 function sortTableColumn(element, ascending) {
@@ -241,13 +203,19 @@ function sortTableColumn(element, ascending) {
     reorderByColumn(object_tag, mini_language_query, ascending);
 }
 function getSorterElements(element) {
-    return '<label>' +
-        '<a href="#" onclick="sortTableColumn(\'' + element + '\', true);">&#128316;</a>' +
-        '<a href="#" onclick="sortTableColumn(\'' + element + '\', false);">&#128317;</a>'
-        +'</label>';
+    return '<a href="#" onclick="sortTableColumn(\'' + element + '\', true);" class="sort asc" title="Sort ascending"></a>' +
+        '<a href="#" onclick="sortTableColumn(\'' + element + '\', false);" class="sort desc" title="Sort descending"></a>'
 }
 
-function updatePlotControlElements(element, query, isScalar, isFilter, isArray, filterOnly) {
+function getDeleteElements(element) {
+    let headerElement = $("#header-"+element.substr(9))
+    if (headerElement.hasClass('editable'))
+        return '&nbsp;<a href="#" onclick="$(\''+"#header-"+element.substr(9)+'\').trigger(\'deleteEditable\')" class="delete" title="Remove"></a>';
+    else
+        return '';
+}
+
+function updatePlotControlElements(element, query, isScalar, isFilter, isArray, canDelete, isColumnHeading) {
     var controls = {};
     $(element).find("input").each(function() {
        controls[this.name] = this.checked;
@@ -255,7 +223,7 @@ function updatePlotControlElements(element, query, isScalar, isFilter, isArray, 
     scalarControls = getPlotControlElements(query,true);
     arrayControls = getPlotControlElements(query,false);
     filterControls = getFilterElements(query)
-    if(filterOnly) {
+    if(isColumnHeading) {
         arrayControls = "";
         scalarControls = getSorterElements(element);
     }
@@ -274,6 +242,7 @@ function updatePlotControlElements(element, query, isScalar, isFilter, isArray, 
         hiddenHtml = scalarControls+filterControls+arrayControls;
         visibleHtml = "";
     }
+    visibleHtml += getDeleteElements(element);
 
     buttonsHtml = "<span class='hidden'>"+hiddenHtml+"</span>"+visibleHtml;
 
