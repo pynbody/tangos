@@ -405,3 +405,37 @@ a.delete::before {
     background-size: cover;
     background-repeat: no-repeat;
 }
+
+label.x-plot-radio::before {
+    content: " ";
+    display: inline-block;
+    width: 1.4494em;
+    height: 1em;
+    background-image: url('/static/icons/plot_x.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+label.y-plot-radio::before {
+    content: " ";
+    display: inline-block;
+    width: 1.359em;
+    height: 1em;
+    background-image: url('/static/icons/plot_y.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+label.plot-radio::before {
+    content: " ";
+    display: inline-block;
+    width: 1.1348em;
+    height: 1em;
+    background-image: url('/static/icons/plot.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+input {
+    accent-color: #BB4400;
+}

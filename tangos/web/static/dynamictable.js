@@ -2,6 +2,12 @@ var allEditables = [];
 
 var addLabelText = "Add +";
 
+
+function extractColumnName(s) {
+    const extractColumnNameRegexp = /(label|plotctl)-(.*)/;
+    return s.match(extractColumnNameRegexp)[2];
+}
+
 Array.prototype.removeItem = function() {
     // from https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
     var what, a = arguments, L = a.length, ax;
@@ -41,7 +47,7 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
     enableAutocomplete($this);
 
     var savedContent;
-    var column_id = $this.attr('id').substr(7);
+    var column_id = extractColumnName($this.attr('id'));
 
     $this.css('cursor','pointer');
 
@@ -167,7 +173,7 @@ function restoreAllEditables() {
         var type_tag = editable.data('editable_type_tag');
         if(type_tag in editables) {
             var editables_of_type = editables[type_tag];
-            var old_column_id = editable.attr('id').substr(7);
+            var old_column_id = extractColumnName(editable.attr('id'));
             forEach(editables_of_type, function(name_to_add) {
                 var add_fn = editable.data('editable_add');
                 var update_fn = editable.data('editable_update');
@@ -186,10 +192,10 @@ function restoreAllEditables() {
 function getPlotControlElements(query, isScalar) {
     var uriQuery = uriEncodeQuery(query);
     if(isScalar)
-        return '<input name="x" type="radio" onclick="resetRadio(\'justthis\');"  value="'+uriQuery+'"/>' +
-               '<input name="y" type="radio" onclick="resetRadio(\'justthis\');" value="'+uriQuery+'"/>'
+        return '<label class="x-plot-radio"><input name="x" type="radio" onclick="resetRadio(\'justthis\');"  value="'+uriQuery+'"/></label>&nbsp;' +
+               '<label class="y-plot-radio"><input name="y" type="radio" onclick="resetRadio(\'justthis\');" value="'+uriQuery+'"/></label>'
     else
-        return '<input name="justthis" type="radio" value="'+uriQuery+'" onclick="resetRadio(\'x\'); resetRadio(\'y\');"/>'
+        return '<label class="plot-radio"><input name="justthis" type="radio" value="'+uriQuery+'" onclick="resetRadio(\'x\'); resetRadio(\'y\');"/></label>'
 }
 
 function getFilterElements(query) {
@@ -199,7 +205,7 @@ function getFilterElements(query) {
 
 function sortTableColumn(element, ascending) {
     let object_tag = $(element).parents('table').attr('id').substr(6);
-    let mini_language_query = $("#header-"+element.substr(9)).data('miniLanguageQuery');
+    let mini_language_query = $("#label-"+extractColumnName(element)).data('miniLanguageQuery');
     reorderByColumn(object_tag, mini_language_query, ascending);
 }
 function getSorterElements(element) {
@@ -208,9 +214,9 @@ function getSorterElements(element) {
 }
 
 function getDeleteElements(element) {
-    let headerElement = $("#header-"+element.substr(9))
+    let headerElement = $("#label-"+extractColumnName(element));
     if (headerElement.hasClass('editable'))
-        return '&nbsp;<a href="#" onclick="$(\''+"#header-"+element.substr(9)+'\').trigger(\'deleteEditable\')" class="delete" title="Remove"></a>';
+        return '&nbsp;<a href="#" onclick="$(\''+"#label-"+extractColumnName(element)+'\').trigger(\'deleteEditable\')" class="delete" title="Remove"></a>';
     else
         return '';
 }

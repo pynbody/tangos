@@ -130,9 +130,10 @@ function getOrderArray(object_tag, length) {
 
 function getDomIdSuffix(object_tag, miniLanguageQ) {
     let result;
+    const re = /label-(.*)/;
     $("#table-"+object_tag+" th").each(function() {
         if($(this).data('miniLanguageQuery')===miniLanguageQ) {
-            result = $(this).attr('id').substr(7);
+            result = $(this).attr('id').match(re)[1];
         }
     });
     return result;
@@ -164,7 +165,7 @@ function reorderByColumn(object_tag, miniLanguageQ, ascending = true) {
 
 function updateTableDisplay(object_tag) {
     let dataColumns = [];
-    $("tr#header-row-"+object_tag+" th").each(function() {
+    $("tr#label-row-"+object_tag+" th").each(function() {
        var miniLanguageQ = $(this).data('miniLanguageQuery');
        if(window.dataTables[object_tag][miniLanguageQ]!==undefined) {
            dataColumns.push(window.dataTables[object_tag][miniLanguageQ].data_formatted);

@@ -56,7 +56,7 @@ function autoUpdateNavToAnother() {
 
 function updateRowData (miniLanguageQuery, rowId) {
   plotFetchingDisabled = true
-  $('#nametg-' + rowId).html("<div class='progress-spinner'></div>" + miniLanguageQuery)
+  $('#label-' + rowId).html("<div class='progress-spinner'></div>" + miniLanguageQuery)
 
   // Plot controls need to be in DOM immediately, then rejigged later if they are not appropriate.
   // This is so that the correct radio buttons get ticked after a page update (otherwise the
@@ -69,12 +69,13 @@ function updateRowData (miniLanguageQuery, rowId) {
     url: $('#calculate_url').text() + uriEncodeQuery(miniLanguageQuery) + '.json',
     success: function (data) {
       var selected_row = $('#' + rowId)
-      $('#nametg-' + rowId).html(miniLanguageQuery)
+      $('#label-' + rowId).html(miniLanguageQuery)
       if (data.error!==undefined) {
-        $('#nametg-' + rowId).addClass('load_table_failed')
-        $('#contents-' + rowId).html(data.error_class)
+        $('#label-' + rowId).addClass('load_table_failed');
+        $('#contents-' + rowId).html(data.error_class);
       } else {
-        $('#contents-' + rowId).html(data.data_formatted)
+        $('#label-' + rowId).removeClass('load_table_failed');
+        $('#contents-' + rowId).html(data.data_formatted);
 
         // See above for why the plot controls are put in place then updated
         updatePlotControlElements('#plotctl-' + rowId, miniLanguageQuery,
@@ -92,8 +93,8 @@ function updateRowData (miniLanguageQuery, rowId) {
 function addBlankRow (after) {
   var new_name = 'custom-row-' + Math.random().toString(36).substring(7)
 
-  $('#' + after).after("<tr id='" + new_name + "'><td class='plotcontrols' id='plotctl-" + new_name + "'></td><td class='editable' id='nametg-" + new_name + "'></td><td id='contents-" + new_name + "'></td>")
-  $('#nametg-' + new_name).markAsRowInsertPoint()
+  $('#' + after).after("<tr id='" + new_name + "'><td class='plotcontrols' id='plotctl-" + new_name + "'></td><td class='editable' id='label-" + new_name + "'></td><td id='contents-" + new_name + "'></td>")
+  $('#label-' + new_name).markAsRowInsertPoint()
   return new_name
 }
 
@@ -316,7 +317,7 @@ $(function () {
 
   function restoreInteractiveElements(isUpdate=true) {
     allEditables = [];
-    $('#nametg-custom-row-1').markAsRowInsertPoint();
+    $('#label-custom-row-1').markAsRowInsertPoint();
     console.log($("#timestep_url").text());
     setupTimestepTables($("#timestep_url").text());
     restoreAllEditables();

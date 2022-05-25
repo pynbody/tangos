@@ -15,10 +15,10 @@
             </select>
             per page.</p>
         <table class="data-table" id="table-{{ object_type }}">
-            <tr id="header-row-{{ object_type }}">
-                <th id="header-number-{{ object_type }}">Number</th>
-                <th class="editable" id="header-colid-1-{{ object_type }}"></th>
-                <th id="header-go-{{ object_type }}">Go &rarr;</th>
+            <tr id="label-row-{{ object_type }}">
+                <th id="label-number-{{ object_type }}">Number</th>
+                <th class="editable" id="label-colid-1-{{ object_type }}"></th>
+                <th id="label-go-{{ object_type }}">Go &rarr;</th>
             </tr>
             <tr>
                 <th id="plotctl-number-{{ object_type }}"></th>
@@ -76,19 +76,19 @@ $.fn.markAsColumnInsertPoint = function(editable_tag) {
 
 function updateColumnData(miniLanguageQuery, columnId, editable_tag) {
 
-    $('#header-'+columnId).data('miniLanguageQuery', miniLanguageQuery);
+    $('#label-'+columnId).data('miniLanguageQuery', miniLanguageQuery);
 
     if(window.dataTables[editable_tag][miniLanguageQuery]!==undefined) {
         data = window.dataTables[editable_tag][miniLanguageQuery]
         if (data===undefined || data.error!==undefined) {
-            $('#header-' + columnId).html("<span class='load_table_failed'>" + miniLanguageQuery + "</span>")
+            $('#label-' + columnId).html("<span class='load_table_failed'>" + miniLanguageQuery + "</span>")
         } else {
-            $('#header-' + columnId).html(miniLanguageQuery);
+            $('#label-' + columnId).html(miniLanguageQuery);
             updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery,
                 data.is_number, data.is_boolean, false, true, true);
         }
     } else {
-        $('#header-'+columnId).html("<div class='progress-spinner'></div>"+miniLanguageQuery);
+        $('#label-'+columnId).html("<div class='progress-spinner'></div>"+miniLanguageQuery);
         updatePlotControlElements('#plotctl-' + columnId, miniLanguageQuery, false, false, false);
         requestColumnData(editable_tag, miniLanguageQuery, function() {
             updateColumnData(miniLanguageQuery, columnId, editable_tag);
@@ -100,17 +100,17 @@ function updateColumnData(miniLanguageQuery, columnId, editable_tag) {
 function addBlankColumn(after, object_tag) {
     var new_name = "column-"+Math.random().toString(36).substring(7);
     $('.data-table tr').each(function(index) {
-        $(this).find("#header-"+after).after("<th id='header-"+new_name+"' class='editable'></th>");
+        $(this).find("#label-"+after).after("<th id='label-"+new_name+"' class='editable'></th>");
         $(this).find("#plotctl-"+after).after("<th id='plotctl-"+new_name+"'></th>");
     })
-    $('#header-'+new_name).markAsColumnInsertPoint(object_tag);
+    $('#label-'+new_name).markAsColumnInsertPoint(object_tag);
     updateTableDisplay(object_tag);
     return new_name;
 }
 
 function removeColumn(name, object_tag) {
      $('.data-table tr').each(function(index) {
-        $(this).find("#header-"+name).remove();
+        $(this).find("#label-"+name).remove();
         $(this).find("#plotctl-"+name).remove();
     })
     updateTableDisplay(object_tag);
@@ -126,9 +126,9 @@ function setupDynamicTables() {
             window.dataTables['{{ this_object['typetag'] }}'] = {};
         }
 
-        $('#header-number-{{ this_object['typetag'] }}').data('miniLanguageQuery', "halo_number()");
-        $('#header-go-{{ this_object['typetag'] }}').data('miniLanguageQuery', "*go_link");
-        $('#header-colid-1-{{ this_object["typetag"] }}').markAsColumnInsertPoint('{{ this_object["typetag"] }}');
+        $('#label-number-{{ this_object['typetag'] }}').data('miniLanguageQuery', "halo_number()");
+        $('#label-go-{{ this_object['typetag'] }}').data('miniLanguageQuery', "*go_link");
+        $('#label-colid-1-{{ this_object["typetag"] }}').markAsColumnInsertPoint('{{ this_object["typetag"] }}');
         updateTableDisplay('{{ this_object['typetag']  }}');
         requestColumnData('{{ this_object["typetag"] }}', "halo_number()", function() {
             let tables = window.dataTables['{{ this_object["typetag"]  }}'];
