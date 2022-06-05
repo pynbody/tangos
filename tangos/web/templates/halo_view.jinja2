@@ -96,23 +96,14 @@
     <input type="hidden" name="page" />
     <input type="hidden" name="per_page" />
     <table>
-        <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
+        <tr class="collapsibletable"><th></th><th>Property</th><th>Value</th></tr>
         <tr id="custom-row-1">
             <td id="plotctl-custom-row-1" class="plotcontrols"></td><td id="label-custom-row-1" class="editable"></td><td id="contents-custom-row-1"></td>
         </tr>
         {%  for prop in properties %}
-            <tr>
-                {%  if prop.is_array %}
-                    <td class="plotcontrols">
-                        <input name="justthis" type="radio" value="{{ prop.name }}" onclick="resetRadio('x'); resetRadio('y');"/>
-                    </td>
-                {% else %}
-                    <td class="plotcontrols">
-                        <input name="x" type="radio" value="{{ prop.name }}" onclick="resetRadio('justthis');"/>
-                        <input name="y" type="radio" value="{{ prop.name }}" onclick="resetRadio('justthis');"/>
-                    </td>
-                {% endif %}
-                <td>{{ prop.name }}</td><td>{{ prop.value }}</td>
+            <tr id="fixed-row-{{ loop.index }}" data-tangos='{{ prop | tojson }}' class="tangos-fixed-row">
+                <td id="plotctl-fixed-row-{{ loop.index }}" class="plotcontrols">...</td>
+                <td id="label-fixed-row-{{ loop.index }}">...</td><td id="contents-fixed-row-{{ loop.index }}">...</td>
             </tr>
         {%  endfor %}
     </table>

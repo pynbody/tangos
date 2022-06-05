@@ -123,13 +123,24 @@ def calculate_all(request):
 @view_config(route_name='get_property', renderer='json', http_cache=webview_cache_time)
 def get_property(request):
     halo = halo_from_request(request)
+    property_name = decode_property_name(request.matchdict['nameid'])
 
-    try:
-        result = halo.calculate(decode_property_name(request.matchdict['nameid']))
-    except Exception as e:
-        return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
+    return get_property_data(halo, property_name, request)
+
+
+def get_property_data(halo, property_name_or_result, request=None):
+    if isinstance(property_name_or_result, str):
+        try:
+            result = halo.calculate(property_name_or_result)
+            name = property_name_or_result
+        except Exception as e:
+            return {'error': getattr(e, 'message', ""), 'error_class': type(e).__name__}
+    else:
+        result = property_name_or_result.data
+        name = property_name_or_result.name.text
 
     return {'data_formatted': format_data(result, request, halo),
+            'mini_language_query': name,
             'is_number': is_number(result),
             'is_boolean': is_boolean(result),
             'is_array': is_array(result)}

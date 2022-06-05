@@ -192,7 +192,7 @@ function restoreAllEditables() {
 function getPlotControlElements(query, isScalar) {
     var uriQuery = uriEncodeQuery(query);
     if(isScalar)
-        return '<label class="x-plot-radio"><input name="x" type="radio" onclick="resetRadio(\'justthis\');"  value="'+uriQuery+'"/></label>&nbsp;' +
+        return '<label class="x-plot-radio"><input name="x" type="radio" onclick="resetRadio(\'justthis\');"  value="'+uriQuery+'"/></label>' +
                '<label class="y-plot-radio"><input name="y" type="radio" onclick="resetRadio(\'justthis\');" value="'+uriQuery+'"/></label>'
     else
         return '<label class="plot-radio"><input name="justthis" type="radio" value="'+uriQuery+'" onclick="resetRadio(\'x\'); resetRadio(\'y\');"/></label>'
@@ -209,14 +209,14 @@ function sortTableColumn(element, ascending) {
     reorderByColumn(object_tag, mini_language_query, ascending);
 }
 function getSorterElements(element) {
-    return '<a href="#" onclick="sortTableColumn(\'' + element + '\', true);" class="sort asc" title="Sort ascending"></a>' +
-        '<a href="#" onclick="sortTableColumn(\'' + element + '\', false);" class="sort desc" title="Sort descending"></a>'
+    return '<a href="#" onclick="sortTableColumn(\'' + element + '\', true); return false;" class="sort asc" title="Sort ascending"></a>' +
+        '<a href="#" onclick="sortTableColumn(\'' + element + '\', false); return false;" class="sort desc" title="Sort descending"></a>'
 }
 
 function getDeleteElements(element) {
     let headerElement = $("#label-"+extractColumnName(element));
     if (headerElement.hasClass('editable'))
-        return '&nbsp;<a href="#" onclick="$(\''+"#label-"+extractColumnName(element)+'\').trigger(\'deleteEditable\')" class="delete" title="Remove"></a>';
+        return '&nbsp;<a href="#" onclick="$(\''+"#label-"+extractColumnName(element)+'\').trigger(\'deleteEditable\'); return false;" class="delete" title="Remove"></a>';
     else
         return '';
 }

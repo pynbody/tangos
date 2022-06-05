@@ -258,7 +258,7 @@ pre {
 }
 
 td.plotcontrols {
-    text-align: center;
+
 }
 
 
@@ -409,13 +409,14 @@ a.delete::before {
 label.x-plot-radio::before {
     content: " ";
     display: inline-block;
-    width: 1.4494em;
+    width: 1.1348em; /* 1.4494em; */
     height: 1em;
-    background-image: url('/static/icons/plot_x.svg');
+    background-image: url('/static/icons/plot.svg');
     background-size: cover;
     background-repeat: no-repeat;
 }
 
+/*
 label.y-plot-radio::before {
     content: " ";
     display: inline-block;
@@ -425,6 +426,7 @@ label.y-plot-radio::before {
     background-size: cover;
     background-repeat: no-repeat;
 }
+ */
 
 label.plot-radio::before {
     content: " ";
