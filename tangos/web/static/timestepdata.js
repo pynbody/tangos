@@ -23,7 +23,7 @@ function requestColumnData(object_tag, miniLanguageQuery, callback) {
 
 
     if(window.dataTables[object_tag][miniLanguageQuery] === undefined) {
-        var updateMarker = $("#update-marker-" + object_tag);
+        let updateMarker = $("#update-marker-" + object_tag);
         if(updateMarker!==undefined)
             updateMarker.html("<div class='progress-spinner'></div>");
         let reqs = updateMarker.data("pending-requests")
@@ -94,7 +94,7 @@ function getFilterArray(object_tag, callbackAfterFetch = undefined) {
     let filterArray = new Array(nData).fill(true);
 
     $.each(dataToFilterOn, function (j, c) {
-        for(var i=0; i<nData; i++) {
+        for(let i=0; i<nData; i++) {
             if (c[i] !== 'True') filterArray[i] = false;
         }
     });
@@ -139,6 +139,7 @@ function getDomIdSuffix(object_tag, miniLanguageQ) {
     return result;
 }
 
+
 function reorderByColumn(object_tag, miniLanguageQ, ascending = true) {
 
     let data = window.dataTables[object_tag][miniLanguageQ].data_formatted;
@@ -146,13 +147,10 @@ function reorderByColumn(object_tag, miniLanguageQ, ascending = true) {
     let order = getOrderArray(object_tag, data.length);
 
     order.sort(function(a,b){
-        var tda = parseFloat(data[a]);
-        var tdb = parseFloat(data[b]);
-                // if a < b return 1
+        const tda = parseFloat(data[a]);
+        const tdb = parseFloat(data[b]);
         return tda < tdb ? sign
-               // else if a > b return -1
                : tda > tdb ? -sign
-               // else they are equal - return 0
                : 0;
     });
 
@@ -166,7 +164,7 @@ function reorderByColumn(object_tag, miniLanguageQ, ascending = true) {
 function updateTableDisplay(object_tag) {
     let dataColumns = [];
     $("tr#label-row-"+object_tag+" th").each(function() {
-       var miniLanguageQ = $(this).data('miniLanguageQuery');
+       let miniLanguageQ = $(this).data('miniLanguageQuery');
        if(window.dataTables[object_tag][miniLanguageQ]!==undefined) {
            dataColumns.push(window.dataTables[object_tag][miniLanguageQ].data_formatted);
        } else {
@@ -200,7 +198,7 @@ function updateTableDisplay(object_tag) {
     let nRowsTotal=0;
     let displayRows = [];
 
-    for(var i_unsorted=0; i_unsorted<nData; i_unsorted++) {
+    for(let i_unsorted=0; i_unsorted<nData; i_unsorted++) {
         i = order[i_unsorted];
 
         let shouldDisplay = true;
@@ -210,7 +208,7 @@ function updateTableDisplay(object_tag) {
 
         if(shouldDisplay) {
             if (nRowsTotal<endRow && nRowsTotal>=startRow) {
-                display = "<tr class='tangos-data'>"
+                let display = "<tr class='tangos-data'>"
                 $.each(dataColumns, function(j,c) {
                     if(c!==undefined)
                         display+="<td>"+c[i]+"</td>";
@@ -226,14 +224,14 @@ function updateTableDisplay(object_tag) {
     }
 
 
-    var numPages = Math.ceil(nRowsTotal/rowsPerPage);
+    let numPages = Math.ceil(nRowsTotal/rowsPerPage);
     $("#num-pages-"+object_tag).text(numPages);
     $("#num-objects-"+object_tag).text(nRowsTotal);
 
-    var pageSelector = $("#page-"+object_tag)
+    let pageSelector = $("#page-"+object_tag)
     pageSelector.find("option").remove();
-    for(var i=1; i<numPages+1; i++) {
-        selected = (i==page)?" selected":"";
+    for(let i=1; i<numPages+1; i++) {
+        let selected = (i==page)?" selected":"";
         pageSelector.append("<option name='"+i+"'"+selected+">"+i+"</option>")
     }
 

@@ -320,14 +320,13 @@ function expandFixedRows() {
 
 $(function () {
 
-  expandFixedRows();
-
   prePageUpdate(function () {
     persistAllEditables();
     persistFormStates();
   });
 
   function restoreInteractiveElements(isUpdate=true) {
+    expandFixedRows();
     allEditables = [];
     $('#label-custom-row-1').markAsRowInsertPoint();
     console.log($("#timestep_url").text());
@@ -336,7 +335,6 @@ $(function () {
     restoreFormStates();
     fetchPlot(isUpdate);
     updatePositionsAfterScroll();
-    var haloNum = parseInt($('#halo_number').text());
     ajaxEnableLinks();
     rangeDisplay($("#use_range"));
     autoUpdateNavToAnother();
