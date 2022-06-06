@@ -80,6 +80,27 @@ class SimulationObjectBase(Base):
                 return c.tag
         raise ValueError("Unknown object typecode %d",typecode)
 
+    @staticmethod
+    def typecode_and_number_from_human_identifier(identifier):
+        """Return object typecode and halo number given a human identification string or number
+
+        E.g. identifier = 5 -> typecode=0,
+        identifier = '1.5' -> typecode=1, number = 5
+        identifier = 'bh_5' -> typecode=1, number = 5
+        """
+        if isinstance(identifier, int):
+            object_typecode, object_number = 0, identifier
+        elif "." in identifier:
+            object_typecode, object_number = list(map(int, identifier.split(".")))
+        elif "_" in identifier:
+            object_typecode, object_number = identifier.split("_")
+            object_typecode = SimulationObjectBase.class_from_tag(object_typecode).__mapper_args__['polymorphic_identity']
+            object_number = int(object_number)
+        else:
+            object_typecode, object_number = 0, int(identifier)
+
+        return object_typecode, object_number
+
     def __init__(self, timestep, halo_number, finder_id, finder_offset, NDM, NStar, NGas, object_typecode=None):
         self.timestep = timestep
         self.halo_number = int(halo_number)

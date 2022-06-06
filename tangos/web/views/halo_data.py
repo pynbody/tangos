@@ -40,14 +40,17 @@ def format_number(data):
             return "%.2f" % data
 
 def format_data(data, request=None, relative_to=None, max_array_length=3):
-    if hasattr(data,'__len__'):
-        return format_array(data, max_array_length)
-    elif np.issubdtype(type(data), np.number):
-        return format_number(data)
-    elif isinstance(data, core.SimulationObjectBase):
-        return format_halo(data, request, relative_to)
-    else:
-        return escape(repr(data))
+    try:
+        if hasattr(data,'__len__'):
+            return format_array(data, max_array_length)
+        elif np.issubdtype(type(data), np.number):
+            return format_number(data)
+        elif isinstance(data, core.SimulationObjectBase):
+            return format_halo(data, request, relative_to)
+        else:
+            return escape(repr(data))
+    except Exception as e:
+        return str(e)
 
 
 

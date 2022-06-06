@@ -310,7 +310,7 @@ $('#use_range').click(function(){
 function expandFixedRows() {
   $(".tangos-fixed-row").each(function() {
     let rowId = $(this).attr('id');
-    let data = JSON.parse($(this).attr('data-tangos'))
+    let data = JSON.parse($(this).attr('data-tangos'));
     $("#label-" + rowId).html(data.mini_language_query);
     $('#contents-' + rowId).html(data.data_formatted);
     updatePlotControlElements('#plotctl-' + rowId, data.mini_language_query,

@@ -185,6 +185,7 @@ span.step_unavailable a {
     padding: 10px;
 }
 
+
 #imgspace {
 
 
@@ -258,7 +259,21 @@ pre {
 }
 
 td.plotcontrols {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
 
+th.plotcontrols div.leftbuttons, th.plotcontrols div.rightbuttons {
+    display: inline;
+}
+
+div.leftbuttons, div.rightbuttons {
+    white-space: nowrap;
+}
+
+div.rightbuttons {
+    margin-left: 1em;
 }
 
 
@@ -405,6 +420,7 @@ a.delete::before {
     background-size: cover;
     background-repeat: no-repeat;
 }
+
 
 label.x-plot-radio::before {
     content: " ";

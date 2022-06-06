@@ -216,7 +216,7 @@ function getSorterElements(element) {
 function getDeleteElements(element) {
     let headerElement = $("#label-"+extractColumnName(element));
     if (headerElement.hasClass('editable'))
-        return '&nbsp;<a href="#" onclick="$(\''+"#label-"+extractColumnName(element)+'\').trigger(\'deleteEditable\'); return false;" class="delete" title="Remove"></a>';
+        return '<a href="#" onclick="$(\''+"#label-"+extractColumnName(element)+'\').trigger(\'deleteEditable\'); return false;" class="delete" title="Remove"></a>';
     else
         return '';
 }
@@ -248,9 +248,10 @@ function updatePlotControlElements(element, query, isScalar, isFilter, isArray, 
         hiddenHtml = scalarControls+filterControls+arrayControls;
         visibleHtml = "";
     }
-    visibleHtml += getDeleteElements(element);
+    visibleHtml = "<div class='leftbuttons'>" + visibleHtml +
+        "</div><div class='rightbuttons'>" + getDeleteElements(element) + "</div>";
 
-    buttonsHtml = "<span class='hidden'>"+hiddenHtml+"</span>"+visibleHtml;
+    buttonsHtml = "<div class='hidden'>"+hiddenHtml+"</div>"+visibleHtml;
 
     $(element).html(buttonsHtml);
     $(element).find("input").each(function() {

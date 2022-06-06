@@ -22,7 +22,7 @@
             </tr>
             <tr>
                 <th id="plotctl-number-{{ object_type }}"></th>
-                <th id="plotctl-colid-1-{{ object_type }}"></th>
+                <th id="plotctl-colid-1-{{ object_type }}" class="plotcontrols"></th>
                 <th></th>
             </tr>
 
@@ -101,7 +101,7 @@ function addBlankColumn(after, object_tag) {
     var new_name = "column-"+Math.random().toString(36).substring(7);
     $('.data-table tr').each(function(index) {
         $(this).find("#label-"+after).after("<th id='label-"+new_name+"' class='editable'></th>");
-        $(this).find("#plotctl-"+after).after("<th id='plotctl-"+new_name+"'></th>");
+        $(this).find("#plotctl-"+after).after("<th id='plotctl-"+new_name+"' class='plotcontrols'></th>");
     })
     $('#label-'+new_name).markAsColumnInsertPoint(object_tag);
     updateTableDisplay(object_tag);
