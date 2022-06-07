@@ -1,11 +1,10 @@
-import matplotlib
-
-matplotlib.use('agg')
 import threading
 import time
+import warnings
 from html import escape
 from io import BytesIO
 
+import matplotlib
 import numpy as np
 import pylab as p
 from pyramid.response import Response
@@ -15,6 +14,8 @@ from ... import core
 from ...config import webview_cache_time, webview_default_image_format
 from ...log import logger
 from . import halo_from_request, simulation_from_request, timestep_from_request
+
+matplotlib.use('agg')
 
 _matplotlib_lock = threading.RLock()
 
@@ -33,11 +34,14 @@ def format_array(data, max_array_length=3):
 def format_number(data):
     if np.issubdtype(type(data), np.integer):
         return "%d" % data
-    elif np.issubdtype(type(data), np.float):
+    elif np.issubdtype(type(data), np.floating):
         if abs(data) > 1e5 or abs(data) < 1e-2:
             return "%.2e" % data
         else:
             return "%.2f" % data
+    else:
+        warnings.warn("Formatting unknown number type")
+        return str(data)
 
 def format_data(data, request=None, relative_to=None, max_array_length=3):
     try:
