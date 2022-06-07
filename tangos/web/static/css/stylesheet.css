@@ -176,13 +176,11 @@ span.step_unavailable a {
 }
 
 #imgbox_container {
-    float: right;
     width: 640px;
     height: 550px;
-    position: absolute;
     right: 0px;
     top: 200px;
-    padding: 10px;
+    padding-left: 10px;
 }
 
 
@@ -345,8 +343,13 @@ div.popup-controls {
     cursor: pointer;
 }
 
+div #properties-and-images-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
 div#properties-area {
-    min-height: 700px;
     max-width: 600px;
 }
 
