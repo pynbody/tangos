@@ -194,6 +194,7 @@ span.step_unavailable a {
     background-color: rgba(223, 223, 223, 0.9);
     border-bottom: 1px solid gray;
     padding-left: 10px;
+    z-index: 100;
 }
 
 #flash-message{
@@ -346,11 +347,12 @@ div.popup-controls {
 div #properties-and-images-container {
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 div#properties-area {
-    max-width: 600px;
+    overflow: hidden;
+    width: 50%;
 }
 
 ul.ui-autocomplete {
@@ -459,4 +461,10 @@ label.plot-radio::before {
 
 input {
     accent-color: #BB4400;
+}
+
+.ui-resizable-e {
+    border-left: 4px solid #bb4400;
+    z-index: 0;
+    box-shadow: -3px 0 rgba(200, 200, 200, 0.8);
 }

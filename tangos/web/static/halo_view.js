@@ -346,4 +346,6 @@ $(function () {
   // put in interactivity for first time
   setupTimestepTables($("#timestep_url").text())
   restoreInteractiveElements(false);
+
+  $('#properties-area').resizable({handles: 'e'});
 });
