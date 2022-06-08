@@ -60,23 +60,3 @@ def test_generate_from_halos():
 def test_empty_collection():
     with assert_raises(ValueError):
         col = cc.ConsistentCollection([])
-
-def test_call_grouped_by():
-    class Dummy:
-        def __init__(self, param):
-            self.param = param
-            self.touched = False
-
-    def callback(objs):
-        assert [o.param == objs[0].param for o in objs] # check all have the same specified attr
-        for o in objs:
-            assert not o.touched # mustn't have been looked at before
-            o.touched = True # flag this has now been looked at
-        return [id(o) for o in objs] # return id of objects to check the results are stored in right order
-
-    objs = [Dummy(1), Dummy(2), Dummy(2), Dummy(3), Dummy(1), Dummy(65), Dummy(1), Dummy(3)]
-    result = cc.call_grouped_by(objs, 'param', callback)
-    for o in objs:
-        assert o.touched # check everything was looked at once
-    for r, o in zip(result, objs):
-        assert r == id(o)

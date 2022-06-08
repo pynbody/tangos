@@ -64,7 +64,7 @@ mergertree_max_hops = 500 # maximum number of timesteps to scan
 
 # relation finding paremeters for multi hop queries
 num_multihops_max_default = 100     # the maximum number of links to follow when searching for related halos
-max_relative_time_difference = 1e-5     # the maximum fractional difference in time between two contemporaneous timesteps when searching for related halos
+max_relative_time_difference = 1e-4     # the maximum fractional difference in time between two contemporaneous timesteps when searching for related halos
 
 # On some network file systems, concurrency using sqlite is dodgy to say the least. After committing a transaction
 # on one node, and before attempting to open a new transaction on another node, it seems empirically helpful to

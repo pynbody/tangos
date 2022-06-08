@@ -1,6 +1,3 @@
-from typing import Callable
-
-
 class ConsistentCollection:
     """Access attributes of an underlying collection of objects, ensuring they are consistent.
 
@@ -32,26 +29,3 @@ class ConsistentCollection:
 
 def consistent_simulation_from_halos(halos):
     return ConsistentCollection([x.timestep.simulation for x in halos])
-
-
-def call_grouped_by(objects: list, attrname: str, callback: Callable[[list], list]) -> list:
-    """Call a specified function with objects grouped by a specified attribute
-
-    :param objects: list of objects
-    :param attrname: name of the object attribute on which they will be grouped
-    :param callback: function taking a list of objects and returning a list of results"""
-
-    attrs = [getattr(o,attrname) for o in objects]
-    unique_attrs = set(attrs)
-    objects_per_unique_attr = [list(zip(*[(i, objects[i])
-                                for i in range(len(objects))
-                                if attrs[i] == uattr]))
-                               for uattr in unique_attrs]
-    results = [None for i in range(len(objects))]
-    for indices, objs in objects_per_unique_attr:
-        callback_result = callback(objs)
-
-        for i, orig_i in enumerate(indices):
-            results[orig_i] = callback_result[i]
-
-    return results

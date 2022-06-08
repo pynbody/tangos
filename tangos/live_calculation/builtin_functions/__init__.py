@@ -1,11 +1,9 @@
 import numpy as np
-from sqlalchemy import alias
 
 import tangos
 from tangos.util import consistent_collection
 
 from ... import core
-from ... import temporary_halolist as thl
 from ...core import extraction_patterns
 from .. import (BuiltinFunction, FixedInput, FixedNumericInput, LiveProperty,
                 StoredProperty)
@@ -40,24 +38,6 @@ def earlier(source_halos, num_steps):
     return later(source_halos, -num_steps)
 
 earlier.set_input_options(0, provide_proxy=True, assert_class = FixedNumericInput)
-
-@BuiltinFunction.register
-def at_this_timestep(source_halos, halo_id):
-    session = core.Session.object_session(source_halos[0])
-    typecode, SimulationObjectBase.typecode_and_number_from_human_identifier(halo_identifier)
-    with thl.temporary_halolist_table(session,
-                                      [h.id for h in source_halos],
-                                      halo_id) as table:
-
-
-
-        original_halo = alias(core.halo.SimulationObjectBase)
-        target_halo = alias(core.halo.SimulationObjectBase)
-
-        session.query(table.c.id, core.halo.SimulationObjectBase).\
-            select_from(table).\
-            outerjoin(core.halo.SimulationObjectBase, table.c.halo_id == core.halo.SimulationObjectBase.id).order_by(table.c.id)
-
 
 
 @BuiltinFunction.register
