@@ -109,7 +109,7 @@ def sim_query_from_args(argv, session=None):
 
 
 def supplement_argparser(argparser):
-    argparser.add_argument("--db-filename", "-f", help="Specify path to a database file to be used",
+    argparser.add_argument("--db-filename", "-d", help="Specify path to a database file to be used",
                            action='store', type=str, metavar="database_file.sqlite3")
     argparser.add_argument("--db-verbose", "-v", action='store_true',
                            help="Switch on sqlalchemy echo mode")
