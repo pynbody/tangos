@@ -20,6 +20,7 @@ CacheDict([(2, 2), (4, 4)])
 
 from collections import OrderedDict
 
+
 class CacheDict(OrderedDict):
     """Dict with a limited length, ejecting LRUs as needed."""
 
