@@ -1,6 +1,7 @@
 import threading
 import time
 import warnings
+from ...util.cache_dict import CacheDict
 from html import escape
 from io import BytesIO
 
@@ -11,13 +12,28 @@ from pyramid.response import Response
 from pyramid.view import view_config
 
 from ... import core
-from ...config import webview_cache_time, webview_default_image_format
+from ...config import webview_cache_time, webview_default_image_format, webview_plots_dpi
 from ...log import logger
 from . import halo_from_request, simulation_from_request, timestep_from_request
 
 matplotlib.use('agg')
 
 _matplotlib_lock = threading.RLock()
+
+def sessionfree_lru_cache(num):
+    cache = CacheDict(cache_len=num)
+    def f(func):
+        def g(*args):
+            key = type(args[0]),args[0].id, *args[1:]
+            if key in cache:
+                return cache[key]
+            else:
+                v = func(*args)
+                cache[key] = v
+                return v
+
+        return g
+    return f
 
 def decode_property_name(name):
     name = name.replace("_slash_","/")
@@ -143,7 +159,7 @@ def get_property_data(halo, property_name_or_result, request=None):
         except Exception as e:
             return {'error': getattr(e, 'message', ""), 'error_class': type(e).__name__}
     else:
-        result = property_name_or_result.data
+        result = property_name_or_result.data_raw
         name = property_name_or_result.name.text
 
     return {'data_formatted': format_data(result, request, halo),
@@ -155,7 +171,8 @@ def get_property_data(halo, property_name_or_result, request=None):
 
 def start(request):
     p.ioff()
-    p.clf()
+    p.figure(figsize=(float(request.GET.get('width',1000))/webview_plots_dpi,
+                   float(request.GET.get('height',1000))/webview_plots_dpi))
     request.canvas = p.get_current_fig_manager().canvas
 
 
@@ -173,7 +190,7 @@ def finish(request, getImage=True):
         request.canvas.draw()
         draw_time = time.time()
         buffer = BytesIO()
-        p.savefig(buffer, format=extension)
+        p.savefig(buffer, format=extension, dpi=webview_plots_dpi)
         end_time = time.time()
 
         logger.info(
@@ -214,7 +231,7 @@ def rescale_plot(request):
 @view_config(route_name='gathered_plot')
 def gathered_plot(request):
     start_time = time.time()
-    name1, name2, v1, v2 = gathered_plot_data(request)
+    name1, name2, v1, v2 = gathered_plot_data_from_request(request)
     logger.info("Gathering data took %.2fs"%(time.time()-start_time))
     with _matplotlib_lock:
         start(request)
@@ -227,34 +244,38 @@ def gathered_plot(request):
 
 @view_config(route_name='gathered_csv', renderer='csv')
 def gathered_csv(request):
-    name1, name2, v1, v2 = gathered_plot_data(request)
+    name1, name2, v1, v2 = gathered_plot_data_from_request(request)
     return {
         'header': [name1, name2],
         'rows': np.array((v1,v2)).T,
         'name': "timestep_" + name1 + "_vs_" + name2
     }
 
-def gathered_plot_data(request):
+def gathered_plot_data_from_request(request):
     ts = timestep_from_request(request)
     name1 = decode_property_name(request.matchdict['nameid1'])
     name2 = decode_property_name(request.matchdict['nameid2'])
     filter = decode_property_name(request.GET.get('filter', ""))
     object_typetag = request.GET.get('object_typetag', None)
 
+    v1, v2 = _gathered_plot_data_from_parameters(ts, name1, name2, filter, object_typetag)
+
+    return name1, name2, v1, v2
+
+@sessionfree_lru_cache(100)
+def _gathered_plot_data_from_parameters(ts, name1, name2, filter, object_typetag):
     if filter != "":
         v1, v2, f = ts.calculate_all(name1, name2, filter, object_typetag=object_typetag)
         v1 = v1[f]
         v2 = v2[f]
     else:
         v1, v2 = ts.calculate_all(name1, name2, object_typetag=object_typetag)
-
-    return name1, name2, v1, v2
-
+    return v1, v2
 
 
 @view_config(route_name='cascade_plot')
 def cascade_plot(request):
-    name1, name2, v1, v2 = cascade_plot_data(request)
+    name1, name2, v1, v2 = cascade_plot_data_from_request(request)
     with _matplotlib_lock:
         start(request)
         p.plot(v1,v2,'k')
@@ -265,19 +286,24 @@ def cascade_plot(request):
 
 @view_config(route_name='cascade_csv', renderer='csv')
 def cascade_csv(request):
-    name1, name2, v1, v2 = cascade_plot_data(request)
+    name1, name2, v1, v2 = cascade_plot_data_from_request(request)
     return {
         'header': [name1, name2],
         'rows': np.array((v1,v2)).T,
         'name': "timeseries_"+name1+"_vs_"+name2
     }
 
-def cascade_plot_data(request):
+def cascade_plot_data_from_request(request):
     halo = halo_from_request(request)
     name1 = decode_property_name(request.matchdict['nameid1'])
     name2 = decode_property_name(request.matchdict['nameid2'])
-    v1, v2 = halo.calculate_for_progenitors(name1, name2)
+    v1, v2 = _cascade_plot_data_from_parameters(halo, name1, name2)
     return name1, name2, v1, v2
+
+@sessionfree_lru_cache(100)
+def _cascade_plot_data_from_parameters(halo, name1, name2):
+    v1, v2 = halo.calculate_for_progenitors(name1, name2)
+    return v1, v2
 
 
 def _sanitize_lims(val, absolute, data, default, log):

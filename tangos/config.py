@@ -78,6 +78,9 @@ webview_default_image_format = 'svg'
 # Caching time in seconds for image and data in the web server
 webview_cache_time = 3600
 
+# The default dpi to adopt when plotting in matplotlib and returning to web browser
+webview_plots_dpi = 100
+
 try:
     from .config_local import *
 except:

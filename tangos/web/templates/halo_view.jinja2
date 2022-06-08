@@ -56,62 +56,60 @@
 
 
 
-    <div id="properties-and-images-container">
-        <div class="dynamic-update" id="properties-area">
-            <h2>Properties</h2>
+    <div class="dynamic-update" id="properties-area">
+        <h2>Properties</h2>
 
-            <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="autorestore" onchange="plotSelectionUpdate();" >
-                <input type="hidden" name="object_typetag" value="{{ halo_typetag }}"/>
-                <!-- next two hidden input types are just to keep track of the pagination
-                on the timestep view, since the form states are carried between pages using
-                session storage -->
-                <input type="hidden" name="page" />
-                <input type="hidden" name="per_page" />
-                <table>
-                    <tr class="collapsibletable"><th></th><th>Property</th><th>Value</th></tr>
-                    <tr id="custom-row-1">
-                        <td id="plotctl-custom-row-1" class="plotcontrols"></td><td id="label-custom-row-1" class="editable"></td><td id="contents-custom-row-1"></td>
+        <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="autorestore" onchange="plotSelectionUpdate();" >
+            <input type="hidden" name="object_typetag" value="{{ halo_typetag }}"/>
+            <!-- next two hidden input types are just to keep track of the pagination
+            on the timestep view, since the form states are carried between pages using
+            session storage -->
+            <input type="hidden" name="page" />
+            <input type="hidden" name="per_page" />
+            <table>
+                <tr class="collapsibletable"><th></th><th>Property</th><th>Value</th></tr>
+                <tr id="custom-row-1">
+                    <td id="plotctl-custom-row-1" class="plotcontrols"></td><td id="label-custom-row-1" class="editable"></td><td id="contents-custom-row-1"></td>
+                </tr>
+                {%  for prop in properties %}
+                    <tr id="fixed-row-{{ loop.index }}" data-tangos='{{ prop | tojson }}' class="tangos-fixed-row">
+                        <td id="plotctl-fixed-row-{{ loop.index }}" class="plotcontrols">...</td>
+                        <td id="label-fixed-row-{{ loop.index }}">...</td><td id="contents-fixed-row-{{ loop.index }}">...</td>
                     </tr>
-                    {%  for prop in properties %}
-                        <tr id="fixed-row-{{ loop.index }}" data-tangos='{{ prop | tojson }}' class="tangos-fixed-row">
-                            <td id="plotctl-fixed-row-{{ loop.index }}" class="plotcontrols">...</td>
-                            <td id="label-fixed-row-{{ loop.index }}">...</td><td id="contents-fixed-row-{{ loop.index }}">...</td>
-                        </tr>
-                    {%  endfor %}
-                </table>
-            </form>
-        </div>
+                {%  endfor %}
+            </table>
+        </form>
+    </div>
 
-        <div id="imgbox_container" >
+    <div id="imgbox_container" >
 
-            <div>
-                <h2>Plots</h2>
-            <form id="image_form" onsubmit="fetchPlot(); return false;" onchange="fetchPlot();" class="autorestore">
-                <input name="type" value="tree" type="radio" id="type-tree"><label for="type-tree">Merger tree</label>;
-                or plot for: <input name="type" value="gather" type="radio" id="type-gather"><label for="type-gather">This timestep</label>
-                <input name="type" value="cascade" type="radio" id="type-cascade" checked><label for="type-cascade">This halo</label><br/>
-                <input name="logx" type="checkbox" id="logx"/><label for="logx">log x</label>
-                <input name="logy" type="checkbox" id="logy"/><label for="logy">log y</label>
-                <label for="image_format">Image format</label>
-                <select id="image_format">
-                    <option value='svg' selected>SVG</option>
-                    <option value='png'>PNG</option>
-                    <option value='pdf'>PDF</option>
-                </select>
-                <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>.
-                <input type="checkbox" name="use_range" id="use_range" onclick="rangeDisplay()"/><label for="use_range">Use range</label>
-                <p id="vmin-vmax-range">
-                    <label for="vmin">Vmin</label>
-                    <input name="vmin" type="range" id="vmin" min="0", vmax="100" value="0" onchange="fetchPlot()">
-                    <label for="vmax">Vmax</label>
-                    <input name="vmax" type="range" id="vmax" min="0", vmax="100" value="100" onchange="fetchPlot()">
-                </p>
-                <span class="download-area-csv"><a href="#" id="download-csv-link">&#x25BC; Download CSV</a></span>
-                <span class="download-area-tree"><a href="#" id="download-merger-tree">&#x25BC; Download Merger Tree</a></span>
-            </form>
-            </div>
-            <div id="imgbox"></div>
+        <div>
+            <h2>Plots</h2>
+        <form id="image_form" onsubmit="fetchPlot(); return false;" onchange="fetchPlot();" class="autorestore">
+            <input name="type" value="tree" type="radio" id="type-tree"><label for="type-tree">Merger tree</label>;
+            or plot for: <input name="type" value="gather" type="radio" id="type-gather"><label for="type-gather">This timestep</label>
+            <input name="type" value="cascade" type="radio" id="type-cascade" checked><label for="type-cascade">This halo</label><br/>
+            <input name="logx" type="checkbox" id="logx"/><label for="logx">log x</label>
+            <input name="logy" type="checkbox" id="logy"/><label for="logy">log y</label>
+            <label for="image_format">Image format</label>
+            <select id="image_format">
+                <option value='svg' selected>SVG</option>
+                <option value='png'>PNG</option>
+                <option value='pdf'>PDF</option>
+            </select>
+            <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>.
+            <input type="checkbox" name="use_range" id="use_range" onclick="rangeDisplay()"/><label for="use_range">Use range</label>
+            <p id="vmin-vmax-range">
+                <label for="vmin">Vmin</label>
+                <input name="vmin" type="range" id="vmin" min="0", vmax="100" value="0" onchange="fetchPlot()">
+                <label for="vmax">Vmax</label>
+                <input name="vmax" type="range" id="vmax" min="0", vmax="100" value="100" onchange="fetchPlot()">
+            </p>
+            <span class="download-area-csv"><a href="#" id="download-csv-link">&#x25BC; Download CSV</a></span>
+            <span class="download-area-tree"><a href="#" id="download-merger-tree">&#x25BC; Download Merger Tree</a></span>
+        </form>
         </div>
+        <div id="imgbox"></div>
     </div>
 
 

@@ -131,6 +131,11 @@ function getFilterUri () {
   return filters
 }
 
+function getPlotSizeParams() {
+  const width = $('#imgbox_container').width();
+  const height = $('#imgbox_container').height();
+  return "&width="+width+"&height="+height;
+}
 function getPlotUriOneVariable (name, extension) {
   let uri = $('#cascade_url').text() + name + '.' + extension
   var plotformvals = {};
@@ -144,7 +149,7 @@ function getPlotUriOneVariable (name, extension) {
     if (Number(plotformvals.vmax) <= 100) { args["vmax"] = plotformvals.vmax }
   }
 
-  return uri + "?" + $.param(args);
+  return uri + "?" + $.param(args) + getPlotSizeParams();
 }
 
 function getPlotUriTwoVariables (name1, name2, typetag, extension) {
@@ -161,7 +166,7 @@ function getPlotUriTwoVariables (name1, name2, typetag, extension) {
             name1 + '/vs/' + name2 + '.' + extension
   }
 
-  return uri + '?' + $('#image_form').serialize() + '&' + getFilterUri() + '&object_typetag=' + typetag
+  return uri + '?' + $('#image_form').serialize() + '&' + getFilterUri() + '&object_typetag=' + typetag + getPlotSizeParams();
 }
 
 var plotFetchingDisabled = false
@@ -204,12 +209,17 @@ function updateDownloadButtons () {
   }
 }
 
+function isDisplayingTree() {
+  return ($('#image_form').values().type === 'tree');
+}
+
 function fetchPlot (isUpdate) {
   if (plotFetchingDisabled) { return }
 
-  updateDownloadButtons()
+  updateDownloadButtons();
 
-  if ($('#image_form').values().type === 'tree') { return fetchTree(isUpdate) }
+  if (isDisplayingTree())
+    return fetchTree(isUpdate);
 
   var formvals = getPropertiesFormJquery().values()
 
@@ -262,7 +272,11 @@ function loadImage (url, extension) {
     objImg.src = url
     objImg.onload = placeImage
   }
-  objImg.onerror = placeImageError
+  objImg.onerror = placeImageError;
+  objImg.style.width="100%";
+  objImg.style.height="100%";
+  objImg.style.maxHeight="80vh";
+  objImg.style.objectFit="contain";
 
   updateDownloadLink(url, extension)
 }
@@ -280,7 +294,7 @@ function treeError () {
 function placeImage () {
   $('#imgbox').empty()
   $('#imgbox').append(objImg)
-  $('#imgbox').css('width', objImg.width)
+  // $('#imgbox').css('width', objImg.width)
 }
 
 function ensurePlotTypeIsNotTree () {
@@ -347,5 +361,13 @@ $(function () {
   setupTimestepTables($("#timestep_url").text())
   restoreInteractiveElements(false);
 
-  $('#properties-area').resizable({handles: 'e'});
+  $('#imgbox_container').resizable(
+      {handles: 'w', minWidth: 200, containment: 'document',
+      stop: function(event, ui) {
+        $('#imgbox_container').css('left',''); // otherwise jqueryui leaves it with a fixed left edge, breaking window resizing
+        if(!isDisplayingTree()) fetchPlot(true); // update for new size of image box
+      }});
+
+
+
 });
