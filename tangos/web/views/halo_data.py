@@ -190,7 +190,7 @@ def finish(request, getImage=True):
         request.canvas.draw()
         draw_time = time.time()
         buffer = BytesIO()
-        p.savefig(buffer, format=extension, dpi=webview_plots_dpi)
+        p.savefig(buffer, format=extension, dpi=webview_plots_dpi, bbox_inches='tight')
         end_time = time.time()
 
         logger.info(

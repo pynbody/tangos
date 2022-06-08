@@ -277,6 +277,7 @@ function loadImage (url, extension) {
   objImg.style.height="100%";
   objImg.style.maxHeight="80vh";
   objImg.style.objectFit="contain";
+  objImg.style.objectPosition="top left";
 
   updateDownloadLink(url, extension)
 }
