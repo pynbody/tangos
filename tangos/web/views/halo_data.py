@@ -155,7 +155,7 @@ def get_property(request):
 def get_property_data(halo, property_name_or_result, request=None):
     if isinstance(property_name_or_result, str):
         try:
-            result = halo.calculate(property_name_or_result)
+            result, p_info = _get_property_from_halo_and_name(halo, property_name_or_result)
             name = property_name_or_result
         except Exception as e:
             return {'error': getattr(e, 'message', ""), 'error_class': type(e).__name__}
@@ -385,8 +385,7 @@ def array_plot(request):
     halo = halo_from_request(request)
     name = decode_property_name(request.matchdict['nameid'])
 
-
-    val, property_info = halo.calculate(name, True)
+    val, property_info = _get_property_from_halo_and_name(halo, name)
 
     if len(val.shape)>1:
         return image_plot(request, val, property_info)
@@ -411,6 +410,9 @@ def array_plot(request):
 
         return finish(request)
 
+@sessionfree_lru_cache(100)
+def _get_property_from_halo_and_name(halo, name):
+    return halo.calculate(name, True)
 
 @view_config(route_name='array_csv', renderer='csv')
 def array_csv(request):
