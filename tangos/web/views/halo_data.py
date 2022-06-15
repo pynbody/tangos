@@ -22,6 +22,13 @@ matplotlib.use('agg')
 _matplotlib_lock = threading.RLock()
 
 def sessionfree_lru_cache(num):
+    """A drop-in replacement for functools.lru_cache that works with sqlalchemy ORM objects as first argument
+
+    The purpose is to cache results of retrieving/calculating data from a database. However, such calculations
+    rely on having an ORM object, which itself may change between calls because a different session is in use
+    (e.g. if different threads are involved). This decorator roughly mimics the behaviour of functools.lru_cache,
+    but keys on the .id attribute of the first argument, rather than the argument itself.
+    """
     cache = CacheDict(cache_len=num)
     def f(func):
         def g(*args):
