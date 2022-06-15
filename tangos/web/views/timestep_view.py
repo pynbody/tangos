@@ -39,8 +39,21 @@ def timestep_view(request):
 
         typecode+=1
 
+    previous = "(First)", ""
+    next = "(Last)", ""
+
+    if ts.previous is not None:
+        previous  = ts.previous.extension, request.route_url('timestep_view', simid=request.matchdict['simid'],
+                                                             timestepid=ts.previous.extension)
+
+    if ts.next is not None:
+        next = ts.next.extension, request.route_url('timestep_view', simid=request.matchdict['simid'],
+                                                             timestepid=ts.next.extension)
+
 
     return {'timestep': ts.extension,
+            'previous': previous,
+            'next': next,
             'objects': all_objects,
             'timestep_url': request.route_url('timestep_view',simid=request.matchdict['simid'],
                                             timestepid=request.matchdict['timestepid'])}

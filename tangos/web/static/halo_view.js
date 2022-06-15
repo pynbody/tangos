@@ -24,7 +24,7 @@ function autoUpdateNavToAnother() {
   if($("#nav-to-another .progress-spinner").length===0)
     $("#nav-to-another").html("<div class='progress-spinner'></div>");
   let object_tag = $("#object_typetag").text()
-  let filter = getFilterArray(object_tag,'td', autoUpdateNavToAnother);
+  let filter = getFilterArray(object_tag, autoUpdateNavToAnother);
   if(filter === undefined) {
     // callback for when required ata is ready has been put in place
     return;
@@ -56,7 +56,7 @@ function autoUpdateNavToAnother() {
 
 function updateRowData (miniLanguageQuery, rowId) {
   plotFetchingDisabled = true
-  $('#nametg-' + rowId).html("<div class='progress-spinner'></div>" + miniLanguageQuery)
+  $('#label-' + rowId).html("<div class='progress-spinner'></div>" + miniLanguageQuery)
 
   // Plot controls need to be in DOM immediately, then rejigged later if they are not appropriate.
   // This is so that the correct radio buttons get ticked after a page update (otherwise the
@@ -69,18 +69,18 @@ function updateRowData (miniLanguageQuery, rowId) {
     url: $('#calculate_url').text() + uriEncodeQuery(miniLanguageQuery) + '.json',
     success: function (data) {
       var selected_row = $('#' + rowId)
-      if (data.error) {
-        $('#nametg-' + rowId).html("<span class='load_table_failed'>" + miniLanguageQuery + '</span>')
-        $('#contents-' + rowId).html("<span class='load_table_failed'>" + data.error_class + '</span>')
-        // alert(data.error_class+": "+data.error);
+      $('#label-' + rowId).html(miniLanguageQuery)
+      if (data.error!==undefined) {
+        $('#label-' + rowId).addClass('load_table_failed');
+        $('#contents-' + rowId).html(data.error_class);
       } else {
-        $('#nametg-' + rowId).html(miniLanguageQuery)
-        $('#contents-' + rowId).html(data.data_formatted)
+        $('#label-' + rowId).removeClass('load_table_failed');
+        $('#contents-' + rowId).html(data.data_formatted);
 
         // See above for why the plot controls are put in place then updated
         updatePlotControlElements('#plotctl-' + rowId, miniLanguageQuery,
-          data.can_use_in_plot, data.can_use_as_filter, data.is_array)
-        if(data.can_use_as_filter)
+          data.is_number, data.is_boolean, data.is_array)
+        if(data.is_boolean)
           autoUpdateNavToAnother();
         plotFetchingDisabled = false
         fetchPlot(true)
@@ -93,8 +93,8 @@ function updateRowData (miniLanguageQuery, rowId) {
 function addBlankRow (after) {
   var new_name = 'custom-row-' + Math.random().toString(36).substring(7)
 
-  $('#' + after).after("<tr id='" + new_name + "'><td class='plotcontrols' id='plotctl-" + new_name + "'></td><td class='editable' id='nametg-" + new_name + "'></td><td id='contents-" + new_name + "'></td>")
-  $('#nametg-' + new_name).markAsRowInsertPoint()
+  $('#' + after).after("<tr id='" + new_name + "'><td class='plotcontrols' id='plotctl-" + new_name + "'></td><td class='editable' id='label-" + new_name + "'></td><td id='contents-" + new_name + "'></td>")
+  $('#label-' + new_name).markAsRowInsertPoint()
   return new_name
 }
 
@@ -131,6 +131,11 @@ function getFilterUri () {
   return filters
 }
 
+function getPlotSizeParams() {
+  const width = $('#imgbox_container').width();
+  const height = $('#imgbox_container').height();
+  return "&width="+width+"&height="+height;
+}
 function getPlotUriOneVariable (name, extension) {
   let uri = $('#cascade_url').text() + name + '.' + extension
   var plotformvals = {};
@@ -144,7 +149,7 @@ function getPlotUriOneVariable (name, extension) {
     if (Number(plotformvals.vmax) <= 100) { args["vmax"] = plotformvals.vmax }
   }
 
-  return uri + "?" + $.param(args);
+  return uri + "?" + $.param(args) + getPlotSizeParams();
 }
 
 function getPlotUriTwoVariables (name1, name2, typetag, extension) {
@@ -161,7 +166,7 @@ function getPlotUriTwoVariables (name1, name2, typetag, extension) {
             name1 + '/vs/' + name2 + '.' + extension
   }
 
-  return uri + '?' + $('#image_form').serialize() + '&' + getFilterUri() + '&object_typetag=' + typetag
+  return uri + '?' + $('#image_form').serialize() + '&' + getFilterUri() + '&object_typetag=' + typetag + getPlotSizeParams();
 }
 
 var plotFetchingDisabled = false
@@ -204,12 +209,17 @@ function updateDownloadButtons () {
   }
 }
 
+function isDisplayingTree() {
+  return ($('#image_form').values().type === 'tree');
+}
+
 function fetchPlot (isUpdate) {
   if (plotFetchingDisabled) { return }
 
-  updateDownloadButtons()
+  updateDownloadButtons();
 
-  if ($('#image_form').values().type === 'tree') { return fetchTree(isUpdate) }
+  if (isDisplayingTree())
+    return fetchTree(isUpdate);
 
   var formvals = getPropertiesFormJquery().values()
 
@@ -262,7 +272,12 @@ function loadImage (url, extension) {
     objImg.src = url
     objImg.onload = placeImage
   }
-  objImg.onerror = placeImageError
+  objImg.onerror = placeImageError;
+  objImg.style.width="100%";
+  objImg.style.height="100%";
+  objImg.style.maxHeight="80vh";
+  objImg.style.objectFit="contain";
+  objImg.style.objectPosition="top left";
 
   updateDownloadLink(url, extension)
 }
@@ -280,7 +295,7 @@ function treeError () {
 function placeImage () {
   $('#imgbox').empty()
   $('#imgbox').append(objImg)
-  $('#imgbox').css('width', objImg.width)
+  // $('#imgbox').css('width', objImg.width)
 }
 
 function ensurePlotTypeIsNotTree () {
@@ -307,6 +322,16 @@ $('#use_range').click(function(){
   rangeDisplay(this);
 });
 
+function expandFixedRows() {
+  $(".tangos-fixed-row").each(function() {
+    let rowId = $(this).attr('id');
+    let data = JSON.parse($(this).attr('data-tangos'));
+    $("#label-" + rowId).html(data.mini_language_query);
+    $('#contents-' + rowId).html(data.data_formatted);
+    updatePlotControlElements('#plotctl-' + rowId, data.mini_language_query,
+      data.is_number, data.is_boolean, data.is_array)
+  });
+}
 
 $(function () {
 
@@ -316,15 +341,15 @@ $(function () {
   });
 
   function restoreInteractiveElements(isUpdate=true) {
+    expandFixedRows();
     allEditables = [];
-    $('#nametg-custom-row-1').markAsRowInsertPoint();
+    $('#label-custom-row-1').markAsRowInsertPoint();
     console.log($("#timestep_url").text());
     setupTimestepTables($("#timestep_url").text());
     restoreAllEditables();
     restoreFormStates();
     fetchPlot(isUpdate);
     updatePositionsAfterScroll();
-    var haloNum = parseInt($('#halo_number').text());
     ajaxEnableLinks();
     rangeDisplay($("#use_range"));
     autoUpdateNavToAnother();
@@ -336,4 +361,14 @@ $(function () {
   // put in interactivity for first time
   setupTimestepTables($("#timestep_url").text())
   restoreInteractiveElements(false);
-})
+
+  $('#imgbox_container').resizable(
+      {handles: 'w', minWidth: 200, containment: 'document',
+      stop: function(event, ui) {
+        $('#imgbox_container').css('left',''); // otherwise jqueryui leaves it with a fixed left edge, breaking window resizing
+        if(!isDisplayingTree()) fetchPlot(true); // update for new size of image box
+      }});
+
+
+
+});

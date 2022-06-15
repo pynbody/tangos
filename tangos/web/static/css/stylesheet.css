@@ -54,7 +54,7 @@ div.progress-spinner {
     display: inline-block;
     width: 1em;
     height: 1em;
-    background-image: url('/static/tangos-50x50.png');
+    background-image: url('/static/icons/tangos-50x50.png');
     background-size: cover;
     background-repeat: no-repeat;
     animation: rotation 2s infinite;
@@ -123,8 +123,6 @@ th {
 }
 
 #imgbox {
-    width: 550px;
-    height: 550px;
     overflow: scroll;
 }
 
@@ -152,7 +150,7 @@ th {
 }
 
 #imgbox {
-    border: 1px solid #eef;
+
 }
 
 img.plotimg {
@@ -176,14 +174,19 @@ span.step_unavailable a {
 }
 
 #imgbox_container {
+    position: fixed;
     float: right;
-    width: 640px;
-    height: 550px;
-    position: absolute;
     right: 0px;
-    top: 200px;
-    padding: 10px;
+    top: 0px;
+    bottom: 0px;
+    min-width: 150px;
+    background-color: #ffffff;
+    z-index: 200;
+    max-width: 80vw;
+    padding: 1em;
+    box-shadow: -10px 0 10px white;
 }
+
 
 #imgspace {
 
@@ -195,6 +198,7 @@ span.step_unavailable a {
     background-color: rgba(223, 223, 223, 0.9);
     border-bottom: 1px solid gray;
     padding-left: 10px;
+    z-index: 100;
 }
 
 #flash-message{
@@ -240,8 +244,15 @@ pre {
     font-size: small;
 }
 
-.load_table_failed {
-    color: gray;
+.load_table_failed::before {
+    content: " ";
+    display: inline-block;
+    width: 1.28em;
+    height: 1em;
+    margin-right: 0.2em;
+    background-image: url('/static/icons/error.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
 }
 
 .mono {
@@ -251,7 +262,21 @@ pre {
 }
 
 td.plotcontrols {
-    text-align: center;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+th.plotcontrols div.leftbuttons, th.plotcontrols div.rightbuttons {
+    display: inline;
+}
+
+div.leftbuttons, div.rightbuttons {
+    white-space: nowrap;
+}
+
+div.rightbuttons {
+    margin-left: 1em;
 }
 
 
@@ -324,8 +349,8 @@ div.popup-controls {
 }
 
 div#properties-area {
-    min-height: 700px;
-    max-width: 600px;
+    overflow: hidden;
+    width: 50%;
 }
 
 ul.ui-autocomplete {
@@ -334,4 +359,110 @@ ul.ui-autocomplete {
     overflow-x: hidden;
     font-family: 'Lucida Console', 'Lucida Sans Typewriter', monaco, 'Bitstream Vera Sans Mono', monospace;
     font-size: small;
+}
+
+
+
+input[type=checkbox].filter-checkbox {
+    display: none;
+}
+
+label.filter-checkbox {
+    cursor: pointer;
+}
+
+label.filter-checkbox::before {
+    content: " ";
+    display: inline-block;
+    width: 1.27em;
+    height: 1em;
+    background-image: url('/static/icons/filter.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    cursor: pointer;
+}
+
+input[type=checkbox]:checked + label.filter-checkbox::before {
+    background-image: url('/static/icons/filter_active.svg');
+}
+
+a.sort.asc::before {
+    content: " ";
+    display: inline-block;
+    width: 1.27em;
+    height: 1em;
+    background-image: url('/static/icons/sort_up.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+a.sort.asc.active::before {
+    background-image: url('/static/icons/sort_up_active.svg');
+}
+
+a.sort.desc::before {
+    content: " ";
+    display: inline-block;
+    width: 1.27em;
+    height: 1em;
+    background-image: url('/static/icons/sort_down.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+a.sort.desc.active::before {
+    background-image: url('/static/icons/sort_down_active.svg');
+}
+
+a.delete::before {
+    content: " ";
+    display: inline-block;
+    width: 1.011em;
+    height: 1em;
+    background-image: url('/static/icons/delete.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+
+label.x-plot-radio::before {
+    content: " ";
+    display: inline-block;
+    width: 1.1348em; /* 1.4494em; */
+    height: 1em;
+    background-image: url('/static/icons/plot.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+/*
+label.y-plot-radio::before {
+    content: " ";
+    display: inline-block;
+    width: 1.359em;
+    height: 1em;
+    background-image: url('/static/icons/plot_y.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+ */
+
+label.plot-radio::before {
+    content: " ";
+    display: inline-block;
+    width: 1.1348em;
+    height: 1em;
+    background-image: url('/static/icons/plot.svg');
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+input {
+    accent-color: #BB4400;
+}
+
+#imgbox_container .ui-resizable-w {
+    border-right: 2px solid rgba(187, 68, 0, 0.2);
+    cursor: ew-resize;
+    z-index: 0;
 }

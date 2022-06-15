@@ -19,16 +19,16 @@ install_requires = [
     'pyramid_tm','pyramid_retry',
     'zope.sqlalchemy',
     'hupper',
-    'six',
     'scipy >= 0.14.0',
     'more_itertools >= 8.0.0',
+    'matplotlib >= 3.0.0' # for web interface
     ]
 
 tests_require = [
     'pytest >= 5.0.0',
     'webtest >= 2.0',
     'pyquery >= 1.3.0',
-    'pynbody >= 0.46',
+    'pynbody >= 1.2.0',
     'yt>=3.4.0',
     'PyMySQL>=1.0.2',
     ]
