@@ -69,7 +69,7 @@ class GenericLinker(GenericTangosTool):
 
         halo_source = sqlalchemy.orm.aliased(core.halo.SimulationObjectBase, name="halo_source")
         halo_target = sqlalchemy.orm.aliased(core.halo.SimulationObjectBase, name="halo_target")
-        same_d_id = self._get_link_dict_id()
+        same_d_id = self._get_linkname_dictionaryitem().id
         exists = self.session.query(core.halo_data.HaloLink).join(halo_source, core.halo_data.HaloLink.halo_from). \
                     join(halo_target, core.halo_data.HaloLink.halo_to). \
                     filter(halo_source.timestep_id == ts1.id, halo_target.timestep_id == ts2.id,
@@ -115,7 +115,7 @@ class GenericLinker(GenericTangosTool):
         halos1 = self.make_finder_offset_to_halo_map(ts1, object_typecode)
         halos2 = self.make_finder_offset_to_halo_map(ts2, object_typecode)
 
-        same_d_id = self._get_link_dict_id()
+        same_d_id = self._get_linkname_dictionaryitem()
 
         output_handler_1 = ts1.simulation.get_output_handler()
         output_handler_2 = ts2.simulation.get_output_handler()
@@ -155,7 +155,7 @@ class GenericLinker(GenericTangosTool):
             self.session.commit()
         logger.info("Finished committing total of %d links for %r and %r", len(items)+len(items_back), ts1, ts2)
 
-    def _get_link_dict_id(self):
+    def _get_linkname_dictionaryitem(self):
         with parallel_tasks.ExclusiveLock("create_db_objects_from_catalog"):
             same_d_id = core.dictionary.get_or_create_dictionary_item(self.session, "ptcls_in_common")
             self.session.commit()
