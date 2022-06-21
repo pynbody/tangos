@@ -124,6 +124,7 @@ th {
 
 #imgbox {
     overflow: scroll;
+    height: 100%;
 }
 
 #imgbox::-webkit-scrollbar {
@@ -185,6 +186,8 @@ span.step_unavailable a {
     max-width: 80vw;
     padding: 1em;
     box-shadow: -10px 0 10px white;
+    display: flex;
+    flex-direction: column;
 }
 
 
@@ -424,6 +427,9 @@ a.delete::before {
     background-repeat: no-repeat;
 }
 
+a.download-link {
+    white-space: nowrap;
+}
 
 label.x-plot-radio::before {
     content: " ";
@@ -465,4 +471,5 @@ input {
     border-right: 2px solid rgba(187, 68, 0, 0.2);
     cursor: ew-resize;
     z-index: 0;
+    flex-grow: 1;
 }
