@@ -203,9 +203,11 @@ function updateDownloadButtons () {
   if ($('#image_form').values().type === 'tree') {
     $('#download-merger-tree').show()
     $('#download-csv-link').hide()
+    $('#options-images').hide()
   } else {
     $('#download-csv-link').show()
     $('#download-merger-tree').hide()
+    $('#options-images').show()
   }
 }
 
@@ -333,6 +335,10 @@ function expandFixedRows() {
   });
 }
 
+function updateImageBoxSize() {
+  if(!isDisplayingTree()) fetchPlot(true);
+}
+
 $(function () {
 
   prePageUpdate(function () {
@@ -366,8 +372,11 @@ $(function () {
       {handles: 'w', minWidth: 200, containment: 'document',
       stop: function(event, ui) {
         $('#imgbox_container').css('left',''); // otherwise jqueryui leaves it with a fixed left edge, breaking window resizing
-        if(!isDisplayingTree()) fetchPlot(true); // update for new size of image box
-      }});
+        updateImageBoxSize();
+      }}
+  );
+
+  $(window).resize(updateImageBoxSize);
 
 
 
