@@ -87,8 +87,7 @@ class MultiSourceMultiHopStrategy(MultiHopStrategy):
 
     def _extract_max_weight_rows_from_query(self, query, table):
         from ..util.sql_argmax import argmax
-        return argmax(query, table.c.weight,
-                      [table.c.halo_from_id, table.c.source_id])
+        return argmax(query, table.c.weight, [table.c.source_id])
 
 
     def _should_halt(self):

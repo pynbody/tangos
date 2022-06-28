@@ -25,12 +25,21 @@ def setup_module():
     generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
     # A second simulation to test linking across
     generator_2 = tangos.testing.simulation_generator.SimulationGeneratorForTests("sim2")
+    # a third simulation to test scenarios where multiple routes across exist
+    generator_3 = tangos.testing.simulation_generator.SimulationGeneratorForTests("sim3")
 
     generator.add_timestep()
     generator_2.add_timestep()
+    generator_3.add_timestep()
+
     generator.add_objects_to_timestep(7)
     generator.add_bhs_to_timestep(2)
     generator.assign_bhs_to_halos({1:1, 2:2})
+    generator_2.add_objects_to_timestep(2)
+    generator_3.add_objects_to_timestep(2)
+
+    generator_2.link_last_halos_across_using_mapping(generator, {1:1, 2:2})
+    generator_2.link_last_halos_across_using_mapping(generator_3, {1:1, 2:1})
 
     generator.add_timestep()
     generator_2.add_timestep()
@@ -77,6 +86,20 @@ def setup_module():
                                              4: 3,
                                              5: 4})
     generator.add_mass_transfer(4,2,0.05)
+
+
+
+
+    generator_3.add_timestep()
+    generator_3.add_objects_to_timestep(2)
+
+    generator_3.link_last_halos()
+    generator_3.add_mass_transfer(1,2,0.1)
+
+    generator_3.add_timestep()
+    generator_3.add_objects_to_timestep(1)
+
+    generator_3.link_last_halos_using_mapping({1:1, 2:1})
 
 
 def teardown_module():
@@ -292,7 +315,7 @@ def test_find_merger():
     testing.assert_halolists_equal(results, ["sim/ts1/6", "sim/ts1/7"])
 
 def test_major_progenitor_from_minor_progenitor():
-    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests("sim3")
+    generator = tangos.testing.simulation_generator.SimulationGeneratorForTests("sim_major_minor")
     ts1 = generator.add_timestep()
     generator.add_objects_to_timestep(4)
     ts2 = generator.add_timestep()
@@ -307,16 +330,16 @@ def test_major_progenitor_from_minor_progenitor():
 
     # Check major progenitor correctly reported one step back by MultiSourceMultiHopStrategy
     progen_in_ts2 = halo_finding.MultiSourceMultiHopStrategy(
-        tangos.get_items(["sim3/ts3/1"]),
-        tangos.get_item("sim3/ts2")).all()
+        tangos.get_items(["sim_major_minor/ts3/1"]),
+        tangos.get_item("sim_major_minor/ts2")).all()
 
-    testing.assert_halolists_equal(progen_in_ts2,['sim3/ts2/1'])
+    testing.assert_halolists_equal(progen_in_ts2,['sim_major_minor/ts2/1'])
 
     # Check major progenitor correctly reported two steps back by MultiHopMajorProgenitorsStrategy
 
-    all_progenitors, weights = halo_finding.MultiHopMajorProgenitorsStrategy(tangos.get_item("sim3/ts3/1")).all_and_weights()
+    all_progenitors, weights = halo_finding.MultiHopMajorProgenitorsStrategy(tangos.get_item("sim_major_minor/ts3/1")).all_and_weights()
 
-    testing.assert_halolists_equal(all_progenitors, ['sim3/ts2/1','sim3/ts1/2'])
+    testing.assert_halolists_equal(all_progenitors, ['sim_major_minor/ts2/1','sim_major_minor/ts1/2'])
 
     # Check major progenitor correctly reported two steps back by MultiSourceMultiHopStrategy
     # This is where a failure occurred in the past -- the behaviour was inequivalent to always choosing
@@ -334,10 +357,10 @@ def test_major_progenitor_from_minor_progenitor():
     # going back to ts3, ts1/h2 (weight 0.57) is the major progenitor to ts2/h1.
 
     progen_in_ts1 = halo_finding.MultiSourceMultiHopStrategy(
-        tangos.get_items(["sim3/ts3/1"]),
-        tangos.get_item("sim3/ts1")).all()
+        tangos.get_items(["sim_major_minor/ts3/1"]),
+        tangos.get_item("sim_major_minor/ts1")).all()
 
-    testing.assert_halolists_equal(progen_in_ts1, ['sim3/ts1/2'])
+    testing.assert_halolists_equal(progen_in_ts1, ['sim_major_minor/ts1/2'])
 
 def test_offset_outputs_dont_confuse_match():
     # This tests for a bug where crosslinked timesteps at slightly different times could confuse the
@@ -370,3 +393,16 @@ def test_merging():
     assert np.all(source==[1,2,3,4,5,6,7])
     testing.assert_halolists_equal(dest, ['sim/ts3/1', 'sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts1/5',
                                           'sim/ts3/4', 'sim/ts3/4'])
+
+def test_single_match_from_multiple_routes():
+    """Test that even if multiple possible matches for an object in another simulation exist,
+    only the highest weight result is returned"""
+
+    # multiple routes in time tracing calculation (didn't previously fail)
+    h = tangos.get_halo("sim3/ts3/1")
+    testing.assert_halolists_equal([h.calculate("match('sim3/ts1')")], [tangos.get_halo("sim3/ts1/1")])
+
+    # multiple routes in tracing to another simulation (did previously fail)
+    # The multiple routes here are sim3/ts1/1 -> sim2/ts1/1, sim2/ts1/2 -> sim/ts1/1
+    h = tangos.get_halo("sim3/ts1/1")
+    testing.assert_halolists_equal([h.calculate("match('sim')")], [tangos.get_halo("sim/ts1/1")])
