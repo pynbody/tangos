@@ -244,7 +244,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
             if isinstance(h, pynbody.halo.SubfindCatalogue) \
                 or isinstance(h, pynbody.halo.SubFindHDFHaloCatalogue) \
-                or (h, pynbody.halo.HOPCatalogue):
+                or isinstance(h, pynbody.halo.HOPCatalogue):
                 istart = 0 # indexes from zero
 
             if hasattr(h, 'precalculate'):
