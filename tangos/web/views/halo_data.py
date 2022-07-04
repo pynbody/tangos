@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 import warnings
@@ -78,6 +79,7 @@ def format_data(data, request=None, relative_to=None, max_array_length=3):
         else:
             return escape(repr(data))
     except Exception as e:
+        logging.exception("Exception in format_data")
         return str(e)
 
 
@@ -144,6 +146,7 @@ def calculate_all(request):
         data, = ts.calculate_all(decode_property_name(request.matchdict['nameid']),
                                  sanitize=False, order_by_halo_number=True, object_type=typetag)
     except Exception as e:
+        logging.exception("Exception in calculate_all")
         return {'error': getattr(e,'message',""), 'error_class': type(e).__name__}
 
     return {'timestep': ts.escaped_extension, 'data_formatted': [format_data(d, request) for d in data],
@@ -165,6 +168,7 @@ def get_property_data(halo, property_name_or_result, request=None):
             result, p_info = _get_property_from_halo_and_name(halo, property_name_or_result)
             name = property_name_or_result
         except Exception as e:
+            logging.exception("Exception in get_property_data")
             return {'error': getattr(e, 'message', ""), 'error_class': type(e).__name__}
     else:
         result = property_name_or_result.data_raw
