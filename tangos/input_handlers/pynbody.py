@@ -321,7 +321,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
     patterns = ["snapshot_???"]
     auxiliary_file_patterns =["groups_???"]
 
-    snap_class_name = "pynbody.snapshot.GadgetSnap" # annoyingly, has to be string because pynbody isn't imported at module import time
+    snap_class_name = "pynbody.snapshot.gadget.GadgetSnap" # annoyingly, has to be string because pynbody isn't imported at module import time
     catalogue_class_name = "pynbody.halo.SubfindCatalogue"
 
     _property_prefix_for_type = {'halo': 'sub_'}
