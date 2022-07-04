@@ -338,7 +338,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
             return False
 
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
-        if mode=='subfind_properties':
+        if mode=='subfind-properties':
             h = self._construct_halo_cat(ts_extension, object_typetag)
             return h.get_halo_properties(finder_offset,with_unit=False)
         else:
