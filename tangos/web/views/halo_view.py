@@ -94,7 +94,7 @@ class HaloLinkInfo:
         halo_source = link.halo_from
         halo_dest = link.halo_to
         weight_text = "( %.2f)"%link.weight if link.weight else ""
-        self.name = "{}{}: {}".format(link.relation.text, weight_text, _relative_description(halo_source, halo_dest))
+        self.name = f"{link.relation.text}{weight_text}: {_relative_description(halo_source, halo_dest)}"
         if halo_dest is not None:
             self.url = request.route_url('halo_view', simid=halo_dest.timestep.simulation.escaped_basename,
                                          timestepid=halo_dest.timestep.escaped_extension,
