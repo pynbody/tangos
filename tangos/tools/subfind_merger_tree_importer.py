@@ -1,13 +1,12 @@
 import re
 
-from .. import config
-from .. import core
+from .. import config, core
 from ..core import get_or_create_dictionary_item
 from ..core.halo_data import HaloLink, HaloProperty
 from ..input_handlers import pynbody
 from ..log import logger
-from . import GenericTangosTool
 from ..util import timestep_object_cache
+from . import GenericTangosTool
 
 
 class SubfindTreeImporter(GenericTangosTool):
@@ -90,4 +89,3 @@ class SubfindTreeImporter(GenericTangosTool):
                 if self._get_snap_id(ts.extension)!=self._get_snap_id(ts_prev.extension)+1:
                     logger.warning("The snapshots appear to skip steps. Attempt to import tree will continue, but may result in errors or an inconsistent merger history.")
                 self.create_links(ts_prev, ts)
-
