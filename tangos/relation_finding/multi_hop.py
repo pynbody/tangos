@@ -87,6 +87,7 @@ class MultiHopStrategy(HopStrategy):
         self._one_simulation = one_simulation
         self._connection = self.session.connection()
         self._combine_routes = combine_routes
+        self._debug_output = False # set to True to see information about discovered links as hops progress
 
         dialect = self._connection.engine.dialect.dialect_description.split("+")[0].lower()
         if dialect == 'mysql':
@@ -257,6 +258,7 @@ class MultiHopStrategy(HopStrategy):
 
     def _make_hops(self):
         for i in range(0, self.nhops_max):
+            self._nhops_taken = i
             generated_count = self._generate_next_level_prelim_links(i)
             if generated_count != 0:
                 filtered_count = self._filter_prelim_links_into_final()
@@ -265,7 +267,7 @@ class MultiHopStrategy(HopStrategy):
 
             if self._hopping_finished(filtered_count):
                 break
-        self._nhops_taken = i
+
 
     def _hopping_finished(self, filtered_count):
         return filtered_count==0
@@ -319,7 +321,22 @@ class MultiHopStrategy(HopStrategy):
 
         return num_inserted
 
+    def _debug_print_links(self, tab):
+        halo_from = sqlalchemy.orm.aliased(core.halo.Halo)
+        halo_to = sqlalchemy.orm.aliased(core.halo.Halo)
+        halo_source = sqlalchemy.orm.aliased(core.halo.Halo)
+        q = self.session.query(halo_from, halo_to, tab.c.source_id, tab.c.weight, tab.c.nhops).\
+            select_from(tab).\
+            join(halo_from, tab.c.halo_from_id == halo_from.id).\
+            join(halo_to, tab.c.halo_to_id == halo_to.id)
+        for row in q.all():
+            print(f"[s{row[2]} i{row[4]}] {row[0].path} -> {row[1].path} w={row[3]:.2f}")
+
     def _filter_prelim_links_into_final(self):
+        if self._debug_output:
+            print()
+            print(f"[{self._nhops_taken}] Preliminary links:")
+            self._debug_print_links(self._prelim_table)
 
         q = self.session.query(self._prelim_table.c.halo_from_id,
                                self._prelim_table.c.halo_to_id,
@@ -333,6 +350,10 @@ class MultiHopStrategy(HopStrategy):
         added_rows = self._connection.execute(
             self._table.insert().from_select(['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'source_id'],
                                              q)).rowcount
+
+        if self._debug_output:
+            print(f"[{self._nhops_taken}] Accepted links:")
+            self._debug_print_links(self._table)
 
         self._connection.execute(self._prelim_table.delete())
         return added_rows
