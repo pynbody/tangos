@@ -206,6 +206,21 @@ class RockstarStatFile(HaloStatFile):
         if basename.startswith("snapshot_"):
             timestep_id = int(basename[9:])
             return os.path.join(dirname, "out_%d.list"%timestep_id)
+        elif basename.startswith(("RD","DD")):
+            # datasets.txt will be written if rockstar was run with yt
+            if os.path.exists(os.path.join(dirname[:-(len(basename)+1)], "datasets.txt")):
+                with open(os.path.join(dirname[:-(len(basename)+1)], "datasets.txt")) as f:
+                    for l in f:
+                        if l.split()[0].endswith(basename):
+                            timestep_id = int(l.split()[1])
+            else: # otherwise, assume a one-to-one correspondence
+                snapfiles = glob.glob(os.path.join(dirname,basename[:2]+len(basename[2:].split('/')[0])*'?'))
+                rockfiles = glob.glob(os.path.join(dirname,"out_*.list"))
+                snapfiles.sort()
+                rockfiles.sort()
+                timestep_ind = np.argwhere(np.array(snapfiles)==basename.split('/')[0])[0]
+                timestep_id = int(np.array(rockfiles)[timestep_ind][0].split('.')[0][4:])
+            return os.path.join(dirname[:-(len(basename)+1)],"out_%d.list"%timestep_id)
         else:
             return "CannotComputeRockstarFilename"
 

@@ -39,7 +39,25 @@ class ConsistentTreesImporter(GenericTangosTool):
         if match:
             return int(match.group(1))
         else:
-            raise ValueError("Unable to convert %s to snapshot number"%filename)
+            match = re.match("(?:RD|DD)[0-9]*/(?:RD|DD)([0-9]*)",filename)
+            if match:
+                # Check whether datasets.txt exists (i.e., if rockstar was run with yt)
+                if os.path.exists(self._extension_to_filename("datasets.txt")):
+                    with open(os.path.join(basedir, "datasets.txt")) as f:
+                        for l in f:
+                            if l.split()[0].endswith(filename):
+                                timestep_id = int(l.split()[1])
+                # Otherwise, assume a one-to-one correspondence
+                else:
+                    snapfiles = glob.glob(self._extension_to_filename(ts_extension[:2]+len(ts_extension[2:].split('/')[0])*'?'))
+                    rockfiles = glob.glob(self._extension_to_filename("out_*.list"))
+                    snapfiles.sort()
+                    rockfiles.sort()
+                    timestep_ind = np.argwhere(np.array(snapfiles)==ts_extension.split('/')[0])[0]
+                    timestep_id = int(np.array(rockfiles)[timestep_ind][0].split('.')[0][4:])
+                return timestep_id
+            else:
+                raise ValueError("Unable to convert %s to snapshot number"%filename)
 
     def create_phantoms(self, timestep, n_phantoms):
         existing_phantoms = timestep.phantoms.all()
