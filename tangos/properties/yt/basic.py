@@ -1,6 +1,6 @@
 from .. import PropertyCalculation, LivePropertyCalculation
 import numpy as np
-from tangos import get_halo
+from tangos.query import get_halo
 
 class FindCenter(PropertyCalculation):
     """Returns center arrays in physical and code units (cu)"""
