@@ -1,6 +1,6 @@
 from .. import PropertyCalculation, LivePropertyCalculation
 import numpy as np
-from ... import get_halo
+import tangos as db
 
 class FindCenter(PropertyCalculation):
     """Returns center arrays in physical and code units (cu)"""
@@ -26,7 +26,7 @@ class FindHosts(LivePropertyCalculation):
         offsets = np.linalg.norm(halo_entry['Center'] - centers[masses>halo_entry['Mvir']], axis=1)
         host_mask = offsets<(radii[masses>halo_entry['Mvir']]/1000.)
         potids = dbid[masses>halo_entry['Mvir']]
-        return np.array([get_halo(x) for x in potids[host_mask]])
+        return np.array([db.get_halo(x) for x in potids[host_mask]])
             
 class FindSats(LivePropertyCalculation):
     """Returns all less massive halos that lie within the virial
@@ -41,7 +41,7 @@ class FindSats(LivePropertyCalculation):
         offsets = np.linalg.norm(halo_entry['Center'] - centers[masses<halo_entry['Mvir']], axis=1)
         host_mask = offsets<(halo_entry['Rvir']/1000.)
         potids = dbid[masses<halo_entry['Mvir']]
-        return np.array([get_halo(x) for x in potids[host_mask]])
+        return np.array([db.get_halo(x) for x in potids[host_mask]])
         
 class GetTimestepName(LivePropertyCalculation):
     """Fetches the name of the timestep that a halo exists in"""
