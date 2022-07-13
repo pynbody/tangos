@@ -139,13 +139,16 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
                     fnum = float(curln.split()[-1])
                 curln = dsfile.readline()
             dsfile.close()
-        else: # otherwise, assume a one-to-one correspondence
-            snapfiles = glob.glob(self._extension_to_filename(ts_extension[:2]+len(ts_extension[2:].split('/')[0])*'?'))
-            rockfiles = glob.glob(self._extension_to_filename("out_*.list"))
-            snapfiles.sort()
-            rockfiles.sort()
-            timestep_ind = np.argwhere(np.array(snapfiles)==ts_extension.split('/')[0])[0]
-            fnum = int(np.array(rockfiles)[timestep_ind][0].split('.')[0][4:])
+            else: # otherwise, assume a one-to-one correspondence
+                overdir = dirname[:(-1*(3+len(basename[2:])))]
+                snapfiles = glob.glob(os.path.join(overdir,basename[:2]+len(basename[2:])*'?'))
+                rockfiles = glob.glob(os.path.join(overdir,"out_*.list"))
+                snapfiles.sort()
+                rockfiles.sort()
+                timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==basename)[0][>
+                fnum = int(np.array(rockfiles)[timestep_ind].split('.')[0][4:])
+                print (fnum)
+                print (self._extension_to_filename("halos_"+str(fnum)+".bin"))
         cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".bin"))
         cat_data = cat.all_data()
         # Check whether rockstar was run with Behroozi's distribution or Wise's
