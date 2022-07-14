@@ -4,7 +4,8 @@ from .. import config
 from ..log import logger
 from . import HandlerBase, finding
 import glob
-
+import os
+import numpy as np
 
 class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __init__(self, *args, **kwargs):
@@ -58,9 +59,9 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
             for i in range(num_objects):
                 obj = self.load_object(ts_extension, i, i, object_typetag)
-                NDM = len(obj["DarkMatter","Mass"])
-                NGas = len(obj["Gas","Mass"])
-                NStar = len(obj["Stars","Mass"])
+                NDM = len(obj["dark_matter","particle_mass"])
+                NGas = len(obj["gas","mass"])
+                NStar = len(obj["stars","particle_mass"])
                 if NDM + NGas + NStar> min_halo_particles:
                     yield i, i, NDM, NStar, NGas
 
@@ -139,17 +140,19 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
                     fnum = float(curln.split()[-1])
                 curln = dsfile.readline()
             dsfile.close()
-            else: # otherwise, assume a one-to-one correspondence
-                overdir = dirname[:(-1*(3+len(basename[2:])))]
-                snapfiles = glob.glob(os.path.join(overdir,basename[:2]+len(basename[2:])*'?'))
-                rockfiles = glob.glob(os.path.join(overdir,"out_*.list"))
-                snapfiles.sort()
-                rockfiles.sort()
-                timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==basename)[0][>
-                fnum = int(np.array(rockfiles)[timestep_ind].split('.')[0][4:])
-                print (fnum)
-                print (self._extension_to_filename("halos_"+str(fnum)+".bin"))
-        cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".bin"))
+        else: # otherwise, assume a one-to-one correspondence
+            overdir = self._extension_to_filename("")
+            print (overdir)
+            print (ts_extension)
+            snapfiles = glob.glob(overdir+ts_extension[:2]+len(ts_extension[2:].split('/')[0])*'?')
+            rockfiles = glob.glob(overdir+"out_*.list")
+            snapfiles.sort()
+            print (snapfiles)
+            rockfiles.sort()
+            print (rockfiles)
+            timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==ts_extension.split('/')[0])[0]
+            fnum = int(np.array(rockfiles)[timestep_ind][0].split('.')[0].split('_')[-1])
+        cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
         cat_data = cat.all_data()
         # Check whether rockstar was run with Behroozi's distribution or Wise's
         if np.any(cat_data["halos","particle_identifier"]<0):
@@ -158,6 +161,7 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
             cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".bin"))
             cat.parameters['format_revision'] = 2 #
             cat_data = cat.all_data()
+        print (len(cat_data['halos','particle_mass']))
         return cat, cat_data
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
@@ -175,9 +179,9 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
 
             for i in range(num_objects):
                 obj = self.load_object(ts_extension, int(catalogue_data["halos","particle_identifier"][i]), i, object_typetag)
-                NDM = len(obj["DarkMatter","particle_mass"])
+                NDM = len(obj["dark_matter","particle_mass"])
                 NGas = 0 # cells
-                NStar = len(obj["Stars","particle_mass"])
+                NStar = len(obj["stars","particle_mass"])
                 if NDM + NGas + NStar> min_halo_particles:
                     yield i, int(catalogue_data["halos","particle_identifier"][i]), NDM, NStar, NGas
 
