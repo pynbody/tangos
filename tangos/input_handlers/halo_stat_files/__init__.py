@@ -215,12 +215,13 @@ class RockstarStatFile(HaloStatFile):
                         if l.split()[0].endswith(basename):
                             timestep_id = int(l.split()[1])
             else: # otherwise, assume a one-to-one correspondence
-                snapfiles = glob.glob(os.path.join(dirname,basename[:2]+len(basename[2:].split('/')[0])*'?'))
-                rockfiles = glob.glob(os.path.join(dirname,"out_*.list"))
+                overdir = dirname[:(-1*(3+len(basename[2:])))]
+                snapfiles = glob.glob(os.path.join(overdir,basename[:2]+len(basename[2:])*'?'))
+                rockfiles = glob.glob(os.path.join(overdir,"out_*.list"))
                 snapfiles.sort()
                 rockfiles.sort()
-                timestep_ind = np.argwhere(np.array(snapfiles)==basename.split('/')[0])[0]
-                timestep_id = int(np.array(rockfiles)[timestep_ind][0].split('.')[0][4:])
+                timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==basename)[0]
+                timestep_id = int(np.array(rockfiles)[timestep_ind].split('.')[0][4:])
                 print (timestep_id)
                 print (os.path.join(dirname[:-(len(basename)+1)],"out_%d.list"%timestep_id))
             return os.path.join(dirname[:-(len(basename)+1)],"out_%d.list"%timestep_id)

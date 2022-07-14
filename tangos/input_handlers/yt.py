@@ -142,14 +142,10 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
             dsfile.close()
         else: # otherwise, assume a one-to-one correspondence
             overdir = self._extension_to_filename("")
-            print (overdir)
-            print (ts_extension)
             snapfiles = glob.glob(overdir+ts_extension[:2]+len(ts_extension[2:].split('/')[0])*'?')
             rockfiles = glob.glob(overdir+"out_*.list")
             snapfiles.sort()
-            print (snapfiles)
             rockfiles.sort()
-            print (rockfiles)
             timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==ts_extension.split('/')[0])[0]
             fnum = int(np.array(rockfiles)[timestep_ind][0].split('.')[0].split('_')[-1])
         cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
