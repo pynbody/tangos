@@ -147,9 +147,9 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
             sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
             sortord = np.argsort(sortind)
             snapfiles.sort()
-            rockfiles = rockfiles[sortord]
+            rockfiles = np.array(rockfiles)[sortord]
             timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==ts_extension.split('/')[0])[0]
-            fnum = int(np.array(rockfiles)[timestep_ind][0].split('.')[0].split('_')[-1])
+            fnum = int(rockfiles[timestep_ind][0].split('.')[0].split('_')[-1])
         cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
         cat_data = cat.all_data()
         # Check whether rockstar was run with Behroozi's distribution or Wise's

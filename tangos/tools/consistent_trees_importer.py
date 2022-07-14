@@ -55,9 +55,9 @@ class ConsistentTreesImporter(GenericTangosTool):
                     sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
                     sortord = np.argsort(sortind)
                     snapfiles.sort()
-                    rockfiles = rockfiles[sortord]
+                    rockfiles = np.array(rockfiles)[sortord]
                     timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==filename.split('/')[-1])[0]
-                    timestep_id = int((np.array(rockfiles)[timestep_ind][0]).split('.')[0].split('_')[-1])
+                    timestep_id = int((rockfiles[timestep_ind][0]).split('.')[0].split('_')[-1])
                 return timestep_id
             else:
                 raise ValueError("Unable to convert %s to snapshot number"%filename)
