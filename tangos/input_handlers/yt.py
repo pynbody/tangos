@@ -144,8 +144,10 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
             overdir = self._extension_to_filename("")
             snapfiles = glob.glob(overdir+ts_extension[:2]+len(ts_extension[2:].split('/')[0])*'?')
             rockfiles = glob.glob(overdir+"out_*.list")
+            sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
+            sortord = np.argsort(sortind)
             snapfiles.sort()
-            rockfiles.sort()
+            rockfiles = rockfiles[sortord]
             timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==ts_extension.split('/')[0])[0]
             fnum = int(np.array(rockfiles)[timestep_ind][0].split('.')[0].split('_')[-1])
         cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
@@ -157,7 +159,6 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
             cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".bin"))
             cat.parameters['format_revision'] = 2 #
             cat_data = cat.all_data()
-        print (len(cat_data['halos','particle_mass']))
         return cat, cat_data
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):

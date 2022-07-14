@@ -12,6 +12,7 @@ from ..core.halo_data import HaloLink, HaloProperty
 from ..input_handlers import consistent_trees as ct
 from ..log import logger
 from . import GenericTangosTool
+import glob
 
 
 class ConsistentTreesImporter(GenericTangosTool):
@@ -49,14 +50,14 @@ class ConsistentTreesImporter(GenericTangosTool):
                                 timestep_id = int(l.split()[1])
                 # Otherwise, assume a one-to-one correspondence
                 else:
-                    overdir = dirname[:(-1*(3+len(basename[2:])))]
-                    snapfiles = glob.glob(os.path.join(overdir,basename[:2]+len(basename[2:])*'?'))
-                    rockfiles = glob.glob(os.path.join(overdir,"out_*.list"))
+                    snapfiles = glob.glob(os.path.join(basedir,filename.split('/')[-1][:2]+len(filename.split('/')[-1][2:])*'?'))
+                    rockfiles = glob.glob(os.path.join(basedir,"out_*.list"))
+                    sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
+                    sortord = np.argsort(sortind)
                     snapfiles.sort()
-                    rockfiles.sort()
-                    timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==basename)[0]
-                    timestep_id = int(np.array(rockfiles)[timestep_ind].split('.')[0][4:])
-                    print (timestep_id)
+                    rockfiles = rockfiles[sortord]
+                    timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==filename.split('/')[-1])[0]
+                    timestep_id = int((np.array(rockfiles)[timestep_ind][0]).split('.')[0].split('_')[-1])
                 return timestep_id
             else:
                 raise ValueError("Unable to convert %s to snapshot number"%filename)

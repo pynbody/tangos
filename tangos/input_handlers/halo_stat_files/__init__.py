@@ -218,12 +218,12 @@ class RockstarStatFile(HaloStatFile):
                 overdir = dirname[:(-1*(3+len(basename[2:])))]
                 snapfiles = glob.glob(os.path.join(overdir,basename[:2]+len(basename[2:])*'?'))
                 rockfiles = glob.glob(os.path.join(overdir,"out_*.list"))
+                sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
+                sortord = np.argsort(sortind)
                 snapfiles.sort()
-                rockfiles.sort()
+                rockfiles = rockfiles[sortord]
                 timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==basename)[0]
-                timestep_id = int(np.array(rockfiles)[timestep_ind].split('.')[0][4:])
-                print (timestep_id)
-                print (os.path.join(dirname[:-(len(basename)+1)],"out_%d.list"%timestep_id))
+                timestep_id = int((np.array(rockfiles)[timestep_ind][0]).split('.')[0].split('_')[-1])
             return os.path.join(dirname[:-(len(basename)+1)],"out_%d.list"%timestep_id)
         else:
             return "CannotComputeRockstarFilename"
