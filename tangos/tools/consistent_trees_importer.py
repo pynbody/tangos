@@ -54,7 +54,7 @@ class ConsistentTreesImporter(GenericTangosTool):
                     rockfiles = glob.glob(os.path.join(overdir,"out_*.list"))
                     snapfiles.sort()
                     rockfiles.sort()
-                    timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==basename)[0][>
+                    timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==basename)[0]
                     timestep_id = int(np.array(rockfiles)[timestep_ind].split('.')[0][4:])
                     print (timestep_id)
                 return timestep_id

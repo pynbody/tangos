@@ -5,6 +5,7 @@ import numpy as np
 
 from ...util import proxy_object
 from . import translations
+import glob
 
 
 class HaloStatFile:
