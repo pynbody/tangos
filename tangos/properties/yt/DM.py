@@ -21,12 +21,12 @@ class HaloDensityProfile(YtPropertyCalculation):
         # a rough-and-ready profile; faster than the yt built-in profiles which seem to insist on interpolating
         # onto a grid even for radial profiling (is this correct?)
 
-        position = (data["DarkMatter","particle_position"] - data.center).in_units("kpc")
+        position = (data["dark_matter","particle_position"] - data.center).in_units("kpc")
         radius = np.linalg.norm(position,axis=1)
         rmax = radius.max()
         num_bins = int(rmax/self.plot_xdelta())+1
 
-        mass = data["DarkMatter","Mass"].in_units("Msun")
+        mass = data["dark_matter","particle_mass"].in_units("Msun")
 
         mass_per_bin,_ = np.histogram(radius, weights=mass, bins=num_bins, range=(0,num_bins*self.plot_xdelta()))
 
@@ -44,7 +44,7 @@ class Contamination(YtPropertyCalculation):
     names = "ContamFrac"
 
     def requires_property(self):
-        return ["Center_cu", "Rvir"]
+        return ["Center", "Rvir_kpc"]
     
     def calculate(self, particle_data, existing_properties):
         dmtot = float(particle_data.quantities.total_quantity(('dark_matter', 'particle_mass')).in_units('Msun').value)

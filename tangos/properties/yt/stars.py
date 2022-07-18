@@ -5,7 +5,7 @@ class StellarMass(YtPropertyCalculation):
     names = "M_star"
 
     def requires_property(self):
-        return ["Center_cu", "Rvir"]
+        return ["Center", "Rvir_kpc"]
 
     def calculate(self, particle_data, existing_properties):
         return float(particle_data.quantities.total_quantity(('stars', 'particle_mass')).in_units('Msun').value)

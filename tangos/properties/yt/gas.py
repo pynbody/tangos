@@ -7,7 +7,7 @@ class GasMass(YtPropertyCalculation):
     names = "M_gas","M_coldgas"
     
     def requires_property(self):
-        return ["Center_cu", "Rvir"]
+        return ["Center", "Rvir_kpc"]
         
     def calculate(self, particle_data, existing_properties):
          cgas = particle_data.cut_region(["obj['temperature'] < 1.5e4"])
