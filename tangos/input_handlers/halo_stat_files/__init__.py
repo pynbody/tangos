@@ -204,7 +204,7 @@ class RockstarStatFile(HaloStatFile):
                                      'n_gas': translations.Value(0),
                                      'n_star': translations.Value(0),
                                      'npart': translations.Rename('Np'),
-                                     'Mvir_Msun': translations.Function(lambda Mtot: Mvir/self.cosmo_h, 'Mvir'),
+                                     'Mvir_Msun': translations.Function(lambda Mvir: Mvir/self.cosmo_h, 'Mvir'),
                                      'Rvir_kpc': translations.Function(lambda Rvir: Rvir*self.cosmo_a/self.cosmo_h, 'Rvir'),
                                      'X_Mpc': translations.Function(lambda X: X*self.cosmo_a/self.cosmo_h, 'X'),
                                      'Y_Mpc': translations.Function(lambda Y: Y*self.cosmo_a/self.cosmo_h, 'Y'),
