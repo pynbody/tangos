@@ -140,6 +140,10 @@ def init_db(db_uri=None, timeout=30, verbose=None):
     if db_uri is None:
         db_uri = config.db
 
+    if 'psycopg2' in db_uri:
+        from ..util import postgresql_adapters
+        postgresql_adapters.register_postgresql_adapters()
+
     if '//' not in db_uri:
         db_uri = 'sqlite:///' + db_uri
 

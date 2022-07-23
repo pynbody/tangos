@@ -14,7 +14,8 @@ def argmax(query, maximise_column, group_bys):
     # but which serves to pick out the argmax
     argmax_subquery = query
 
-    argmax_subquery = argmax_subquery.add_columns(func.max(maximise_column).label("maximise_column_result")). \
+    argmax_subquery = argmax_subquery.with_entities(func.max(maximise_column).label("maximise_column_result"),
+                                                    *group_bys). \
         group_by(*group_bys).subquery()
     # NB tried making the above a materialised CTE to improve performance, but it doesn't help (presumably the SQLite
     # optimizers already spot the subquery is used twice?)
@@ -29,7 +30,8 @@ def argmax(query, maximise_column, group_bys):
     # currently generates more than one row. Avoid by grouping. Note in this case SQL will return
     # basically a random choice of which row to return, so this is not a perfect solution - long term TODO.
     # This also ends up necessitating using MySQL without ONLY_FULL_GROUP_BY mode enabled
-    query = query.group_by(*group_bys)
+
+    # query = query.group_by(*group_bys)
 
     return query
 
