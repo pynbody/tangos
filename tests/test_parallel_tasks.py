@@ -9,7 +9,7 @@ from tangos import testing
 
 def setup_module():
     pt.use("multiprocessing")
-    testing.init_blank_db_for_testing(timeout=5.0, verbose=False)
+    testing.init_blank_db_for_testing(timeout=5, verbose=False)
 
     generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
     generator.add_timestep()
