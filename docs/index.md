@@ -77,12 +77,12 @@ MySQL / MariaDB below.
 Remember, you will need to set these environment variables *every* time you start a new session on your computer prior
 to booting up the database, either with the webserver or the python interface (see below).
 
-Using MySQL (or MariaDB)
----------------------
+Using PostgreSQL, MySQL or MariaDB
+----------------------------------
 
-As stated above, tangos is agnostic to the underlying SQL flavour. It is most likely to work well
-(other than with SQLite) with [MySQL](https://www.mysql.com) and [MariaDB](https://mariadb.org).
-Since version 1.5.0, tangos is routinely tested with MySQL as well as SQLite.
+As stated above, tangos is agnostic to the underlying SQL flavour. It is easiest to get start with
+SQLite which doesn't need any special server. But it should also work well with [MySQL](https://www.mysql.com), 
+[MariaDB](https://mariadb.org) or [PostgreSQL](https://www.postgresql.org). 
 
 To try this out, if you have [docker](https://docker.com), you can run a test
 MySQL server very easily:
@@ -93,16 +93,29 @@ docker run -d --name=mysql-server -p3306:3306 -e MYSQL_ROOT_PASSWORD=my_secret_p
 echo "create database database_name;" | docker exec -i mysql-server mysql -pmy_secret_password
 ```
 
-To be sure that python can connect to MySQL, install the PyMySQL module:
+Or, just as easily, you can get going with PostgreSQL:
 ```bash
-pip install PyMySQL
+docker pull postgres
+docker run --name tangos-postgres -e POSTGRES_USER=tangos -e POSTGRES_PASSWORD=my_secret_password -e POSTGRES_DB=database_name -p 5432:5432 -d postgres
 ```
 
-Tangos can now connect to your test server using the connection:
+To be sure that python can connect to MySQL or PostgreSQL, install the appropriate modules:
+```bash
+pip install PyMySQL # for MySQL
+pip install psycopg2-binary # for PostgreSQL
+```
+
+Tangos can now connect to your test MySQL server using the connection:
 ```bash
 export TANGOS_DB_CONNECTION=mysql+pymysql://root:my_secret_password@localhost:3306/database_name
 ```
-You can now use all the tangos tools as normal, and they will populate the MySQL database instead of a SQLite file.
+or for PostgreSQL:
+```bash
+export TANGOS_DB_CONNECTION=postgresql+psycopg2://tangos:my_secret_password@localhost/database_name
+```
+
+You can now use all the tangos tools as normal, and they will populate the MySQL/PostgreSQL database 
+instead of a SQLite file.
 
 
 Where next?
