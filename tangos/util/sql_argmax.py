@@ -40,7 +40,7 @@ def argmax(query, maximise_column, group_bys):
     primary_key = group_bys[0].table.primary_key.columns[0]
 
     deduped_argmax_subquery \
-        = select(func.max(primary_key).label('id')).join(argmax_subquery,
+        = query.with_entities(func.max(primary_key).label('id')).join(argmax_subquery,
                                                     and_( maximise_column == argmax_subquery.c.maximise_column_result,
                                                             *join_conditions) ).\
                                                     group_by(*group_bys_in_argmax_subquery).subquery()
