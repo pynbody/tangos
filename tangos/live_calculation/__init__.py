@@ -186,22 +186,24 @@ class Calculation:
     def _refetch_halos_from_original_session(self, unsanitized_values, session):
         output_halo_ids = []
         halo_id_to_list_index = {}
-        unsanitized_values_ravel = unsanitized_values.flat
-        for i, item in enumerate(unsanitized_values_ravel):
+
+        for i, item in enumerate(unsanitized_values.flat):
             if isinstance(item, core.SimulationObjectBase):
                 output_halo_ids.append(item.id)
                 halo_id_to_list_index[item.id] = i
         if len(output_halo_ids) > 0:
             with thl.temporary_halolist_table(session, output_halo_ids) as tab:
-                results = thl.halo_query(tab).all()
+                results = thl.enumerated_halo_query(tab).all() # must be enumerated to keep duplicates
 
-            # reinstate duplicates
-            results = self._add_entries_for_duplicates(results, output_halo_ids)
+            # Now work through the original output and replace all SimulationObjectBase instances with the
+            # new ones
+            j = 0
+            for i, item in enumerate(unsanitized_values.flat):
+                if isinstance(item, core.SimulationObjectBase):
+                    unsanitized_values.flat[i] = results[j][1]
+                    j+=1
 
-            for i in range(len(unsanitized_values_ravel)):
-                if isinstance(unsanitized_values_ravel[i], core.SimulationObjectBase):
-                    refetched_halo = results[halo_id_to_list_index[unsanitized_values_ravel[i].id]]
-                    unsanitized_values_ravel[i] = refetched_halo
+
 
     @staticmethod
     def _make_numpy_array(x):
