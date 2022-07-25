@@ -81,8 +81,8 @@ Using PostgreSQL, MySQL or MariaDB
 ----------------------------------
 
 As stated above, tangos is agnostic to the underlying SQL flavour. It is easiest to get start with
-SQLite which doesn't need any special server. But it should also work well with [MySQL](https://www.mysql.com), 
-[MariaDB](https://mariadb.org) or [PostgreSQL](https://www.postgresql.org). 
+SQLite which doesn't need any special server. But it should also work well with [MySQL](https://www.mysql.com),
+[MariaDB](https://mariadb.org) or [PostgreSQL](https://www.postgresql.org).
 
 To try this out, if you have [docker](https://docker.com), you can run a test
 MySQL server very easily:
@@ -114,7 +114,7 @@ or for PostgreSQL:
 export TANGOS_DB_CONNECTION=postgresql+psycopg2://tangos:my_secret_password@localhost/database_name
 ```
 
-You can now use all the tangos tools as normal, and they will populate the MySQL/PostgreSQL database 
+You can now use all the tangos tools as normal, and they will populate the MySQL/PostgreSQL database
 instead of a SQLite file.
 
 

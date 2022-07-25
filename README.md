@@ -23,7 +23,7 @@ When building databases, _tangos_:
    process raw simulation data;
  - can use your favourite database as the underlying store, thanks to [sqlalchemy](https://www.sqlalchemy.org).
    By default, _tangos_ uses the file-based database [sqlite](https://sqlite.org), but it is also routinely
-   tested against the server-based MySQL.
+   tested against the server-based MySQL and PostgreSQL.
 
 
  Getting started
