@@ -71,17 +71,8 @@ class TimeStep(Base):
     def __getitem__(self, halo_identifier):
         from . import Session, SimulationObjectBase
         session = Session.object_session(self)
-        if isinstance(halo_identifier, int):
-            object_typecode, halo_number = 0, halo_identifier
-        elif "." in halo_identifier:
-            object_typecode, halo_number = list(map(int, halo_identifier.split(".")))
-        elif "_" in halo_identifier:
-            object_typecode, halo_number = halo_identifier.split("_")
-            object_typecode = SimulationObjectBase.class_from_tag(object_typecode).__mapper_args__['polymorphic_identity']
-            halo_number = int(halo_number)
-        else:
-            object_typecode, halo_number = 0, int(halo_identifier)
-        return session.query(SimulationObjectBase).filter_by(timestep_id=self.id, halo_number=halo_number, object_typecode=object_typecode).first()
+        object_typecode, object_number = SimulationObjectBase.typecode_and_number_from_human_identifier(halo_identifier)
+        return session.query(SimulationObjectBase).filter_by(timestep_id=self.id, halo_number=object_number, object_typecode=object_typecode).first()
 
     @property
     def path(self):

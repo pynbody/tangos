@@ -2,6 +2,12 @@ var allEditables = [];
 
 var addLabelText = "Add +";
 
+
+function extractColumnName(s) {
+    const extractColumnNameRegexp = /(label|plotctl)-(.*)/;
+    return s.match(extractColumnNameRegexp)[2];
+}
+
 Array.prototype.removeItem = function() {
     // from https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
     var what, a = arguments, L = a.length, ax;
@@ -13,31 +19,6 @@ Array.prototype.removeItem = function() {
     }
     return this;
 };
-
-jQuery.fn.positionDiv = function (divToPop) {
-    var pos=$(this).offset();
-    var h=$(this).height();
-    var w=$(this).width();
-    $(divToPop).css({ left: pos.left , top: pos.top + h + 5 , position: 'absolute', align: 'right' });
-
-};
-
-function popupControls(attachTo) {
-    unpopupControls(attachTo);
-    var id = attachTo.attr('id');
-    var popupDiv = $("<div/>", {id: 'popup-controls-'+id, class: 'popup-controls'});
-    popupDiv.html("&#x1F5D1;");
-    popupDiv.appendTo('#content-container');
-    attachTo.positionDiv(popupDiv);
-    popupDiv.on('mousedown', function() {
-        attachTo.trigger('deleteEditable');
-    }).on( 'click', function() {});
-}
-
-function unpopupControls(attachedTo) {
-    var id = attachedTo.attr('id');
-    $('#popup-controls-'+id).remove();
-}
 
 $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
     /* Mark a DOM element as a place to
@@ -66,7 +47,7 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
     enableAutocomplete($this);
 
     var savedContent;
-    var column_id = $this.attr('id').substr(7);
+    var column_id = extractColumnName($this.attr('id'));
 
     $this.css('cursor','pointer');
 
@@ -93,25 +74,21 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
         'focus': function() {
             $this.css('cursor','text');
             savedContent = $this.text();
-            if(savedContent!==addLabelText)
-                popupControls($this);
             if($this.text()===addLabelText) {
                 putCursorAt(this, 0);
                 $this.text("");
             }
+            console.log("savedContent=",savedContent);
         },
         'deleteEditable': function() {
-            unpopupControls($this);
             remove(column_id, editable_tag);
             allEditables.removeItem($this);
         },
         'revertEditable': function() {
-            unpopupControls($this);
             $this.css('cursor','pointer');
             $this.text(savedContent);
         },
         'saveEditable': function() {
-            unpopupControls($this);
             $this.css('cursor','pointer');
             var content = $this.text();
             if(savedContent===addLabelText) {
@@ -128,15 +105,6 @@ $.fn.makeEditableTemplate = function(add, remove, update, editable_tag) {
 
     return this;
 }
-
-/*
-function insertNewEditable(editable_name) {
-    var previous_id = allEditables[allEditables.length-1].attr('id').substr(7);
-    var id = defaultAddFn(previous_id);
-    defaultUpdateFn(editable_name, previous_id);
-}
-*/
-
 
 function uriEncodeQuery(name) {
     name = name.replace(/\//g,"_slash_")
@@ -205,7 +173,7 @@ function restoreAllEditables() {
         var type_tag = editable.data('editable_type_tag');
         if(type_tag in editables) {
             var editables_of_type = editables[type_tag];
-            var old_column_id = editable.attr('id').substr(7);
+            var old_column_id = extractColumnName(editable.attr('id'));
             forEach(editables_of_type, function(name_to_add) {
                 var add_fn = editable.data('editable_add');
                 var update_fn = editable.data('editable_update');
@@ -224,18 +192,36 @@ function restoreAllEditables() {
 function getPlotControlElements(query, isScalar) {
     var uriQuery = uriEncodeQuery(query);
     if(isScalar)
-        return '<input name="x" type="radio" onclick="resetRadio(\'justthis\');"  value="'+uriQuery+'"/>' +
-               '<input name="y" type="radio" onclick="resetRadio(\'justthis\');" value="'+uriQuery+'"/>'
+        return '<label class="x-plot-radio"><input name="x" type="radio" onclick="resetRadio(\'justthis\');"  value="'+uriQuery+'"/></label>' +
+               '<label class="y-plot-radio"><input name="y" type="radio" onclick="resetRadio(\'justthis\');" value="'+uriQuery+'"/></label>'
     else
-        return '<input name="justthis" type="radio" value="'+uriQuery+'" onclick="resetRadio(\'x\'); resetRadio(\'y\');"/>'
+        return '<label class="plot-radio"><input name="justthis" type="radio" value="'+uriQuery+'" onclick="resetRadio(\'x\'); resetRadio(\'y\');"/></label>'
 }
 
 function getFilterElements(query) {
     var uriQuery = uriEncodeQuery(query);
-    return '<label>Filter <input name="filter-'+uriQuery+'" type="checkbox"/></label>'
+    return '<input id="filter-'+uriQuery+'" name="filter-'+uriQuery+'" type="checkbox" class="filter-checkbox"/><label class="filter-checkbox" for="filter-'+uriQuery+'" title="Filter"></label>'
 }
 
-function updatePlotControlElements(element, query, isScalar, isFilter, isArray, filterOnly) {
+function sortTableColumn(element, ascending) {
+    let object_tag = $(element).parents('table').attr('id').substr(6);
+    let mini_language_query = $("#label-"+extractColumnName(element)).data('miniLanguageQuery');
+    reorderByColumn(object_tag, mini_language_query, ascending);
+}
+function getSorterElements(element) {
+    return '<a href="#" onclick="sortTableColumn(\'' + element + '\', true); return false;" class="sort asc" title="Sort ascending"></a>' +
+        '<a href="#" onclick="sortTableColumn(\'' + element + '\', false); return false;" class="sort desc" title="Sort descending"></a>'
+}
+
+function getDeleteElements(element) {
+    let headerElement = $("#label-"+extractColumnName(element));
+    if (headerElement.hasClass('editable'))
+        return '<a href="#" onclick="$(\''+"#label-"+extractColumnName(element)+'\').trigger(\'deleteEditable\'); return false;" class="delete" title="Remove"></a>';
+    else
+        return '';
+}
+
+function updatePlotControlElements(element, query, isScalar, isFilter, isArray, canDelete, isColumnHeading) {
     var controls = {};
     $(element).find("input").each(function() {
        controls[this.name] = this.checked;
@@ -243,10 +229,11 @@ function updatePlotControlElements(element, query, isScalar, isFilter, isArray, 
     scalarControls = getPlotControlElements(query,true);
     arrayControls = getPlotControlElements(query,false);
     filterControls = getFilterElements(query)
-    if(filterOnly) {
-        scalarControls = "";
+    if(isColumnHeading) {
         arrayControls = "";
+        scalarControls = getSorterElements(element);
     }
+
     var buttonsHtml;
     if(isFilter) {
         hiddenHtml = arrayControls+scalarControls;
@@ -261,8 +248,10 @@ function updatePlotControlElements(element, query, isScalar, isFilter, isArray, 
         hiddenHtml = scalarControls+filterControls+arrayControls;
         visibleHtml = "";
     }
+    visibleHtml = "<div class='leftbuttons'>" + visibleHtml +
+        "</div><div class='rightbuttons'>" + getDeleteElements(element) + "</div>";
 
-    buttonsHtml = "<span class='hidden'>"+hiddenHtml+"</span>"+visibleHtml;
+    buttonsHtml = "<div class='hidden'>"+hiddenHtml+"</div>"+visibleHtml;
 
     $(element).html(buttonsHtml);
     $(element).find("input").each(function() {

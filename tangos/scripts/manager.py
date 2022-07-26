@@ -384,8 +384,8 @@ def grep_remove_runs(opts):
     print(""">>> type "yes" to continue""")
 
     if input(":").lower() == "yes":
-        for r, run in enumerate(matching_runs):
-            print('Removing run ',r+1,' of ',len(matching_runs))
+        for r, run in enumerate(matching_runs[::-1]):
+            print(f'Removing run {run.id}')
             _erase_run_content(run)
         print("Done")
     else:
@@ -476,7 +476,7 @@ def main():
 def get_argument_parser_and_subparsers():
     parser = argparse.ArgumentParser()
     core.supplement_argparser(parser)
-    subparse = parser.add_subparsers()
+    subparse = parser.add_subparsers(required=True)
 
     subparse_add = subparse.add_parser("add",
                                        help="Add new simulations to the database, or update existing simulations")

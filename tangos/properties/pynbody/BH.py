@@ -33,7 +33,7 @@ class BH(PynbodyPropertyCalculation):
         print(self.log)
 
     def calculate(self, halo, properties):
-        if not isinstance(properties, tangos.core.halo.Halo):
+        if not isinstance(properties, tangos.core.halo.BH):
             raise RuntimeError("No proxies, please")
         boxsize = self.log.boxsize
 

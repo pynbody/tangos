@@ -122,8 +122,8 @@ def test_json_gather_float():
     result = json.loads(response.body.decode('utf-8'))
     assert result['timestep']=='ts1'
     assert result['data_formatted']==["1.00", "1.00", "1.00", "1.00"]
-    assert result['can_use_in_plot'] is True
-    assert result['can_use_as_filter'] is False
+    assert result['is_number'] is True
+    assert result['is_boolean'] is False
     assert result['is_array'] is False
 
 def test_json_gather_array():
@@ -133,8 +133,8 @@ def test_json_gather_array():
     result = json.loads(response.body.decode('utf-8'))
     assert result['timestep']=='ts1'
     assert result['data_formatted'][0]=="Array"
-    assert result['can_use_in_plot'] is False
-    assert result['can_use_as_filter'] is False
+    assert result['is_number'] is False
+    assert result['is_boolean'] is False
     assert result['is_array'] is True
 
 def test_json_gather_bool():
@@ -144,8 +144,8 @@ def test_json_gather_bool():
     result = json.loads(response.body.decode('utf-8'))
     assert result['timestep'] == 'ts1'
     assert result['data_formatted'] == ["True", "False", "False", "False"]
-    assert result['can_use_in_plot'] is False
-    assert result['can_use_as_filter'] is True
+    assert result['is_number'] is False
+    assert result['is_boolean'] is True
     assert result['is_array'] is False
 
 

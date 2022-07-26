@@ -26,7 +26,7 @@
                   </td>
                 </tr>
                <tr><td>Look at another {{ halo_typetag }}:</td>
-               <td id="nav-to-another"><img src="/static/spinner.gif"></td>
+               <td id="nav-to-another"><div class="progress-spinner"></div></td>
                </tr>
             <tr><td><label for="target_sim_id">Find in another simulation:</label></td>
             <td><select name="target_sim_id" id="target_sim_id" onchange="findInOtherSimulation();">
@@ -54,70 +54,66 @@
 
     </div>
 
-    <div id="imgbox_container" class="keeponscreen">
+
+
+    <div class="dynamic-update" id="properties-area">
+        <h2>Properties</h2>
+
+        <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="autorestore" onchange="plotSelectionUpdate();" >
+            <input type="hidden" name="object_typetag" value="{{ halo_typetag }}"/>
+            <!-- next two hidden input types are just to keep track of the pagination
+            on the timestep view, since the form states are carried between pages using
+            session storage -->
+            <input type="hidden" name="page" />
+            <input type="hidden" name="per_page" />
+            <table>
+                <tr class="collapsibletable"><th></th><th>Property</th><th>Value</th></tr>
+                <tr id="custom-row-1">
+                    <td id="plotctl-custom-row-1" class="plotcontrols"></td><td id="label-custom-row-1" class="editable"></td><td id="contents-custom-row-1"></td>
+                </tr>
+                {%  for prop in properties %}
+                    <tr id="fixed-row-{{ loop.index }}" data-tangos='{{ prop | tojson }}' class="tangos-fixed-row">
+                        <td id="plotctl-fixed-row-{{ loop.index }}" class="plotcontrols">...</td>
+                        <td id="label-fixed-row-{{ loop.index }}">...</td><td id="contents-fixed-row-{{ loop.index }}">...</td>
+                    </tr>
+                {%  endfor %}
+            </table>
+        </form>
+    </div>
+
+    <div id="imgbox_container" >
+
         <div>
+            <h2>Plots</h2>
         <form id="image_form" onsubmit="fetchPlot(); return false;" onchange="fetchPlot();" class="autorestore">
             <input name="type" value="tree" type="radio" id="type-tree"><label for="type-tree">Merger tree</label>;
             or plot for: <input name="type" value="gather" type="radio" id="type-gather"><label for="type-gather">This timestep</label>
             <input name="type" value="cascade" type="radio" id="type-cascade" checked><label for="type-cascade">This halo</label><br/>
-            <input name="logx" type="checkbox" id="logx"/><label for="logx">log x</label>
-            <input name="logy" type="checkbox" id="logy"/><label for="logy">log y</label>
-            <label for="image_format">Image format</label>
-            <select id="image_format">
-                <option value='svg' selected>SVG</option>
-                <option value='png'>PNG</option>
-                <option value='pdf'>PDF</option>
-            </select>
-            <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>.
-            <input type="checkbox" name="use_range" id="use_range" onclick="rangeDisplay()"/><label for="use_range">Use range</label>
-            <p id="vmin-vmax-range">
-                <label for="vmin">Vmin</label>
-                <input name="vmin" type="range" id="vmin" min="0", vmax="100" value="0" onchange="fetchPlot()">
-                <label for="vmax">Vmax</label>
-                <input name="vmax" type="range" id="vmax" min="0", vmax="100" value="100" onchange="fetchPlot()">
-            </p>
-            <span class="download-area-csv"><a href="#" id="download-csv-link">&#x25BC; Download CSV</a></span>
-            <span class="download-area-tree"><a href="#" id="download-merger-tree">&#x25BC; Download Merger Tree</a></span>
+            <span id="options-images">
+                <select id="image_format">
+                    <option value='svg' selected>SVG</option>
+                    <option value='png'>PNG</option>
+                    <option value='pdf'>PDF</option>
+                </select>
+                <input name="logx" type="checkbox" id="logx"/><label for="logx">log x</label>
+                <input name="logy" type="checkbox" id="logy"/><label for="logy">log y</label>
+                <input name="logimage" type="checkbox" id="logimage"/><label for="logimage">log images</label>.
+                <input type="checkbox" name="use_range" id="use_range" onclick="rangeDisplay()"/><label for="use_range">Use range</label>
+                <p id="vmin-vmax-range">
+                    <label for="vmin">Vmin</label>
+                    <input name="vmin" type="range" id="vmin" min="0", vmax="100" value="0" onchange="fetchPlot()">
+                    <label for="vmax">Vmax</label>
+                    <input name="vmax" type="range" id="vmax" min="0", vmax="100" value="100" onchange="fetchPlot()">
+                </p>
+            </span>
+            <a href="#" id="download-csv-link" class="download-link">&#x25BC; Download CSV</a>
+            <a href="#" id="download-merger-tree" class="download-link">&#x25BC; Download Merger Tree</a>
         </form>
         </div>
         <div id="imgbox"></div>
     </div>
 
 
-    <div class="dynamic-update" id="properties-area">
-    <h2>Properties</h2>
-
-
-    <form id="properties_form_{{ halo_typetag }}" onsubmit="return false;" class="autorestore" onchange="plotSelectionUpdate();" >
-    <input type="hidden" name="object_typetag" value="{{ halo_typetag }}"/>
-    <!-- next two hidden input types are just to keep track of the pagination
-    on the timestep view, since the form states are carried between pages using
-    session storage -->
-    <input type="hidden" name="page" />
-    <input type="hidden" name="per_page" />
-    <table>
-        <tr class="collapsibletable"><th>Plot</th><th>Property</th><th>Value</th></tr>
-        <tr id="custom-row-1">
-            <td id="plotctl-custom-row-1" class="plotcontrols"></td><td id="nametg-custom-row-1" class="editable"></td><td id="contents-custom-row-1"></td>
-        </tr>
-        {%  for prop in properties %}
-            <tr>
-                {%  if prop.is_array %}
-                    <td class="plotcontrols">
-                        <input name="justthis" type="radio" value="{{ prop.name }}" onclick="resetRadio('x'); resetRadio('y');"/>
-                    </td>
-                {% else %}
-                    <td class="plotcontrols">
-                        <input name="x" type="radio" value="{{ prop.name }}" onclick="resetRadio('justthis');"/>
-                        <input name="y" type="radio" value="{{ prop.name }}" onclick="resetRadio('justthis');"/>
-                    </td>
-                {% endif %}
-                <td>{{ prop.name }}</td><td>{{ prop.value }}</td>
-            </tr>
-        {%  endfor %}
-    </table>
-    </div>
-    </form>
 
     <script type="text/javascript" src="{{ request.static_url('tangos.web:static/timestepdata.js') }}"></script>
     <script type="text/javascript" src="{{ request.static_url('tangos.web:static/halo_view.js') }}"></script>

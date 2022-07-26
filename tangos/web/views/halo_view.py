@@ -9,7 +9,7 @@ import tangos
 from tangos import core
 
 from . import halo_from_request
-from .halo_data import _relative_description, format_number
+from .halo_data import _relative_description, format_number, get_property_data
 
 
 class TimestepInfo:
@@ -40,26 +40,29 @@ class DisplayProperty:
         self.name = property.name.text
         self.value = format_property_data(property)
         self.is_array = property.data_is_array()
+        self.name_id = property.name_id
 
 class TimeProperty(DisplayProperty):
     def __init__(self, halo):
         self.name = "t()"
         self.value = format_number(halo.timestep.time_gyr) + " Gyr"
         self.is_array = False
+        self.name_id = "t"
 
 class RedshiftProperty(DisplayProperty):
     def __init__(self, halo):
         self.name = "z()"
         self.value = format_number(halo.timestep.redshift)
         self.is_array = False
+        self.name_id = "z"
 
 def default_properties(halo):
-    properties = [TimeProperty(halo), RedshiftProperty(halo)]
+    properties = ["t()", "z()"]
 
     for property in halo.properties.options(sqlalchemy.orm.joinedload(core.HaloProperty.name)):
-        properties.append(DisplayProperty(property))
+        properties.append(property)
 
-    return properties
+    return [get_property_data(halo, p) for p in properties]
 
 def format_property_data(property):
     if property.data_is_array():
@@ -91,10 +94,13 @@ class HaloLinkInfo:
         halo_source = link.halo_from
         halo_dest = link.halo_to
         weight_text = "( %.2f)"%link.weight if link.weight else ""
-        self.name = "%s%s: %s"%(link.relation.text,weight_text,_relative_description(halo_source, halo_dest))
-        self.url = request.route_url('halo_view', simid=halo_dest.timestep.simulation.escaped_basename,
-                                     timestepid=halo_dest.timestep.escaped_extension,
-                                     halonumber=halo_dest.basename)
+        self.name = f"{link.relation.text}{weight_text}: {_relative_description(halo_source, halo_dest)}"
+        if halo_dest is not None:
+            self.url = request.route_url('halo_view', simid=halo_dest.timestep.simulation.escaped_basename,
+                                         timestepid=halo_dest.timestep.escaped_extension,
+                                         halonumber=halo_dest.basename)
+        else:
+            self.url = ""
 
 def all_simulations(request):
     return [SimulationInfo(x,request) for x in tangos.all_simulations(request.dbsession)]

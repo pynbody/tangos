@@ -17,6 +17,14 @@ detect_mpi() {
     fi
 }
 
+build_gadget4() {
+  get_tutorial_data gadget4
+  tangos add tutorial_gadget4
+  tangos import-properties --for tutorial_gadget4
+  tangos import-properties --for tutorial_gadget4 --type group
+  $MPI tangos $MPIBACKEND write dm_density_profile --with-prerequisites --include-only="NDM()>5000" --type=halo --for tutorial_gadget4
+}
+
 build_gadget_subfind() {
     get_tutorial_data gadget
     tangos add tutorial_gadget --min-particles 100
@@ -85,3 +93,4 @@ build_gadget_rockstar
 build_ramses
 build_changa
 build_changa_bh
+build_gadget4
