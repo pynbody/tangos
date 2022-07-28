@@ -11,10 +11,8 @@ import sqlalchemy.orm.query
 from sqlalchemy import Column, Index, Integer, Table, and_
 from sqlalchemy.orm import defer, relationship
 
-from .. import core, temporary_halolist
+from .. import core, temporary_halolist, config
 from ..config import DOUBLE_PRECISION
-from ..config import max_relative_time_difference as SMALL_FRACTION
-from ..config import num_multihops_max_default as NHOPS_MAX_DEFAULT
 from .one_hop import HopStrategy
 
 
@@ -27,7 +25,7 @@ class MultiHopStrategy(HopStrategy):
     timestep_old = sqlalchemy.orm.aliased(core.timestep.TimeStep, name="timestep_old")
     timestep_new = sqlalchemy.orm.aliased(core.timestep.TimeStep, name="timestep_new")
 
-    def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, directed=None, target=None,
+    def __init__(self, halo_from, nhops_max=None, directed=None, target=None,
                  order_by=None, combine_routes=True, min_aggregated_weight=0.0,
                  min_onehop_weight=0.0, min_onehop_reverse_weight=None,
                  include_startpoint=False, one_simulation=None):
@@ -76,6 +74,8 @@ class MultiHopStrategy(HopStrategy):
         :param include_startpoint:    Return the starting halo in the results (default False)
         """
         super().__init__(halo_from, target, order_by)
+        if nhops_max is None:
+            nhops_max = config.num_multihops_max_default
         self.nhops_max = nhops_max
         self.directed = directed
         self._min_aggregated_weight = min_aggregated_weight
@@ -88,12 +88,6 @@ class MultiHopStrategy(HopStrategy):
         self._connection = self.session.connection()
         self._combine_routes = combine_routes
         self._debug_output = False # set to True to see information about discovered links as hops progress
-
-        dialect = self._connection.engine.dialect.dialect_description.split("+")[0].lower()
-        if dialect == 'mysql':
-            # ONLY_FULL_GROUP_BY causes issues with the current implementation of argmax-like functionality
-            # See commentary in util/sql_argmax.py
-            self.session.execute("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));")
 
     def temp_table(self):
         """Execute the strategy and return results as a temp_table (see temporary_halolist module)"""
@@ -161,15 +155,15 @@ class MultiHopStrategy(HopStrategy):
             if self._one_simulation:
                 recursion_filter &= (timestep_new.simulation_id == timestep_old.simulation_id)
             if directed == 'backwards':
-                recursion_filter &= (timestep_new.time_gyr < timestep_old.time_gyr*(1.0-SMALL_FRACTION))
+                recursion_filter &= (timestep_new.time_gyr < timestep_old.time_gyr*(1.0-config.max_relative_time_difference))
             elif directed == 'forwards':
-                recursion_filter &= (timestep_new.time_gyr > timestep_old.time_gyr*(1.0+SMALL_FRACTION))
+                recursion_filter &= (timestep_new.time_gyr > timestep_old.time_gyr*(1.0+config.max_relative_time_difference))
             elif directed == 'across':
                 existing_timestep_ids = self.session.query(core.SimulationObjectBase.timestep_id).\
                     select_from(self._link_orm_class).join(self._link_orm_class.halo_to).distinct()
                 recursion_filter &= ~timestep_new.id.in_(existing_timestep_ids)
                 recursion_filter &= sqlalchemy.func.abs(timestep_new.time_gyr - timestep_old.time_gyr) \
-                                    < SMALL_FRACTION * timestep_old.time_gyr
+                                    < config.max_relative_time_difference * timestep_old.time_gyr
             else:
                 raise ValueError("Unknown direction %r" % directed)
 
