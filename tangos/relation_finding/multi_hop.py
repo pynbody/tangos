@@ -11,7 +11,7 @@ import sqlalchemy.orm.query
 from sqlalchemy import Column, Index, Integer, Table, and_
 from sqlalchemy.orm import defer, relationship
 
-from .. import core, temporary_halolist, config
+from .. import config, core, temporary_halolist
 from ..config import DOUBLE_PRECISION
 from .one_hop import HopStrategy
 
