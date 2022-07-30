@@ -1,5 +1,6 @@
 import os
 
+import sqlalchemy
 from sqlalchemy import Index, create_engine, event, inspect, text
 from sqlalchemy.orm import clear_mappers, declarative_base, sessionmaker
 
@@ -12,10 +13,9 @@ _internal_session_pid=None
 _engine=None
 Session=None
 
-def get_default_session():
-    """Get the default ORM session to be used when no other is specified.
 
-    :rtype: sqlalchemy.orm.Session"""
+def get_default_session() -> sqlalchemy.orm.Session:
+    """Get the default ORM session to be used when no other is specified."""
     global _internal_session, _internal_session_pid, _internal_session_args
     if _internal_session is None:
         init_db()
@@ -25,6 +25,7 @@ def get_default_session():
         else:
             init_db(*_internal_session_args)
     return _internal_session
+
 
 def set_default_session(session):
     """Set the default ORM session to be used.
@@ -36,7 +37,8 @@ def set_default_session(session):
     _internal_session_pid = os.getpid()
     _internal_session_args = None
 
-def get_default_engine():
+
+def get_default_engine() -> sqlalchemy.engine.Engine:
     """Get the default sqlalchemy engine to be used when no other is specified."""
     global _engine
     if _engine is None:
@@ -139,6 +141,10 @@ def init_db(db_uri=None, timeout=30, verbose=None):
     global _verbose, _internal_session, _engine, Session, _internal_session_args, _internal_session_pid
     if db_uri is None:
         db_uri = config.db
+
+    if 'psycopg2' in db_uri:
+        from ..util import postgresql_adapters
+        postgresql_adapters.register_postgresql_adapters()
 
     if '//' not in db_uri:
         db_uri = 'sqlite:///' + db_uri

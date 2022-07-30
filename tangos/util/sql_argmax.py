@@ -14,22 +14,40 @@ def argmax(query, maximise_column, group_bys):
     # but which serves to pick out the argmax
     argmax_subquery = query
 
-    argmax_subquery = argmax_subquery.add_columns(func.max(maximise_column).label("maximise_column_result")). \
+    argmax_subquery = argmax_subquery.with_entities(func.max(maximise_column).label("maximise_column_result"),
+                                                    *group_bys). \
         group_by(*group_bys).subquery()
     # NB tried making the above a materialised CTE to improve performance, but it doesn't help (presumably the SQLite
     # optimizers already spot the subquery is used twice?)
 
-    join_conditions = [group_by == argmax_subquery.corresponding_column(group_by) for group_by in group_bys]
-    # the main query will join to the subquery to pick out all details of the selected row
-    query = query.join(argmax_subquery,
-                       and_( maximise_column == argmax_subquery.c.maximise_column_result,
-                            *join_conditions))
+    group_bys_in_argmax_subquery = [argmax_subquery.corresponding_column(group_by) for group_by in group_bys]
 
-    # there may be rare occasions where two links have exactly the same weight, in which case the above query
-    # currently generates more than one row. Avoid by grouping. Note in this case SQL will return
-    # basically a random choice of which row to return, so this is not a perfect solution - long term TODO.
-    # This also ends up necessitating using MySQL without ONLY_FULL_GROUP_BY mode enabled
-    query = query.group_by(*group_bys)
+    join_conditions = [a == b for a, b in zip(group_bys, group_bys_in_argmax_subquery)]
+
+    # Ideally now the main query will join to the subquery to pick out all details of the selected row, like:
+    #
+    # query = query.join(argmax_subquery,
+    #                    and_(maximise_column == argmax_subquery.c.maximise_column_result,
+    #                         *join_conditions))
+    #
+    # However this ignores the edge case where two rows in a group both have the same value in maximise_column.
+    #
+    # We need to de-dup these groups, and do it by picking out the first of any duplicates, in order of the
+    # primary key
+
+    assert len(group_bys[0].table.primary_key.columns) == 1 # unable to de-dup if there isn't a single PK column
+
+    primary_key = group_bys[0].table.primary_key.columns[0]
+
+    deduped_argmax_subquery \
+        = query.with_entities(func.max(primary_key).label('id')).join(argmax_subquery,
+                                                    and_( maximise_column == argmax_subquery.c.maximise_column_result,
+                                                            *join_conditions) ).\
+                                                    group_by(*group_bys_in_argmax_subquery).subquery()
+
+
+    # the main query will join to the subquery to pick out all details of the selected row
+    query = query.join(deduped_argmax_subquery, deduped_argmax_subquery.c.id == primary_key)
 
     return query
 

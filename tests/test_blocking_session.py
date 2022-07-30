@@ -18,6 +18,9 @@ from tangos.config import testing_db_backend
 
 
 def setup_module():
+    if testing_db_backend != "sqlite":
+        skip("This test is only relevant for sqlite databases")
+
     pt.use("multiprocessing")
     testing.init_blank_db_for_testing(timeout=0.1, verbose=False)
 
