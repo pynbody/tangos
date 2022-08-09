@@ -221,9 +221,9 @@ def test_return_nones():
 
 def test_earlier_equal_weight():
     """Regression test for problem where earlier(x) or later(x) failed when there was more than one link
-    with the identical same weight, meaning the major progenitor was undefined. An interim fix picks one or the
-    other possibility, so that at least the code does not crash. However, a better long-term solution should
-    be found - see TODO in multi_source.py"""
+    with the identical same weight, meaning the major progenitor was undefined. Now the match is
+    disambiguiated by looking for the link with the highest primary key (not very physical, but at least
+    unambiguous)."""
     ts5_halo, ts4_halo = tangos.get_timestep("sim/ts5").calculate_all("dbid()","earlier(1).dbid()")
     testing.assert_halolists_equal(ts5_halo, ['sim/ts5/1'])
     assert testing.halolists_equal(ts4_halo, ['sim/ts4/1']) or testing.halolists_equal(ts4_halo, ['sim/ts4/2'])

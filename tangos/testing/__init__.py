@@ -62,6 +62,8 @@ def autorevert():
     core.set_default_session(isolated_session)
     yield
     transaction.rollback()
+    isolated_session.close()
+    connection.close()
     core.set_default_session(old_session)
 
 @contextlib.contextmanager
@@ -152,6 +154,9 @@ class SqlExecutionTracker:
         self._stacks.append("".join(traceback.format_list(traceback.extract_stack()[:-2])))
 
 def init_blank_db_for_testing(**init_kwargs):
+
+    core.close_db()
+
     try:
         os.mkdir("test_dbs")
     except OSError:
@@ -175,6 +180,7 @@ def init_blank_db_for_testing(**init_kwargs):
         with engine.connect() as conn:
             conn.execute("COMMIT")
             conn.execute(f"DROP DATABASE IF EXISTS {testing_db_name}")
+            conn.execute("COMMIT")
             conn.execute(f"CREATE DATABASE {testing_db_name}")
 
         core.init_db(f"{db_url}/{testing_db_name}", **init_kwargs)

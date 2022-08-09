@@ -19,8 +19,7 @@ jobs:
         exclude:
           - python-version: 3.7
             numpy-version: 1.22
-
-        TANGOS_TESTING_DB_BACKEND: [sqlite, mysql+pymysql]
+        TANGOS_TESTING_DB_BACKEND: [sqlite, mysql+pymysql, postgresql+psycopg2]
     runs-on: ${{ matrix.os }}
     env:
       C: gcc-10
@@ -28,6 +27,23 @@ jobs:
       TANGOS_TESTING_DB_USER: root
       TANGOS_TESTING_DB_PASSWORD: root
       TANGOS_TESTING_DB_BACKEND: ${{ matrix.TANGOS_TESTING_DB_BACKEND }}
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: root
+
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
     steps:
     - name: Install Python
       uses: actions/setup-python@v2
@@ -42,7 +58,7 @@ jobs:
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        python -m pip install numpy~=${{ matrix.numpy-version}} scipy "matplotlib<3.3.0" pytest h5py pip webtest pyquery sphinx pygments pandas sqlalchemy~=${{ matrix.sqlalchemy-version}} cython pyramid ipython pyramid_mako PyMySQL[rsa]
+        python -m pip install numpy~=${{ matrix.numpy-version}} scipy "matplotlib<3.3.0" pytest h5py pip webtest pyquery sphinx pygments pandas sqlalchemy~=${{ matrix.sqlalchemy-version}} cython pyramid ipython pyramid_mako PyMySQL[rsa] psycopg2-binary
     - name: Build and install tangos
       run: |
         python setup.py develop

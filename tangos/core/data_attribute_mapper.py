@@ -149,7 +149,7 @@ class FloatAttributeMapper(ArrayDowncastingAttributeMapper):
 
 class IntAttributeMapper(ArrayDowncastingAttributeMapper):
     _attribute_name = "data_int"
-    _handled_types = [int, np.int32, np.int64]
+    _handled_types = [int, np.int32, np.int64, np.uint32, np.uint64]
 
 
 class ArrayAttributeMapper(DataAttributeMapper):
