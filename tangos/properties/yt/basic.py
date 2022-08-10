@@ -4,7 +4,7 @@ import tangos as db
 
 class FindCenter(PropertyCalculation):
     """Returns center array in halo finder units"""
-    names = "Center"
+    names = "center"
 
     def requires_property(self):
         return ["X", "Y", "Z"]
@@ -14,7 +14,7 @@ class FindCenter(PropertyCalculation):
                
 class FindPhyiscalCenter(PropertyCalculation):
     """Returns center arrays in physical units (Mpc)"""
-    names = "Center_Mpc"
+    names = "center_Mpc"
 
     def requires_property(self):
         return ["X_Mpc", "Y_Mpc", "Z_Mpc"]
@@ -25,14 +25,14 @@ class FindPhyiscalCenter(PropertyCalculation):
 class FindHosts(LivePropertyCalculation):
     """Returns all more massive halos that given halo is within
     the virial radius of"""
-    names = "Hosts"
+    names = "hosts"
     
     def requires_property(self):
-        return ["Mvir", "Center_Mpc", "Rvir_kpc"]
+        return ["Mvir", "center_Mpc", "Rvir_kpc"]
             
     def live_calculate(self, halo_entry):
-        centers, radii, dbid, masses = halo_entry.timestep.calculate_all("Center_Mpc","Rvir_kpc","dbid()","Mvir")
-        offsets = np.linalg.norm(halo_entry['Center_Mpc'] - centers[masses>halo_entry['Mvir']], axis=1)
+        centers, radii, dbid, masses = halo_entry.timestep.calculate_all("center_Mpc","Rvir_kpc","dbid()","Mvir")
+        offsets = np.linalg.norm(halo_entry['center_Mpc'] - centers[masses>halo_entry['Mvir']], axis=1)
         host_mask = offsets<(radii[masses>halo_entry['Mvir']]/1000.)
         potids = dbid[masses>halo_entry['Mvir']]
         return np.array([db.get_halo(x) for x in potids[host_mask]])
@@ -40,26 +40,15 @@ class FindHosts(LivePropertyCalculation):
 class FindSats(LivePropertyCalculation):
     """Returns all less massive halos that lie within the virial
     radius of a given halo"""
-    names = "Satellites"
+    names = "satellites"
     
     def requires_property(self):
-        return ["Mvir", "Center_Mpc", "Rvir_kpc"]
+        return ["Mvir", "center_Mpc", "Rvir_kpc"]
                 
     def live_calculate(self, halo_entry):
-        centers, radii, dbid, masses = halo_entry.timestep.calculate_all("Center_Mpc","Rvir_kpc","dbid()","Mvir")
-        offsets = np.linalg.norm(halo_entry['Center_Mpc'] - centers[masses<halo_entry['Mvir']], axis=1)
+        centers, radii, dbid, masses = halo_entry.timestep.calculate_all("center_Mpc","Rvir_kpc","dbid()","Mvir")
+        offsets = np.linalg.norm(halo_entry['center_Mpc'] - centers[masses<halo_entry['Mvir']], axis=1)
         host_mask = offsets<(halo_entry['Rvir_kpc']/1000.)
         potids = dbid[masses<halo_entry['Mvir']]
         return np.array([db.get_halo(x) for x in potids[host_mask]])
-        
-class GetTimestepName(LivePropertyCalculation):
-    """Fetches the name of the timestep that a halo exists in"""
-    names = "TimeStep"
-    
-    def requires_property(self):
-        return []
-                
-    def live_calculate(self, halo_entry):
-        tsn = str(halo_entry.timestep).split('/')[1]
-        return tsn
 

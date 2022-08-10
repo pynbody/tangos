@@ -6,6 +6,7 @@ from . import HandlerBase, finding
 import glob
 import os
 import numpy as np
+from ..util.read_datasets_file import read_datasets
 
 class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __init__(self, *args, **kwargs):
@@ -98,7 +99,7 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
 
     def load_timestep_without_caching(self, ts_extension, mode=None):
         from yt.data_objects.particle_filters import add_particle_filter
-        if mode!=None:
+        if mode is not None:
             raise ValueError("Custom load modes are not supported with yt")
         f = yt.load(self._extension_to_filename(ts_extension))
         
@@ -131,15 +132,16 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
     def _load_halo_cat_without_caching(self, ts_extension, snapshot_file):
         # Check whether datasets.txt exists (i.e., if rockstar was run with yt)
         if os.path.exists(self._extension_to_filename("datasets.txt")):
-            dsfile = open(self._extension_to_filename("datasets.txt"),'r')
-            dsfile.readline()
-            curln = dsfile.readline()
-            while curln != '':
-                cursp = curln.split()[0].split('/')
-                if cursp[-2]+'/'+cursp[-1] == ts_extension:
-                    fnum = float(curln.split()[-1])
-                curln = dsfile.readline()
-            dsfile.close()
+#            dsfile = open(self._extension_to_filename("datasets.txt"),'r')
+#            dsfile.readline()
+#            curln = dsfile.readline()
+#            while curln != '':
+#                cursp = curln.split()[0].split('/')
+#                if cursp[-2]+'/'+cursp[-1] == ts_extension:
+#                    fnum = float(curln.split()[-1])
+#                curln = dsfile.readline()
+#            dsfile.close()
+            fnum = read_datasets(self._extension_to_filename(""),ts_extension)
         else: # otherwise, assume a one-to-one correspondence
             overdir = self._extension_to_filename("")
             snapfiles = glob.glob(overdir+ts_extension[:2]+len(ts_extension[2:].split('/')[0])*'?')

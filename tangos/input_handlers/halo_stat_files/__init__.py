@@ -6,6 +6,7 @@ import numpy as np
 from ...util import proxy_object
 from . import translations
 import glob
+from ...util.read_datasets_file import read_datasets
 
 
 class HaloStatFile:
@@ -217,23 +218,25 @@ class RockstarStatFile(HaloStatFile):
         if basename.startswith("snapshot_"):
             timestep_id = int(basename[9:])
             return os.path.join(dirname, "out_%d.list"%timestep_id)
-        elif basename.startswith(("RD","DD")):
-            # datasets.txt will be written if rockstar was run with yt
-            if os.path.exists(os.path.join(dirname[:-(len(basename)+1)], "datasets.txt")):
-                with open(os.path.join(dirname[:-(len(basename)+1)], "datasets.txt")) as f:
-                    for l in f:
-                        if l.split()[0].endswith(basename):
-                            timestep_id = int(l.split()[1])
-            else: # otherwise, assume a one-to-one correspondence
-                overdir = dirname[:(-1*(3+len(basename[2:])))]
-                snapfiles = glob.glob(os.path.join(overdir,basename[:2]+len(basename[2:])*'?'))
-                rockfiles = glob.glob(os.path.join(overdir,"out_*.list"))
-                sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
-                sortord = np.argsort(sortind)
-                snapfiles.sort()
-                rockfiles = np.array(rockfiles)[sortord]
-                timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==basename)[0]
-                timestep_id = int((rockfiles[timestep_ind][0]).split('.')[0].split('_')[-1])
+        # datasets.txt will be written if rockstar was run with yt
+        elif os.path.exists(os.path.join(dirname[:-(len(basename)+1)], "datasets.txt")):
+#            with open(os.path.join(dirname[:-(len(basename)+1)], "datasets.txt")) as f:
+#                for l in f:
+#                    if l.split()[0].endswith(basename):
+#                        timestep_id = int(l.split()[1])
+            timestep_id = read_datasets(dirname[:-(len(basename)+1)],basename)
+            return os.path.join(dirname[:-(len(basename)+1)],"out_%d.list"%timestep_id)
+        # otherwise, assume a one-to-one correspondence
+        elif basename.startswith(("RD","DD")): # format for Enzo outputs
+            overdir = dirname[:(-1*(3+len(basename[2:])))]
+            snapfiles = glob.glob(os.path.join(overdir,basename[:2]+len(basename[2:])*'?'))
+            rockfiles = glob.glob(os.path.join(overdir,"out_*.list"))
+            sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
+            sortord = np.argsort(sortind)
+            snapfiles.sort()
+            rockfiles = np.array(rockfiles)[sortord]
+            timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==basename)[0]
+            timestep_id = int((rockfiles[timestep_ind][0]).split('.')[0].split('_')[-1])
             return os.path.join(dirname[:-(len(basename)+1)],"out_%d.list"%timestep_id)
         else:
             return "CannotComputeRockstarFilename"

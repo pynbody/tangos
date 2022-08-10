@@ -12,6 +12,7 @@ from ..core.halo_data import HaloLink, HaloProperty
 from ..input_handlers import consistent_trees as ct
 from ..log import logger
 from . import GenericTangosTool
+from ..util.read_datasets_file import read_datasets
 import glob
 
 
@@ -39,25 +40,26 @@ class ConsistentTreesImporter(GenericTangosTool):
         match = re.match(".*(?:snapdir|snapshot)_([0-9]+)/?$", filename)
         if match:
             return int(match.group(1))
+
+        # Check whether datasets.txt exists (i.e., if rockstar was run with yt)
+        elif os.path.exists(os.path.join(basedir, "datasets.txt")):
+#            with open(os.path.join(basedir, "datasets.txt")) as f:
+#                for l in f:
+#                    if l.split()[0].endswith(filename):
+#                        return int(l.split()[1])
+            return read_datasets(basedir,filename)
+                # Otherwise, assume a one-to-one correspondence
         else:
             match = re.match("(?:RD|DD)[0-9]*/(?:RD|DD)([0-9]*)",filename)
             if match:
-                # Check whether datasets.txt exists (i.e., if rockstar was run with yt)
-                if os.path.exists(os.path.join(basedir, "datasets.txt")):
-                    with open(os.path.join(basedir, "datasets.txt")) as f:
-                        for l in f:
-                            if l.split()[0].endswith(filename):
-                                timestep_id = int(l.split()[1])
-                # Otherwise, assume a one-to-one correspondence
-                else:
-                    snapfiles = glob.glob(os.path.join(basedir,filename.split('/')[-1][:2]+len(filename.split('/')[-1][2:])*'?'))
-                    rockfiles = glob.glob(os.path.join(basedir,"out_*.list"))
-                    sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
-                    sortord = np.argsort(sortind)
-                    snapfiles.sort()
-                    rockfiles = np.array(rockfiles)[sortord]
-                    timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==filename.split('/')[-1])[0]
-                    timestep_id = int((rockfiles[timestep_ind][0]).split('.')[0].split('_')[-1])
+                snapfiles = glob.glob(os.path.join(basedir,filename.split('/')[-1][:2]+len(filename.split('/')[-1][2:])*'?'))
+                rockfiles = glob.glob(os.path.join(basedir,"out_*.list"))
+                sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
+                sortord = np.argsort(sortind)
+                snapfiles.sort()
+                rockfiles = np.array(rockfiles)[sortord]
+                timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==filename.split('/')[-1])[0]
+                timestep_id = int((rockfiles[timestep_ind][0]).split('.')[0].split('_')[-1])
                 return timestep_id
             else:
                 raise ValueError("Unable to convert %s to snapshot number"%filename)

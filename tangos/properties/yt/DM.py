@@ -41,10 +41,10 @@ class HaloDensityProfile(YtPropertyCalculation):
 class Contamination(YtPropertyCalculation):
     """"Calculates fraction of dark matter particles within a sphere
     of radius Rvir around center of halo that are not must refine particles"""
-    names = "ContamFrac"
+    names = "contamfrac"
 
     def requires_property(self):
-        return ["Center", "Rvir_kpc"]
+        return ["center", "Rvir_kpc"]
     
     def calculate(self, particle_data, existing_properties):
         dmtot = float(particle_data.quantities.total_quantity(('dark_matter', 'particle_mass')).in_units('Msun').value)
