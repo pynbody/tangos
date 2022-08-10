@@ -220,10 +220,6 @@ class RockstarStatFile(HaloStatFile):
             return os.path.join(dirname, "out_%d.list"%timestep_id)
         # datasets.txt will be written if rockstar was run with yt
         elif os.path.exists(os.path.join(dirname[:-(len(basename)+1)], "datasets.txt")):
-#            with open(os.path.join(dirname[:-(len(basename)+1)], "datasets.txt")) as f:
-#                for l in f:
-#                    if l.split()[0].endswith(basename):
-#                        timestep_id = int(l.split()[1])
             timestep_id = read_datasets(dirname[:-(len(basename)+1)],basename)
             return os.path.join(dirname[:-(len(basename)+1)],"out_%d.list"%timestep_id)
         # otherwise, assume a one-to-one correspondence

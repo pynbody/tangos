@@ -43,12 +43,8 @@ class ConsistentTreesImporter(GenericTangosTool):
 
         # Check whether datasets.txt exists (i.e., if rockstar was run with yt)
         elif os.path.exists(os.path.join(basedir, "datasets.txt")):
-#            with open(os.path.join(basedir, "datasets.txt")) as f:
-#                for l in f:
-#                    if l.split()[0].endswith(filename):
-#                        return int(l.split()[1])
             return read_datasets(basedir,filename)
-                # Otherwise, assume a one-to-one correspondence
+        # Otherwise, assume a one-to-one correspondence
         else:
             match = re.match("(?:RD|DD)[0-9]*/(?:RD|DD)([0-9]*)",filename)
             if match:

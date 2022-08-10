@@ -132,15 +132,6 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
     def _load_halo_cat_without_caching(self, ts_extension, snapshot_file):
         # Check whether datasets.txt exists (i.e., if rockstar was run with yt)
         if os.path.exists(self._extension_to_filename("datasets.txt")):
-#            dsfile = open(self._extension_to_filename("datasets.txt"),'r')
-#            dsfile.readline()
-#            curln = dsfile.readline()
-#            while curln != '':
-#                cursp = curln.split()[0].split('/')
-#                if cursp[-2]+'/'+cursp[-1] == ts_extension:
-#                    fnum = float(curln.split()[-1])
-#                curln = dsfile.readline()
-#            dsfile.close()
             fnum = read_datasets(self._extension_to_filename(""),ts_extension)
         else: # otherwise, assume a one-to-one correspondence
             overdir = self._extension_to_filename("")
@@ -152,13 +143,13 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
             rockfiles = np.array(rockfiles)[sortord]
             timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==ts_extension.split('/')[0])[0]
             fnum = int(rockfiles[timestep_ind][0].split('.')[0].split('_')[-1])
-        cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".bin"))
+        cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
         cat_data = cat.all_data()
         # Check whether rockstar was run with Behroozi's distribution or Wise's
         if np.any(cat_data["halos","particle_identifier"]<0):
             del cat
             del cat_data
-            cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".bin"))
+            cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
             cat.parameters['format_revision'] = 2 #
             cat_data = cat.all_data()
         return cat, cat_data
