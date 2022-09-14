@@ -563,7 +563,7 @@ def get_argument_parser_and_subparsers():
     subparse_diff.add_argument("--simulation", type=str, help="Only compare the specified simulation", default=None)
     subparse_diff.add_argument("--timestep", type=str, help="Only compare the specified timestep", default=None)
     subparse_diff.add_argument("--object", type=str, help="Only compare the specified object", default=None)
-    subparse_diff.add_argument("--ignore-value-of", nargs="*", type=str, help="Ignore the value of the specified properties", default=None)
+    subparse_diff.add_argument("--ignore-value-of", nargs="*", type=str, help="Ignore the value of the specified properties", default=[])
     subparse_diff.set_defaults(func=diff)
 
     subparse_list_available_properties = subparse.add_parser("list-possible-properties",

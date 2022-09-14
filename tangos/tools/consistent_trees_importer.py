@@ -1,3 +1,4 @@
+import glob
 import os
 import re
 
@@ -11,6 +12,7 @@ from ..core.halo import PhantomHalo
 from ..core.halo_data import HaloLink, HaloProperty
 from ..input_handlers import consistent_trees as ct
 from ..log import logger
+from ..util.read_datasets_file import read_datasets
 from . import GenericTangosTool
 
 
@@ -34,12 +36,29 @@ class ConsistentTreesImporter(GenericTangosTool):
 
 
     @staticmethod
-    def filename_to_snapnum(filename):
+    def filename_to_snapnum(filename,basedir):
         match = re.match(".*(?:snapdir|snapshot)_([0-9]+)/?$", filename)
         if match:
             return int(match.group(1))
+
+        # Check whether datasets.txt exists (i.e., if rockstar was run with yt)
+        elif os.path.exists(os.path.join(basedir, "datasets.txt")):
+            return read_datasets(basedir,filename)
+        # Otherwise, assume a one-to-one correspondence
         else:
-            raise ValueError("Unable to convert %s to snapshot number"%filename)
+            match = re.match("(?:RD|DD)[0-9]*/(?:RD|DD)([0-9]*)",filename)
+            if match:
+                snapfiles = glob.glob(os.path.join(basedir,filename.split('/')[-1][:2]+len(filename.split('/')[-1][2:])*'?'))
+                rockfiles = glob.glob(os.path.join(basedir,"out_*.list"))
+                sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
+                sortord = np.argsort(sortind)
+                snapfiles.sort()
+                rockfiles = np.array(rockfiles)[sortord]
+                timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==filename.split('/')[-1])[0]
+                timestep_id = int((rockfiles[timestep_ind][0]).split('.')[0].split('_')[-1])
+                return timestep_id
+            else:
+                raise ValueError("Unable to convert %s to snapshot number"%filename)
 
     def create_phantoms(self, timestep, n_phantoms):
         existing_phantoms = timestep.phantoms.all()
@@ -110,7 +129,7 @@ class ConsistentTreesImporter(GenericTangosTool):
             logger.info("Processing %s",simulation)
             tree = ct.ConsistentTrees(os.path.join(config.base,simulation.basename))
             for ts in simulation.timesteps:
-                snapnum = self.filename_to_snapnum(ts.extension)
+                snapnum = self.filename_to_snapnum(ts.extension,os.path.join(config.base,simulation.basename))
                 ts_next = ts.next
 
                 if self.options.with_ids:

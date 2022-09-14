@@ -40,12 +40,16 @@ jobs:
     - name: Install latest pynbody
       run: python -m pip install pynbody
 
+    - name: Install latest yt
+      run: python -m pip install yt
+
     - name: Cache test datasets
       id: cache-test-datasets
       uses: actions/cache@v2
       with:
         path: |
           test_tutorial_build/tutorial_*
+          test_tutorial_build/enzo.tinycosmo
           test_tutorial_build/reference_database.db
         key: replace-later-with-md5 # need to work out a way to generate a key here at some point if test data changes
 

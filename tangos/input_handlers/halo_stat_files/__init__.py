@@ -1,9 +1,11 @@
 import copy
+import glob
 import os
 
 import numpy as np
 
 from ...util import proxy_object
+from ...util.read_datasets_file import read_datasets
 from . import translations
 
 
@@ -194,10 +196,20 @@ class AHFStatFile(HaloStatFile):
         return children
 
 class RockstarStatFile(HaloStatFile):
-    _column_translations = {'n_dm': translations.Rename('Np'),
-                            'n_gas': translations.Value(0),
-                            'n_star': translations.Value(0),
-                            'npart': translations.Rename('Np')}
+
+    def __init__(self, timestep_filename):
+        self._timestep_filename = timestep_filename
+        self.filename = self.filename(timestep_filename)
+        self._get_cosmo()
+        self._column_translations = {'n_dm': translations.Rename('Np'),
+                                     'n_gas': translations.Value(0),
+                                     'n_star': translations.Value(0),
+                                     'npart': translations.Rename('Np'),
+                                     'Mvir_Msun': translations.Function(lambda Mvir: Mvir/self.cosmo_h, 'Mvir'),
+                                     'Rvir_kpc': translations.Function(lambda Rvir: Rvir*self.cosmo_a/self.cosmo_h, 'Rvir'),
+                                     'X_Mpc': translations.Function(lambda X: X*self.cosmo_a/self.cosmo_h, 'X'),
+                                     'Y_Mpc': translations.Function(lambda Y: Y*self.cosmo_a/self.cosmo_h, 'Y'),
+                                     'Z_Mpc': translations.Function(lambda Z: Z*self.cosmo_a/self.cosmo_h, 'Z')}
 
     @classmethod
     def filename(cls, timestep_filename):
@@ -206,8 +218,35 @@ class RockstarStatFile(HaloStatFile):
         if basename.startswith("snapshot_"):
             timestep_id = int(basename[9:])
             return os.path.join(dirname, "out_%d.list"%timestep_id)
+        # datasets.txt will be written if rockstar was run with yt
+        elif os.path.exists(os.path.join(dirname[:-(len(basename)+1)], "datasets.txt")):
+            timestep_id = read_datasets(dirname[:-(len(basename)+1)],basename)
+            return os.path.join(dirname[:-(len(basename)+1)],"out_%d.list"%timestep_id)
+        # otherwise, assume a one-to-one correspondence
+        elif basename.startswith(("RD","DD")): # format for Enzo outputs
+            overdir = dirname[:(-1*(3+len(basename[2:])))]
+            snapfiles = glob.glob(os.path.join(overdir,basename[:2]+len(basename[2:])*'?'))
+            rockfiles = glob.glob(os.path.join(overdir,"out_*.list"))
+            sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
+            sortord = np.argsort(sortind)
+            snapfiles.sort()
+            rockfiles = np.array(rockfiles)[sortord]
+            timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==basename)[0]
+            timestep_id = int((rockfiles[timestep_ind][0]).split('.')[0].split('_')[-1])
+            return os.path.join(dirname[:-(len(basename)+1)],"out_%d.list"%timestep_id)
         else:
             return "CannotComputeRockstarFilename"
+
+    def _get_cosmo(self, *args):
+        """
+        Sets cosmo_h and cosmo_a for physical unit translations
+        """
+        with open(self.filename) as f:
+            for l in f:
+                if l.startswith("#a"):
+                    self.cosmo_a = float(l.split('=')[-1])
+                if l.startswith("#O"):
+                    self.cosmo_h = float(l.split(';')[-1].split('=')[-1])
 
 class AmigaIDLStatFile(HaloStatFile):
 

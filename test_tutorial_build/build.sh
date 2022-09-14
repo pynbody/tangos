@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 
 get_tutorial_data() {
-    if [ ! -d tutorial_$1 ]; then
-	wget -O - https://zenodo.org/record/5155467/files/tutorial_$1.tar.gz?download=1 | tar -xz
-    fi
+  if [ ! -d tutorial_$1 ]; then
+    wget -O - https://zenodo.org/record/5155467/files/tutorial_$1.tar.gz?download=1 | tar -xz
+  fi
 }
 
 detect_mpi() {
-    if hash mpirun 2>/dev/null; then
-	export MPI="mpirun -np 4"
-	export MPIBACKEND="--backend=mpi4py"
-	export MPILOADMODE="--load-mode=server"
-	echo "Detected mpirun -- will use where appropriate"
-    else
-	echo "No mpirun found; running all processes in serial"
-    fi
+  if hash mpirun 2>/dev/null; then
+    export MPI="mpirun -np 4"
+    export MPIBACKEND="--backend=mpi4py"
+    export MPILOADMODE="--load-mode=server"
+    echo "Detected mpirun -- will use where appropriate"
+  else
+    echo "No mpirun found; running all processes in serial"
+  fi
 }
 
 build_gadget4() {
@@ -68,6 +68,17 @@ build_changa_bh() {
     $MPI tangos crosslink tutorial_changa tutorial_changa_blackholes $MPIBACKEND
 }
 
+build_enzo_yt() {
+  if [ -d enzo.tinycosmo ]; then
+    tangos add enzo.tinycosmo --handler=yt.YtInputHandler --min-particles 100
+    tangos import-consistent-trees --for enzo.tinycosmo --with-ids
+    tangos import-properties Mvir Rvir X Y Z VX VY VZ --for enzo.tinycosmo
+    tangos import-properties Mvir_Msun Rvir_kpc X_Mpc Y_Mpc Z_Mpc --for enzo.tinycosmo
+    tangos write center center_Mpc --for enzo.tinycosmo
+    $MPI tangos write Mgas Mcoldgas Mstar contamfrac --for enzo.tinycosmo $MPIBACKEND
+  fi
+}
+
 
 echo "This script builds the tangos tutorial database"
 echo
@@ -94,3 +105,4 @@ build_ramses
 build_changa
 build_changa_bh
 build_gadget4
+build_enzo_yt
