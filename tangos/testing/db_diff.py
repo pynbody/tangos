@@ -69,7 +69,7 @@ class TangosDbDiff:
 
         if self.test_timesteps:
             for ts in ts1.intersection(ts2):
-                self.compare_timestep(sim+"/"+ts)
+                self.compare_timestep(sim+"/"+ts.replace("/","%"))
 
     def compare_timestep(self, ts):
         logger.info("Comparing timestep %s", ts)
