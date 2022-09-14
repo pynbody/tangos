@@ -1,12 +1,12 @@
 import copy
+import glob
 import os
 
 import numpy as np
 
 from ...util import proxy_object
-from . import translations
-import glob
 from ...util.read_datasets_file import read_datasets
+from . import translations
 
 
 class HaloStatFile:
@@ -196,7 +196,7 @@ class AHFStatFile(HaloStatFile):
         return children
 
 class RockstarStatFile(HaloStatFile):
-                            
+
     def __init__(self, timestep_filename):
         self._timestep_filename = timestep_filename
         self.filename = self.filename(timestep_filename)
@@ -236,7 +236,7 @@ class RockstarStatFile(HaloStatFile):
             return os.path.join(dirname[:-(len(basename)+1)],"out_%d.list"%timestep_id)
         else:
             return "CannotComputeRockstarFilename"
-            
+
     def _get_cosmo(self, *args):
         """
         Sets cosmo_h and cosmo_a for physical unit translations

@@ -1,12 +1,15 @@
 yt = None # deferred import; occurs when a YtInputHandler is constructed
 
-from .. import config
-from ..log import logger
-from . import HandlerBase, finding
 import glob
 import os
+
 import numpy as np
+
+from .. import config
+from ..log import logger
 from ..util.read_datasets_file import read_datasets
+from . import HandlerBase, finding
+
 
 class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __init__(self, *args, **kwargs):
@@ -102,21 +105,21 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
         if mode is not None:
             raise ValueError("Custom load modes are not supported with yt")
         f = yt.load(self._extension_to_filename(ts_extension))
-        
+
         def Stars(pfilter, data):
             filter = data[("all", "particle_type")] == 2 # DM = 1, Stars = 2
             return filter
 
         add_particle_filter("stars", function=Stars, filtered_type='all', \
                             requires=["particle_type"])
-                            
+
         def AllDarkMatter(pfilter, data):
             filter = np.logical_or(data[("all", "particle_type")] == 4,data[("all", "particle_type")] == 1) # DM = 1, Stars = 2
             return filter
 
         add_particle_filter("dark_matter", function=AllDarkMatter, filtered_type='all', \
                             requires=["particle_type"])
-                            
+
         def MustRefineParticles(pfilter, data):
             filter = data[("all", "particle_type")] == 4
             return filter
@@ -158,8 +161,7 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
         if object_typetag!="halo":
             return
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
-            for X in self._enumerate_objects_from_statfile(ts_extension, object_typetag):
-                yield X
+            yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
         else:
             logger.warn("No halo statistics file found for timestep %r", ts_extension)
             logger.warn(" => enumerating %ss directly using yt", object_typetag)

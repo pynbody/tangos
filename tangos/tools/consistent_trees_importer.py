@@ -1,3 +1,4 @@
+import glob
 import os
 import re
 
@@ -11,9 +12,8 @@ from ..core.halo import PhantomHalo
 from ..core.halo_data import HaloLink, HaloProperty
 from ..input_handlers import consistent_trees as ct
 from ..log import logger
-from . import GenericTangosTool
 from ..util.read_datasets_file import read_datasets
-import glob
+from . import GenericTangosTool
 
 
 class ConsistentTreesImporter(GenericTangosTool):

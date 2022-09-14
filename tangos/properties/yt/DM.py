@@ -1,5 +1,7 @@
-from . import YtPropertyCalculation
 import numpy as np
+
+from . import YtPropertyCalculation
+
 
 class HaloDensityProfile(YtPropertyCalculation):
     """Proof of concept: get halo density profiles from yt"""
@@ -45,7 +47,7 @@ class Contamination(YtPropertyCalculation):
 
     def requires_property(self):
         return ["center", "Rvir_kpc"]
-    
+
     def calculate(self, particle_data, existing_properties):
         dmtot = float(particle_data.quantities.total_quantity(('dark_matter', 'particle_mass')).in_units('Msun').value)
         hrdm = float(particle_data.quantities.total_quantity(('mrp_dark_matter', 'particle_mass')).in_units('Msun').value)

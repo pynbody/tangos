@@ -47,14 +47,14 @@ class ConsistentTrees:
 
     def _load_original_catalogue(self, snapnum):
         filename = os.path.join(self._path, "outputs", "really_consistent_%d.list"%snapnum)
-        f = open(filename,'r')
+        f = open(filename)
         collist = f.readline().split()
         f.close()
         if 'Original_ID' in collist:
             read_cols = (0,collist.index('Original_ID'))
             return np.loadtxt(filename, dtype=np.int64, usecols=read_cols, unpack=True)
         else:
-            raise IOError("Cannot identify Original_ID column in really_consistent_%d.list"%snapnum)
+            raise OSError("Cannot identify Original_ID column in really_consistent_%d.list"%snapnum)
 
     def _setup_map_to_original_finder_catalogues(self):
         maxval = self.links['id_this'].max()

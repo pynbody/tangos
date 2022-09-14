@@ -1,5 +1,6 @@
 from . import YtPropertyCalculation
 
+
 class StellarMass(YtPropertyCalculation):
     """Returns mass of stars within Rvir of center of halo"""
     names = "Mstar"
