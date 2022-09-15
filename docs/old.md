@@ -120,7 +120,7 @@ SIMS="romulus8.256gst3.bwBH"
 mpirun tangos write Mvir Vvir dm_density_profile dm_alpha_500pc Sub --for $SIMS --load-mode=partial --backend mpi4py
 mpirun tangos write stellar_image_faceon --hmax 100 --backwards --for $SIMS --load-mode=partial --backend mpi4py
 mpirun tangos link --for $SIMS --backend mpi4py
-mpirun tangos_add_bh for $SIMS --backend mpi4py
+mpirun tangos add-bh for $SIMS --backend mpi4py
 mpirun tangos write BH_mass --for $SIMS --type BH --load-mode=partial --backend mpi4py
 # type BH in the line above means "do this for the black holes, not the regular halos".
 ```
