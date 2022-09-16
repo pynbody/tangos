@@ -16,7 +16,7 @@ def run_dbwriter(argv):
 
 def main():
     print("""
-    The 'tangos_add_bh' command line is deprecated in favour of 'tangos add-bh'.
+    The 'tangos_add_bh' command line is deprecated in favour of 'tangos import-changa-bh'.
     'tangos_add_bh' may be removed in future versions.
     """)
     parallel_tasks.launch(run_dbwriter, 2, [sys.argv[1:]])

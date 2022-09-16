@@ -10,7 +10,7 @@ from . import GenericTangosTool
 
 
 class BHImporter(GenericTangosTool):
-    tool_name = 'import-bh'
+    tool_name = 'import-changa-bh'
     tool_description = 'Import black holes and link them to parent halos'
 
     @classmethod
