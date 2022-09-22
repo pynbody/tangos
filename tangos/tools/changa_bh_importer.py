@@ -9,7 +9,7 @@ from ..util.check_deleted import check_deleted
 from . import GenericTangosTool
 
 
-class BHImporter(GenericTangosTool):
+class ChangaBHImporter(GenericTangosTool):
     tool_name = 'import-changa-bh'
     tool_description = 'Import black holes and link them to parent halos'
 

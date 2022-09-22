@@ -4,12 +4,12 @@ import sys
 
 from tangos import core, parallel_tasks
 from tangos.parallel_tasks import database
-from tangos.tools.bh_importer import BHImporter
+from tangos.tools.changa_bh_importer import ChangaBHImporter
 
 
 def run_dbwriter(argv):
     database.synchronize_creator_object()
-    writer = BHImporter()
+    writer = ChangaBHImporter()
     writer.parse_command_line(argv)
     writer.run_calculation_loop()
 
