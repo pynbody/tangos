@@ -43,7 +43,7 @@ Black holes are added to the _tangos_ database with a specialised script that sc
 for black hole particles. Type:
 
 ```
-tangos_add_bh --sims tutorial_changa_blackholes
+tangos import-changa-bh --sims tutorial_changa_blackholes
 ```
 
 This scans through the timesteps, adds black holes from each snapshot, and links them together using merger
@@ -67,7 +67,7 @@ Here
  - `--type bh` is a new directive, indicating the writer should be applied to all black hole
    objects in the simulation (rather than regular halos).
 
-If you want to speed up the processes above, `tangos_add_bh` and `tangos write` can both
+If you want to speed up the processes above, `tangos import-changa-bh` and `tangos write` can both
 be [MPI parallelised](mpi.md).
 
 Explore

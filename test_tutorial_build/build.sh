@@ -63,7 +63,7 @@ build_changa() {
 
 build_changa_bh() {
     build_changa _blackholes
-    tangos_add_bh --sims tutorial_changa_blackholes
+    tangos import-changa-bh --sims tutorial_changa_blackholes
     $MPI tangos write BH_mass BH_mdot_histogram --for tutorial_changa_blackholes --type bh $MPIBACKEND
     $MPI tangos crosslink tutorial_changa tutorial_changa_blackholes $MPIBACKEND
 }

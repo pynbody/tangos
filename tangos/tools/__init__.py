@@ -63,7 +63,7 @@ class GenericTangosTool(metaclass=abc.ABCMeta):
         for c in cls.__subclasses__():
             c.add_tools(subparse)
 
-from . import (add_simulation, ahf_merger_tree_importer,
+from . import (add_simulation, ahf_merger_tree_importer, changa_bh_importer,
                consistent_trees_importer, crosslink, merger_tree_patcher,
                property_deleter, property_importer, property_writer,
                subfind_merger_tree_importer)
