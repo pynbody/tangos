@@ -188,7 +188,7 @@ class PropertyWriter(GenericTangosTool):
 
         if self._include:
             inclusion, = self._include.values(halos)
-            if any([not np.issubdtype(inc_i, np.bool_) for inc_i in inclusion]):
+            if any([not (np.issubdtype(inc_i, np.bool_) or inc_i is None) for inc_i in inclusion]):
                 raise ValueError("Specified inclusion criterion does not return a boolean")
             if len(inclusion)!=len(halos):
                 raise ValueError("Inclusion criterion did not generate results for all the halos")
