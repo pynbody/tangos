@@ -233,7 +233,7 @@ class Calculation:
             halo_alias = tangos.core.halo.SimulationObjectBase
         augmented_query = halo_query
         order_bys = []
-        current_join_path = None
+        load_options_this_level = Load(halo_alias)
 
         for i in range(self.n_join_levels()):
             halo_property_alias = aliased(tangos.core.halo_data.HaloProperty)
@@ -257,22 +257,25 @@ class Calculation:
                                         outerjoin(halo_link_alias,
                                                   (halo_alias.id==halo_link_alias.halo_from_id)
                                                   & link_name_condition)
+
+            load_options_this_level_links = load_options_this_level.contains_eager(halo_alias.all_links.of_type(halo_link_alias))
+
             augmented_query = augmented_query.options(
-                Load(halo_alias).contains_eager(halo_alias.all_properties, alias=halo_property_alias).undefer("*"),
-                Load(halo_alias).contains_eager(halo_alias.all_links, alias=halo_link_alias),
+                load_options_this_level.contains_eager(halo_alias.all_properties.of_type(halo_property_alias)).undefer("*"),
+                load_options_this_level_links,
             )
 
             order_bys+=[halo_link_alias.id,halo_property_alias.id]
 
             if i<self.n_join_levels()-1:
                 next_level_halo_alias = aliased(tangos.core.halo.SimulationObjectBase)
+                load_options_next_level = load_options_this_level_links.contains_eager(halo_link_alias.halo_to.of_type(next_level_halo_alias))
                 augmented_query = augmented_query.outerjoin(next_level_halo_alias,
                                                             (halo_link_alias.halo_to_id==next_level_halo_alias.id)).\
-                                                  options(Load(halo_link_alias).\
-                                                          contains_eager(halo_link_alias.halo_to, alias=next_level_halo_alias)
-                                                          )
+                                                  options(load_options_next_level)
 
                 halo_alias = next_level_halo_alias
+                load_options_this_level = load_options_next_level
         augmented_query = augmented_query.order_by(*order_bys)
         return augmented_query
 
