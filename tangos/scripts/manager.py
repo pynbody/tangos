@@ -5,7 +5,7 @@ import sys
 from textwrap import dedent
 
 import numpy as np
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 import tangos as db
@@ -168,11 +168,11 @@ def flag_duplicates_deprecated(opts):
 
     session = db.core.get_default_session()
 
-    print("unmark all properties:", session.execute("update haloproperties set deprecated=0").rowcount)
-    print("duplicate properties marked:", session.execute("update haloproperties set deprecated=1 where id in (SELECT min(id) FROM haloproperties GROUP BY halo_id, name_id HAVING COUNT(*)>1 ORDER BY halo_id, name_id)").rowcount)
+    print("unmark all properties:", session.execute(text("update haloproperties set deprecated=0")).rowcount)
+    print("duplicate properties marked:", session.execute(text("update haloproperties set deprecated=1 where id in (SELECT min(id) FROM haloproperties GROUP BY halo_id, name_id HAVING COUNT(*)>1 ORDER BY halo_id, name_id)")).rowcount)
 
-    print("unmark all links:", session.execute("update halolink set deprecated=0").rowcount)
-    print("duplicate links marked:", session.execute("update halolink set deprecated=1 where id in (SELECT min(id) FROM halolink GROUP BY halo_from_id, halo_to_id, relation_id HAVING COUNT(*)>1 ORDER BY halo_from_id, halo_to_id, weight)").rowcount)
+    print("unmark all links:", session.execute(text("update halolink set deprecated=0")).rowcount)
+    print("duplicate links marked:", session.execute(text("update halolink set deprecated=1 where id in (SELECT min(id) FROM halolink GROUP BY halo_from_id, halo_to_id, relation_id HAVING COUNT(*)>1 ORDER BY halo_from_id, halo_to_id, weight)")).rowcount)
 
     session.commit()
 
@@ -193,10 +193,10 @@ def remove_duplicates(options):
     # See https://dev.mysql.com/doc/relnotes/mysql/5.7/en/news-5-7-6.html#mysqld-5-7-6-optimizer
     dialect = session.connection().engine.dialect.dialect_description.split("+")[0].lower()
     if dialect == 'mysql':
-        session.execute("SET @__optimizations = @@SESSION.optimizer_switch")
-        session.execute("SET @@SESSION.optimizer_switch = 'derived_merge=off'")
+        session.execute(text("SET @__optimizations = @@SESSION.optimizer_switch"))
+        session.execute(text("SET @@SESSION.optimizer_switch = 'derived_merge=off'"))
 
-    count = session.execute(dedent("""
+    count = session.execute(text(dedent("""
         DELETE FROM haloproperties
         WHERE id NOT IN (
             SELECT * FROM (
@@ -205,9 +205,9 @@ def remove_duplicates(options):
                 GROUP BY halo_id, name_id
             ) as t
         )
-    """)).rowcount
+    """))).rowcount
 
-    count_links = session.execute(dedent("""
+    count_links = session.execute(text(dedent("""
         DELETE FROM halolink
         WHERE id NOT IN (
             SELECT * FROM (
@@ -216,10 +216,10 @@ def remove_duplicates(options):
                 GROUP BY halo_from_id, halo_to_id, relation_id
             ) as t
         )
-    """)).rowcount
+    """))).rowcount
 
     if dialect == 'mysql':
-        session.execute("SET @@SESSION.optimizer_switch = @__optimizations")
+        session.execute(text("SET @@SESSION.optimizer_switch = @__optimizations"))
     print("Deleted %d rows" % count)
     print("Deleted %d links" % count_links)
     session.commit()

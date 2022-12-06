@@ -6,7 +6,7 @@ import traceback
 
 import sqlalchemy
 import sqlalchemy.event
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 from .. import core, get_halo
 from ..config import testing_db_backend, testing_db_password, testing_db_user
@@ -178,9 +178,9 @@ def init_blank_db_for_testing(**init_kwargs):
         db_url = f"{testing_db_backend}://{testing_db_user}:{testing_db_password}@localhost"
         engine = create_engine(db_url)
         with engine.connect() as conn:
-            conn.execute("COMMIT")
-            conn.execute(f"DROP DATABASE IF EXISTS {testing_db_name}")
-            conn.execute("COMMIT")
-            conn.execute(f"CREATE DATABASE {testing_db_name}")
+            conn.execute(text("COMMIT"))
+            conn.execute(text(f"DROP DATABASE IF EXISTS {testing_db_name}"))
+            conn.execute(text("COMMIT"))
+            conn.execute(text(f"CREATE DATABASE {testing_db_name}"))
 
         core.init_db(f"{db_url}/{testing_db_name}", **init_kwargs)
