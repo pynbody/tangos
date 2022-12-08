@@ -97,7 +97,7 @@ setup(name='tangos',
       python_requires='>=3.7',
       install_requires=install_requires,
       tests_require=tests_require,
-      test_suite="nose.collector",
+      test_suite="tests",
       long_description=long_description,
       long_description_content_type='text/markdown'
       )
