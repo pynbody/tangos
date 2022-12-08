@@ -44,10 +44,10 @@ cd tangos
 python setup.py develop
 ```
 
-To run the tests, you will also need to install _yt_, _nose_, _webtest_, _pyquery and _pynbody_ e.g. using `pip install yt pyquery nose webtest pynbody`.
+To run the tests, you will also need to install _yt_, _pytest_, _webtest_, _pyquery and _pynbody_ e.g. using `pip install yt pyquery pytest webtest pynbody`.
 
 Once installed, you should check that _tangos_ is functioning correctly by entering the `tests` folder and
-typing `nosetests`. You should see a bunch of text scrolling by, ultimately finishing with the simple message `OK`.
+typing `pytest`. You should see a bunch of text scrolling by, ultimately finishing with the simple message `OK`.
 If you get a failure message instead of `OK`, report it (with as much detail of your setup as possible) in the
 github issue tracker.
 
