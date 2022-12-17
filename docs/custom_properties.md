@@ -277,7 +277,7 @@ consider the following implementation:
 
 ```python
 from tangos.properties import PropertyCalculation
-from tangos import get_halo
+import tangos
 import numpy as np
 
 class ExampleHaloProperty(PropertyCalculation):
@@ -288,7 +288,7 @@ class ExampleHaloProperty(PropertyCalculation):
         offsets[offsets<1e-5] = np.inf # exclude self!
         inside_mask = offsets<self.radii
         if np.any(inside_mask):
-            return get_halo(self.dbid[offsets.argmin()])
+            return tangos.get_halo(self.dbid[offsets.argmin()])
         else:
             return None
 
