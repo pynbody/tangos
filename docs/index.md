@@ -114,6 +114,32 @@ or for PostgreSQL:
 export TANGOS_DB_CONNECTION=postgresql+psycopg2://tangos:my_secret_password@localhost/database_name
 ```
 
+You can now create new users that can access your mysql server with their own username and password.
+
+```bash
+echo "create user 'my_new_user'@'%' identified by 'new_password';" | docker exec -i mysql-server mysql -pmy_secret_password 
+```
+
+Note that in MySQL the `%` acts as a wild card, so this command creates a new user 
+logging in from any host.
+
+The new user would then connect to the database:
+
+```bash
+export TANGOS_DB_CONNECTION=mysql+pymysql://my_new_user:new_password@localhost:3306/database_name
+```
+
+The database can be accessed remotely so long as the user is connected to the computer where
+the server is running. For example, if the server `mysql-server` created above is running on 
+the host `fancy_computer.astro.fancy_school.edu` the user would first ssh tunnel into the computer:
+
+```bash
+ssh -N -f -L localhost:3306:localhost:3306 my_username@fancy_computer.astro.fancy_school.edu
+```
+
+Then they would be able to access the mysql server as above. The same applies when accessing
+as the root user.
+
 You can now use all the tangos tools as normal, and they will populate the MySQL/PostgreSQL database
 instead of a SQLite file.
 
