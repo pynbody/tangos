@@ -138,9 +138,16 @@ ssh -N -f -L localhost:3306:localhost:3306 my_username@fancy_computer.astro.fanc
 ```
 
 Then they would be able to access the mysql server as above. The same applies when accessing
-as the root user.
+as the root user. Note that new users will by default only be able to view a database. Granting
+additional permissions should be done on a case-by-case basis. Note that only the root user can
+do this by defualt. To give a user complete permission to edit an existing database:
 
-You can now use all the tangos tools as normal, and they will populate the MySQL/PostgreSQL database
+```bash
+echo "grant all on database_name.* to 'new_user'@'%';" | docker exec -i mysql-server mysql -pmy_secret_password  
+echo "flush privileges;" | docker exec -i mysql-server mysql -pmy_secret_password  
+```
+
+You (and whatever users you choose) can now use all the tangos tools as normal, and they will populate the MySQL/PostgreSQL database
 instead of a SQLite file.
 
 
