@@ -443,6 +443,10 @@ def list_available_properties(options):
 def diff(options):
     from ..testing import db_diff
     differ = db_diff.TangosDbDiff(options.uri1, options.uri2, ignore_keys=options.ignore_value_of)
+    if options.property_tolerance is not None:
+        for k, rtol, atol in options.property_tolerance:
+            differ.set_tolerance(k, float(rtol), float(atol))
+
     if options.simulation:
         differ.compare_simulation(options.simulation)
     elif options.timestep:
@@ -564,6 +568,9 @@ def get_argument_parser_and_subparsers():
     subparse_diff.add_argument("--timestep", type=str, help="Only compare the specified timestep", default=None)
     subparse_diff.add_argument("--object", type=str, help="Only compare the specified object", default=None)
     subparse_diff.add_argument("--ignore-value-of", nargs="*", type=str, help="Ignore the value of the specified properties", default=[])
+    subparse_diff.add_argument("--property-tolerance", nargs=3, type=str, help="Set the relative and absolute tolerances "
+                                                                                 "for a given property, as --property-tolerance "
+                                                                                 "<property_name> <rtol> <atol> ", action="append")
     subparse_diff.set_defaults(func=diff)
 
     subparse_list_available_properties = subparse.add_parser("list-possible-properties",
