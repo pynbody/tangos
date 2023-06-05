@@ -81,6 +81,12 @@ webview_cache_time = 3600
 # The default dpi to adopt when plotting in matplotlib and returning to web browser
 webview_plots_dpi = 100
 
+# Default atol for assert_almost_equal when using the diff tool
+diff_default_atol = 1e-3
+
+# Default rtol for assert_amost_equal when using the diff tool
+diff_default_rtol = 1e-3
+
 try:
     from .config_local import *
 except:
