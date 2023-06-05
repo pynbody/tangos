@@ -2,7 +2,7 @@ import numpy as np
 import numpy.testing as npt
 from sqlalchemy.orm import Session, joinedload, object_session, undefer
 
-from .. import all_simulations, core, get_object, get_simulation, get_timestep
+from .. import all_simulations, core, get_object, get_simulation, get_timestep, config
 from ..log import logger
 
 
@@ -33,6 +33,8 @@ class TangosDbDiff:
         self.ignore_keys = ignore_keys
         self.failed = False
 
+        self._tolerances = {None: (config.diff_default_rtol, config.diff_default_atol)}
+
         logger.info("Database 1 = %s",uri1)
         logger.info("Database 2 = %s",uri2)
         logger.info("For each timestep will check data in first %d objects of each type",max_objects)
@@ -43,6 +45,17 @@ class TangosDbDiff:
     def fail(self, message, *args):
         logger.error(message, *args)
         self.failed = True
+
+    def set_tolerance(self, property_name, rtol=0.0, atol=0.0):
+        """Set the tolerance for the given property
+
+        Parameters:
+            property_name: The property name on which to set the tolerance, or None to set default across all properties
+            rtol: The reslative tolerance parameter to pass to numpy.assert_almost_equal
+            atol: The absolute tolerance parameter to pass to numpy.assert_almost_equal
+        """
+
+        self._tolerances[property_name] = (rtol, atol)
 
     def compare(self):
         sims1 = {s.basename for s in all_simulations(self.session1)}
@@ -147,7 +160,7 @@ class TangosDbDiff:
 
     def _check_properties_equal(self, v1, v2, d, name_of_object):
         try:
-            self._assert_equal(v1, v2)
+            self._assert_equal(d, v1, v2)
         except AssertionError as e:
             self.fail("When comparing %s, value mismatch for key %s", name_of_object, d)
             self.fail("%s", e)
@@ -160,7 +173,10 @@ class TangosDbDiff:
                 if v1.shape != v2.shape:
                     self.fail("When comparing %s, array shapes of key %s differ", name_of_object, name_of_property)
 
-    def _assert_equal(self, v1, v2):
+    def _assert_equal(self, name_of_property, v1, v2):
+        rtol, atol = self._tolerances.get(name_of_property,
+                                          self._tolerances[None]  # defaults
+                                          )
         if v1 is None or v2 is None:
             assert v1 is None, "Value 2 is None but Value 1 is not None"
             assert v2 is None, "Value 1 is None but Value 2 is not None"
@@ -168,6 +184,6 @@ class TangosDbDiff:
             assert v1 == v2
         elif isinstance(v1, tuple):
             for e1, e2 in zip(v1,v2):
-                self._assert_equal(e1, e2)
+                self._assert_equal(name_of_property, e1, e2)
         else:
-            npt.assert_allclose(v1, v2, rtol=1e-3, atol=1e-3)
+            npt.assert_allclose(v1, v2, rtol=rtol, atol=atol)
