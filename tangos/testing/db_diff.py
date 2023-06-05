@@ -2,7 +2,8 @@ import numpy as np
 import numpy.testing as npt
 from sqlalchemy.orm import Session, joinedload, object_session, undefer
 
-from .. import all_simulations, core, get_object, get_simulation, get_timestep, config
+from .. import (all_simulations, config, core, get_object, get_simulation,
+                get_timestep)
 from ..log import logger
 
 
