@@ -112,6 +112,7 @@ def _db_import_export(target_session, from_session, *sims):
                 h = SimulationObjectBase(ts, h_ext.halo_number, h_ext.finder_id, h_ext.finder_offset, h_ext.NDM,
                          h_ext.NStar, h_ext.NGas, h_ext.object_typecode)
                 h.external_id = h_ext.id
+                external_id_to_internal_halo[h.external_id] = h
                 halos_this_ts.append(h)
 
             target_session.add_all(halos_this_ts)
@@ -119,7 +120,7 @@ def _db_import_export(target_session, from_session, *sims):
 
             for h in halos_this_ts:
                 assert h.id is not None and h.id > 0
-                external_id_to_internal_halo[h.external_id] = h
+
 
             properties_this_ts = []
             logger.info("Transferring object properties for %s", ts_ext)
@@ -155,13 +156,13 @@ def _translate_halolinks(target_session, halolinks, external_id_to_internal_halo
 
         dic = get_or_create_dictionary_item(
             target_session, hl_ext.relation.text)
-        hl_new = HaloLink(external_id_to_internal_halo[hl_ext.halo_from_id],
-                          external_id_to_internal_halo[hl_ext.halo_to_id],
-                          dic)
+        ih_from = external_id_to_internal_halo.get(hl_ext.halo_from_id, None)
+        ih_to = external_id_to_internal_halo.get(hl_ext.halo_to_id, None)
 
-        target_session.add(hl_new)
-
-        translated.append(hl_ext.id)
+        if ih_from is not None and ih_to is not None:
+            hl_new = HaloLink(ih_from, ih_to, dic)
+            target_session.add(hl_new)
+            translated.append(hl_ext.id)
 
 
 def flag_duplicates_deprecated(opts):
