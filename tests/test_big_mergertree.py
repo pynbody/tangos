@@ -9,29 +9,19 @@ import tangos.testing as testing
 import tangos.testing.simulation_generator as sg
 
 def setup_module():
-
-
-
-
-    #from tangos.config import testing_db_backend, testing_db_password, testing_db_user
-    #db_url = f"{testing_db_backend}://{testing_db_user}:{testing_db_password}@localhost"
-    #testing_db_name = "test_big_mergertree"
-    #tangos.core.init_db(f"{db_url}/{testing_db_name}")
-
     is_blank = testing.init_blank_db_for_testing(erase_if_exists=False)
-
-    if not is_blank:
-        print("NOT GENERATING...")
+    # Creating this test database is a bit time-consuming, so if it already
+    # exists we assume it's OK to use it. If you want to force a rebuild,
+    # drop or delete the database and re-run the tests. (Or use the
+    # erase_if_exists=True option above.)
 
     if is_blank:
-        print("GENERATING...")
-
-        generator = sg.SimulationGeneratorForTests()
-
         N_TIMESTEPS = 15
         N_HALOS_FINAL = 2
         N_BRANCHES_PER_TIMESTEP = 2
         MAX_HALOS = 10000
+
+        generator = sg.SimulationGeneratorForTests(max_steps=N_TIMESTEPS)
 
         n_halos_previous_timestep = None
 
