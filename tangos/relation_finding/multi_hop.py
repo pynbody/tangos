@@ -230,6 +230,7 @@ class MultiHopStrategy(HopStrategy):
         )
 
         self._table_index = Index('temp.source_id_index_' + rstr, multi_hop_link_table.c.source_id, multi_hop_link_table.c.nhops)
+        self._table_nhop_index = Index('temp.nhop_index_' + rstr, multi_hop_link_table.c.nhops)
 
         self._table = multi_hop_link_table
         self._prelim_table = multi_hop_link_prelim_table
@@ -283,11 +284,18 @@ class MultiHopStrategy(HopStrategy):
                 filter(core.halo_data.HaloLink.weight > self._min_onehop_weight
                        )
 
+        import time
+        t = time.time()
         insert = self._prelim_table.insert().from_select(
             ['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'source_id'],
             recursion_query)
 
         num_inserted = self._connection.execute(insert).rowcount
+
+        from ..util.explain_query import explain_query
+        explain_query(recursion_query, self._connection)
+
+        print(f"inserted {num_inserted} prelim rows in {time.time() - t:.3f} seconds")
 
         if self._combine_routes:
             # Ideally, before self._prelim_table.insert(), one would adapt recursion_query to return the argmax of
@@ -308,9 +316,11 @@ class MultiHopStrategy(HopStrategy):
             # has relevant indices.
             from ..util.sql_argmax import delete_non_maximal_rows
 
+            t = time.time()
             deleted_count = delete_non_maximal_rows(self._connection, self._prelim_table,
                                                     self._prelim_table.c.weight,
                                                     [self._prelim_table.c.halo_to_id, self._prelim_table.c.source_id])
+            print(f"deleted {deleted_count} prelim rows in {time.time() - t:.3f} seconds")
             num_inserted-=deleted_count
 
         return num_inserted
@@ -341,15 +351,22 @@ class MultiHopStrategy(HopStrategy):
         q = self._supplement_halolink_query_with_reverse_hop_filter(q, self._prelim_table)
         q = self._supplement_halolink_query_with_filter(q, self._prelim_table)
 
+
+        import time
+        t = time.time()
         added_rows = self._connection.execute(
             self._table.insert().from_select(['halo_from_id', 'halo_to_id', 'weight', 'nhops', 'source_id'],
                                              q)).rowcount
+
+        print(f"added_rows = {added_rows} in {time.time()-t:.3f} seconds")
 
         if self._debug_output:
             print(f"[{self._nhops_taken}] Accepted links:")
             self._debug_print_links(self._table)
 
-        self._connection.execute(self._prelim_table.delete())
+        t = time.time()
+        deleted_rows = self._connection.execute(self._prelim_table.delete()).rowcount
+        print(f"deleted_rows = {deleted_rows} in {time.time() - t:.3f} seconds")
         return added_rows
 
     def _supplement_halolink_query_with_reverse_hop_filter(self, query, table=None):
