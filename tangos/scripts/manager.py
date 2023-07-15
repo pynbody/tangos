@@ -5,13 +5,15 @@ import sys
 from textwrap import dedent
 
 import numpy as np
+import sqlalchemy
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 import tangos as db
 from tangos import all_simulations, config, core
 from tangos.core import (Base, Creator, HaloLink, HaloProperty, Simulation,
-                         SimulationObjectBase, TimeStep,
+                         SimulationObjectBase, TimeStep, DictionaryItem,
                          get_or_create_dictionary_item)
 from tangos.core.simulation import SimulationProperty
 from tangos.core.tracking import TrackData
@@ -35,118 +37,101 @@ def add_simulation_timesteps(options):
 
 
 def db_import(options):
+    if not options.force:
+        s = core.get_default_session()
 
-    sims = options.sims
+        num_sims = s.query(core.Simulation).count()
+
+        if num_sims>0:
+            print("**** WARNING ****")
+            print("The behaviour of importing has changed. Now when you import into a database, any existing")
+            print("simulations in that database will be deleted. To avoid seeing this message, you can use -f or --force.")
+
+            num_timesteps = s.query(core.TimeStep).count()
+            num_objs = s.query(core.SimulationObjectBase).count()
+
+            print(f"""
+Currently there are
+    {num_sims} simulation(s)
+    {num_timesteps} timestep(s), and
+    {num_objs} object(s)
+that will be deleted if you continue.
+""")
+            if not _get_user_confirmation():
+                print("Aborted")
+                exit(0)
+
     remote_db = options.file
 
-    global internal_session
-    engine2 = create_engine('sqlite:///' + remote_db, echo=False)
+    if "://" not in remote_db:
+        remote_db = "sqlite:///"+remote_db
+
+    engine2 = create_engine(remote_db, echo=False)
     ext_session = sessionmaker(bind=engine2)()
 
-    _db_import_export(core.get_default_session(), ext_session, *sims)
+    _db_import_export(core.get_default_session(), ext_session)
 
 
-def db_export(remote_db, *sims):
 
-    global internal_session
-    engine2 = create_engine('sqlite:///' + remote_db, echo=False)
+def _update_foreign_id(list_of_rows, foreign_id_column: sqlalchemy.Column, mapping=None):
+    foreign_id_column_number = foreign_id_column.table.c.keys().index(foreign_id_column.name)
+    new_list_of_rows = []
+    mapped_id = None
+    for row in list_of_rows:
+        if mapping is not None:
+            mapped_id = mapping[row[foreign_id_column_number]]
+        new_row = row[:foreign_id_column_number]+(mapped_id,)+row[foreign_id_column_number+1:]
+        new_list_of_rows.append(new_row)
+    return new_list_of_rows
 
-    int_session = core.get_default_session()
-    ext_session = sessionmaker(bind=engine2)()
+def _copy_table(from_connection, target_connection, orm_class):
+    from sqlalchemy import select, insert, func
+    table = orm_class.__table__
 
-    Base.metadata.create_all(engine2)
+    num_rows = from_connection.execute(select(func.count(table.c.id))).scalar()
+    import tqdm
 
-    _xcurrent_creator = core.creator.get_creator()
+    CHUNK_SIZE = 500
 
-    core.set_default_session(ext_session)
-    creator = Creator()
-    ext_session.add(creator)
-    core.set_creator(creator)
+    num_done = 0
 
-    _db_import_export(ext_session, int_session, *sims)
+    with tqdm.tqdm(total=num_rows, desc = f"Copying {orm_class.__name__}", unit="row") as pbar:
+        while num_done < num_rows:
+            all_rows = from_connection.execute(select(table).limit(CHUNK_SIZE).offset(num_done)).fetchall()
+            all_rows = [tuple(r) for r in all_rows]
 
-    core.set_creator(_xcurrent_creator)
-    core.set_default_session(int_session)
+            target_connection.execute(insert(table).values(all_rows))
 
+            num_done += len(all_rows)
+            pbar.update(len(all_rows))
+
+    target_connection.commit()
 
 def _db_import_export(target_session, from_session, *sims):
-    external_id_to_internal_halo = {}
-    translated_halolink_ids = []
+    from sqlalchemy import delete
 
-    if len(sims)==0:
-        sims = [x.id for x in all_simulations(from_session)]
-
-    for sim in sims:
-        ext_sim = get_simulation(sim, from_session)
-        sim = Simulation(ext_sim.basename)
-        target_session.add(sim)
-        logger.info("Transferring simulation %s", ext_sim)
-
-        halos_this_ts = []
-        for p_ext in ext_sim.properties:
-            dic = get_or_create_dictionary_item(
-                target_session, p_ext.name.text)
-            p = SimulationProperty(sim, dic, p_ext.data)
-            halos_this_ts.append(p)
-
-        for tk_ext in ext_sim.trackers:
-            tk = TrackData(sim, tk_ext.halo_number)
-            tk.particles = tk_ext.particles
-            tk.use_iord = tk_ext.use_iord
-            halos_this_ts.append(tk)
-
-        target_session.add_all(halos_this_ts)
-
-        for ts_ext in ext_sim.timesteps:
-            logger.info("Transferring timestep %s",ts_ext)
-            ts = TimeStep(sim, ts_ext.extension)
-            ts.redshift = ts_ext.redshift
-            ts.time_gyr = ts_ext.time_gyr
-            ts.available = True
-            target_session.add(ts)
-
-            halos_this_ts = []
-
-            logger.info("Transferring objects for %s", ts_ext)
-            for h_ext in ts_ext.objects:
-                h = SimulationObjectBase(ts, h_ext.halo_number, h_ext.finder_id, h_ext.finder_offset, h_ext.NDM,
-                         h_ext.NStar, h_ext.NGas, h_ext.object_typecode)
-                h.external_id = h_ext.id
-                halos_this_ts.append(h)
-
-            target_session.add_all(halos_this_ts)
-            target_session.commit()
-
-            for h in halos_this_ts:
-                assert h.id is not None and h.id > 0
-                external_id_to_internal_halo[h.external_id] = h
-
-            properties_this_ts = []
-            logger.info("Transferring object properties for %s", ts_ext)
-            for h_ext in ts_ext.objects:
-                h_new = external_id_to_internal_halo[h_ext.id]
-                for p_ext in h_ext.properties:
-                    dic = get_or_create_dictionary_item(
-                        target_session, p_ext.name.text)
-                    dat = p_ext.data_raw
-                    if dat is not None:
-                        p = HaloProperty(h_new, dic, dat)
-                        target_session.add(p)
-
-            target_session.commit()
-
-        for ts_ext in ext_sim.timesteps:
-            logger.info("Transferring halolinks for timestep %s", ts_ext)
-            sys.stdout.flush()
-            _translate_halolinks(
-                target_session, ts_ext.links_from, external_id_to_internal_halo, translated_halolink_ids)
-            _translate_halolinks(
-                target_session, ts_ext.links_to, external_id_to_internal_halo, translated_halolink_ids)
-            target_session.commit()
-
-        logger.info("Done")
+    target_connection = target_session.connection()
+    from_connection = from_session.connection()
 
 
+
+    target_connection.execute(delete(SimulationProperty))
+    target_connection.execute(delete(HaloProperty))
+    target_connection.execute(delete(HaloLink))
+    target_connection.execute(delete(DictionaryItem))
+    target_connection.execute(delete(SimulationObjectBase))
+    target_connection.execute(delete(TimeStep))
+    target_connection.execute(delete(Simulation))
+    target_connection.execute(delete(Creator))
+
+    _copy_table(from_connection, target_connection, Creator)
+    _copy_table(from_connection, target_connection, Simulation)
+    _copy_table(from_connection, target_connection, TimeStep)
+    _copy_table(from_connection, target_connection, SimulationObjectBase)
+    _copy_table(from_connection, target_connection, DictionaryItem)
+    _copy_table(from_connection, target_connection, HaloLink)
+    _copy_table(from_connection, target_connection, HaloProperty)
+    _copy_table(from_connection, target_connection, SimulationProperty)
 
 def _translate_halolinks(target_session, halolinks, external_id_to_internal_halo, translated):
     for hl_ext in halolinks:
@@ -357,6 +342,12 @@ def _erase_run_content(run):
     core.get_default_session().delete(run)
     core.get_default_session().commit()
 
+def _get_user_confirmation():
+    try:
+        return input("Enter 'yes' to continue, or anything else to abort >").lower() == "yes"
+    except EOFError:
+        return False
+
 def rem_run(id, confirm=True):
     run = core.get_default_session().query(Creator).filter_by(id=id).first()
 
@@ -366,10 +357,7 @@ def rem_run(id, confirm=True):
     print("You want to delete everything created by the following run:")
     run.print_info()
 
-    if confirm:
-        print(""">>> type "yes" to continue""")
-
-    if (not confirm) or input(":").lower() == "yes":
+    if (not confirm) or _get_user_confirmation():
         _erase_run_content(run)
         print("OK")
     else:
@@ -528,10 +516,9 @@ def get_argument_parser_and_subparsers():
      """
 
     subparse_import = subparse.add_parser("import",
-                                          help="Import one or more simulations from another sqlite file")
-    subparse_import.add_argument("file", type=str, help="The filename of the sqlite file from which to import")
-    subparse_import.add_argument("sims", nargs="*", type=str,
-                                 help="The name of the simulations to import (or import everything if none specified)")
+                                          help="Import from a different database (e.g. useful to load sqlite data onto a server).")
+    subparse_import.add_argument("file", type=str, help="The filename of the sqlite file, or a sqlalchemy URI, from which to import")
+    subparse_import.add_argument("--force", "-f", action="store_true", help="If this flag is present, no confirmation prompts will be issued")
     subparse_import.set_defaults(func=db_import)
 
 
