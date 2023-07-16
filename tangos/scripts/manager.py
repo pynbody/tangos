@@ -5,7 +5,7 @@ import sys
 from textwrap import dedent
 
 import numpy as np
-import sqlalchemy
+import sqlalchemy, sqlalchemy.exc
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -92,7 +92,7 @@ def _copy_table(from_connection, target_connection, orm_class):
     import tqdm
 
     CHUNK_SIZE = 500
-
+    COMMIT_AFTER_CHUNKS = 10
     num_done = 0
 
     with tqdm.tqdm(total=num_rows, desc = f"Copying {orm_class.__name__}", unit="row") as pbar:
@@ -100,7 +100,18 @@ def _copy_table(from_connection, target_connection, orm_class):
             all_rows = from_connection.execute(select(table).limit(CHUNK_SIZE).offset(num_done)).fetchall()
             all_rows = [tuple(r) for r in all_rows]
 
-            target_connection.execute(insert(table).values(all_rows))
+            try:
+                target_connection.execute(insert(table).values(all_rows))
+                if num_done % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS) == 0:
+                    target_connection.commit()
+            except sqlalchemy.exc.OperationalError:
+                num_committed = num_done + 1 - (num_done - 1) % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS)
+                print(f"Note: lost connection to database after {num_done} rows. Resetting to {num_committed}.")
+                # reset to point of last commit
+                num_done = num_committed
+                # create a new connection from the target connection's engine
+                target_connection = target_connection.engine.connect()
+                continue
 
             num_done += len(all_rows)
             pbar.update(len(all_rows))
@@ -113,25 +124,49 @@ def _db_import_export(target_session, from_session, *sims):
     target_connection = target_session.connection()
     from_connection = from_session.connection()
 
+    copy_classes = [Creator, Simulation, TimeStep, SimulationObjectBase, DictionaryItem, SimulationProperty,
+                    HaloLink, HaloProperty]
+
+    # temporary
+    copy_classes = [HaloProperty]
+
+    """
+    print("Dropping indexes...")
+    # Find all Index objects exposed by core
+    for table in Base.metadata.tables.values():
+        for index in table.indexes:
+            print("Drop:",index,end="")
+            try:
+                index.drop(target_connection)
+            except:
+                print(" (failed)")
+            else:
+                print(" (done)")
+
+    """
+
+    try:
+        for target in copy_classes[::-1]:
+            target_connection.execute(delete(target))
+
+        for target in copy_classes:
+            _copy_table(from_connection, target_connection, target)
+    finally:
+        print("Recreating indexes...")
+        """
+        for table in Base.metadata.tables.values():
+            for index in table.indexes:
+                print("Create:",index,end="")
+                try:
+                    index.create(target_connection)
+                except:
+                    print(" (failed)")
+                else:
+                    print(" (done)")
+        """
 
 
-    target_connection.execute(delete(SimulationProperty))
-    target_connection.execute(delete(HaloProperty))
-    target_connection.execute(delete(HaloLink))
-    target_connection.execute(delete(DictionaryItem))
-    target_connection.execute(delete(SimulationObjectBase))
-    target_connection.execute(delete(TimeStep))
-    target_connection.execute(delete(Simulation))
-    target_connection.execute(delete(Creator))
 
-    _copy_table(from_connection, target_connection, Creator)
-    _copy_table(from_connection, target_connection, Simulation)
-    _copy_table(from_connection, target_connection, TimeStep)
-    _copy_table(from_connection, target_connection, SimulationObjectBase)
-    _copy_table(from_connection, target_connection, DictionaryItem)
-    _copy_table(from_connection, target_connection, HaloLink)
-    _copy_table(from_connection, target_connection, HaloProperty)
-    _copy_table(from_connection, target_connection, SimulationProperty)
 
 def _translate_halolinks(target_session, halolinks, external_id_to_internal_halo, translated):
     for hl_ext in halolinks:
