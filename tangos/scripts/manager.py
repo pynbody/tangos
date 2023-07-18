@@ -95,15 +95,18 @@ def _copy_table(from_connection, target_connection, orm_class):
     COMMIT_AFTER_CHUNKS = 10
     num_done = 0
 
+    source_result = from_connection.execute(select(table))
+
     with tqdm.tqdm(total=num_rows, desc = f"Copying {orm_class.__name__}", unit="row") as pbar:
         while num_done < num_rows:
-            all_rows = from_connection.execute(select(table).limit(CHUNK_SIZE).offset(num_done)).fetchall()
+            all_rows = source_result.fetchmany(CHUNK_SIZE)
             all_rows = [tuple(r) for r in all_rows]
 
             try:
                 target_connection.execute(insert(table).values(all_rows))
                 if num_done % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS) == 0:
                     target_connection.commit()
+
             except sqlalchemy.exc.OperationalError:
                 num_committed = num_done + 1 - (num_done - 1) % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS)
                 print(f"Note: lost connection to database after {num_done} rows. Resetting to {num_committed}.")
@@ -118,6 +121,76 @@ def _copy_table(from_connection, target_connection, orm_class):
 
     target_connection.commit()
 
+def _drop_foreign_keys(session):
+    from sqlalchemy.engine import reflection
+    from sqlalchemy import MetaData, Table, ForeignKeyConstraint
+    from sqlalchemy.schema import DropConstraint, AddConstraint
+
+
+    engine = session.get_bind()
+
+    inspector = reflection.Inspector.from_engine(engine)
+    fake_metadata = MetaData()
+
+    fake_tables = []
+    all_fks = []
+
+    for table_name in Base.metadata.tables:
+        fks = []
+        for fk in inspector.get_foreign_keys(table_name):
+            if fk['name']:
+                fks.append(ForeignKeyConstraint((), (), name=fk['name']))
+        t = Table(table_name, fake_metadata, *fks)
+        fake_tables.append(t)
+        all_fks.extend(fks)
+
+    with engine.begin() as conn:
+        for fkc in all_fks:
+            print(str(DropConstraint(fkc)))
+            conn.execute(DropConstraint(fkc))
+
+def _create_foreign_keys(session):
+    from sqlalchemy.engine import reflection
+    from sqlalchemy import MetaData, Table, ForeignKeyConstraint
+    from sqlalchemy.schema import DropConstraint, AddConstraint
+
+
+    engine = session.get_bind()
+
+    with engine.begin() as conn:
+        for table in Base.metadata.tables.values():
+            for fk in table.foreign_keys:
+                print(str(AddConstraint(fk.constraint)), end="")
+                try:
+                    conn.execute(AddConstraint(fk.constraint))
+                except sqlalchemy.exc.OperationalError:
+                    print("... FAILED")
+                else:
+                    print("... OK")
+
+
+def _drop_or_create_indexes(connection, mode='drop'):
+
+    for table in Base.metadata.tables.values():
+        for index in table.indexes:
+
+            try:
+                if mode=='drop':
+                    print("Drop:", index, end="")
+                    sys.stdout.flush()
+                    index.drop(connection)
+                elif mode=='create':
+                    print("Create:", index, end="")
+                    sys.stdout.flush()
+                    index.create(connection)
+                else:
+                    raise ValueError("mode must be 'drop' or 'create'")
+            except sqlalchemy.exc.OperationalError:
+                print("... FAILED")
+            else:
+                print("... OK")
+    connection.commit()
+
 def _db_import_export(target_session, from_session, *sims):
     from sqlalchemy import delete
 
@@ -130,21 +203,14 @@ def _db_import_export(target_session, from_session, *sims):
     # temporary
     copy_classes = [HaloProperty]
 
-    """
+    print("Dropping foreign key constraints...")
+    _drop_foreign_keys(target_session)
+
     print("Dropping indexes...")
-    # Find all Index objects exposed by core
-    for table in Base.metadata.tables.values():
-        for index in table.indexes:
-            print("Drop:",index,end="")
-            try:
-                index.drop(target_connection)
-            except:
-                print(" (failed)")
-            else:
-                print(" (done)")
+    _drop_or_create_indexes(target_connection, mode='drop')
 
-    """
 
+    print("Copying tables...")
     try:
         for target in copy_classes[::-1]:
             target_connection.execute(delete(target))
@@ -152,18 +218,13 @@ def _db_import_export(target_session, from_session, *sims):
         for target in copy_classes:
             _copy_table(from_connection, target_connection, target)
     finally:
+        target_connection.rollback()
+
         print("Recreating indexes...")
-        """
-        for table in Base.metadata.tables.values():
-            for index in table.indexes:
-                print("Create:",index,end="")
-                try:
-                    index.create(target_connection)
-                except:
-                    print(" (failed)")
-                else:
-                    print(" (done)")
-        """
+        _drop_or_create_indexes(target_connection, mode='create')
+
+        print("Recreating foreign keys...")
+        _create_foreign_keys(target_session)
 
 
 
