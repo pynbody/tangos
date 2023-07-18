@@ -114,6 +114,7 @@ def _copy_table(from_connection, target_connection, orm_class):
                 num_done = num_committed
                 # create a new connection from the target connection's engine
                 target_connection = target_connection.engine.connect()
+                source_result = from_connection.execute(select(table).offset(num_committed))
                 continue
 
             num_done += len(all_rows)
@@ -170,17 +171,17 @@ def _create_foreign_keys(session):
 
 
 def _drop_or_create_indexes(connection, mode='drop'):
-
+    from sqlalchemy.schema import DropIndex, CreateIndex
     for table in Base.metadata.tables.values():
         for index in table.indexes:
 
             try:
                 if mode=='drop':
-                    print("Drop:", index, end="")
+                    print(str(DropIndex(index)), end="")
                     sys.stdout.flush()
                     index.drop(connection)
                 elif mode=='create':
-                    print("Create:", index, end="")
+                    print(str(CreateIndex(index)), end="")
                     sys.stdout.flush()
                     index.create(connection)
                 else:
@@ -199,9 +200,6 @@ def _db_import_export(target_session, from_session, *sims):
 
     copy_classes = [Creator, Simulation, TimeStep, SimulationObjectBase, DictionaryItem, SimulationProperty,
                     HaloLink, HaloProperty]
-
-    # temporary
-    copy_classes = [HaloProperty]
 
     print("Dropping foreign key constraints...")
     _drop_foreign_keys(target_session)
