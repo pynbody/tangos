@@ -104,11 +104,9 @@ def _copy_table(from_connection, target_connection, orm_class):
 
             try:
                 target_connection.execute(insert(table).values(all_rows))
-                if num_done % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS) == 0:
-                    target_connection.commit()
 
             except sqlalchemy.exc.OperationalError:
-                num_committed = num_done + 1 - (num_done - 1) % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS)
+                num_committed = num_done - (num_done % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS))
                 print(f"Note: lost connection to database after {num_done} rows. Resetting to {num_committed}.")
                 # reset to point of last commit
                 num_done = num_committed
@@ -117,7 +115,12 @@ def _copy_table(from_connection, target_connection, orm_class):
                 source_result = from_connection.execute(select(table).offset(num_committed))
                 continue
 
+
             num_done += len(all_rows)
+
+            if num_done % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS) == 0:
+                target_connection.commit()
+
             pbar.update(len(all_rows))
 
     target_connection.commit()
