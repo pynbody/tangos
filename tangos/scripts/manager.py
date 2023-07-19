@@ -91,13 +91,15 @@ def _copy_table(from_connection, target_connection, orm_class):
     num_rows = from_connection.execute(select(func.count(table.c.id))).scalar()
     import tqdm
 
-    CHUNK_SIZE = 500
-    COMMIT_AFTER_CHUNKS = 10
+    CHUNK_SIZE = 10
+    COMMIT_AFTER_CHUNKS = 500
     num_done = 0
 
     source_result = from_connection.execute(select(table))
 
-    with tqdm.tqdm(total=num_rows, desc = f"Copying {orm_class.__name__}", unit="row") as pbar:
+    retries = 0
+
+    with tqdm.tqdm(total=num_rows, desc = f"Copying {orm_class.__name__}", unit="row", smoothing=0.1) as pbar:
         while num_done < num_rows:
             all_rows = source_result.fetchmany(CHUNK_SIZE)
             all_rows = [tuple(r) for r in all_rows]
@@ -105,23 +107,34 @@ def _copy_table(from_connection, target_connection, orm_class):
             try:
                 target_connection.execute(insert(table).values(all_rows))
 
-            except sqlalchemy.exc.OperationalError:
+            except sqlalchemy.exc.OperationalError as e:
+                if retries>=1:
+                    raise # if this line is hit, it may reflect a data limit in the server, e.g. max_allowed_packet in MySQL
+                    # Such limits result in the connection being dropped. In PostgreSQL an error is written in the
+                    # server log, but in MySQL it does not seem to be. Reducing CHUNK_SIZE may help, or increasing
+                    # the limit on the server.
+
                 num_committed = num_done - (num_done % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS))
+                pbar.update(num_committed-num_done) # negative correction
                 print(f"Note: lost connection to database after {num_done} rows. Resetting to {num_committed}.")
                 # reset to point of last commit
                 num_done = num_committed
+                target_connection.rollback()
                 # create a new connection from the target connection's engine
                 target_connection = target_connection.engine.connect()
                 source_result = from_connection.execute(select(table).offset(num_committed))
+                retries+=1
                 continue
 
 
             num_done += len(all_rows)
+            pbar.update(len(all_rows))
 
             if num_done % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS) == 0:
                 target_connection.commit()
+                retries = 0
 
-            pbar.update(len(all_rows))
+
 
     target_connection.commit()
 
@@ -189,11 +202,13 @@ def _drop_or_create_indexes(connection, mode='drop'):
                     index.create(connection)
                 else:
                     raise ValueError("mode must be 'drop' or 'create'")
-            except sqlalchemy.exc.OperationalError:
+            except (sqlalchemy.exc.OperationalError, sqlalchemy.exc.ProgrammingError):
                 print("... FAILED")
+                connection.rollback()
             else:
                 print("... OK")
-    connection.commit()
+                connection.commit()
+
 
 def _db_import_export(target_session, from_session, *sims):
     from sqlalchemy import delete
