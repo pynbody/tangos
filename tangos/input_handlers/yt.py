@@ -2,6 +2,7 @@ yt = None # deferred import; occurs when a YtInputHandler is constructed
 
 import glob
 import os
+from typing import List, Tuple
 
 import numpy as np
 
@@ -46,8 +47,86 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def load_tracked_region(self, ts_extension, track_data, mode=None):
         raise NotImplementedError("Tracked regions not implemented for yt")
 
-    def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=False, threshold=0.005, object_typetag='halo'):
-        raise NotImplementedError("Matching halos still needs to be implemented for yt")
+    def match_objects(
+        self,
+        ts1: str,
+        ts2: str,
+        halo_min: int,
+        halo_max: int,
+        dm_only: bool=False,
+        threshold:float =0.005,
+        object_typetag: str="halo",
+        output_handler_for_ts2=None,
+        fuzzy_match_kwa={},
+    ) -> Tuple[List[int], List[List[Tuple[int, int]]]]:
+        if output_handler_for_ts2 is None:
+            raise NotImplementedError(
+                "Alternative output_handler_for_ts2 is not implemented for yt."
+            )
+        if fuzzy_match_kwa:
+            raise NotImplementedError(
+                "Fuzzy matching is not implemented for yt."
+            )
+
+        if halo_min is None:
+            halo_min = 0
+        if halo_max is None:
+            halo_max = np.inf
+
+        h1 = self._load_halo_cat(ts1, object_typetag)
+        if output_handler_for_ts2 is None:
+            h2 = self._load_halo_cat(ts2, object_typetag)
+        else:
+            h2 = output_handler_for_ts2._load_halo_cat(ts2, object_typetag)
+
+        # Compute the sets of particle ids in each halo
+        members2 = np.concatenate([
+            h2.halo("halos", i).member_ids
+            for i in h2.r["particle_identifier"].astype(int)
+            if halo_min <= i <= halo_max
+        ])
+
+        members2halo2 = np.concatenate(
+            np.repeat(i, len(h2.halo("halos", i).member_ids))
+            for i in h2.r["particle_identifier"].astype(int)
+            if halo_min <= i <= halo_max
+        )
+
+        # Compute size of intersection of all sets in h1 with those in h2
+        cat, possibilities = [], []
+        for ihalo1 in h1.r["particle_identifier"].astype(int):
+            if not (halo_min <= ihalo1 <= halo_max):
+                continue
+
+            ids1 = h1.halo("halos", ihalo1).member_ids
+            mask = np.in1d(ids1, members2)
+            if mask.sum() == 0:
+                continue
+
+            # Get the halo ids of the particles in the other snapshot
+            idhalo2 = members2halo2[mask]
+
+            # Count the number of particles in each halo
+            idhalo2, counts = np.unique(idhalo2, return_counts=True)
+            weights = counts / len(ids1)
+
+            # Sort the links by decreasing number of particles
+            _order = np.argsort(weights)[::-1]
+            idhalo2 = idhalo2[_order]
+            weights = weights[_order]
+
+            # Keep only the links with a significant number of particles
+            mask = weights > threshold
+            if mask.sum() == 0:
+                continue
+
+            idhalo2 = idhalo2[mask]
+            weights = weights[mask]
+
+            cat.append(ihalo1)
+            possibilities.append(list(zip(idhalo2, counts)))
+
+        return cat, possibilities
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
         if object_typetag!="halo":
