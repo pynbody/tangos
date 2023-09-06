@@ -5,7 +5,7 @@ ci:
 
 repos:
 -   repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v2.3.0
+    rev: v2.4.0
     hooks:
     -   id: setup-cfg-fmt
 -   repo: https://github.com/pre-commit/pre-commit-hooks
@@ -19,7 +19,7 @@ repos:
     - id: check-executables-have-shebangs
     - id: check-yaml
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.6.0
+    rev: v3.10.1
     hooks:
     - id: pyupgrade
       args: [--py38-plus]
