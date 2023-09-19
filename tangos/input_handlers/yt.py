@@ -87,18 +87,18 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         ])
 
         members2halo2 = np.concatenate([
-            np.repeat(i, len(h2.halo("halos", i).member_ids))
-            for i in h2.r["particle_identifier"].astype(int)
-            if halo_min <= i <= halo_max
+            np.repeat(itangos, len(h2.halo("halos", irockstar).member_ids))
+            for itangos, irockstar in enumerate(h2.r["particle_identifier"].astype(int))
+            if halo_min <= itangos <= halo_max
         ])
 
         # Compute size of intersection of all sets in h1 with those in h2
-        cat, possibilities = [], []
-        for ihalo1 in h1.r["particle_identifier"].astype(int):
-            if not (halo_min <= ihalo1 <= halo_max):
+        cat = []
+        for ihalo1_tangos, ihalo1_rockstar in enumerate(h1.r["particle_identifier"].astype(int)):
+            if not (halo_min <= ihalo1_tangos <= halo_max):
                 continue
 
-            ids1 = h1.halo("halos", ihalo1).member_ids
+            ids1 = h1.halo("halos", ihalo1_rockstar).member_ids
             #mask = np.in1d(ids1, members2)
             mask = np.in1d(members2, ids1)
             if mask.sum() == 0:
@@ -130,9 +130,7 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             idhalo2 = idhalo2[mask]
             weights = weights[mask]
 
-            cat.append(
-                list(zip(idhalo2.value, weights))
-            )
+            cat.append(list(zip(idhalo2, weights)))
 
             #mport pdb
             #pdb.set_trace()
@@ -232,13 +230,13 @@ class YtRamsesRockstarInputHandler(YtInputHandler):
             rockfiles = np.array(rockfiles)[sortord]
             timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==ts_extension.split('/')[0])[0]
             fnum = int(rockfiles[timestep_ind][0].split('.')[0].split('_')[-1])
-        cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
+        cat = yt.load(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
         cat_data = cat.all_data()
         # Check whether rockstar was run with Behroozi's distribution or Wise's
         if np.any(cat_data["halos","particle_identifier"]<0):
             del cat
             del cat_data
-            cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
+            cat = yt.load(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
             cat.parameters['format_revision'] = 2 #
             cat_data = cat.all_data()
         return cat, cat_data
