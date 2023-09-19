@@ -176,6 +176,27 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def get_properties(self):
         return {}
 
+    def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
+        h, _ = self._load_halo_cat(ts_extension, object_typetag)
+        return [fn for ft, fn in h.field_list if ft == "halos"]
+
+
+    def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
+        h, ad = self._load_halo_cat(ts_extension, object_typetag)
+
+        props_with_ftype = [
+            ("halos", name) for name in property_names
+        ]
+
+        ad.get_data(props_with_ftype)
+
+        Nhalo = len(ad["halos", "particle_identifier"])
+        data = zip(range(Nhalo), range(Nhalo), *(
+            ad[_] for _ in props_with_ftype
+        ))
+
+        return data
+
 class YtRamsesRockstarInputHandler(YtInputHandler):
     patterns = ["output_0????"]
     auxiliary_file_patterns = ["halos_*.bin"]
