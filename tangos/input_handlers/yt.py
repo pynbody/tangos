@@ -73,11 +73,11 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         if halo_max is None:
             halo_max = np.inf
 
-        h1 = self._load_halo_cat(ts1, object_typetag)
+        h1, _ = self._load_halo_cat(ts1, object_typetag)
         if output_handler_for_ts2 is None:
-            h2 = self._load_halo_cat(ts2, object_typetag)
+            h2, _ = self._load_halo_cat(ts2, object_typetag)
         else:
-            h2 = output_handler_for_ts2._load_halo_cat(ts2, object_typetag)
+            h2, _ = output_handler_for_ts2._load_halo_cat(ts2, object_typetag)
 
         # Compute the sets of particle ids in each halo
         members2 = np.concatenate([
@@ -86,11 +86,11 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             if halo_min <= i <= halo_max
         ])
 
-        members2halo2 = np.concatenate(
+        members2halo2 = np.concatenate([
             np.repeat(i, len(h2.halo("halos", i).member_ids))
             for i in h2.r["particle_identifier"].astype(int)
             if halo_min <= i <= halo_max
-        )
+        ])
 
         # Compute size of intersection of all sets in h1 with those in h2
         cat, possibilities = [], []
@@ -99,8 +99,12 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                 continue
 
             ids1 = h1.halo("halos", ihalo1).member_ids
-            mask = np.in1d(ids1, members2)
+            #mask = np.in1d(ids1, members2)
+            mask = np.in1d(members2, ids1)
             if mask.sum() == 0:
+                cat.append(
+                    []
+                )
                 continue
 
             # Get the halo ids of the particles in the other snapshot
@@ -118,15 +122,25 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             # Keep only the links with a significant number of particles
             mask = weights > threshold
             if mask.sum() == 0:
+                cat.append(
+                    []
+                )
                 continue
 
             idhalo2 = idhalo2[mask]
             weights = weights[mask]
 
-            cat.append(ihalo1)
-            possibilities.append(list(zip(idhalo2, counts)))
+            cat.append(
+                list(zip(idhalo2.value, weights))
+            )
 
-        return cat, possibilities
+            #mport pdb
+            #pdb.set_trace()
+
+        #import pdb
+        #pdb.set_trace()
+
+        return cat
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
         if object_typetag!="halo":
@@ -163,6 +177,99 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
     def get_properties(self):
         return {}
+
+class YtRamsesRockstarInputHandler(YtInputHandler):
+    patterns = ["output_0????"]
+    auxiliary_file_patterns = ["halos_*.bin"]
+
+    def load_timestep_without_caching(self, ts_extension, mode=None):
+        from yt.data_objects.particle_filters import add_particle_filter
+        if mode is not None:
+            raise ValueError("Custom load modes are not supported with yt")
+        f = yt.load(self._extension_to_filename(ts_extension))
+
+        def Stars(pfilter, data):
+            filter = data[("all", "particle_family")] == 2 # DM = 1, Stars = 2
+            return filter
+
+        add_particle_filter("stars", function=Stars, filtered_type='all', \
+                            requires=["particle_family"])
+
+        def AllDarkMatter(pfilter, data):
+            #filter = np.logical_or(data[("all", "particle_type")] == 4,data[("all", "particle_type")] == 1) # DM = 1, Stars = 2
+            filter = data[("all", "particle_family")] == 1
+            return filter
+
+        add_particle_filter("dark_matter", function=AllDarkMatter, filtered_type='all', \
+                            requires=["particle_family"])
+
+        def MustRefineParticles(pfilter, data):
+            filter = data[("all", "particle_family")] == 4
+            return filter
+
+        add_particle_filter("mrp_dark_matter", function=MustRefineParticles, filtered_type='all', \
+                            requires=["particle_family"])
+
+        f.add_particle_filter("stars")
+        f.add_particle_filter("dark_matter")
+        f.add_particle_filter("mrp_dark_matter")
+
+        return f
+
+    def _load_halo_cat_without_caching(self, ts_extension, snapshot_file):
+        # Check whether datasets.txt exists (i.e., if rockstar was run with yt)
+        if os.path.exists(self._extension_to_filename("datasets.txt")):
+            fnum = read_datasets(self._extension_to_filename(""),ts_extension)
+            print (ts_extension)
+            print (fnum)
+        else: # otherwise, assume a one-to-one correspondence
+            overdir = self._extension_to_filename("")
+            snapfiles = glob.glob(overdir+ts_extension[:2]+len(ts_extension[2:].split('/')[0])*'?')
+            rockfiles = glob.glob(overdir+"out_*.list")
+            sortind = np.array([int(rname.split('.')[0].split('_')[-1]) for rname in rockfiles])
+            sortord = np.argsort(sortind)
+            snapfiles.sort()
+            rockfiles = np.array(rockfiles)[sortord]
+            timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==ts_extension.split('/')[0])[0]
+            fnum = int(rockfiles[timestep_ind][0].split('.')[0].split('_')[-1])
+        cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
+        cat_data = cat.all_data()
+        # Check whether rockstar was run with Behroozi's distribution or Wise's
+        if np.any(cat_data["halos","particle_identifier"]<0):
+            del cat
+            del cat_data
+            cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
+            cat.parameters['format_revision'] = 2 #
+            cat_data = cat.all_data()
+        return cat, cat_data
+
+    def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
+        if object_typetag!="halo":
+            return
+        if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
+            yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
+        else:
+            logger.warn("No halo statistics file found for timestep %r", ts_extension)
+            logger.warn(" => enumerating %ss directly using yt", object_typetag)
+
+            catalogue, catalogue_data = self._load_halo_cat(ts_extension, object_typetag)
+            num_objects = len(catalogue_data["halos", "virial_radius"])
+
+            for i in range(num_objects):
+                obj = self.load_object(ts_extension, int(catalogue_data["halos","particle_identifier"][i]), i, object_typetag)
+                NDM = len(obj["dark_matter","particle_mass"])
+                NGas = 0 # cells
+                NStar = len(obj["stars","particle_mass"])
+                if NDM + NGas + NStar> min_halo_particles:
+                    yield i, int(catalogue_data["halos","particle_identifier"][i]), NDM, NStar, NGas
+
+    def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
+        f = self.load_timestep(ts_extension, mode)
+        cat, cat_dat = self._load_halo_cat(ts_extension, object_typetag)
+        center = cat_dat["halos","particle_position"][cat_dat["halos","particle_identifier"]==finder_id][0]
+        center+=f.domain_left_edge-cat.domain_left_edge
+        radius = cat_dat["halos","virial_radius"][cat_dat["halos","particle_identifier"]==finder_id][0]
+        return f.sphere(center.in_cgs(), radius.in_cgs())
 
 
 class YtChangaAHFInputHandler(YtInputHandler):
