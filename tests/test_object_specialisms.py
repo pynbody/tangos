@@ -14,6 +14,7 @@ def setup_module():
     generator = tangos.testing.simulation_generator.SimulationGeneratorForTests()
     generator.add_timestep()
     halo_1, = generator.add_objects_to_timestep(1)
+    print("h1 typecode:", halo_1.object_typecode)
     bh_1, bh_2 = generator.add_bhs_to_timestep(2)
 
     halo_1['BH'] = bh_2, bh_1
@@ -24,6 +25,7 @@ def teardown_module():
     tangos.core.close_db()
 
 def test_bh_identity():
+    print("h1 typecode as retrieved:", tangos.get_halo(1).object_typecode)
     assert isinstance(tangos.get_halo(1), tangos.core.halo.Halo)
     assert not isinstance(tangos.get_halo(1), tangos.core.halo.BH)
     assert isinstance(tangos.get_halo(2), tangos.core.halo.BH)
