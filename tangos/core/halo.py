@@ -48,7 +48,7 @@ class SimulationObjectBase(Base):
     tag = "abstract_base_class_for_halos_etc" # tag will be halo, bh, tracker etc. Don't use the base class!
 
     __mapper_args__ = {
-        'polymorphic_identity':-1,
+        'polymorphic_identity':100,
         'polymorphic_on':object_typecode
     }
 

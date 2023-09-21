@@ -134,7 +134,7 @@ def launch_functions(functions, args):
                 if message=='finalize':
                     #print "  ---> multiprocessing backend: finalize node ",i,running
                     running[i]=False
-                elif message[0]=='error':
+                elif isinstance(message[0], str) and message[0]=='error':
                     error = message[1]
                     running = [False]
                     break
