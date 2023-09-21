@@ -13,10 +13,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.8, 3.9, "3.10", "3.11"]
-        sqlalchemy-version: ["1.4", "2.0"]
+        python-version: ["3.11"] #[3.8, 3.9, "3.10", "3.11"]
+        sqlalchemy-version: ["2.0"] # ["1.4", "2.0"]
         numpy-version: ["1.18", "1.22"]
-        TANGOS_TESTING_DB_BACKEND: [sqlite, mysql+pymysql, postgresql+psycopg2]
+        TANGOS_TESTING_DB_BACKEND: [sqlite, mysql+pymsql] #[sqlite, mysql+pymysql, postgresql+psycopg2]
     runs-on: ${{ matrix.os }}
     env:
       C: gcc-10

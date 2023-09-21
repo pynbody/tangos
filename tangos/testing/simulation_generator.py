@@ -25,7 +25,12 @@ class SimulationGeneratorForTests:
                 NDM_halo = 1000-i*100
             else:
                 NDM_halo = NDM[i-1]
+
             halo = core.halo.SimulationObjectBase(ts, i, i, i, NDM_halo, 0, 0, object_typecode=object_typecode)
+            cl = core.halo.SimulationObjectBase.class_from_tag(
+                core.halo.SimulationObjectBase.object_typetag_from_code(object_typecode)
+            )
+            halo.__class__ = cl # hmm, not really sure this should be necessary or advisable
             self.session.add(halo)
             returned_halos.append(halo)
 
