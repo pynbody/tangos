@@ -30,7 +30,9 @@ class SimulationGeneratorForTests:
             cl = core.halo.SimulationObjectBase.class_from_tag(
                 core.halo.SimulationObjectBase.object_typetag_from_code(object_typecode)
             )
-            halo.__class__ = cl # hmm, not really sure this should be necessary or advisable
+            halo.__class__ = cl # hmm, not really sure this should be necessary or advisable. But tests were failing
+            # with the very specific combination of py3.11 + sqlalchemy 2.0.x + mysql, and this appears to fix it
+            # so we better stick with it.
             self.session.add(halo)
             returned_halos.append(halo)
 
