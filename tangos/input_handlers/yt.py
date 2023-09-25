@@ -271,11 +271,19 @@ class YtRamsesRockstarInputHandler(YtInputHandler):
             logger.warn("No halo statistics file found for timestep %r", ts_extension)
             logger.warn(" => enumerating %ss directly using yt", object_typetag)
 
-            catalogue, catalogue_data = self._load_halo_cat(ts_extension, object_typetag)
+            _catalogue, catalogue_data = self._load_halo_cat(ts_extension, object_typetag)
             num_objects = len(catalogue_data["halos", "virial_radius"])
 
+            # Make sure this isn't garbage collected
+            _f = self.load_timestep(ts_extension)
+
             for i in range(num_objects):
-                obj = self.load_object(ts_extension, int(catalogue_data["halos","particle_identifier"][i]), i, object_typetag)
+                obj = self.load_object(
+                    ts_extension,
+                    int(catalogue_data["halos","particle_identifier"][i]),
+                    i,
+                    object_typetag
+                )
                 NDM = len(obj["dark_matter","particle_mass"])
                 NGas = 0 # cells
                 NStar = len(obj["stars","particle_mass"])
