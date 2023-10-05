@@ -68,8 +68,8 @@ class PatternBasedFileDiscovery:
         extensions = find(basename=base + "/", patterns=self.patterns)
         logger.info("Enumerate timestep extensions base=%r patterns=%s", base, self.patterns)
         for e in extensions:
-            if self._is_able_to_load(e):
-                yield e[len(base) + 1:]
+            if self._is_able_to_load(self._transform_extension(e)):
+                yield self._transform_extension(e[len(base) + 1:])
             else:
                 logger.info("Could not load %s with class %s", e, self)
 
@@ -78,3 +78,7 @@ class PatternBasedFileDiscovery:
 
         Override in child class to filter the pattern-based file matches"""
         return True
+
+    def _transform_extension(self, extension_name):
+        """Can be overriden by child classes to map from the literal filename discovered to a different name for loading"""
+        return extension_name
