@@ -246,9 +246,9 @@ class PropertyWriter(GenericTangosTool):
     def _commit_results_if_needed(self, end_of_timestep=False, end_of_simulation=False):
 
         if self._is_commit_needed(end_of_timestep, end_of_simulation):
-            logger.info("Attempting to commit %d halo properties...", len(self._pending_properties))
-            insert_list(self._pending_properties)
-            logger.info("%d properties were committed", len(self._pending_properties))
+            logger.info("Attempting to commit halo properties...")
+            num_properties = insert_list(self._pending_properties)
+            logger.info(f"...{num_properties} properties were committed")
             self._pending_properties = []
             self._start_time = time.time()
             self.timing_monitor.summarise_timing(logger)
@@ -459,8 +459,10 @@ class PropertyWriter(GenericTangosTool):
 
         logger.info("Successfully gathered existing properties; calculating halo properties now...")
 
-        logger.info("  %d halos to consider; %d property calculations for each of them",
-                    len(db_halos), len(self._property_calculator_instances))
+        logger.info("  %d halos to consider; %d calculation routines for each of them, resulting in %d properties per halo",
+                    len(db_halos), len(self._property_calculator_instances),
+                    sum([1 if isinstance(x.names, str) else len(x.names) for x in self._property_calculator_instances])
+                    )
 
         for db_halo, existing_properties in \
                 self._get_parallel_halo_iterator(list(zip(db_halos, self._existing_properties_all_halos))):
