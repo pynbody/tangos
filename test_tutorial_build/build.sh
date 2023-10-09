@@ -2,7 +2,13 @@
 
 get_tutorial_data() {
   if [ ! -d tutorial_$1 ]; then
-    wget -O - https://zenodo.org/record/5155467/files/tutorial_$1.tar.gz?download=1 | tar -xz
+    if [ -z "$INTEGRATION_TESTING" ]; then
+      echo "Downloading tutorial data for $1"
+      wget -nv -O - https://zenodo.org/record/5155467/files/tutorial_$1.tar.gz?download=1 | tar -xzv
+    else
+      echo "Downloading mini tutorial data for $1"
+      wget -nv -O - https://zenodo.org/record/8423051/files/tutorial_$1.tar.gz?download=1 | tar -xzv
+    fi
   fi
 }
 
@@ -23,9 +29,6 @@ build_gadget4() {
   tangos import-properties --for tutorial_gadget4
   tangos import-properties --for tutorial_gadget4 --type group
   $MPI tangos $MPIBACKEND write dm_density_profile --with-prerequisites --include-only="NDM()>5000" --type=halo --for tutorial_gadget4
-  if [ ! -z "$DELETE_FILES_AFTER_IMPORT" ]; then
-    rm -rf tutorial_gadget4
-  fi
 }
 
 build_gadget_subfind() {
@@ -53,9 +56,6 @@ build_ramses() {
     $MPI tangos link --for tutorial_ramses $MPIBACKEND
     $MPI tangos write contamination_fraction --for tutorial_ramses $MPIBACKEND
     $MPI tangos write dm_density_profile --with-prerequisites --include-only="contamination_fraction<0.01" --for tutorial_ramses $MPIBACKEND
-    if [ ! -z "$DELETE_FILES_AFTER_IMPORT" ]; then
-      rm -rf tutorial_ramses
-    fi
 }
 
 build_changa() {
@@ -65,10 +65,6 @@ build_changa() {
     $MPI tangos link --for tutorial_changa$1 $MPIBACKEND
     $MPI tangos write contamination_fraction --for tutorial_changa$1 $MPIBACKEND
     $MPI tangos write dm_density_profile gas_density_profile uvi_image SFR_histogram --with-prerequisites --include-only="contamination_fraction<0.01" --include-only="NDM()>5000" $MPILOADMODE --for tutorial_changa$1  $MPIBACKEND
-    # delete tutorial_changa if $1 is a null string and DELETE_FILES_AFTER_IMPORT is set
-    if [ ! -z "$DELETE_FILES_AFTER_IMPORT" ] && [ -z "$1" ]; then
-      rm -rf tutorial_changa
-    fi
 }
 
 build_changa_bh() {
@@ -76,12 +72,10 @@ build_changa_bh() {
     tangos import-changa-bh --sims tutorial_changa_blackholes
     $MPI tangos write BH_mass BH_mdot_histogram --for tutorial_changa_blackholes --type bh $MPIBACKEND
     $MPI tangos crosslink tutorial_changa tutorial_changa_blackholes $MPIBACKEND
-    if [ ! -z "$DELETE_FILES_AFTER_IMPORT" ]; then
-      rm -rf tutorial_changa_blackholes
-    fi
 }
 
 build_enzo_yt() {
+  get_tutorial_data enzo.tinycosmo
   if [ -d enzo.tinycosmo ]; then
     tangos add enzo.tinycosmo --handler=yt.YtInputHandler --min-particles 100
     tangos import-consistent-trees --for enzo.tinycosmo --with-ids
@@ -92,18 +86,27 @@ build_enzo_yt() {
   fi
 }
 
+clearup_files() {
+  if [ ! -z "$INTEGRATION_TESTING" ]; then
+    rm -rf $1
+  fi
+}
 
-echo "This script builds the tangos tutorial database"
-echo
-echo "It will download data and build in the current working directory:"
-echo "  "`pwd`
-echo
-echo "The total required space is approximately 35GB"
-echo
-echo "If this is not what you want, press ^C now"
-echo "Starting process in 5 seconds..."
 
-sleep 5
+if [ -z "$INTEGRATION_TESTING" ]; then
+  echo "This script builds the tangos tutorial database"
+  echo
+  echo "It will download data and build in the current working directory:"
+  echo "  "`pwd`
+  echo
+  echo "The total required space is approximately 35GB"
+  echo
+  echo "If this is not what you want, press ^C now"
+  echo "Starting process in 5 seconds..."
+  sleep 5
+fi
+
+
 
 export TANGOS_DB_CONNECTION=`pwd`/data.db
 export TANGOS_SIMULATION_FOLDER=`pwd`
@@ -114,8 +117,14 @@ set -e
 
 build_gadget_subfind
 build_gadget_rockstar
+clearup_files("tutorial_gadget")
 build_ramses
+clearup_files("tutorial_ramses")
 build_changa
+clearup_files("tutorial_changa")
 build_changa_bh
+clearup_files("tutorial_changa_blackholes")
 build_gadget4
+clearup_files("tutorial_gadget4")
 build_enzo_yt
+clearup_files("enzo.tinycosmo")
