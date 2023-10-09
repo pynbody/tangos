@@ -23,6 +23,9 @@ build_gadget4() {
   tangos import-properties --for tutorial_gadget4
   tangos import-properties --for tutorial_gadget4 --type group
   $MPI tangos $MPIBACKEND write dm_density_profile --with-prerequisites --include-only="NDM()>5000" --type=halo --for tutorial_gadget4
+  if [ ! -z "$DELETE_FILES_AFTER_IMPORT" ]; then
+    rm -rf tutorial_gadget4
+  fi
 }
 
 build_gadget_subfind() {
@@ -50,6 +53,9 @@ build_ramses() {
     $MPI tangos link --for tutorial_ramses $MPIBACKEND
     $MPI tangos write contamination_fraction --for tutorial_ramses $MPIBACKEND
     $MPI tangos write dm_density_profile --with-prerequisites --include-only="contamination_fraction<0.01" --for tutorial_ramses $MPIBACKEND
+    if [ ! -z "$DELETE_FILES_AFTER_IMPORT" ]; then
+      rm -rf tutorial_ramses
+    fi
 }
 
 build_changa() {
@@ -59,6 +65,10 @@ build_changa() {
     $MPI tangos link --for tutorial_changa$1 $MPIBACKEND
     $MPI tangos write contamination_fraction --for tutorial_changa$1 $MPIBACKEND
     $MPI tangos write dm_density_profile gas_density_profile uvi_image SFR_histogram --with-prerequisites --include-only="contamination_fraction<0.01" --include-only="NDM()>5000" $MPILOADMODE --for tutorial_changa$1  $MPIBACKEND
+    # delete tutorial_changa if $1 is a null string and DELETE_FILES_AFTER_IMPORT is set
+    if [ ! -z "$DELETE_FILES_AFTER_IMPORT" ] && [ -z "$1" ]; then
+      rm -rf tutorial_changa
+    fi
 }
 
 build_changa_bh() {
@@ -66,6 +76,9 @@ build_changa_bh() {
     tangos import-changa-bh --sims tutorial_changa_blackholes
     $MPI tangos write BH_mass BH_mdot_histogram --for tutorial_changa_blackholes --type bh $MPIBACKEND
     $MPI tangos crosslink tutorial_changa tutorial_changa_blackholes $MPIBACKEND
+    if [ ! -z "$DELETE_FILES_AFTER_IMPORT" ]; then
+      rm -rf tutorial_changa_blackholes
+    fi
 }
 
 build_enzo_yt() {
