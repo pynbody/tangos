@@ -423,7 +423,12 @@ def all_properties(with_particle_data=True):
 def providing_class(property_name, handler_class=None, silent_fail=False, explain=False):
     """Return property calculator class for given property name when files will be loaded by specified handler.
 
-    If handler_class is None, return "live" properties which can be calculated without particle data.
+    :param property_name -- name of property to be calculated
+    :param handler_class -- class of handler that will be used to load files
+                            (e.g. input_handlers.pynbody.PynbodyInputHandler).
+                            If None, return "live" properties which can be calculated without particle data.
+    :param silent_fail -- if True, return None if no class is found, otherwise raise NameError
+    :param explain -- if True, print out the reason why a particular class was selected
 
     When more than one possible class is capable of calculating the requested property, the following criteria
     are used to select one. The guiding criterion is to select user-provided code of the greatest specificity.
@@ -441,12 +446,18 @@ def providing_class(property_name, handler_class=None, silent_fail=False, explai
 
     """
 
-    candidates = all_providing_classes(property_name)
+    candidates_unfiltered = all_providing_classes(property_name)
 
     if handler_class is None:
-        candidates = list(filter(lambda c: not c.requires_particle_data, candidates))
+        candidates = list(filter(lambda c: not c.requires_particle_data, candidates_unfiltered))
     else:
-        candidates = list(filter(lambda c: issubclass(handler_class, c.works_with_handler), candidates))
+        candidates = []
+        for c in candidates_unfiltered:
+            if issubclass(handler_class, c.works_with_handler):
+                candidates.append(c)
+            else:
+                if explain:
+                    logger.info(f"Property class selection: {c.__module__}.{c.__qualname__} is excluded, as it is not compatible with handler {handler_class}")
 
     if len(candidates)>=1:
         # return the property which is most specialised
@@ -477,7 +488,7 @@ def all_providing_classes(property_name):
 def _sort_by_class_hierarchy(candidates, explain=False):
     def explanation(s):
         if explain:
-            logger.info(s)
+            logger.info("Property class selection: "+s)
     def cmp(a, b):
         a_name = a.__module__ + "." + a.__qualname__
         b_name = b.__module__ + "." + b.__qualname__
