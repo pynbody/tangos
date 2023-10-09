@@ -464,6 +464,11 @@ class PropertyWriter(GenericTangosTool):
                     sum([1 if isinstance(x.names, str) else len(x.names) for x in self._property_calculator_instances])
                     )
 
+        logger.info("  The property modules are:")
+        for x in self._property_calculator_instances:
+            x_type = type(x)
+            logger.info(f"    {x_type.__module__}.{x_type.__qualname__}")
+
         for db_halo, existing_properties in \
                 self._get_parallel_halo_iterator(list(zip(db_halos, self._existing_properties_all_halos))):
             self._existing_properties_this_halo = existing_properties

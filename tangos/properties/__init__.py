@@ -421,7 +421,20 @@ def all_properties(with_particle_data=True):
 def providing_class(property_name, handler_class=None, silent_fail=False):
     """Return property calculator class for given property name when files will be loaded by specified handler.
 
-    If handler_class is None, return "live" properties which can be calculated without particle data"""
+    If handler_class is None, return "live" properties which can be calculated without particle data.
+
+    When more than one possible class is capable of calculating the requested property, the following criteria
+    are used to select one. The guiding criterion is to select user-provided code of the greatest specificity.
+
+    1) If possible, the most specialised class in terms of the class hierarchy is used. So if a user-defined class
+       inherits from tangos.properties.pynbody.CentreAndRadius, and implements the same properties, the child class
+       will be preferred
+    2) If there is no class hierarchy, the class defined in the tangos codebase is de-prioritised over any externally
+       provided classes
+    3) If there is still a tie, the string representation of the classname (including the module) is used to sort
+       alphabetically. This has no particular rationale except to make reproducible results.
+
+    """
 
     candidates = all_providing_classes(property_name)
 
@@ -461,9 +474,29 @@ def _sort_by_class_hierarchy(candidates):
         if a is b:
             return 0
         elif issubclass(a, b):
+            return -1
+        elif issubclass(b, a):
             return 1
         else:
-            return -1
+            # Next, let's see if one of these is internal to tangos. If so, we'll define it as
+            # less specialised than the user-provided other one
+            if a.__module__.startswith("tangos.") and not b.__module__.startswith("tangos."):
+                return 1
+            elif b.__module__.startswith("tangos.") and not a.__module__.startswith("tangos."):
+                return -1
+            else:
+                # out of sensible ways to order, now we just go alphabetical
+                a_name = a.__module__ + "." + a.__qualname__
+                b_name = b.__module__ + "." + b.__qualname__
+                if a_name<b_name:
+                    return -1
+                elif a_name>b_name:
+                    return 1
+                else:
+                    # very surprising to reach this - how can two different classes have the same module and name?
+                    return 0
+
+
     candidates.sort(key=functools.cmp_to_key(cmp))
 
 
