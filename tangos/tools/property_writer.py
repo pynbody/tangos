@@ -78,6 +78,8 @@ class PropertyWriter(GenericTangosTool):
                             help="Specify the paralellism backend (e.g. pypar, mpi4py)")
         parser.add_argument('--include-only', action='append', type=str,
                             help="Specify a filter that describes which objects the calculation should be executed for. Multiple filters may be specified, in which case they must all evaluate to true for the object to be included.")
+        parser.add_argument('--explain-classes', action='store_true',
+                            help="Log some explanation for why property classes are selected (when there is any ambiguity)")
 
     def _create_parser_obj(self):
         parser = argparse.ArgumentParser()
@@ -446,7 +448,9 @@ class PropertyWriter(GenericTangosTool):
         self.tracker = CalculationSuccessTracker()
 
         logger.info("Processing %r", db_timestep)
-        self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
+        self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation,
+                                                                             self.options.properties,
+                                                                             explain=self.options.explain_classes)
         if self.options.with_prerequisites:
             self._add_prerequisites_to_calculator_instances(db_timestep)
 

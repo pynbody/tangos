@@ -9,6 +9,7 @@ import pkg_resources
 from tangos.util import timing_monitor
 
 from .. import input_handlers, parallel_tasks
+from ..log import logger
 
 
 class PropertyCalculationMetaClass(type):
@@ -419,7 +420,7 @@ def all_properties(with_particle_data=True):
     return pr
 
 @functools.lru_cache
-def providing_class(property_name, handler_class=None, silent_fail=False):
+def providing_class(property_name, handler_class=None, silent_fail=False, explain=False):
     """Return property calculator class for given property name when files will be loaded by specified handler.
 
     If handler_class is None, return "live" properties which can be calculated without particle data.
@@ -449,7 +450,7 @@ def providing_class(property_name, handler_class=None, silent_fail=False):
 
     if len(candidates)>=1:
         # return the property which is most specialised
-        _sort_by_class_hierarchy(candidates)
+        _sort_by_class_hierarchy(candidates, explain)
         return candidates[0]
     elif silent_fail:
         return None
@@ -473,38 +474,56 @@ def all_providing_classes(property_name):
     return candidates
 
 
-def _sort_by_class_hierarchy(candidates):
+def _sort_by_class_hierarchy(candidates, explain=False):
+    def explanation(s):
+        if explain:
+            logger.info(s)
     def cmp(a, b):
+        a_name = a.__module__ + "." + a.__qualname__
+        b_name = b.__module__ + "." + b.__qualname__
+
         if a is b:
             return 0
 
         # Rule 1: prefer the most specialised handler
-        if issubclass(a.works_with_handler, b.works_with_handler):
-            return -1
-        elif issubclass(b.works_with_handler, a.works_with_handler):
-            return 1
+        if a.works_with_handler is not b.works_with_handler:
+            if issubclass(a.works_with_handler, b.works_with_handler):
+                explanation(f"{a_name} is preferred to {b_name} because handler ({a.works_with_handler}) is a subclass "
+                      f"of handler {b.works_with_handler}")
+                return -1
+            elif issubclass(b.works_with_handler, a.works_with_handler):
+                explanation(f"{b_name} is preferred to {a_name} because handler ({b.works_with_handler}) is a subclass "
+                      f"of handler {a.works_with_handler}")
+                return 1
 
         # Rule 2: prefer the most specialised class:
         if issubclass(a, b):
+            explanation(f"{a_name} is preferred to {b_name} because it is a subclass of {b_name}")
             return -1
         elif issubclass(b, a):
+            explanation(f"{b_name} is preferred to {a_name} because it is a subclass of {a_name}")
             return 1
 
         # Rule 3: prefer externally-provided classes over tangos-provided ones
 
         if a.__module__.startswith("tangos.") and not b.__module__.startswith("tangos."):
+            explanation(f"{b_name} is preferred to {a_name} because it is provided externally to tangos")
             return 1
         elif b.__module__.startswith("tangos.") and not a.__module__.startswith("tangos."):
+            explanation(f"{a_name} is preferred to {b_name} because it is provided externally to tangos")
             return -1
 
         # Rule 4: out of sensible ways to order, now we just go alphabetical
         a_name = a.__module__ + "." + a.__qualname__
         b_name = b.__module__ + "." + b.__qualname__
         if a_name<b_name:
+            explanation(f"{a_name} is preferred to {b_name} because of alphabetical ordering")
             return -1
         elif a_name>b_name:
+            explanation(f"{b_name} is preferred to {a_name} because of alphabetical ordering")
             return 1
 
+        explanation(f"{a_name} and {b_name} could not be distinguished by any of the ordering rules")
         # very surprising to reach this - how can two different classes have the same module and name?
         return 0
 
@@ -512,22 +531,22 @@ def _sort_by_class_hierarchy(candidates):
 
 
 
-def providing_classes(property_name_list, handler_class, silent_fail=False):
+def providing_classes(property_name_list, handler_class, silent_fail=False, explain=False):
     """Return classes for given list of property names; see providing_class for details"""
     classes = []
     for property_name in property_name_list:
-        cl = providing_class(property_name, handler_class, silent_fail)
+        cl = providing_class(property_name, handler_class, silent_fail, explain)
         if cl not in classes and cl is not None:
             classes.append(cl)
 
     return classes
 
-def instantiate_classes(simulation, property_name_list, silent_fail=False):
+def instantiate_classes(simulation, property_name_list, silent_fail=False, explain=False):
     """Instantiate appropriate property calculation classes for a given simulation and list of property names."""
     instances = []
     handler_class = type(simulation.get_output_handler())
     for property_identifier in property_name_list:
-        instances.append(providing_class(property_identifier, handler_class, silent_fail)(simulation))
+        instances.append(providing_class(property_identifier, handler_class, silent_fail, explain)(simulation))
 
     return instances
 
