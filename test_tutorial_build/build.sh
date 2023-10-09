@@ -117,14 +117,14 @@ set -e
 
 build_gadget_subfind
 build_gadget_rockstar
-clearup_files("tutorial_gadget")
+clearup_files tutorial_gadget
 build_ramses
-clearup_files("tutorial_ramses")
+clearup_files tutorial_ramses
 build_changa
-clearup_files("tutorial_changa")
+clearup_files tutorial_changa
 build_changa_bh
-clearup_files("tutorial_changa_blackholes")
+clearup_files tutorial_changa_blackholes
 build_gadget4
-clearup_files("tutorial_gadget4")
+clearup_files tutorial_gadget4
 build_enzo_yt
-clearup_files("enzo.tinycosmo")
+clearup_files enzo.tinycosmo
