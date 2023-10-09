@@ -1,5 +1,6 @@
 import functools
 import importlib
+import os
 import warnings
 
 import numpy as np
@@ -539,6 +540,10 @@ def instantiate_class(simulation, property_name, silent_fail=False):
         return instance[0]
 
 def _import_configured_property_modules():
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        warnings.warn("Not importing external property modules during testing", ImportWarning)
+        return
+
     from ..config import property_modules
     for pm in property_modules:
         if pm=="": continue
