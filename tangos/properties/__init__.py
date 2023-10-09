@@ -426,9 +426,12 @@ def providing_class(property_name, handler_class=None, silent_fail=False):
     When more than one possible class is capable of calculating the requested property, the following criteria
     are used to select one. The guiding criterion is to select user-provided code of the greatest specificity.
 
-    1) If possible, the most specialised class in terms of the class hierarchy is used. So if a user-defined class
-       inherits from tangos.properties.pynbody.CentreAndRadius, and implements the same properties, the child class
-       will be preferred
+    1) If possible, the class targetting the most specialised input handler is selected. That is, if a
+       class targetting say PynbodyInputHandler is available, it will be selected in preference to one
+       targetting HandlerBase.
+    2) Next, the class hierarchy of the properties themselves is inspected. If one class is a subclass of another,
+       the more specialised class is selected. For example, if there are two classes calculating "my_prop", A and B,
+       and B is a child class of A, B is selected.
     2) If there is no class hierarchy, the class defined in the tangos codebase is de-prioritised over any externally
        provided classes
     3) If there is still a tie, the string representation of the classname (including the module) is used to sort
@@ -473,31 +476,39 @@ def _sort_by_class_hierarchy(candidates):
     def cmp(a, b):
         if a is b:
             return 0
-        elif issubclass(a, b):
+
+        # Rule 1: prefer the most specialised handler
+        if issubclass(a.works_with_handler, b.works_with_handler):
+            return -1
+        elif issubclass(b.works_with_handler, a.works_with_handler):
+            return 1
+
+        # Rule 2: prefer the most specialised class:
+        if issubclass(a, b):
             return -1
         elif issubclass(b, a):
             return 1
-        else:
-            # Next, let's see if one of these is internal to tangos. If so, we'll define it as
-            # less specialised than the user-provided other one
-            if a.__module__.startswith("tangos.") and not b.__module__.startswith("tangos."):
-                return 1
-            elif b.__module__.startswith("tangos.") and not a.__module__.startswith("tangos."):
-                return -1
-            else:
-                # out of sensible ways to order, now we just go alphabetical
-                a_name = a.__module__ + "." + a.__qualname__
-                b_name = b.__module__ + "." + b.__qualname__
-                if a_name<b_name:
-                    return -1
-                elif a_name>b_name:
-                    return 1
-                else:
-                    # very surprising to reach this - how can two different classes have the same module and name?
-                    return 0
 
+        # Rule 3: prefer externally-provided classes over tangos-provided ones
+
+        if a.__module__.startswith("tangos.") and not b.__module__.startswith("tangos."):
+            return 1
+        elif b.__module__.startswith("tangos.") and not a.__module__.startswith("tangos."):
+            return -1
+
+        # Rule 4: out of sensible ways to order, now we just go alphabetical
+        a_name = a.__module__ + "." + a.__qualname__
+        b_name = b.__module__ + "." + b.__qualname__
+        if a_name<b_name:
+            return -1
+        elif a_name>b_name:
+            return 1
+
+        # very surprising to reach this - how can two different classes have the same module and name?
+        return 0
 
     candidates.sort(key=functools.cmp_to_key(cmp))
+
 
 
 def providing_classes(property_name_list, handler_class, silent_fail=False):
