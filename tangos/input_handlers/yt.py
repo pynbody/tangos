@@ -146,13 +146,13 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
             rockfiles = np.array(rockfiles)[sortord]
             timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==ts_extension.split('/')[0])[0]
             fnum = int(rockfiles[timestep_ind][0].split('.')[0].split('_')[-1])
-        cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
+        cat = yt.load(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
         cat_data = cat.all_data()
         # Check whether rockstar was run with Behroozi's distribution or Wise's
         if np.any(cat_data["halos","particle_identifier"]<0):
             del cat
             del cat_data
-            cat = yt.frontends.rockstar.RockstarDataset(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
+            cat = yt.load(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
             cat.parameters['format_revision'] = 2 #
             cat_data = cat.all_data()
         return cat, cat_data
