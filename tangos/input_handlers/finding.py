@@ -65,7 +65,7 @@ class PatternBasedFileDiscovery:
 
     def enumerate_timestep_extensions(self):
         base = os.path.join(config.base, self.basename)
-        extensions = find(basename=base + "/", patterns=self.patterns)
+        extensions = sorted(find(basename=base + "/", patterns=self.patterns))
         logger.info("Enumerate timestep extensions base=%r patterns=%s", base, self.patterns)
         for e in extensions:
             if self._is_able_to_load(self._transform_extension(e)):

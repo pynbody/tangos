@@ -260,9 +260,9 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                     pass
 
     def get_properties(self):
-        timesteps = list(self.enumerate_timestep_extensions())
-        if len(timesteps)>0:
-            f = self.load_timestep_without_caching(sorted(timesteps)[-1])
+        timesteps = self.enumerate_timestep_extensions()
+        try:
+            f = self.load_timestep_without_caching(next(timesteps))
             if self.quicker:
                 res_kpc = self._estimate_spatial_resolution_quicker(f)
                 res_msol = self._estimate_mass_resolution_quicker(f)
@@ -271,7 +271,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                 res_msol = self._estimate_mass_resolution(f)
             return {'approx_resolution_kpc': res_kpc, 'approx_resolution_Msol': res_msol}
 
-        else:
+        except StopIteration:
             return {}
 
     def _estimate_spatial_resolution(self, f):
