@@ -90,7 +90,8 @@ class YtChangaAHFInputHandler(YtInputHandler):
     patterns = ["*.00???", "*.00????"]
 
     def _load_halo_cat_without_caching(self, ts_extension, snapshot_file):
-        cat = yt.frontends.ahf.AHFHalosDataset(self._extension_to_filename("halos/"+ts_extension)+".AHF_param",
+        import yt.frontends.ahf.api
+        cat = yt.frontends.ahf.api.AHFHalosDataset(self._extension_to_filename("halos/"+ts_extension)+".AHF_param",
                                                 hubble_constant = snapshot_file.hubble_constant)
         cat_data = cat.all_data()
         return cat, cat_data
