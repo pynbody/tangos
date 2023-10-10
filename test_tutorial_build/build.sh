@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 get_tutorial_data() {
-  if [ ! -d tutorial_$1 ]; then
+  if [ ! -d $1 ]; then
     if [ -z "$INTEGRATION_TESTING" ]; then
       echo "Downloading tutorial data for $1"
       wget -nv -O - https://zenodo.org/record/5155467/files/tutorial_$1.tar.gz?download=1 | tar -xzv
@@ -24,7 +24,7 @@ detect_mpi() {
 }
 
 build_gadget4() {
-  get_tutorial_data gadget4
+  get_tutorial_data tutorial_gadget4
   tangos add tutorial_gadget4
   tangos import-properties --for tutorial_gadget4
   tangos import-properties --for tutorial_gadget4 --type group
@@ -32,7 +32,7 @@ build_gadget4() {
 }
 
 build_gadget_subfind() {
-    get_tutorial_data gadget
+    get_tutorial_data tutorial_gadget
     tangos add tutorial_gadget --min-particles 100
     tangos import-properties --for tutorial_gadget
     tangos import-properties --type group --for tutorial_gadget
@@ -42,8 +42,8 @@ build_gadget_subfind() {
 }
 
 build_gadget_rockstar() {
-    get_tutorial_data gadget
-    get_tutorial_data gadget_rockstar
+    get_tutorial_data tutorial_gadget
+    get_tutorial_data tutorial_gadget_rockstar
     tangos add tutorial_gadget_rockstar --min-particles 100
     tangos import-properties Mvir Rvir X Y Z --for tutorial_gadget_rockstar
     tangos import-consistent-trees --for tutorial_gadget_rockstar
@@ -51,7 +51,7 @@ build_gadget_rockstar() {
 }
 
 build_ramses() {
-    get_tutorial_data ramses
+    get_tutorial_data tutorial_ramses
     tangos add tutorial_ramses --min-particles 100 --no-renumber
     $MPI tangos link --for tutorial_ramses $MPIBACKEND
     $MPI tangos write contamination_fraction --for tutorial_ramses $MPIBACKEND
@@ -59,7 +59,7 @@ build_ramses() {
 }
 
 build_changa() {
-    get_tutorial_data changa$1
+    get_tutorial_data tutorial_changa$1
     tangos add tutorial_changa$1
     tangos import-properties Mvir Rvir --for tutorial_changa$1
     $MPI tangos link --for tutorial_changa$1 $MPIBACKEND
