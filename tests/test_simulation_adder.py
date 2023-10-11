@@ -133,7 +133,7 @@ def test_add_with_pynbody(fresh_database_no_contents):
 def test_add_with_pynbody_parallel(fresh_database_no_contents):
 
     manager = tools.add_simulation.SimulationAdderUpdater(
-        input_handlers.pynbody.ChangaInputHandler("test_ahf_merger_tree"), parallel=True)
+        input_handlers.pynbody.ChangaInputHandler("test_ahf_merger_tree"))
 
 
     try:

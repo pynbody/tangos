@@ -11,22 +11,22 @@ from ..log import logger
 class SimulationAdderUpdater:
     """This class contains the necessary tools to add a new simulation to the database"""
 
-    def __init__(self, simulation_output, session=None, renumber=True, parallel=False):
+    def __init__(self, simulation_output, session=None, renumber=True):
         """:type simulation_output tangos.simulation_outputs.HandlerBase"""
         self.simulation_output = simulation_output
-        if session is None:
-            if parallel:
-                # if running in parallel, creating a session for the first time may trigger a race condition e.g. if the
-                # database doesn't exist yet
-                with pt.ExclusiveLock("creating_database"):
-                    session = core.get_default_session()
-            else:
-                session = core.get_default_session()
+
+        # if running in parallel, creating a session for the first time may trigger a race condition e.g. if the
+        # database doesn't exist yet
+        with pt.ExclusiveLock("creating_database"):
+            session = core.get_default_session()
+
         self.session = session
         self.min_halo_particles = config.min_halo_particles
         self.max_num_objects = config.max_num_objects
         self.renumber = renumber
-        self.parallel = parallel
+
+        self.parallel = pt.parallelism_is_active()
+
 
     @property
     def basename(self):
@@ -34,13 +34,12 @@ class SimulationAdderUpdater:
 
     def scan_simulation_and_add_all_descendants(self):
         if self.parallel:
-
-            assert pt.parallel_backend_loaded(), "Parallel backend has not been initialized"
-            is_rank_1 = pt.backend.rank()==1 # nb rank 0 is busy coordinating everything
+            assert pt.parallelism_is_active(), "Parallel backend has not been initialized"
+            create_simulation = pt.backend.rank()==1 # nb rank 0 is busy coordinating everything
         else:
-            is_rank_1 = True
+            create_simulation = True
 
-        if is_rank_1:
+        if create_simulation:
             if not self.simulation_exists():
                 logger.info("Add new simulation %r", self.basename)
                 logger.info("... using the output handler %r", self.simulation_output.handler_class_name())
@@ -49,11 +48,9 @@ class SimulationAdderUpdater:
                 logger.warning("Simulation already exists %r", self.basename)
 
             self.add_simulation_properties()
-        else:
-            logger.info("Waiting for process rank 1 to create the simulation...")
 
-        if self.parallel:
-            pt.barrier()
+        # await the simulation being ready if we are running in parallel
+        pt.barrier()
 
         for ts_filename in self.simulation_output.enumerate_timestep_extensions(parallel=self.parallel):
             if not self.timestep_exists_for_extension(ts_filename):

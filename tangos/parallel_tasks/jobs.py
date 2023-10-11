@@ -74,9 +74,9 @@ def generate_task_list_and_parallel_iterate(task_list_function):
     if backend.rank()==1:
         task_list = task_list_function()
         MessageDistributeJobList(task_list).send(0)
-        log.logger.info("generated task list = %r",task_list)
+        log.logger.debug("generated task list = %r",task_list)
     else:
-        log.logger.info("awaiting rank 1")
+        log.logger.debug("awaiting rank 1 generating task list")
         task_list = MessageDistributeJobList.receive(0).contents
-        log.logger.info("task_list = %r",task_list)
+        log.logger.debug("task_list = %r",task_list)
     return parallel_iterate(task_list)

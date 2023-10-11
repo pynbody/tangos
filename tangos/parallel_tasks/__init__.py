@@ -42,13 +42,13 @@ def deinit_backend():
     global backend
     backend = None
 
-def parallel_backend_loaded():
+def parallelism_is_active():
     global _backend_name
-    return _backend_name!='null'
+    return _backend_name != 'null' and backend is not None
 
 def launch(function, num_procs=None, args=[]):
     init_backend()
-    if _backend_name!='null':
+    if _backend_name != 'null':
         backend.launch(_exec_function_or_server, num_procs, [function, args])
     else:
         function(*args)

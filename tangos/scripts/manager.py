@@ -26,8 +26,7 @@ def _add_simulation_timesteps(options):
     output_class = get_named_handler_class(handler).best_matching_handler(options.sim)
     output_object = output_class(options.sim)
     output_object.quicker = options.quicker
-    adder = SimulationAdderUpdater(output_object, renumber=not options.no_renumber,
-                                   parallel=parallel_tasks.parallel_backend_loaded())
+    adder = SimulationAdderUpdater(output_object, renumber=not options.no_renumber)
     adder.min_halo_particles = options.min_particles
     adder.max_num_objects = options.max_objects
     adder.scan_simulation_and_add_all_descendants()
