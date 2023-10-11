@@ -130,17 +130,14 @@ def test_add_with_pynbody(fresh_database_no_contents):
     assert db.get_timestep("test_ahf_merger_tree/tiny.000640").halos.count() == 9
     assert db.get_timestep("test_ahf_merger_tree/tiny.000832").halos.count() == 9
 
-def test_add_with_pynbody_parallel(fresh_database_no_contents):
-
+def _add_with_pynbody_parallel():
     manager = tools.add_simulation.SimulationAdderUpdater(
         input_handlers.pynbody.ChangaInputHandler("test_ahf_merger_tree"))
+    manager.scan_simulation_and_add_all_descendants()
 
-
-    try:
-        pt.use("multiprocessing")
-        pt.launch(manager.scan_simulation_and_add_all_descendants, 3)
-    finally:
-        pt.use("null")
+def test_add_with_pynbody_parallel(fresh_database_no_contents):
+    pt.use("multiprocessing")
+    pt.launch(_add_with_pynbody_parallel, 3)
 
     assert db.get_timestep("test_ahf_merger_tree/tiny.000640").halos.count() == 9
     assert db.get_timestep("test_ahf_merger_tree/tiny.000832").halos.count() == 9
