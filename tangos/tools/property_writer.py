@@ -78,6 +78,8 @@ class PropertyWriter(GenericTangosTool):
                             help="Specify the paralellism backend (e.g. pypar, mpi4py)")
         parser.add_argument('--include-only', action='append', type=str,
                             help="Specify a filter that describes which objects the calculation should be executed for. Multiple filters may be specified, in which case they must all evaluate to true for the object to be included.")
+        parser.add_argument('--explain-classes', action='store_true',
+                            help="Log some explanation for why property classes are selected (when there is any ambiguity)")
 
     def _create_parser_obj(self):
         parser = argparse.ArgumentParser()
@@ -246,9 +248,9 @@ class PropertyWriter(GenericTangosTool):
     def _commit_results_if_needed(self, end_of_timestep=False, end_of_simulation=False):
 
         if self._is_commit_needed(end_of_timestep, end_of_simulation):
-            logger.info("Attempting to commit %d halo properties...", len(self._pending_properties))
-            insert_list(self._pending_properties)
-            logger.info("%d properties were committed", len(self._pending_properties))
+            logger.info("Attempting to commit halo properties...")
+            num_properties = insert_list(self._pending_properties)
+            logger.info(f"...{num_properties} properties were committed")
             self._pending_properties = []
             self._start_time = time.time()
             self.timing_monitor.summarise_timing(logger)
@@ -446,7 +448,9 @@ class PropertyWriter(GenericTangosTool):
         self.tracker = CalculationSuccessTracker()
 
         logger.info("Processing %r", db_timestep)
-        self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation, self.options.properties)
+        self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation,
+                                                                             self.options.properties,
+                                                                             explain=self.options.explain_classes)
         if self.options.with_prerequisites:
             self._add_prerequisites_to_calculator_instances(db_timestep)
 
@@ -459,8 +463,15 @@ class PropertyWriter(GenericTangosTool):
 
         logger.info("Successfully gathered existing properties; calculating halo properties now...")
 
-        logger.info("  %d halos to consider; %d property calculations for each of them",
-                    len(db_halos), len(self._property_calculator_instances))
+        logger.info("  %d halos to consider; %d calculation routines for each of them, resulting in %d properties per halo",
+                    len(db_halos), len(self._property_calculator_instances),
+                    sum([1 if isinstance(x.names, str) else len(x.names) for x in self._property_calculator_instances])
+                    )
+
+        logger.info("  The property modules are:")
+        for x in self._property_calculator_instances:
+            x_type = type(x)
+            logger.info(f"    {x_type.__module__}.{x_type.__qualname__}")
 
         for db_halo, existing_properties in \
                 self._get_parallel_halo_iterator(list(zip(db_halos, self._existing_properties_all_halos))):

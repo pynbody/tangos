@@ -28,7 +28,7 @@ tests_require = [
     'pytest >= 5.0.0',
     'webtest >= 2.0',
     'pyquery >= 1.3.0',
-    'pynbody >= 1.2.2',
+    'pynbody >= 1.3.2',
     'yt>=3.4.0',
     'PyMySQL>=1.0.2',
     ]

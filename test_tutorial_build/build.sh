@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
 get_tutorial_data() {
-  if [ ! -d tutorial_$1 ]; then
-    wget -O - https://zenodo.org/record/5155467/files/tutorial_$1.tar.gz?download=1 | tar -xz
+  if [ ! -d $1 ]; then
+    if [ -z "$INTEGRATION_TESTING" ]; then
+      echo "Downloading tutorial data for $1"
+      wget -nv -O - https://zenodo.org/record/5155467/files/$1.tar.gz?download=1 | tar -xzv
+    else
+      echo "Downloading mini tutorial data for $1"
+      wget -nv -O - https://zenodo.org/record/8423051/files/$1.tar.gz?download=1 | tar -xzv
+    fi
   fi
 }
 
@@ -18,7 +24,7 @@ detect_mpi() {
 }
 
 build_gadget4() {
-  get_tutorial_data gadget4
+  get_tutorial_data tutorial_gadget4
   tangos add tutorial_gadget4
   tangos import-properties --for tutorial_gadget4
   tangos import-properties --for tutorial_gadget4 --type group
@@ -26,7 +32,7 @@ build_gadget4() {
 }
 
 build_gadget_subfind() {
-    get_tutorial_data gadget
+    get_tutorial_data tutorial_gadget
     tangos add tutorial_gadget --min-particles 100
     tangos import-properties --for tutorial_gadget
     tangos import-properties --type group --for tutorial_gadget
@@ -36,8 +42,8 @@ build_gadget_subfind() {
 }
 
 build_gadget_rockstar() {
-    get_tutorial_data gadget
-    get_tutorial_data gadget_rockstar
+    get_tutorial_data tutorial_gadget
+    get_tutorial_data tutorial_gadget_rockstar
     tangos add tutorial_gadget_rockstar --min-particles 100
     tangos import-properties Mvir Rvir X Y Z --for tutorial_gadget_rockstar
     tangos import-consistent-trees --for tutorial_gadget_rockstar
@@ -45,7 +51,7 @@ build_gadget_rockstar() {
 }
 
 build_ramses() {
-    get_tutorial_data ramses
+    get_tutorial_data tutorial_ramses
     tangos add tutorial_ramses --min-particles 100 --no-renumber
     $MPI tangos link --for tutorial_ramses $MPIBACKEND
     $MPI tangos write contamination_fraction --for tutorial_ramses $MPIBACKEND
@@ -53,7 +59,7 @@ build_ramses() {
 }
 
 build_changa() {
-    get_tutorial_data changa$1
+    get_tutorial_data tutorial_changa$1
     tangos add tutorial_changa$1
     tangos import-properties Mvir Rvir --for tutorial_changa$1
     $MPI tangos link --for tutorial_changa$1 $MPIBACKEND
@@ -69,6 +75,7 @@ build_changa_bh() {
 }
 
 build_enzo_yt() {
+  get_tutorial_data enzo.tinycosmo
   if [ -d enzo.tinycosmo ]; then
     tangos add enzo.tinycosmo --handler=yt.YtInputHandler --min-particles 100
     tangos import-consistent-trees --for enzo.tinycosmo --with-ids
@@ -79,18 +86,27 @@ build_enzo_yt() {
   fi
 }
 
+clearup_files() {
+  if [ ! -z "$INTEGRATION_TESTING" ]; then
+    rm -rf $1
+  fi
+}
 
-echo "This script builds the tangos tutorial database"
-echo
-echo "It will download data and build in the current working directory:"
-echo "  "`pwd`
-echo
-echo "The total required space is approximately 35GB"
-echo
-echo "If this is not what you want, press ^C now"
-echo "Starting process in 5 seconds..."
 
-sleep 5
+if [ -z "$INTEGRATION_TESTING" ]; then
+  echo "This script builds the tangos tutorial database"
+  echo
+  echo "It will download data and build in the current working directory:"
+  echo "  "`pwd`
+  echo
+  echo "The total required space is approximately 35GB"
+  echo
+  echo "If this is not what you want, press ^C now"
+  echo "Starting process in 5 seconds..."
+  sleep 5
+fi
+
+
 
 export TANGOS_DB_CONNECTION=`pwd`/data.db
 export TANGOS_SIMULATION_FOLDER=`pwd`
@@ -99,10 +115,17 @@ detect_mpi
 
 set -e
 
-build_gadget_subfind
-build_gadget_rockstar
-build_ramses
 build_changa
 build_changa_bh
+clearup_files tutorial_changa
+clearup_files tutorial_changa_blackholes
+build_gadget_subfind
+build_gadget_rockstar
+clearup_files tutorial_gadget
+clearup_files tutorial_gadget_rockstar
+build_ramses
+clearup_files tutorial_ramses
 build_gadget4
+clearup_files tutorial_gadget4
 build_enzo_yt
+clearup_files enzo.tinycosmo

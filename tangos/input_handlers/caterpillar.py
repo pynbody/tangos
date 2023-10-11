@@ -12,6 +12,7 @@ from .pynbody import PynbodyInputHandler
 
 class CaterpillarInputHandler(PynbodyInputHandler):
     patterns = ["snapdir_???"]
+    auxiliary_file_patterns = ["halos/halos_???", "halos_???"]
 
     @classmethod
     def _snap_id_from_snapdir_path(cls, path):
