@@ -48,8 +48,10 @@ class HandlerBase:
         """Find the best subclass to read in the specified folder of simulation timesteps"""
         return cls
 
-    def enumerate_timestep_extensions(self):
-        """Yield the extension of each timestep available on disk"""
+    def enumerate_timestep_extensions(self, parallel=False):
+        """Yield the extension of each timestep available on disk.
+
+        If parallel is True, then each timestep is returned to one and only one rank."""
         raise NotImplementedError
 
     def get_properties(self):
