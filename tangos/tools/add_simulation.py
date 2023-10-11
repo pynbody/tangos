@@ -14,9 +14,12 @@ class SimulationAdderUpdater:
         """:type simulation_output tangos.simulation_outputs.HandlerBase"""
         self.simulation_output = simulation_output
         if session is None:
-            # if running in parallel, creating a session for the first time may trigger a race condition e.g. if the
-            # database doesn't exist yet
-            with pt.ExclusiveLock("creating_database"):
+            if parallel:
+                # if running in parallel, creating a session for the first time may trigger a race condition e.g. if the
+                # database doesn't exist yet
+                with pt.ExclusiveLock("creating_database"):
+                    session = core.get_default_session()
+            else:
                 session = core.get_default_session()
         self.session = session
         self.min_halo_particles = config.min_halo_particles
