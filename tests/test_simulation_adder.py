@@ -3,7 +3,8 @@ import os
 from pytest import fixture
 
 import tangos as db
-from tangos import log, testing
+from tangos import parallel_tasks as pt
+from tangos import log, testing, tools, input_handlers
 from tangos.input_handlers import output_testing
 from tangos.tools import add_simulation
 
@@ -117,3 +118,29 @@ def test_NDM_cut(fresh_database_no_contents):
     manager.scan_simulation_and_add_all_descendants()
     ndm, = db.get_timestep("dummy_sim_2/step.1").calculate_all("NDM()")
     assert ndm.min()==2005
+
+def test_add_with_pynbody(fresh_database_no_contents):
+
+    manager = tools.add_simulation.SimulationAdderUpdater(
+        input_handlers.pynbody.ChangaInputHandler("test_ahf_merger_tree"))
+    with log.LogCapturer():
+        manager.scan_simulation_and_add_all_descendants()
+
+    assert db.get_timestep("test_ahf_merger_tree/tiny.000640").halos.count() == 9
+    assert db.get_timestep("test_ahf_merger_tree/tiny.000832").halos.count() == 9
+
+def test_add_with_pynbody_parallel(fresh_database_no_contents):
+
+    manager = tools.add_simulation.SimulationAdderUpdater(
+        input_handlers.pynbody.ChangaInputHandler("test_ahf_merger_tree"), parallel=True)
+
+
+    try:
+        pt.use("multiprocessing")
+        pt.launch(manager.scan_simulation_and_add_all_descendants, 3)
+    finally:
+        pt.use("null")
+
+    assert db.get_timestep("test_ahf_merger_tree/tiny.000640").halos.count() == 9
+    assert db.get_timestep("test_ahf_merger_tree/tiny.000832").halos.count() == 9
+
