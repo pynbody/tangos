@@ -3,9 +3,10 @@ import numbers
 import numpy as np
 
 from .. import config, core
+from .. import parallel_tasks as pt
 from ..core import Simulation, TimeStep
 from ..log import logger
-from .. import parallel_tasks as pt
+
 
 class SimulationAdderUpdater:
     """This class contains the necessary tools to add a new simulation to the database"""

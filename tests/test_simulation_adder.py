@@ -3,8 +3,9 @@ import os
 from pytest import fixture
 
 import tangos as db
+from tangos import input_handlers, log
 from tangos import parallel_tasks as pt
-from tangos import log, testing, tools, input_handlers
+from tangos import testing, tools
 from tangos.input_handlers import output_testing
 from tangos.tools import add_simulation
 
@@ -143,4 +144,3 @@ def test_add_with_pynbody_parallel(fresh_database_no_contents):
 
     assert db.get_timestep("test_ahf_merger_tree/tiny.000640").halos.count() == 9
     assert db.get_timestep("test_ahf_merger_tree/tiny.000832").halos.count() == 9
-
