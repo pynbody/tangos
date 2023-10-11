@@ -54,8 +54,8 @@ jobs:
 
     - name: Verify database
       working-directory: test_tutorial_build
-      run:
-        wget https://zenodo.org/record/8423051/files/reference_database.db?download=1 -O reference_database.db -nv
+      run: |
+        wget https://zenodo.org/record/8430190/files/reference_database.db?download=1 -O reference_database.db -nv
         tangos diff data.db reference_database.db --property-tolerance dm_density_profile 1e-2 0
       # --property-tolerance dm_density_profile here is because if a single particle crosses between bins
       # (which seems to happen due to differing library versions), the profile can change by this much
