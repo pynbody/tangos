@@ -4,7 +4,7 @@ MPI Parallelisation
 If you want to speed up time-consuming `tangos` operations from your command line, you can run many of them in parallel if you have MPI and `mpi4py` on your machine. This is straight-forward
 with, for example, anaconda python distributions – just type `conda install mpi4py`. With regular python distributions, you need to install MPI on your machine and then `pip install mpi4py` (which will compile the python bindings).
 
-Once this has successfully installed, you can run 
+Once this has successfully installed, you can run
 
 * `tangos link`
 * `tangos write`
