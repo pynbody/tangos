@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 import tangos as db
-from tangos import all_simulations, config, core
+from tangos import all_simulations, config, core, parallel_tasks
 from tangos.core import (Base, Creator, HaloLink, HaloProperty, Simulation,
                          SimulationObjectBase, TimeStep,
                          get_or_create_dictionary_item)
@@ -21,16 +21,17 @@ from tangos.query import get_halo, get_simulation
 from tangos.tools.add_simulation import SimulationAdderUpdater
 
 
-def add_simulation_timesteps(options):
-    handler=options.handler
+def _add_simulation_timesteps(options):
+    handler = options.handler
     output_class = get_named_handler_class(handler).best_matching_handler(options.sim)
     output_object = output_class(options.sim)
     output_object.quicker = options.quicker
-    adder = SimulationAdderUpdater(output_object,renumber=not options.no_renumber)
+    adder = SimulationAdderUpdater(output_object, renumber=not options.no_renumber)
     adder.min_halo_particles = options.min_particles
     adder.max_num_objects = options.max_objects
     adder.scan_simulation_and_add_all_descendants()
-
+def add_simulation_timesteps(options):
+    parallel_tasks.launch(_add_simulation_timesteps, 2, [options])
 
 
 

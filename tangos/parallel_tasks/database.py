@@ -19,12 +19,12 @@ def synchronize_creator_object(session=None):
     Without calling this, each process of a distributed calculation has its own Creator object
     and so the user will see multiple calculations in their history when in effect they only ran
     one (through mpirun or similar)."""
-    from . import parallel_backend_loaded
+    from . import parallelism_is_active
 
     if session is None:
         session = core.get_default_session()
 
-    if not parallel_backend_loaded():
+    if not parallelism_is_active():
         return
 
     remote_import.ImportRequestMessage(__name__).send(0)

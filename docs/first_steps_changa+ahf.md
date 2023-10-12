@@ -42,6 +42,8 @@ Note that all _tangos_ command-line tools provide help. For example `tangos --he
 
 At this point, the database knows about the existence of timesteps and their halos in our simulation, but nothing about the properties of those halos or groups. We need to add more information before the database is useful.
 
+If you want to speed up this process, it can be [MPI parallelised](mpi.md) since version 1.8.
+
 
 Import some AHF-defined properties
 ----------------------------------

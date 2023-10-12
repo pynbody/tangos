@@ -63,10 +63,22 @@ class PatternBasedFileDiscovery:
 
         return best_handler
 
-    def enumerate_timestep_extensions(self):
+    def enumerate_timestep_extensions(self, parallel=False):
         base = os.path.join(config.base, self.basename)
-        extensions = sorted(find(basename=base + "/", patterns=self.patterns))
-        logger.info("Enumerate timestep extensions base=%r patterns=%s", base, self.patterns)
+
+        def find_matching_extensions():
+            logger.info("Enumerate timestep extensions base=%r patterns=%s", base, self.patterns)
+            results = sorted(find(basename=base + "/", patterns=self.patterns))
+            logger.info("Found %d candidates to be inspected", len(results))
+            return results
+
+
+        if parallel:
+            from ..parallel_tasks import jobs
+            extensions = jobs.generate_task_list_and_parallel_iterate(find_matching_extensions)
+        else:
+            extensions = find_matching_extensions()
+
         for e in extensions:
             if self._is_able_to_load(self._transform_extension(e)):
                 yield self._transform_extension(e[len(base) + 1:])
