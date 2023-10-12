@@ -71,6 +71,7 @@ setup(name='tangos',
           "Programming Language :: Python :: 3.9",
           "Programming Language :: Python :: 3.10",
           "Programming Language :: Python :: 3.11",
+          "Programming Language :: Python :: 3.12",
           "License :: OSI Approved :: BSD License",
       ],
       author="Andrew Pontzen",
@@ -99,5 +100,9 @@ setup(name='tangos',
       tests_require=tests_require,
       test_suite="tests",
       long_description=long_description,
-      long_description_content_type='text/markdown'
+      long_description_content_type='text/markdown',
+      extras_require={'test': tests_require,
+                      'rmdbs': ['PyMySQL[rsa]',
+                                'psycopg2-binary']
+                      }
       )
