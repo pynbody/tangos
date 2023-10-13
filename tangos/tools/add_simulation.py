@@ -35,6 +35,8 @@ class SimulationAdderUpdater:
     def scan_simulation_and_add_all_descendants(self):
         if self.parallel:
             assert pt.parallelism_is_active(), "Parallel backend has not been initialized"
+            from ..parallel_tasks import database
+            database.synchronize_creator_object()
             create_simulation = pt.backend.rank()==1 # nb rank 0 is busy coordinating everything
         else:
             create_simulation = True
