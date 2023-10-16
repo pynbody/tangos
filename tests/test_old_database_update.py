@@ -18,7 +18,8 @@ def setup_module():
 
 def teardown_module():
     tangos.core.close_db()
-    pt.launch(tangos.core.close_db, 6)
+    pt.use("multiprocessing-6")
+    pt.launch(tangos.core.close_db)
 
 def test_database_update():
     tangos.core._check_and_upgrade_database(tangos.core.get_default_engine(), 'test_add_column')

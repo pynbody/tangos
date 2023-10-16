@@ -23,7 +23,5 @@ def finalize():
     pass
 
 
-def launch(function, num_procs, args):
-    if num_procs is not None and num_procs!=1:
-        warnings.warn("Number of processors requested (%d) will be ignored as this is a single-processor run"%num_procs)
+def launch(function, args):
     function(*args)

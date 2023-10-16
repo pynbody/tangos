@@ -45,7 +45,8 @@ def _get_array():
 
 
 def test_get_array():
-    pt.launch(_get_array,3)
+    pt.use("multiprocessing-3")
+    pt.launch(_get_array)
 
 
 def _test_simsnap_properties():
@@ -63,7 +64,8 @@ def _test_simsnap_properties():
 
 
 def test_simsnap_properties():
-    pt.launch(_test_simsnap_properties,2)
+    pt.use("multiprocessing-2")
+    pt.launch(_test_simsnap_properties)
 
 
 def _test_simsnap_arrays():
@@ -76,7 +78,8 @@ def _test_simsnap_arrays():
     assert (f.gas['iord'] == f_local.gas['iord']).all()
 
 def test_simsnap_arrays():
-    pt.launch(_test_simsnap_arrays,2)
+    pt.use("multiprocessing-2")
+    pt.launch(_test_simsnap_arrays)
 
 def _test_nonexistent_array():
     test_filter = pynbody.filt.Sphere('5000 kpc')
@@ -86,7 +89,8 @@ def _test_nonexistent_array():
         f['nonexistent']
 
 def test_nonexistent_array():
-    pt.launch(_test_nonexistent_array, 2)
+    pt.use("multiprocessing-2")
+    pt.launch(_test_nonexistent_array)
 
 
 def _test_halo_array():
@@ -98,7 +102,8 @@ def _test_halo_array():
     assert (f.gas['temp'] == f_local.gas['temp']).all()
 
 def test_halo_array():
-    pt.launch(_test_halo_array, 2)
+    pt.use("multiprocessing-2")
+    pt.launch(_test_halo_array)
 
 
 def _test_remote_file_index():
@@ -110,7 +115,8 @@ def _test_remote_file_index():
     assert (index_list==local_index_list).all()
 
 def test_remote_file_index():
-    pt.launch(_test_remote_file_index, 2)
+    pt.use("multiprocessing-2")
+    pt.launch(_test_remote_file_index)
 
 def _debug_print_arrays(*arrays):
     for vals in zip(*arrays):
@@ -136,7 +142,8 @@ def _test_lazy_evaluation_is_local():
     npt.assert_almost_equal(f['r'], f_local['r'], decimal=4)
 
 def test_lazy_evaluation_is_local():
-    pt.launch(_test_lazy_evaluation_is_local, 2)
+    pt.use("multiprocessing-2")
+    pt.launch(_test_lazy_evaluation_is_local)
 
 
 @pynbody.snapshot.tipsy.TipsySnap.derived_quantity
@@ -153,7 +160,8 @@ def _test_underlying_class():
     assert f.connection.underlying_pynbody_class is pynbody.snapshot.tipsy.TipsySnap
 
 def test_underlying_class():
-    pt.launch(_test_underlying_class, 2)
+    pt.use("multiprocessing-2")
+    pt.launch(_test_underlying_class)
 
 
 def _test_correct_object_loading():
@@ -168,4 +176,5 @@ def test_correct_object_loading():
     """This regression test looks for a bug where the pynbody_server module assumed halos could be
     loaded just by calling f.halos() where f was the SimSnap. This is not true in general; for example,
     for SubFind catalogues one has both halos and groups and the correct arguments must be passed."""
-    pt.launch(_test_correct_object_loading, 2)
+    pt.use("multiprocessing-2")
+    pt.launch(_test_correct_object_loading)

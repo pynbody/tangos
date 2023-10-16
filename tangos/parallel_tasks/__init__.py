@@ -11,6 +11,8 @@ from .. import config, core
 
 backend = None
 _backend_name = config.default_backend
+_num_procs = None # only for multiprocessing backend
+
 from .. import log
 from ..log import logger
 from . import backends, jobs, message
@@ -28,10 +30,14 @@ def _process_command_line():
 _process_command_line()
 
 def use(name):
-    global backend, _backend_name
+    global backend, _backend_name, _num_procs
     if backend is not None:
         warnings.warn("Attempt to specify backend but parallelism is already initialised. This call may have no effect, unless you know exactly what you're doing.", RuntimeWarning)
-    _backend_name = name
+    if "-" in name:
+        _backend_name, num_procs = name.split("-")
+        _num_procs = int(num_procs)
+    else:
+        _backend_name = name
 
 def init_backend():
     global backend
@@ -46,10 +52,12 @@ def parallelism_is_active():
     global _backend_name
     return _backend_name != 'null' and backend is not None
 
-def launch(function, num_procs=None, args=[]):
+def launch(function, args=None):
+    if args is None:
+        args = []
     init_backend()
     if _backend_name != 'null':
-        backend.launch(_exec_function_or_server, num_procs, [function, args])
+        backend.launch(_exec_function_or_server, [function, args])
     else:
         function(*args)
 

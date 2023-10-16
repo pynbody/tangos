@@ -107,9 +107,9 @@ def test_basic_writing(fresh_database):
 
 
 def test_parallel_writing(fresh_database):
-    parallel_tasks.use('multiprocessing')
+    parallel_tasks.use('multiprocessing-3')
     try:
-        parallel_tasks.launch(run_writer_with_args, 3, ["dummy_property"])
+        parallel_tasks.launch(run_writer_with_args,  ["dummy_property"])
     finally:
         parallel_tasks.use('null')
     _assert_properties_as_expected()
@@ -208,9 +208,9 @@ def test_writer_handles_sim_properties(fresh_database):
     However it does not directly test that the parallel_tasks locking mechanism is called,
     which is hard. Ideally this test would therefore be completed at some point..."""
 
-    parallel_tasks.use('multiprocessing')
+    parallel_tasks.use('multiprocessing-3')
     try:
-        parallel_tasks.launch(run_writer_with_args, 3, ["dummy_property_accessing_simulation_property"])
+        parallel_tasks.launch(run_writer_with_args,  ["dummy_property_accessing_simulation_property"])
     finally:
         parallel_tasks.use('null')
 
