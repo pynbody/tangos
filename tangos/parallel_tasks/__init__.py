@@ -18,17 +18,6 @@ from ..log import logger
 from . import backends, jobs, message
 
 
-def _process_command_line():
-    command_line = " ".join(sys.argv)
-    match = re.match("^(.*)--backend *=? *([^ ]*)(.*)$", command_line)
-    if match is not None:
-        global _backend_name
-        _backend_name = match.group(2)
-        new_command_line = match.group(1)+" "+match.group(3)
-        sys.argv = new_command_line.split()
-
-_process_command_line()
-
 def use(name):
     global backend, _backend_name, _num_procs
     if backend is not None:
@@ -38,6 +27,16 @@ def use(name):
         _num_procs = int(num_procs)
     else:
         _backend_name = name
+
+def _process_command_line():
+    command_line = " ".join(sys.argv)
+    match = re.match("^(.*)--backend *=? *([^ ]*)(.*)$", command_line)
+    if match is not None:
+        use(match.group(2))
+        new_command_line = match.group(1)+" "+match.group(3)
+        sys.argv = new_command_line.split()
+
+_process_command_line()
 
 def init_backend():
     global backend
