@@ -54,11 +54,10 @@ def teardown_module():
 
 
 def test_property_import():
-    pt.use("multiprocessing-2")
     importer = tools.property_importer.PropertyImporter()
     importer.parse_command_line("X Y Z Mvir --for test_gadget_rockstar".split())
     with log.LogCapturer():
-        parallel_tasks.use('multiprocessing')
+        parallel_tasks.use('multiprocessing-2')
         parallel_tasks.launch(importer.run_calculation_loop)
 
     Mvir_test, = tangos.get_timestep("test_gadget_rockstar/snapshot_013").calculate_all("Mvir")
