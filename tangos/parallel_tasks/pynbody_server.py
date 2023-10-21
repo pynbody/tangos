@@ -171,10 +171,14 @@ class ReturnPynbodyArray(Message):
         backend.send_numpy_array(self.contents.view(np.ndarray), destination)
 
 class RequestPynbodyArray(Message):
-    def __init__(self, filter_or_object_spec, array, fam=None):
+    _time_to_start_processing = []
+    _num_retained_timings = 20
+
+    def __init__(self, filter_or_object_spec, array, fam=None, request_sent_time=None):
         self.filter_or_object_spec = filter_or_object_spec
         self.array = array
         self.fam = fam
+        self.request_sent_time = request_sent_time
 
     @classmethod
     def deserialize(cls, source, message):
@@ -183,10 +187,18 @@ class RequestPynbodyArray(Message):
         return obj
 
     def serialize(self):
-        return (self.filter_or_object_spec, self.array, self.fam)
+        return (self.filter_or_object_spec, self.array, self.fam, time.time())
 
     def process(self):
         start_time = time.time()
+        self._time_to_start_processing.append(start_time - self.request_sent_time)
+        if len(self._time_to_start_processing)>self._num_retained_timings:
+            self._time_to_start_processing = []
+        
+            log.logger.info("pynbody server typical time to start retrieving an array: %.1fs +/- %.1fs",
+                            np.mean(self._time_to_start_processing),
+                            np.std(self._time_to_start_processing))
+        
         try:
             log.logger.debug("Receive request for array %r from %d",self.array,self.source)
             subsnap = _server_queue.get_subsnap(self.filter_or_object_spec, self.fam)
