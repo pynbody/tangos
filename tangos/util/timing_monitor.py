@@ -52,21 +52,24 @@ class TimingMonitor:
         self._unset_as_monitor_for(self._monitoring)
         self._time_marks_info.append("end")
         self._time_marks.append(time.time())
+
+        self._add_run_to_running_totals(cl, self._time_marks, self._time_marks_info)
+
+    def _add_run_to_running_totals(self, cl, latest_run_time_marks, latest_run_time_marks_labels):
         previous_timings = self.timings_by_class.get(cl, None)
-        if previous_timings is None or len(previous_timings) == len(self._time_marks)-1:
-            cumulative_timings = np.diff(self._time_marks)
+        if previous_timings is None or len(previous_timings) == len(latest_run_time_marks) - 1:
+            cumulative_timings = np.diff(latest_run_time_marks)
             if previous_timings is not None:
-                cumulative_timings+=previous_timings
+                cumulative_timings += previous_timings
             self.timings_by_class[cl] = cumulative_timings
-            self.labels_by_class[cl] = self._time_marks_info
+            self.labels_by_class[cl] = latest_run_time_marks_labels
         else:
             # Incompatibility between this and previous timings from the same procedure. Can only track total time spent.
-            start_time = self._time_marks[0]
-            end_time = self._time_marks[-1]
-            time_elapsed = end_time-start_time + sum(previous_timings)
-            self.labels_by_class[cl] = ['start','end']
+            start_time = latest_run_time_marks[0]
+            end_time = latest_run_time_marks[-1]
+            time_elapsed = end_time - start_time + sum(previous_timings)
+            self.labels_by_class[cl] = ['start', 'end']
             self.timings_by_class[cl] = [time_elapsed]
-
 
     def mark(self, label=None):
         """Mark a named event so that more detailed timing can be given"""
@@ -76,6 +79,18 @@ class TimingMonitor:
                 inspect.currentframe().f_back.f_lineno)
         else:
             self._time_marks_info.append(label)
+
+    def add(self, other):
+        """Add the time taken by another TimingMonitor to this one"""
+        if self._monitoring is not None:
+            raise RuntimeError("Cannot add timings to a TimingMonitor that is currently monitoring a procedure")
+
+        for c in other.labels_by_class.keys():
+            labels = other.labels_by_class[c]
+            timings = other.timings_by_class[c]
+            print("ADD", c, labels, timings)
+            self._add_run_to_running_totals(c, np.cumsum(np.concatenate(([0.0],timings))), labels)
+            print("RESULT", c, self.labels_by_class[c], self.timings_by_class[c])
 
     def summarise_timing(self, logger):
         logger.info("CUMULATIVE RUNNING TIMES (just this node)")
