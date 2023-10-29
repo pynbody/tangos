@@ -54,7 +54,7 @@ def parallelism_is_active():
 def launch(function, args=None):
     if args is None:
         args = []
-    init_backend()
+
     # we need to close any existing connections because we may fork, which leads to
     # buggy/unreliable behaviour. This should invalidate the session attached to
     # any existing objects, which is intended behaviour. If you are using parallel
@@ -62,19 +62,23 @@ def launch(function, args=None):
     # parallel jobs.
     if core._engine is not None:
         connection_info = core._internal_session_args
-        core.close_db()
     else:
         connection_info = None
 
-    if _backend_name != 'null':
-        backend.launch(_exec_function_or_server, [function, connection_info, args])
-    else:
-        function(*args)
+    try:
+        init_backend()
 
-    if connection_info is not None:
-        core.init_db(*connection_info)
-
-    deinit_backend()
+        try:
+            core.close_db()
+            if _backend_name != 'null':
+                backend.launch(_exec_function_or_server, [function, connection_info, args])
+            else:
+                function(*args)
+        finally:
+            if connection_info is not None:
+                core.init_db(*connection_info)
+    finally:
+        deinit_backend()
 
 def distributed(file_list, proc=None, of=None):
     """Distribute a list of tasks between all nodes"""
@@ -98,10 +102,9 @@ def distributed(file_list, proc=None, of=None):
 
 
 def _exec_function_or_server(function, connection_info, args):
-
     log.set_identity_string("[%3d] " % backend.rank())
     if connection_info is not None:
-        log.logger.info("Reinitialising database, args "+str(connection_info))
+        log.logger.debug("Reinitialising database, args "+str(connection_info))
         core.init_db(*connection_info)
 
     if backend.rank()==0:

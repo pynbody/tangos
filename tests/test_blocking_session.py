@@ -109,7 +109,6 @@ def test_non_blocking_exception():
             with log.LogCapturer():
                 pt.launch(_perform_test, (False,))
 
-    db.core.get_default_session().rollback()
 
 
 
