@@ -1,7 +1,8 @@
+from sqlalchemy.orm import lazyload
+
 import tangos
 from tangos import testing
 
-from sqlalchemy.orm import lazyload
 
 def setup_module():
     testing.init_blank_db_for_testing()
