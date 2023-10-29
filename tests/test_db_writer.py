@@ -93,13 +93,22 @@ class DummyPropertyAccessingSimulationProperty(properties.PropertyCalculation):
         return 1,
 
 
-def run_writer_with_args(*args):
-    stored_log = log.LogCapturer()
+def run_writer_with_args(*args, parallel=False):
     writer = property_writer.PropertyWriter()
     writer.parse_command_line(args)
-    with stored_log:
-        writer.run_calculation_loop()
-    return stored_log.get_output()
+
+    def _runner():
+        stored_log = log.LogCapturer()
+        with stored_log:
+            writer.run_calculation_loop()
+        return stored_log.get_output()
+
+    if parallel:
+        parallel_tasks.launch(_runner, [])
+    else:
+        return _runner()
+
+
 
 def test_basic_writing(fresh_database):
     run_writer_with_args("dummy_property")
@@ -107,11 +116,9 @@ def test_basic_writing(fresh_database):
 
 
 def test_parallel_writing(fresh_database):
-    parallel_tasks.use('multiprocessing-3')
-    try:
-        parallel_tasks.launch(run_writer_with_args,  ["dummy_property"])
-    finally:
-        parallel_tasks.use('null')
+    parallel_tasks.use('multiprocessing-2')
+    run_writer_with_args("dummy_property", parallel=True)
+
     _assert_properties_as_expected()
 
 
