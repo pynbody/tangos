@@ -87,7 +87,6 @@ class PropertyWriter(GenericTangosTool):
         return parser
 
     def _build_file_list(self):
-
         query = core.sim_query_from_name_list(self.options.sims)
         files = []
         if self.options.latest:
@@ -108,7 +107,14 @@ class PropertyWriter(GenericTangosTool):
             random.seed(0)
             random.shuffle(files)
 
-        self.files = files
+        self._files = files
+
+    @property
+    def files(self):
+        if not hasattr(self, '_files'):
+            self._build_file_list()
+        return self._files
+
 
     def _get_parallel_timestep_iterator(self):
         if self.options.part is not None:
@@ -145,7 +151,6 @@ class PropertyWriter(GenericTangosTool):
     def process_options(self, options):
         self.options = options
         core.process_options(self.options)
-        self._build_file_list()
         self._compile_inclusion_criterion()
 
         if self.options.load_mode=='all':

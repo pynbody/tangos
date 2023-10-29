@@ -57,8 +57,8 @@ def test_property_import():
     importer = tools.property_importer.PropertyImporter()
     importer.parse_command_line("X Y Z Mvir --for test_gadget_rockstar".split())
     with log.LogCapturer():
-        parallel_tasks.use('multiprocessing')
-        parallel_tasks.launch(importer.run_calculation_loop,2)
+        parallel_tasks.use('multiprocessing-2')
+        parallel_tasks.launch(importer.run_calculation_loop)
 
     Mvir_test, = tangos.get_timestep("test_gadget_rockstar/snapshot_013").calculate_all("Mvir")
     npt.assert_allclose(Mvir_test, [1.160400e+13,   8.341900e+12,   5.061400e+12,   5.951900e+12])

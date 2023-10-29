@@ -11,22 +11,25 @@ from ..log import logger
 class SimulationAdderUpdater:
     """This class contains the necessary tools to add a new simulation to the database"""
 
-    def __init__(self, simulation_output, session=None, renumber=True):
+    def __init__(self, simulation_output, renumber=True):
         """:type simulation_output tangos.simulation_outputs.HandlerBase"""
         self.simulation_output = simulation_output
 
         # if running in parallel, creating a session for the first time may trigger a race condition e.g. if the
         # database doesn't exist yet
         with pt.ExclusiveLock("creating_database"):
-            session = core.get_default_session()
+            core.get_default_session()
 
-        self.session = session
         self.min_halo_particles = config.min_halo_particles
         self.max_num_objects = config.max_num_objects
         self.renumber = renumber
 
         self.parallel = pt.parallelism_is_active()
 
+
+    @property
+    def session(self):
+        return core.get_default_session()
 
     @property
     def basename(self):
