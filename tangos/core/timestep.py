@@ -78,7 +78,11 @@ class TimeStep(Base):
     def path(self):
         sess = Session.object_session(self)
         if sess is None:
-            return self.simulation.path+"/"+self.extension
+            from sqlalchemy import inspect
+            if 'simulation' not in inspect(self).unloaded:
+                return self.simulation.path+"/"+self.extension
+            else:
+                return '<detached>'
         else:
             with sess.no_autoflush:
                 return self.simulation.path+"/"+self.extension
