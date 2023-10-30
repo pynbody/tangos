@@ -178,3 +178,13 @@ def test_correct_object_loading():
     for SubFind catalogues one has both halos and groups and the correct arguments must be passed."""
     pt.use("multiprocessing-2")
     pt.launch(_test_correct_object_loading)
+
+
+
+def _test_oserror_on_nonexistent_file():
+    with npt.assert_raises(OSError):
+        f = ps.RemoteSnapshotConnection(handler, "nonexistent_file")
+
+def test_oserror_on_nonexistent_file():
+    pt.use("multiprocessing-2")
+    pt.launch(_test_oserror_on_nonexistent_file)
