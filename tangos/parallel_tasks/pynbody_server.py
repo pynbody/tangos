@@ -9,6 +9,7 @@ from ..util.check_deleted import check_deleted
 from . import log, parallelism_is_active, remote_import
 from .message import ExceptionMessage, Message
 
+
 class ConfirmLoadPynbodySnapshot(Message):
     pass
 
