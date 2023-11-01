@@ -11,12 +11,12 @@ from tangos.tools import add_simulation, property_writer
 from tangos.util import proxy_object
 
 
-def setup_func():
+def setup_func(sim="dummy_sim_1"):
     parallel_tasks.use('null')
 
     testing.init_blank_db_for_testing()
     db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
-    manager = add_simulation.SimulationAdderUpdater(output_testing.TestInputHandler("dummy_sim_1"))
+    manager = add_simulation.SimulationAdderUpdater(output_testing.TestInputHandler(sim))
     with log.LogCapturer():
         manager.scan_simulation_and_add_all_descendants()
 
@@ -26,6 +26,12 @@ def teardown_func():
 @fixture
 def fresh_database():
     setup_func()
+    yield
+    teardown_func()
+
+@fixture
+def fresh_database_2():
+    setup_func("dummy_sim_2")
     yield
     teardown_func()
 
@@ -225,3 +231,10 @@ def test_writer_handles_sim_properties(fresh_database):
         ts = db.get_timestep("dummy_sim_1/step.%d"%i)
         x, = ts.calculate_all("dummy_property_accessing_simulation_property")
         npt.assert_equal(x,[1]*ts.halos.count())
+
+def test_timesteps_matching(fresh_database_2):
+    run_writer_with_args("dummy_property", "--timesteps-matching", "step.1", "--timesteps-matching", "step.2")
+    assert 'dummy_property' in  db.get_halo("dummy_sim_2/step.1/1").keys()
+    assert 'dummy_property' in db.get_halo("dummy_sim_2/step.1/2").keys()
+    assert 'dummy_property' in db.get_halo("dummy_sim_2/step.2/1").keys()
+    assert 'dummy_property' not in db.get_halo("dummy_sim_2/step.3/1").keys()
