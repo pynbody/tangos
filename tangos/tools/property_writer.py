@@ -99,7 +99,7 @@ class PropertyWriter(GenericTangosTool):
                     pass
         else:
             timestep_filter = core.timestep.TimeStep.simulation_id.in_([q.id for q in query.all()])
-            if len(self.options.timesteps_matching)>0:
+            if self.options.timesteps_matching is not None and len(self.options.timesteps_matching)>0:
                 subfilter = core.timestep.TimeStep.extension.like(self.options.timesteps_matching[0])
                 for m in self.options.timesteps_matching[1:]:
                     subfilter |= core.timestep.TimeStep.extension.like(m)
