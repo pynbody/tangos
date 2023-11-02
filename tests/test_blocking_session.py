@@ -100,25 +100,26 @@ def _suppress_exception_report():
     backend._print_exceptions = True
 
 def test_non_blocking_exception():
+    pt.use("multiprocessing-3")
     if testing_db_backend != "sqlite":
         skip("This test is only relevant for sqlite databases")
 
     with _suppress_exception_report():
         with assert_raises(sqlalchemy.exc.OperationalError):
             with log.LogCapturer():
-                pt.launch(_perform_test,3, (False,))
+                pt.launch(_perform_test, (False,))
 
-    db.core.get_default_session().rollback()
 
 
 
 def test_blocking_avoids_exception():
+    pt.use("multiprocessing-3")
     if testing_db_backend != "sqlite":
         skip("This test is only relevant for sqlite databases")
 
     assert tangos.get_halo("sim/ts1/6") is None
     db.core.get_default_session().commit()
     with log.LogCapturer():
-        pt.launch(_perform_test,3, (True,))
+        pt.launch(_perform_test, (True,))
 
     assert tangos.get_halo("sim/ts1/6") is not None

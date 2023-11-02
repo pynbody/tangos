@@ -34,4 +34,4 @@ if len(sys.argv)!=2:
     print("Syntax: test_numpy_mpi.py [backend name]")
 else:
     pt.use(sys.argv[1])
-    pt.launch(test_function, 8)
+    pt.launch(test_function)

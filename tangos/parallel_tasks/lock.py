@@ -1,7 +1,7 @@
 import time
 
 from ..config import DEFAULT_SLEEP_BEFORE_ALLOWING_NEXT_LOCK
-from . import log, message, parallel_backend_loaded
+from . import log, message, parallelism_is_active
 
 
 class MessageRequestLock(message.Message):
@@ -123,7 +123,7 @@ class ExclusiveLock:
         self._count = 0
 
     def acquire(self):
-        if not parallel_backend_loaded():
+        if not parallelism_is_active():
             return
         if self._count==0:
             MessageRequestLock(self.name, self._shared).send(0)
@@ -137,7 +137,7 @@ class ExclusiveLock:
         self._count+=1
 
     def release(self):
-        if not parallel_backend_loaded():
+        if not parallelism_is_active():
             return
         self._count-=1
         if self._count==0:

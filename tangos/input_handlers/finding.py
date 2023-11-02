@@ -63,13 +63,25 @@ class PatternBasedFileDiscovery:
 
         return best_handler
 
-    def enumerate_timestep_extensions(self):
+    def enumerate_timestep_extensions(self, parallel=False):
         base = os.path.join(config.base, self.basename)
-        extensions = find(basename=base + "/", patterns=self.patterns)
-        logger.info("Enumerate timestep extensions base=%r patterns=%s", base, self.patterns)
+
+        def find_matching_extensions():
+            logger.info("Enumerate timestep extensions base=%r patterns=%s", base, self.patterns)
+            results = sorted(find(basename=base + "/", patterns=self.patterns))
+            logger.info("Found %d candidates to be inspected", len(results))
+            return results
+
+
+        if parallel:
+            from ..parallel_tasks import jobs
+            extensions = jobs.generate_task_list_and_parallel_iterate(find_matching_extensions)
+        else:
+            extensions = find_matching_extensions()
+
         for e in extensions:
-            if self._is_able_to_load(e):
-                yield e[len(base) + 1:]
+            if self._is_able_to_load(self._transform_extension(e)):
+                yield self._transform_extension(e[len(base) + 1:])
             else:
                 logger.info("Could not load %s with class %s", e, self)
 
@@ -78,3 +90,7 @@ class PatternBasedFileDiscovery:
 
         Override in child class to filter the pattern-based file matches"""
         return True
+
+    def _transform_extension(self, extension_name):
+        """Can be overriden by child classes to map from the literal filename discovered to a different name for loading"""
+        return extension_name

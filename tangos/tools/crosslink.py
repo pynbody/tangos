@@ -15,8 +15,9 @@ from . import GenericTangosTool
 
 
 class GenericLinker(GenericTangosTool):
-    def __init__(self, session=None):
-        self.session = session or core.get_default_session()
+    @property
+    def session(self):
+        return core.get_default_session()
 
     def process_options(self, options):
         self.args = options

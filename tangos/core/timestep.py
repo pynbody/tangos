@@ -76,8 +76,16 @@ class TimeStep(Base):
 
     @property
     def path(self):
-        with Session.object_session(self).no_autoflush:
-            return self.simulation.path+"/"+self.extension
+        sess = Session.object_session(self)
+        if sess is None:
+            from sqlalchemy import inspect
+            if 'simulation' not in inspect(self).unloaded:
+                return self.simulation.path+"/"+self.extension
+            else:
+                return '<detached>'
+        else:
+            with sess.no_autoflush:
+                return self.simulation.path+"/"+self.extension
 
     @property
     def redshift_cascade(self):

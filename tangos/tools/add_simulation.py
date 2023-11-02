@@ -3,6 +3,7 @@ import numbers
 import numpy as np
 
 from .. import config, core
+from .. import parallel_tasks as pt
 from ..core import Simulation, TimeStep
 from ..log import logger
 
@@ -10,31 +11,53 @@ from ..log import logger
 class SimulationAdderUpdater:
     """This class contains the necessary tools to add a new simulation to the database"""
 
-    def __init__(self, simulation_output, session=None, renumber=True):
+    def __init__(self, simulation_output, renumber=True):
         """:type simulation_output tangos.simulation_outputs.HandlerBase"""
         self.simulation_output = simulation_output
-        if session is None:
-            session = core.get_default_session()
-        self.session = session
+
+        # if running in parallel, creating a session for the first time may trigger a race condition e.g. if the
+        # database doesn't exist yet
+        with pt.ExclusiveLock("creating_database"):
+            core.get_default_session()
+
         self.min_halo_particles = config.min_halo_particles
         self.max_num_objects = config.max_num_objects
         self.renumber = renumber
+
+        self.parallel = pt.parallelism_is_active()
+
+
+    @property
+    def session(self):
+        return core.get_default_session()
 
     @property
     def basename(self):
         return self.simulation_output.basename
 
     def scan_simulation_and_add_all_descendants(self):
-        if not self.simulation_exists():
-            logger.info("Add new simulation %r", self.basename)
-            logger.info("... using the output handler %r", self.simulation_output.handler_class_name())
-            self.add_simulation()
+        if self.parallel:
+            assert pt.parallelism_is_active(), "Parallel backend has not been initialized"
+            from ..parallel_tasks import database
+            database.synchronize_creator_object()
+            create_simulation = pt.backend.rank()==1 # nb rank 0 is busy coordinating everything
         else:
-            logger.warning("Simulation already exists %r", self.basename)
+            create_simulation = True
 
-        self.add_simulation_properties()
+        if create_simulation:
+            if not self.simulation_exists():
+                logger.info("Add new simulation %r", self.basename)
+                logger.info("... using the output handler %r", self.simulation_output.handler_class_name())
+                self.add_simulation()
+            else:
+                logger.warning("Simulation already exists %r", self.basename)
 
-        for ts_filename in self.simulation_output.enumerate_timestep_extensions():
+            self.add_simulation_properties()
+
+        # await the simulation being ready if we are running in parallel
+        pt.barrier()
+
+        for ts_filename in self.simulation_output.enumerate_timestep_extensions(parallel=self.parallel):
             if not self.timestep_exists_for_extension(ts_filename):
                 ts = self.add_timestep(ts_filename)
                 self.add_timestep_properties(ts)
@@ -57,11 +80,14 @@ class SimulationAdderUpdater:
     def add_timestep(self, ts_extension):
         logger.info("Add timestep %r to simulation %r",ts_extension,self.basename)
         ex = TimeStep(self._get_simulation(), ts_extension)
-        self.session.add(ex)
+        with pt.ExclusiveLock("db_write_lock"):
+            self.session.add(ex)
+            self.session.commit()
         return ex
 
     def add_simulation(self):
         sim = Simulation(self.basename)
+        # no need for a lock here - only one process should be adding a simulation
         self.session.add(sim)
         self.session.commit()
 
@@ -123,9 +149,10 @@ class SimulationAdderUpdater:
                 h = create_class(ts, database_number, finder_id, catalog_id, NDM, Nstar, Ngas)
                 halos.append(h)
 
-        logger.info("Add %d %ss to timestep %r", len(halos), create_class.__name__, ts)
-        self.session.add_all(halos)
-        self.session.commit()
+        with pt.ExclusiveLock("db_write_lock"):
+            logger.info("Add %d %ss to timestep %r", len(halos), create_class.__name__, ts)
+            self.session.add_all(halos)
+            self.session.commit()
 
     def add_timestep_properties(self, ts):
         for key, value in self.simulation_output.get_timestep_properties(ts.extension).items():

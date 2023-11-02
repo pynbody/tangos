@@ -1,43 +1,32 @@
-import hashlib
-import struct
-
-
-def _stable_hash(string):
-    return struct.unpack('<L', hashlib.md5(string.encode()).digest()[:4])[0]
-
 class MessageMetaClass(type):
     _message_classes = {}
+    _next_tag = 100
 
     def __new__(meta, name, bases, dct):
         return super().__new__(meta, name, bases, dct)
 
     def __init__(cls, name, bases, dct):
         super().__init__(name, bases, dct)
-        MessageMetaClass.register_class(cls)
-
-
-    @staticmethod
-    def class_to_hash(cls):
-        result = _stable_hash(cls.__name__) & 0xfffffff
-        return result
+        MessageMetaClass.register_class(cls, MessageMetaClass._next_tag)
+        MessageMetaClass._next_tag+=1
 
     @staticmethod
-    def hash_to_class(hash):
-        if hash not in MessageMetaClass._message_classes:
-            raise RuntimeError("Unknown message receieved")
+    def tag_to_class(tag):
+        if tag not in MessageMetaClass._message_classes:
+            raise RuntimeError("Unknown message receieved (tag %d)" % tag)
 
-        return MessageMetaClass._message_classes[hash]
+        return MessageMetaClass._message_classes[tag]
 
     @staticmethod
     def class_is_known(cls):
-        return MessageMetaClass.class_to_hash(cls) in MessageMetaClass._message_classes
+        return cls in MessageMetaClass._message_classes.values()
 
     @staticmethod
-    def register_class(cls):
+    def register_class(cls, tag):
         if MessageMetaClass.class_is_known(cls):
-            raise AttributeError("Attempting to register duplicate message class")
-        MessageMetaClass._message_classes[MessageMetaClass.class_to_hash(cls)] = cls
-        cls._tag = MessageMetaClass.class_to_hash(cls)
+            raise AttributeError("Attempting to register duplicate message class %r"%cls)
+        MessageMetaClass._message_classes[tag] = cls
+        cls._tag = tag
 
 
 class Message(metaclass=MessageMetaClass):
@@ -58,7 +47,7 @@ class Message(metaclass=MessageMetaClass):
 
     @staticmethod
     def interpret_and_deserialize(tag, source, message):
-        obj = MessageMetaClass.hash_to_class(tag).deserialize(source, message)
+        obj = MessageMetaClass.tag_to_class(tag).deserialize(source, message)
         return obj
 
     @staticmethod

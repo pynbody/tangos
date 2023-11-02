@@ -1,5 +1,6 @@
 import functools
 import importlib
+import os
 import warnings
 
 import numpy as np
@@ -8,6 +9,7 @@ import pkg_resources
 from tangos.util import timing_monitor
 
 from .. import input_handlers, parallel_tasks
+from ..log import logger
 
 
 class PropertyCalculationMetaClass(type):
@@ -418,21 +420,48 @@ def all_properties(with_particle_data=True):
     return pr
 
 @functools.lru_cache
-def providing_class(property_name, handler_class=None, silent_fail=False):
+def providing_class(property_name, handler_class=None, silent_fail=False, explain=False):
     """Return property calculator class for given property name when files will be loaded by specified handler.
 
-    If handler_class is None, return "live" properties which can be calculated without particle data"""
+    :param property_name -- name of property to be calculated
+    :param handler_class -- class of handler that will be used to load files
+                            (e.g. input_handlers.pynbody.PynbodyInputHandler).
+                            If None, return "live" properties which can be calculated without particle data.
+    :param silent_fail -- if True, return None if no class is found, otherwise raise NameError
+    :param explain -- if True, print out the reason why a particular class was selected
 
-    candidates = all_providing_classes(property_name)
+    When more than one possible class is capable of calculating the requested property, the following criteria
+    are used to select one. The guiding criterion is to select user-provided code of the greatest specificity.
+
+    1) If possible, the class targetting the most specialised input handler is selected. That is, if a
+       class targetting say PynbodyInputHandler is available, it will be selected in preference to one
+       targetting HandlerBase.
+    2) Next, the class hierarchy of the properties themselves is inspected. If one class is a subclass of another,
+       the more specialised class is selected. For example, if there are two classes calculating "my_prop", A and B,
+       and B is a child class of A, B is selected.
+    2) If there is no class hierarchy, the class defined in the tangos codebase is de-prioritised over any externally
+       provided classes
+    3) If there is still a tie, the string representation of the classname (including the module) is used to sort
+       alphabetically. This has no particular rationale except to make reproducible results.
+
+    """
+
+    candidates_unfiltered = all_providing_classes(property_name)
 
     if handler_class is None:
-        candidates = list(filter(lambda c: not c.requires_particle_data, candidates))
+        candidates = list(filter(lambda c: not c.requires_particle_data, candidates_unfiltered))
     else:
-        candidates = list(filter(lambda c: issubclass(handler_class, c.works_with_handler), candidates))
+        candidates = []
+        for c in candidates_unfiltered:
+            if issubclass(handler_class, c.works_with_handler):
+                candidates.append(c)
+            else:
+                if explain:
+                    logger.info(f"Property class selection: {c.__module__}.{c.__qualname__} is excluded, as it is not compatible with handler {handler_class}")
 
     if len(candidates)>=1:
         # return the property which is most specialised
-        _sort_by_class_hierarchy(candidates)
+        _sort_by_class_hierarchy(candidates, explain)
         return candidates[0]
     elif silent_fail:
         return None
@@ -456,33 +485,79 @@ def all_providing_classes(property_name):
     return candidates
 
 
-def _sort_by_class_hierarchy(candidates):
+def _sort_by_class_hierarchy(candidates, explain=False):
+    def explanation(s):
+        if explain:
+            logger.info("Property class selection: "+s)
     def cmp(a, b):
+        a_name = a.__module__ + "." + a.__qualname__
+        b_name = b.__module__ + "." + b.__qualname__
+
         if a is b:
             return 0
-        elif issubclass(a, b):
-            return 1
-        else:
+
+        # Rule 1: prefer the most specialised handler
+        if a.works_with_handler is not b.works_with_handler:
+            if issubclass(a.works_with_handler, b.works_with_handler):
+                explanation(f"{a_name} is preferred to {b_name} because handler ({a.works_with_handler}) is a subclass "
+                      f"of handler {b.works_with_handler}")
+                return -1
+            elif issubclass(b.works_with_handler, a.works_with_handler):
+                explanation(f"{b_name} is preferred to {a_name} because handler ({b.works_with_handler}) is a subclass "
+                      f"of handler {a.works_with_handler}")
+                return 1
+
+        # Rule 2: prefer the most specialised class:
+        if issubclass(a, b):
+            explanation(f"{a_name} is preferred to {b_name} because it is a subclass of {b_name}")
             return -1
+        elif issubclass(b, a):
+            explanation(f"{b_name} is preferred to {a_name} because it is a subclass of {a_name}")
+            return 1
+
+        # Rule 3: prefer externally-provided classes over tangos-provided ones
+
+        if a.__module__.startswith("tangos.") and not b.__module__.startswith("tangos."):
+            explanation(f"{b_name} is preferred to {a_name} because it is provided externally to tangos")
+            return 1
+        elif b.__module__.startswith("tangos.") and not a.__module__.startswith("tangos."):
+            explanation(f"{a_name} is preferred to {b_name} because it is provided externally to tangos")
+            return -1
+
+        # Rule 4: out of sensible ways to order, now we just go alphabetical
+        a_name = a.__module__ + "." + a.__qualname__
+        b_name = b.__module__ + "." + b.__qualname__
+        if a_name<b_name:
+            explanation(f"{a_name} is preferred to {b_name} because of alphabetical ordering")
+            return -1
+        elif a_name>b_name:
+            explanation(f"{b_name} is preferred to {a_name} because of alphabetical ordering")
+            return 1
+
+        explanation(f"{a_name} and {b_name} could not be distinguished by any of the ordering rules")
+        # very surprising to reach this - how can two different classes have the same module and name?
+        return 0
+
     candidates.sort(key=functools.cmp_to_key(cmp))
 
 
-def providing_classes(property_name_list, handler_class, silent_fail=False):
+
+def providing_classes(property_name_list, handler_class, silent_fail=False, explain=False):
     """Return classes for given list of property names; see providing_class for details"""
     classes = []
     for property_name in property_name_list:
-        cl = providing_class(property_name, handler_class, silent_fail)
+        cl = providing_class(property_name, handler_class, silent_fail, explain)
         if cl not in classes and cl is not None:
             classes.append(cl)
 
     return classes
 
-def instantiate_classes(simulation, property_name_list, silent_fail=False):
+def instantiate_classes(simulation, property_name_list, silent_fail=False, explain=False):
     """Instantiate appropriate property calculation classes for a given simulation and list of property names."""
     instances = []
     handler_class = type(simulation.get_output_handler())
     for property_identifier in property_name_list:
-        instances.append(providing_class(property_identifier, handler_class, silent_fail)(simulation))
+        instances.append(providing_class(property_identifier, handler_class, silent_fail, explain)(simulation))
 
     return instances
 
@@ -495,6 +570,10 @@ def instantiate_class(simulation, property_name, silent_fail=False):
         return instance[0]
 
 def _import_configured_property_modules():
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        warnings.warn("Not importing external property modules during testing", ImportWarning)
+        return
+
     from ..config import property_modules
     for pm in property_modules:
         if pm=="": continue
