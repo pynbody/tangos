@@ -239,8 +239,6 @@ class YtRamsesRockstarInputHandler(YtInputHandler):
         # Check whether datasets.txt exists (i.e., if rockstar was run with yt)
         if os.path.exists(self._extension_to_filename("datasets.txt")):
             fnum = read_datasets(self._extension_to_filename(""),ts_extension)
-            print (ts_extension)
-            print (fnum)
         else: # otherwise, assume a one-to-one correspondence
             overdir = self._extension_to_filename("")
             snapfiles = glob.glob(overdir+ts_extension[:2]+len(ts_extension[2:].split('/')[0])*'?')
@@ -268,8 +266,8 @@ class YtRamsesRockstarInputHandler(YtInputHandler):
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
             yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
         else:
-            logger.warn("No halo statistics file found for timestep %r", ts_extension)
-            logger.warn(" => enumerating %ss directly using yt", object_typetag)
+            #logger.warn("No halo statistics file found for timestep %r", ts_extension)
+            #logger.warn(" => enumerating %ss directly using yt", object_typetag)
 
             _catalogue, catalogue_data = self._load_halo_cat(ts_extension, object_typetag)
             num_objects = len(catalogue_data["halos", "virial_radius"])
