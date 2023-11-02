@@ -194,11 +194,11 @@ class RequestPynbodyArray(Message):
         self._time_to_start_processing.append(start_time - self.request_sent_time)
         if len(self._time_to_start_processing)>self._num_retained_timings:
             self._time_to_start_processing = []
-        
+
             log.logger.info("pynbody server typical time to start retrieving an array: %.1fs +/- %.1fs",
                             np.mean(self._time_to_start_processing),
                             np.std(self._time_to_start_processing))
-        
+
         try:
             log.logger.debug("Receive request for array %r from %d",self.array,self.source)
             subsnap = _server_queue.get_subsnap(self.filter_or_object_spec, self.fam)
