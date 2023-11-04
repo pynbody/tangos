@@ -1,6 +1,7 @@
 import os
 import sys
 
+import numpy as np
 import numpy.testing as npt
 import pynbody
 
@@ -188,3 +189,24 @@ def _test_oserror_on_nonexistent_file():
 def test_oserror_on_nonexistent_file():
     pt.use("multiprocessing-2")
     pt.launch(_test_oserror_on_nonexistent_file)
+
+
+
+@pynbody.snapshot.tipsy.TipsySnap.derived_quantity
+def metals(sim):
+    """Derived array that will only be invoked for dm, since metals is present on disk for gas/stars"""
+    return pynbody.array.SimArray(np.ones(len(sim)))
+
+def _test_mixed_derived_loaded_arrays():
+    f_remote = handler.load_object('tiny.000640', 1, 1, mode='server')
+    f_local = handler.load_object('tiny.000640', 1, 1, mode=None)
+    assert (f_remote.dm['metals'] == f_local.dm['metals']).all()
+    assert (f_remote.st['metals'] == f_local.st['metals']).all()
+
+
+def test_mixed_derived_loaded_arrays():
+    """Sometimes an array is present on disk for some families but is derived for others. A notable real-world example
+    is the mass array for gas in ramses snapshots. Previously accessing this array in a remotesnap could cause errors,
+    specifically a "derived array is not writable" error on the server. This test ensures that the correct behaviour"""
+    pt.use("multiprocessing-2")
+    pt.launch(_test_mixed_derived_loaded_arrays)
