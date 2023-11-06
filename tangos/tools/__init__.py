@@ -50,7 +50,7 @@ class GenericTangosTool(metaclass=abc.ABCMeta):
             obj = cls()
             obj.process_options(options)
             if obj.parallel:
-                parallel_tasks.launch(obj.run_calculation_loop, 2, [])
+                parallel_tasks.launch(obj.run_calculation_loop,  [])
             else:
                 obj.run_calculation_loop()
 

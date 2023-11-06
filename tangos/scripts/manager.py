@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 import tangos as db
-from tangos import all_simulations, config, core
+from tangos import all_simulations, config, core, parallel_tasks
 from tangos.core import (Base, Creator, HaloLink, HaloProperty, Simulation,
                          SimulationObjectBase, TimeStep,
                          get_or_create_dictionary_item)
@@ -21,16 +21,17 @@ from tangos.query import get_halo, get_simulation
 from tangos.tools.add_simulation import SimulationAdderUpdater
 
 
-def add_simulation_timesteps(options):
-    handler=options.handler
+def _add_simulation_timesteps(options):
+    handler = options.handler
     output_class = get_named_handler_class(handler).best_matching_handler(options.sim)
     output_object = output_class(options.sim)
     output_object.quicker = options.quicker
-    adder = SimulationAdderUpdater(output_object,renumber=not options.no_renumber)
+    adder = SimulationAdderUpdater(output_object, renumber=not options.no_renumber)
     adder.min_halo_particles = options.min_particles
     adder.max_num_objects = options.max_objects
     adder.scan_simulation_and_add_all_descendants()
-
+def add_simulation_timesteps(options):
+    parallel_tasks.launch(_add_simulation_timesteps,  [options])
 
 
 
@@ -443,6 +444,10 @@ def list_available_properties(options):
 def diff(options):
     from ..testing import db_diff
     differ = db_diff.TangosDbDiff(options.uri1, options.uri2, ignore_keys=options.ignore_value_of)
+    if options.property_tolerance is not None:
+        for k, rtol, atol in options.property_tolerance:
+            differ.set_tolerance(k, float(rtol), float(atol))
+
     if options.simulation:
         differ.compare_simulation(options.simulation)
     elif options.timestep:
@@ -564,6 +569,9 @@ def get_argument_parser_and_subparsers():
     subparse_diff.add_argument("--timestep", type=str, help="Only compare the specified timestep", default=None)
     subparse_diff.add_argument("--object", type=str, help="Only compare the specified object", default=None)
     subparse_diff.add_argument("--ignore-value-of", nargs="*", type=str, help="Ignore the value of the specified properties", default=[])
+    subparse_diff.add_argument("--property-tolerance", nargs=3, type=str, help="Set the relative and absolute tolerances "
+                                                                                 "for a given property, as --property-tolerance "
+                                                                                 "<property_name> <rtol> <atol> ", action="append")
     subparse_diff.set_defaults(func=diff)
 
     subparse_list_available_properties = subparse.add_parser("list-possible-properties",

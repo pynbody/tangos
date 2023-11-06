@@ -2,6 +2,7 @@ from pytest import raises as assert_raises
 
 import tangos
 import tangos.input_handlers as soh
+import tangos.input_handlers.pynbody as pih
 import tangos.properties as prop
 
 
@@ -22,7 +23,13 @@ class PropertyForHandler1(prop.PropertyCalculation):
 class PropertyForHandler2(prop.PropertyCalculation):
     works_with_handler = _TestOutputHandler2
     requires_particle_data = True
-    names = "widget", "robin"
+    names = "widget", "robin", "tree"
+
+class DensityProfileOverride(prop.pynbody.profile.HaloDensityProfile):
+    pass
+
+class CenterOverride(prop.pynbody.PynbodyPropertyCalculation):
+    names = "shrink_center"
 
 class PropertyForHandler1Child(prop.PropertyCalculation):
     works_with_handler = _TestOutputHandler1Child
@@ -31,6 +38,17 @@ class PropertyForHandler1Child(prop.PropertyCalculation):
 
 class PropertyForLiveUse(prop.LivePropertyCalculation):
     names = "livewidget"
+
+class AmbiguousPropertyForHandler2(prop.PropertyCalculation):
+    works_with_handler = _TestOutputHandler1
+    requires_particle_data = True
+    names = "ambiguous"
+class AmbiguousPropertyForHandler1(prop.PropertyCalculation):
+    works_with_handler = _TestOutputHandler1
+    requires_particle_data = True
+    names = "ambiguous"
+
+
 
 def test_setup():
     assert issubclass(_TestOutputHandler1Child, _TestOutputHandler1)
@@ -60,3 +78,16 @@ def test_map_liveproperty():
 
     with assert_raises(NameError):
         prop.providing_class("widget") # unavailable as a live property
+
+def test_priorities():
+    # most specialised subclass should be used:
+    assert (prop.providing_class("dm_density_profile", pih.PynbodyInputHandler)
+            is DensityProfileOverride)
+
+    # if there is no class hierarchy, the one external to tangos should be used:
+    assert (prop.providing_class("shrink_center", pih.PynbodyInputHandler)
+            is CenterOverride)
+
+    # alphabetical priority as last resort, first in alphabetical is prioritised:
+    assert (prop.providing_class("ambiguous", _TestOutputHandler1)
+            is AmbiguousPropertyForHandler1)

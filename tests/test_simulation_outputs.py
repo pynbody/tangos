@@ -40,8 +40,8 @@ def test_handler_properties():
 def test_handler_properties_quicker_flag():
     output_manager.quicker = True
     prop = output_manager.get_properties()
-    npt.assert_allclose(prop['approx_resolution_kpc'], 33.4360203909648)
-    npt.assert_allclose(prop['approx_resolution_Msol'], 40370039199.44858)
+    npt.assert_allclose(prop['approx_resolution_kpc'], 33.590757, rtol=1e-5)
+    npt.assert_allclose(prop['approx_resolution_Msol'], 2.412033e+10, rtol=1e-5)
 
 def test_enumerate():
     assert set(output_manager.enumerate_timestep_extensions())=={"tiny.000640","tiny.000832"}

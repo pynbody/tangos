@@ -19,7 +19,8 @@ def setup_module():
 
 def teardown_module():
     tangos.core.close_db()
-    pt.launch(tangos.core.close_db, 6)
+    pt.use("multiprocessing-6")
+    pt.launch(tangos.core.close_db)
 
 
 def _add_property():
@@ -30,7 +31,8 @@ def _add_property():
 
 
 def test_add_property():
-    pt.launch(_add_property,3)
+    pt.use("multiprocessing-3")
+    pt.launch(_add_property)
     for i in range(1,10):
         assert tangos.get_halo(i)['my_test_property']==i
 
@@ -48,8 +50,8 @@ def _add_two_properties_different_ranges():
             tangos.core.get_default_session().commit()
 
 def test_add_two_properties_different_ranges():
-
-    pt.launch(_add_two_properties_different_ranges,3)
+    pt.use("multiprocessing-3")
+    pt.launch(_add_two_properties_different_ranges)
     for i in range(1,10):
         assert tangos.get_halo(i)['my_test_property_2']==i
         if i<8:
@@ -75,7 +77,8 @@ def test_for_loop_is_not_run_twice():
     entire task could be run twice"""
     tangos.get_halo(1)['test_count'] = 0
     tangos.get_default_session().commit()
-    pt.launch(_test_not_run_twice, 5)
+    pt.use("multiprocessing-5")
+    pt.launch(_test_not_run_twice)
     assert tangos.get_halo(1)['test_count']==3
 
 
@@ -86,7 +89,8 @@ def _test_empty_loop():
 
 
 def test_empty_loop():
-    pt.launch(_test_empty_loop,3)
+    pt.use("multiprocessing-3")
+    pt.launch(_test_empty_loop)
 
 def _test_empty_then_non_empty_loop():
     for _ in pt.distributed([]):
@@ -96,7 +100,8 @@ def _test_empty_then_non_empty_loop():
         pass
 
 def test_empty_then_non_empty_loop():
-    pt.launch(_test_empty_then_non_empty_loop, 3)
+    pt.use("multiprocessing-3")
+    pt.launch(_test_empty_then_non_empty_loop)
 
 
 def _test_synchronize_db_creator():
@@ -111,7 +116,8 @@ def _test_synchronize_db_creator():
     tangos.core.get_default_session().commit()
 
 def test_synchronize_db_creator():
-    pt.launch(_test_synchronize_db_creator,3)
+    pt.use("multiprocessing-3")
+    pt.launch(_test_synchronize_db_creator)
     assert tangos.get_halo(1)['db_creator_test_property']==1.0
     assert tangos.get_halo(2)['db_creator_test_property'] == 1.0
     creator_1, creator_2 = (tangos.get_halo(i).get_objects('db_creator_test_property')[0].creator for i in (1,2))
@@ -154,5 +160,7 @@ def _test_shared_locks_in_queue():
     pt.backend.barrier()
 
 def test_shared_locks():
-    pt.launch(_test_shared_locks,4)
-    pt.launch(_test_shared_locks_in_queue, 6)
+    pt.use("multiprocessing-4")
+    pt.launch(_test_shared_locks)
+    pt.use("multiprocessing-6")
+    pt.launch(_test_shared_locks_in_queue)

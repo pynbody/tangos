@@ -167,7 +167,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
             yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
         else:
-            logger.warning("No halo statistics file found for timestep %r", ts_extension)
+            logger.warning("No %s statistics file found for timestep %r", object_typetag, ts_extension)
 
             try:
                 h = self._construct_halo_cat(ts_extension, object_typetag)

@@ -20,9 +20,9 @@ class DictionaryItem(Base):
     def __init__(self, text):
         self.text = text
 
-    def providing_class(self, handler):
+    def providing_class(self, handler, explain=False):
         from .. import properties
-        return properties.providing_class(self.text, handler)
+        return properties.providing_class(self.text, handler, explain)
 
 raise_exception = object()
 

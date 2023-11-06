@@ -134,7 +134,7 @@ def launch_functions(functions, args):
                 if message=='finalize':
                     #print "  ---> multiprocessing backend: finalize node ",i,running
                     running[i]=False
-                elif message[0]=='error':
+                elif isinstance(message[0], str) and message[0]=='error':
                     error = message[1]
                     running = [False]
                     break
@@ -158,8 +158,11 @@ def launch_functions(functions, args):
 
 
 
-def launch(function, num_procs, args):
-    if num_procs is None:
-        raise RuntimeError("To launch a parallel session using multiprocessing backend, you need to specify the number of processors")
+def launch(function, args):
+    from .. import _num_procs
+    if _num_procs is None:
+        raise RuntimeError("To launch a parallel session using multiprocessing backend, you need to specify the number "
+                           "of processors. You can do this by calling the backend multiprocessing-<n> where <n> is the"
+                           "number of processors you want to use.")
 
-    launch_functions([function]*num_procs, [args]*num_procs)
+    launch_functions([function]*_num_procs, [args]*_num_procs)

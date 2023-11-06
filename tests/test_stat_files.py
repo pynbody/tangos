@@ -135,7 +135,7 @@ def test_import_properties_is_only_numeric_or_array():
     # Arrays of numerics should now create a property successfully
     property = importer._create_property(db_name, halo, np.array([42, 42, 42]))
     assert property.data_is_array() == True
-    assert property.data.dtype == np.int
+    assert property.data.dtype == int
     npt.assert_allclose(property.data, np.array([42, 42, 42]))
 
     property = importer._create_property(db_name, halo, np.array([42.0, 42.0, 42.0]))

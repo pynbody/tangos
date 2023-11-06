@@ -21,7 +21,9 @@ class MessageBarrier(message.Message):
 
 
 def barrier():
-    from . import backend
+    from . import backend, parallelism_is_active
+    if not parallelism_is_active():
+        return
     assert backend.rank()!=0, "The server process cannot take part in a barrier"
     MessageBarrier().send(0)
     MessageBarrierPass.receive(0)

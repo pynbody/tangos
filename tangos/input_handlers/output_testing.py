@@ -25,7 +25,9 @@ class TestInputHandler(HandlerBase):
                 result[line_split[0]] = " ".join(line_split[1:])
         return result
 
-    def enumerate_timestep_extensions(self):
+    def enumerate_timestep_extensions(self, parallel=False):
+        if parallel:
+            raise NotImplementedError("Parallel enumeration not implemented for this test handler")
         pre_extension_length = len(os.path.join(config.base, self.basename))
         steps = glob.glob(os.path.join(config.base, self.basename, "step.*"))
         for i in steps:
