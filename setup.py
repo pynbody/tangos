@@ -21,7 +21,8 @@ install_requires = [
     'hupper',
     'scipy >= 0.14.0',
     'more_itertools >= 8.0.0',
-    'matplotlib >= 3.0.0' # for web interface
+    'matplotlib >= 3.0.0', # for web interface
+    'tqdm >= 4.59.0'
     ]
 
 tests_require = [
