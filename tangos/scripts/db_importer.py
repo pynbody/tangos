@@ -189,13 +189,15 @@ def _drop_foreign_keys(session):
     all_fks = []
 
     for table_name in Base.metadata.tables:
-        fks = []
-        for fk in inspector.get_foreign_keys(table_name):
-            if fk['name']:
-                fks.append(ForeignKeyConstraint((), (), name=fk['name']))
-        t = Table(table_name, fake_metadata, *fks)
-        fake_tables.append(t)
-        all_fks.extend(fks)
+        # if the metadata has multihop tables left, we aren't interested in those (they're not really in the database)
+        if 'multihop' not in table_name:
+            fks = []
+            for fk in inspector.get_foreign_keys(table_name):
+                if fk['name']:
+                    fks.append(ForeignKeyConstraint((), (), name=fk['name']))
+            t = Table(table_name, fake_metadata, *fks)
+            fake_tables.append(t)
+            all_fks.extend(fks)
 
     with engine.begin() as conn:
         for fkc in all_fks:
