@@ -1,5 +1,5 @@
 import numpy as np
-from sqlalchemy import Column, ForeignKey, Integer, orm, types, BigInteger
+from sqlalchemy import BigInteger, Column, ForeignKey, Integer, orm, types
 from sqlalchemy.orm import Session, backref, relationship
 
 from . import Base, creator, extraction_patterns

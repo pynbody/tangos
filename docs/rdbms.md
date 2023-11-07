@@ -1,16 +1,16 @@
 Working with different database systems
 =======================================
 
-Tangos is built on sqlalchemy, which means that it is in principle possible to use any database system supported by sqlalchemy. However, different database systems have different features and limitations of which it is worth being aware. 
+Tangos is built on sqlalchemy, which means that it is in principle possible to use any database system supported by sqlalchemy. However, different database systems have different features and limitations of which it is worth being aware.
 
 The tangos tests are run with SQLite, mySQL and postgresql. Other databases, while supported by sqlalchemy, have not been directly tested. The following contain some notes on using these different systems.
 
 SQLite
 ------
 
-SQLite is the default database. It is simple in the sense that it keeps your entire database within a single file which can easily be transferred to different systems. Additionally, the SQLite driver is included with Python and so it's quick to get started. 
+SQLite is the default database. It is simple in the sense that it keeps your entire database within a single file which can easily be transferred to different systems. Additionally, the SQLite driver is included with Python and so it's quick to get started.
 
-There are two major, related drawbacks to SQLite. The first is that the 
+There are two major, related drawbacks to SQLite. The first is that the
 
 PostgreSQL and MySQL
 --------------------
@@ -24,7 +24,7 @@ MySQL
 
 MySQL is a server-based system, and as such takes a little more effort to set up. The advantage is that you can host your data in a single location and allow multiple users to connect. Additionally, it is able to cope much better with complex parallel writes than SQLite.
 
-For most users, MySQL and PostgreSQL are 
+For most users, MySQL and PostgreSQL are
 
 To try this out, if you have [docker](https://docker.com), you can run a test
 MySQL server very easily:
@@ -58,5 +58,3 @@ export TANGOS_DB_CONNECTION=postgresql+psycopg2://tangos:my_secret_password@loca
 
 You can now use all the tangos tools as normal, and they will populate the MySQL/PostgreSQL database
 instead of a SQLite file.
-
-

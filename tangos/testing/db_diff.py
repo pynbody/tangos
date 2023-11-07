@@ -118,7 +118,10 @@ class TangosDbDiff:
 
     def _compare_objects(self, obj1, obj2):
         properties1 = {prop.name.text: prop.data_raw for prop in self._joined_properties_load(obj1)}
-        properties2 = {prop.name.text: prop.data_raw for prop in self._joined_properties_load(obj2)}
+        properties2 = {
+            prop.name.text: prop.data_raw
+            for prop in self._joined_properties_load(obj2)
+        }
 
         self._check_dict_same(properties1, properties2, obj1.path)
 

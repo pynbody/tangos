@@ -1,5 +1,7 @@
 import sqlalchemy.engine
+
 from ..log import logger
+
 
 def explain_query(query, engine_or_connection=None):
     """Get the underlying SQL engine to explain how it will execute a given query. For debugging purposes.
@@ -39,4 +41,3 @@ def _explain_query_using_connection(query, connection):
 
 
     logger.info(pt)
-

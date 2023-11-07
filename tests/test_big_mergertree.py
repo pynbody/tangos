@@ -1,12 +1,13 @@
 import numpy as np
 
 import tangos
-from tangos.relation_finding import tree
 import tangos.live_calculation
 import tangos.relation_finding as halo_finding
 import tangos.temporary_halolist as thl
 import tangos.testing as testing
 import tangos.testing.simulation_generator as sg
+from tangos.relation_finding import tree
+
 
 def setup_module():
     is_blank = testing.init_blank_db_for_testing(erase_if_exists=False)

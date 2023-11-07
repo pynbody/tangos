@@ -13,9 +13,10 @@ from sqlalchemy.orm import defer, relationship
 
 from .. import config, core, temporary_halolist
 from ..config import DOUBLE_PRECISION
-from .one_hop import HopStrategy
-from ..util.timing_monitor import TimingMonitor
 from ..log import logger
+from ..util.timing_monitor import TimingMonitor
+from .one_hop import HopStrategy
+
 
 class MultiHopStrategy(HopStrategy):
     """An extension of the HopStrategy class that takes multiple hops across
@@ -306,6 +307,7 @@ class MultiHopStrategy(HopStrategy):
         num_inserted = self._connection.execute(insert).rowcount
 
         from ..util.explain_query import explain_query
+
         #explain_query(recursion_query, self._connection)
 
         logger.info(f"inserted {num_inserted} prelim rows in {time.time() - t:.3f} seconds")

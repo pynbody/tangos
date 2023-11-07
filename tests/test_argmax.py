@@ -1,13 +1,15 @@
 import tangos
 from tangos import testing
 from tangos.util import sql_argmax
+
+
 def test_argmax():
     testing.init_blank_db_for_testing()
 
     engine = tangos.core.get_default_engine()
 
     # define a sqlalchemy table (non-ORM), with columns "id", "value" and "category"
-    from sqlalchemy import Table, Column, Integer, MetaData, insert
+    from sqlalchemy import Column, Integer, MetaData, Table, insert
     metadata = MetaData()
     table = Table('test_table', metadata,
                     Column('id', Integer, primary_key=True),

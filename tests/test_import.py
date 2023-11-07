@@ -1,6 +1,7 @@
 import os
 
 import tangos
+import tangos.scripts.db_importer
 import tangos.scripts.manager as manager
 import tangos.testing as testing
 import tangos.testing.db_diff as diff
@@ -39,8 +40,34 @@ def teardown_module():
 def test_import():
     existing_session = tangos.get_default_session()
     testing.init_blank_db_for_testing(testing_db_name='imported_db_test')
+    _populate_existing_simulation()
+
     new_session = tangos.get_default_session()
-    manager._db_import_export(new_session, existing_session)
+    tangos.scripts.db_importer._db_import_export(new_session, existing_session)
     differ = diff.TangosDbDiff(existing_session, new_session)
-    differ.compare()
+    differ.compare_simulation("sim")
+
     assert not differ.failed, "Copied database differs; see log for details"
+
+    # now check that the import process didn't corrupt the existing database
+    testing.init_blank_db_for_testing(testing_db_name='existing_db_comparision')
+    _populate_existing_simulation()
+    reference_session = tangos.get_default_session()
+    differ = diff.TangosDbDiff(new_session, reference_session)
+    differ.compare_simulation("sim_existing")
+
+    # NB this SHOULD be failing right now! The dictionary is corrupt and it should pick up on that.
+
+    assert not differ.failed, "Import process has corrupted existing simulation in database; see log for details"
+
+
+def _populate_existing_simulation():
+    creator = tangos.testing.simulation_generator.SimulationGeneratorForTests("sim_existing")
+    creator.add_timestep()
+    creator.add_objects_to_timestep(3)
+    creator.add_properties_to_halos(prop=lambda i: i)
+    creator.add_properties_to_halos(Mvir=lambda i: i*100.0)
+    creator.add_timestep()
+    creator.add_objects_to_timestep(3)
+    creator.add_properties_to_halos(prop=lambda i: i*2)
+    creator.link_last_halos()
