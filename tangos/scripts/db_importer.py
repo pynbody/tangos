@@ -112,7 +112,7 @@ def _copy_table(from_connection, target_connection, orm_class, offsets, destinat
 
     num_done = 0
 
-    source_result = from_connection.execute(select(cols_select))
+    source_result = from_connection.execute(select(*cols_select))
 
     retries = 0
 
