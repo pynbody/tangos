@@ -1,25 +1,20 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 
 import argparse
 import sys
 from textwrap import dedent
 
 import numpy as np
-import sqlalchemy, sqlalchemy.exc
-
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
 
 import tangos as db
-from tangos import all_simulations, config, core, parallel_tasks
-from tangos.core import (Base, Creator, HaloLink, HaloProperty, Simulation,
-                         SimulationObjectBase, TimeStep, DictionaryItem,
-                         get_or_create_dictionary_item)
-from tangos.core.simulation import SimulationProperty
+from tangos import config, core, parallel_tasks
+from tangos.core import Creator, DictionaryItem, Simulation
 from tangos.core.tracking import TrackData
 from tangos.input_handlers import get_named_handler_class
 from tangos.log import logger
 from tangos.query import get_halo, get_simulation
+from tangos.scripts.db_importer import db_import
 from tangos.tools.add_simulation import SimulationAdderUpdater
 
 
@@ -34,233 +29,6 @@ def _add_simulation_timesteps(options):
     adder.scan_simulation_and_add_all_descendants()
 def add_simulation_timesteps(options):
     parallel_tasks.launch(_add_simulation_timesteps,  [options])
-
-
-
-def db_import(options):
-    if not options.force:
-        s = core.get_default_session()
-
-        num_sims = s.query(core.Simulation).count()
-
-        if num_sims>0:
-            print("**** WARNING ****")
-            print("The behaviour of importing has changed. Now when you import into a database, any existing")
-            print("simulations in that database will be deleted. To avoid seeing this message, you can use -f or --force.")
-
-            num_timesteps = s.query(core.TimeStep).count()
-            num_objs = s.query(core.SimulationObjectBase).count()
-
-            print(f"""
-Currently there are
-    {num_sims} simulation(s)
-    {num_timesteps} timestep(s), and
-    {num_objs} object(s)
-that will be deleted if you continue.
-""")
-            if not _get_user_confirmation():
-                print("Aborted")
-                exit(0)
-
-    remote_db = options.file
-
-    if "://" not in remote_db:
-        remote_db = "sqlite:///"+remote_db
-
-    engine2 = create_engine(remote_db, echo=False)
-    ext_session = sessionmaker(bind=engine2)()
-
-    _db_import_export(core.get_default_session(), ext_session)
-
-
-
-def _update_foreign_id(list_of_rows, foreign_id_column: sqlalchemy.Column, mapping=None):
-    foreign_id_column_number = foreign_id_column.table.c.keys().index(foreign_id_column.name)
-    new_list_of_rows = []
-    mapped_id = None
-    for row in list_of_rows:
-        if mapping is not None:
-            mapped_id = mapping[row[foreign_id_column_number]]
-        new_row = row[:foreign_id_column_number]+(mapped_id,)+row[foreign_id_column_number+1:]
-        new_list_of_rows.append(new_row)
-    return new_list_of_rows
-
-def _copy_table(from_connection, target_connection, orm_class):
-    from sqlalchemy import select, insert, func
-    table = orm_class.__table__
-
-    num_rows = from_connection.execute(select(func.count(table.c.id))).scalar()
-    import tqdm
-
-    CHUNK_SIZE = 10
-    COMMIT_AFTER_CHUNKS = 500
-    num_done = 0
-
-    source_result = from_connection.execute(select(table))
-
-    retries = 0
-
-    with tqdm.tqdm(total=num_rows, desc = f"Copying {orm_class.__name__}", unit="row", smoothing=0.1) as pbar:
-        while num_done < num_rows:
-            all_rows = source_result.fetchmany(CHUNK_SIZE)
-            all_rows = [tuple(r) for r in all_rows]
-
-            try:
-                target_connection.execute(insert(table).values(all_rows))
-
-            except sqlalchemy.exc.OperationalError as e:
-                if retries>=1:
-                    raise # if this line is hit, it may reflect a data limit in the server, e.g. max_allowed_packet in MySQL
-                    # Such limits result in the connection being dropped. In PostgreSQL an error is written in the
-                    # server log, but in MySQL it does not seem to be. Reducing CHUNK_SIZE may help, or increasing
-                    # the limit on the server.
-
-                num_committed = num_done - (num_done % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS))
-                pbar.update(num_committed-num_done) # negative correction
-                print(f"Note: lost connection to database after {num_done} rows. Resetting to {num_committed}.")
-                # reset to point of last commit
-                num_done = num_committed
-                target_connection.rollback()
-                # create a new connection from the target connection's engine
-                target_connection = target_connection.engine.connect()
-                source_result = from_connection.execute(select(table).offset(num_committed))
-                retries+=1
-                continue
-
-
-            num_done += len(all_rows)
-            pbar.update(len(all_rows))
-
-            if num_done % (CHUNK_SIZE * COMMIT_AFTER_CHUNKS) == 0:
-                target_connection.commit()
-                retries = 0
-
-
-
-    target_connection.commit()
-
-def _drop_foreign_keys(session):
-    from sqlalchemy.engine import reflection
-    from sqlalchemy import MetaData, Table, ForeignKeyConstraint
-    from sqlalchemy.schema import DropConstraint, AddConstraint
-
-
-    engine = session.get_bind()
-
-    inspector = reflection.Inspector.from_engine(engine)
-    fake_metadata = MetaData()
-
-    fake_tables = []
-    all_fks = []
-
-    for table_name in Base.metadata.tables:
-        fks = []
-        for fk in inspector.get_foreign_keys(table_name):
-            if fk['name']:
-                fks.append(ForeignKeyConstraint((), (), name=fk['name']))
-        t = Table(table_name, fake_metadata, *fks)
-        fake_tables.append(t)
-        all_fks.extend(fks)
-
-    with engine.begin() as conn:
-        for fkc in all_fks:
-            print(str(DropConstraint(fkc)))
-            conn.execute(DropConstraint(fkc))
-
-def _create_foreign_keys(session):
-    from sqlalchemy.engine import reflection
-    from sqlalchemy import MetaData, Table, ForeignKeyConstraint
-    from sqlalchemy.schema import DropConstraint, AddConstraint
-
-
-    engine = session.get_bind()
-
-    with engine.begin() as conn:
-        for table in Base.metadata.tables.values():
-            for fk in table.foreign_keys:
-                print(str(AddConstraint(fk.constraint)), end="")
-                try:
-                    conn.execute(AddConstraint(fk.constraint))
-                except sqlalchemy.exc.OperationalError:
-                    print("... FAILED")
-                else:
-                    print("... OK")
-
-
-def _drop_or_create_indexes(connection, mode='drop'):
-    from sqlalchemy.schema import DropIndex, CreateIndex
-    for table in Base.metadata.tables.values():
-        for index in table.indexes:
-
-            try:
-                if mode=='drop':
-                    print(str(DropIndex(index)), end="")
-                    sys.stdout.flush()
-                    index.drop(connection)
-                elif mode=='create':
-                    print(str(CreateIndex(index)), end="")
-                    sys.stdout.flush()
-                    index.create(connection)
-                else:
-                    raise ValueError("mode must be 'drop' or 'create'")
-            except (sqlalchemy.exc.OperationalError, sqlalchemy.exc.ProgrammingError):
-                print("... FAILED")
-                connection.rollback()
-            else:
-                print("... OK")
-                connection.commit()
-
-
-def _db_import_export(target_session, from_session, *sims):
-    from sqlalchemy import delete
-
-    target_connection = target_session.connection()
-    from_connection = from_session.connection()
-
-    copy_classes = [Creator, Simulation, TimeStep, SimulationObjectBase, DictionaryItem, SimulationProperty,
-                    HaloLink, HaloProperty]
-
-    print("Dropping foreign key constraints...")
-    _drop_foreign_keys(target_session)
-
-    print("Dropping indexes...")
-    _drop_or_create_indexes(target_connection, mode='drop')
-
-
-    print("Copying tables...")
-    try:
-        for target in copy_classes[::-1]:
-            target_connection.execute(delete(target))
-
-        for target in copy_classes:
-            _copy_table(from_connection, target_connection, target)
-    finally:
-        target_connection.rollback()
-
-        print("Recreating indexes...")
-        _drop_or_create_indexes(target_connection, mode='create')
-
-        print("Recreating foreign keys...")
-        _create_foreign_keys(target_session)
-
-
-
-
-def _translate_halolinks(target_session, halolinks, external_id_to_internal_halo, translated):
-    for hl_ext in halolinks:
-        if hl_ext.id in translated:
-            continue
-
-        dic = get_or_create_dictionary_item(
-            target_session, hl_ext.relation.text)
-        hl_new = HaloLink(external_id_to_internal_halo[hl_ext.halo_from_id],
-                          external_id_to_internal_halo[hl_ext.halo_to_id],
-                          dic)
-
-        target_session.add(hl_new)
-
-        translated.append(hl_ext.id)
-
 
 def flag_duplicates_deprecated(opts):
 
@@ -635,7 +403,6 @@ def get_argument_parser_and_subparsers():
     subparse_import = subparse.add_parser("import",
                                           help="Import from a different database (e.g. useful to load sqlite data onto a server).")
     subparse_import.add_argument("file", type=str, help="The filename of the sqlite file, or a sqlalchemy URI, from which to import")
-    subparse_import.add_argument("--force", "-f", action="store_true", help="If this flag is present, no confirmation prompts will be issued")
     subparse_import.set_defaults(func=db_import)
 
 
