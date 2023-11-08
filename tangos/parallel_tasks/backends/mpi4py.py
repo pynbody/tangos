@@ -50,10 +50,7 @@ def finalize():
     MPI.Finalize()
 
 
-def launch(function, num_procs, args):
+def launch(function, args):
     if size()==1:
         raise RuntimeError("MPI run needs minimum of 2 processors (one for manager, one for worker)")
-    if num_procs is not None:
-        if rank()==0:
-            warnings.warn("Number of processors requested (%d) will be ignored as this is an MPI run that has already selected %d processors"%(num_procs,size()))
     function(*args)

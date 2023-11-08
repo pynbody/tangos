@@ -25,8 +25,8 @@ def test_property_import():
     importer = tools.property_importer.PropertyImporter()
     importer.parse_command_line("Xc Yc Zc Mvir --for test_ahf_merger_tree".split())
     with log.LogCapturer():
-        parallel_tasks.use('multiprocessing')
-        parallel_tasks.launch(importer.run_calculation_loop,2)
+        parallel_tasks.use('multiprocessing-2')
+        parallel_tasks.launch(importer.run_calculation_loop)
 
     Mvir_test, = tangos.get_timestep("test_ahf_merger_tree/tiny_000832").calculate_all("Mvir")
     npt.assert_allclose(Mvir_test, [2.34068e+11,   4.94677e+10,   4.58779e+10,   4.24798e+10,   2.31297e+10,   2.1545e+10,   1.85704e+10,   1.62538e+10,   1.28763e+10])

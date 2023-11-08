@@ -44,6 +44,8 @@ class PropertyWriter(GenericTangosTool):
                             help='Specify a simulation (or multiple simulations) to run on')
         parser.add_argument('--latest', action='store_true',
                             help='Run only on the latest timesteps')
+        parser.add_argument('--timesteps-matching', action='append', type=str,
+                            help='Run only on timesteps with extensions matching the specified string. Multiple timesteps may be specified.')
         parser.add_argument('--force', action='store_true',
                             help='Run calculations even if a value is already stored in the database')
         parser.add_argument('--debug', action='store_true',
@@ -87,7 +89,6 @@ class PropertyWriter(GenericTangosTool):
         return parser
 
     def _build_file_list(self):
-
         query = core.sim_query_from_name_list(self.options.sims)
         files = []
         if self.options.latest:
@@ -97,9 +98,17 @@ class PropertyWriter(GenericTangosTool):
                 except IndexError:
                     pass
         else:
-            files = core.get_default_session().query(core.timestep.TimeStep).filter(
-                core.timestep.TimeStep.simulation_id.in_([q.id for q in query.all()])). \
+            timestep_filter = core.timestep.TimeStep.simulation_id.in_([q.id for q in query.all()])
+            if self.options.timesteps_matching is not None and len(self.options.timesteps_matching)>0:
+                subfilter = core.timestep.TimeStep.extension.like(self.options.timesteps_matching[0])
+                for m in self.options.timesteps_matching[1:]:
+                    subfilter |= core.timestep.TimeStep.extension.like(m)
+                timestep_filter &= subfilter
+
+            files = core.get_default_session().query(core.timestep.TimeStep).filter(timestep_filter). \
                 order_by(core.timestep.TimeStep.time_gyr).all()
+
+
 
         if self.options.backwards:
             files = files[::-1]
@@ -108,7 +117,14 @@ class PropertyWriter(GenericTangosTool):
             random.seed(0)
             random.shuffle(files)
 
-        self.files = files
+        self._files = files
+
+    @property
+    def files(self):
+        if not hasattr(self, '_files'):
+            self._build_file_list()
+        return self._files
+
 
     def _get_parallel_timestep_iterator(self):
         if self.options.part is not None:
@@ -145,7 +161,6 @@ class PropertyWriter(GenericTangosTool):
     def process_options(self, options):
         self.options = options
         core.process_options(self.options)
-        self._build_file_list()
         self._compile_inclusion_criterion()
 
         if self.options.load_mode=='all':

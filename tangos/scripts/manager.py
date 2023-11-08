@@ -31,7 +31,7 @@ def _add_simulation_timesteps(options):
     adder.max_num_objects = options.max_objects
     adder.scan_simulation_and_add_all_descendants()
 def add_simulation_timesteps(options):
-    parallel_tasks.launch(_add_simulation_timesteps, 2, [options])
+    parallel_tasks.launch(_add_simulation_timesteps,  [options])
 
 
 

@@ -9,7 +9,7 @@ def run_importer(argv):
     from tangos.tools.property_importer import PropertyImporter
     importer = PropertyImporter()
     importer.parse_command_line(argv)
-    parallel_tasks.launch(importer.run_calculation_loop, 2, [])
+    parallel_tasks.launch(importer.run_calculation_loop,  [])
 
 def main():
     print("""

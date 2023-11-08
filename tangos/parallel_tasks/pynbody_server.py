@@ -105,6 +105,10 @@ class PynbodySnapshotQueue:
         log.logger.debug("Pynbody server: notify %d that snapshot is now available", node)
         ConfirmLoadPynbodySnapshot(type(self.current_snapshot)).send(node)
 
+    def _notify_unavailable(self, node):
+        log.logger.debug("Pynbody server: notify %d that snapshot is unavailable", node)
+        ConfirmLoadPynbodySnapshot(None).send(node)
+
     def _load_next_if_free(self):
         if len(self.timestep_queue)==0:
             return
@@ -114,14 +118,29 @@ class PynbodySnapshotQueue:
             self.current_timestep = self.timestep_queue.pop(0)
             self.current_handler = self.handler_queue.pop(0)
 
-            self.current_snapshot = self.current_handler.load_timestep(self.current_timestep)
-            self.current_snapshot.physical_units()
-            log.logger.info("Pynbody server: loaded %r", self.current_timestep)
+            try:
+                self.current_snapshot = self.current_handler.load_timestep(self.current_timestep)
+                self.current_snapshot.physical_units()
+                log.logger.info("Pynbody server: loaded %r", self.current_timestep)
+                success = True
+            except OSError:
+                success = False
 
             notify = self.load_requester_queue.pop(0)
-            self.in_use_by = notify
-            for n in notify:
-                self._notify_available(n)
+
+            if success:
+                self.in_use_by = notify
+                for n in notify:
+                    self._notify_available(n)
+            else:
+                self.current_timestep = None
+                self.current_handler = None
+                self.current_snapshot = None
+
+                for n in notify:
+                    self._notify_unavailable(n)
+                self._load_next_if_free()
+
         else:
             log.logger.info("The currently loaded snapshot is still required and so other clients will have to wait")
             log.logger.info("(Currently %d snapshots are in the queue to be loaded later)", len(self.timestep_queue))
@@ -298,10 +317,11 @@ class RemoteSubSnap(pynbody.snapshot.SimSnap):
             log.logger.debug("Array received; waited %.2fs",time.time()-start_time)
         except KeyError:
             raise OSError("No such array %r available from the remote"%array_name)
-        if fam is None:
-            self[array_name] = data
-        else:
-            self[fam][array_name] = data
+        with self.auto_propagate_off:
+            if fam is None:
+                self[array_name] = data
+            else:
+                self[fam][array_name] = data
 
 
 _connection_active = False
@@ -316,7 +336,7 @@ class RemoteSnapshotConnection:
         if _connection_active:
             raise RuntimeError("Each client can only have one remote snapshot connection at any time")
 
-        _connection_active = True
+
 
         super().__init__()
 
@@ -324,6 +344,7 @@ class RemoteSnapshotConnection:
         self._input_handler = input_handler
         self.filename = ts_extension
         self.identity = "%d: %s"%(self._server_id, ts_extension)
+        self.connected = False
 
         # ensure server knows what our messages are about
         remote_import.ImportRequestMessage(__name__).send(self._server_id)
@@ -331,8 +352,11 @@ class RemoteSnapshotConnection:
         log.logger.debug("Pynbody client: attempt to connect to remote snapshot %r", ts_extension)
         RequestLoadPynbodySnapshot((input_handler, ts_extension)).send(self._server_id)
         self.underlying_pynbody_class = ConfirmLoadPynbodySnapshot.receive(self._server_id).contents
-        self.connected = True
+        if self.underlying_pynbody_class is None:
+            raise OSError("Could not load remote snapshot %r"%ts_extension)
 
+        _connection_active = True
+        self.connected = True
         log.logger.info("Pynbody client: connected to remote snapshot %r", ts_extension)
 
     def get_view(self, filter_or_object_spec):

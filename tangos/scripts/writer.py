@@ -8,7 +8,7 @@ def run_dbwriter(argv):
     from tangos.tools.property_writer import PropertyWriter
     writer = PropertyWriter()
     writer.parse_command_line(argv)
-    parallel_tasks.launch(writer.run_calculation_loop, 2, [])
+    parallel_tasks.launch(writer.run_calculation_loop,  [])
 
 def main():
     print("""
