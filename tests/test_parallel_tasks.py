@@ -4,8 +4,8 @@ import time
 import tangos
 import tangos.testing.simulation_generator
 from tangos import parallel_tasks as pt
-from tangos.parallel_tasks import testing as pt_testing
 from tangos import testing
+from tangos.parallel_tasks import testing as pt_testing
 
 
 def setup_module():

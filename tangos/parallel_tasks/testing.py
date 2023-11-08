@@ -7,7 +7,7 @@ def initialise_log():
         f.write("")
 
 def get_log():
-    with open(FILENAME, "r") as f:
+    with open(FILENAME) as f:
         return f.readlines()
 
 def log(message):
