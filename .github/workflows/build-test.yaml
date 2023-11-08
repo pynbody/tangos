@@ -22,7 +22,7 @@ jobs:
             sqlalchemy-version: "1.4"
           - python-version: "3.12"
             numpy-version: "1.22"
-        
+
     runs-on: ${{ matrix.os }}
     env:
       C: gcc-10
