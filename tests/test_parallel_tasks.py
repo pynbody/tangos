@@ -151,10 +151,6 @@ def _test_shared_locks_in_queue():
             pt_testing.log("exclusive lock about to be released")
     else:
         # shared mode
-        log = pt_testing.get_log()
-        while len(log)==0 or "exclusive lock" not in log[-1]:
-            time.sleep(0.02) # make sure the exclusive locks get requested first
-            log = pt_testing.get_log()
         with pt.lock.SharedLock("lock",0):
             # should be running after the exclusive locks are done
             pt_testing.log("shared lock acquired")
@@ -181,7 +177,27 @@ def test_shared_locks_in_queue():
     pt.launch(_test_shared_locks_in_queue)
     log = pt_testing.get_log()
     print("log:")
-    print("".join(log))
+
+    # we want to verify that shared locks were held simultaneously, but exclusive locks never were
+    lock_held = 0
+    for line in log:
+        print(line.strip())
+        if "exclusive lock acquired" in line:
+            assert lock_held==0
+            lock_held = 'exclusive'
+        elif "shared lock acquired" in line:
+            assert isinstance(lock_held, int)
+            lock_held += 1
+        elif "exclusive lock about to be released" in line:
+            assert lock_held=='exclusive'
+            lock_held = 0
+        elif "shared lock about to be released" in line:
+            assert isinstance(lock_held, int)
+            lock_held-=1
+        else:
+            assert False, "Unexpected line in log: "+line
+
+
     for i in range(0,4,2):
         assert log[i].strip()[4:] == "exclusive lock acquired"
         assert log[i].strip()[:3] == log[i+1].strip()[:3]
