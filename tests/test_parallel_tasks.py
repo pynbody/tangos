@@ -126,13 +126,14 @@ def test_synchronize_db_creator():
 
 
 def _test_shared_locks():
+    pt.backend.barrier()
     start_time = time.time()
     if pt.backend.rank()==1:
         # exclusive mode
-        time.sleep(0.05)
+        time.sleep(0.05) # make sure the exclusive lock isn't claimed before the first shared locks
         with pt.lock.ExclusiveLock("lock"):
             # should be running after the shared locks are done
-            assert time.time()-start_time>0.1
+            assert time.time()-start_time>0.095 # really should be >0.1, but allow for timing discrepancies
     else:
         # shared mode
         with pt.lock.SharedLock("lock"):
@@ -142,18 +143,19 @@ def _test_shared_locks():
     pt.backend.barrier()
 
 def _test_shared_locks_in_queue():
+    pt.backend.barrier()
     start_time = time.time()
     if pt.backend.rank() <=2 :
-        # exclusive mode
+        # two different processes going for the exclusive lock
         with pt.lock.ExclusiveLock("lock", 0):
             assert time.time() - start_time < 0.2
             time.sleep(0.1)
     else:
         # shared mode
-        time.sleep(0.1)
+        time.sleep(0.1) # make sure the exclusive locks get requested first
         with pt.lock.SharedLock("lock",0):
             # should be running after the exclusive locks are done
-            assert time.time() - start_time > 0.1
+            assert time.time() - start_time > 0.19 # really should be >0.2, but allow for timing discrepancies
             time.sleep(0.1)
         # should all have run in parallel
         assert time.time()-start_time<0.5
