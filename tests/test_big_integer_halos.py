@@ -15,7 +15,7 @@ def teardown_module():
     tangos.core.close_db()
 
 def test_big_integer_halo():
-    crazy_number = np.iinfo(np.dtype('uint64')).max - 10 # close to maximum but not the actual max, avoiding special case
+    crazy_number = np.iinfo(np.dtype('int64')).max - 10 # close to maximum but not the actual max, avoiding special case
 
     h  = Halo(db.get_timestep("sim/ts1"),1,crazy_number,1,0,0,0)
     session = db.core.get_default_session()

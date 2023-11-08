@@ -87,6 +87,11 @@ diff_default_atol = 1e-3
 # Default rtol for assert_amost_equal when using the diff tool
 diff_default_rtol = 1e-3
 
+
+# Database import: how many rows to copy at a time, and when to issue a commit
+DB_IMPORT_CHUNK_SIZE = 10
+DB_IMPORT_COMMIT_AFTER_CHUNKS = 500
+
 try:
     from .config_local import *
 except:

@@ -68,6 +68,7 @@ Index("halo_creator_index", SimulationObjectBase.__table__.c.creator_id)
 Index("halo_finder_index", SimulationObjectBase.__table__.c.finder_id)
 Index("haloproperties_creator_index", HaloProperty.__table__.c.creator_id)
 Index("halolink_index", HaloLink.__table__.c.halo_from_id)
+Index("halolink_bidirectional_index", HaloLink.__table__.c.halo_to_id, HaloLink.__table__.c.halo_from_id)
 Index("named_halolink_index", HaloLink.__table__.c.relation_id, HaloLink.__table__.c.halo_from_id)
 
 
