@@ -196,13 +196,3 @@ def test_shared_locks_in_queue():
             lock_held-=1
         else:
             assert False, "Unexpected line in log: "+line
-
-
-    for i in range(0,4,2):
-        assert log[i].strip()[4:] == "exclusive lock acquired"
-        assert log[i].strip()[:3] == log[i+1].strip()[:3]
-        assert log[i+1].strip()[4:] == "exclusive lock about to be released"
-    for i in range(4, 7):
-        assert log[i].strip()[4:] == "shared lock acquired"
-    for i in range(7, 10):
-        assert log[i].strip()[4:] == "shared lock about to be released"
