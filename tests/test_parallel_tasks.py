@@ -143,17 +143,17 @@ def _test_shared_locks():
     pt.backend.barrier()
 
 def _test_shared_locks_in_queue():
-    pt.backend.barrier()
     start_time = time.time()
     if pt.backend.rank() <=2 :
         # two different processes going for the exclusive lock
         with pt.lock.ExclusiveLock("lock", 0):
+            pt.backend.barrier()
             pt_testing.log("exclusive lock acquired")
             time.sleep(0.1)
             pt_testing.log("exclusive lock about to be released")
     else:
         # shared mode
-        time.sleep(0.1) # make sure the exclusive locks get requested first
+        pt.backend.barrier() # make sure the exclusive locks get requested first
         with pt.lock.SharedLock("lock",0):
             # should be running after the exclusive locks are done
             pt_testing.log("shared lock acquired")
