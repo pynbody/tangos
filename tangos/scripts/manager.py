@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 import tangos as db
 from tangos import config, core, parallel_tasks
-from tangos.core import Creator, DictionaryItem, Simulation
+from tangos.core import Creator, Simulation
 from tangos.core.tracking import TrackData
 from tangos.input_handlers import get_named_handler_class
 from tangos.log import logger

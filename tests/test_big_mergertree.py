@@ -31,7 +31,6 @@ def setup_module():
             nhalos_this_timestep = min(N_HALOS_FINAL *
                                        N_BRANCHES_PER_TIMESTEP**(N_TIMESTEPS-i)
                                        , MAX_HALOS)
-            print("TS", i, ts)
             generator.add_objects_to_timestep(nhalos_this_timestep, NDM=np.arange(1,nhalos_this_timestep+1)[::-1])
             if n_halos_previous_timestep is not None:
                 assert nhalos_this_timestep <= n_halos_previous_timestep
@@ -51,10 +50,8 @@ def test_major_progenitors():
 
 def test_merger_tree():
     mt = tree.MergerTree(tangos.get_halo("%/ts15/1"))
-    import time
-    start = time.perf_counter()
     mt.construct()
-    print("TIME=",time.perf_counter()-start)
+
 
     assert mt.summarise() == ("1(1(1(1(1(1(1(1(1(1(1(1(1(1(1))))))))),65(65(65(65(65(65(65(65(65(65)))))))))),"
                             "33(33(33(33(33(33(33(33(33(33(33))))))))),97(97(97(97(97(97(97(97(97(97))))))))))),"
@@ -75,7 +72,10 @@ def test_merger_tree():
 
 def manual_test():
     setup_module()
+    import time
+    start = time.perf_counter()
     test_merger_tree()
+    print("Time taken = ", time.perf_counter() - start)
 
 if __name__=="__main__":
     manual_test()

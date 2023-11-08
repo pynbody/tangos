@@ -56,8 +56,6 @@ def test_import():
     differ = diff.TangosDbDiff(new_session, reference_session)
     differ.compare_simulation("sim_existing")
 
-    # NB this SHOULD be failing right now! The dictionary is corrupt and it should pick up on that.
-
     assert not differ.failed, "Import process has corrupted existing simulation in database; see log for details"
 
 
