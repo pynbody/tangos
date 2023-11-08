@@ -4,6 +4,7 @@ import time
 import tangos
 import tangos.testing.simulation_generator
 from tangos import parallel_tasks as pt
+from tangos.parallel_tasks import testing as pt_testing
 from tangos import testing
 
 
@@ -132,14 +133,13 @@ def _test_shared_locks():
         # exclusive mode
         time.sleep(0.05) # make sure the exclusive lock isn't claimed before the first shared locks
         with pt.lock.ExclusiveLock("lock"):
+            pt_testing.log("exclusive lock acquired")
             # should be running after the shared locks are done
-            assert time.time()-start_time>0.09 # really should be >0.1, but allow for timing discrepancies
     else:
         # shared mode
         with pt.lock.SharedLock("lock"):
             # should not have waited for the other shared locks
-            assert time.time() - start_time < 0.1
-            time.sleep(0.1)
+            pt_testing.log("shared lock acquired")
     pt.backend.barrier()
 
 def _test_shared_locks_in_queue():
@@ -148,21 +148,39 @@ def _test_shared_locks_in_queue():
     if pt.backend.rank() <=2 :
         # two different processes going for the exclusive lock
         with pt.lock.ExclusiveLock("lock", 0):
-            assert time.time() - start_time < 0.15
+            pt_testing.log("exclusive lock acquired")
             time.sleep(0.1)
+            pt_testing.log("exclusive lock about to be released")
     else:
         # shared mode
         time.sleep(0.1) # make sure the exclusive locks get requested first
         with pt.lock.SharedLock("lock",0):
             # should be running after the exclusive locks are done
-            assert time.time() - start_time > 0.15 # really should be >0.2, but allow for timing discrepancies
+            pt_testing.log("shared lock acquired")
             time.sleep(0.1)
+            pt_testing.log("shared lock about to be released")
         # should all have run in parallel
         assert time.time()-start_time<0.5
     pt.backend.barrier()
 
 def test_shared_locks():
+    pt_testing.initialise_log()
     pt.use("multiprocessing-4")
     pt.launch(_test_shared_locks)
+    log = pt_testing.get_log()
+    for i in range(2):
+      assert log[i].strip() in ("[2] shared lock acquired", "[3] shared lock acquired")
+    assert log[2].strip() == "[1] exclusive lock acquired"
+
+    pt_testing.initialise_log()
     pt.use("multiprocessing-6")
     pt.launch(_test_shared_locks_in_queue)
+    log = pt_testing.get_log()
+    for i in range(0,4,2):
+        assert log[i].strip()[4:] == "exclusive lock acquired"
+        assert log[i].strip()[:3] == log[i+1].strip()[:3]
+        assert log[i+1].strip()[4:] == "exclusive lock about to be released"
+    for i in range(4, 7):
+        assert log[i].strip()[4:] == "shared lock acquired"
+    for i in range(7, 10):
+        assert log[i].strip()[4:] == "shared lock about to be released"
