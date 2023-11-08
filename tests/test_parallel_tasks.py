@@ -168,14 +168,19 @@ def test_shared_locks():
     pt.use("multiprocessing-4")
     pt.launch(_test_shared_locks)
     log = pt_testing.get_log()
+    print("log:")
+    print("".join(log))
     for i in range(2):
       assert log[i].strip() in ("[2] shared lock acquired", "[3] shared lock acquired")
     assert log[2].strip() == "[1] exclusive lock acquired"
 
+def test_shared_locks_in_queue():
     pt_testing.initialise_log()
     pt.use("multiprocessing-6")
     pt.launch(_test_shared_locks_in_queue)
     log = pt_testing.get_log()
+    print("log:")
+    print("".join(log))
     for i in range(0,4,2):
         assert log[i].strip()[4:] == "exclusive lock acquired"
         assert log[i].strip()[:3] == log[i+1].strip()[:3]
