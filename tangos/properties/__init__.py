@@ -1,8 +1,8 @@
 import functools
 import importlib
 import os
-import warnings
 import sys
+import warnings
 from importlib.metadata import entry_points
 
 import numpy as np
