@@ -573,7 +573,7 @@ def _get_entry_points():
     if sys.version_info >= (3, 10):
         return entry_points(group='tangos.property_modules')
     else:
-        return entry_points()['tangos.property_modules']
+        return entry_points().get('tangos.property_modules', [])
 
 def _import_configured_property_modules():
     if "PYTEST_CURRENT_TEST" in os.environ:
