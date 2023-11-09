@@ -16,13 +16,13 @@ class HaloLink(Base):
 
     halo_from = relationship(SimulationObjectBase, primaryjoin=halo_from_id == SimulationObjectBase.id,
                              backref=backref('links', cascade_backrefs=False,
-                                             lazy='dynamic',
+                                             lazy='dynamic', viewonly=True,
                                              primaryjoin=halo_from_id == SimulationObjectBase.id),
                              cascade='')
 
     halo_to = relationship(SimulationObjectBase, primaryjoin=(halo_to_id == SimulationObjectBase.id),
                            backref=backref('reverse_links', cascade_backrefs=False,
-                                           lazy='dynamic',
+                                           lazy='dynamic', viewonly=True,
                                            primaryjoin=halo_to_id == SimulationObjectBase.id),
                            cascade='')
 
