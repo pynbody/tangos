@@ -2,14 +2,13 @@ import functools
 import importlib
 import os
 import warnings
+from importlib.metadata import entry_points
 
 import numpy as np
-import pkg_resources
-
-from tangos.util import timing_monitor
 
 from .. import input_handlers, parallel_tasks
 from ..log import logger
+from ..util import timing_monitor
 
 
 class PropertyCalculationMetaClass(type):
@@ -582,7 +581,7 @@ def _import_configured_property_modules():
         except ImportError:
             warnings.warn("Failed to import requested property module %r. Some properties may be unavailable."%pm,
                           ImportWarning)
-    for module in pkg_resources.iter_entry_points('tangos.property_modules'):
+    for module in entry_points(group='tangos.property_modules'):
         module.load()
 
 _import_configured_property_modules()
