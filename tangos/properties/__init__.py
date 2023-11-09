@@ -2,6 +2,7 @@ import functools
 import importlib
 import os
 import warnings
+import sys
 from importlib.metadata import entry_points
 
 import numpy as np
@@ -568,6 +569,12 @@ def instantiate_class(simulation, property_name, silent_fail=False):
     else:
         return instance[0]
 
+def _get_entry_points():
+    if sys.version_info >= (3, 10):
+        return entry_points(group='tangos.property_modules')
+    else:
+        return entry_points()['tangos.property_modules']
+
 def _import_configured_property_modules():
     if "PYTEST_CURRENT_TEST" in os.environ:
         warnings.warn("Not importing external property modules during testing", ImportWarning)
@@ -581,7 +588,7 @@ def _import_configured_property_modules():
         except ImportError:
             warnings.warn("Failed to import requested property module %r. Some properties may be unavailable."%pm,
                           ImportWarning)
-    for module in entry_points(group='tangos.property_modules'):
+    for module in _get_entry_points():
         module.load()
 
 _import_configured_property_modules()
