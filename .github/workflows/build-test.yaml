@@ -13,10 +13,16 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.8, 3.9, "3.10", "3.11"]
+        python-version: [3.9, "3.10", "3.11", "3.12"]
         sqlalchemy-version: ["1.4", "2.0"]
-        numpy-version: ["1.18", "1.22"]
+        numpy-version: ["1.22", "1.26"]
         TANGOS_TESTING_DB_BACKEND: [sqlite, mysql+pymysql, postgresql+psycopg2]
+        exclude:
+          - python-version: "3.12"
+            sqlalchemy-version: "1.4"
+          - python-version: "3.12"
+            numpy-version: "1.22"
+
     runs-on: ${{ matrix.os }}
     env:
       C: gcc-10
@@ -55,10 +61,10 @@ jobs:
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        python -m pip install numpy~=${{ matrix.numpy-version}} scipy "matplotlib<3.3.0" pytest h5py pip webtest pyquery sphinx pygments pandas sqlalchemy~=${{ matrix.sqlalchemy-version}} cython pyramid ipython pyramid_mako PyMySQL[rsa] psycopg2-binary
+        python -m pip install numpy~=${{ matrix.numpy-version}} sqlalchemy~=${{ matrix.sqlalchemy-version}}
     - name: Build and install tangos
       run: |
-        python setup.py develop
+        pip install -e .[test,rmdbs]
     - name: Check that tangos can import without pynbody
       run: |
          python -c "import tangos"

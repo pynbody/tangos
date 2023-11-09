@@ -113,7 +113,7 @@ class ConsistentTreesImporter(GenericTangosTool):
         props = []
         for o in objs.values():
             if isinstance(o, PhantomHalo):
-                tree_id = id_to_tree_id.get(-o.finder_id, None)
+                tree_id = id_to_tree_id.get(-int(o.finder_id), None)
             else:
                 tree_id = id_to_tree_id.get(o.finder_id, None)
             if tree_id is not None:
