@@ -20,7 +20,7 @@ def _create_dummy_simsnap():
     f['pos'].units="Mpc"
     f['vel'] = np.zeros((2097152, 3)).view(pynbody.array.SimArray)
     f['vel'].units = "km s^-1"
-    f['mass'] = np.zeros(2097152).view(pynbody.array.SimArray)
+    f['mass'] = np.ones(2097152).view(pynbody.array.SimArray)
     f['mass'].units="Msol"
     f.properties['boxsize'] = pynbody.units.Unit("50 Mpc")
     return f
