@@ -4,7 +4,7 @@ Advanced topics
 _Tangos_ is a highly flexible, customisable system. Tutorials are available covering the following
 topics:
 
- - Working with [different database systems](dbms.md) (e.g. MySQL and PostgreSQL)
+ - Working with [different database systems](rdbms.md) (e.g. MySQL and PostgreSQL)
  - Writing code to [calculate your own properties](custom_properties.md)
  - [Tracking](tracking.md) groups of particles across timesteps
  - [Parallelisation strategies](mpi.md)
