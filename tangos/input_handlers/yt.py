@@ -193,7 +193,7 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         yield from zip(range(Nhalo), range(Nhalo), *(
             ad[_] for _ in props_with_ftype
         ))
-        
+
 
 class YtRamsesRockstarInputHandler(YtInputHandler):
     patterns = ["output_0????"]
