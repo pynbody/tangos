@@ -13,6 +13,8 @@ from sqlalchemy.orm import defer, relationship
 
 from .. import config, core, temporary_halolist
 from ..config import DOUBLE_PRECISION
+from ..log import logger
+from ..util.timing_monitor import TimingMonitor
 from .one_hop import HopStrategy
 
 
@@ -89,6 +91,7 @@ class MultiHopStrategy(HopStrategy):
         self._combine_routes = combine_routes
         self._debug_output = False # set to True to see information about discovered links as hops progress
 
+        self.timing_monitor = TimingMonitor()
     def temp_table(self):
         """Execute the strategy and return results as a temp_table (see temporary_halolist module)"""
         if self._all is None:
@@ -119,7 +122,10 @@ class MultiHopStrategy(HopStrategy):
         with self._manage_temp_table():
             self._generate_multihop_results()
             try:
-                results = self._order_query(self._generate_query(halo_ids_only=False)).all()
+                q = self._order_query(self._generate_query(halo_ids_only=False))
+                results = q.all()
+                # NB the time here seems to be mainly making the ORM objects
+                # rather than the query itself
             except sqlalchemy.exc.ResourceClosedError:
                 results = []
 
@@ -230,6 +236,7 @@ class MultiHopStrategy(HopStrategy):
         )
 
         self._table_index = Index('temp.source_id_index_' + rstr, multi_hop_link_table.c.source_id, multi_hop_link_table.c.nhops)
+        self._table_nhop_index = Index('temp.nhop_index_' + rstr, multi_hop_link_table.c.nhops)
 
         self._table = multi_hop_link_table
         self._prelim_table = multi_hop_link_prelim_table
@@ -252,12 +259,15 @@ class MultiHopStrategy(HopStrategy):
 
     def _make_hops(self):
         for i in range(0, self.nhops_max):
-            self._nhops_taken = i
-            generated_count = self._generate_next_level_prelim_links(i)
-            if generated_count != 0:
-                filtered_count = self._filter_prelim_links_into_final()
-            else:
-                filtered_count = 0
+            with self.timing_monitor(self):
+                self._nhops_taken = i
+                generated_count = self._generate_next_level_prelim_links(i)
+                if generated_count != 0:
+                    filtered_count = self._filter_prelim_links_into_final()
+                else:
+                    filtered_count = 0
+
+            # for performance info: self.timing_monitor.summarise_timing(logger)
 
             if self._hopping_finished(filtered_count):
                 break
@@ -267,7 +277,7 @@ class MultiHopStrategy(HopStrategy):
         return filtered_count==0
 
     def _generate_next_level_prelim_links(self, from_nhops=0):
-
+        self.timing_monitor.mark('prelim-insert')
         new_weight = self._table.c.weight * core.halo_data.HaloLink.weight
 
         recursion_query = \
@@ -289,6 +299,7 @@ class MultiHopStrategy(HopStrategy):
 
         num_inserted = self._connection.execute(insert).rowcount
 
+        self.timing_monitor.mark('prelim-thin')
         if self._combine_routes:
             # Ideally, before self._prelim_table.insert(), one would adapt recursion_query to return the argmax of
             # new_weight, grouped by halo_to_id and source_id. That could have been achieved using:
@@ -327,6 +338,7 @@ class MultiHopStrategy(HopStrategy):
             print(f"[s{row[2]} i{row[4]}] {row[0].path} -> {row[1].path} w={row[3]:.2f}")
 
     def _filter_prelim_links_into_final(self):
+        self.timing_monitor.mark('final-insert')
         if self._debug_output:
             print()
             print(f"[{self._nhops_taken}] Preliminary links:")
@@ -346,9 +358,10 @@ class MultiHopStrategy(HopStrategy):
                                              q)).rowcount
 
         if self._debug_output:
-            print(f"[{self._nhops_taken}] Accepted links:")
+            logger.info(f"[{self._nhops_taken}] Accepted links:")
             self._debug_print_links(self._table)
 
+        self.timing_monitor.mark('final-thin')
         self._connection.execute(self._prelim_table.delete())
         return added_rows
 

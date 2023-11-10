@@ -104,12 +104,14 @@ class TangosDbDiff:
 
 
     def _joined_links_load(self, parent):
-        return object_session(parent).query(core.HaloLink).with_parent(parent, type(parent).all_links).\
-            options(joinedload(core.HaloLink.halo_to))
+        return (object_session(parent).query(core.HaloLink).where(
+            core.HaloLink.halo_from_id == parent.id
+        ).options(joinedload(core.HaloLink.halo_to)))
 
     def _joined_properties_load(self, parent):
-        return object_session(parent).query(core.HaloProperty).with_parent(parent, type(parent).all_properties).\
-            options(undefer("*")).options(joinedload(core.HaloProperty.name))
+        return object_session(parent).query(core.HaloProperty).where(
+            core.HaloProperty.halo_id == parent.id
+        ).options(undefer("*")).options(joinedload(core.HaloProperty.name))
 
     def compare_object(self, obj):
         obj1 = get_object(obj, self.session1)
@@ -118,7 +120,10 @@ class TangosDbDiff:
 
     def _compare_objects(self, obj1, obj2):
         properties1 = {prop.name.text: prop.data_raw for prop in self._joined_properties_load(obj1)}
-        properties2 = {prop.name.text: prop.data_raw for prop in self._joined_properties_load(obj2)}
+        properties2 = {
+            prop.name.text: prop.data_raw
+            for prop in self._joined_properties_load(obj2)
+        }
 
         self._check_dict_same(properties1, properties2, obj1.path)
 

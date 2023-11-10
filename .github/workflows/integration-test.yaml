@@ -56,10 +56,9 @@ jobs:
       working-directory: test_tutorial_build
       run: |
         wget https://zenodo.org/record/10051592/files/reference_database.db?download=1 -O reference_database.db -nv
-        tangos diff data.db reference_database.db --property-tolerance dm_density_profile 1e-2 0
+        tangos diff data.db reference_database.db --property-tolerance dm_density_profile 1e-2 0 --property-tolerance gas_map 1e-2 0 --property-tolerance gas_map_sideon 1e-2 0 --property-tolerance gas_map_faceon 1e-2 0
       # --property-tolerance dm_density_profile here is because if a single particle crosses between bins
       # (which seems to happen due to differing library versions), the profile can change by this much
       #
-      # previously had:
+      # Images also occasionally differ by one or two particles. To deal with this previously had:
       # --ignore-value-of gas_map gas_map_faceon gas_map_sideon uvi_image uvi_image_sideon uvi_image_faceon
-      # ignore-value-of above is a clunky fix for the use of 'approximate fast' images -- is it needed any longer?

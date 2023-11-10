@@ -21,7 +21,8 @@ install_requires = [
     'hupper',
     'scipy >= 0.14.0',
     'more_itertools >= 8.0.0',
-    'matplotlib >= 3.0.0' # for web interface
+    'matplotlib >= 3.0.0', # for web interface
+    'tqdm >= 4.59.0'
     ]
 
 tests_require = [
@@ -71,6 +72,7 @@ setup(name='tangos',
           "Programming Language :: Python :: 3.9",
           "Programming Language :: Python :: 3.10",
           "Programming Language :: Python :: 3.11",
+          "Programming Language :: Python :: 3.12",
           "License :: OSI Approved :: BSD License",
       ],
       author="Andrew Pontzen",
@@ -99,5 +101,9 @@ setup(name='tangos',
       tests_require=tests_require,
       test_suite="tests",
       long_description=long_description,
-      long_description_content_type='text/markdown'
+      long_description_content_type='text/markdown',
+      extras_require={'test': tests_require,
+                      'rmdbs': ['PyMySQL[rsa]',
+                                'psycopg2-binary']
+                      }
       )
