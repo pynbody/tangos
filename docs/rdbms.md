@@ -14,10 +14,10 @@ There are two major, related drawbacks to SQLite. The first is that to access it
 the file, and there is no automated way to keep files synchronised between hosts. (Probably the best
 thing to do is to write to the database only on one cluster, and then `rsync` it to the relevant
 analysis machines.) The second is that it is not really designed for parallel writes, so when tangos
-is writing to the database it must manually try to synchronise writes between different workers. 
+is writing to the database it must manually try to synchronise writes between different workers.
 Tangos does a pretty good job of this, but some network file systems can be slow at releasing file
 locks that SQLite uses extensively. If you run into errors about 'database is locked', you have reached
-the limit of how many tangos processes can safely write to SQLite simultaneously. 
+the limit of how many tangos processes can safely write to SQLite simultaneously.
 
 PostgreSQL and MySQL
 --------------------
@@ -67,10 +67,10 @@ export TANGOS_DB_CONNECTION=postgresql+psycopg2://tangos:my_secret_password@loca
  You can now create new users that can access your mysql server with their own username and password.
 
  ```bash
- echo "create user 'my_new_user'@'%' identified by 'new_password';" | docker exec -i mysql-server mysql -pmy_secret_password 
+ echo "create user 'my_new_user'@'%' identified by 'new_password';" | docker exec -i mysql-server mysql -pmy_secret_password
  ```
 
- Note that in MySQL the `%` acts as a wild card, so this command creates a new user 
+ Note that in MySQL the `%` acts as a wild card, so this command creates a new user
  logging in from any host.
 
  The new user would then connect to the database:
@@ -82,7 +82,7 @@ export TANGOS_DB_CONNECTION=postgresql+psycopg2://tangos:my_secret_password@loca
 The database can be accessed remotely if allowed by any applicable firewalls, by replacing `localhost`
 with the actual host like `fancy_computer.astro.fancy_school.edu`. Note, however, that
 running a database server open to the world has security implications and may be disallowed by
-relevant institutions. The simplest approach, rather than opening up firewalls, is to tunnel in. 
+relevant institutions. The simplest approach, rather than opening up firewalls, is to tunnel in.
 For example, the server can be accessed as though it's running on `localhost` if the user
 first ssh tunnels into `fancy_computer.astro.fancy_school.edu`:
 
@@ -95,9 +95,9 @@ additional permissions should be done on a case-by-case basis. Only the root use
 do this by defualt. To give a user complete permission to edit an existing database:
 
  ```bash
- echo "grant all on database_name.* to 'new_user'@'%';" | docker exec -i mysql-server mysql -pmy_secret_password  
- echo "flush privileges;" | docker exec -i mysql-server mysql -pmy_secret_password  
+ echo "grant all on database_name.* to 'new_user'@'%';" | docker exec -i mysql-server mysql -pmy_secret_password
+ echo "flush privileges;" | docker exec -i mysql-server mysql -pmy_secret_password
  ```
 
- You (and whatever users you choose) can now use all the tangos tools as normal, and they will 
+ You (and whatever users you choose) can now use all the tangos tools as normal, and they will
  populate the MySQL/PostgreSQL database instead of a SQLite file.
