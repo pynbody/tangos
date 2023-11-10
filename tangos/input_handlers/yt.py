@@ -132,12 +132,6 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
             cat.append(list(zip(idhalo2, weights)))
 
-            #mport pdb
-            #pdb.set_trace()
-
-        #import pdb
-        #pdb.set_trace()
-
         return cat
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
@@ -182,6 +176,11 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
 
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
+        try:
+            yield from super().iterate_object_properties_for_timestep(ts_extension, object_typetag, property_names)
+            return
+        except OSError:
+            pass
         h, ad = self._load_halo_cat(ts_extension, object_typetag)
 
         props_with_ftype = [
@@ -191,11 +190,10 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         ad.get_data(props_with_ftype)
 
         Nhalo = len(ad["halos", "particle_identifier"])
-        data = zip(range(Nhalo), range(Nhalo), *(
+        yield from zip(range(Nhalo), range(Nhalo), *(
             ad[_] for _ in props_with_ftype
         ))
-
-        return data
+        
 
 class YtRamsesRockstarInputHandler(YtInputHandler):
     patterns = ["output_0????"]
