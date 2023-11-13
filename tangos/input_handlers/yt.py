@@ -231,8 +231,8 @@ class YtRamsesRockstarInputHandler(YtInputHandler):
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
             yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
         else:
-            #logger.warn("No halo statistics file found for timestep %r", ts_extension)
-            #logger.warn(" => enumerating %ss directly using yt", object_typetag)
+            logger.warn("No halo statistics file found for timestep %r", ts_extension)
+            logger.warn(" => enumerating %ss directly using yt", object_typetag)
 
             _catalogue, catalogue_data = self._load_halo_cat(ts_extension, object_typetag)
             num_objects = len(catalogue_data["halos", "virial_radius"])
