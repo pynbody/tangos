@@ -150,7 +150,7 @@ class SimulationAdderUpdater:
                 halos.append(h)
 
         with pt.ExclusiveLock("db_write_lock"):
-            if (create_class.__name__ != "Group"):
+            if create_class.__name__ != "Group":
                 logger.info("Add %d %ss to timestep %r", len(halos), create_class.__name__, ts)
             self.session.add_all(halos)
             self.session.commit()
