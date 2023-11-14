@@ -1,8 +1,5 @@
-import os
-
 import tangos
-import tangos.scripts.db_importer
-import tangos.scripts.manager as manager
+import tangos.tools.db_importer
 import tangos.testing as testing
 import tangos.testing.db_diff as diff
 import tangos.testing.simulation_generator
@@ -38,13 +35,17 @@ def teardown_module():
 
 
 def test_import():
-    existing_session = tangos.get_default_session()
+    source_engine = tangos.core.get_default_engine()
+    source_session = tangos.get_default_session()
     testing.init_blank_db_for_testing(testing_db_name='imported_db_test')
     _populate_existing_simulation()
 
+    importer = tangos.tools.db_importer.DBImporter()
+    importer.parse_command_line([source_engine.url])
+    importer.run_calculation_loop()
+
     new_session = tangos.get_default_session()
-    tangos.scripts.db_importer._db_import_export(new_session, existing_session)
-    differ = diff.TangosDbDiff(existing_session, new_session)
+    differ = diff.TangosDbDiff(source_session, new_session)
     differ.compare_simulation("sim")
 
     assert not differ.failed, "Copied database differs; see log for details"
@@ -69,3 +70,16 @@ def _populate_existing_simulation():
     creator.add_objects_to_timestep(3)
     creator.add_properties_to_halos(prop=lambda i: i*2)
     creator.link_last_halos()
+
+
+def test_import_filtered():
+    existing_engine = tangos.core.get_default_engine()
+    testing.init_blank_db_for_testing(testing_db_name='imported_db_test')
+    _populate_existing_simulation()
+
+    importer = tangos.tools.db_importer.DBImporter()
+    importer.parse_command_line([existing_engine.url, "--exclude-properties", "Mvir"])
+    importer.run_calculation_loop()
+
+    assert "Mvir" not in tangos.get_halo("sim/ts1/halo_1").keys()
+    assert "Mvir" in tangos.get_halo("sim_existing/ts1/halo_1").keys()
