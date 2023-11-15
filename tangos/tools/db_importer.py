@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import Column
 from typing import Optional
 
+from sqlalchemy import MetaData
 from tangos import Base, Creator, DictionaryItem, core
 from tangos.config import DB_IMPORT_CHUNK_SIZE, DB_IMPORT_COMMIT_AFTER_CHUNKS
 from tangos.core import (HaloLink, HaloProperty, Simulation, SimulationObjectBase,
@@ -76,8 +77,6 @@ def _db_import_export(target_session, from_session, exclusion_information = None
     5) Indexes and foreign keys are recreated on the target
     """
 
-    from sqlalchemy.schema import DropTable
-
     target_connection = target_session.connection()
     from_connection = from_session.connection()
 
@@ -115,6 +114,7 @@ def _db_import_export(target_session, from_session, exclusion_information = None
         target_connection.commit()
 
     finally:
+        from_session.close()
         target_connection.rollback()
 
         print("Recreating indexes...")
@@ -124,7 +124,13 @@ def _db_import_export(target_session, from_session, exclusion_information = None
         _create_foreign_keys(target_session)
 
         print("Dropping temporary dictionary table...")
-        target_connection.execute(DropTable(temp_dict))
+        temp_dict.drop(target_connection)
+
+        target_connection.commit()
+
+        target_session.close()
+
+
 def _copy_table(from_connection, target_connection, orm_class, offsets, destination_table=None,
                 exclusion_information: Optional[dict[Column, list[int]]]=None):
     import tqdm
@@ -144,7 +150,10 @@ def _copy_table(from_connection, target_connection, orm_class, offsets, destinat
 
     num_rows = from_connection.execute(select(func.count(table.c.id)).filter(query_filter)).scalar()
 
-    id_offset = target_connection.execute(select(func.max(table.c.id)).filter(query_filter)).scalar()
+    id_offset = target_connection.execute(select(func.max(table.c.id))).scalar()
+    # NB no query_filter should be applied here because we want to know the maximum id in the existing table
+    # which may include rows that would be excluded by the filter
+
     if id_offset is None:
         id_offset = 0
 
@@ -243,7 +252,7 @@ def _get_import_columns_with_required_offsets(table, offsets):
 
 
 def _drop_foreign_keys(session):
-    from sqlalchemy import ForeignKeyConstraint, MetaData, Table
+    from sqlalchemy import ForeignKeyConstraint, Table
     from sqlalchemy.engine import reflection
     from sqlalchemy.schema import AddConstraint, DropConstraint
 
@@ -382,13 +391,15 @@ def _temporary_to_permanent_dictionary(connection, temp_dict_table):
 
 
 def _create_temporary_dictionary(connection):
-    from sqlalchemy import Column, Integer, String, Table
+    from sqlalchemy import Column, Integer, String, Table, select
     from sqlalchemy.schema import CreateTable
 
     dict_table = DictionaryItem.__table__
 
+    # we don't want our table to be associated with the main database schema
+    temporary_metadata = MetaData()
     # create a table like the dictionary table, but without the unique constraint
-    temp_dict_table = Table("temporary_dictionary", Base.metadata,
+    temp_dict_table = Table("temporary_dictionary", temporary_metadata,
                             Column("id", Integer, primary_key=True),
                             Column("text", String(128)))
     connection.execute(CreateTable(temp_dict_table))
