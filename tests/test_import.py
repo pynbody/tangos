@@ -1,9 +1,11 @@
 import pytest
+
 import tangos
-import tangos.tools.db_importer
 import tangos.testing as testing
 import tangos.testing.db_diff as diff
 import tangos.testing.simulation_generator
+import tangos.tools.db_importer
+
 
 @pytest.fixture
 def source_engine_and_session():

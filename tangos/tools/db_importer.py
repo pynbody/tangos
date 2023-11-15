@@ -1,19 +1,20 @@
 import sys
-
-import sqlalchemy, sqlalchemy.sql.elements
-import tqdm
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.schema import Column
 from typing import Optional
 
-from sqlalchemy import MetaData
+import sqlalchemy
+import sqlalchemy.sql.elements
+import tqdm
+from sqlalchemy import MetaData, create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.schema import Column
+
 from tangos import Base, Creator, DictionaryItem, core
 from tangos.config import DB_IMPORT_CHUNK_SIZE, DB_IMPORT_COMMIT_AFTER_CHUNKS
-from tangos.core import (HaloLink, HaloProperty, Simulation, SimulationObjectBase,
-                         SimulationProperty, TimeStep)
+from tangos.core import (HaloLink, HaloProperty, Simulation,
+                         SimulationObjectBase, SimulationProperty, TimeStep)
 
 from . import GenericTangosTool
+
 
 class DBImporter(GenericTangosTool):
     parallel = False
