@@ -14,7 +14,6 @@ from tangos.core.tracking import TrackData
 from tangos.input_handlers import get_named_handler_class
 from tangos.log import logger
 from tangos.query import get_halo, get_simulation
-from tangos.scripts.db_importer import db_import
 from tangos.tools.add_simulation import SimulationAdderUpdater
 
 
@@ -399,13 +398,6 @@ def get_argument_parser_and_subparsers():
     subparse_remruns.add_argument("sims", help="The path to the simulation folder relative to the database folder")
     subparse_remruns.set_defaults(func=rem_simulation_timesteps)
      """
-
-    subparse_import = subparse.add_parser("import",
-                                          help="Import from a different database (e.g. useful to load sqlite data onto a server).")
-    subparse_import.add_argument("file", type=str, help="The filename of the sqlite file, or a sqlalchemy URI, from which to import")
-    subparse_import.set_defaults(func=db_import)
-
-
 
     subparse_deprecate = subparse.add_parser("flag-duplicates",
                                              help="Flag old copies of properties and duplicate links (if they are present)")
