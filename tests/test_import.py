@@ -90,7 +90,7 @@ def test_import(source_engine_and_session, destination_engine_and_session):
 def _get_importer_instance(source_engine, *args):
     importer = tangos.tools.db_importer.DBImporter()
     importer.parse_command_line((source_engine.url,) + args)
-    importer.options.file = source_engine
+    importer.options.files = [source_engine]
     # this looks weird, but it's just making the importer use the engine that we already made
     # if we pass only the URL, it gets cast to a string which makes any passwords into
     # strings of asterisks, which then get passed to the engine and cause it to fail
