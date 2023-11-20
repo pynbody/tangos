@@ -9,6 +9,7 @@ import tangos
 import tangos.input_handlers.pynbody
 import tangos.parallel_tasks as pt
 import tangos.parallel_tasks.pynbody_server as ps
+import tangos.parallel_tasks.pynbody_server.snapshot_queue
 
 
 class _TestHandler(tangos.input_handlers.pynbody.ChangaInputHandler):
@@ -32,8 +33,8 @@ def teardown_module():
 def _get_array():
     test_filter = pynbody.filt.Sphere('5000 kpc')
     for fname in pt.distributed(["tiny.000640", "tiny.000832"]):
-        ps.RequestLoadPynbodySnapshot((handler, fname)).send(0)
-        ps.ConfirmLoadPynbodySnapshot.receive(0)
+        ps.snapshot_queue.RequestLoadPynbodySnapshot((handler, fname)).send(0)
+        ps.snapshot_queue.ConfirmLoadPynbodySnapshot.receive(0)
 
         ps.RequestPynbodyArray(test_filter, "pos").send(0)
 
@@ -42,13 +43,35 @@ def _get_array():
         remote_result =  ps.ReturnPynbodyArray.receive(0).contents
         assert (f_local[test_filter]['pos']==remote_result).all()
 
-        ps.ReleasePynbodySnapshot().send(0)
+        ps.snapshot_queue.ReleasePynbodySnapshot().send(0)
 
 
 def test_get_array():
     pt.use("multiprocessing-3")
     pt.launch(_get_array)
 
+
+def _get_shared_array():
+    if pt.backend.rank()==1:
+        shared_array = pynbody.array._array_factory((10,), int, True, True)
+        shared_array[:] = np.arange(0,10)
+        pt.pynbody_server.transfer_array.send_array(shared_array, 2, True)
+        assert shared_array[2]==2
+        pt.barrier()
+        # change the value, to be checked in the other process
+        shared_array[2] = 100
+        pt.barrier()
+    elif pt.backend.rank()==2:
+        shared_array = pt.pynbody_server.transfer_array.receive_array(2, True)
+        assert shared_array[2]==2
+        pt.barrier()
+        # now the other process should be changing the value
+        pt.barrier()
+        assert shared_array[2]==100
+
+def test_get_shared_array():
+    pt.use("multiprocessing-3")
+    pt.launch(_get_shared_array)
 
 def _test_simsnap_properties():
     test_filter = pynbody.filt.Sphere('5000 kpc')
@@ -96,7 +119,7 @@ def test_nonexistent_array():
 
 def _test_halo_array():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.ObjectSpecification(1, 1))
+    f = conn.get_view(ps.snapshot_queue.ObjectSpecification(1, 1))
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
     assert len(f)==len(f_local)
     assert (f['x'] == f_local['x']).all()
@@ -109,7 +132,7 @@ def test_halo_array():
 
 def _test_remote_file_index():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.ObjectSpecification(1, 1))
+    f = conn.get_view(ps.snapshot_queue.ObjectSpecification(1, 1))
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
     local_index_list = f_local.get_index_list(f_local.ancestor)
     index_list = f['remote-index-list']
@@ -125,7 +148,7 @@ def _debug_print_arrays(*arrays):
 
 def _test_lazy_evaluation_is_local():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.ObjectSpecification(1, 1))
+    f = conn.get_view(ps.snapshot_queue.ObjectSpecification(1, 1))
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
     f_local.physical_units()
 
@@ -154,7 +177,7 @@ def tipsy_specific_derived_array(sim):
 
 def _test_underlying_class():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.ObjectSpecification(1, 1))
+    f = conn.get_view(ps.snapshot_queue.ObjectSpecification(1, 1))
     f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[1]
     f_local.physical_units()
     npt.assert_almost_equal(f['tipsy_specific_derived_array'],f_local['tipsy_specific_derived_array'], decimal=4)
