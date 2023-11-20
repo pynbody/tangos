@@ -19,12 +19,12 @@ from . import GenericTangosTool
 class DBImporter(GenericTangosTool):
     parallel = False
     tool_name = "import"
-    tool_description = "Import from a different database (e.g. useful to load sqlite data onto a server)."
+    tool_description = "Import from one or more different databases (e.g. useful to load sqlite data onto a server)."
 
     @classmethod
     def add_parser_arguments(self, parser):
-        parser.add_argument("file", type=str,
-                            help="The filename of the sqlite file, or a sqlalchemy URI, from which to import")
+        parser.add_argument("files", type=str, nargs="+",
+                            help="The filename(s) of the sqlite file, or a sqlalchemy URI, from which to import")
         parser.add_argument("--exclude-properties", type=str, nargs="*", default=[],
                             help="Specify a property that should *excluded* from the copy. "
                                  "Useful if some properties are known to be large.")
@@ -37,21 +37,19 @@ class DBImporter(GenericTangosTool):
         self.db_import()
 
     def db_import(self):
+        for remote_db in self.options.files:
+            if isinstance(remote_db, sqlalchemy.engine.Engine):
+                engine2 = remote_db
+            else:
+                if "://" not in remote_db:
+                    remote_db = "sqlite:///"+remote_db
+                engine2 = create_engine(remote_db, echo=False)
 
-        remote_db = self.options.file
+            ext_session = sessionmaker(bind=engine2)()
 
-        if isinstance(self.options.file, sqlalchemy.engine.Engine):
-            engine2 = remote_db
-        else:
-            if "://" not in remote_db:
-                remote_db = "sqlite:///"+remote_db
-            engine2 = create_engine(remote_db, echo=False)
-
-        ext_session = sessionmaker(bind=engine2)()
-
-        exclude_dict_ids = [core.get_dict_id(x, session = ext_session) for x in self.options.exclude_properties]
-        exclusion_information = {DictionaryItem.__table__.c.id: exclude_dict_ids}
-        _db_import_export(core.get_default_session(), ext_session, exclusion_information)
+            exclude_dict_ids = [core.get_dict_id(x, session = ext_session) for x in self.options.exclude_properties]
+            exclusion_information = {DictionaryItem.__table__.c.id: exclude_dict_ids}
+            _db_import_export(core.get_default_session(), ext_session, exclusion_information)
 
 
 def _db_import_export(target_session, from_session, exclusion_information = None):
