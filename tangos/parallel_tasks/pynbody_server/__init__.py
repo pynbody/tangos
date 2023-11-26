@@ -73,7 +73,7 @@ class RequestPynbodyArray(Message):
     def process(self):
         start_time = time.time()
         try:
-            log.logger.info("Receive request for array %r from %d",self.array,self.source)
+            log.logger.debug("Receive request for array %r from %d",self.array,self.source)
             subsnap = _server_queue.get_subsnap(self.filter_or_object_spec, self.fam)
             transfer_via_shared_mem = _server_queue.current_shared_mem_flag
 
