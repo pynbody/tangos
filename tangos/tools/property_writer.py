@@ -335,7 +335,10 @@ class PropertyWriter(GenericTangosTool):
 
 
     def _set_current_halo(self, db_halo):
-        self._set_current_timestep(db_halo.timestep)
+        with parallel_tasks.lock.SharedLock("insert_list"):
+            # don't want this to happen in parallel with a database write -- seems to lazily fetch
+            # rows in the background
+            self._set_current_timestep(db_halo.timestep)
 
         if self._loaded_halo_id==db_halo.id:
             return
