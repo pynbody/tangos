@@ -73,6 +73,30 @@ def test_get_shared_array():
     pt.use("multiprocessing-3")
     pt.launch(_get_shared_array)
 
+def _get_shared_array_slice():
+    if pt.backend.rank()==1:
+        shared_array = pynbody.array._array_factory((10,), int, True, True)
+        shared_array[:] = np.arange(0,10)
+        pt.pynbody_server.transfer_array.send_array(shared_array[1:7:2], 2, True)
+        assert shared_array[3] == 3
+        pt.barrier()
+        # change the value, to be checked in the other process
+        shared_array[3] = 100
+        pt.barrier()
+    elif pt.backend.rank()==2:
+        shared_array = pt.pynbody_server.transfer_array.receive_array(2, True)
+        assert len(shared_array)==3
+        assert shared_array[1] == 3
+        pt.barrier()
+        # now the other process should be changing the value
+        pt.barrier()
+        assert shared_array[1]==100
+
+def test_get_shared_array_slice():
+    """Like test_get_shared_array, but with a slice"""
+    pt.use("multiprocessing-3")
+    pt.launch(_get_shared_array_slice)
+
 def _test_simsnap_properties():
     test_filter = pynbody.filt.Sphere('5000 kpc')
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
@@ -233,3 +257,78 @@ def test_mixed_derived_loaded_arrays():
     specifically a "derived array is not writable" error on the server. This test ensures that the correct behaviour"""
     pt.use("multiprocessing-2")
     pt.launch(_test_mixed_derived_loaded_arrays)
+
+
+def _test_shmem_simulation(load_sphere=False):
+    sphere_filter = pynbody.filt.Sphere("3 Mpc")
+    def loader_function(**kwargs):
+        if load_sphere:
+            return handler.load_region("tiny.000640", sphere_filter, **kwargs)
+        else:
+            return handler.load_object("tiny.000640", 1, 1, **kwargs)
+    if pt.backend.rank()==1:
+        f_remote = loader_function(mode='server-shared-mem')
+        f_local = loader_function(mode=None)
+        # note we are using the velocity rather than the position because the position is already accessed
+        # in the case of the sphere region test. We intentionally load information family-by-family (see
+        # below). Using a 3d array slice (vx, rather than vel) tests that we don't accidentally just retireve
+        # 1d slices - the whole 3d array should be retrieved, even though the code only asks for the x component.
+        assert (f_remote.dm['vx'] == f_local.dm['vx']).all()
+        assert (f_remote.st['vx'] == f_local.st['vx']).all()
+
+        f_remote.dm['vx'][:] = 1337.0 # this should be a copy, not the actual shared memory array
+
+        assert 'vel' in f_remote.dm.keys() # should have got the whole 3d array
+        pt.barrier()
+        # other rank will test that 1337.0 is *not* in the array. The reason this must be
+        # true is so that we don't get race conditions when two processes are processing overlapping
+        # regions
+        pt.barrier()
+        f = handler.load_timestep("tiny.000640", mode='server-shared-mem').shared_mem_view
+        # now we get the *actual* shared memory view, so updates here really should reflect into the
+        # other process. This isn't particularly a desirable behaviour, but it just serves to verify
+        # everything really is backing onto shared memory
+        f.dm['vx'][:] = 1234.0
+        pt.barrier()
+
+        # We now want to test what happens when we load the rest of the position array. What we don't
+        # want to happen is a 'local promotion' -- this would imply a copy into local memory, defeating
+        # the point of having shared memory mode. Instead, we want to recognise that actually we always had
+        # pointers into a simulation-level shared memory array, and just keep looking at that.
+
+        assert 'vel' not in f.keys() # currently a family array
+        assert f.dm['vel'].ancestor._shared_fname is not None
+
+        # prompt a promotion:
+        f.gas['vx']
+
+        assert 'vel' in f.keys()
+        assert f['vel']._shared_fname is not None
+
+        # Note: in principle, there could arise a situation where the server 'promotes' the array and so unlinks
+        # the shared memory file, but one or more clients still has a reference to it. However, the OS should
+        # not actually delete the file until all references are closed, so this should not cause a crash - it just
+        # means there could be excess memory usage. For now, let's not worry about it.
+
+
+    elif pt.backend.rank()==2:
+        pt.barrier() # let the other rank try to corrupt things
+        f_remote = loader_function(mode='server-shared-mem')
+        assert np.all(f_remote.dm['vx'] != 1337.0)
+        pt.barrier()
+        # other process is updating the shared memory array
+        pt.barrier()
+        f = handler.load_timestep("tiny.000640", mode='server-shared-mem').shared_mem_view
+        assert np.all(f.dm['vx']==1234.0)
+
+
+def test_shmem_simulation_with_halo():
+    """This test ensures that a simulation can be loaded correctly in shared memory, and halos accessed"""
+    pt.use("multiprocessing-3")
+    pt.launch(_test_shmem_simulation)
+
+def test_shmem_simulation_with_filter():
+    """This test ensures that a simulation can be loaded correctly in shared memory, and filter regions accessed"""
+    pt.use("multiprocessing-3")
+    pt.launch(lambda: _test_shmem_simulation(load_sphere=True))
+

@@ -20,7 +20,7 @@ detect_mpi() {
     echo "Detected mpirun -- will use where appropriate"
   else
     export MPIBACKEND="--backend=multiprocessing-3" # 1 process for server, 1 for each worker
-    export MPILOADMODE="--load-mode=server"
+    export MPILOADMODE="--load-mode=server-shared-mem"
     echo "No mpirun found; adopting multiprocessing with 2 workers"
   fi
 }

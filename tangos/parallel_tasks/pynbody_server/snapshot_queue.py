@@ -13,6 +13,7 @@ class PynbodySnapshotQueue:
     def __init__(self):
         self.timestep_queue = []
         self.handler_queue = []
+        self.shared_mem_queue = []
         self.load_requester_queue = []
         self.current_timestep = None
         self.current_snapshot = None
@@ -20,8 +21,10 @@ class PynbodySnapshotQueue:
         self.current_handler = None
         self.in_use_by = []
 
-    def add(self, handler, filename, requester):
+    def add(self, requester, handler, filename, shared_mem=False):
         log.logger.debug("Pynbody server: client %d requests access to %r", requester, filename)
+        if shared_mem:
+            log.logger.debug(" (shared memory mode)")
         if filename==self.current_timestep:
             self._notify_available(requester)
             self.in_use_by.append(requester)
@@ -29,10 +32,12 @@ class PynbodySnapshotQueue:
             queue_position = self.timestep_queue.index(filename)
             self.load_requester_queue[queue_position].append(requester)
             assert self.handler_queue[queue_position] == handler
+            assert self.shared_mem_queue[queue_position] == shared_mem
         else:
             self.timestep_queue.append(filename)
             self.handler_queue.append(handler)
             self.load_requester_queue.append([requester])
+            self.shared_mem_queue.append(shared_mem)
         self._load_next_if_free()
 
     def free(self, requester):
@@ -42,7 +47,12 @@ class PynbodySnapshotQueue:
         self._load_next_if_free()
 
     def get_subsnap(self, filter_or_object_spec, fam):
-        if (filter_or_object_spec, fam) in self.current_subsnap_cache:
+        if filter_or_object_spec is None:
+            if fam is None:
+                return self.current_snapshot
+            else:
+                return self.current_snapshot[fam]
+        elif (filter_or_object_spec, fam) in self.current_subsnap_cache:
             log.logger.debug("Pynbody server: cache hit for %r (fam %r)",filter_or_object_spec, fam)
             return self.current_subsnap_cache[(filter_or_object_spec, fam)]
         else:
@@ -96,16 +106,19 @@ class PynbodySnapshotQueue:
             # TODO: Error handling
             self.current_timestep = self.timestep_queue.pop(0)
             self.current_handler = self.handler_queue.pop(0)
+            self.current_shared_mem_flag = self.shared_mem_queue.pop(0)
+            notify = self.load_requester_queue.pop(0)
 
             try:
                 self.current_snapshot = self.current_handler.load_timestep(self.current_timestep)
-                self.current_snapshot.physical_units()
                 log.logger.info("Pynbody server: loaded %r", self.current_timestep)
+                if self.current_shared_mem_flag:
+                    log.logger.info("                (shared memory mode)")
+                    self.current_snapshot._shared_arrays = True
+                self.current_snapshot.physical_units()
                 success = True
             except OSError:
                 success = False
-
-            notify = self.load_requester_queue.pop(0)
 
             if success:
                 self.in_use_by = notify
@@ -130,7 +143,7 @@ _server_queue = PynbodySnapshotQueue()
 
 class RequestLoadPynbodySnapshot(Message):
     def process(self):
-        _server_queue.add(self.contents[0], self.contents[1], self.source)
+        _server_queue.add(self.source, *self.contents)
 
 
 class ReleasePynbodySnapshot(Message):

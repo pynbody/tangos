@@ -7,7 +7,10 @@ from ..message import Message
 def send_array(array: pynbody.array.SimArray, destination: int, use_shared_memory: bool = False):
     if use_shared_memory:
         if not hasattr(array, "_shared_fname"):
-            raise ValueError("Array %r has no shared memory information" % array)
+            if isinstance(array, np.ndarray) and hasattr(array, "base") and hasattr(array.base, "_shared_fname"):
+                array._shared_fname = array.base._shared_fname # the strides/offset will point into the same memory
+            else:
+                raise ValueError("Array %r has no shared memory information" % array)
         _send_array_shared_memory(array, destination)
     else:
         _send_array_copy(array, destination)

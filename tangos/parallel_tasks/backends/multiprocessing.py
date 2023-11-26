@@ -107,6 +107,8 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
 
     _pipe.close()
 
+class RemoteException(Exception):
+    pass
 
 def launch_functions(functions, args):
     global _slave
@@ -154,7 +156,7 @@ def launch_functions(functions, args):
         proc_i.join()
 
     if error:
-        raise error
+        raise RemoteException() from error
 
 
 
