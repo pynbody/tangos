@@ -180,6 +180,13 @@ class PropertyWriter(GenericTangosTool):
         else:
             self._include = None
 
+    def _log_one_process(self, *args):
+        if parallel_tasks.backend is None or parallel_tasks.backend.rank()==1:
+            logger.info(*args)
+
+    def _summarise_timing_one_process(self):
+        if parallel_tasks.backend is None or parallel_tasks.backend.rank() == 1:
+            self.timing_monitor.summarise_timing(logger)
 
     def _build_halo_list(self, db_timestep):
         query = core.halo.SimulationObjectBase.timestep == db_timestep
@@ -199,7 +206,7 @@ class PropertyWriter(GenericTangosTool):
         if self._include:
             needed_properties.append(self._include)
 
-        logger.info('Gathering existing properties for all halos in timestep %r',db_timestep)
+        logger.debug('Gathering existing properties for all halos in timestep %r',db_timestep)
         halo_query = live_calculation.MultiCalculation(*needed_properties).supplement_halo_query(halo_query)
 
         halos = halo_query.all()
@@ -213,8 +220,8 @@ class PropertyWriter(GenericTangosTool):
 
             # perform filtering:
             halos = [halo_i for halo_i, include_i in zip(halos, inclusion) if include_i]
-            logger.info("User-specified inclusion criterion excluded %d of %d halos",
-                        len(inclusion)-len(halos),len(inclusion))
+            self._log_one_process("User-specified inclusion criterion excluded %d of %d halos",
+                                  len(inclusion)-len(halos),len(inclusion))
 
         return halos
 
@@ -269,7 +276,7 @@ class PropertyWriter(GenericTangosTool):
             logger.info(f"...{num_properties} properties were committed")
             self._pending_properties = []
             self._start_time = time.time()
-            self.timing_monitor.summarise_timing(logger)
+            self._summarise_timing_one_process()
 
     def _queue_results_for_later_commit(self, db_halo, names, results, existing_properties_data):
         for n, r in zip(names, results):
@@ -480,14 +487,14 @@ class PropertyWriter(GenericTangosTool):
 
         self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
 
-        logger.info("Successfully gathered existing properties; calculating halo properties now...")
+        self._log_one_process("Successfully gathered existing properties; calculating halo properties now...")
 
-        logger.info("  %d halos to consider; %d calculation routines for each of them, resulting in %d properties per halo",
+        self._log_one_process("  %d halos to consider; %d calculation routines for each of them, resulting in %d properties per halo",
                     len(db_halos), len(self._property_calculator_instances),
                     sum([1 if isinstance(x.names, str) else len(x.names) for x in self._property_calculator_instances])
                     )
 
-        logger.info("  The property modules are:")
+        self._log_one_process("  The property modules are:")
         for x in self._property_calculator_instances:
             x_type = type(x)
             logger.info(f"    {x_type.__module__}.{x_type.__qualname__}")
@@ -518,8 +525,8 @@ class PropertyWriter(GenericTangosTool):
         for r in requirements:
             if r not in will_calculate:
                 new_instance = properties.instantiate_class(db_timestep.simulation, r)
-                logger.info("Missing prerequisites - added class %r",type(new_instance))
-                logger.info("                        providing properties %r",new_instance.names)
+                self._log_one_process("Missing prerequisites - added class %r",type(new_instance))
+                self._log_one_process("                        providing properties %r",new_instance.names)
                 self._property_calculator_instances = [new_instance]+self._property_calculator_instances
                 self._add_prerequisites_to_calculator_instances(db_timestep) # everything has changed; start afresh
                 break
