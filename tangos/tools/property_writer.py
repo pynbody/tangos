@@ -497,7 +497,7 @@ class PropertyWriter(GenericTangosTool):
         self._log_one_process("  The property modules are:")
         for x in self._property_calculator_instances:
             x_type = type(x)
-            logger.info(f"    {x_type.__module__}.{x_type.__qualname__}")
+            self._log_one_process(f"    {x_type.__module__}.{x_type.__qualname__}")
 
         for db_halo, existing_properties in \
                 self._get_parallel_halo_iterator(list(zip(db_halos, self._existing_properties_all_halos))):
@@ -508,9 +508,8 @@ class PropertyWriter(GenericTangosTool):
         self._unload_timestep()
 
         self.tracker.report_to_log(logger)
-        sys.stderr.flush()
 
-        self._commit_results_if_needed(True)
+        self._commit_results_if_needed(end_of_timestep=True)
 
     def _add_prerequisites_to_calculator_instances(self, db_timestep):
         will_calculate = []

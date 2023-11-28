@@ -255,7 +255,7 @@ class RemoteSnapshotConnection:
 
         tangos.parallel_tasks.pynbody_server.snapshot_queue._connection_active = True
         self.connected = True
-        log.logger.info("Pynbody client: connected to remote snapshot %r", ts_extension)
+        log.logger.debug("Pynbody client: connected to remote snapshot %r", ts_extension)
 
         if self.shared_mem:
             self.shared_mem_view = self.get_view(None)
