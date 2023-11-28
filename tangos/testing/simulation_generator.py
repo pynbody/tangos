@@ -2,10 +2,11 @@ from .. import core
 
 
 class SimulationGeneratorForTests:
-    def __init__(self, sim_name="sim", session=None):
+    def __init__(self, sim_name="sim", session=None, max_steps=9):
         if not session:
             session = core.get_default_session()
 
+        self.max_steps = max_steps
         self.session = session
         self.sim = core.simulation.Simulation(sim_name)
         self.session.add(self.sim)
@@ -25,6 +26,8 @@ class SimulationGeneratorForTests:
                 NDM_halo = 1000-i*100
             else:
                 NDM_halo = NDM[i-1]
+            halo = core.halo.SimulationObjectBase(ts, i, i, i, NDM_halo, 0, 0, 0)
+            halo.object_typecode = object_typecode
 
             halo = core.halo.SimulationObjectBase(ts, i, i, i, NDM_halo, 0, 0, object_typecode=object_typecode)
             cl = core.halo.SimulationObjectBase.class_from_tag(
@@ -33,8 +36,8 @@ class SimulationGeneratorForTests:
             halo.__class__ = cl # hmm, not really sure this should be necessary or advisable. But tests were failing
             # with the very specific combination of py3.11 + sqlalchemy 2.0.x + mysql, and this appears to fix it
             # so we better stick with it.
-            self.session.add(halo)
             returned_halos.append(halo)
+        self.session.add_all(returned_halos)
 
         self.session.commit()
         return returned_halos
@@ -80,8 +83,10 @@ class SimulationGeneratorForTests:
         """Add a sequentially-numbered timestep to the specified simulation"""
 
         timestep_num = len(self.sim.timesteps)+1
+        if timestep_num>self.max_steps:
+            raise ValueError("Number of steps added exceeds maximum. You can use max_steps=<n> when constructing SimulationGeneratorForTests.")
         ts = core.timestep.TimeStep(self.sim, "ts%d"%timestep_num)
-        ts.redshift = 9 - timestep_num
+        ts.redshift = self.max_steps - timestep_num
         ts.time_gyr = 0.9*timestep_num
         self.session.add(ts)
         self.session.commit()
@@ -163,24 +168,39 @@ class SimulationGeneratorForTests:
 
 
 
+    def _generate_number_to_object_map(self, object_list):
+        return {o.halo_number: o for o in object_list}
     def _generate_bidirectional_halolinks_for_mapping(self, mapping, ts_dest, ts_source, object_typecode):
 
+        source_halos = self._generate_number_to_object_map(
+            ts_source.objects.filter_by(object_typecode = object_typecode).all())
+        target_halos = self._generate_number_to_object_map(
+            ts_dest.objects.filter_by(object_typecode = object_typecode).all())
+
+        links = []
+
         for source_num, target_num in mapping.items():
-            source_halo = ts_source.objects.filter_by(halo_number=source_num, object_typecode=object_typecode).first()
-            target_halo = ts_dest.objects.filter_by(halo_number=target_num, object_typecode=object_typecode).first()
+            source_halo = source_halos[source_num]
+            target_halo = target_halos[target_num]
 
             forward_link = core.halo_data.HaloLink(source_halo, target_halo, self._ptcls_in_common_dict, 1.0)
             backward_link = core.halo_data.HaloLink(target_halo, source_halo, self._ptcls_in_common_dict, float(source_halo.NDM) / target_halo.NDM)
 
-            self.session.add_all([forward_link, backward_link])
+            links += [forward_link, backward_link]
+
+        self.session.add_all(links)
 
 
     def _adjust_halo_NDM_for_mapping(self, mapping, ts_dest, ts_source):
 
+        source_halos = self._generate_number_to_object_map(ts_source.halos.all())
+        target_halos = self._generate_number_to_object_map(ts_dest.halos.all())
+
         for source_num, target_num in mapping.items():
-            target_halo = ts_dest.halos.filter_by(halo_number=target_num).first()
+            target_halo = target_halos[target_num]
             target_halo.NDM = 0
+
         for source_num, target_num in mapping.items():
-            source_halo = ts_source.halos.filter_by(halo_number=source_num).first()
-            target_halo = ts_dest.halos.filter_by(halo_number=target_num).first()
+            source_halo = source_halos[source_num]
+            target_halo = target_halos[target_num]
             target_halo.NDM += source_halo.NDM

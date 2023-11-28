@@ -87,7 +87,7 @@ class ConsistentTreesImporter(GenericTangosTool):
         for h in halos:
             out[h.finder_id] = h
         for p in phantoms:
-            out[-p.finder_id.astype(np.int64)] = p
+            out[-p.finder_id] = p
         return out
 
     def create_links(self, ts, ts_next, link_dictionary):
@@ -113,7 +113,7 @@ class ConsistentTreesImporter(GenericTangosTool):
         props = []
         for o in objs.values():
             if isinstance(o, PhantomHalo):
-                tree_id = id_to_tree_id.get(-o.finder_id, None)
+                tree_id = id_to_tree_id.get(-int(o.finder_id), None)
             else:
                 tree_id = id_to_tree_id.get(o.finder_id, None)
             if tree_id is not None:

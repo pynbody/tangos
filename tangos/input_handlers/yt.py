@@ -102,9 +102,7 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             #mask = np.in1d(ids1, members2)
             mask = np.in1d(members2, ids1)
             if mask.sum() == 0:
-                cat.append(
-                    []
-                )
+                cat.append([])
                 continue
 
             # Get the halo ids of the particles in the other snapshot
@@ -131,12 +129,6 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             weights = weights[mask]
 
             cat.append(list(zip(idhalo2, weights)))
-
-            #mport pdb
-            #pdb.set_trace()
-
-        #import pdb
-        #pdb.set_trace()
 
         return cat
 
@@ -182,6 +174,11 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
 
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
+        try:
+            yield from super().iterate_object_properties_for_timestep(ts_extension, object_typetag, property_names)
+            return
+        except OSError:
+            pass
         h, ad = self._load_halo_cat(ts_extension, object_typetag)
 
         props_with_ftype = [
@@ -191,49 +188,19 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         ad.get_data(props_with_ftype)
 
         Nhalo = len(ad["halos", "particle_identifier"])
-        data = zip(range(Nhalo), range(Nhalo), *(
+        yield from zip(range(Nhalo), range(Nhalo), *(
             ad[_] for _ in props_with_ftype
         ))
 
-        return data
 
 class YtRamsesRockstarInputHandler(YtInputHandler):
     patterns = ["output_0????"]
     auxiliary_file_patterns = ["halos_*.bin"]
 
     def load_timestep_without_caching(self, ts_extension, mode=None):
-        from yt.data_objects.particle_filters import add_particle_filter
         if mode is not None:
             raise ValueError("Custom load modes are not supported with yt")
-        f = yt.load(self._extension_to_filename(ts_extension))
-
-        def Stars(pfilter, data):
-            filter = data[("all", "particle_family")] == 2 # DM = 1, Stars = 2
-            return filter
-
-        add_particle_filter("stars", function=Stars, filtered_type='all', \
-                            requires=["particle_family"])
-
-        def AllDarkMatter(pfilter, data):
-            #filter = np.logical_or(data[("all", "particle_type")] == 4,data[("all", "particle_type")] == 1) # DM = 1, Stars = 2
-            filter = data[("all", "particle_family")] == 1
-            return filter
-
-        add_particle_filter("dark_matter", function=AllDarkMatter, filtered_type='all', \
-                            requires=["particle_family"])
-
-        def MustRefineParticles(pfilter, data):
-            filter = data[("all", "particle_family")] == 4
-            return filter
-
-        add_particle_filter("mrp_dark_matter", function=MustRefineParticles, filtered_type='all', \
-                            requires=["particle_family"])
-
-        f.add_particle_filter("stars")
-        f.add_particle_filter("dark_matter")
-        f.add_particle_filter("mrp_dark_matter")
-
-        return f
+        return yt.load(self._extension_to_filename(ts_extension))
 
     def _load_halo_cat_without_caching(self, ts_extension, snapshot_file):
         # Check whether datasets.txt exists (i.e., if rockstar was run with yt)
@@ -249,13 +216,11 @@ class YtRamsesRockstarInputHandler(YtInputHandler):
             rockfiles = np.array(rockfiles)[sortord]
             timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==ts_extension.split('/')[0])[0]
             fnum = int(rockfiles[timestep_ind][0].split('.')[0].split('_')[-1])
-        cat = yt.load(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
+        cat = yt.load(self._extension_to_filename(f"halos_{fnum}.0.bin"))
         cat_data = cat.all_data()
         # Check whether rockstar was run with Behroozi's distribution or Wise's
         if np.any(cat_data["halos","particle_identifier"]<0):
-            del cat
-            del cat_data
-            cat = yt.load(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
+            cat = yt.load(self._extension_to_filename(f"halos_{fnum}.0.bin"))
             cat.parameters['format_revision'] = 2 #
             cat_data = cat.all_data()
         return cat, cat_data
@@ -266,8 +231,8 @@ class YtRamsesRockstarInputHandler(YtInputHandler):
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
             yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
         else:
-            #logger.warn("No halo statistics file found for timestep %r", ts_extension)
-            #logger.warn(" => enumerating %ss directly using yt", object_typetag)
+            logger.warn("No halo statistics file found for timestep %r", ts_extension)
+            logger.warn(" => enumerating %ss directly using yt", object_typetag)
 
             _catalogue, catalogue_data = self._load_halo_cat(ts_extension, object_typetag)
             num_objects = len(catalogue_data["halos", "virial_radius"])
@@ -282,19 +247,20 @@ class YtRamsesRockstarInputHandler(YtInputHandler):
                     i,
                     object_typetag
                 )
-                NDM = len(obj["dark_matter","particle_mass"])
+                NDM = len(obj["DM", "particle_ones"])
                 NGas = 0 # cells
-                NStar = len(obj["stars","particle_mass"])
+                NStar = len(obj["star", "particle_ones"])
                 if NDM + NGas + NStar> min_halo_particles:
                     yield i, int(catalogue_data["halos","particle_identifier"][i]), NDM, NStar, NGas
 
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         f = self.load_timestep(ts_extension, mode)
         cat, cat_dat = self._load_halo_cat(ts_extension, object_typetag)
-        center = cat_dat["halos","particle_position"][cat_dat["halos","particle_identifier"]==finder_id][0]
-        center+=f.domain_left_edge-cat.domain_left_edge
-        radius = cat_dat["halos","virial_radius"][cat_dat["halos","particle_identifier"]==finder_id][0]
-        return f.sphere(center.in_cgs(), radius.in_cgs())
+        index = np.argwhere(cat_dat["halos", "particle_identifier"] == finder_id)[0, 0]
+        center = cat_dat["halos","particle_position"][index]
+        center += f.domain_left_edge - cat.domain_left_edge
+        radius = cat_dat["halos", "virial_radius"][index]
+        return f.sphere(center, radius)
 
 
 class YtChangaAHFInputHandler(YtInputHandler):

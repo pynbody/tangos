@@ -317,10 +317,11 @@ class RemoteSubSnap(pynbody.snapshot.SimSnap):
             log.logger.debug("Array received; waited %.2fs",time.time()-start_time)
         except KeyError:
             raise OSError("No such array %r available from the remote"%array_name)
-        if fam is None:
-            self[array_name] = data
-        else:
-            self[fam][array_name] = data
+        with self.auto_propagate_off:
+            if fam is None:
+                self[array_name] = data
+            else:
+                self[fam][array_name] = data
 
 
 _connection_active = False

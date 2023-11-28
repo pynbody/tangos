@@ -154,6 +154,17 @@ class SqlExecutionTracker:
         self._stacks.append("".join(traceback.format_list(traceback.extract_stack()[:-2])))
 
 def init_blank_db_for_testing(**init_kwargs):
+    """Initialize a blank database for testing purposes.
+
+    :arg testing_db_name: name of the database to create.  Defaults to the name of the calling file.
+    :arg erase_if_exists: if True (default), delete the database if it already exists.
+
+    Other arguments are passed to tangos.core.init_db
+
+    :returns: True if a blank database has been created. False if the database already existed and erase_if_exists was False.
+    """
+
+    db_is_blank = False
 
     core.close_db()
 
@@ -165,22 +176,39 @@ def init_blank_db_for_testing(**init_kwargs):
     caller_fname = os.path.basename(inspect.getframeinfo(inspect.currentframe().f_back)[0])[:-3]
 
     testing_db_name = init_kwargs.pop("testing_db_name", caller_fname)
+    erase_if_exists = init_kwargs.pop("erase_if_exists", True)
 
     if testing_db_backend == "sqlite":
         db_name = f"test_dbs/%s.db"%testing_db_name
-        try:
-            os.remove(db_name)
-        except OSError:
-            pass
+        if erase_if_exists:
+            try:
+                os.remove(db_name)
+            except OSError:
+                pass
+            db_is_blank = True
+        else:
+            db_is_blank = not os.path.exists(db_name)
 
         core.init_db(f"sqlite:///{db_name}", **init_kwargs)
     else:
         db_url = f"{testing_db_backend}://{testing_db_user}:{testing_db_password}@localhost"
         engine = create_engine(db_url)
-        with engine.connect() as conn:
-            conn.execute(text("COMMIT"))
-            conn.execute(text(f"DROP DATABASE IF EXISTS {testing_db_name}"))
-            conn.execute(text("COMMIT"))
-            conn.execute(text(f"CREATE DATABASE {testing_db_name}"))
 
+        if erase_if_exists:
+            with engine.connect() as conn:
+                conn.execute(text("COMMIT"))
+                conn.execute(text(f"DROP DATABASE IF EXISTS {testing_db_name}"))
+                conn.execute(text("COMMIT"))
+                conn.execute(text(f"CREATE DATABASE {testing_db_name}"))
+            db_is_blank = True
+        else:
+            try:
+                create_engine(f"{db_url}/{testing_db_name}").connect()
+            except sqlalchemy.exc.OperationalError:
+                with engine.connect() as conn:
+                    conn.execute(text("COMMIT"))
+                    conn.execute(text(f"CREATE DATABASE {testing_db_name}"))
+                    db_is_blank = True
         core.init_db(f"{db_url}/{testing_db_name}", **init_kwargs)
+
+    return db_is_blank
