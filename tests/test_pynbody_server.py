@@ -244,8 +244,8 @@ def metals(sim):
     """Derived array that will only be invoked for dm, since metals is present on disk for gas/stars"""
     return pynbody.array.SimArray(np.ones(len(sim)))
 
-def _test_mixed_derived_loaded_arrays():
-    f_remote = handler.load_object('tiny.000640', 1, 1, mode='server')
+def _test_mixed_derived_loaded_arrays(mode='server'):
+    f_remote = handler.load_object('tiny.000640', 1, 1, mode=mode)
     f_local = handler.load_object('tiny.000640', 1, 1, mode=None)
     assert (f_remote.dm['metals'] == f_local.dm['metals']).all()
     assert (f_remote.st['metals'] == f_local.st['metals']).all()
@@ -257,6 +257,7 @@ def test_mixed_derived_loaded_arrays():
     specifically a "derived array is not writable" error on the server. This test ensures that the correct behaviour"""
     pt.use("multiprocessing-2")
     pt.launch(_test_mixed_derived_loaded_arrays)
+    pt.launch(lambda: _test_mixed_derived_loaded_arrays(mode='server-shared-mem'))
 
 
 def _test_shmem_simulation(load_sphere=False):
