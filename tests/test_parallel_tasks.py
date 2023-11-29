@@ -1,5 +1,6 @@
-import sys
 import time
+
+import pytest
 
 import tangos
 import tangos.testing.simulation_generator
@@ -196,3 +197,22 @@ def test_shared_locks_in_queue():
             lock_held-=1
         else:
             assert False, "Unexpected line in log: "+line
+
+class ErrorOnServer(pt.message.Message):
+    def process(self):
+        raise RuntimeError("Error on server")
+
+def test_error_on_server():
+    pt.use("multiprocessing-2")
+    with pytest.raises(RuntimeError) as e:
+        pt.launch(lambda: ErrorOnServer().send(0))
+    assert "Error on server" in str(e.value)
+
+def test_error_on_client():
+    pt.use("multiprocessing-2")
+    def _error_on_client():
+        raise RuntimeError("Error on client")
+
+    with pytest.raises(RuntimeError) as e:
+        pt.launch(_error_on_client)
+    assert "Error on client" in str(e.value)

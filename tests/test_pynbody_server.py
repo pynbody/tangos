@@ -350,5 +350,3 @@ def _test_implict_array_promotion_shared_mem():
 def test_implicit_array_promotion_shared_mem():
     pt.use("multiprocessing-2")
     pt.launch(_test_implict_array_promotion_shared_mem)
-
-
