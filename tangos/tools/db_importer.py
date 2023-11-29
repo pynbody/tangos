@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import Column
 
 from tangos import Base, Creator, DictionaryItem, core
-from tangos.config import DB_IMPORT_CHUNK_SIZE, DB_IMPORT_COMMIT_AFTER_CHUNKS
+from tangos.config import DB_IMPORT_CHUNK_SIZE
 from tangos.core import (HaloLink, HaloProperty, Simulation,
                          SimulationObjectBase, SimulationProperty, TimeStep)
 
