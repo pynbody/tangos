@@ -4,12 +4,8 @@ import os.path
 import time
 import weakref
 from collections import defaultdict
-from itertools import chain
 
 import numpy as np
-from more_itertools import always_iterable
-
-import tangos.parallel_tasks.pynbody_server.snapshot_queue
 
 from ..util import proxy_object
 
@@ -123,7 +119,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps
             return timestep.get_view(
-                tangos.parallel_tasks.pynbody_server.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag))
+                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag))
         elif mode=='server-partial':
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps

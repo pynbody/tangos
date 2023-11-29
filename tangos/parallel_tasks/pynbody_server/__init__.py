@@ -10,7 +10,7 @@ import tangos.parallel_tasks.pynbody_server.snapshot_queue
 
 from .. import log, remote_import
 from ..message import ExceptionMessage, Message
-from . import transfer_array
+from . import snapshot_queue, transfer_array
 from .snapshot_queue import (ConfirmLoadPynbodySnapshot,
                              ReleasePynbodySnapshot,
                              RequestLoadPynbodySnapshot, _server_queue)

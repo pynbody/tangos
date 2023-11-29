@@ -10,7 +10,7 @@ import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
 
-from .. import core, live_calculation, parallel_tasks, properties
+from .. import config, core, live_calculation, parallel_tasks, properties
 from ..cached_writer import insert_list
 from ..log import logger
 from ..util import proxy_object, terminalcontroller, timing_monitor
@@ -28,8 +28,8 @@ class PropertyWriter(GenericTangosTool):
 
     def __init__(self):
         self.redirect = terminalcontroller.redirect
-        self._writer_timeout = 60
-        self._writer_minimum = 60  # don't commit at end of halo if < 1 minute past
+        self._writer_timeout = config.PROPERTY_WRITER_MAXIMUM_TIME_BETWEEN_COMMITS
+        self._writer_minimum = config.PROPERTY_WRITER_MINIMUM_TIME_BETWEEN_COMMITS
         self._current_timestep_id = None
         self._loaded_timestep = None
         self._loaded_halo_id = None

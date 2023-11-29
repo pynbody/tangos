@@ -332,4 +332,3 @@ def test_shmem_simulation_with_filter():
     """This test ensures that a simulation can be loaded correctly in shared memory, and filter regions accessed"""
     pt.use("multiprocessing-3")
     pt.launch(lambda: _test_shmem_simulation(load_sphere=True))
-
