@@ -88,9 +88,14 @@ diff_default_atol = 1e-3
 diff_default_rtol = 1e-3
 
 
-# Database import: how many rows to copy at a time, and when to issue a commit
+# Database import: how many rows to copy at a time
 DB_IMPORT_CHUNK_SIZE = 10
-DB_IMPORT_COMMIT_AFTER_CHUNKS = 500
+
+# Property writer: longest to wait before trying to commit properties (even if in middle of timestep)
+PROPERTY_WRITER_MAXIMUM_TIME_BETWEEN_COMMITS = 600 # seconds
+
+# Property writer: don't bother committing even if a timestep is finished if this time hasn't elapsed:
+PROPERTY_WRITER_MINIMUM_TIME_BETWEEN_COMMITS = 300 # seconds
 
 try:
     from .config_local import *

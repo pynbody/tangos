@@ -4,10 +4,8 @@ import os.path
 import time
 import weakref
 from collections import defaultdict
-from itertools import chain
 
 import numpy as np
-from more_itertools import always_iterable
 
 from ..util import proxy_object
 
@@ -36,8 +34,8 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __new__(cls, *args, **kwargs):
         import pynbody as pynbody_local
 
-        if pynbody_local.__version__<"1.2.2":
-            raise ImportError("Using tangos with pynbody requires pynbody 1.2.2 or later")
+        if pynbody_local.__version__<"1.5.0":
+            raise ImportError("Using tangos with pynbody requires pynbody 1.5.0 or later")
 
         global pynbody
         pynbody = pynbody_local
@@ -82,19 +80,22 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             f = pynbody.load(self._extension_to_filename(ts_extension))
             f.physical_units()
             return f
-        elif mode=='server' or mode=='server-partial':
+        elif mode in ('server', 'server-partial', 'server-shared-mem'):
             from ..parallel_tasks import pynbody_server as ps
-            return ps.RemoteSnapshotConnection(self,ts_extension)
+            return ps.RemoteSnapshotConnection(self, ts_extension,
+                                               shared_mem = (mode == 'server-shared-mem'))
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def load_region(self, ts_extension, region_specification, mode=None):
-        if mode is None:
+        if mode is None or mode=='server':
             timestep = self.load_timestep(ts_extension, mode)
             return timestep[region_specification]
-        elif mode=='server':
+        elif mode=='server-shared-mem':
+            from ..parallel_tasks import pynbody_server as ps
             timestep = self.load_timestep(ts_extension, mode)
-            return timestep.get_view(region_specification)
+            simsnap = timestep.shared_mem_view
+            return simsnap[region_specification].get_copy_on_access_simsnap()
         elif mode=='server-partial':
             timestep = self.load_timestep(ts_extension, mode)
             view = timestep.get_view(region_specification)
@@ -114,19 +115,29 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             h_file = h.load_copy(finder_offset)
             h_file.physical_units()
             return h_file
-        elif mode=='server':
+        elif mode=='server' :
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps
-            return timestep.get_view(ps.ObjectSpecification(finder_id, finder_offset, object_typetag))
+            return timestep.get_view(
+                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag))
         elif mode=='server-partial':
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps
-            view = timestep.get_view(ps.ObjectSpecification(finder_id, finder_offset, object_typetag))
+            view = timestep.get_view(
+                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag))
             load_index = view['remote-index-list']
             logger.info("Partial load %r, taking %d particles", ts_extension, len(load_index))
             f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
             f.physical_units()
             return f
+        elif mode=='server-shared-mem':
+            timestep = self.load_timestep(ts_extension, mode)
+            from ..parallel_tasks import pynbody_server as ps
+            view = timestep.get_view(
+                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag))
+            view_index = view['remote-index-list']
+            return timestep.shared_mem_view[view_index].get_copy_on_access_simsnap()
+
         elif mode is None:
             h = self._construct_halo_cat(ts_extension, object_typetag)
             return h[finder_offset]

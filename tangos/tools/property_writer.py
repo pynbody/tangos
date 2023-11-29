@@ -10,7 +10,7 @@ import sqlalchemy
 import sqlalchemy.exc
 import sqlalchemy.orm
 
-from .. import core, live_calculation, parallel_tasks, properties
+from .. import config, core, live_calculation, parallel_tasks, properties
 from ..cached_writer import insert_list
 from ..log import logger
 from ..util import proxy_object, terminalcontroller, timing_monitor
@@ -28,8 +28,8 @@ class PropertyWriter(GenericTangosTool):
 
     def __init__(self):
         self.redirect = terminalcontroller.redirect
-        self._writer_timeout = 60
-        self._writer_minimum = 60  # don't commit at end of halo if < 1 minute past
+        self._writer_timeout = config.PROPERTY_WRITER_MAXIMUM_TIME_BETWEEN_COMMITS
+        self._writer_minimum = config.PROPERTY_WRITER_MINIMUM_TIME_BETWEEN_COMMITS
         self._current_timestep_id = None
         self._loaded_timestep = None
         self._loaded_halo_id = None
@@ -58,13 +58,14 @@ class PropertyWriter(GenericTangosTool):
                             help='Process timesteps in random order')
         parser.add_argument('--with-prerequisites', action='store_true',
                             help='Automatically calculate any missing prerequisites for the properties')
-        parser.add_argument('--load-mode', action='store', choices=['all', 'partial', 'server', 'server-partial'],
+        parser.add_argument('--load-mode', action='store', choices=['all', 'partial', 'server', 'server-partial', 'server-shared-mem'],
                             required=False, default=None,
                             help="Select a load-mode: " \
-                                 "  --load-mode partial:        each node attempts to load only the data it needs; " \
-                                 "  --load-mode server:         a server process manages the data;"
-                                 "  --load-mode server-partial: a server process figures out the indices to load, which are then passed to the partial loader" \
-                                 "  --load-mode all:            each node loads all the data (default, and often fine for zoom simulations).")
+                                 "  --load-mode partial:           each processor attempts to load only the data it needs; " \
+                                 "  --load-mode server:            a server process manages the data;"
+                                 "  --load-mode server-partial:    a server process figures out the indices to load, which are then passed to the partial loader" \
+                                 "  --load-mode all:               each processor loads all the data (default, and often fine for zoom simulations)." \
+                                 "  --load-mode server-shared-mem: a server process manages the data, passing to other processes via shared memory")
         parser.add_argument('--type', action='store', type=str, dest='htype',
                             help="Secify the object type to run on by tag name (or integer). Can be halo, group, or BH.")
         parser.add_argument('--hmin', action='store', type=int, default=0,
@@ -179,6 +180,13 @@ class PropertyWriter(GenericTangosTool):
         else:
             self._include = None
 
+    def _log_one_process(self, *args):
+        if parallel_tasks.backend is None or parallel_tasks.backend.rank()==1:
+            logger.info(*args)
+
+    def _summarise_timing_one_process(self):
+        if parallel_tasks.backend is None or parallel_tasks.backend.rank() == 1:
+            self.timing_monitor.summarise_timing(logger)
 
     def _build_halo_list(self, db_timestep):
         query = core.halo.SimulationObjectBase.timestep == db_timestep
@@ -198,7 +206,7 @@ class PropertyWriter(GenericTangosTool):
         if self._include:
             needed_properties.append(self._include)
 
-        logger.info('Gathering existing properties for all halos in timestep %r',db_timestep)
+        logger.debug('Gathering existing properties for all halos in timestep %r',db_timestep)
         halo_query = live_calculation.MultiCalculation(*needed_properties).supplement_halo_query(halo_query)
 
         halos = halo_query.all()
@@ -212,8 +220,8 @@ class PropertyWriter(GenericTangosTool):
 
             # perform filtering:
             halos = [halo_i for halo_i, include_i in zip(halos, inclusion) if include_i]
-            logger.info("User-specified inclusion criterion excluded %d of %d halos",
-                        len(inclusion)-len(halos),len(inclusion))
+            self._log_one_process("User-specified inclusion criterion excluded %d of %d halos",
+                                  len(inclusion)-len(halos),len(inclusion))
 
         return halos
 
@@ -268,7 +276,7 @@ class PropertyWriter(GenericTangosTool):
             logger.info(f"...{num_properties} properties were committed")
             self._pending_properties = []
             self._start_time = time.time()
-            self.timing_monitor.summarise_timing(logger)
+            self._summarise_timing_one_process()
 
     def _queue_results_for_later_commit(self, db_halo, names, results, existing_properties_data):
         for n, r in zip(names, results):
@@ -334,7 +342,10 @@ class PropertyWriter(GenericTangosTool):
 
 
     def _set_current_halo(self, db_halo):
-        self._set_current_timestep(db_halo.timestep)
+        with parallel_tasks.lock.SharedLock("insert_list"):
+            # don't want this to happen in parallel with a database write -- seems to lazily fetch
+            # rows in the background
+            self._set_current_timestep(db_halo.timestep)
 
         if self._loaded_halo_id==db_halo.id:
             return
@@ -476,17 +487,17 @@ class PropertyWriter(GenericTangosTool):
 
         self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
 
-        logger.info("Successfully gathered existing properties; calculating halo properties now...")
+        self._log_one_process("Successfully gathered existing properties; calculating halo properties now...")
 
-        logger.info("  %d halos to consider; %d calculation routines for each of them, resulting in %d properties per halo",
+        self._log_one_process("  %d halos to consider; %d calculation routines for each of them, resulting in %d properties per halo",
                     len(db_halos), len(self._property_calculator_instances),
                     sum([1 if isinstance(x.names, str) else len(x.names) for x in self._property_calculator_instances])
                     )
 
-        logger.info("  The property modules are:")
+        self._log_one_process("  The property modules are:")
         for x in self._property_calculator_instances:
             x_type = type(x)
-            logger.info(f"    {x_type.__module__}.{x_type.__qualname__}")
+            self._log_one_process(f"    {x_type.__module__}.{x_type.__qualname__}")
 
         for db_halo, existing_properties in \
                 self._get_parallel_halo_iterator(list(zip(db_halos, self._existing_properties_all_halos))):
@@ -497,9 +508,8 @@ class PropertyWriter(GenericTangosTool):
         self._unload_timestep()
 
         self.tracker.report_to_log(logger)
-        sys.stderr.flush()
 
-        self._commit_results_if_needed(True)
+        self._commit_results_if_needed(end_of_timestep=True)
 
     def _add_prerequisites_to_calculator_instances(self, db_timestep):
         will_calculate = []
@@ -514,8 +524,8 @@ class PropertyWriter(GenericTangosTool):
         for r in requirements:
             if r not in will_calculate:
                 new_instance = properties.instantiate_class(db_timestep.simulation, r)
-                logger.info("Missing prerequisites - added class %r",type(new_instance))
-                logger.info("                        providing properties %r",new_instance.names)
+                self._log_one_process("Missing prerequisites - added class %r",type(new_instance))
+                self._log_one_process("                        providing properties %r",new_instance.names)
                 self._property_calculator_instances = [new_instance]+self._property_calculator_instances
                 self._add_prerequisites_to_calculator_instances(db_timestep) # everything has changed; start afresh
                 break

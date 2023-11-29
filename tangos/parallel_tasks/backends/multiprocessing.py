@@ -3,6 +3,9 @@ import os
 import signal
 import sys
 import threading
+from typing import Optional
+
+import tblib.pickling_support
 
 _slave = False
 _rank = None
@@ -86,6 +89,8 @@ def finalize():
     _pipe.send("finalize")
 
 def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
+    tblib.pickling_support.install()
+
     global _slave, _rank, _size, _pipe, _recv_lock
     _rank = rank_in
     _size = size_in
@@ -103,10 +108,12 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
             print("Error on a sub-process:", file=sys.stderr)
             traceback.print_exception(exc_type, exc_value, exc_traceback,
                                       file=sys.stderr)
-        _pipe.send(("error", e))
+        _pipe.send(("error", exc_value, exc_traceback))
 
     _pipe.close()
 
+class RemoteException(Exception):
+    pass
 
 def launch_functions(functions, args):
     global _slave
@@ -125,7 +132,7 @@ def launch_functions(functions, args):
         proc_i.start()
 
     running = [True for rank in range(num_procs)]
-    error = False
+    error: Optional[Exception] = None
 
     while any(running):
         for i, pipe_i in enumerate(parent_connections):
@@ -136,6 +143,7 @@ def launch_functions(functions, args):
                     running[i]=False
                 elif isinstance(message[0], str) and message[0]=='error':
                     error = message[1]
+                    traceback = message[2]
                     running = [False]
                     break
                 else:
@@ -153,8 +161,8 @@ def launch_functions(functions, args):
             os.kill(proc_i.pid, signal.SIGTERM)
         proc_i.join()
 
-    if error:
-        raise error
+    if error is not None:
+        raise error.with_traceback(traceback)
 
 
 

@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import Column
 
 from tangos import Base, Creator, DictionaryItem, core
-from tangos.config import DB_IMPORT_CHUNK_SIZE, DB_IMPORT_COMMIT_AFTER_CHUNKS
+from tangos.config import DB_IMPORT_CHUNK_SIZE
 from tangos.core import (HaloLink, HaloProperty, Simulation,
                          SimulationObjectBase, SimulationProperty, TimeStep)
 
@@ -173,7 +173,6 @@ def _copy_table(from_connection, target_connection, orm_class, offsets, destinat
 
             try:
                 target_connection.execute(insert(destination_table).values(all_rows))
-
             except sqlalchemy.exc.OperationalError as e:
                 if retries>=1:
                     raise # if this line is hit, it may reflect a data limit in the server, e.g. max_allowed_packet in MySQL
@@ -181,18 +180,13 @@ def _copy_table(from_connection, target_connection, orm_class, offsets, destinat
                     # server log, but in MySQL it does not seem to be. Reducing CHUNK_SIZE may help, or increasing
                     # the limit on the server.
 
-                num_committed = num_done - (num_done % (DB_IMPORT_CHUNK_SIZE * DB_IMPORT_COMMIT_AFTER_CHUNKS))
-                pbar.update(num_committed-num_done) # negative correction
-                print(f"Note: lost connection to database after {num_done} rows. Resetting to {num_committed}.")
-                # reset to point of last commit
-                num_done = num_committed
+                print(f"Note: lost connection to database after {num_done} rows. Trying again.")
                 target_connection.rollback()
                 # create a new connection from the target connection's engine
                 target_connection = target_connection.engine.connect()
-                source_result = from_connection.execute(select(table).offset(num_committed))
+                source_result = from_connection.execute(select(table).offset(num_done))
                 retries+=1
                 continue
-
 
             num_done += len(all_rows)
             pbar.update(len(all_rows))

@@ -139,12 +139,12 @@ def _server_thread():
             obj.process()
 
 
-    log.logger.info("Terminating manager")
+    log.logger.info("Terminating manager process")
 
 
 def _shutdown_parallelism():
     global backend
-    log.logger.info("Shutting down parallel_tasks")
+    log.logger.info("Terminating worker process")
     backend.barrier()
     backend.finalize()
     backend = None
