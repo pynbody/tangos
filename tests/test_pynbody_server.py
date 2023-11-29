@@ -332,3 +332,23 @@ def test_shmem_simulation_with_filter():
     """This test ensures that a simulation can be loaded correctly in shared memory, and filter regions accessed"""
     pt.use("multiprocessing-3")
     pt.launch(lambda: _test_shmem_simulation(load_sphere=True))
+
+
+def _test_implict_array_promotion_shared_mem():
+
+    f_remote = handler.load_timestep("tiny.000640", mode='server-shared-mem').shared_mem_view
+
+    f_remote.dm['pos']
+    f_remote.gas['pos']
+
+    # Don't explicitly load the f_remote.star['pos']. It should implicitly get promoted:
+    f_remote['pos']
+
+    f_local = handler.load_timestep("tiny.000640", mode=None)
+    assert (f_remote['pos'] == f_local['pos']).all()
+
+def test_implicit_array_promotion_shared_mem():
+    pt.use("multiprocessing-2")
+    pt.launch(_test_implict_array_promotion_shared_mem)
+
+

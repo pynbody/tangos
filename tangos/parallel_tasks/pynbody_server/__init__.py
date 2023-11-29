@@ -207,7 +207,7 @@ class RemoteSnap(pynbody.snapshot.copy_on_access.UnderlyingClassMixin, pynbody.s
         # special logic: the normal promotion procedure would copy everything for this array out of shared memory
         # which we don't want if the server can provide us with a shared memory view of the whole array
 
-        if self.connection.shared_mem:
+        if self.connection.shared_mem and not self.delay_promotion:
             if name in self._loadable_keys:
                 for fam in self.families():
                     try:
