@@ -1,5 +1,5 @@
 import numpy as np
-import pynbody
+import pynbody.array.shared
 
 from ..message import Message
 
@@ -34,9 +34,9 @@ class SharedMemoryArrayInfo(Message):
     pass
 
 def _send_array_shared_memory(array: pynbody.array.SimArray, destination: int):
-    info = pynbody.array._shared_array_deconstruct(array, transfer_ownership=False)
+    info = pynbody.array.shared._shared_array_deconstruct(array, transfer_ownership=False)
     SharedMemoryArrayInfo(info).send(destination)
 
 def _receive_array_shared_memory(source):
     info = SharedMemoryArrayInfo.receive(source)
-    return pynbody.array._shared_array_reconstruct(info.contents)
+    return pynbody.array.shared._shared_array_reconstruct(info.contents)
