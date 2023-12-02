@@ -350,3 +350,19 @@ def _test_implict_array_promotion_shared_mem():
 def test_implicit_array_promotion_shared_mem():
     pt.use("multiprocessing-2")
     pt.launch(_test_implict_array_promotion_shared_mem)
+
+def _test_explicit_array_promotion_shared_mem():
+
+    f_remote = handler.load_timestep("tiny.000640", mode='server-shared-mem').shared_mem_view
+
+    f_remote.dm['pos']
+    f_remote.gas['pos']
+    f_remote.star['pos']
+
+
+    f_local = handler.load_timestep("tiny.000640", mode=None)
+    assert (f_remote['pos'] == f_local['pos']).all()
+
+def test_explicit_array_promotion_shared_mem():
+    pt.use("multiprocessing-2")
+    pt.launch(_test_explicit_array_promotion_shared_mem)
