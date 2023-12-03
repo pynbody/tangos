@@ -1,4 +1,5 @@
 import multiprocessing
+import multiprocessing.resource_tracker
 import os
 import signal
 import sys
@@ -119,6 +120,11 @@ def launch_functions(functions, args):
     global _slave
     if _slave:
         raise RuntimeError("Multiprocessing session is already underway")
+
+    # the resource tracker must be running before we start any processes,
+    # otherwise they'll start their own resource trackers and all sorts
+    # of confusion will ensue
+    multiprocessing.resource_tracker.ensure_running()
 
     num_procs = len(functions)
 
