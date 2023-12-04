@@ -81,7 +81,7 @@ are rarely likely to be the best option.
    the entire snapshot's position arrays will be loaded on rank 0, but no other data.
    The data on the individual ranks is loaded via partial loading (see `--load-mode=partial` above).
 
-## `tangos write` worked example
+## tangos write worked example
 
 
 Let's consider the longest process in the tutorials which involves writing images and more to
@@ -115,12 +115,19 @@ for a machine with 4 processors.
  * So we're left with `--load-mode=server` (for multi-node calculations) or `--load-mode=server-shared-mem` (for single-node calculations). Either is efficient in terms of computation and memory usage, but the latter is also efficient
   in terms of having minimal communication overheads between processes.
 
-Memory implications: `tangos link`
-------------------------------------
+tangos link / crosslink
+-----------------------
 
-For `tangos link`, parallelisation is currently implemented only at the snapshot level. Suppose you have a simulation
+For `tangos link` and `tangos crosslink`, parallelisation is currently implemented only at the snapshot level. Suppose you have a simulation
 with M particles. Each worker loads needs to store at least 2M integers at any one time (possibly more depending on the
 underlying formats) in order to work out the merger tree.
 
 Consequently for large simulations, you may need to use a machine with lots of memory and/or use fewer processes than you have
 cores available.
+
+tangos add
+----------
+
+The `tangos add` tool is also only parallelised at the snapshot
+level, but it does not need to load much data per snapshot and so
+this does not normally pose a problem.
