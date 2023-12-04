@@ -13,12 +13,9 @@ There are currently various sample simulations available to illustrate the use o
 * You can also use the publicly-available Eagle particle data to try
   analysing [a full uniform volume galaxy formation simulation](first_steps_eagle.md), although this takes slightly
   longer and requires a large amount of disk space.
+* As a final example, you can also [import a simulation using yt](using_with_yt.md) as the underlying library.
 
-Adding simulations to _tangos_ is not strongly dependent on the underlying format so to get to grips with
+Adding simulations to _tangos_ is only weakly dependent on the underlying format so to get to grips with
 that process you can try any of the tutorials.
 
-If you want to build the database used for the [analysis tutorials](data_exploration.md), you should import
-all of the above. However you can also download the ready-made database file if you don't want to
-go through importing three separate simulations.
-
-As a final example, you can also [import a simulation using yt](using_with_yt.md) as the underlying library.
+Once you have built a database, you can try it out with the [analysis tutorials](data_exploration.md). The analysis tutorials also include a link to pre-made databases from the above simulations.
