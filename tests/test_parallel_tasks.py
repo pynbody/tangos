@@ -1,10 +1,12 @@
-import sys
 import time
+
+import pytest
 
 import tangos
 import tangos.testing.simulation_generator
 from tangos import parallel_tasks as pt
 from tangos import testing
+from tangos.parallel_tasks import testing as pt_testing
 
 
 def setup_module():
@@ -19,7 +21,8 @@ def setup_module():
 
 def teardown_module():
     tangos.core.close_db()
-    pt.launch(tangos.core.close_db, 6)
+    pt.use("multiprocessing-6")
+    pt.launch(tangos.core.close_db)
 
 
 def _add_property():
@@ -30,7 +33,8 @@ def _add_property():
 
 
 def test_add_property():
-    pt.launch(_add_property,3)
+    pt.use("multiprocessing-3")
+    pt.launch(_add_property)
     for i in range(1,10):
         assert tangos.get_halo(i)['my_test_property']==i
 
@@ -48,8 +52,8 @@ def _add_two_properties_different_ranges():
             tangos.core.get_default_session().commit()
 
 def test_add_two_properties_different_ranges():
-
-    pt.launch(_add_two_properties_different_ranges,3)
+    pt.use("multiprocessing-3")
+    pt.launch(_add_two_properties_different_ranges)
     for i in range(1,10):
         assert tangos.get_halo(i)['my_test_property_2']==i
         if i<8:
@@ -75,7 +79,8 @@ def test_for_loop_is_not_run_twice():
     entire task could be run twice"""
     tangos.get_halo(1)['test_count'] = 0
     tangos.get_default_session().commit()
-    pt.launch(_test_not_run_twice, 5)
+    pt.use("multiprocessing-5")
+    pt.launch(_test_not_run_twice)
     assert tangos.get_halo(1)['test_count']==3
 
 
@@ -86,7 +91,8 @@ def _test_empty_loop():
 
 
 def test_empty_loop():
-    pt.launch(_test_empty_loop,3)
+    pt.use("multiprocessing-3")
+    pt.launch(_test_empty_loop)
 
 def _test_empty_then_non_empty_loop():
     for _ in pt.distributed([]):
@@ -96,7 +102,8 @@ def _test_empty_then_non_empty_loop():
         pass
 
 def test_empty_then_non_empty_loop():
-    pt.launch(_test_empty_then_non_empty_loop, 3)
+    pt.use("multiprocessing-3")
+    pt.launch(_test_empty_then_non_empty_loop)
 
 
 def _test_synchronize_db_creator():
@@ -111,7 +118,8 @@ def _test_synchronize_db_creator():
     tangos.core.get_default_session().commit()
 
 def test_synchronize_db_creator():
-    pt.launch(_test_synchronize_db_creator,3)
+    pt.use("multiprocessing-3")
+    pt.launch(_test_synchronize_db_creator)
     assert tangos.get_halo(1)['db_creator_test_property']==1.0
     assert tangos.get_halo(2)['db_creator_test_property'] == 1.0
     creator_1, creator_2 = (tangos.get_halo(i).get_objects('db_creator_test_property')[0].creator for i in (1,2))
@@ -120,39 +128,91 @@ def test_synchronize_db_creator():
 
 
 def _test_shared_locks():
-    start_time = time.time()
     if pt.backend.rank()==1:
         # exclusive mode
-        time.sleep(0.05)
+        pt.barrier() # make sure the exclusive lock isn't claimed before the first shared locks
         with pt.lock.ExclusiveLock("lock"):
+            pt_testing.log("exclusive lock acquired")
             # should be running after the shared locks are done
-            assert time.time()-start_time>0.1
     else:
         # shared mode
         with pt.lock.SharedLock("lock"):
             # should not have waited for the other shared locks
-            assert time.time() - start_time < 0.1
-            time.sleep(0.1)
-    pt.backend.barrier()
+            pt_testing.log("shared lock acquired")
+            pt.barrier()
+    pt.barrier()
 
 def _test_shared_locks_in_queue():
     start_time = time.time()
     if pt.backend.rank() <=2 :
-        # exclusive mode
+        # two different processes going for the exclusive lock
         with pt.lock.ExclusiveLock("lock", 0):
-            assert time.time() - start_time < 0.2
+            pt_testing.log("exclusive lock acquired")
             time.sleep(0.1)
+            pt_testing.log("exclusive lock about to be released")
     else:
         # shared mode
-        time.sleep(0.1)
         with pt.lock.SharedLock("lock",0):
             # should be running after the exclusive locks are done
-            assert time.time() - start_time > 0.1
+            pt_testing.log("shared lock acquired")
             time.sleep(0.1)
+            pt_testing.log("shared lock about to be released")
         # should all have run in parallel
         assert time.time()-start_time<0.5
-    pt.backend.barrier()
+    pt.barrier()
 
 def test_shared_locks():
-    pt.launch(_test_shared_locks,4)
-    pt.launch(_test_shared_locks_in_queue, 6)
+    pt_testing.initialise_log()
+    pt.use("multiprocessing-4")
+    pt.launch(_test_shared_locks)
+    log = pt_testing.get_log()
+    print("log:")
+    print("".join(log))
+    for i in range(2):
+      assert log[i].strip() in ("[2] shared lock acquired", "[3] shared lock acquired")
+    assert log[2].strip() == "[1] exclusive lock acquired"
+
+def test_shared_locks_in_queue():
+    pt_testing.initialise_log()
+    pt.use("multiprocessing-6")
+    pt.launch(_test_shared_locks_in_queue)
+    log = pt_testing.get_log()
+    print("log:")
+
+    # we want to verify that shared locks were held simultaneously, but exclusive locks never were
+    lock_held = 0
+    for line in log:
+        print(line.strip())
+        if "exclusive lock acquired" in line:
+            assert lock_held==0
+            lock_held = 'exclusive'
+        elif "shared lock acquired" in line:
+            assert isinstance(lock_held, int)
+            lock_held += 1
+        elif "exclusive lock about to be released" in line:
+            assert lock_held=='exclusive'
+            lock_held = 0
+        elif "shared lock about to be released" in line:
+            assert isinstance(lock_held, int)
+            lock_held-=1
+        else:
+            assert False, "Unexpected line in log: "+line
+
+class ErrorOnServer(pt.message.Message):
+    def process(self):
+        raise RuntimeError("Error on server")
+
+def test_error_on_server():
+    pt.use("multiprocessing-2")
+    with pytest.raises(RuntimeError) as e:
+        pt.launch(lambda: ErrorOnServer().send(0))
+    assert "Error on server" in str(e.value)
+
+def test_error_on_client():
+    pt.use("multiprocessing-2")
+    def _error_on_client():
+        raise RuntimeError("Error on client")
+
+    with pytest.raises(RuntimeError) as e:
+        pt.launch(_error_on_client)
+    assert "Error on client" in str(e.value)

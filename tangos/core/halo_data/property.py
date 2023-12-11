@@ -15,7 +15,7 @@ class HaloProperty(Base):
     # n.b. backref defined below
     halo = relationship(SimulationObjectBase, cascade='',
                         backref=backref('all_properties',overlaps='properties,deprecated_properties',
-                                        cascade_backrefs=False),
+                                        cascade_backrefs=False, viewonly=True),
                         overlaps='properties,deprecated_properties')
 
     data_float = Column(DOUBLE_PRECISION)
@@ -27,8 +27,10 @@ class HaloProperty(Base):
 
     deprecated = Column(Boolean, default=False, nullable=False)
 
-    creator = relationship(creator.Creator, backref=backref(
-        'properties', cascade_backrefs=False, lazy='dynamic'), cascade='save-update')
+    creator = relationship(creator.Creator,
+                           backref=backref('properties', cascade_backrefs=False,
+                                           lazy='dynamic', viewonly=True),
+                           cascade='save-update')
     creator_id = Column(Integer, ForeignKey('creators.id'))
 
     def __init__(self, halo, name, data):

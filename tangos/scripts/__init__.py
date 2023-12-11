@@ -13,7 +13,7 @@ def add_generic_tool(subparse, class_, command, help):
     def run(options):
         obj = class_()
         obj.process_options(options)
-        parallel_tasks.launch(obj.run_calculation_loop, 2, [])
+        parallel_tasks.launch(obj.run_calculation_loop, [])
     this_subparser.set_defaults(func=run)
 
 def add_serve_tool(subparse):

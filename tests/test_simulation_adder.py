@@ -136,8 +136,8 @@ def _add_with_pynbody_parallel():
     manager.scan_simulation_and_add_all_descendants()
 
 def test_add_with_pynbody_parallel(fresh_database_no_contents):
-    pt.use("multiprocessing")
-    pt.launch(_add_with_pynbody_parallel, 3)
+    pt.use("multiprocessing-3")
+    pt.launch(_add_with_pynbody_parallel)
 
     assert db.get_timestep("test_ahf_merger_tree/tiny.000640").halos.count() == 9
     assert db.get_timestep("test_ahf_merger_tree/tiny.000832").halos.count() == 9

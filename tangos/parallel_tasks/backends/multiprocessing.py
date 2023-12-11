@@ -1,8 +1,12 @@
 import multiprocessing
+import multiprocessing.resource_tracker
 import os
 import signal
 import sys
 import threading
+from typing import Optional
+
+import tblib.pickling_support
 
 _slave = False
 _rank = None
@@ -86,6 +90,8 @@ def finalize():
     _pipe.send("finalize")
 
 def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
+    tblib.pickling_support.install()
+
     global _slave, _rank, _size, _pipe, _recv_lock
     _rank = rank_in
     _size = size_in
@@ -103,15 +109,22 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
             print("Error on a sub-process:", file=sys.stderr)
             traceback.print_exception(exc_type, exc_value, exc_traceback,
                                       file=sys.stderr)
-        _pipe.send(("error", e))
+        _pipe.send(("error", exc_value, exc_traceback))
 
     _pipe.close()
 
+class RemoteException(Exception):
+    pass
 
 def launch_functions(functions, args):
     global _slave
     if _slave:
         raise RuntimeError("Multiprocessing session is already underway")
+
+    # the resource tracker must be running before we start any processes,
+    # otherwise they'll start their own resource trackers and all sorts
+    # of confusion will ensue
+    multiprocessing.resource_tracker.ensure_running()
 
     num_procs = len(functions)
 
@@ -125,7 +138,7 @@ def launch_functions(functions, args):
         proc_i.start()
 
     running = [True for rank in range(num_procs)]
-    error = False
+    error: Optional[Exception] = None
 
     while any(running):
         for i, pipe_i in enumerate(parent_connections):
@@ -136,6 +149,7 @@ def launch_functions(functions, args):
                     running[i]=False
                 elif isinstance(message[0], str) and message[0]=='error':
                     error = message[1]
+                    traceback = message[2]
                     running = [False]
                     break
                 else:
@@ -153,13 +167,16 @@ def launch_functions(functions, args):
             os.kill(proc_i.pid, signal.SIGTERM)
         proc_i.join()
 
-    if error:
-        raise error
+    if error is not None:
+        raise error.with_traceback(traceback)
 
 
 
-def launch(function, num_procs, args):
-    if num_procs is None:
-        raise RuntimeError("To launch a parallel session using multiprocessing backend, you need to specify the number of processors")
+def launch(function, args):
+    from .. import _num_procs
+    if _num_procs is None:
+        raise RuntimeError("To launch a parallel session using multiprocessing backend, you need to specify the number "
+                           "of processors. You can do this by calling the backend multiprocessing-<n> where <n> is the"
+                           "number of processors you want to use.")
 
-    launch_functions([function]*num_procs, [args]*num_procs)
+    launch_functions([function]*_num_procs, [args]*_num_procs)

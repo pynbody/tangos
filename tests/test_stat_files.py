@@ -140,7 +140,7 @@ def test_import_properties_is_only_numeric_or_array():
 
     property = importer._create_property(db_name, halo, np.array([42.0, 42.0, 42.0]))
     assert property.data_is_array() == True
-    assert property.data.dtype == np.floating
+    assert np.issubdtype(property.data.dtype, np.floating)
     npt.assert_allclose(property.data, np.array([42.0, 42.0, 42.0]))
 
     # Importing a string should fail

@@ -1,5 +1,5 @@
 import numpy as np
-from sqlalchemy import Column, ForeignKey, Integer, orm, types
+from sqlalchemy import BigInteger, Column, ForeignKey, Integer, orm, types
 from sqlalchemy.orm import Session, backref, relationship
 
 from . import Base, creator, extraction_patterns
@@ -30,9 +30,9 @@ class SimulationObjectBase(Base):
     __tablename__= "halos"
 
     id = Column(Integer, primary_key=True) #the unique ID value of the database object created for this halo
-    halo_number = Column(Integer) #by default this will be the halo's rank in terms of particle count
-    finder_id = Column(UnsignedInteger) #raw halo ID from the halo catalog
-    finder_offset = Column(Integer) #index of halo within halo catalog, primary identifier used when reading catalog/simulation data
+    halo_number = Column(BigInteger) #by default this will be the halo's rank in terms of particle count
+    finder_id = Column(BigInteger) #raw halo ID from the halo catalog
+    finder_offset = Column(BigInteger) #index of halo within halo catalog, primary identifier used when reading catalog/simulation data
     timestep_id = Column(Integer, ForeignKey('timesteps.id'))
     timestep = relationship(TimeStep, backref=backref(
         'objects', order_by=halo_number, cascade_backrefs=False, lazy='dynamic'), cascade='')
