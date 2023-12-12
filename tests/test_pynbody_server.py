@@ -228,6 +228,17 @@ def test_correct_object_loading():
     pt.launch(_test_correct_object_loading)
 
 
+def _test_region_loading():
+    """This test ensures that a region can be loaded correctly under server mode"""
+    f_remote = handler.load_region("tiny.000640", pynbody.filt.Sphere("3 Mpc"), mode='server')
+    f_local = handler.load_region("tiny.000640", pynbody.filt.Sphere("3 Mpc"), mode=None)
+    assert (f_remote.dm['pos'] == f_local.dm['pos']).all()
+    assert (f_remote.st['pos'] == f_local.st['pos']).all()
+def test_region_loading():
+    """This test ensures that a region can be loaded correctly under server mode"""
+    pt.use("multiprocessing-3")
+    pt.launch(_test_region_loading)
+
 
 def _test_oserror_on_nonexistent_file():
     with npt.assert_raises(OSError):
