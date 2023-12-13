@@ -20,4 +20,4 @@ from . import core, log, properties
 from .core import *
 from .query import *
 
-__version__ = '1.9.0'
+__version__ = '1.9.1'
