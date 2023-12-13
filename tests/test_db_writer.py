@@ -110,7 +110,7 @@ def run_writer_with_args(*args, parallel=False):
         return stored_log.get_output()
 
     if parallel:
-        parallel_tasks.launch(_runner, [])
+        return parallel_tasks.launch(writer.run_calculation_loop, [], {'capture_log': True})
     else:
         return _runner()
 

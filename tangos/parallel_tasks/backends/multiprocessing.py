@@ -4,6 +4,7 @@ import os
 import signal
 import sys
 import threading
+import time
 from typing import Optional
 
 import tblib.pickling_support
@@ -87,9 +88,9 @@ def barrier():
     pass
 
 def finalize():
-    _pipe.send("finalize")
+    pass
 
-def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
+def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in, capture_log):
     tblib.pickling_support.install()
 
     global _slave, _rank, _size, _pipe, _recv_lock
@@ -97,9 +98,22 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
     _size = size_in
     _pipe = pipe_in
     _recv_lock = threading.Lock()
+
+    result = None
+
     try:
-        target_fn(*args_in)
-        finalize()
+        if capture_log:
+            from .. import log
+            try:
+                with log.LogCapturer() as lc:
+                    target_fn(*args_in)
+            finally:
+                result = lc.get_output()
+        else:
+            target_fn(*args_in)
+        if result is not None:
+            _pipe.send(("log", result))
+        _pipe.send("exit")
     except Exception as e:
         import sys
         import traceback
@@ -109,14 +123,17 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in):
             print("Error on a sub-process:", file=sys.stderr)
             traceback.print_exception(exc_type, exc_value, exc_traceback,
                                       file=sys.stderr)
+        if result is not None:
+            _pipe.send(("log", result))
         _pipe.send(("error", exc_value, exc_traceback))
+
 
     _pipe.close()
 
 class RemoteException(Exception):
     pass
 
-def launch_functions(functions, args):
+def launch_functions(functions, args, capture_log=False):
     global _slave
     if _slave:
         raise RuntimeError("Multiprocessing session is already underway")
@@ -130,7 +147,7 @@ def launch_functions(functions, args):
 
 
     child_connections, parent_connections = list(zip(*[mp_context.Pipe() for rank in range(num_procs)]))
-    processes = [mp_context.Process(target=launch_wrapper, args=(function, rank, num_procs, pipe, args_i))
+    processes = [mp_context.Process(target=launch_wrapper, args=(function, rank, num_procs, pipe, args_i, capture_log))
                  for rank, (pipe, function, args_i) in
                  enumerate(zip(child_connections, functions, args))]
 
@@ -140,18 +157,21 @@ def launch_functions(functions, args):
     running = [True for rank in range(num_procs)]
     error: Optional[Exception] = None
 
+    log = "" if capture_log else None
+
     while any(running):
         for i, pipe_i in enumerate(parent_connections):
             if pipe_i.poll():
                 message = pipe_i.recv()
-                if message=='finalize':
-                    #print "  ---> multiprocessing backend: finalize node ",i,running
+                if message=='exit':
                     running[i]=False
                 elif isinstance(message[0], str) and message[0]=='error':
                     error = message[1]
                     traceback = message[2]
                     running = [False]
                     break
+                elif isinstance(message[0], str) and message[0]=='log':
+                    log+=message[1]
                 else:
                     #print "multiprocessing backend: pass message ",i,"->",message[1]
                     parent_connections[message[1]].send((message[0],i,message[2]))
@@ -170,13 +190,38 @@ def launch_functions(functions, args):
     if error is not None:
         raise error.with_traceback(traceback)
 
+    return _sort_log(log)
+
+def _sort_log(log):
+    """Sort the log by time.
+
+    The input log is of the format, for example:
+      [  3] 2023-12-12 13:55:46,004 Message
+
+    This routine extracts the times, parses them and returns a reordered log in time order.
+    It is stable, i.e. messages with the same timestep are returned in the input order
+    """
+    if log is None:
+        return None
+    lines = log.split("\n")
+    times = []
+    for line in lines:
+        if line.strip() == "":
+            continue
+        times.append(line[6:28])
+    times = [time.strptime(t, "%Y-%m-%d %H:%M:%S,%f") for t in times]
+    lines = [line for _, line in sorted(zip(times, lines), key=lambda item: item[0])]
+    return "\n".join(lines)
 
 
-def launch(function, args):
+
+
+
+def launch(function, args, **kwargs):
     from .. import _num_procs
     if _num_procs is None:
         raise RuntimeError("To launch a parallel session using multiprocessing backend, you need to specify the number "
                            "of processors. You can do this by calling the backend multiprocessing-<n> where <n> is the"
                            "number of processors you want to use.")
 
-    launch_functions([function]*_num_procs, [args]*_num_procs)
+    return launch_functions([function]*_num_procs, [args]*_num_procs, **kwargs)
