@@ -558,7 +558,7 @@ class CalculationSuccessTracker(accumulative_statistics.StatisticsAccumulatorBas
         self._posted_errors = parallel_tasks.shared_set.SharedSet('posted_errors',allow_parallel)
 
     def should_log_error(self, exception):
-        tb = "\n".join(traceback.format_exception(exception))
+        tb = "\n".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
         return not self._posted_errors.add_if_not_exists(tb)
 
     def report_to_log(self, logger):
