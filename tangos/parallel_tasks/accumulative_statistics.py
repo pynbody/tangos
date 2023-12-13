@@ -1,7 +1,7 @@
 import logging
 import time
 
-from ..config import PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES 
+from ..config import PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES
 from ..log import logger
 from .message import Message
 
@@ -50,7 +50,7 @@ class AccumulateStatisticsMessage(Message):
         _existing_accumulators[self.contents.id].add(self.contents)
 
 class StatisticsAccumulatorBase:
-    REPORT_AFTER = PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES 
+    REPORT_AFTER = PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES
     def __init__(self, allow_parallel=False):
         """This is a base class for accumulating statistics, possibly in parallel across multiple processes.
 
