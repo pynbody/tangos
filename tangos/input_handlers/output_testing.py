@@ -31,7 +31,6 @@ class TestInputHandler(HandlerBase):
         pre_extension_length = len(os.path.join(config.base, self.basename))
         steps = glob.glob(os.path.join(config.base, self.basename, "step.*"))
         for i in steps:
-            print(i, i[pre_extension_length:], self.strip_slashes(i[pre_extension_length:]))
             yield self.strip_slashes(i[pre_extension_length:])
 
     def get_timestep_properties(self, ts_extension):

@@ -93,8 +93,6 @@ class _TestPathChoice(properties.LivePropertyCalculation):
         type(self).num_calls+=1
         bh_links = halo["BH"]
         if isinstance(bh_links,list):
-            for lk in bh_links:
-                print(list(lk.keys()))
             vals = [lk[criterion] if criterion in lk else self.default_val for lk in bh_links]
             return bh_links[np.argmax(vals)]
         else:

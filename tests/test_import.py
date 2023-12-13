@@ -103,8 +103,8 @@ def test_import_filtered(source_engine_and_session, destination_engine_and_sessi
 
     assert tangos.get_default_session() is destination_session
 
-    print("exist:",existing_session.query(tangos.core.Simulation).all())
-    print("dest:",destination_session.query(tangos.core.Simulation).all())
+
+
 
     importer = _get_importer_instance(existing_engine, "--exclude-properties", "Mvir")
     importer.run_calculation_loop()
