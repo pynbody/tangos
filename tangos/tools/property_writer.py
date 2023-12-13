@@ -13,6 +13,7 @@ import sqlalchemy.orm
 from .. import config, core, live_calculation, parallel_tasks, properties
 from ..cached_writer import insert_list
 from ..log import logger
+from ..parallel_tasks import accumulative_statistics
 from ..util import proxy_object, terminalcontroller, timing_monitor
 from ..util.check_deleted import check_deleted
 from . import GenericTangosTool
@@ -170,7 +171,7 @@ class PropertyWriter(GenericTangosTool):
         if self.options.verbose:
             self.redirect.enabled = False
 
-        self.timing_monitor = timing_monitor.TimingMonitor()
+
 
     def _compile_inclusion_criterion(self):
         if self.options.include_only:
@@ -184,9 +185,9 @@ class PropertyWriter(GenericTangosTool):
         if parallel_tasks.backend is None or parallel_tasks.backend.rank()==1:
             logger.info(*args)
 
-    def _summarise_timing_one_process(self):
-        if parallel_tasks.backend is None or parallel_tasks.backend.rank() == 1:
-            self.timing_monitor.summarise_timing(logger)
+    def _summarise_timing(self):
+        self.timing_monitor.report_to_log_or_server(logger)
+
 
     def _build_halo_list(self, db_timestep):
         query = core.halo.SimulationObjectBase.timestep == db_timestep
@@ -276,7 +277,7 @@ class PropertyWriter(GenericTangosTool):
             logger.info(f"...{num_properties} properties were committed")
             self._pending_properties = []
             self._start_time = time.time()
-            self._summarise_timing_one_process()
+            self._summarise_timing()
 
     def _queue_results_for_later_commit(self, db_halo, names, results, existing_properties_data):
         for n, r in zip(names, results):
@@ -471,8 +472,6 @@ class PropertyWriter(GenericTangosTool):
 
 
     def run_timestep_calculation(self, db_timestep):
-        self.tracker = CalculationSuccessTracker()
-
         logger.info("Processing %r", db_timestep)
         self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation,
                                                                              self.options.properties,
@@ -507,7 +506,7 @@ class PropertyWriter(GenericTangosTool):
         logger.info("Done with %r",db_timestep)
         self._unload_timestep()
 
-        self.tracker.report_to_log(logger)
+        self.tracker.report_to_log_or_server(logger)
 
         self._commit_results_if_needed(end_of_timestep=True)
 
@@ -532,6 +531,11 @@ class PropertyWriter(GenericTangosTool):
 
 
     def run_calculation_loop(self):
+        # NB both these objects must be created at the same place in all processes,
+        # since creating them is a 'barrier'-like operation
+        self.timing_monitor = timing_monitor.TimingMonitor(allow_parallel=True)
+        self.tracker = CalculationSuccessTracker(allow_parallel=True)
+
         parallel_tasks.database.synchronize_creator_object()
 
         self._start_time = time.time()
@@ -543,13 +547,10 @@ class PropertyWriter(GenericTangosTool):
         self._commit_results_if_needed(True,True)
 
 
-class CalculationSuccessTracker:
-    def __init__(self):
-        self._skipped_existing = 0
-        self._skipped_missing_prerequisite = 0
-        self._skipped_error = 0
-        self._skipped_loading_error = 0
-        self._succeeded = 0
+class CalculationSuccessTracker(accumulative_statistics.StatisticsAccumulatorBase):
+    def __init__(self, allow_parallel=False):
+        super().__init__(allow_parallel=allow_parallel)
+        self.reset()
 
         self._posted_errors = set()
 
@@ -561,6 +562,7 @@ class CalculationSuccessTracker:
             return False
 
     def report_to_log(self, logger):
+        logger.info("PROPERTY CALCULATION SUMMARY")
         logger.info("            Succeeded: %d property calculations", self._succeeded)
         logger.info("              Errored: %d property calculations", self._skipped_error)
         logger.info("  Errored during load: %d property calculations", self._skipped_loading_error)
@@ -581,3 +583,17 @@ class CalculationSuccessTracker:
 
     def register_already_exists(self):
         self._skipped_existing+=1
+
+    def reset(self):
+        self._succeeded = 0
+        self._skipped_error = 0
+        self._skipped_loading_error = 0
+        self._skipped_existing = 0
+        self._skipped_missing_prerequisite = 0
+
+    def add(self, other):
+        self._succeeded += other._succeeded
+        self._skipped_error += other._skipped_error
+        self._skipped_loading_error += other._skipped_loading_error
+        self._skipped_existing += other._skipped_existing
+        self._skipped_missing_prerequisite += other._skipped_missing_prerequisite

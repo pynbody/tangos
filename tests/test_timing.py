@@ -23,7 +23,7 @@ def test_timing_graceful_fail():
             TM.mark("goodbye")
 
     with lc:
-        TM.summarise_timing(logger)
+        TM.report_to_log(logger)
 
     assert "INTERNAL BREAKDOWN" in lc.get_output()
     assert "hello" in lc.get_output()
@@ -36,7 +36,7 @@ def test_timing_graceful_fail():
     lc = LogCapturer()
 
     with lc:
-        TM.summarise_timing(logger)
+        TM.report_to_log(logger)
 
     assert "hello" not in lc.get_output()
     assert "goodbye" not in lc.get_output()
@@ -51,7 +51,7 @@ def test_timing_graceful_fail():
         TM.mark("goodbye")
 
     with lc:
-        TM.summarise_timing(logger)
+        TM.report_to_log(logger)
 
     assert "hello" not in lc.get_output()
     assert "goodbye" not in lc.get_output()
@@ -76,8 +76,8 @@ def test_timing_add():
     lc = LogCapturer()
 
     with lc:
-        TM.summarise_timing(logger)
-        TM2.summarise_timing(logger)
+        TM.report_to_log(logger)
+        TM2.report_to_log(logger)
 
     assert "Dummy 0.3s" in lc.get_output()
     assert "0.1s" in lc.get_output()
@@ -86,8 +86,35 @@ def test_timing_add():
     lc = LogCapturer()
 
     with lc:
-        TM.summarise_timing(logger)
+        TM.report_to_log(logger)
 
-    assert "Dummy 0.5s" in lc.get_output()
-    assert "hello 0.2s" in lc.get_output()
-    assert "end 0.3s" in lc.get_output()
+    output = lc.get_output_without_timestamps()
+
+    assert "Dummy 0.5s" in output
+    assert "hello 0.2s" in output
+    assert "end 0.3s" in output
+
+def test_picklable():
+    TM = tm.TimingMonitor()
+    x = Dummy()
+
+    with TM(x):
+        time.sleep(0.1)
+        TM.mark("hello")
+        time.sleep(0.2)
+
+    lc = LogCapturer()
+
+    with lc:
+        TM.report_to_log(logger)
+
+    correct_results = lc.get_output_without_timestamps()
+
+    import pickle
+    TM2 = pickle.loads(pickle.dumps(TM))
+
+    lc = LogCapturer()
+    with lc:
+        TM2.report_to_log(logger)
+
+    assert lc.get_output_without_timestamps() == correct_results

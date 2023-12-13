@@ -97,6 +97,9 @@ PROPERTY_WRITER_MAXIMUM_TIME_BETWEEN_COMMITS = 600 # seconds
 # Property writer: don't bother committing even if a timestep is finished if this time hasn't elapsed:
 PROPERTY_WRITER_MINIMUM_TIME_BETWEEN_COMMITS = 300 # seconds
 
+# Minimum time between providing updates to the user during tangos write, when running in parallel
+PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES = 600 # seconds
+
 try:
     from .config_local import *
 except:

@@ -4,14 +4,16 @@ import time
 
 import numpy as np
 
+from ..parallel_tasks import accumulative_statistics
 
-class TimingMonitor:
+
+class TimingMonitor(accumulative_statistics.StatisticsAccumulatorBase):
     """This class keeps track of how long a Property is taking to evaluate, and (if the Property is implemented
     to take advantage of this), the time spent on sub-tasks. It provides formatting to place this information
     into the log."""
-    def __init__(self):
-        self.timings_by_class = {}
-        self.labels_by_class = {}
+    def __init__(self, allow_parallel=False):
+        super().__init__(allow_parallel=allow_parallel)
+        self.reset()
         self._monitoring = None
 
     @contextlib.contextmanager
@@ -19,6 +21,10 @@ class TimingMonitor:
         self._start(object)
         yield
         self._end()
+
+    def reset(self):
+        self.timings_by_class = {}
+        self.labels_by_class = {}
 
     def check_compatible_object(self, object):
         if not hasattr(object, 'timing_monitor'):
@@ -88,12 +94,12 @@ class TimingMonitor:
         for c in other.labels_by_class.keys():
             labels = other.labels_by_class[c]
             timings = other.timings_by_class[c]
-            print("ADD", c, labels, timings)
             self._add_run_to_running_totals(c, np.cumsum(np.concatenate(([0.0],timings))), labels)
-            print("RESULT", c, self.labels_by_class[c], self.timings_by_class[c])
 
-    def summarise_timing(self, logger):
-        logger.info("CUMULATIVE RUNNING TIMES (just this node)")
+    def report_to_log(self, logger):
+        if len(self.timings_by_class) == 0:
+            return
+        logger.info("CUMULATIVE RUNNING TIMES")
         v_tot = 1e-10
         for k, v in self.timings_by_class.items():
             v_tot += sum(v)

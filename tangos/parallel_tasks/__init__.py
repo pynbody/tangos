@@ -1,11 +1,7 @@
 import importlib
 import re
 import sys
-import time
-import traceback
 import warnings
-
-import tangos.core.creator
 
 from .. import config, core
 
@@ -13,9 +9,10 @@ backend = None
 _backend_name = config.default_backend
 _num_procs = None # only for multiprocessing backend
 
+_on_exit = [] # list of functions to call when parallelism is shutting down
+
 from .. import log
-from ..log import logger
-from . import backends, jobs, message
+from . import accumulative_statistics, jobs, message
 
 
 def use(name):
@@ -51,9 +48,14 @@ def parallelism_is_active():
     global _backend_name
     return _backend_name != 'null' and backend is not None
 
-def launch(function, args=None):
+def launch(function, args=None, backend_kwargs=None):
     if args is None:
         args = []
+
+    if backend_kwargs is None:
+        backend_kwargs = {}
+
+    result = None
 
     # we need to close any existing connections because we may fork, which leads to
     # buggy/unreliable behaviour. This should invalidate the session attached to
@@ -71,14 +73,16 @@ def launch(function, args=None):
         try:
             core.close_db()
             if _backend_name != 'null':
-                backend.launch(_exec_function_or_server, [function, connection_info, args])
+                result = backend.launch(_exec_function_or_server, [function, connection_info, args], **backend_kwargs)
             else:
-                function(*args)
+                result = function(*args)
         finally:
             if connection_info is not None:
                 core.init_db(*connection_info)
     finally:
         deinit_backend()
+
+    return result
 
 def distributed(file_list, proc=None, of=None):
     """Distribute a list of tasks between all nodes"""
@@ -138,13 +142,18 @@ def _server_thread():
         else:
             obj.process()
 
-
-    log.logger.info("Terminating manager process")
-
+def on_exit_parallelism(function):
+    global _on_exit
+    _on_exit.append(function)
 
 def _shutdown_parallelism():
-    global backend
-    log.logger.info("Terminating worker process")
+    global backend, _on_exit
+    log.logger.debug("Clearing up process")
+
+    for fn in _on_exit:
+        fn()
+    _on_exit = []
+
     backend.barrier()
     backend.finalize()
     backend = None
