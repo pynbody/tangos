@@ -4,6 +4,7 @@ import time
 from numpy import testing as npt
 from pytest import fixture
 
+import pytest
 import tangos as db
 import tangos.config
 from tangos import log, parallel_tasks, properties, testing
@@ -134,9 +135,19 @@ def _assert_properties_as_expected():
     assert db.get_halo("dummy_sim_1/step.1/2")['dummy_property'] == 2.0
     assert db.get_halo("dummy_sim_1/step.2/1")['dummy_property'] == 2.0
 
-def test_error_ignoring(fresh_database):
-    log = run_writer_with_args("dummy_property", "dummy_property_with_exception")
-    assert "Uncaught exception during property calculation" in log
+@pytest.mark.parametrize('parallel', [True, False])
+def test_exception_reporting(fresh_database, parallel):
+    if parallel:
+        parallel_tasks.use('multiprocessing-3')
+    log = run_writer_with_args("dummy_property", "dummy_property_with_exception", parallel=parallel)
+    assert "Uncaught exception RuntimeError('Test of exception handling') during property calculation" in log
+    assert ":     result = property_calculator.calculate(snapshot_data, db_data)" in log
+    # above tests that a bit of the traceback is present, but also that it has been put on a formatted line
+
+    # count occurrences of the traceback, should be only one:
+    assert log.count("Traceback (most recent call last)")==1
+
+    assert "Errored: 15 property calculations" in log
 
     assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property'] == 1.0
     assert db.get_halo("dummy_sim_1/step.1/2")['dummy_property'] == 2.0

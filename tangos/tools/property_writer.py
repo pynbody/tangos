@@ -401,12 +401,15 @@ class PropertyWriter(GenericTangosTool):
                 with self.redirect:
                     result = property_calculator.calculate(snapshot_data, db_data)
                     self.tracker.register_success()
-            except Exception:
+            except Exception as e:
                 self.tracker.register_error()
 
-                if self.tracker.should_log_error(property_calculator):
-                    logger.exception("Uncaught exception during property calculation %r applied to %r"%(property_calculator, db_halo))
-                    logger.info("Further errors from this calculation on this timestep will be counted but not individually reported.")
+                if self.tracker.should_log_error(e):
+                    logger.info("Uncaught exception %r during property calculation %r applied to %r"%(e, property_calculator, db_halo))
+                    exc_data = traceback.format_exc()
+                    for line in exc_data.split("\n"):
+                        logger.info(line)
+                    logger.info("If this error arises again, it will be counted but not individually reported.")
 
                 if self.options.catch:
                     tbtype, value, tb = sys.exc_info()
@@ -552,14 +555,11 @@ class CalculationSuccessTracker(accumulative_statistics.StatisticsAccumulatorBas
         super().__init__(allow_parallel=allow_parallel)
         self.reset()
 
-        self._posted_errors = set()
+        self._posted_errors = parallel_tasks.shared_set.SharedSet('posted_errors',allow_parallel)
 
-    def should_log_error(self, from_module):
-        if from_module not in self._posted_errors:
-            self._posted_errors.add(from_module)
-            return True
-        else:
-            return False
+    def should_log_error(self, exception):
+        tb = "\n".join(traceback.format_exception(exception))
+        return not self._posted_errors.add_if_not_exists(tb)
 
     def report_to_log(self, logger):
         logger.info("PROPERTY CALCULATION SUMMARY")

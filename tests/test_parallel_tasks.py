@@ -216,3 +216,34 @@ def test_error_on_client():
     with pytest.raises(RuntimeError) as e:
         pt.launch(_error_on_client)
     assert "Error on client" in str(e.value)
+
+def _test_remote_set():
+    set = pt.shared_set.SharedSet("test_set", allow_parallel=True)
+    assert isinstance(set, pt.shared_set.RemoteSet)
+    if pt.backend.rank()==1:
+        result = set.add_if_not_exists("foo")
+        assert not result
+        pt.barrier()
+        pt.barrier()
+        result = set.add_if_not_exists("bar")
+        assert result
+        set2 = pt.shared_set.SharedSet("test_set2")
+        result = set2.add_if_not_exists("foo")
+        assert not result
+    elif pt.backend.rank()==2:
+        pt.barrier()
+        result = set.add_if_not_exists("foo")
+        assert result
+        result = set.add_if_not_exists("bar")
+        assert not result
+        pt.barrier()
+
+
+def test_remote_set():
+    pt.use("multiprocessing-3")
+    pt.launch(_test_remote_set)
+
+def test_local_set():
+    set = pt.shared_set.SharedSet("test_local_set")
+    assert not set.add_if_not_exists("foo")
+    assert set.add_if_not_exists("foo")
