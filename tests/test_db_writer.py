@@ -1,10 +1,10 @@
 import os
 import time
 
+import pytest
 from numpy import testing as npt
 from pytest import fixture
 
-import pytest
 import tangos as db
 import tangos.config
 from tangos import log, parallel_tasks, properties, testing
