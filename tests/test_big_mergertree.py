@@ -45,7 +45,7 @@ def setup_module():
 
 def test_major_progenitors():
     results = halo_finding.MultiHopMajorProgenitorsStrategy(tangos.get_item("sim/ts3/1"), include_startpoint=True).all()
-    print(results)
+
     testing.assert_halolists_equal(results, ["sim/ts3/1","sim/ts2/1","sim/ts1/1"])
 
 def test_merger_tree():

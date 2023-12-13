@@ -88,9 +88,12 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def load_region(self, ts_extension, region_specification, mode=None):
-        if mode is None or mode=='server':
+        if mode is None:
             timestep = self.load_timestep(ts_extension, mode)
             return timestep[region_specification]
+        elif mode=='server':
+            timestep = self.load_timestep(ts_extension, mode)
+            return timestep.get_view(region_specification)
         elif mode=='server-shared-mem':
             from ..parallel_tasks import pynbody_server as ps
             timestep = self.load_timestep(ts_extension, mode)

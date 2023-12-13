@@ -95,7 +95,6 @@ def test_insert_properties():
     adder.add_objects_to_timestep(ts1)
     importer = property_importer.PropertyImporter()
     importer.parse_command_line("Mvir Rvir hostHalo childHalo --for test_stat_files".split())
-    print(importer.options)
     importer.run_calculation_loop()
     npt.assert_almost_equal(ts1.halos[0]["Rvir"], 195.87)
     npt.assert_almost_equal(ts1.halos[0]["Mvir"], 5.02432e+11)

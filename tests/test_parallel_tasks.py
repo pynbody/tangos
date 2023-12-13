@@ -166,8 +166,6 @@ def test_shared_locks():
     pt.use("multiprocessing-4")
     pt.launch(_test_shared_locks)
     log = pt_testing.get_log()
-    print("log:")
-    print("".join(log))
     for i in range(2):
       assert log[i].strip() in ("[2] shared lock acquired", "[3] shared lock acquired")
     assert log[2].strip() == "[1] exclusive lock acquired"
@@ -177,12 +175,11 @@ def test_shared_locks_in_queue():
     pt.use("multiprocessing-6")
     pt.launch(_test_shared_locks_in_queue)
     log = pt_testing.get_log()
-    print("log:")
+
 
     # we want to verify that shared locks were held simultaneously, but exclusive locks never were
     lock_held = 0
     for line in log:
-        print(line.strip())
         if "exclusive lock acquired" in line:
             assert lock_held==0
             lock_held = 'exclusive'
@@ -216,3 +213,34 @@ def test_error_on_client():
     with pytest.raises(RuntimeError) as e:
         pt.launch(_error_on_client)
     assert "Error on client" in str(e.value)
+
+def _test_remote_set():
+    set = pt.shared_set.SharedSet("test_set", allow_parallel=True)
+    assert isinstance(set, pt.shared_set.RemoteSet)
+    if pt.backend.rank()==1:
+        result = set.add_if_not_exists("foo")
+        assert not result
+        pt.barrier()
+        pt.barrier()
+        result = set.add_if_not_exists("bar")
+        assert result
+        set2 = pt.shared_set.SharedSet("test_set2")
+        result = set2.add_if_not_exists("foo")
+        assert not result
+    elif pt.backend.rank()==2:
+        pt.barrier()
+        result = set.add_if_not_exists("foo")
+        assert result
+        result = set.add_if_not_exists("bar")
+        assert not result
+        pt.barrier()
+
+
+def test_remote_set():
+    pt.use("multiprocessing-3")
+    pt.launch(_test_remote_set)
+
+def test_local_set():
+    set = pt.shared_set.SharedSet("test_local_set")
+    assert not set.add_if_not_exists("foo")
+    assert set.add_if_not_exists("foo")

@@ -83,7 +83,17 @@ class PynbodySnapshotQueue:
 
     def _free_if_unused(self):
         if len(self.in_use_by)==0:
-            log.logger.debug("Pynbody server: all clients are finished with the current snapshot; freeing.")
+            from . import RequestPynbodyArray
+            log.logger.info(
+                f"Closing snapshot {self.current_timestep} after processing "
+                f"{RequestPynbodyArray.get_num_requests()} array fetches")
+            if RequestPynbodyArray.get_num_requests() > 0:
+                log.logger.info("    Typical wait time to start retrieving an array: %.1fs +/- %.1fs",
+                                RequestPynbodyArray.get_mean_wait_time(),
+                                RequestPynbodyArray.get_std_wait_time())
+                log.logger.info("    Total wait time: %.1fs", RequestPynbodyArray.get_total_wait_time())
+                RequestPynbodyArray.reset_performance_stats()
+
             with check_deleted(self.current_snapshot):
                 self.current_snapshot = None
                 self.current_timestep = None

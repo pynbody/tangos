@@ -389,7 +389,7 @@ def test_merging():
     testing.assert_halolists_equal(dest, ['sim/ts3/1', 'sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts3/4', 'sim/ts3/4'])
 
     source, dest = tangos.get_timestep("sim/ts1").calculate_all("halo_number()", "latest()", object_typetag='halo')
-    print(source,dest)
+
     assert np.all(source==[1,2,3,4,5,6,7])
     testing.assert_halolists_equal(dest, ['sim/ts3/1', 'sim/ts3/1', 'sim/ts3/2', 'sim/ts3/3', 'sim/ts1/5',
                                           'sim/ts3/4', 'sim/ts3/4'])

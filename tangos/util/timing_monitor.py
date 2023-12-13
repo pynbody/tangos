@@ -4,14 +4,16 @@ import time
 
 import numpy as np
 
+from ..parallel_tasks import accumulative_statistics
 
-class TimingMonitor:
+
+class TimingMonitor(accumulative_statistics.StatisticsAccumulatorBase):
     """This class keeps track of how long a Property is taking to evaluate, and (if the Property is implemented
     to take advantage of this), the time spent on sub-tasks. It provides formatting to place this information
     into the log."""
-    def __init__(self):
-        self.timings_by_class = {}
-        self.labels_by_class = {}
+    def __init__(self, allow_parallel=False):
+        super().__init__(allow_parallel=allow_parallel)
+        self.reset()
         self._monitoring = None
 
     @contextlib.contextmanager
@@ -19,6 +21,10 @@ class TimingMonitor:
         self._start(object)
         yield
         self._end()
+
+    def reset(self):
+        self.timings_by_class = {}
+        self.labels_by_class = {}
 
     def check_compatible_object(self, object):
         if not hasattr(object, 'timing_monitor'):
@@ -52,21 +58,24 @@ class TimingMonitor:
         self._unset_as_monitor_for(self._monitoring)
         self._time_marks_info.append("end")
         self._time_marks.append(time.time())
+
+        self._add_run_to_running_totals(cl, self._time_marks, self._time_marks_info)
+
+    def _add_run_to_running_totals(self, cl, latest_run_time_marks, latest_run_time_marks_labels):
         previous_timings = self.timings_by_class.get(cl, None)
-        if previous_timings is None or len(previous_timings) == len(self._time_marks)-1:
-            cumulative_timings = np.diff(self._time_marks)
+        if previous_timings is None or len(previous_timings) == len(latest_run_time_marks) - 1:
+            cumulative_timings = np.diff(latest_run_time_marks)
             if previous_timings is not None:
-                cumulative_timings+=previous_timings
+                cumulative_timings += previous_timings
             self.timings_by_class[cl] = cumulative_timings
-            self.labels_by_class[cl] = self._time_marks_info
+            self.labels_by_class[cl] = latest_run_time_marks_labels
         else:
             # Incompatibility between this and previous timings from the same procedure. Can only track total time spent.
-            start_time = self._time_marks[0]
-            end_time = self._time_marks[-1]
-            time_elapsed = end_time-start_time + sum(previous_timings)
-            self.labels_by_class[cl] = ['start','end']
+            start_time = latest_run_time_marks[0]
+            end_time = latest_run_time_marks[-1]
+            time_elapsed = end_time - start_time + sum(previous_timings)
+            self.labels_by_class[cl] = ['start', 'end']
             self.timings_by_class[cl] = [time_elapsed]
-
 
     def mark(self, label=None):
         """Mark a named event so that more detailed timing can be given"""
@@ -77,8 +86,20 @@ class TimingMonitor:
         else:
             self._time_marks_info.append(label)
 
-    def summarise_timing(self, logger):
-        logger.info("CUMULATIVE RUNNING TIMES (just this node)")
+    def add(self, other):
+        """Add the time taken by another TimingMonitor to this one"""
+        if self._monitoring is not None:
+            raise RuntimeError("Cannot add timings to a TimingMonitor that is currently monitoring a procedure")
+
+        for c in other.labels_by_class.keys():
+            labels = other.labels_by_class[c]
+            timings = other.timings_by_class[c]
+            self._add_run_to_running_totals(c, np.cumsum(np.concatenate(([0.0],timings))), labels)
+
+    def report_to_log(self, logger):
+        if len(self.timings_by_class) == 0:
+            return
+        logger.info("CUMULATIVE RUNNING TIMES")
         v_tot = 1e-10
         for k, v in self.timings_by_class.items():
             v_tot += sum(v)

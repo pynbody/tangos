@@ -1,5 +1,7 @@
 import os
+import time
 
+import pytest
 from numpy import testing as npt
 from pytest import fixture
 
@@ -110,7 +112,7 @@ def run_writer_with_args(*args, parallel=False):
         return stored_log.get_output()
 
     if parallel:
-        parallel_tasks.launch(_runner, [])
+        return parallel_tasks.launch(writer.run_calculation_loop, [], {'capture_log': True})
     else:
         return _runner()
 
@@ -133,9 +135,19 @@ def _assert_properties_as_expected():
     assert db.get_halo("dummy_sim_1/step.1/2")['dummy_property'] == 2.0
     assert db.get_halo("dummy_sim_1/step.2/1")['dummy_property'] == 2.0
 
-def test_error_ignoring(fresh_database):
-    log = run_writer_with_args("dummy_property", "dummy_property_with_exception")
-    assert "Uncaught exception during property calculation" in log
+@pytest.mark.parametrize('parallel', [True, False])
+def test_exception_reporting(fresh_database, parallel):
+    if parallel:
+        parallel_tasks.use('multiprocessing-3')
+    log = run_writer_with_args("dummy_property", "dummy_property_with_exception", parallel=parallel)
+    assert "Uncaught exception RuntimeError('Test of exception handling') during property calculation" in log
+    assert ":     result = property_calculator.calculate(snapshot_data, db_data)" in log
+    # above tests that a bit of the traceback is present, but also that it has been put on a formatted line
+
+    # count occurrences of the traceback, should be only one:
+    assert log.count("Traceback (most recent call last)")==1
+
+    assert "Errored: 15 property calculations" in log
 
     assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property'] == 1.0
     assert db.get_halo("dummy_sim_1/step.1/2")['dummy_property'] == 2.0
@@ -238,3 +250,60 @@ def test_timesteps_matching(fresh_database_2):
     assert 'dummy_property' in db.get_halo("dummy_sim_2/step.1/2").keys()
     assert 'dummy_property' in db.get_halo("dummy_sim_2/step.2/1").keys()
     assert 'dummy_property' not in db.get_halo("dummy_sim_2/step.3/1").keys()
+
+
+class DummyPropertyTakingTime(DummyProperty):
+    names = "dummy_property_taking_time",
+
+    def calculate(self, data, entry):
+        time.sleep(0.1)
+        return 0.0,
+
+
+@fixture
+def success_tracker():
+    from tangos.tools.property_writer import CalculationSuccessTracker
+    st = CalculationSuccessTracker()
+    for i in range(1):
+        st.register_success()
+    for i in range(2):
+        st.register_error()
+    for i in range(3):
+        st.register_already_exists()
+    for i in range(4):
+        st.register_loading_error()
+    for i in range(5):
+        st.register_missing_prerequisite()
+    yield st
+
+def test_calc_success_tracker(success_tracker):
+    with log.LogCapturer() as lc:
+        success_tracker.report_to_log(log.logger)
+    output = lc.get_output()
+    assert "Succeeded: 1 property calculations" in output
+    assert "Errored: 2 property calculations" in output
+    assert "Already exists: 3 property" in output
+    assert "Errored during load: 4 property calculations" in output
+    assert "Missing pre-requisite: 5 property" in output
+
+def test_calc_success_tracker_addition(success_tracker):
+    success_tracker.add(success_tracker)
+    with log.LogCapturer() as lc:
+        success_tracker.report_to_log(log.logger)
+    output = lc.get_output()
+    assert "Succeeded: 2 property calculations" in output
+    assert "Errored: 4 property calculations" in output
+    assert "Already exists: 6 property" in output
+    assert "Errored during load: 8 property calculations" in output
+    assert "Missing pre-requisite: 10 property" in output
+
+def test_writer_reports_aggregates(fresh_database):
+    parallel_tasks.use('multiprocessing-4')
+    try:
+        res = run_writer_with_args("dummy_property_taking_time", parallel=True)
+    finally:
+        parallel_tasks.use('null')
+
+
+    assert "Succeeded: 15 property calculations" in res
+    assert "myPropertyTakingTime 1.5s" in res

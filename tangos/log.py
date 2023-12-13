@@ -17,6 +17,7 @@ class LogCapturer:
         self.buffer = StringIO()
         self.handler_buffer = logging.StreamHandler(self.buffer)
         self.handler_buffer.setLevel(logging.INFO)
+        self.handler_buffer.setFormatter(formatter)
         self._suspended_handlers = []
 
     def __enter__(self):
@@ -24,6 +25,7 @@ class LogCapturer:
         for x_handler in self._suspended_handlers:
             logger.removeHandler(x_handler)
         logger.addHandler(self.handler_buffer)
+        return self
 
     def __exit__(self, *exc_info):
         for x_handler in self._suspended_handlers:
@@ -34,8 +36,19 @@ class LogCapturer:
     def get_output(self):
         return self.buffer.getvalue()
 
+    def get_output_without_timestamps(self):
+        lines = self.get_output().split("\n")
+        result = ""
+        for l in lines:
+            try:
+                result += l.split(" : ", 1)[1]+"\n"
+            except IndexError:
+                result += l+"\n"
+        return result
+
 
 def set_identity_string(identifier):
     global handler_stderr
     formatter = logging.Formatter(identifier+"%(asctime)s : %(message)s")
-    handler_stderr.setFormatter(formatter)
+    for handler in logger.handlers:
+        handler.setFormatter(formatter)

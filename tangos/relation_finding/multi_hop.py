@@ -267,7 +267,7 @@ class MultiHopStrategy(HopStrategy):
                 else:
                     filtered_count = 0
 
-            # for performance info: self.timing_monitor.summarise_timing(logger)
+            # for performance info: self.timing_monitor.report_to_log(logger)
 
             if self._hopping_finished(filtered_count):
                 break
