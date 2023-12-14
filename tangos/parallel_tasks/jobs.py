@@ -1,7 +1,7 @@
 import base64
+import getpass
 import hashlib
 import os
-import getpass
 import pickle
 import pipes
 import sys
