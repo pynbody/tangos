@@ -1,3 +1,4 @@
+import os
 import time
 
 import pytest
@@ -6,6 +7,7 @@ import tangos
 import tangos.testing.simulation_generator
 from tangos import parallel_tasks as pt
 from tangos import testing
+from tangos.log import logger
 from tangos.parallel_tasks import testing as pt_testing
 
 
@@ -83,6 +85,82 @@ def test_for_loop_is_not_run_twice():
     pt.launch(_test_not_run_twice)
     assert tangos.get_halo(1)['test_count']==3
 
+
+def _test_loops_different_length():
+    for i in pt.distributed(list(range(pt.backend.rank()*10))):
+        pass
+
+def _test_loops_different_backtrace():
+    if pt.backend.rank()==1:
+        for i in pt.distributed(list(range(10))):
+            pass
+    else:
+        for i in pt.distributed(list(range(10))):
+            pass
+def test_inconsistent_loops_rejected():
+    pt.use("multiprocessing-3")
+    with pytest.raises(pt.jobs.InconsistentJobList):
+        pt.launch(_test_loops_different_length)
+
+    with pytest.raises(pt.jobs.InconsistentContext):
+        pt.launch(_test_loops_different_backtrace)
+
+
+def _test_resume_loop(attempt):
+    for i in pt.distributed(list(range(10)), allow_resume=True, resumption_id=101):
+        with pt.ExclusiveLock("write_to_file", 0.01):
+            with open("test_resume_loop.log", "a") as f:
+                f.write(f"Start job {i}\n")
+        if i==5 and attempt==0:
+            raise ValueError("Suspend processing")
+
+        pt.barrier()
+        time.sleep(0.02)
+        logger.info(f"Finished job {i}")
+        with pt.ExclusiveLock("write_to_file", 0.01):
+            with open("test_resume_loop.log", "a") as f:
+                f.write(f"Finish job {i}\n")
+
+        pt.barrier()
+def test_resume_loop():
+    pt.use("multiprocessing-3")
+
+    pt.jobs.IterationState.clear_resume_state()
+
+    try:
+        os.unlink("test_resume_loop.log")
+    except FileNotFoundError:
+        pass
+
+    with pytest.raises(ValueError):
+        pt.launch(_test_resume_loop, args=(0,))
+
+    with open("test_resume_loop.log") as f:
+        lines = [s.strip() for s in f.readlines()]
+
+    for i in range(6):
+        assert lines.count(f"Start job {i}") == 1
+        if i<=3:
+            assert lines.count(f"Finish job {i}") == 1
+        else:
+            assert lines.count(f"Finish job {i}") == 0
+
+    pt.launch(_test_resume_loop, args=(1,))
+
+    with open("test_resume_loop.log") as f:
+        lines = [s.strip() for s in f.readlines()]
+
+    for i in range(4):
+        assert lines.count(f"Start job {i}") == 1
+        assert lines.count(f"Finish job {i}") == 1
+
+    for i in range(4,6):
+        assert lines.count(f"Start job {i}") == 2 # started twice
+        assert lines.count(f"Finish job {i}") == 1 # finished once
+
+    for i in range(7,10):
+        assert lines.count(f"Start job {i}") == 1
+        assert lines.count(f"Finish job {i}") == 1
 
 
 def _test_empty_loop():
@@ -244,3 +322,46 @@ def test_local_set():
     set = pt.shared_set.SharedSet("test_local_set")
     assert not set.add_if_not_exists("foo")
     assert set.add_if_not_exists("foo")
+
+def test_iteration_state_closes_tasks():
+    from tangos.parallel_tasks.jobs import IterationState
+
+    for backend_size in (2,3):
+        iteration_state = IterationState.from_context(3, backend_size=backend_size)
+        assert iteration_state.next_job(0)==0
+        assert iteration_state.next_job(1)==1
+
+        assert iteration_state.count_complete()==0
+        assert iteration_state.next_job(0)==2
+        assert iteration_state.count_complete()==1
+        assert iteration_state.next_job(0) is None
+        assert iteration_state.count_complete()==2
+        assert iteration_state.next_job(0) is None
+        assert iteration_state.count_complete()==2
+
+        assert not iteration_state.finished() # no more jobs, but not finished until all tasks are closed
+        assert iteration_state.next_job(1) is None
+        assert iteration_state.count_complete()==3
+
+        if backend_size==3:
+            # STILL not finished -- all the tasks are closed, but not all ranks have seen that
+            assert not iteration_state.finished()
+
+            assert iteration_state.next_job(2) is None
+
+    assert iteration_state.finished()
+
+def test_iteration_state_from_string():
+    from tangos.parallel_tasks.jobs import IterationState
+
+    iteration_state = IterationState.from_context(20, backend_size=2)
+    iteration_state.next_job(0) # job 0
+    iteration_state.next_job(1) # job 1 (never completed)
+    iteration_state.next_job(0) # job 2 (completes)
+    iteration_state.next_job(0) # job 3 (never completed)
+    string = iteration_state.to_string()
+    iteration_state2 = IterationState.from_string(string, backend_size=2)
+    assert iteration_state == iteration_state2
+    assert iteration_state2.next_job(0) == 1
+    assert iteration_state2.next_job(0) == 3
+    assert iteration_state2.next_job(0) == 4

@@ -46,7 +46,7 @@ class GenericLinker(GenericTangosTool):
             logger.error("No timesteps found to link")
             return
 
-        pair_list = parallel_tasks.distributed(pair_list)
+        pair_list = parallel_tasks.distributed(pair_list, allow_resume=True)
 
         object_type = core.halo.SimulationObjectBase.object_typecode_from_tag(self.args.type_)
 
