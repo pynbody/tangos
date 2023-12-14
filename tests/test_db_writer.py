@@ -101,9 +101,12 @@ class DummyPropertyAccessingSimulationProperty(properties.PropertyCalculation):
         return 1,
 
 
-def run_writer_with_args(*args, parallel=False):
+def run_writer_with_args(*args, parallel=False, allow_resume=False):
     writer = property_writer.PropertyWriter()
-    writer.parse_command_line(args)
+    if allow_resume:
+        writer.parse_command_line(args)
+    else:
+        writer.parse_command_line((*args, "--no-resume"))
 
     def _runner():
         stored_log = log.LogCapturer()
@@ -122,12 +125,24 @@ def test_basic_writing(fresh_database):
     run_writer_with_args("dummy_property")
     _assert_properties_as_expected()
 
-
 def test_parallel_writing(fresh_database):
     parallel_tasks.use('multiprocessing-2')
     run_writer_with_args("dummy_property", parallel=True)
 
     _assert_properties_as_expected()
+
+def test_resuming(fresh_database):
+    parallel_tasks.use("multiprocessing-2")
+    log = []
+    for allow_resume in [False, False, True]:
+        log.append(run_writer_with_args("dummy_property", parallel=True, allow_resume=allow_resume))
+
+    for i in [0,1]:
+        assert "Resuming from previous run" not in log[i]
+        assert len(log[i].split("\n"))>2 # should have done lots of stuff,
+        # even if second time it ultimately wrote nothing into the db
+
+    assert len(log[2].split("\n"))==2 # it should resume at the end, and so do nothing other than log a message
 
 
 def _assert_properties_as_expected():

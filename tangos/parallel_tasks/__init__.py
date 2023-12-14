@@ -84,7 +84,7 @@ def launch(function, args=None, backend_kwargs=None):
 
     return result
 
-def distributed(file_list, proc=None, of=None):
+def distributed(file_list, proc=None, of=None, allow_resume=False, resumption_id=None):
     """Distribute a list of tasks between all nodes"""
 
     if type(file_list) == set:
@@ -102,7 +102,7 @@ def distributed(file_list, proc=None, of=None):
         return file_list[i:j + 1]
     else:
         from . import jobs
-        return jobs.parallel_iterate(file_list)
+        return jobs.parallel_iterate(file_list, allow_resume, resumption_id)
 
 
 def _exec_function_or_server(function, connection_info, args):

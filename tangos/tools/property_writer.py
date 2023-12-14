@@ -59,6 +59,8 @@ class PropertyWriter(GenericTangosTool):
                             help='Process timesteps in random order')
         parser.add_argument('--with-prerequisites', action='store_true',
                             help='Automatically calculate any missing prerequisites for the properties')
+        parser.add_argument('--no-resume', action='store_true',
+                            help="Prevent resumption from a previous calculation, even if tangos thinks it's possible")
         parser.add_argument('--load-mode', action='store', choices=['all', 'partial', 'server', 'server-partial', 'server-shared-mem'],
                             required=False, default=None,
                             help="Select a load-mode: " \
@@ -138,7 +140,7 @@ class PropertyWriter(GenericTangosTool):
             ma_files = self.files
         else:
             # In all other cases, different timesteps are distributed to different nodes
-            ma_files = parallel_tasks.distributed(self.files)
+            ma_files = parallel_tasks.distributed(self.files, allow_resume=not self.options.no_resume)
         return ma_files
 
     def _get_parallel_halo_iterator(self, items):
