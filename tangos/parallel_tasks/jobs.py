@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import os
+import getpass
 import pickle
 import pipes
 import sys
@@ -54,17 +55,21 @@ class IterationState:
                 log.logger.info(
                     f"Resuming from previous run. {r.count_complete()} of {len(r)} jobs are already complete.")
                 log.logger.info(
-                    f"To prevent tangos from doing this, you can delete the file tangos_resume_state.pickle")
+                    f"To prevent tangos from doing this, you can delete the file {cls._resume_state_filename()}")
                 return r
 
         return cls(context, [False]*num_jobs, backend_size=backend_size)
 
 
     @classmethod
+    def _resume_state_filename(cls):
+        return f"tangos_resume_state_{getpass.getuser()}.pickle"
+
+    @classmethod
     def _get_stored_completion_maps(cls):
         maps = {}
         try:
-            with open("tangos_resume_state.pickle", "rb") as f:
+            with open(cls._resume_state_filename(), "rb") as f:
                 maps = pickle.load(f)
         except FileNotFoundError:
             pass
@@ -72,7 +77,7 @@ class IterationState:
 
     @classmethod
     def _store_completion_maps(cls, maps):
-        with open("tangos_resume_state.pickle", "wb") as f:
+        with open(cls._resume_state_filename(), "wb") as f:
             pickle.dump(maps, f)
     @classmethod
     def _get_stored_completion_map_from_context(cls, context):
@@ -82,7 +87,7 @@ class IterationState:
     @classmethod
     def clear_resume_state(cls):
         try:
-            os.unlink("tangos_resume_state.pickle")
+            os.unlink(cls._resume_state_filename())
         except FileNotFoundError:
             pass
 
