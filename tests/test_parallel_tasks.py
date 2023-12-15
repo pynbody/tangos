@@ -268,6 +268,20 @@ def test_empty_then_non_empty_loop(mode):
         assert "Should not appear" not in log
 
 
+def _test_overtaking_synchronized_loop():
+    for i in pt.synchronized([0,1,2]):
+        pt_testing.log(f"Doing task {i}")
+        if pt.backend.rank()==1:
+            time.sleep(0.02)
+
+def test_overtaking_synchronized_loop():
+    # test that iterations stay synchronized even if one process tries to overtake the other
+    pt.use("multiprocessing-3")
+    pt_testing.initialise_log()
+    pt.launch(_test_overtaking_synchronized_loop)
+    log = pt_testing.get_log()
+    assert len(log)==6
+
 def _test_synchronize_db_creator():
     rank = pt.backend.rank()
     import tangos.parallel_tasks.database

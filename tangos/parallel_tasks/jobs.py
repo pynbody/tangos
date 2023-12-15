@@ -152,8 +152,11 @@ class SynchronizedIterationState(IterationState):
         else:
             self._rank_running_job[for_rank] = my_next_job
 
-        if not self._is_still_running_somewhere(previous_job):
-            self.mark_complete(previous_job)
+        # NB the next line assumes that no process can ever get two steps ahead of another process
+        # This is not actually enforced here, it's enforced by a barrier inside the synchronized_iterate
+        # function below. See also test_parallel_tasks.py::test_overtaking_synchronized_loop
+        if previous_job is not None and (not self._is_still_running_somewhere(previous_job)):
+             self.mark_complete(previous_job)
 
         return my_next_job
 
@@ -263,9 +266,8 @@ def synchronized_iterate(task_list, allow_resume=False, resumption_id=None):
 
     while True:
         job = MessageRequestJob(iteration_id).send_and_get_response(0)
-
+        barrier() # this is crucial to keep things in sync (see comment in SynchronizedIterationState.next_job)
         if job is None:
-            barrier()
             return
 
         yield task_list[job]
