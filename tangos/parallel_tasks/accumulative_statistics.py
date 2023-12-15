@@ -3,47 +3,27 @@ import time
 
 from ..config import PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES
 from ..log import logger
-from .message import Message
+from .message import BarrierMessageWithResponse, Message
 
 _new_accumulator_requested_for_ranks = []
 _new_accumulator = None
 _existing_accumulators = []
-class CreateNewAccumulatorMessage(Message):
+class CreateNewAccumulatorMessage(BarrierMessageWithResponse):
 
-    def process(self):
-        from . import backend
-        global _new_accumulator, _new_accumulator_requested_for_ranks, _existing_accumulators
-        assert issubclass(self.contents, StatisticsAccumulatorBase)
-        if _new_accumulator is None:
-            _new_accumulator = self.contents()
-            _new_accumulator_requested_for_ranks = [self.source]
-        else:
-            assert self.source not in _new_accumulator_requested_for_ranks
-            assert isinstance(_new_accumulator, self.contents)
-            _new_accumulator_requested_for_ranks.append(self.source)
-
-            from . import backend
-
-        if len(_new_accumulator_requested_for_ranks) == backend.size()-1:
-            self._confirm_new_accumulator()
-
-    def _confirm_new_accumulator(self):
-        global _new_accumulator, _new_accumulator_requested_for_ranks, _existing_accumulators
+    def process_global(self):
         from . import backend, on_exit_parallelism
-        accumulator_id = len(_existing_accumulators)
-        _existing_accumulators.append(_new_accumulator)
 
-        locally_bound_accumulator = _new_accumulator
-        logger.debug("Created new accumulator of type %s with id %d" % (locally_bound_accumulator.__class__.__name__, accumulator_id))
+        new_accumulator = self.contents()
+        accumulator_id = len(_existing_accumulators)
+        _existing_accumulators.append(new_accumulator)
+
+        locally_bound_accumulator = new_accumulator
+        logger.debug("Created new accumulator of type %s with id %d" % (
+        locally_bound_accumulator.__class__.__name__, accumulator_id))
         on_exit_parallelism(lambda: locally_bound_accumulator.report_to_log_if_needed(logger, 0.05))
 
-        _new_accumulator = None
-        _new_accumulator_requested_for_ranks = []
+        self.respond(accumulator_id)
 
-        for destination in range(1, backend.size()):
-            AccumulatorIdMessage(accumulator_id).send(destination)
-class AccumulatorIdMessage(Message):
-    pass
 class AccumulateStatisticsMessage(Message):
     def process(self):
         global _existing_accumulators
@@ -63,9 +43,7 @@ class StatisticsAccumulatorBase:
         self._parallel = allow_parallel and parallelism_is_active() and backend.rank() != 0
         if self._parallel:
             logger.debug(f"Registering {self.__class__}")
-            CreateNewAccumulatorMessage(self.__class__).send(0)
-            logger.debug(f"Awaiting accumulator id for {self.__class__}")
-            self.id = AccumulatorIdMessage.receive(0).contents
+            self.id = CreateNewAccumulatorMessage(self.__class__).send_and_get_response(0)
             logger.debug(f"Received accumulator id={ self.id}")
 
     def report_to_server(self):
