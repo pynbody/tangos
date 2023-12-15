@@ -99,7 +99,8 @@ def distributed(items, allow_resume=False, resumption_id=None):
         return items
     else:
         from . import jobs
-        return jobs.parallel_iterate(file_list, allow_resume, resumption_id)
+        return jobs.parallel_iterate(items, allow_resume, resumption_id)
+
 
 
 def _exec_function_or_server(function, connection_info, args):
