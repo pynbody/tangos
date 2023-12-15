@@ -140,11 +140,7 @@ def _server_thread():
     # available job and move on. Jobs are labelled through the
     # provided iterator
 
-    j = -1
-    num_jobs = None
-    current_job = None
     alive = [True for i in range(backend.size())]
-    awaiting_barrier = [False for i in range(backend.size())]
 
     while any(alive[1:]):
         obj = message.Message.receive()

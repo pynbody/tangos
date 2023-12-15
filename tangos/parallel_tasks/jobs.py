@@ -157,43 +157,37 @@ class SynchronizedIterationState(IterationState):
 
         return my_next_job
 
-current_num_jobs = None
-current_iteration_state = None
-current_stack_hash = None
-current_is_resumable = False
+_next_iteration_state_id = 0
+_iteration_states = {}
 
-class MessageStartIteration(message.Message):
-    def process(self):
-        global current_iteration_state, current_stack_hash, current_is_resumable
+
+class MessageStartIteration(message.BarrierMessageWithResponse):
+    def process_global(self):
+        global _next_iteration_state_id, _iteration_states
         req_jobs, req_hash, allow_resume, synchronized = self.contents
 
-        if current_iteration_state is None:
-            current_num_jobs = req_jobs
-            current_stack_hash = req_hash
-            current_is_resumable = allow_resume
-            # convert sys.argv to a string which is quoted/escaped as needed
-            argv_string = " ".join([pipes.quote(arg) for arg in sys.argv])
+        argv_string = " ".join([pipes.quote(arg) for arg in sys.argv])
 
-            IteratorClass = SynchronizedIterationState if synchronized else IterationState
+        IteratorClass = SynchronizedIterationState if synchronized else IterationState
 
-            current_iteration_state = IteratorClass.from_context(req_jobs, argv=" ".join(sys.argv),
-                                                                  stack_hash=req_hash,
-                                                                  allow_resume=allow_resume)
-            # note: if running a 'synchronized' loop, only rank 1 will be requesting jobs, and the other ranks
-            # will be synchronized just via a simple barrier. This allows for a much simpler implementation.
+        my_id = _next_iteration_state_id
+        _iteration_states[my_id] = IteratorClass.from_context(req_jobs, argv=argv_string,
+                                                              stack_hash=req_hash,
+                                                              allow_resume=allow_resume)
+        _next_iteration_state_id += 1
+
+        self.respond(my_id)
+
+    def assert_consistent(self, other):
+        assert type(self) == type(other)
+        self_njobs = self.contents[0]
+        other_njobs = other.contents[0]
+        if self_njobs != other_njobs:
+            raise InconsistentJobList("Inconsistent number of jobs between different processes")
+        if self.contents != other.contents:
+            raise InconsistentContext("Inconsistency in requested loops between different processes")
 
 
-        else:
-            if len(current_iteration_state) != req_jobs:
-                raise InconsistentJobList(f"Number of jobs ({req_jobs}) expected by rank {self.source} "
-                                          f"is inconsistent with {len(current_iteration_state)}")
-            if current_stack_hash != req_hash:
-                raise InconsistentContext(f"Inconsistent stack from rank {self.source} when entering parallel loop")
-            if current_is_resumable != allow_resume:
-                raise InconsistentContext(f"Inconsistent allow_resume flag from rank {self.source} when entering parallel loop")
-
-class MessageDeliverJob(message.Message):
-    pass
 
 class MessageDistributeJobList(message.Message):
     def process(self):
@@ -202,10 +196,13 @@ class MessageDistributeJobList(message.Message):
         for rank in range(1, backend.size()):
             if rank != self.source:
                 MessageDistributeJobList(self.contents).send(rank)
-class MessageRequestJob(message.Message):
+
+class MessageRequestJob(message.MessageWithResponse):
     def process(self):
-        global current_iteration_state
+        iterator_id = self.contents
+        current_iteration_state = _iteration_states.get(iterator_id, None)
         source = self.source
+
         assert current_iteration_state is not None # should not be requesting jobs if we are not in a loop
 
         job = current_iteration_state.next_job(source)
@@ -215,10 +212,10 @@ class MessageRequestJob(message.Message):
         else:
             log.logger.debug("Finished jobs; notify node %d", source)
 
-        MessageDeliverJob(job).send(source)
-
         if current_iteration_state.finished():
-            current_iteration_state = None
+            del _iteration_states[iterator_id]
+
+        self.respond(job)
 
 def distributed_iterate(task_list, allow_resume=False, resumption_id=None):
     """Sets up an iterator returning items of task_list.
@@ -232,13 +229,11 @@ def distributed_iterate(task_list, allow_resume=False, resumption_id=None):
     resumption_id = resumption_id or _autogenerate_resume_id()
 
     assert backend is not None, "Parallelism is not initialised"
-    MessageStartIteration((len(task_list), resumption_id, allow_resume, False)).send(0)
+    iteration_id = MessageStartIteration((len(task_list), resumption_id, allow_resume, False)).send_and_get_response(0)
     barrier()
 
     while True:
-        MessageRequestJob().send(0)
-        job = MessageDeliverJob.receive(0).contents
-
+        job = MessageRequestJob(iteration_id).send_and_get_response(0)
         if job is None:
             barrier()
             return
@@ -263,12 +258,11 @@ def synchronized_iterate(task_list, allow_resume=False, resumption_id=None):
 
     assert backend is not None, "Parallelism is not initialised"
 
-    MessageStartIteration((len(task_list), resumption_id, allow_resume, True)).send(0)
+    iteration_id = MessageStartIteration((len(task_list), resumption_id, allow_resume, True)).send_and_get_response(0)
     barrier()
 
     while True:
-        MessageRequestJob().send(0)
-        job = MessageDeliverJob.receive(0).contents
+        job = MessageRequestJob(iteration_id).send_and_get_response(0)
 
         if job is None:
             barrier()

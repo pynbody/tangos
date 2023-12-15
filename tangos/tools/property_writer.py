@@ -137,7 +137,7 @@ class PropertyWriter(GenericTangosTool):
         elif self.options.load_mode is not None and self.options.load_mode.startswith('server'):
             # In the case of loading from a centralised server, each node works on the _same_ timestep --
             # parallelism is then implemented at the halo level
-            ma_files = self.files
+            ma_files = parallel_tasks.synchronized(self.files, allow_resume=not self.options.no_resume)
         else:
             # In all other cases, different timesteps are distributed to different nodes
             ma_files = parallel_tasks.distributed(self.files, allow_resume=not self.options.no_resume)
@@ -154,7 +154,7 @@ class PropertyWriter(GenericTangosTool):
             # before all nodes have generated their local work lists
             parallel_tasks.barrier()
 
-            return parallel_tasks.distributed(items)
+            return parallel_tasks.distributed(items, allow_resume=False)
         else:
             return items
 

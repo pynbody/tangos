@@ -41,6 +41,23 @@ def test_add_property():
         assert tangos.get_halo(i)['my_test_property']==i
 
 
+def _test_barrier():
+    if pt.backend.rank()==1:
+        # only sleep on one process, to check barrier works
+        time.sleep(0.3)
+    pt_testing.log("Before barrier")
+    pt.barrier()
+    pt_testing.log("After barrier")
+
+def test_barrier():
+    pt.use("multiprocessing-3")
+    pt_testing.initialise_log()
+    pt.launch(_test_barrier)
+    log = pt_testing.get_log(remove_process_ids=True)
+    assert log == ["Before barrier"]*2+["After barrier"]*2
+
+
+
 
 def _add_two_properties_different_ranges():
     for i in pt.distributed(list(range(1,10))):
@@ -269,6 +286,23 @@ def test_synchronize_db_creator():
     assert tangos.get_halo(2)['db_creator_test_property'] == 1.0
     creator_1, creator_2 = (tangos.get_halo(i).get_objects('db_creator_test_property')[0].creator for i in (1,2))
     assert creator_1==creator_2
+
+
+def _test_nested_loop():
+    for i in pt.synchronized(list(range(3))):
+        for j in pt.distributed(list(range(3))):
+            pt_testing.log(f"Task {i},{j}")
+
+def test_nested_loop():
+    pt.use("multiprocessing-3")
+    pt_testing.initialise_log()
+    pt.launch(_test_nested_loop)
+
+    log = pt_testing.get_log(remove_process_ids=True)
+
+    for i in range(3):
+        for j in range(3):
+            assert log.count(f"Task {i},{j}")==1
 
 
 
