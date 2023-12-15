@@ -1,21 +1,15 @@
-from .message import Message
+from .message import MessageWithResponse
 
 _remote_sets = {}
-class RemoteSetOperation(Message):
+class RemoteSetOperation(MessageWithResponse):
     def process(self):
         set_id, operation, value = self.contents
         global _remote_sets
         if operation=="add-if-not-exists":
             result = LocalSet(set_id).add_if_not_exists(value)
-            self.reply(result)
+            self.respond(result)
         else:
             raise ValueError("Unknown operation %s" % operation)
-
-    def reply(self, result):
-        RemoteSetResult(result).send(self.source)
-
-class RemoteSetResult(Message):
-    pass
 
 class SharedSet:
     def __new__(cls, set_id, allow_parallel=False):
@@ -46,9 +40,8 @@ class RemoteSet(SharedSet):
 
     def add_if_not_exists(self, value):
         """Adds to the set, and returns a boolean indicating whether the value was already present"""
-        RemoteSetOperation((self.set_id, "add-if-not-exists", value)).send(0)
-        result = RemoteSetResult.receive(0).contents
-        return result
+        return RemoteSetOperation((self.set_id, "add-if-not-exists", value)).send_and_get_response(0)
+
 
 class LocalSet(SharedSet):
     def __init__(self, set_id, allow_parallel=False):

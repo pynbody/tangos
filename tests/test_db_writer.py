@@ -125,9 +125,13 @@ def test_basic_writing(fresh_database):
     run_writer_with_args("dummy_property")
     _assert_properties_as_expected()
 
-def test_parallel_writing(fresh_database):
+@pytest.mark.parametrize('load_mode', [None, 'server'])
+def test_parallel_writing(fresh_database, load_mode):
     parallel_tasks.use('multiprocessing-2')
-    run_writer_with_args("dummy_property", parallel=True)
+    if load_mode is None:
+        run_writer_with_args("dummy_property", parallel=True)
+    else:
+        run_writer_with_args("dummy_property", "--load-mode="+load_mode, parallel=True)
 
     _assert_properties_as_expected()
 

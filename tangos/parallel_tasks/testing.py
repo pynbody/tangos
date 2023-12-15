@@ -6,9 +6,14 @@ def initialise_log():
     with open(FILENAME, "w") as f:
         f.write("")
 
-def get_log():
+def get_log(remove_process_ids=False):
+    if remove_process_ids:
+        processor = lambda s: s.strip()[4:]
+    else:
+        processor = lambda s: s.strip()
+
     with open(FILENAME) as f:
-        return f.readlines()
+        return [processor(s) for s in f.readlines()]
 
 def log(message):
     ServerLogMessage(message).send(0)

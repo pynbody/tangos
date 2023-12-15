@@ -131,16 +131,18 @@ class PropertyWriter(GenericTangosTool):
 
 
     def _get_parallel_timestep_iterator(self):
-        if self.options.part is not None:
-            # In the case of a null backend with manual parallelism, pass the specified part specification
-            ma_files = parallel_tasks.distributed(self.files, proc=self.options.part[0], of=self.options.part[1])
+        if parallel_tasks.backend is None:
+            # Go sequentially
+            ma_files = self.files
         elif self.options.load_mode is not None and self.options.load_mode.startswith('server'):
             # In the case of loading from a centralised server, each node works on the _same_ timestep --
             # parallelism is then implemented at the halo level
-            ma_files = self.files
+            ma_files = parallel_tasks.synchronized(self.files, allow_resume=not self.options.no_resume,
+                                                   resumption_id='parallel-timestep-iterator')
         else:
             # In all other cases, different timesteps are distributed to different nodes
-            ma_files = parallel_tasks.distributed(self.files, allow_resume=not self.options.no_resume)
+            ma_files = parallel_tasks.distributed(self.files, allow_resume=not self.options.no_resume,
+                                                  resumption_id='parallel-timestep-iterator')
         return ma_files
 
     def _get_parallel_halo_iterator(self, items):
@@ -154,7 +156,7 @@ class PropertyWriter(GenericTangosTool):
             # before all nodes have generated their local work lists
             parallel_tasks.barrier()
 
-            return parallel_tasks.distributed(items)
+            return parallel_tasks.distributed(items, allow_resume=False)
         else:
             return items
 
@@ -183,8 +185,8 @@ class PropertyWriter(GenericTangosTool):
         else:
             self._include = None
 
-    def _log_one_process(self, *args):
-        if parallel_tasks.backend is None or parallel_tasks.backend.rank()==1:
+    def _log_once_per_timestep(self, *args):
+        if parallel_tasks.backend is None or parallel_tasks.backend.rank()==1 or self.options.load_mode is None:
             logger.info(*args)
 
     def _summarise_timing(self):
@@ -223,8 +225,8 @@ class PropertyWriter(GenericTangosTool):
 
             # perform filtering:
             halos = [halo_i for halo_i, include_i in zip(halos, inclusion) if include_i]
-            self._log_one_process("User-specified inclusion criterion excluded %d of %d halos",
-                                  len(inclusion)-len(halos),len(inclusion))
+            self._log_once_per_timestep("User-specified inclusion criterion excluded %d of %d halos",
+                                        len(inclusion) - len(halos), len(inclusion))
 
         return halos
 
@@ -477,7 +479,7 @@ class PropertyWriter(GenericTangosTool):
 
 
     def run_timestep_calculation(self, db_timestep):
-        logger.info("Processing %r", db_timestep)
+        self._log_once_per_timestep("Processing %r", db_timestep)
         self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation,
                                                                              self.options.properties,
                                                                              explain=self.options.explain_classes)
@@ -491,24 +493,24 @@ class PropertyWriter(GenericTangosTool):
 
         self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
 
-        self._log_one_process("Successfully gathered existing properties; calculating halo properties now...")
+        self._log_once_per_timestep("Successfully gathered existing properties; calculating halo properties now...")
 
-        self._log_one_process("  %d halos to consider; %d calculation routines for each of them, resulting in %d properties per halo",
-                    len(db_halos), len(self._property_calculator_instances),
-                    sum([1 if isinstance(x.names, str) else len(x.names) for x in self._property_calculator_instances])
-                    )
+        self._log_once_per_timestep("  %d halos to consider; %d calculation routines for each of them, resulting in %d properties per halo",
+                                    len(db_halos), len(self._property_calculator_instances),
+                                    sum([1 if isinstance(x.names, str) else len(x.names) for x in self._property_calculator_instances])
+                                    )
 
-        self._log_one_process("  The property modules are:")
+        self._log_once_per_timestep("  The property modules are:")
         for x in self._property_calculator_instances:
             x_type = type(x)
-            self._log_one_process(f"    {x_type.__module__}.{x_type.__qualname__}")
+            self._log_once_per_timestep(f"    {x_type.__module__}.{x_type.__qualname__}")
 
         for db_halo, existing_properties in \
                 self._get_parallel_halo_iterator(list(zip(db_halos, self._existing_properties_all_halos))):
             self._existing_properties_this_halo = existing_properties
             self.run_halo_calculation(db_halo, existing_properties)
 
-        logger.info("Done with %r",db_timestep)
+        self._log_once_per_timestep("Done with %r", db_timestep)
         self._unload_timestep()
 
         self.tracker.report_to_log_or_server(logger)
@@ -528,8 +530,8 @@ class PropertyWriter(GenericTangosTool):
         for r in requirements:
             if r not in will_calculate:
                 new_instance = properties.instantiate_class(db_timestep.simulation, r)
-                self._log_one_process("Missing prerequisites - added class %r",type(new_instance))
-                self._log_one_process("                        providing properties %r",new_instance.names)
+                self._log_once_per_timestep("Missing prerequisites - added class %r", type(new_instance))
+                self._log_once_per_timestep("                        providing properties %r", new_instance.names)
                 self._property_calculator_instances = [new_instance]+self._property_calculator_instances
                 self._add_prerequisites_to_calculator_instances(db_timestep) # everything has changed; start afresh
                 break

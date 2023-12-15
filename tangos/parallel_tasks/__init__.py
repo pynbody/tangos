@@ -84,25 +84,36 @@ def launch(function, args=None, backend_kwargs=None):
 
     return result
 
-def distributed(file_list, proc=None, of=None, allow_resume=False, resumption_id=None):
-    """Distribute a list of tasks between all nodes"""
+def distributed(items, allow_resume=False, resumption_id=None):
+    """Return an iterator that consumes the items, distributed across all processors
+    (i.e. each item is consumed by only one processor, in a dynamic way).
 
-    if type(file_list) == set:
-        file_list = list(file_list)
+    Optionally, if allow_resume is True, then the iterator will resume from the last point it reached
+    provided argv and the stack trace are unchanged. If resumption_id is not None, then
+    the stack trace is ignored and only resumption_id needs to match."""
+
+    if type(items) == set:
+        items = list(items)
 
     if _backend_name=='null':
-        if proc is None:
-            proc = 1
-            of = 1
-        i = (len(file_list) * (proc - 1)) // of
-        j = (len(file_list) * proc) // of - 1
-        assert proc <= of and proc > 0
-        if proc == of:
-            j += 1
-        return file_list[i:j + 1]
+        return items
     else:
         from . import jobs
-        return jobs.parallel_iterate(file_list, allow_resume, resumption_id)
+        return jobs.distributed_iterate(items, allow_resume, resumption_id)
+
+def synchronized(items, allow_resume=False, resumption_id=None):
+    """Return an iterator that consumes all items on all processors.
+
+    Optionally, if allow_resume is True, then the iterator will resume from the last point it reached
+    provided argv and the stack trace are unchanged. If resumption_id is not None, then
+    the stack trace is ignored and only resumption_id needs to match."""
+    if _backend_name=='null':
+        return items
+    else:
+        from . import jobs
+        return jobs.synchronized_iterate(items, allow_resume, resumption_id)
+
+
 
 
 def _exec_function_or_server(function, connection_info, args):
@@ -129,11 +140,7 @@ def _server_thread():
     # available job and move on. Jobs are labelled through the
     # provided iterator
 
-    j = -1
-    num_jobs = None
-    current_job = None
     alive = [True for i in range(backend.size())]
-    awaiting_barrier = [False for i in range(backend.size())]
 
     while any(alive[1:]):
         obj = message.Message.receive()
