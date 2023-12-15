@@ -99,7 +99,20 @@ def distributed(items, allow_resume=False, resumption_id=None):
         return items
     else:
         from . import jobs
-        return jobs.parallel_iterate(items, allow_resume, resumption_id)
+        return jobs.distributed_iterate(items, allow_resume, resumption_id)
+
+def synchronized(items, allow_resume=False, resumption_id=None):
+    """Return an iterator that consumes all items on all processors.
+
+    Optionally, if allow_resume is True, then the iterator will resume from the last point it reached
+    provided argv and the stack trace are unchanged. If resumption_id is not None, then
+    the stack trace is ignored and only resumption_id needs to match."""
+    if _backend_name=='null':
+        return items
+    else:
+        from . import jobs
+        return jobs.synchronized_iterate(items, allow_resume, resumption_id)
+
 
 
 

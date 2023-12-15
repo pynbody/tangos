@@ -106,82 +106,149 @@ def test_inconsistent_loops_rejected():
         pt.launch(_test_loops_different_backtrace)
 
 
-def _test_resume_loop(attempt):
-    for i in pt.distributed(list(range(10)), allow_resume=True, resumption_id=101):
-        with pt.ExclusiveLock("write_to_file", 0.01):
-            with open("test_resume_loop.log", "a") as f:
-                f.write(f"Start job {i}\n")
+def _test_synchronized_loop():
+    for i in pt.synchronized(list(range(10))):
+        pt_testing.log(f"Doing task {i}")
+        pass
+
+def test_synchronized_loop():
+    pt.use('multiprocessing-3')
+    pt_testing.initialise_log()
+    pt.launch(_test_synchronized_loop)
+    log = pt_testing.get_log()
+    assert len(log) == 20
+    for i in range(10):
+        for r in (1,2):
+            assert log.count(f"[{r}] Doing task {i}") == 1
+
+
+def _test_resume_loop(attempt, mode='distributed'):
+    if mode=='distributed':
+        iterator = pt.distributed(list(range(10)), allow_resume=True, resumption_id=1)
+        # must provide a resumption_id because when we resume the stack trace is different
+    elif mode=='synchronized':
+        iterator = pt.synchronized(list(range(10)), allow_resume=True, resumption_id=2)
+    else:
+        raise ValueError("Unknown test mode")
+
+    for i in iterator:
+        pt_testing.log(f"Start job {i}")
+        pt.barrier() # make sure start is logged before kicking up a fuss
+
         if i==5 and attempt==0:
             raise ValueError("Suspend processing")
 
         pt.barrier()
-        time.sleep(0.02)
-        logger.info(f"Finished job {i}")
-        with pt.ExclusiveLock("write_to_file", 0.01):
-            with open("test_resume_loop.log", "a") as f:
-                f.write(f"Finish job {i}\n")
+        pt_testing.log(f"Finish job {i}")
 
-        pt.barrier()
-def test_resume_loop():
+
+
+@pytest.mark.parametrize("mode", ("distributed", "synchronized"))
+def test_resume_loop(mode):
     pt.use("multiprocessing-3")
 
     pt.jobs.IterationState.clear_resume_state()
 
-    try:
-        os.unlink("test_resume_loop.log")
-    except FileNotFoundError:
-        pass
+    pt_testing.initialise_log()
 
     with pytest.raises(ValueError):
-        pt.launch(_test_resume_loop, args=(0,))
+        pt.launch(_test_resume_loop, args=(0, mode))
 
-    with open("test_resume_loop.log") as f:
-        lines = [s.strip() for s in f.readlines()]
+    lines = pt_testing.get_log(remove_process_ids=True)
 
-    for i in range(6):
-        assert lines.count(f"Start job {i}") == 1
-        if i<=3:
-            assert lines.count(f"Finish job {i}") == 1
-        else:
-            assert lines.count(f"Finish job {i}") == 0
+    expected_when_distributed = [
+        (f"Start job {i}", 1) for i in range(6)
+    ] + [
+        (f"Finish job {i}", 1) for i in range(4)
+    ] + [
+        (f"Finish job {i}", 0) for i in range(4,6)
+    ]
 
-    pt.launch(_test_resume_loop, args=(1,))
+    expected_when_synchronized = [
+        (f"Start job {i}", 2) for i in range(6)
+    ] + [
+        (f"Finish job {i}", 2) for i in range(5)
+    ] + [
+        (f"Finish job 5", 0)
+    ]
 
-    with open("test_resume_loop.log") as f:
-        lines = [s.strip() for s in f.readlines()]
+    expected = expected_when_distributed if mode=='distributed' else expected_when_synchronized
 
-    for i in range(4):
-        assert lines.count(f"Start job {i}") == 1
-        assert lines.count(f"Finish job {i}") == 1
+    for line, count in expected:
+        assert lines.count(line) == count
 
-    for i in range(4,6):
-        assert lines.count(f"Start job {i}") == 2 # started twice
-        assert lines.count(f"Finish job {i}") == 1 # finished once
+    pt_testing.initialise_log()
 
-    for i in range(7,10):
-        assert lines.count(f"Start job {i}") == 1
-        assert lines.count(f"Finish job {i}") == 1
+    pt.launch(_test_resume_loop, args=(1, mode))
+
+    lines = pt_testing.get_log(remove_process_ids=True)
+
+    expected_when_distributed = [
+                                    (f"Start job {i}", 1) for i in range(4, 10)
+                                ] + [
+                                    (f"Finish job {i}", 1) for i in range(4, 10)
+                                ]  + [
+                                    (f"Start job {i}", 0) for i in range(4)
+                                ]
+
+    expected_when_synchronized = [
+                                     (f"Start job {i}", 2) for i in range(5, 10)
+                                 ] + [
+                                     (f"Finish job {i}", 2) for i in range(5, 10)
+                                 ] + [
+                                    (f"Start job {i}", 0) for i in range(5)
+                                 ]
+
+    expected = expected_when_distributed if mode == 'distributed' else expected_when_synchronized
+
+    for line, count in expected:
+        assert lines.count(line) == count
 
 
-def _test_empty_loop():
-    for _ in pt.distributed([]):
-        assert False
 
+def _test_empty_loop(mode):
+    if mode=='distributed':
+        for _ in pt.distributed([]):
+            assert False
+    elif mode=='synchronized':
+        for _ in pt.synchronized([]):
+            assert False
+    else:
+        raise ValueError("Unknown test mode")
 
-def test_empty_loop():
+@pytest.mark.parametrize("mode", ("distributed", "synchronized"))
+def test_empty_loop(mode):
     pt.use("multiprocessing-3")
-    pt.launch(_test_empty_loop)
+    pt.launch(_test_empty_loop, args=(mode,))
 
-def _test_empty_then_non_empty_loop():
-    for _ in pt.distributed([]):
-        pass
+def _test_empty_then_non_empty_loop(mode):
+    if mode=='distributed':
+        iterator = pt.distributed
+    elif mode=='synchronized':
+        iterator = pt.synchronized
+    else:
+        raise ValueError("Unknown test mode")
 
-    for _ in pt.distributed([1,2,3]):
-        pass
+    for _ in iterator([]):
+        pt_testing.log(f"Should not appear")
 
-def test_empty_then_non_empty_loop():
+    for i in iterator([1,2,3]):
+        pt_testing.log(f"Doing task {i}")
+
+@pytest.mark.parametrize("mode", ("distributed", "synchronized"))
+def test_empty_then_non_empty_loop(mode):
     pt.use("multiprocessing-3")
-    pt.launch(_test_empty_then_non_empty_loop)
+    pt_testing.initialise_log()
+    pt.launch(_test_empty_then_non_empty_loop, args=(mode,))
+    log = pt_testing.get_log(remove_process_ids=True)
+    if mode=='distributed':
+        assert len(log)==3
+        assert "Doing task 3" in log
+        assert "Should not appear" not in log
+    elif mode=='synchronized':
+        assert len(log)==6
+        assert log.count("Doing task 3")==2
+        assert "Should not appear" not in log
 
 
 def _test_synchronize_db_creator():
