@@ -4,13 +4,10 @@ from .. import core
 from . import message, remote_import
 
 
-class MessageRequestCreatorId(message.Message):
+class MessageRequestCreatorId(message.MessageWithResponse):
     def process(self):
         creator_id = core.creator.get_creator_id()
-        MessageDeliverCreatorId(creator_id).send(self.source)
-
-class MessageDeliverCreatorId(message.Message):
-    pass
+        self.respond(creator_id)
 
 
 def synchronize_creator_object(session=None):
@@ -28,6 +25,5 @@ def synchronize_creator_object(session=None):
         return
 
     remote_import.ImportRequestMessage(__name__).send(0)
-    MessageRequestCreatorId().send(0)
-    id = MessageDeliverCreatorId.receive(0).contents
+    id = MessageRequestCreatorId().send_and_get_response(0)
     core.creator.set_creator(session.query(core.creator.Creator).filter_by(id=id).first())
