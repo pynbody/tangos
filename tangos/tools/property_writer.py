@@ -566,6 +566,12 @@ class CalculationSuccessTracker(accumulative_statistics.StatisticsAccumulatorBas
         return not self._posted_errors.add_if_not_exists(tb)
 
     def report_to_log(self, logger):
+        if sum([self._succeeded,
+                self._skipped_error,
+                self._skipped_loading_error,
+                self._skipped_existing,
+                self._skipped_missing_prerequisite]) == 0:
+            return
         logger.info("PROPERTY CALCULATION SUMMARY")
         logger.info("            Succeeded: %d property calculations", self._succeeded)
         logger.info("              Errored: %d property calculations", self._skipped_error)
