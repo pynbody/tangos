@@ -18,8 +18,7 @@ class InconsistentContext(RuntimeError):
     pass
 
 class IterationState:
-    _stored_iteration_states = {}
-    _this_run_id = None
+    _this_run_iteration_states = {}
     def __init__(self, context, jobs_complete, /, backend_size=None):
         from . import backend
         self._context = context
@@ -66,9 +65,10 @@ class IterationState:
         path.mkdir(exist_ok=True)
         return path
 
-    def _resume_state_path(self):
-        if not hasattr(self, "__resume_state_filename"):
-            path = self._resume_state_folder_path()
+    @staticmethod
+    def _resume_state_path():
+        if not hasattr(IterationState, "_resume_state_path_this_run"):
+            path = IterationState._resume_state_folder_path()
             all_state_files = sorted(list(path.iterdir()))
             if len(all_state_files)==0:
                 i = 0
@@ -76,8 +76,8 @@ class IterationState:
                 i = int(all_state_files[-1].name.split("_")[-1].split(".")[0])+1
             candidate = path / f"tangos_resume_state_{i:06d}.pickle"
             assert not candidate.exists()
-            self.__resume_state_path = candidate
-        return self.__resume_state_path
+            IterationState._resume_state_path_this_run = candidate
+        return IterationState._resume_state_path_this_run
 
     @classmethod
     def _get_stored_completion_maps(cls):
@@ -106,10 +106,9 @@ class IterationState:
             f.unlink()
 
     def _store_completion_map(self):
-        maps = {}
-        maps[self._context] = self.to_string()
+        self._this_run_iteration_states[self._context] = self.to_string()
         with open(self._resume_state_path(), "wb") as f:
-            pickle.dump(maps, f)
+            pickle.dump(self._this_run_iteration_states, f)
 
     def mark_complete(self, job):
         if job is None:
