@@ -90,7 +90,7 @@ class IterationState:
                 try:
                     with filename.open('rb') as f:
                         maps.update(pickle.load(f))
-                except OSError:
+                except (OSError, EOFError):
                     log.logger.warn(f"Error reading resume state from {str(filename):s}. Skipped.")
                     pass
 
