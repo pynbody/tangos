@@ -1,7 +1,6 @@
 import base64
-import getpass
 import hashlib
-import os
+import pathlib
 import pickle
 import pipes
 import sys
@@ -20,6 +19,7 @@ class InconsistentContext(RuntimeError):
 
 class IterationState:
     _stored_iteration_states = {}
+    _this_run_id = None
     def __init__(self, context, jobs_complete, /, backend_size=None):
         from . import backend
         self._context = context
@@ -55,30 +55,46 @@ class IterationState:
                 log.logger.info(
                     f"Resuming from previous run. {r.count_complete()} of {len(r)} jobs are already complete.")
                 log.logger.info(
-                    f"To prevent tangos from doing this, you can delete the file {cls._resume_state_filename()}")
+                    f"To prevent tangos from doing this, you can delete the folder {str(cls._resume_state_folder_path()):s}")
                 return r
 
         return cls(context, [False]*num_jobs, backend_size=backend_size)
 
-
     @classmethod
-    def _resume_state_filename(cls):
-        return f"tangos_resume_state_{getpass.getuser()}.pickle"
+    def _resume_state_folder_path(cls):
+        path = pathlib.Path("~").expanduser() / ".tangos_resume_state"
+        path.mkdir(exist_ok=True)
+        return path
+
+    def _resume_state_path(self):
+        if not hasattr(self, "__resume_state_filename"):
+            path = self._resume_state_folder_path()
+            all_state_files = sorted(list(path.iterdir()))
+            if len(all_state_files)==0:
+                i = 0
+            else:
+                i = int(all_state_files[-1].name.split("_")[-1].split(".")[0])+1
+            candidate = path / f"tangos_resume_state_{i:06d}.pickle"
+            assert not candidate.exists()
+            self.__resume_state_path = candidate
+        return self.__resume_state_path
 
     @classmethod
     def _get_stored_completion_maps(cls):
         maps = {}
-        try:
-            with open(cls._resume_state_filename(), "rb") as f:
-                maps = pickle.load(f)
-        except FileNotFoundError:
-            pass
-        return maps
 
-    @classmethod
-    def _store_completion_maps(cls, maps):
-        with open(cls._resume_state_filename(), "wb") as f:
-            pickle.dump(maps, f)
+        resume_path = cls._resume_state_folder_path()
+
+        for filename in sorted(list(resume_path.iterdir())):
+            if str(filename).endswith(".pickle"):
+                try:
+                    with filename.open('rb') as f:
+                        maps.update(pickle.load(f))
+                except OSError:
+                    log.logger.warn(f"Error reading resume state from {str(filename):s}. Skipped.")
+                    pass
+
+        return maps
     @classmethod
     def _get_stored_completion_map_from_context(cls, context):
         maps = cls._get_stored_completion_maps()
@@ -86,19 +102,14 @@ class IterationState:
 
     @classmethod
     def clear_resume_state(cls):
-        try:
-            os.unlink(cls._resume_state_filename())
-        except FileNotFoundError:
-            pass
+        for f in cls._resume_state_folder_path().iterdir():
+            f.unlink()
 
     def _store_completion_map(self):
-        # In principle, there could be a race condition if more than one tangos process
-        # is ongoing on the same filesystem. However, this is very unlikely to happen
-        # since updating the completion map is very quick and happens quite rarely,
-        # so we don't worry about it.
-        maps = self._get_stored_completion_maps()
+        maps = {}
         maps[self._context] = self.to_string()
-        self._store_completion_maps(maps)
+        with open(self._resume_state_path(), "wb") as f:
+            pickle.dump(maps, f)
 
     def mark_complete(self, job):
         if job is None:
