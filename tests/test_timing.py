@@ -1,6 +1,8 @@
 import logging
 import time
 
+import pytest
+
 import tangos.util.timing_monitor as tm
 from tangos.log import LogCapturer, logger
 
@@ -79,8 +81,8 @@ def test_timing_add():
         TM.report_to_log(logger)
         TM2.report_to_log(logger)
 
-    assert "Dummy 0.3s" in lc.get_output()
-    assert "0.1s" in lc.get_output()
+    assert "Dummy        0.3" in lc.get_output()
+    assert "start hello           0.1" in lc.get_output()
 
     TM.add(TM2)
     lc = LogCapturer()
@@ -90,31 +92,69 @@ def test_timing_add():
 
     output = lc.get_output_without_timestamps()
 
-    assert "Dummy 0.5s" in output
-    assert "hello 0.2s" in output
-    assert "end 0.3s" in output
+    assert "Dummy        0.5" in output
+    assert "start hello           0.2" in output
+    assert "hello end             0.3" in output
 
-def test_picklable():
-    TM = tm.TimingMonitor()
+@pytest.fixture
+def sample_timing_monitor():
+    sample_timing_monitor = tm.TimingMonitor()
     x = Dummy()
 
-    with TM(x):
+    with sample_timing_monitor(x):
         time.sleep(0.1)
-        TM.mark("hello")
+        sample_timing_monitor.mark("hello")
         time.sleep(0.2)
 
+    return sample_timing_monitor
+def test_picklable(sample_timing_monitor):
     lc = LogCapturer()
 
     with lc:
-        TM.report_to_log(logger)
+        sample_timing_monitor.report_to_log(logger)
 
     correct_results = lc.get_output_without_timestamps()
 
     import pickle
-    TM2 = pickle.loads(pickle.dumps(TM))
+    TM2 = pickle.loads(pickle.dumps(sample_timing_monitor))
 
     lc = LogCapturer()
     with lc:
         TM2.report_to_log(logger)
 
     assert lc.get_output_without_timestamps() == correct_results
+
+def test_time_formatting():
+    results = [(0.151, "0.15s"),
+               (12.46, "12.5s"),
+               (61.3, "1m 1s"),
+               (3702.51, "1h 1m 43s")
+               ]
+
+    for t, f in results:
+        assert tm.TimingMonitor.format_time(t) == f
+
+
+
+def test_report_if_needed(sample_timing_monitor):
+    lc = LogCapturer()
+    with lc:
+        sample_timing_monitor.report_to_log_if_needed(logger)
+
+    assert len(lc.get_output())>0
+
+    lc = LogCapturer()
+    with lc:
+        sample_timing_monitor.report_to_log_if_needed(logger)
+
+    assert len(lc.get_output()) == 0
+
+    x = Dummy()
+    with sample_timing_monitor(x):
+        sample_timing_monitor.mark("hello")
+        time.sleep(0.2)
+
+    with lc:
+        sample_timing_monitor.report_to_log_if_needed(logger)
+
+    assert len(lc.get_output())>0

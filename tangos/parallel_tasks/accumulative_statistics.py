@@ -1,17 +1,50 @@
-import logging
+import copy
+import threading
 import time
+from typing import Optional
 
 from ..config import PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES
 from ..log import logger
 from .message import BarrierMessageWithResponse, Message
 
-_new_accumulator_requested_for_ranks = []
-_new_accumulator = None
 _existing_accumulators = []
+_accumulator_reporting_thread: Optional[threading.Thread] = None
+_accumulator_reporting_semaphore: Optional[threading.Semaphore] = None
+
+def _accumulator_reporting():
+    global _existing_accumulators
+    while True:
+        if _accumulator_reporting_semaphore.acquire(timeout=PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES):
+            break # semaphore has been released, meaning the thread should stop
+
+        # otherwise, semaphore has timed out, so report
+        for a in _existing_accumulators:
+            a.report_to_log_if_needed(logger)
+def _start_accumulator_reporting_thread():
+    from . import on_exit_parallelism
+    global _accumulator_reporting_thread, _accumulator_reporting_semaphore
+    if _accumulator_reporting_thread is None:
+        _accumulator_reporting_semaphore = threading.Semaphore(0)
+        _accumulator_reporting_thread = threading.Thread(target=_accumulator_reporting)
+        _accumulator_reporting_thread.start()
+        on_exit_parallelism(_stop_accumulator_reporting_thread)
+
+def _stop_accumulator_reporting_thread():
+    global _accumulator_reporting_thread, _accumulator_reporting_semaphore
+    if _accumulator_reporting_thread is not None:
+        _accumulator_reporting_semaphore.release()
+        _accumulator_reporting_thread.join()
+        _accumulator_reporting_thread = None
+        _accumulator_reporting_semaphore = None
+
 class CreateNewAccumulatorMessage(BarrierMessageWithResponse):
 
     def process_global(self):
-        from . import backend, on_exit_parallelism
+        global _existing_accumulators
+
+        _start_accumulator_reporting_thread()
+
+        from . import on_exit_parallelism
 
         new_accumulator = self.contents()
         accumulator_id = len(_existing_accumulators)
@@ -19,8 +52,8 @@ class CreateNewAccumulatorMessage(BarrierMessageWithResponse):
 
         locally_bound_accumulator = new_accumulator
         logger.debug("Created new accumulator of type %s with id %d" % (
-        locally_bound_accumulator.__class__.__name__, accumulator_id))
-        on_exit_parallelism(lambda: locally_bound_accumulator.report_to_log_if_needed(logger, 0.05))
+                     locally_bound_accumulator.__class__.__name__, accumulator_id))
+        on_exit_parallelism(lambda: locally_bound_accumulator.report_to_log_if_needed(logger))
 
         self.respond(accumulator_id)
 
@@ -45,6 +78,7 @@ class StatisticsAccumulatorBase:
             logger.debug(f"Registering {self.__class__}")
             self.id = CreateNewAccumulatorMessage(self.__class__).send_and_get_response(0)
             logger.debug(f"Received accumulator id={ self.id}")
+        self._state_at_last_report = copy.deepcopy(self)
 
     def report_to_server(self):
         if self._parallel:
@@ -66,9 +100,10 @@ class StatisticsAccumulatorBase:
         else:
             self.report_to_log(logger)
 
-    def report_to_log_if_needed(self, logger, after_time=None):
-        if after_time is None:
-            after_time = self.REPORT_AFTER
-        if time.time() - self._last_reported > after_time:
+    def report_to_log_if_needed(self, logger):
+        if self != self._state_at_last_report:
             self.report_to_log(logger)
-            self._last_reported = time.time()
+            self._state_at_last_report = copy.deepcopy(self)
+
+    def __eq__(self, other):
+        raise NotImplementedError("This method should be overriden to compare two accumulations")

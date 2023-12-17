@@ -189,8 +189,6 @@ class PropertyWriter(GenericTangosTool):
         if parallel_tasks.backend is None or parallel_tasks.backend.rank()==1 or self.options.load_mode is None:
             logger.info(*args)
 
-    def _summarise_timing(self):
-        self.timing_monitor.report_to_log_or_server(logger)
 
 
     def _build_halo_list(self, db_timestep):
@@ -265,9 +263,9 @@ class PropertyWriter(GenericTangosTool):
             return False
         if end_of_simulation:
             return True
-        elif end_of_timestep and (time.time() - self._start_time > self._writer_minimum):
+        elif end_of_timestep and (time.time() - self._last_commit_time > self._writer_minimum):
             return True
-        elif time.time() - self._start_time > self._writer_timeout:
+        elif time.time() - self._last_commit_time > self._writer_timeout:
             return True
         else:
             return False
@@ -276,12 +274,15 @@ class PropertyWriter(GenericTangosTool):
     def _commit_results_if_needed(self, end_of_timestep=False, end_of_simulation=False):
 
         if self._is_commit_needed(end_of_timestep, end_of_simulation):
-            logger.info("Attempting to commit halo properties...")
-            num_properties = insert_list(self._pending_properties)
-            logger.info(f"...{num_properties} properties were committed")
-            self._pending_properties = []
-            self._start_time = time.time()
-            self._summarise_timing()
+            self._commit_results()
+
+            self.tracker.report_to_log_or_server(logger)
+            self.timing_monitor.report_to_log_or_server(logger)
+
+    def _commit_results(self):
+        insert_list(self._pending_properties)
+        self._pending_properties = []
+        self._last_commit_time = time.time()
 
     def _queue_results_for_later_commit(self, db_halo, names, results, existing_properties_data):
         for n, r in zip(names, results):
@@ -513,8 +514,6 @@ class PropertyWriter(GenericTangosTool):
         self._log_once_per_timestep("Done with %r", db_timestep)
         self._unload_timestep()
 
-        self.tracker.report_to_log_or_server(logger)
-
         self._commit_results_if_needed(end_of_timestep=True)
 
     def _add_prerequisites_to_calculator_instances(self, db_timestep):
@@ -545,7 +544,7 @@ class PropertyWriter(GenericTangosTool):
 
         parallel_tasks.database.synchronize_creator_object()
 
-        self._start_time = time.time()
+        self._last_commit_time = time.time()
         self._pending_properties = []
 
         for f_obj in self._get_parallel_timestep_iterator():
@@ -556,8 +555,8 @@ class PropertyWriter(GenericTangosTool):
 
 class CalculationSuccessTracker(accumulative_statistics.StatisticsAccumulatorBase):
     def __init__(self, allow_parallel=False):
+        self.reset() # comes before __init__, since the latter stores a copy for use in report_to_log_if_needed
         super().__init__(allow_parallel=allow_parallel)
-        self.reset()
 
         self._posted_errors = parallel_tasks.shared_set.SharedSet('posted_errors',allow_parallel)
 
@@ -607,3 +606,11 @@ class CalculationSuccessTracker(accumulative_statistics.StatisticsAccumulatorBas
         self._skipped_loading_error += other._skipped_loading_error
         self._skipped_existing += other._skipped_existing
         self._skipped_missing_prerequisite += other._skipped_missing_prerequisite
+
+    def __eq__(self, other):
+        return type(other) == type(self) and \
+               self._succeeded == other._succeeded and \
+               self._skipped_error == other._skipped_error and \
+               self._skipped_loading_error == other._skipped_loading_error and \
+               self._skipped_existing == other._skipped_existing and \
+               self._skipped_missing_prerequisite == other._skipped_missing_prerequisite

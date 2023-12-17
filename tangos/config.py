@@ -98,6 +98,9 @@ PROPERTY_WRITER_MAXIMUM_TIME_BETWEEN_COMMITS = 600 # seconds
 PROPERTY_WRITER_MINIMUM_TIME_BETWEEN_COMMITS = 300 # seconds
 
 # Minimum time between providing updates to the user during tangos write, when running in parallel
+# Note that this is a 'polling' interval, for checking whether to update the display. Internally, the
+# statistics are updated whenever a commit is made by any process (and the frequency of such commits
+# is determined above).
 PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES = 600 # seconds
 
 try:

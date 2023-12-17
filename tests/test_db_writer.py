@@ -305,6 +305,22 @@ def test_calc_success_tracker(success_tracker):
     assert "Errored during load: 4 property calculations" in output
     assert "Missing pre-requisite: 5 property" in output
 
+def test_log_when_needed(success_tracker):
+    with log.LogCapturer() as lc:
+        success_tracker.report_to_log_if_needed(log.logger)
+    assert len(lc.get_output())>0
+
+    with log.LogCapturer() as lc:
+        success_tracker.report_to_log_if_needed(log.logger)
+    assert len(lc.get_output())==0
+
+    success_tracker.register_success()
+
+    with log.LogCapturer() as lc:
+        success_tracker.report_to_log_if_needed(log.logger)
+    assert len(lc.get_output())>0
+
+
 def test_calc_success_tracker_addition(success_tracker):
     success_tracker.add(success_tracker)
     with log.LogCapturer() as lc:
@@ -325,4 +341,4 @@ def test_writer_reports_aggregates(fresh_database):
 
 
     assert "Succeeded: 15 property calculations" in res
-    assert "myPropertyTakingTime 1.5s" in res
+    assert "myPropertyTakingTime         1.5s" in res
