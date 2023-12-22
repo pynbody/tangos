@@ -158,3 +158,8 @@ def test_report_if_needed(sample_timing_monitor):
         sample_timing_monitor.report_to_log_if_needed(logger)
 
     assert len(lc.get_output())>0
+
+def test_report_if_needed_no_limitless_recursion(sample_timing_monitor):
+    sample_timing_monitor.report_to_log_if_needed(logger)
+    assert sample_timing_monitor._state_at_last_report is not None
+    assert sample_timing_monitor._state_at_last_report._state_at_last_report is None

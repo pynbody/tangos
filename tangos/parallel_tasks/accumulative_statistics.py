@@ -103,6 +103,7 @@ class StatisticsAccumulatorBase:
     def report_to_log_if_needed(self, logger):
         if self != self._state_at_last_report:
             self.report_to_log(logger)
+            self._state_at_last_report = None # avoid limitless depth in copy!
             self._state_at_last_report = copy.deepcopy(self)
 
     def __eq__(self, other):
