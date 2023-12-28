@@ -133,4 +133,3 @@ class TimestepThinner(GenericTangosTool):
             connection.commit()
 
         print(f"Removed {count} orphan properties")
-
