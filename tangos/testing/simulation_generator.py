@@ -79,7 +79,7 @@ class SimulationGeneratorForTests:
     def _two_most_recently_added_timesteps(self):
         return self.sim.timesteps[-2:]
 
-    def add_timestep(self):
+    def add_timestep(self, time = None):
         """Add a sequentially-numbered timestep to the specified simulation"""
 
         timestep_num = len(self.sim.timesteps)+1
@@ -87,7 +87,10 @@ class SimulationGeneratorForTests:
             raise ValueError("Number of steps added exceeds maximum. You can use max_steps=<n> when constructing SimulationGeneratorForTests.")
         ts = core.timestep.TimeStep(self.sim, "ts%d"%timestep_num)
         ts.redshift = self.max_steps - timestep_num
-        ts.time_gyr = 0.9*timestep_num
+        if time is None:
+            ts.time_gyr = 0.9*timestep_num
+        else:
+            ts.time_gyr = time
         self.session.add(ts)
         self.session.commit()
 
