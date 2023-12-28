@@ -555,9 +555,15 @@ def providing_classes(property_name_list, handler_class, silent_fail=False, expl
 def instantiate_classes(simulation, property_name_list, silent_fail=False, explain=False):
     """Instantiate appropriate property calculation classes for a given simulation and list of property names."""
     instances = []
+    already_instantiated_classes = []
+
     handler_class = type(simulation.get_output_handler())
+
     for property_identifier in property_name_list:
-        instances.append(providing_class(property_identifier, handler_class, silent_fail, explain)(simulation))
+        cl = providing_class(property_identifier, handler_class, silent_fail, explain)
+        if cl not in already_instantiated_classes:
+            already_instantiated_classes.append(cl)
+            instances.append(cl(simulation))
 
     return instances
 

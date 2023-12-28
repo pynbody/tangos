@@ -342,3 +342,21 @@ def test_writer_reports_aggregates(fresh_database):
 
     assert "Succeeded: 15 property calculations" in res
     assert "myPropertyTakingTime         1.5s" in res
+
+
+class MoreThanOneDummyProperty(properties.PropertyCalculation):
+    names = "dummy_property_t1", "dummy_property_t2"
+    requires_particle_data = True
+
+    def requires_property(self):
+        return []
+
+    def calculate(self, data, entry):
+        return data.time*data.halo, data.time*data.halo+1
+
+def test_writer_doesnt_duplicate_property_classes(fresh_database):
+    res = run_writer_with_args("dummy_property_t1", "dummy_property_t2")
+    assert "Succeeded: 15" in res
+    assert "Already exists: 0" in res
+    assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property_t1'] == 1.0
+    assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property_t2'] == 2.0
