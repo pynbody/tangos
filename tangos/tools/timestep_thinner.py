@@ -59,10 +59,19 @@ class TimestepThinner(GenericTangosTool):
 
         to_remove = []
 
+        dt_already_accumulated = 0.0
+
         for i, dt in enumerate(intervals, 1):
-            if dt < min_interval:
+            if dt + dt_already_accumulated < min_interval:
                 to_remove.append(timesteps[i])
-                print(f"    {timesteps[i].extension:s} (delta_t =  {dt:.3f} Gyr)")
+                if dt_already_accumulated > 0.0:
+                    print(f"    {timesteps[i].extension:s} (delta_t = {dt+dt_already_accumulated:.3f} Gyr; "
+                          f"original delta_t =  {dt:.3f} Gyr)")
+                else:
+                    print(f"    {timesteps[i].extension:s} (delta_t = {dt:.3f} Gyr)")
+                dt_already_accumulated += dt
+            else:
+                dt_already_accumulated = 0.0
 
         if len(to_remove) == 0:
             print("    None")
@@ -70,22 +79,21 @@ class TimestepThinner(GenericTangosTool):
             print(f"  There are {len(to_remove)} timesteps to remove")
 
             if not self.options.force:
-                print("""Type "yes" to continue""")
-                ok = input(":").lower() == "yes"
+                print("""  Type "yes" to continue""")
+                ok = input("  :").lower() == "yes"
             else:
                 ok = True
 
             if ok:
                 session = core.get_default_session()
                 for ts in to_remove:
-                    print(f"    Removing {ts.extension:s}")
                     session.execute(
                        sqlalchemy.delete(core.TimeStep).filter(core.TimeStep.id == ts.id)
                     )
                 session.commit()
 
             else:
-                print("Skipping")
+                print("  Skipping")
 
         self._cleanup_orphan_objects()
         self._cleanup_orphan_links()
@@ -102,7 +110,7 @@ class TimestepThinner(GenericTangosTool):
                 )
             ).rowcount
             connection.commit()
-        print(f"Removed {count} orphan objects")
+        print(f"  Removed {count} orphan objects")
 
     def _cleanup_orphan_links(self):
         engine = core.get_default_engine()
@@ -117,7 +125,7 @@ class TimestepThinner(GenericTangosTool):
                 )
             ).rowcount
             connection.commit()
-        print(f"Removed {count} orphan links")
+        print(f"  Removed {count} orphan links")
 
     def _cleanup_orphan_properties(self):
         engine = core.get_default_engine()
@@ -132,4 +140,4 @@ class TimestepThinner(GenericTangosTool):
             ).rowcount
             connection.commit()
 
-        print(f"Removed {count} orphan properties")
+        print(f"  Removed {count} orphan properties")

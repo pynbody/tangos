@@ -79,6 +79,17 @@ def test_timestep_thinner_relative(fresh_database):
 
     _assert_timestep_removed(target_ts_id)
 
+def test_timestep_thinner_doesnt_over_thin(fresh_database):
+    """Check that when the threshold delta_time is more than all the delta times, we retain
+    some timesteps, just not spaced more regularly than delta_time"""
+    _assert_everything_present()
+
+    tt = timestep_thinner.TimestepThinner()
+    tt.parse_command_line(["0.1999", "-f"])
+    tt.run_calculation_loop()
+
+    assert [t.extension for t in tangos.get_simulation("sim").timesteps] == ["ts1", "ts3", "ts6"]
+
 def test_timestep_thinner_absolute(fresh_database):
     _assert_everything_present()
 
