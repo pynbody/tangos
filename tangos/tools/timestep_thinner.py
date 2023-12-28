@@ -92,39 +92,45 @@ class TimestepThinner(GenericTangosTool):
         self._cleanup_orphan_properties()
 
     def _cleanup_orphan_objects(self):
-        session = core.get_default_session()
-        count = session.execute(
-            delete(core.SimulationObjectBase).filter(
-                ~core.SimulationObjectBase.timestep_id.in_(
-                    select(core.TimeStep.id)
+        engine = core.get_default_engine()
+        with engine.connect() as connection:
+            count = connection.execute(
+                delete(core.SimulationObjectBase).filter(
+                    ~core.SimulationObjectBase.timestep_id.in_(
+                        select(core.TimeStep.id)
+                    )
                 )
-            )
-        ).rowcount
+            ).rowcount
+            connection.commit()
         print(f"Removed {count} orphan objects")
-        session.commit()
 
     def _cleanup_orphan_links(self):
-        session = core.get_default_session()
-        count = session.execute(
-            delete(core.HaloLink).filter(
-                ~core.HaloLink.halo_to_id.in_(
-                    select(core.SimulationObjectBase.id)
-                ) | ~core.HaloLink.halo_from_id.in_(
-                    select(core.SimulationObjectBase.id)
+        engine = core.get_default_engine()
+        with engine.connect() as connection:
+            count = connection.execute(
+                delete(core.HaloLink).filter(
+                    ~core.HaloLink.halo_to_id.in_(
+                        select(core.SimulationObjectBase.id)
+                    ) | ~core.HaloLink.halo_from_id.in_(
+                        select(core.SimulationObjectBase.id)
+                    )
                 )
-            )
-        ).rowcount
+            ).rowcount
+            connection.commit()
         print(f"Removed {count} orphan links")
-        session.commit()
 
     def _cleanup_orphan_properties(self):
-        session = core.get_default_session()
-        count = session.execute(
-            delete(core.HaloProperty).filter(
-                ~core.HaloProperty.halo_id.in_(
-                    select(core.SimulationObjectBase.id)
+        engine = core.get_default_engine()
+
+        with engine.connect() as connection:
+            count = connection.execute(
+                delete(core.HaloProperty).where(
+                    ~core.HaloProperty.halo_id.in_(
+                        select(core.SimulationObjectBase.id)
+                    )
                 )
-            )
-        ).rowcount
+            ).rowcount
+            connection.commit()
+
         print(f"Removed {count} orphan properties")
-        session.commit()
+
