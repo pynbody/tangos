@@ -12,8 +12,8 @@ class TimingMonitor(accumulative_statistics.StatisticsAccumulatorBase):
     to take advantage of this), the time spent on sub-tasks. It provides formatting to place this information
     into the log."""
     def __init__(self, allow_parallel=False):
-        super().__init__(allow_parallel=allow_parallel)
         self.reset()
+        super().__init__(allow_parallel=allow_parallel)
         self._monitoring = None
 
     @contextlib.contextmanager
@@ -99,7 +99,8 @@ class TimingMonitor(accumulative_statistics.StatisticsAccumulatorBase):
     def report_to_log(self, logger):
         if len(self.timings_by_class) == 0:
             return
-        logger.info("CUMULATIVE RUNNING TIMES")
+        logger.info("")
+        logger.info("CUMULATIVE RUNNING TIMES, summed over all processes, if applicable")
         v_tot = 1e-10
         for k, v in self.timings_by_class.items():
             v_tot += sum(v)
@@ -108,14 +109,46 @@ class TimingMonitor(accumulative_statistics.StatisticsAccumulatorBase):
             name = str(k)[:-2]
             name = name.split(".")[-1]
             name = "%20s " % (name[-20:])
+            logger.info(" " + name + f"{self.format_time(sum(v)):>12} | {100 * sum(v) / v_tot:4.1f}%")
             if len(v)>1:
                 marks_info = self.labels_by_class[k]
-                logger.info(" " + name + f"{sum(v):.1f}s | {100 * sum(v) / v_tot:.1f}%")
-                logger.info("  ------ INTERNAL BREAKDOWN ------" )
+                logger.info("  ------------ INTERNAL BREAKDOWN ------------" )
                 for i, this_v in enumerate(v):
-                    logger.info((" %8s %8s %.1fs | %.1f%% | %.1f%%") %
-                                (marks_info[i], marks_info[i + 1],
-                                 this_v, 100 * this_v / sum(v), 100 * this_v / v_tot))
-                logger.info("  --------------------------------")
-            else:
-                logger.info(name + f"{v[0]:.1f}s | {100 * v[0] / v_tot:.1f}%")
+                    logger.info(("    {:>8s} {:<8s} {:>12} | {:4.1f}% | {:4.1f}%").format(
+                                 marks_info[i], marks_info[i + 1],
+                                 self.format_time(this_v), 100 * this_v / sum(v), 100 * this_v / v_tot))
+                logger.info("  --------------------------------------------")
+
+        logger.info("")
+
+    @classmethod
+    def format_time(cls, time_in_seconds):
+        """Returns a formatted time with sensible accuracy, e.g.
+
+        0.124 -> 0.12s
+        12.51 -> 12.5s
+        123.4 -> 2m 3s
+        3715.22 -> 1h 1m 55s
+        """
+
+        if time_in_seconds < 1:
+            return "%.2fs" % time_in_seconds
+        elif time_in_seconds < 60:
+            return "%.1fs" % time_in_seconds
+        elif time_in_seconds < 3600:
+            return "%dm %.0fs" % (time_in_seconds // 60, time_in_seconds % 60)
+        else:
+            return "%dh %dm %.0fs" % (time_in_seconds // 3600, (time_in_seconds % 3600) // 60, time_in_seconds % 60)
+
+    def __eq__(self, other):
+        if type(other) != type(self):
+            return False
+
+        if self.timings_by_class.keys() != other.timings_by_class.keys():
+            return False
+
+        for k in self.timings_by_class.keys():
+            if not np.all(self.timings_by_class[k] == other.timings_by_class[k]):
+                return False
+
+        return True
