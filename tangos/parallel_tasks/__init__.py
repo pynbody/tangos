@@ -122,6 +122,9 @@ def _exec_function_or_server(function, connection_info, args):
         log.logger.debug("Reinitialising database, args "+str(connection_info))
         core.init_db(*connection_info)
 
+    from .message import _setup_message_reception_timing_monitor
+    _setup_message_reception_timing_monitor()
+
     if backend.rank()==0:
         _server_thread()
     else:

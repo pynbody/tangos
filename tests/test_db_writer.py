@@ -343,6 +343,9 @@ def test_writer_reports_aggregates(fresh_database):
     assert "Succeeded: 15 property calculations" in res
     assert "myPropertyTakingTime         1.5s" in res
 
+    assert "CUMULATIVE RESPONSE WAIT" in res
+    assert "MessageRequestJobResponse" in res # checking the server response time stats are being printed
+
 
 class MoreThanOneDummyProperty(properties.PropertyCalculation):
     names = "dummy_property_t1", "dummy_property_t2"

@@ -279,6 +279,9 @@ class PropertyWriter(GenericTangosTool):
             self.tracker.report_to_log_or_server(logger)
             self.timing_monitor.report_to_log_or_server(logger)
 
+            from ..parallel_tasks import message
+            message.update_performance_stats()
+
     def _commit_results(self):
         insert_list(self._pending_properties)
         self._pending_properties = []
