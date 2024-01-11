@@ -197,6 +197,9 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             if isinstance(h, pynbody.halo.SubfindCatalogue) or isinstance(h, pynbody.halo.SubFindHDFHaloCatalogue):
                 # ugly fix - loads groups by default, wanted halos
                 h = self._construct_pynbody_halos(f, subs=True)
+            if hasattr(h, 'precalculate'):
+                # speeds up getting individual halos etc:
+                h.precalculate()
             _loaded_halocats[id(f)] = weakref.ref(h)
             f._db_current_halocat = h # keep alive for lifetime of simulation
         return h  # pynbody.halo.AmigaGrpCatalogue(f)
