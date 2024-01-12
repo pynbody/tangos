@@ -111,7 +111,7 @@ class Message(metaclass=MessageMetaClass):
         return obj
 
     def process(self):
-        raise NotImplementedError("No process implemented for this message")
+        raise NotImplementedError(f"No process implemented for this message of type {type(self)}")
 
 class ServerResponseMessage(Message):
     pass
