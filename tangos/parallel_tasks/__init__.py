@@ -172,6 +172,6 @@ def _shutdown_parallelism():
 
 
 
-from . import remote_import, shared_set, async_message
+from . import async_message, remote_import, shared_set
 from .barrier import barrier
 from .lock import ExclusiveLock
