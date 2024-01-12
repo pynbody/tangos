@@ -139,9 +139,9 @@ class MessageExit(message.Message):
 
 
 def _server_thread():
-    # Sit idle until request for a job comes in, then assign first
-    # available job and move on. Jobs are labelled through the
-    # provided iterator
+
+    from .async_message import init_async_processing_thread
+    init_async_processing_thread() # uses on_exit_parallelism to ensure thread is cleared up
 
     alive = [True for i in range(backend.size())]
 

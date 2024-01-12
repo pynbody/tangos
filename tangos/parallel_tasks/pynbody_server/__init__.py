@@ -9,6 +9,7 @@ import pynbody.snapshot.copy_on_access
 import tangos.parallel_tasks.pynbody_server.snapshot_queue
 
 from .. import log, remote_import
+from ..async_message import AsyncProcessedMessage
 from ..message import ExceptionMessage, Message
 from . import snapshot_queue, transfer_array
 from .snapshot_queue import (ConfirmLoadPynbodySnapshot,
@@ -55,7 +56,7 @@ class ReturnPynbodyArray(Message):
         # send contents
         transfer_array.send_array(self.contents, destination, use_shared_memory=self.shared_mem)
 
-class RequestPynbodyArray(Message):
+class RequestPynbodyArray(AsyncProcessedMessage):
     _time_to_start_processing = []
 
     def __init__(self, filter_or_object_spec, array, fam=None, request_sent_time=None):
@@ -102,7 +103,7 @@ class RequestPynbodyArray(Message):
     def reset_performance_stats(cls):
         cls._time_to_start_processing = []
 
-    def process(self):
+    def process_async(self):
         start_time = time.time()
         self._time_to_start_processing.append(start_time - self.request_sent_time)
 
@@ -153,7 +154,7 @@ class ReturnPynbodySubsnapInfo(Message):
 
 
 
-class RequestPynbodySubsnapInfo(Message):
+class RequestPynbodySubsnapInfo(AsyncProcessedMessage):
     def __init__(self, filename, filter_):
         super().__init__()
         self.filename = filename
@@ -168,7 +169,7 @@ class RequestPynbodySubsnapInfo(Message):
     def serialize(self):
         return (self.filename, self.filter_or_object_spec)
 
-    def process(self):
+    def process_async(self):
         start_time = time.time()
         assert(_server_queue.current_timestep == self.filename)
         if self.filter_or_object_spec is not None:

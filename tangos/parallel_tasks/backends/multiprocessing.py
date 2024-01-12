@@ -18,6 +18,9 @@ _recv_buffer = []
 
 _print_exceptions = True
 
+send_lock = threading.Lock() # a lock to make sure if multiple threads are running, only one can send/receive at a time
+receive_lock = threading.Lock()
+
 # Compatibility fix for python >=3.8 on MacOS, where the default process start
 # method changed:
 if sys.version_info[:2]>=(3,3):
@@ -30,22 +33,24 @@ class NoMatchingItem(Exception):
 
 
 def send(data, destination, tag=0):
-    _pipe.send((data, destination, tag))
+    with send_lock:
+        _pipe.send((data, destination, tag))
 
 def receive_any(source=None):
     return receive(source,None,True)
 
 
 def receive(source=None, tag=0, return_tag=False):
-    while True:
-        try:
-            item = _pop_first_match_from_reception_buffer(source, tag)
-            if return_tag:
-                return item
-            else:
-                return item[0]
-        except NoMatchingItem:
-            _receive_item_into_buffer()
+    with receive_lock:
+        while True:
+            try:
+                item = _pop_first_match_from_reception_buffer(source, tag)
+                if return_tag:
+                    return item
+                else:
+                    return item[0]
+            except NoMatchingItem:
+                _receive_item_into_buffer()
 
 
 NUMPY_SPECIAL_TAG = 1515
