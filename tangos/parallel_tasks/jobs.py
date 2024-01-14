@@ -2,7 +2,7 @@ import base64
 import hashlib
 import pathlib
 import pickle
-import pipes
+import shlex
 import sys
 import traceback
 import zlib
@@ -179,7 +179,7 @@ class MessageStartIteration(message.BarrierMessageWithResponse):
         global _next_iteration_state_id, _iteration_states
         req_jobs, req_hash, allow_resume, synchronized = self.contents
 
-        argv_string = " ".join([pipes.quote(arg) for arg in sys.argv])
+        argv_string = shlex.join(sys.argv)
 
         IteratorClass = SynchronizedIterationState if synchronized else IterationState
 
