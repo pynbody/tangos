@@ -50,7 +50,6 @@ def test_get_array():
     pt.use("multiprocessing-3")
     pt.launch(_get_array)
 
-
 def _get_shared_array():
     if pt.backend.rank()==1:
         shared_array = pynbody.array._array_factory((10,), int, True, True)
@@ -156,10 +155,11 @@ def test_halo_array():
 
 def _test_remote_file_index():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.snapshot_queue.ObjectSpecification(1, 1))
-    f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
+    index_list = conn.get_index_list(ps.snapshot_queue.ObjectSpecification(1, 1))
+
+    f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[1]
     local_index_list = f_local.get_index_list(f_local.ancestor)
-    index_list = f['remote-index-list']
+
     assert (index_list==local_index_list).all()
 
 def test_remote_file_index():
@@ -377,3 +377,12 @@ def _test_explicit_array_promotion_shared_mem():
 def test_explicit_array_promotion_shared_mem():
     pt.use("multiprocessing-2")
     pt.launch(_test_explicit_array_promotion_shared_mem)
+
+def test_request_index_list_deserialization():
+    o = ps.RequestIndexList(ps.snapshot_queue.ObjectSpecification(1, 2))
+    tag, contents = o._tag, o.serialize()
+
+    o2 = ps.Message.interpret_and_deserialize(tag, 0, contents)
+    assert isinstance(o2, ps.RequestIndexList)
+
+    assert o2.filter_or_object_spec == o.filter_or_object_spec

@@ -67,7 +67,7 @@ class RequestPynbodyArray(AsyncProcessedMessage):
 
     @classmethod
     def deserialize(cls, source, message):
-        obj = RequestPynbodyArray(*message)
+        obj = cls(*message)
         obj.source = source
         return obj
 
@@ -115,13 +115,8 @@ class RequestPynbodyArray(AsyncProcessedMessage):
             with subsnap.immediate_mode, subsnap.lazy_derive_off:
                 if subsnap._array_name_implies_ND_slice(self.array):
                     raise KeyError("Not transferring a single slice %r of a ND array"%self.array)
-                if self.array=='remote-index-list':
-                    subarray = subsnap.get_index_list(subsnap.ancestor).view(pynbody.array.SimArray)
-                    # this won't be actually in shared memory – it's a regular numpy array
-                    transfer_via_shared_mem = False
-                else:
-                    subarray = subsnap[self.array]
-                    assert isinstance(subarray, pynbody.array.SimArray)
+                subarray = subsnap[self.array]
+                assert isinstance(subarray, pynbody.array.SimArray)
                 array_result = ReturnPynbodyArray(subarray, transfer_via_shared_mem)
 
         except Exception as e:
@@ -132,6 +127,32 @@ class RequestPynbodyArray(AsyncProcessedMessage):
         gc.collect()
         log.logger.debug("Array sent after %.2fs"%(time.time()-start_time))
 
+class RequestIndexList(RequestPynbodyArray):
+    def __init__(self, filter_or_object_spec, request_sent_time=None):
+        super().__init__(filter_or_object_spec, 'remote-index-list', None, request_sent_time)
+
+    def serialize(self):
+        return self.filter_or_object_spec, time.time()
+
+    def process_async(self):
+        start_time = time.time()
+        self._time_to_start_processing.append(start_time - self.request_sent_time)
+
+        try:
+            log.logger.debug("Receive request for array %r from %d",self.array,self.source)
+            subsnap = _server_queue.get_subsnap(self.filter_or_object_spec, self.fam)
+
+            subarray = subsnap.get_index_list(subsnap.ancestor).view(pynbody.array.SimArray)
+
+            array_result = ReturnPynbodyArray(subarray)
+
+        except Exception as e:
+            array_result = ExceptionMessage(e)
+
+        array_result.send(self.source)
+        del array_result
+        gc.collect()
+        log.logger.debug("Array sent after %.2fs"%(time.time()-start_time))
 
 
 class ReturnPynbodySubsnapInfo(Message):
@@ -302,6 +323,10 @@ class RemoteSnapshotConnection:
         (typetag, number), which are respectively the object type tag and object number to be loaded
         """
         return RemoteSnap(self, filter_or_object_spec)
+
+    def get_index_list(self, filter_or_object_spec):
+        RequestIndexList(filter_or_object_spec, 'remote-index-list').send(self._server_id)
+        return ReturnPynbodyArray.receive(self._server_id).contents
 
     def disconnect(self):
 

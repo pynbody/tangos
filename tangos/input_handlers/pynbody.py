@@ -101,8 +101,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             return simsnap[region_specification].get_copy_on_access_simsnap()
         elif mode=='server-partial':
             timestep = self.load_timestep(ts_extension, mode)
-            view = timestep.get_view(region_specification)
-            load_index = view['remote-index-list']
+            load_index = timestep.get_index_list(region_specification)
             logger.info("Partial load %r, taking %d particles",ts_extension,len(load_index))
             f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
             f.physical_units()
@@ -126,9 +125,10 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         elif mode=='server-partial':
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps
-            view = timestep.get_view(
-                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag))
-            load_index = view['remote-index-list']
+            load_index = timestep.get_index_list(
+                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag)
+            )
+
             logger.info("Partial load %r, taking %d particles", ts_extension, len(load_index))
             f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
             f.physical_units()
@@ -136,10 +136,10 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         elif mode=='server-shared-mem':
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps
-            view = timestep.get_view(
-                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag))
-            view_index = view['remote-index-list']
-            return timestep.shared_mem_view[view_index].get_copy_on_access_simsnap()
+            index_list = timestep.get_index_list(
+                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag)
+            )
+            return timestep.shared_mem_view[index_list].get_copy_on_access_simsnap()
 
         elif mode is None:
             h = self._construct_halo_cat(ts_extension, object_typetag)
