@@ -113,7 +113,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         if mode=='partial':
-            h = self._construct_halo_cat(ts_extension, object_typetag)
+            h = self.get_catalogue(ts_extension, object_typetag)
             h_file = h.load_copy(finder_offset)
             h_file.physical_units()
             return h_file
@@ -142,7 +142,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             return timestep.shared_mem_view[index_list].get_copy_on_access_simsnap()
 
         elif mode is None:
-            h = self._construct_halo_cat(ts_extension, object_typetag)
+            h = self.get_catalogue(ts_extension, object_typetag)
             return h[finder_offset]
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
@@ -187,7 +187,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
 
 
-    def _construct_halo_cat(self, ts_extension, object_typetag):
+    def get_catalogue(self, ts_extension, object_typetag):
         if object_typetag!= 'halo':
             raise ValueError("Unknown object type %r" % object_typetag)
         f = self.load_timestep(ts_extension)
@@ -215,15 +215,15 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             only_family=None
 
         f1 = self.load_timestep(ts1)
-        h1 = self._construct_halo_cat(ts1, object_typetag)
+        h1 = self.get_catalogue(ts1, object_typetag)
 
         if output_handler_for_ts2:
             assert isinstance(output_handler_for_ts2, PynbodyInputHandler)
             f2 = output_handler_for_ts2.load_timestep(ts2)
-            h2 = output_handler_for_ts2._construct_halo_cat(ts2, object_typetag)
+            h2 = output_handler_for_ts2.get_catalogue(ts2, object_typetag)
         else:
             f2 = self.load_timestep(ts2)
-            h2 = self._construct_halo_cat(ts2, object_typetag)
+            h2 = self.get_catalogue(ts2, object_typetag)
 
         if halo_max is None:
             halo_max = max(len(h2), len(h1))
@@ -250,7 +250,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
             snapshot_keep_alive = self.load_timestep(ts_extension)
             try:
-                h = self._construct_halo_cat(ts_extension, object_typetag)
+                h = self.get_catalogue(ts_extension, object_typetag)
             except:
                 logger.warning("Unable to read %ss using pynbody; assuming step has none", object_typetag)
                 return
@@ -358,7 +358,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
 
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         if mode=='subfind-properties':
-            h = self._construct_halo_cat(ts_extension, object_typetag)
+            h = self.get_catalogue(ts_extension, object_typetag)
             return h.get_halo_properties(finder_offset,with_unit=False)
         else:
             return super().load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
@@ -373,9 +373,9 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
             f._db_current_groupcat = h  # keep alive for lifetime of simulation
         return h
 
-    def _construct_halo_cat(self, ts_extension, object_typetag):
+    def get_catalogue(self, ts_extension, object_typetag):
         if object_typetag== 'halo':
-            return super()._construct_halo_cat(ts_extension, object_typetag)
+            return super().get_catalogue(ts_extension, object_typetag)
         elif object_typetag== 'group':
             return self._construct_group_cat(ts_extension)
         else:
@@ -389,7 +389,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
             return value
 
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
-        cat = self._construct_halo_cat(ts_extension, object_typetag)
+        cat = self.get_catalogue(ts_extension, object_typetag)
         properties = list(cat.get_halo_properties(0, False).keys())
         pynbody_prefix = self._property_prefix_for_type.get(object_typetag, '')
         for i,p in enumerate(properties):
@@ -408,7 +408,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
 
 
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
-        h = self._construct_halo_cat(ts_extension, object_typetag)
+        h = self.get_catalogue(ts_extension, object_typetag)
 
         pynbody_prefix = self._property_prefix_for_type.get(object_typetag, '')
 
@@ -522,7 +522,7 @@ class AHFInputHandler(PynbodyInputHandler):
     )
 
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
-        h = self._construct_halo_cat(ts_extension, object_typetag)
+        h = self.get_catalogue(ts_extension, object_typetag)
 
         return (
             [
@@ -533,7 +533,7 @@ class AHFInputHandler(PynbodyInputHandler):
 
 
     def _get_map_child_subhalos(self, ts_extension):
-        h = self._construct_halo_cat(ts_extension, 'halo')
+        h = self.get_catalogue(ts_extension, 'halo')
         halo_children = defaultdict(list)
         for halo in h:
             iparent = halo.properties["hostHalo"] # Returns the unique ID (NOT the halo_id index) of the host
@@ -548,13 +548,13 @@ class AHFInputHandler(PynbodyInputHandler):
         # IDs and halo_ids are usually related by ID = halo_id - 1,
         # but they can be entirely independent when using specific AHF options or running with MPI
         # This allows to map between one and the other
-        h = self._construct_halo_cat(ts_extension, 'halo')
+        h = self.get_catalogue(ts_extension, 'halo')
         return {
             halo.properties["ID"]: halo.properties["halo_id"] for halo in h
         }
 
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
-        h = self._construct_halo_cat(ts_extension, object_typetag)
+        h = self.get_catalogue(ts_extension, object_typetag)
 
         h.physical_units()
 

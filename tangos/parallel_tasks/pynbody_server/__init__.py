@@ -34,7 +34,7 @@ class ReturnPynbodyArray(Message):
                 contents = contents.view(pynbody.array.SimArray)
             contents.units = units
 
-        obj = ReturnPynbodyArray(contents, shared_mem=shared_mem)
+        obj = cls(contents, shared_mem=shared_mem)
         obj.source = source
 
         return obj
@@ -205,6 +205,28 @@ class RequestPynbodySubsnapInfo(AsyncProcessedMessage):
         ReturnPynbodySubsnapInfo(families, fam_lengths, obj.properties, lkeys, fam_lkeys).send(self.source)
         log.logger.debug("Info sent after %.2f",(time.time()-start_time))
 
+class ReturnObjectNumberArray(ReturnPynbodyArray):
+    pass
+
+class RequestSharedMemObjectNumberArray(AsyncProcessedMessage):
+    def __init__(self, filename, object_typetag):
+        self.filename = filename
+        self.type_tag = object_typetag
+
+    def serialize(self):
+        return self.filename, self.type_tag
+
+    @classmethod
+    def deserialize(cls, source, message):
+        obj = cls(*message)
+        obj.source = source
+        return obj
+
+    def process_async(self):
+        assert self.filename == _server_queue.current_timestep
+        object_ar = _server_queue.get_portable_catalogue(self.type_tag)
+        ReturnObjectNumberArray(object_ar, shared_mem=True).send(self.source)
+
 
 class RemoteSnap(pynbody.snapshot.copy_on_access.UnderlyingClassMixin, pynbody.snapshot.SimSnap):
     def __init__(self, connection, filter_or_object_spec):
@@ -300,6 +322,8 @@ class RemoteSnapshotConnection:
         self.connected = False
         self.shared_mem = shared_mem
 
+        self._shared_mem_no_cat_for = set()
+
         # ensure server knows what our messages are about
         remote_import.ImportRequestMessage(__name__).send(self._server_id)
 
@@ -324,8 +348,23 @@ class RemoteSnapshotConnection:
         """
         return RemoteSnap(self, filter_or_object_spec)
 
-    def get_index_list(self, filter_or_object_spec):
-        RequestIndexList(filter_or_object_spec, 'remote-index-list').send(self._server_id)
+    def get_index_list(self, filter_or_object_spec: snapshot_queue.ObjectSpecification):
+        typetag = filter_or_object_spec.object_typetag
+        if self.shared_mem and typetag not in self._shared_mem_no_cat_for:
+            arname = '__'+typetag+"__CAT"
+            if arname not in self.shared_mem_view.keys():
+                RequestSharedMemObjectNumberArray(self.filename, typetag).send(self._server_id)
+                obj_ar = ReturnObjectNumberArray.receive(self._server_id).contents
+                if obj_ar is not None:
+                    self.shared_mem_view[arname] = obj_ar
+                else:
+                    self._shared_mem_no_cat_for.add(typetag)
+            if arname in self.shared_mem_view.keys():
+                grpcat = pynbody.halo.GrpCatalogue(self.shared_mem_view, arname)
+                return grpcat[filter_or_object_spec.object_number]
+
+        # was not able to do anything smart with shared memory, so get the server to figure out the index list
+        RequestIndexList(filter_or_object_spec).send(self._server_id)
         return ReturnPynbodyArray.receive(self._server_id).contents
 
     def disconnect(self):

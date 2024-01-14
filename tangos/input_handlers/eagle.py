@@ -67,7 +67,7 @@ class EagleLikeInputHandler(PynbodyInputHandler):
 
         return True
 
-    def _construct_halo_cat(self, ts_extension, object_typetag):
+    def get_catalogue(self, ts_extension, object_typetag):
         from .pynbody import pynbody
         if object_typetag!= 'halo' and object_typetag!='group':
             raise ValueError("Unknown object type %r" % object_typetag)

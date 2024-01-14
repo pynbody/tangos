@@ -9,6 +9,7 @@ class ConfirmLoadPynbodySnapshot(Message):
     pass
 
 
+
 class PynbodySnapshotQueue:
     def __init__(self):
         self.timestep_queue = []
@@ -19,7 +20,9 @@ class PynbodySnapshotQueue:
         self.current_snapshot = None
         self.current_subsnap_cache = {}
         self.current_handler = None
+        self.current_portable_catalogues = {}
         self.in_use_by = []
+
 
     def add(self, requester, handler, filename, shared_mem=False):
         log.logger.debug("Pynbody server: client %d requests access to %r", requester, filename)
@@ -79,7 +82,24 @@ class PynbodySnapshotQueue:
 
         return snap
 
+    def get_catalogue(self, type_tag):
+        return self.current_handler.get_catalogue(self.current_timestep, type_tag)
 
+    def get_portable_catalogue(self, type_tag):
+        if type_tag in self.current_portable_catalogues:
+            log.logger.debug("Pynbody server: cache hit for object number array %r", type_tag)
+            return self.current_portable_catalogues[type_tag]
+        else:
+            log.logger.debug("Pynbody server: cache miss for object number array %r", type_tag)
+            try:
+                portacat = PortableObjectCatalogue(self.get_catalogue(type_tag).get_group_array())
+
+            except Exception as e:
+                log.logger.error("Error fetching object number array %r: %s", type_tag, e)
+                portacat = None
+
+            self.current_portable_catalogues[type_tag] = portacat
+            return portacat
 
     def _free_if_unused(self):
         if len(self.in_use_by)==0:
@@ -95,6 +115,7 @@ class PynbodySnapshotQueue:
                 self.current_snapshot = None
                 self.current_timestep = None
                 self.current_subsnap_cache = {}
+                self.current_portable_catalogues = {}
                 self.current_handler = None
 
     def _notify_available(self, node):
