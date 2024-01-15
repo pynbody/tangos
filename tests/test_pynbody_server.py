@@ -11,7 +11,7 @@ import tangos.input_handlers.pynbody
 import tangos.parallel_tasks as pt
 import tangos.parallel_tasks.pynbody_server as ps
 import tangos.parallel_tasks.pynbody_server.snapshot_queue
-
+from tangos.parallel_tasks.pynbody_server import portable_object_catalogue
 from tangos.testing import using_parallel_tasks
 
 
@@ -333,3 +333,35 @@ def test_request_index_list_deserialization():
     assert isinstance(o2, ps.RequestIndexList)
 
     assert o2.filter_or_object_spec == o.filter_or_object_spec
+
+
+def test_portable_catalogue_from_id_array():
+
+
+    np.random.seed(1337)
+    object_id_per_particle = np.array(np.random.randint(1,10,100))
+    iords = np.arange(len(object_id_per_particle))
+
+    obj_cat = portable_object_catalogue.PortableObjectCatalogue(object_id_per_particle)
+
+    for id_ in np.unique(object_id_per_particle):
+        assert (obj_cat.get_object(id_, iords) == iords[object_id_per_particle==id_]).all()
+
+
+@using_parallel_tasks(3)
+def test_transmit_receive_portable_catalogue():
+    np.random.seed(1337)
+    object_id_per_particle = np.array(np.random.randint(1, 10, 100))
+
+    if pt.backend.rank()==1:
+
+        obj_cat = portable_object_catalogue.PortableObjectCatalogue(object_id_per_particle)
+        obj_cat.send(2)
+
+        pt.barrier()
+    else:
+        iords = np.arange(len(object_id_per_particle))
+        obj_cat = portable_object_catalogue.PortableObjectCatalogue.receive(1)
+        for id_ in np.unique(object_id_per_particle):
+            assert (obj_cat.get_object(id_, iords) == iords[object_id_per_particle == id_]).all()
+        pt.barrier()

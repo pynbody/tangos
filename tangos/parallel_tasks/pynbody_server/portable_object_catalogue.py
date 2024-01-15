@@ -1,7 +1,8 @@
 import numpy as np
 
-from . import transfer_array
 from ..message import Message
+from . import transfer_array
+
 
 class PortableObjectCatalogue(Message):
     def __init__(self,  /, object_id_per_particle=None, sort_key=None, unique_obj_numbers=None, boundaries=None):
@@ -23,14 +24,16 @@ class PortableObjectCatalogue(Message):
             self.boundaries = boundaries
 
     def get_object(self, obj_number, simulation):
-        ptcl_start = np.searchsorted(self.unique_obj_numbers, obj_number)
-        if ptcl_start >= len(self.unique_obj_numbers) or self.unique_obj_numbers[ptcl_start] != obj_number:
+        obj_offset = np.searchsorted(self.unique_obj_numbers, obj_number)
+        if obj_offset >= len(self.unique_obj_numbers) or self.unique_obj_numbers[obj_offset] != obj_number:
             raise IndexError("No such object")
 
-        if ptcl_start == len(self.unique_obj_numbers) - 1:
+        ptcl_start = self.boundaries[obj_offset]
+
+        if obj_offset == len(self.unique_obj_numbers) - 1:
             ptcl_end = len(self.sort_key)
         else:
-            ptcl_end = self.boundaries[ptcl_start + 1]
+            ptcl_end = self.boundaries[obj_offset + 1]
 
         return simulation[self.sort_key[ptcl_start:ptcl_end]]
 
@@ -53,4 +56,3 @@ class PortableObjectCatalogue(Message):
         transfer_array.send_array(self.sort_key, destination, use_shared_memory=True)
         transfer_array.send_array(self.unique_obj_numbers, destination, use_shared_memory=True)
         transfer_array.send_array(self.boundaries, destination, use_shared_memory=True)
-

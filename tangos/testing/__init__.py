@@ -1,6 +1,6 @@
 import contextlib
-import gc
 import functools
+import gc
 import inspect
 import os
 import traceback
@@ -232,7 +232,7 @@ def using_parallel_tasks(fn_or_num_processes, num_processes = 2):
     """
 
     if hasattr(fn_or_num_processes, "__call__"):
-        from ..parallel_tasks import use, launch
+        from ..parallel_tasks import launch, use
         @functools.wraps(fn_or_num_processes)
         def wrapped_fn(**kwargs):
             use(f"multiprocessing-{num_processes}")
