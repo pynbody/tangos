@@ -382,4 +382,3 @@ def test_server_generates_portable_catalogue():
 def test_portable_catalogue_generated_only_once():
     log = test_server_generates_portable_catalogue() # runs on two processes, should only get one cat
     assert log.count("Generating a shared object catalogue for halos") == 1
-

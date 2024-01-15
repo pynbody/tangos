@@ -92,7 +92,9 @@ class PynbodySnapshotQueue:
         else:
             log.logger.debug("Pynbody server: cache miss for object number array %r", type_tag)
             try:
-                from .shared_object_catalogue import make_shared_object_catalogue_from_pynbody_halos
+                from .shared_object_catalogue import (
+                    make_shared_object_catalogue_from_pynbody_halos,
+                )
                 log.logger.info("Generating a shared object catalogue for %ss", type_tag)
                 portacat = make_shared_object_catalogue_from_pynbody_halos(self.get_catalogue(type_tag))
                 log.logger.info("Done")
