@@ -5,8 +5,7 @@ import pytest
 
 import tangos
 import tangos.testing.simulation_generator
-from tangos import parallel_tasks as pt
-from tangos import testing
+from tangos import parallel_tasks as pt, testing
 from tangos.log import logger
 from tangos.parallel_tasks import testing as pt_testing
 

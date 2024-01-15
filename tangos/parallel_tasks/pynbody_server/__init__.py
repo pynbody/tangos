@@ -12,9 +12,12 @@ from .. import log, remote_import
 from ..async_message import AsyncProcessedMessage
 from ..message import ExceptionMessage, Message
 from . import snapshot_queue, transfer_array
-from .snapshot_queue import (ConfirmLoadPynbodySnapshot,
-                             ReleasePynbodySnapshot,
-                             RequestLoadPynbodySnapshot, _server_queue)
+from .snapshot_queue import (
+    ConfirmLoadPynbodySnapshot,
+    ReleasePynbodySnapshot,
+    RequestLoadPynbodySnapshot,
+    _server_queue,
+)
 
 
 class ReturnPynbodyArray(Message):

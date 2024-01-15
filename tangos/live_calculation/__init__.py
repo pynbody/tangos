@@ -12,12 +12,10 @@ import tangos.core.halo
 import tangos.core.halo_data
 from tangos.core import extraction_patterns
 from tangos.live_calculation.query_masking import QueryMask
-from tangos.live_calculation.query_multivalue_folding import \
-    QueryMultivalueFolding
+from tangos.live_calculation.query_multivalue_folding import QueryMultivalueFolding
 from tangos.util import consistent_collection
 
-from .. import core
-from .. import temporary_halolist as thl
+from .. import core, temporary_halolist as thl
 
 
 class UnknownValue:

@@ -5,8 +5,13 @@ from tangos.util import consistent_collection
 
 from ... import core
 from ...core import extraction_patterns
-from .. import (BuiltinFunction, FixedInput, FixedNumericInput, LiveProperty,
-                StoredProperty)
+from .. import (
+    BuiltinFunction,
+    FixedInput,
+    FixedNumericInput,
+    LiveProperty,
+    StoredProperty,
+)
 
 
 @BuiltinFunction.register

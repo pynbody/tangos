@@ -7,8 +7,7 @@ from sqlalchemy.orm import Session, backref, relationship
 from .. import config, input_handlers
 from ..config import DOUBLE_PRECISION, LARGE_BINARY
 from . import Base, creator, data_attribute_mapper
-from .dictionary import (DictionaryItem, get_dict_id,
-                         get_or_create_dictionary_item)
+from .dictionary import DictionaryItem, get_dict_id, get_or_create_dictionary_item
 
 
 class Simulation(Base):

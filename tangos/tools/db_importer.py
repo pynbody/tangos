@@ -10,8 +10,14 @@ from sqlalchemy.schema import Column
 
 from tangos import Base, Creator, DictionaryItem, core
 from tangos.config import DB_IMPORT_CHUNK_SIZE
-from tangos.core import (HaloLink, HaloProperty, Simulation,
-                         SimulationObjectBase, SimulationProperty, TimeStep)
+from tangos.core import (
+    HaloLink,
+    HaloProperty,
+    Simulation,
+    SimulationObjectBase,
+    SimulationProperty,
+    TimeStep,
+)
 
 from . import GenericTangosTool
 
@@ -326,8 +332,7 @@ def _drop_or_create_indexes(connection, mode='drop', verbose=False):
 
 
 def _dedup_temp_dictionary_items(connection, dict_table):
-    from sqlalchemy import (Column, bindparam, delete, func, select, text,
-                            update)
+    from sqlalchemy import Column, bindparam, delete, func, select, text, update
 
     updater_expressions = _updates_for_all_columns_referencing_dictionary_id()
 

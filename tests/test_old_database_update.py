@@ -2,8 +2,7 @@ from sqlalchemy import inspect
 
 import tangos
 import tangos.testing.simulation_generator
-from tangos import parallel_tasks as pt
-from tangos import testing
+from tangos import parallel_tasks as pt, testing
 
 
 def setup_module():

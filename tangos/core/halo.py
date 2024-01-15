@@ -353,10 +353,12 @@ class SimulationObjectBase(Base):
         :param nmax: The maximum number of descendants to consider (default 1000)
         :param strategy: The class to use to find the descendants (default relation_finding.MultiHopMajorDescendantsStrategy)
         """
-        from .. import live_calculation
-        from .. import query as db_query
-        from .. import relation_finding
-        from .. import temporary_halolist as thl
+        from .. import (
+            live_calculation,
+            query as db_query,
+            relation_finding,
+            temporary_halolist as thl,
+        )
         from . import Session
 
         nmax = kwargs.get('nmax',1000)
