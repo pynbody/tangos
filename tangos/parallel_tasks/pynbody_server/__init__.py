@@ -208,27 +208,8 @@ class RequestPynbodySubsnapInfo(AsyncProcessedMessage):
         ReturnPynbodySubsnapInfo(families, fam_lengths, obj.properties, lkeys, fam_lkeys).send(self.source)
         log.logger.debug("Info sent after %.2f",(time.time()-start_time))
 
-class ReturnObjectNumberArray(ReturnPynbodyArray):
-    pass
 
-class RequestSharedMemObjectNumberArray(AsyncProcessedMessage):
-    def __init__(self, filename, object_typetag):
-        self.filename = filename
-        self.type_tag = object_typetag
 
-    def serialize(self):
-        return self.filename, self.type_tag
-
-    @classmethod
-    def deserialize(cls, source, message):
-        obj = cls(*message)
-        obj.source = source
-        return obj
-
-    def process_async(self):
-        assert self.filename == _server_queue.current_timestep
-        object_ar = _server_queue.get_portable_catalogue(self.type_tag)
-        ReturnObjectNumberArray(object_ar, shared_mem=True).send(self.source)
 
 
 class RemoteSnap(pynbody.snapshot.copy_on_access.UnderlyingClassMixin, pynbody.snapshot.SimSnap):
@@ -325,7 +306,7 @@ class RemoteSnapshotConnection:
         self.connected = False
         self.shared_mem = shared_mem
 
-        self._shared_mem_no_cat_for = set()
+        self.shared_mem_catalogues = {}
 
         # ensure server knows what our messages are about
         remote_import.ImportRequestMessage(__name__).send(self._server_id)
@@ -353,18 +334,14 @@ class RemoteSnapshotConnection:
 
     def get_index_list(self, filter_or_object_spec: snapshot_queue.ObjectSpecification):
         typetag = filter_or_object_spec.object_typetag
-        if self.shared_mem and typetag not in self._shared_mem_no_cat_for:
-            arname = '__'+typetag+"__CAT"
-            if arname not in self.shared_mem_view.keys():
-                RequestSharedMemObjectNumberArray(self.filename, typetag).send(self._server_id)
-                obj_ar = ReturnObjectNumberArray.receive(self._server_id).contents
-                if obj_ar is not None:
-                    self.shared_mem_view[arname] = obj_ar
-                else:
-                    self._shared_mem_no_cat_for.add(typetag)
-            if arname in self.shared_mem_view.keys():
-                grpcat = pynbody.halo.GrpCatalogue(self.shared_mem_view, arname)
-                return grpcat[filter_or_object_spec.object_number]
+        if self.shared_mem:
+            if typetag not in self.shared_mem_catalogues:
+                from . import shared_object_catalogue
+                self.shared_mem_catalogues[typetag] = (shared_object_catalogue.
+                        get_shared_object_catalogue_from_server(self.filename, typetag, self._server_id))
+            shared_cat = self.shared_mem_catalogues[typetag]
+            if shared_cat is not None:
+                return shared_cat.get_index_list(filter_or_object_spec.object_number)
 
         # was not able to do anything smart with shared memory, so get the server to figure out the index list
         RequestIndexList(filter_or_object_spec).send(self._server_id)

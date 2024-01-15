@@ -85,17 +85,19 @@ class PynbodySnapshotQueue:
     def get_catalogue(self, type_tag):
         return self.current_handler.get_catalogue(self.current_timestep, type_tag)
 
-    def get_portable_catalogue(self, type_tag):
+    def get_shared_catalogue(self, type_tag):
         if type_tag in self.current_portable_catalogues:
             log.logger.debug("Pynbody server: cache hit for object number array %r", type_tag)
             return self.current_portable_catalogues[type_tag]
         else:
             log.logger.debug("Pynbody server: cache miss for object number array %r", type_tag)
             try:
-                portacat = PortableObjectCatalogue(self.get_catalogue(type_tag).get_group_array())
-
+                from .shared_object_catalogue import make_shared_object_catalogue_from_pynbody_halos
+                log.logger.info("Generating a shared object catalogue for %ss", type_tag)
+                portacat = make_shared_object_catalogue_from_pynbody_halos(self.get_catalogue(type_tag))
+                log.logger.info("Done")
             except Exception as e:
-                log.logger.error("Error fetching object number array %r: %s", type_tag, e)
+                log.logger.error("Error generating shared object_catalogue for %ss: %s", type_tag, e)
                 portacat = None
 
             self.current_portable_catalogues[type_tag] = portacat

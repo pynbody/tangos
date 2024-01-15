@@ -11,7 +11,7 @@ import tangos.input_handlers.pynbody
 import tangos.parallel_tasks as pt
 import tangos.parallel_tasks.pynbody_server as ps
 import tangos.parallel_tasks.pynbody_server.snapshot_queue
-from tangos.parallel_tasks.pynbody_server import portable_object_catalogue
+from tangos.parallel_tasks.pynbody_server import shared_object_catalogue
 from tangos.testing import using_parallel_tasks
 
 
@@ -135,9 +135,10 @@ def test_halo_array():
     assert (f.gas['temp'] == f_local.gas['temp']).all()
 
 
+@pytest.mark.parametrize('shared_mem', [True, False])
 @using_parallel_tasks
-def test_remote_file_index():
-    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
+def test_remote_file_index(shared_mem):
+    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640", shared_mem=shared_mem)
     index_list = conn.get_index_list(ps.snapshot_queue.ObjectSpecification(1, 1))
 
     f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[1]
@@ -146,9 +147,14 @@ def test_remote_file_index():
     assert (index_list==local_index_list).all()
 
 
-def _debug_print_arrays(*arrays):
-    for vals in zip(*arrays):
-        print(vals, file=sys.stderr)
+def test_shared_file_index_uses_shared_obj_catalogue():
+    @using_parallel_tasks
+    def test():
+        conn = ps.RemoteSnapshotConnection(handler, "tiny.000640", shared_mem=True)
+        conn.get_index_list(ps.snapshot_queue.ObjectSpecification(1, 1))
+
+    log = test()
+    assert "Generating a shared object catalogue" in log
 
 @using_parallel_tasks
 def test_lazy_evaluation_is_local():
@@ -336,13 +342,11 @@ def test_request_index_list_deserialization():
 
 
 def test_portable_catalogue_from_id_array():
-
-
     np.random.seed(1337)
     object_id_per_particle = np.array(np.random.randint(1,10,100))
     iords = np.arange(len(object_id_per_particle))
 
-    obj_cat = portable_object_catalogue.PortableObjectCatalogue(object_id_per_particle)
+    obj_cat = shared_object_catalogue.SharedObjectCatalogue(object_id_per_particle)
 
     for id_ in np.unique(object_id_per_particle):
         assert (obj_cat.get_object(id_, iords) == iords[object_id_per_particle==id_]).all()
@@ -355,13 +359,27 @@ def test_transmit_receive_portable_catalogue():
 
     if pt.backend.rank()==1:
 
-        obj_cat = portable_object_catalogue.PortableObjectCatalogue(object_id_per_particle)
+        obj_cat = shared_object_catalogue.SharedObjectCatalogue(object_id_per_particle)
         obj_cat.send(2)
 
         pt.barrier()
     else:
         iords = np.arange(len(object_id_per_particle))
-        obj_cat = portable_object_catalogue.PortableObjectCatalogue.receive(1)
+        obj_cat = shared_object_catalogue.SharedObjectCatalogue.receive(1)
         for id_ in np.unique(object_id_per_particle):
             assert (obj_cat.get_object(id_, iords) == iords[object_id_per_particle == id_]).all()
         pt.barrier()
+
+@using_parallel_tasks(3)
+def test_server_generates_portable_catalogue():
+    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640", shared_mem=True)
+    obj_cat = ps.shared_object_catalogue.get_shared_object_catalogue_from_server(conn.filename, 'halo', 0)
+    local_halo = handler.load_object("tiny.000640", 1, 1, mode=None)
+
+    assert (obj_cat.get_object(1, conn.shared_mem_view)['iord'] == local_halo['iord']).all()
+
+
+def test_portable_catalogue_generated_only_once():
+    log = test_server_generates_portable_catalogue() # runs on two processes, should only get one cat
+    assert log.count("Generating a shared object catalogue for halos") == 1
+
