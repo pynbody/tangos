@@ -4,12 +4,15 @@ import sys
 import numpy as np
 import numpy.testing as npt
 import pynbody
+import pytest
 
 import tangos
 import tangos.input_handlers.pynbody
 import tangos.parallel_tasks as pt
 import tangos.parallel_tasks.pynbody_server as ps
 import tangos.parallel_tasks.pynbody_server.snapshot_queue
+
+from tangos.testing import using_parallel_tasks
 
 
 class _TestHandler(tangos.input_handlers.pynbody.ChangaInputHandler):
@@ -30,7 +33,8 @@ def teardown_module():
     tangos.core.close_db()
 
 
-def _get_array():
+@using_parallel_tasks(3)
+def test_get_array():
     test_filter = pynbody.filt.Sphere('5000 kpc')
     for fname in pt.distributed(["tiny.000640", "tiny.000832"]):
         ps.snapshot_queue.RequestLoadPynbodySnapshot((handler, fname)).send(0)
@@ -46,11 +50,8 @@ def _get_array():
         ps.snapshot_queue.ReleasePynbodySnapshot().send(0)
 
 
-def test_get_array():
-    pt.use("multiprocessing-3")
-    pt.launch(_get_array)
-
-def _get_shared_array():
+@using_parallel_tasks(3)
+def test_get_shared_array():
     if pt.backend.rank()==1:
         shared_array = pynbody.array._array_factory((10,), int, True, True)
         shared_array[:] = np.arange(0,10)
@@ -68,11 +69,10 @@ def _get_shared_array():
         pt.barrier()
         assert shared_array[2]==100
 
-def test_get_shared_array():
-    pt.use("multiprocessing-3")
-    pt.launch(_get_shared_array)
 
-def _get_shared_array_slice():
+@using_parallel_tasks(3)
+def test_get_shared_array_slice():
+    """Like test_get_shared_array, but with a slice"""
     if pt.backend.rank()==1:
         shared_array = pynbody.array._array_factory((10,), int, True, True)
         shared_array[:] = np.arange(0,10)
@@ -91,12 +91,8 @@ def _get_shared_array_slice():
         pt.barrier()
         assert shared_array[1]==100
 
-def test_get_shared_array_slice():
-    """Like test_get_shared_array, but with a slice"""
-    pt.use("multiprocessing-3")
-    pt.launch(_get_shared_array_slice)
-
-def _test_simsnap_properties():
+@using_parallel_tasks(2)
+def test_simsnap_properties():
     test_filter = pynbody.filt.Sphere('5000 kpc')
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
     f = conn.get_view(test_filter)
@@ -110,12 +106,8 @@ def _test_simsnap_properties():
     assert f.properties['boxsize']==f_local.properties['boxsize']
 
 
-def test_simsnap_properties():
-    pt.use("multiprocessing-2")
-    pt.launch(_test_simsnap_properties)
-
-
-def _test_simsnap_arrays():
+@using_parallel_tasks
+def test_simsnap_arrays():
     test_filter = pynbody.filt.Sphere('5000 kpc')
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
     f = conn.get_view(test_filter)
@@ -124,23 +116,17 @@ def _test_simsnap_arrays():
     assert (f['x'] == f_local['x']).all()
     assert (f.gas['iord'] == f_local.gas['iord']).all()
 
-def test_simsnap_arrays():
-    pt.use("multiprocessing-2")
-    pt.launch(_test_simsnap_arrays)
-
-def _test_nonexistent_array():
+@using_parallel_tasks
+def test_nonexistent_array():
     test_filter = pynbody.filt.Sphere('5000 kpc')
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
     f = conn.get_view(test_filter)
     with npt.assert_raises(KeyError):
         f['nonexistent']
 
-def test_nonexistent_array():
-    pt.use("multiprocessing-2")
-    pt.launch(_test_nonexistent_array)
 
-
-def _test_halo_array():
+@using_parallel_tasks
+def test_halo_array():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
     f = conn.get_view(ps.snapshot_queue.ObjectSpecification(1, 1))
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
@@ -148,12 +134,9 @@ def _test_halo_array():
     assert (f['x'] == f_local['x']).all()
     assert (f.gas['temp'] == f_local.gas['temp']).all()
 
-def test_halo_array():
-    pt.use("multiprocessing-2")
-    pt.launch(_test_halo_array)
 
-
-def _test_remote_file_index():
+@using_parallel_tasks
+def test_remote_file_index():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
     index_list = conn.get_index_list(ps.snapshot_queue.ObjectSpecification(1, 1))
 
@@ -162,15 +145,13 @@ def _test_remote_file_index():
 
     assert (index_list==local_index_list).all()
 
-def test_remote_file_index():
-    pt.use("multiprocessing-2")
-    pt.launch(_test_remote_file_index)
 
 def _debug_print_arrays(*arrays):
     for vals in zip(*arrays):
         print(vals, file=sys.stderr)
 
-def _test_lazy_evaluation_is_local():
+@using_parallel_tasks
+def test_lazy_evaluation_is_local():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
     f = conn.get_view(ps.snapshot_queue.ObjectSpecification(1, 1))
     f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
@@ -189,9 +170,6 @@ def _test_lazy_evaluation_is_local():
     # avoid in a memory-bound situation.
     npt.assert_almost_equal(f['r'], f_local['r'], decimal=4)
 
-def test_lazy_evaluation_is_local():
-    pt.use("multiprocessing-2")
-    pt.launch(_test_lazy_evaluation_is_local)
 
 
 @pynbody.snapshot.tipsy.TipsySnap.derived_quantity
@@ -199,7 +177,8 @@ def tipsy_specific_derived_array(sim):
     """Test derived array to ensure format-specific derived arrays are available"""
     return 1-sim['x']
 
-def _test_underlying_class():
+@using_parallel_tasks
+def test_underlying_class():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
     f = conn.get_view(ps.snapshot_queue.ObjectSpecification(1, 1))
     f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[1]
@@ -207,12 +186,11 @@ def _test_underlying_class():
     npt.assert_almost_equal(f['tipsy_specific_derived_array'],f_local['tipsy_specific_derived_array'], decimal=4)
     assert f.connection.underlying_pynbody_class is pynbody.snapshot.tipsy.TipsySnap
 
-def test_underlying_class():
-    pt.use("multiprocessing-2")
-    pt.launch(_test_underlying_class)
-
-
-def _test_correct_object_loading():
+@using_parallel_tasks
+def test_correct_object_loading():
+    """This regression test looks for a bug where the pynbody_server module assumed halos could be
+    loaded just by calling f.halos() where f was the SimSnap. This is not true in general; for example,
+    for SubFind catalogues one has both halos and groups and the correct arguments must be passed."""
     f_remote = handler.load_object('tiny.000640', 1, 1, mode='server')
     f_local = handler.load_object('tiny.000640', 1, 1, mode=None)
     assert (f_remote['iord']==f_local['iord']).all()
@@ -220,58 +198,42 @@ def _test_correct_object_loading():
     f_local = handler.load_object('tiny.000640', 1, 1, 'test-objects', mode=None)
     assert (f_remote['iord'] == f_local['iord']).all()
 
-def test_correct_object_loading():
-    """This regression test looks for a bug where the pynbody_server module assumed halos could be
-    loaded just by calling f.halos() where f was the SimSnap. This is not true in general; for example,
-    for SubFind catalogues one has both halos and groups and the correct arguments must be passed."""
-    pt.use("multiprocessing-2")
-    pt.launch(_test_correct_object_loading)
 
-
-def _test_region_loading():
+@using_parallel_tasks
+def test_region_loading():
     """This test ensures that a region can be loaded correctly under server mode"""
     f_remote = handler.load_region("tiny.000640", pynbody.filt.Sphere("3 Mpc"), mode='server')
     f_local = handler.load_region("tiny.000640", pynbody.filt.Sphere("3 Mpc"), mode=None)
     assert (f_remote.dm['pos'] == f_local.dm['pos']).all()
     assert (f_remote.st['pos'] == f_local.st['pos']).all()
-def test_region_loading():
-    """This test ensures that a region can be loaded correctly under server mode"""
-    pt.use("multiprocessing-3")
-    pt.launch(_test_region_loading)
 
-
-def _test_oserror_on_nonexistent_file():
+@using_parallel_tasks
+def test_oserror_on_nonexistent_file():
     with npt.assert_raises(OSError):
         f = ps.RemoteSnapshotConnection(handler, "nonexistent_file")
-
-def test_oserror_on_nonexistent_file():
-    pt.use("multiprocessing-2")
-    pt.launch(_test_oserror_on_nonexistent_file)
-
-
 
 @pynbody.snapshot.tipsy.TipsySnap.derived_quantity
 def metals(sim):
     """Derived array that will only be invoked for dm, since metals is present on disk for gas/stars"""
     return pynbody.array.SimArray(np.ones(len(sim)))
 
-def _test_mixed_derived_loaded_arrays(mode='server'):
+@pytest.mark.parametrize('mode', ['server', 'server-shared-mem'])
+@using_parallel_tasks
+def test_mixed_derived_loaded_arrays(mode):
+    """Sometimes an array is present on disk for some families but is derived for others. A notable real-world example
+    is the mass array for gas in ramses snapshots. Previously accessing this array in a remotesnap could cause errors,
+    specifically a "derived array is not writable" error on the server. This test ensures that the correct behaviour"""
+
     f_remote = handler.load_object('tiny.000640', 1, 1, mode=mode)
     f_local = handler.load_object('tiny.000640', 1, 1, mode=None)
     assert (f_remote.dm['metals'] == f_local.dm['metals']).all()
     assert (f_remote.st['metals'] == f_local.st['metals']).all()
 
 
-def test_mixed_derived_loaded_arrays():
-    """Sometimes an array is present on disk for some families but is derived for others. A notable real-world example
-    is the mass array for gas in ramses snapshots. Previously accessing this array in a remotesnap could cause errors,
-    specifically a "derived array is not writable" error on the server. This test ensures that the correct behaviour"""
-    pt.use("multiprocessing-2")
-    pt.launch(_test_mixed_derived_loaded_arrays)
-    pt.launch(lambda: _test_mixed_derived_loaded_arrays(mode='server-shared-mem'))
 
-
-def _test_shmem_simulation(load_sphere=False):
+@pytest.mark.parametrize('load_sphere', [True, False])
+@using_parallel_tasks(3)
+def test_shmem_simulation(load_sphere):
     sphere_filter = pynbody.filt.Sphere("3 Mpc")
     def loader_function(**kwargs):
         if load_sphere:
@@ -334,18 +296,9 @@ def _test_shmem_simulation(load_sphere=False):
         assert np.all(f.dm['vx']==1234.0)
 
 
-def test_shmem_simulation_with_halo():
-    """This test ensures that a simulation can be loaded correctly in shared memory, and halos accessed"""
-    pt.use("multiprocessing-3")
-    pt.launch(_test_shmem_simulation)
 
-def test_shmem_simulation_with_filter():
-    """This test ensures that a simulation can be loaded correctly in shared memory, and filter regions accessed"""
-    pt.use("multiprocessing-3")
-    pt.launch(lambda: _test_shmem_simulation(load_sphere=True))
-
-
-def _test_implict_array_promotion_shared_mem():
+@using_parallel_tasks
+def test_implict_array_promotion_shared_mem():
 
     f_remote = handler.load_timestep("tiny.000640", mode='server-shared-mem').shared_mem_view
 
@@ -358,11 +311,9 @@ def _test_implict_array_promotion_shared_mem():
     f_local = handler.load_timestep("tiny.000640", mode=None)
     assert (f_remote['pos'] == f_local['pos']).all()
 
-def test_implicit_array_promotion_shared_mem():
-    pt.use("multiprocessing-2")
-    pt.launch(_test_implict_array_promotion_shared_mem)
 
-def _test_explicit_array_promotion_shared_mem():
+@using_parallel_tasks
+def test_explicit_array_promotion_shared_mem():
 
     f_remote = handler.load_timestep("tiny.000640", mode='server-shared-mem').shared_mem_view
 
@@ -373,10 +324,6 @@ def _test_explicit_array_promotion_shared_mem():
 
     f_local = handler.load_timestep("tiny.000640", mode=None)
     assert (f_remote['pos'] == f_local['pos']).all()
-
-def test_explicit_array_promotion_shared_mem():
-    pt.use("multiprocessing-2")
-    pt.launch(_test_explicit_array_promotion_shared_mem)
 
 def test_request_index_list_deserialization():
     o = ps.RequestIndexList(ps.snapshot_queue.ObjectSpecification(1, 2))

@@ -1,5 +1,6 @@
 import contextlib
 import gc
+import functools
 import inspect
 import os
 import traceback
@@ -212,3 +213,31 @@ def init_blank_db_for_testing(**init_kwargs):
         core.init_db(f"{db_url}/{testing_db_name}", **init_kwargs)
 
     return db_is_blank
+
+def using_parallel_tasks(fn_or_num_processes, num_processes = 2):
+    """Decorator for tests, using parallel_tasks multiprocessing backend to launch
+
+    Usage:
+      @using_parallel_tasks
+      def test_something():
+          ...
+    launches the test in a separate process with one server process and one client that runs the code
+
+    @using_parallel_tasks(4)
+    def test_something():
+        ...
+    launches the test in a separate process with one server process and three clients that run the code
+
+    the test function may take kwarg parameters, e.g. for use with pytest.mark.parametrize
+    """
+
+    if hasattr(fn_or_num_processes, "__call__"):
+        from ..parallel_tasks import use, launch
+        @functools.wraps(fn_or_num_processes)
+        def wrapped_fn(**kwargs):
+            use(f"multiprocessing-{num_processes}")
+            launch(lambda: fn_or_num_processes(**kwargs))
+
+        return wrapped_fn
+    else:
+        return lambda fn: using_parallel_tasks(fn, num_processes=fn_or_num_processes)
