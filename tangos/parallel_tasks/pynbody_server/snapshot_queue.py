@@ -54,7 +54,10 @@ class PynbodySnapshotQueue:
             if fam is None:
                 return self.current_snapshot
             else:
-                return self.current_snapshot[fam]
+                if fam not in self.current_subsnap_cache.keys():
+                    self.current_subsnap_cache[fam] = self.current_snapshot[fam]
+                return self.current_subsnap_cache[fam]
+
         elif (filter_or_object_spec, fam) in self.current_subsnap_cache:
             log.logger.debug("Pynbody server: cache hit for %r (fam %r)",filter_or_object_spec, fam)
             return self.current_subsnap_cache[(filter_or_object_spec, fam)]
