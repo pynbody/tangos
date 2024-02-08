@@ -156,27 +156,48 @@ def test_shared_file_index_uses_shared_obj_catalogue():
     log = test()
     assert "Generating a shared object catalogue" in log
 
+@pytest.mark.parametrize('mode', ['server', 'server-shared-mem'])
 @using_parallel_tasks
-def test_lazy_evaluation_is_local():
-    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.snapshot_queue.ObjectSpecification(1, 1))
-    f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
+def test_lazy_evaluation_is_local(mode):
+    ts = handler.load_timestep("tiny.000640", mode=mode)
+    f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640")
     f_local.physical_units()
+    h_local = f_local.halos()
+
+    remote_view = handler.load_object("tiny.000640", 1, 1, 'halo', mode=mode)
+    comparator = h_local[1]
 
     centre_offset = (-6017.0,-123.8,566.4)
-    f['pos']-=centre_offset
-    f_local['pos']-=centre_offset
+    remote_view['pos']-=centre_offset
+    comparator['pos']-=centre_offset
 
-    npt.assert_almost_equal(f['x'], f_local['x'], decimal=4)
+    npt.assert_almost_equal(remote_view['x'], comparator['x'], decimal=4)
 
     # This is the critical test: if the lazy-evaluation of 'r' takes place on the server, it will not be using
     # the updated version of the position array. This is undesirable for two reasons: first, because the pynbody
     # snapshot seen by the client is inconsistent in a way that would never happen with a normal snapshot. Second,
     # because it means extra "derived" arrays are being calculated across the entire snapshot which we want to
     # avoid in a memory-bound situation.
-    npt.assert_almost_equal(f['r'], f_local['r'], decimal=4)
+    npt.assert_almost_equal(remote_view['r'], comparator['r'], decimal=4)
 
+    ts.disconnect()
 
+@using_parallel_tasks
+def _test_no_repeat_failing_queries(mode):
+    ts = handler.load_timestep("tiny.000640", mode=mode)
+    f = handler.load_object("tiny.000640", 1, 1, 'halo', mode=mode)
+
+    for i in range(10):
+        # the following fails on the server (due to it being run with derived arrays off), but succeeds locally
+        # what we are checking is that the server doesn't get pelted with requests for things it can't provide
+        _ = f['r']
+    ts.disconnect()
+
+@pytest.mark.parametrize('mode', ['server', 'server-shared-mem'])
+def test_no_repeat_failing_queries(mode):
+    log = _test_no_repeat_failing_queries(mode)
+    assert "processing 3 array fetches" in log
+    # = 1 attempt to get on the simulation, 1 attempt to get at family level, then a final request for pos
 
 @pynbody.snapshot.tipsy.TipsySnap.derived_quantity
 def tipsy_specific_derived_array(sim):

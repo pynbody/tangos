@@ -234,9 +234,9 @@ def using_parallel_tasks(fn_or_num_processes, num_processes = 2):
     if hasattr(fn_or_num_processes, "__call__"):
         from ..parallel_tasks import launch, use
         @functools.wraps(fn_or_num_processes)
-        def wrapped_fn(**kwargs):
+        def wrapped_fn(*args, **kwargs):
             use(f"multiprocessing-{num_processes}")
-            return launch(lambda: fn_or_num_processes(**kwargs), backend_kwargs={"capture_log": True})
+            return launch(lambda: fn_or_num_processes(*args, **kwargs), backend_kwargs={"capture_log": True})
 
         return wrapped_fn
     else:

@@ -11,7 +11,7 @@ import tangos.parallel_tasks.pynbody_server.snapshot_queue
 from .. import log, remote_import
 from ..async_message import AsyncProcessedMessage
 from ..message import ExceptionMessage, Message
-from . import snapshot_queue, transfer_array, shared_object_catalogue
+from . import shared_object_catalogue, snapshot_queue, transfer_array
 from .snapshot_queue import (
     ConfirmLoadPynbodySnapshot,
     ReleasePynbodySnapshot,
@@ -240,10 +240,15 @@ class RemoteSnap(pynbody.snapshot.copy_on_access.UnderlyingClassMixin, pynbody.s
         self._fam_loadable_keys = {fam: lk for fam, lk in zip(info.families, info.fam_loadable_keys)}
         self._filter_or_object_spec = filter_or_object_spec
 
+        self._unavailable_arrays = []
+
 
 
 
     def _load_array(self, array_name, fam=None):
+        if (array_name, fam) in self._unavailable_arrays:
+            raise OSError("No such array %r available from the remote"%array_name)
+
         RequestPynbodyArray(self._filter_or_object_spec, array_name, fam).send(self._server_id)
         try:
             start_time=time.time()
@@ -251,6 +256,7 @@ class RemoteSnap(pynbody.snapshot.copy_on_access.UnderlyingClassMixin, pynbody.s
             data = ReturnPynbodyArray.receive(self._server_id).contents
             log.logger.debug("Array received; waited %.2fs",time.time()-start_time)
         except KeyError:
+            self._unavailable_arrays.append((array_name, fam))
             raise OSError("No such array %r available from the remote"%array_name)
         with self.auto_propagate_off:
             if len(data.shape)==1:
