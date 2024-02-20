@@ -26,7 +26,7 @@ def find(extension=None, mtd=None, ignore=None, basename="", patterns=[]):
         for d in range(mtd + 1):
             for pattern in patterns:
               out += glob.glob(basename + ("*/" * d) + pattern)
-              
+
     out = [f for f in out if not any([fnmatch.fnmatch(f, ipat) for ipat in ignore])]
 
     return set(out)
