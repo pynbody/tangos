@@ -34,6 +34,11 @@ max_num_objects = None
 # Normally, the most massive objects will be stored, but this does depend on either the halo finder
 # ordering appropriately, or the re-ordering of objects being enabled (which is the default)
 
+
+pynbody_build_kdtree_threshold_count = 2000
+# If the number of regions being queried on a timestep is expected to exceed this number,
+# a KDTree will be built to accelerate the region queries.
+
 default_backend = 'null'
 # the default paralellism backend. Set e.g. to mpi4py to avoid having to pass --backend mpi4py to all parallel runs.
 

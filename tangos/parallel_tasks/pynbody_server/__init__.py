@@ -59,6 +59,49 @@ class ReturnPynbodyArray(Message):
         # send contents
         transfer_array.send_array(self.contents, destination, use_shared_memory=self.shared_mem)
 
+class BuildRemoteTree(AsyncProcessedMessage):
+    def process_async(self):
+        log.logger.debug("Processing tree build request from %d", self.source)
+        start = time.time()
+        _server_queue.build_tree()
+        log.logger.debug("Tree built after %.2fs", time.time()-start)
+
+class ReturnSharedTree(Message):
+    def __init__(self, leafsize, boxsize, kdnodes, offsets):
+        super().__init__()
+        self.leafsize = leafsize
+        self.boxsize = boxsize
+        self.kdnodes = kdnodes
+        self.offsets = offsets
+
+    def serialize(self):
+        return self.leafsize, self.boxsize
+
+    @classmethod
+    def deserialize(cls, source, message):
+        leafsize, boxsize = message
+        kdnodes = transfer_array.receive_array(source, use_shared_memory=True)
+        offsets = transfer_array.receive_array(source, use_shared_memory=True)
+        obj = cls(leafsize, boxsize, kdnodes, offsets)
+        obj.source = source
+        return obj
+
+    def send(self, destination):
+        super().send(destination)
+        transfer_array.send_array(self.kdnodes, destination, use_shared_memory=True)
+        transfer_array.send_array(self.offsets, destination, use_shared_memory=True)
+
+    def import_tree_into_local_view(self, sim):
+        sim.import_tree((self.leafsize, self.boxsize, self.kdnodes, self.offsets))
+
+
+class GetSharedTree(AsyncProcessedMessage):
+    def process_async(self):
+        assert _server_queue.current_shared_mem_flag
+        assert hasattr(_server_queue.current_snapshot, "kdtree")
+        serialized_tree = _server_queue.current_snapshot.kdtree.serialize()
+        ReturnSharedTree(*serialized_tree).send(self.source)
+
 class RequestPynbodyArray(AsyncProcessedMessage):
     _time_to_start_processing = []
 
@@ -337,6 +380,13 @@ class RemoteSnapshotConnection:
         (typetag, number), which are respectively the object type tag and object number to be loaded
         """
         return RemoteSnap(self, filter_or_object_spec)
+
+    def build_tree(self):
+        BuildRemoteTree().send(self._server_id)
+        if self.shared_mem:
+            GetSharedTree().send(self._server_id)
+            shared_tree = ReturnSharedTree.receive(self._server_id)
+            shared_tree.import_tree_into_local_view(self.shared_mem_view)
 
     def get_index_list(self, filter_or_object_spec: snapshot_queue.ObjectSpecification):
         typetag = filter_or_object_spec.object_typetag

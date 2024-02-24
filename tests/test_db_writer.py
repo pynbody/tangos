@@ -363,3 +363,11 @@ def test_writer_doesnt_duplicate_property_classes(fresh_database):
     assert "Already exists: 0" in res
     assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property_t1'] == 1.0
     assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property_t2'] == 2.0
+
+def test_writer_num_regions_optimization(fresh_database):
+    log = run_writer_with_args("dummy_property", "dummy_region_property")
+    print(log)
+
+    # there are 10 halos, and dummy_region_property requests a region. dummy_property
+    # does not request a region. So the expected number of region queries is 10.
+    assert "load_region expected_number_of_queries=10" in log

@@ -187,7 +187,7 @@ class PropertyCalculation(metaclass=PropertyCalculationMetaClass):
         if self.requires_particle_data:
             region_spec =  self.region_specification(db)
             if region_spec:
-                halo_particles = db.timestep.load_region(region_spec)
+                halo_particles = db.timestep.load_region(region_spec, )
             else:
                 halo_particles = db.load()
 

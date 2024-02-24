@@ -225,14 +225,31 @@ def test_correct_object_loading():
     f_local = handler.load_object('tiny.000640', 1, 1, 'test-objects', mode=None)
     assert (f_remote['iord'] == f_local['iord']).all()
 
-
 @using_parallel_tasks
-def test_region_loading():
-    """This test ensures that a region can be loaded correctly under server mode"""
-    f_remote = handler.load_region("tiny.000640", pynbody.filt.Sphere("3 Mpc"), mode='server')
+def _test_region_loading(mode, expected_number_of_queries):
+    f_remote = handler.load_region("tiny.000640", pynbody.filt.Sphere("3 Mpc"), mode=mode,
+                                   expected_number_of_queries=expected_number_of_queries)
     f_local = handler.load_region("tiny.000640", pynbody.filt.Sphere("3 Mpc"), mode=None)
     assert (f_remote.dm['pos'] == f_local.dm['pos']).all()
     assert (f_remote.st['pos'] == f_local.st['pos']).all()
+
+    if mode == 'server-shared-mem':
+        shmem_view_has_kdtree = hasattr(handler.load_timestep('tiny.000640', mode=mode).shared_mem_view,'kdtree')
+        if expected_number_of_queries > 20000:
+            assert shmem_view_has_kdtree
+        else:
+            assert not shmem_view_has_kdtree
+
+@pytest.mark.parametrize('mode', ['server', 'server-shared-mem'])
+@pytest.mark.parametrize('expected_number_of_queries', [1, 100000])
+def test_region_loading(mode, expected_number_of_queries):
+    """This test ensures that a region can be loaded correctly under server mode"""
+    log = _test_region_loading(mode, expected_number_of_queries)
+
+    if expected_number_of_queries == 100000:
+        assert "Building KDTree" in log
+    else:
+        assert "Building KDTree" not in log
 
 @using_parallel_tasks
 def test_oserror_on_nonexistent_file():

@@ -1,6 +1,7 @@
 import queue
 from threading import Thread
 
+from ..log import logger
 from . import on_exit_parallelism
 from .message import Message
 
@@ -20,7 +21,11 @@ def init_async_processing_thread():
             msg = AsyncProcessedMessage._async_task_queue.get()
             if msg is None:
                 break
-            msg.process_async()
+            try:
+                msg.process_async()
+            except Exception as e:
+                print(f"Error processing async message {msg}: {e}")
+                logger.error(f"Error processing async message {msg}: {e}")
 
     t = Thread(target=async_processing_thread)
     t.daemon = True

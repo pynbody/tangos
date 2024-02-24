@@ -371,7 +371,8 @@ class PropertyWriter(GenericTangosTool):
 
 
     def _get_current_halo_specified_region_particles(self, db_halo, region_spec):
-        return db_halo.timestep.load_region(region_spec,self.options.load_mode)
+        return db_halo.timestep.load_region(region_spec, self.options.load_mode,
+                                            self._estimate_num_region_calculations_this_timestep())
 
     def _get_halo_snapshot_data_if_appropriate(self, db_halo, db_data, property_calculator):
 
@@ -480,6 +481,15 @@ class PropertyWriter(GenericTangosTool):
                     busy = True
 
         self._commit_results_if_needed()
+
+    def _estimate_num_region_calculations_this_timestep(self):
+        num_region_props = 0
+        for prop in self._property_calculator_instances:
+            if prop.region_specification is not properties.PropertyCalculation.region_specification:
+                # assume overriding means the class isn't just going to be returning None!
+                num_region_props += 1
+        num_objs = len(self._existing_properties_all_halos)
+        return num_region_props * num_objs
 
 
     def run_timestep_calculation(self, db_timestep):

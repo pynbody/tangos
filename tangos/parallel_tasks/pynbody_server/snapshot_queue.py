@@ -1,6 +1,7 @@
 import pynbody
 
 from tangos import log
+from tangos.parallel_tasks.async_message import AsyncProcessedMessage
 from tangos.parallel_tasks.message import Message
 from tangos.util.check_deleted import check_deleted
 
@@ -108,6 +109,9 @@ class PynbodySnapshotQueue:
             self.current_portable_catalogues[type_tag] = portacat
             return portacat
 
+    def build_tree(self):
+        self.current_snapshot.build_tree(shared_mem=self.current_shared_mem_flag)
+
     def _free_if_unused(self):
         if len(self.in_use_by)==0:
             from . import RequestPynbodyArray
@@ -176,12 +180,12 @@ class PynbodySnapshotQueue:
 _server_queue = PynbodySnapshotQueue()
 
 
-class RequestLoadPynbodySnapshot(Message):
+class RequestLoadPynbodySnapshot(AsyncProcessedMessage):
     def process(self):
         _server_queue.add(self.source, *self.contents)
 
 
-class ReleasePynbodySnapshot(Message):
+class ReleasePynbodySnapshot(AsyncProcessedMessage):
     def process(self):
         _server_queue.free(self.source)
 

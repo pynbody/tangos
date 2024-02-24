@@ -87,20 +87,24 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
-    def load_region(self, ts_extension, region_specification, mode=None):
+    def _build_kdtree(self, timestep, mode):
+        logger.info("Expecting a large number of region queries. Building KDTree.")
+        timestep.build_tree()
+
+    def load_region(self, ts_extension, region_specification, mode=None, expected_number_of_queries=None):
+        timestep = self.load_timestep(ts_extension, mode)
+
+        if expected_number_of_queries is not None and expected_number_of_queries>config.pynbody_build_kdtree_threshold_count:
+            self._build_kdtree(timestep, mode)
         if mode is None:
-            timestep = self.load_timestep(ts_extension, mode)
             return timestep[region_specification]
         elif mode=='server':
-            timestep = self.load_timestep(ts_extension, mode)
             return timestep.get_view(region_specification)
         elif mode=='server-shared-mem':
             from ..parallel_tasks import pynbody_server as ps
-            timestep = self.load_timestep(ts_extension, mode)
             simsnap = timestep.shared_mem_view
             return simsnap[region_specification].get_copy_on_access_simsnap()
         elif mode=='server-partial':
-            timestep = self.load_timestep(ts_extension, mode)
             load_index = timestep.get_index_list(region_specification)
             logger.info("Partial load %r, taking %d particles",ts_extension,len(load_index))
             f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
