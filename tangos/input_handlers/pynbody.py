@@ -88,7 +88,6 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def _build_kdtree(self, timestep, mode):
-        logger.info("Expecting a large number of region queries. Building KDTree.")
         timestep.build_tree()
 
     def load_region(self, ts_extension, region_specification, mode=None, expected_number_of_queries=None):

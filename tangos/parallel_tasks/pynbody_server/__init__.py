@@ -350,6 +350,7 @@ class RemoteSnapshotConnection:
 
         self._server_id = server_id
         self._input_handler = input_handler
+        self._has_tree = False
         self.filename = ts_extension
         self.identity = "%d: %s"%(self._server_id, ts_extension)
         self.connected = False
@@ -382,11 +383,14 @@ class RemoteSnapshotConnection:
         return RemoteSnap(self, filter_or_object_spec)
 
     def build_tree(self):
+        if self._has_tree:
+            return
         BuildRemoteTree().send(self._server_id)
         if self.shared_mem:
             GetSharedTree().send(self._server_id)
             shared_tree = ReturnSharedTree.receive(self._server_id)
             shared_tree.import_tree_into_local_view(self.shared_mem_view)
+        self._has_tree = True
 
     def get_index_list(self, filter_or_object_spec: snapshot_queue.ObjectSpecification):
         typetag = filter_or_object_spec.object_typetag
