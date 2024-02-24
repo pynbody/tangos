@@ -240,6 +240,11 @@ def _test_region_loading(mode, expected_number_of_queries):
         else:
             assert not shmem_view_has_kdtree
 
+    # we trigger ANOTHER region load here, to check that the server doesn't get asked to
+    # build the tree again
+    f_remote = handler.load_region("tiny.000640", pynbody.filt.Sphere("2 Mpc"), mode=mode,
+                                   expected_number_of_queries=expected_number_of_queries)
+
 @pytest.mark.parametrize('mode', ['server', 'server-shared-mem'])
 @pytest.mark.parametrize('expected_number_of_queries', [1, 100000])
 def test_region_loading(mode, expected_number_of_queries):
@@ -247,7 +252,7 @@ def test_region_loading(mode, expected_number_of_queries):
     log = _test_region_loading(mode, expected_number_of_queries)
 
     if expected_number_of_queries == 100000:
-        assert "Building KDTree" in log
+        assert log.count("Building KDTree") == 1
     else:
         assert "Building KDTree" not in log
 
