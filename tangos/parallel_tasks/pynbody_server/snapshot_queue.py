@@ -110,8 +110,9 @@ class PynbodySnapshotQueue:
             return portacat
 
     def build_tree(self):
-        log.logger.info("Building KDTree")
-        self.current_snapshot.build_tree(shared_mem=self.current_shared_mem_flag)
+        if not hasattr(self.current_snapshot, "kdtree"):
+            log.logger.info("Building KDTree")
+            self.current_snapshot.build_tree(shared_mem=self.current_shared_mem_flag)
 
     def _free_if_unused(self):
         if len(self.in_use_by)==0:
