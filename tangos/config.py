@@ -42,6 +42,16 @@ pynbody_build_kdtree_threshold_count = 2000
 default_backend = 'null'
 # the default paralellism backend. Set e.g. to mpi4py to avoid having to pass --backend mpi4py to all parallel runs.
 
+enable_async_message_processing = False
+# Async message processing was introduced in an effort to separate out long pynbody operations
+# on the server into a different thread. However, it can lead to subtle race conditions (e.g.
+# when transmitting numpy arrays which get turned into several return messages) and may (?) also
+# be implicated in hangs. It is also not clear whether the performance gains are meaningful in
+# any way. The above flag disables the async processing and makes the server process do everything
+# in a single queue, which should be more reliable. It may be that async processing should be
+# removed from the codebase entirely, but I am leaving it like this for now.
+
+
 
 # names of property modules to import; default is for backwards compatibility on systems with N-Body-Shop extensions
 # N.B. since version 1.0.10 it is also possible to use entry point tangos.property_modules. For example, in your

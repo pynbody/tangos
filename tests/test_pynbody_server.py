@@ -400,6 +400,8 @@ def test_transmit_receive_portable_catalogue():
     np.random.seed(1337)
     object_id_per_particle = np.array(np.random.randint(1, 10, 100))
 
+    pt.barrier() # ensure initialization is complete
+
     if pt.backend.rank()==1:
 
         obj_cat = shared_object_catalogue.SharedObjectCatalogue(object_id_per_particle)

@@ -1,6 +1,7 @@
 import queue
 from threading import Thread
 
+from .. import config
 from ..log import logger
 from . import on_exit_parallelism
 from .message import Message
@@ -13,9 +14,14 @@ class AsyncProcessedMessage(Message):
         raise NotImplementedError()
 
     def process(self):
-        self._async_task_queue.put(self)
+        if config.enable_async_message_processing:
+            self._async_task_queue.put(self)
+        else:
+            self.process_async()
 
 def init_async_processing_thread():
+    if not config.enable_async_message_processing:
+        return
     def async_processing_thread():
         while True:
             msg = AsyncProcessedMessage._async_task_queue.get()
