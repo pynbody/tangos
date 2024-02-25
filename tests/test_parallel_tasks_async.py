@@ -1,5 +1,7 @@
 import time
 
+import pytest
+
 from tangos import parallel_tasks as pt
 from tangos.parallel_tasks import async_message, message, testing
 
@@ -28,7 +30,7 @@ def _test_async_message():
     assert msg.contents == "slow"
 
 
-
+@pytest.mark.skip("Async processing is currently switched off")
 def test_async_message():
     pt.use('multiprocessing-2')
     pt.launch(_test_async_message)

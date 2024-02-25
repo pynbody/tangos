@@ -93,6 +93,20 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def load_region(self, ts_extension, region_specification, mode=None, expected_number_of_queries=None):
         timestep = self.load_timestep(ts_extension, mode)
 
+        timestep._tangos_cached_regions = getattr(timestep, '_tangos_cached_regions', {})
+
+        key = (region_specification, mode)
+
+        # we store a cache in the timestep object, so that it is automatically cleared when the timestep is
+        if key in timestep._tangos_cached_regions:
+            return timestep._tangos_cached_regions[key]
+
+        result = self._load_region_uncached(timestep, ts_extension, region_specification, mode, expected_number_of_queries)
+        timestep._tangos_cached_regions[key] = result
+
+        return result
+
+    def _load_region_uncached(self, timestep, ts_extension, region_specification, mode=None, expected_number_of_queries=None):
         if expected_number_of_queries is not None and expected_number_of_queries>config.pynbody_build_kdtree_threshold_count:
             self._build_kdtree(timestep, mode)
         if mode is None:

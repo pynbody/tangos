@@ -163,3 +163,14 @@ def test_load_region():
        10900437, 10960437, 11030437, 11090437, 11480437, 11490437,
        11550437, 11740437, 12270437, 12590437, 12600437, 12920437,
        13380437, 13710437]).all()
+
+def test_load_region_uses_cache():
+    filt1 = pynbody.filt.Sphere(2000,[1000,1000,1000])
+    filt2 = pynbody.filt.Sphere(2000,[1001,1000,1000])
+
+    region1a = db.get_timestep("test_tipsy/tiny.000640").load_region(filt1)
+    region2 = db.get_timestep("test_tipsy/tiny.000640").load_region(filt2)
+    region1b = db.get_timestep("test_tipsy/tiny.000640").load_region(filt1)
+
+    assert id(region1a) == id(region1b)
+    assert id(region1a) != id(region2)
