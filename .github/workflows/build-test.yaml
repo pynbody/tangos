@@ -80,4 +80,4 @@ jobs:
         sudo /etc/init.d/mysql start
     - name: Run all tests
       working-directory: tests
-      run: python -m pytest
+      run: python -m pytest -v
