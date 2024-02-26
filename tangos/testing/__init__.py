@@ -236,8 +236,19 @@ def using_parallel_tasks(fn_or_num_processes, num_processes = 2):
         @functools.wraps(fn_or_num_processes)
         def wrapped_fn(*args, **kwargs):
             use(f"multiprocessing-{num_processes}")
-            return launch(lambda: fn_or_num_processes(*args, **kwargs),
-                          backend_kwargs={"capture_log": True})
+            result = launch(lambda: fn_or_num_processes(*args, **kwargs),
+                            backend_kwargs={"capture_log": True})
+
+            # check whether the frame calling this function is pytest itself, or something else
+            # if it's pytest, we mustn't return the result (pytest used to ignore the return
+            # value but now raises a deprecation warning)
+            frame = inspect.currentframe()
+
+            if "pytest" in frame.f_back.f_code.co_name:
+                return
+            else:
+                return result
+
 
         return wrapped_fn
     else:
