@@ -1,10 +1,11 @@
+import multiprocessing
 import pynbody
 
-from tangos import log
-from tangos.parallel_tasks.async_message import AsyncProcessedMessage
-from tangos.parallel_tasks.message import Message
-from tangos.util.check_deleted import check_deleted
-
+from .. import log
+from ...parallel_tasks.async_message import AsyncProcessedMessage
+from ...parallel_tasks.message import Message
+from ...util.check_deleted import check_deleted
+from .. import config
 
 class ConfirmLoadPynbodySnapshot(Message):
     pass
@@ -112,7 +113,13 @@ class PynbodySnapshotQueue:
     def build_tree(self):
         if not hasattr(self.current_snapshot, "kdtree"):
             log.logger.info("Building KDTree")
-            self.current_snapshot.build_tree(shared_mem=self.current_shared_mem_flag)
+            if config.pynbody_build_kdtree_all_cpus:
+                # get number of processors on this system using python multiprocessing module
+                num_threads = multiprocessing.cpu_count()
+            else:
+                num_threads = None
+            self.current_snapshot.build_tree(num_threads=num_threads,
+                                             shared_mem=self.current_shared_mem_flag)
 
     def _free_if_unused(self):
         if len(self.in_use_by)==0:

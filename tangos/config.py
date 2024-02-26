@@ -39,6 +39,13 @@ pynbody_build_kdtree_threshold_count = 2000
 # If the number of regions being queried on a timestep is expected to exceed this number,
 # a KDTree will be built to accelerate the region queries.
 
+pynbody_build_kdtree_all_cpus = True
+# If True, allow the server process to take over all available CPUs when building a
+# KDTree. This is despite the fact that most parallelism takes place across different client
+# processes, but is probably best set to True on the assumption that those clients are just going
+# to be waiting on the server anyway. If set to False, pynbody determines the number of
+# CPUs for the KDTree build, which on a system well configured for tangos would be 1.
+
 default_backend = 'null'
 # the default paralellism backend. Set e.g. to mpi4py to avoid having to pass --backend mpi4py to all parallel runs.
 
