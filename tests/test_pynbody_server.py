@@ -245,6 +245,9 @@ def _test_region_loading(mode, expected_number_of_queries):
     f_remote = handler.load_region("tiny.000640", pynbody.filt.Sphere("2 Mpc"), mode=mode,
                                    expected_number_of_queries=expected_number_of_queries)
 
+    del f_remote
+    pt.barrier()
+
 @pytest.mark.parametrize('mode', ['server', 'server-shared-mem'])
 @pytest.mark.parametrize('expected_number_of_queries', [1, 100000])
 def test_region_loading(mode, expected_number_of_queries):
