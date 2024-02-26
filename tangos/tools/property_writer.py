@@ -327,34 +327,34 @@ class PropertyWriter(GenericTangosTool):
         if self._current_timestep_id == db_timestep.id:
             return
 
-        self._unload_timestep()
-
-        if self._must_load_timestep_particles():
-            self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
-
-        elif self._should_load_halo_particles():
-            # Keep a snapshot alive for this timestep, even if should_load_timestep_particles is False,
-            # because it might be needed for the iord's if we are in partial-load mode.
-            try:
-                self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
-            except OSError:
-                pass
-
-        if self.options.load_mode is None:
-            self._run_preloop(self._loaded_timestep, db_timestep,
-                              self._property_calculator_instances, self._existing_properties_all_halos)
-        else:
-            self._run_preloop(None, db_timestep,
-                              self._property_calculator_instances, self._existing_properties_all_halos)
-
-        self._current_timestep_id = db_timestep.id
-
-
-    def _set_current_halo(self, db_halo):
         with parallel_tasks.lock.SharedLock("insert_list"):
             # don't want this to happen in parallel with a database write -- seems to lazily fetch
             # rows in the background
-            self._set_current_timestep(db_halo.timestep)
+            self._unload_timestep()
+
+            if self._must_load_timestep_particles():
+                self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
+
+            elif self._should_load_halo_particles():
+                # Keep a snapshot alive for this timestep, even if should_load_timestep_particles is False,
+                # because it might be needed for the iord's if we are in partial-load mode.
+                try:
+                    self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
+                except OSError:
+                    pass
+
+            if self.options.load_mode is None:
+                self._run_preloop(self._loaded_timestep, db_timestep,
+                                  self._property_calculator_instances, self._existing_properties_all_halos)
+            else:
+                self._run_preloop(None, db_timestep,
+                                  self._property_calculator_instances, self._existing_properties_all_halos)
+
+            self._current_timestep_id = db_timestep.id
+
+
+    def _set_current_halo(self, db_halo):
+        self._set_current_timestep(db_halo.timestep)
 
         if self._loaded_halo_id==db_halo.id:
             return
