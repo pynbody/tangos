@@ -108,6 +108,7 @@ def test_partial_load_tracker_halo():
     assert pynbody_h.ancestor is pynbody_h
 
 def test_load_persistence():
+    add_test_simulation_to_db()
     f = db.get_timestep("test_tipsy/tiny.000640").load()
     f2 = db.get_timestep("test_tipsy/tiny.000640").load()
     h = db.get_halo("test_tipsy/tiny.000640/1").load()
@@ -158,6 +159,7 @@ def assert_is_subview_of_full_file(pynbody_h):
     assert len(pynbody_h.ancestor) == len(db.get_timestep("test_tipsy/tiny.000640").load())
 
 def test_load_region():
+    add_test_simulation_to_db()
     region = db.get_timestep("test_tipsy/tiny.000640").load_region(pynbody.filt.Sphere(2000,[1000,1000,1000]))
     assert (region['iord']==[ 9980437, 10570437, 10630437, 10640437, 10770437, 10890437,
        10900437, 10960437, 11030437, 11090437, 11480437, 11490437,
@@ -165,6 +167,7 @@ def test_load_region():
        13380437, 13710437]).all()
 
 def test_load_region_uses_cache():
+    add_test_simulation_to_db()
     filt1 = pynbody.filt.Sphere(2000,[1000,1000,1000])
     filt2 = pynbody.filt.Sphere(2000,[1001,1000,1000])
 

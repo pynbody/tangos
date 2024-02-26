@@ -31,13 +31,14 @@ def test_issue_77():
     assert(ih1.load_timestep("step.1") is not ih2.load_timestep("step.1"))
 
 def test_timestep_linking():
+    orig_count = db.get_halo("dummy_sim_1/step.1/1").links.count() # may not be zero if tests run out of order
     tl = crosslink.TimeLinker()
     tl.parse_command_line([])
     with log.LogCapturer():
         tl.run_calculation_loop()
     assert db.get_halo("dummy_sim_1/step.1/1").next==db.get_halo("dummy_sim_1/step.2/1")
     assert db.get_halo("dummy_sim_1/step.2/2").previous == db.get_halo("dummy_sim_1/step.1/2")
-    assert db.get_halo("dummy_sim_1/step.1/1").links.count()==2
+    assert db.get_halo("dummy_sim_1/step.1/1").links.count() - orig_count==2
 
 def test_crosslinking():
     cl = crosslink.CrossLinker()

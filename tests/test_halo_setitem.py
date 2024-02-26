@@ -15,6 +15,8 @@ def setup_module():
         generator.add_timestep()
         generator.add_objects_to_timestep(3)
 
+    tangos.get_halo("sim/ts1/1")['item_for_update'] = 24
+
 def teardown_module():
     tangos.core.close_db()
 
@@ -29,10 +31,10 @@ def test_set_another_item():
     assert tangos.get_halo("sim/ts1/2")['bla'] == 42
 
 def test_update_item():
-    assert tangos.get_halo("sim/ts1/1")['bla'] == 23
-    tangos.get_halo("sim/ts1/1")['bla'] = 96
+    assert tangos.get_halo("sim/ts1/1")['item_for_update'] == 24
+    tangos.get_halo("sim/ts1/1")['item_for_update'] = 96
     db.core.get_default_session().commit()
-    assert tangos.get_halo("sim/ts1/1")['bla'] == 96
+    assert tangos.get_halo("sim/ts1/1")['item_for_update'] == 96
 
 def test_set_large_item():
     "Test inserting arrays with size up to a few MiB"
