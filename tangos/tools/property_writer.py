@@ -205,7 +205,9 @@ class PropertyWriter(GenericTangosTool):
 
         needed_properties = self._required_and_calculated_property_names()
 
-        halo_query = core.get_default_session().query(core.halo.SimulationObjectBase).order_by(core.halo.SimulationObjectBase.halo_number).filter(query)
+        halo_query = (core.get_default_session().query(core.halo.SimulationObjectBase).
+                      options(sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.timestep)).
+                      order_by(core.halo.SimulationObjectBase.halo_number).filter(query))
         if self._include:
             needed_properties.append(self._include)
 
