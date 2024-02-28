@@ -205,8 +205,13 @@ class PropertyWriter(GenericTangosTool):
 
         needed_properties = self._required_and_calculated_property_names()
 
+        # it's important that anything we need from the database is loaded now, as if it's
+        # lazy-loaded later when we have relinquished the lock, SQLite may get upset
         halo_query = (core.get_default_session().query(core.halo.SimulationObjectBase).
-                      options(sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.timestep)).
+                      options(sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.timestep),
+                              sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.all_links,
+                                                        core.halo_data.HaloLink.halo_to),
+                              sqlalchemy.orm.raiseload("*")).
                       order_by(core.halo.SimulationObjectBase.halo_number).filter(query))
         if self._include:
             needed_properties.append(self._include)
