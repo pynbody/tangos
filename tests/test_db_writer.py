@@ -364,9 +364,22 @@ def test_writer_doesnt_duplicate_property_classes(fresh_database):
     assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property_t1'] == 1.0
     assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property_t2'] == 2.0
 
+def test_write_include_only(fresh_database):
+    run_writer_with_args("dummy_property")
+    run_writer_with_args("another_dummy_property","--include","dummy_property<5")
+
+    dp, _ = db.get_timestep("%/step.1").calculate_all("dummy_property","another_dummy_property")
+    # the above only returns halos where another_dummy_property has been written, which should
+    # correspond to just those with dummy_property<5
+    assert((dp<5).all())
+    assert len(dp)==4
+
+    dp, _ = db.get_timestep("%/step.2").calculate_all("dummy_property", "another_dummy_property")
+    assert ((dp < 5).all())
+    assert len(dp)==2
+
 def test_writer_num_regions_optimization(fresh_database):
     log = run_writer_with_args("dummy_property", "dummy_region_property")
-    print(log)
 
     # there are 10 halos, and dummy_region_property requests a region. dummy_property
     # does not request a region. So the expected number of region queries is 10.
