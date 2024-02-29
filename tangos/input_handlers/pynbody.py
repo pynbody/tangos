@@ -211,7 +211,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         h = _loaded_halocats.get(id(f), lambda: None)()
         if h is None:
             h = self._construct_pynbody_halos(f)
-            if isinstance(h, pynbody.halo.SubfindCatalogue) or isinstance(h, pynbody.halo.SubFindHDFHaloCatalogue):
+            if isinstance(h, pynbody.halo.subfind.SubfindCatalogue) or isinstance(h, pynbody.halo.subfindhdf.SubFindHDFHaloCatalogue):
                 # ugly fix - loads groups by default, wanted halos
                 h = self._construct_pynbody_halos(f, subs=True)
             if hasattr(h, 'precalculate'):
@@ -276,9 +276,9 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
             istart = 1
 
-            if isinstance(h, pynbody.halo.SubfindCatalogue) \
-                or isinstance(h, pynbody.halo.SubFindHDFHaloCatalogue) \
-                or isinstance(h, pynbody.halo.HOPCatalogue):
+            if isinstance(h, pynbody.halo.subfind.SubfindCatalogue) \
+                or isinstance(h, pynbody.halo.subfindhdf.SubFindHDFHaloCatalogue) \
+                or isinstance(h, pynbody.halo.hop.HOPCatalogue):
                 istart = 0 # indexes from zero
 
             if hasattr(h, 'precalculate'):
@@ -488,7 +488,7 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
     def _is_able_to_load(self, filepath):
         try:
             f = pynbody.load(filepath)
-            h = pynbody.halo.RockstarCatalogue(f)
+            h = pynbody.halo.rockstar.RockstarCatalogue(f)
             return True
         except (OSError, RuntimeError):
             return False

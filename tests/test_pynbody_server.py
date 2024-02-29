@@ -387,46 +387,43 @@ def test_request_index_list_deserialization():
     assert o2.filter_or_object_spec == o.filter_or_object_spec
 
 
-def test_portable_catalogue_from_id_array():
-    np.random.seed(1337)
-    object_id_per_particle = np.array(np.random.randint(1,10,100))
-    iords = np.arange(len(object_id_per_particle))
-
-    obj_cat = shared_object_catalogue.SharedObjectCatalogue(object_id_per_particle)
-
-    for id_ in np.unique(object_id_per_particle):
-        assert (obj_cat.get_object(id_, iords) == iords[object_id_per_particle==id_]).all()
-
-
 @using_parallel_tasks(3)
 def test_transmit_receive_portable_catalogue():
     np.random.seed(1337)
     object_id_per_particle = np.array(np.random.randint(1, 10, 100))
+    sim = pynbody.new(100)
+    sim['iord'] = np.arange(100)
+    sim['grp'] = object_id_per_particle
+    halos = sim.halos() # this will create a catalogue from the grp array
 
     pt.barrier() # ensure initialization is complete
 
     if pt.backend.rank()==1:
 
-        obj_cat = shared_object_catalogue.SharedObjectCatalogue(object_id_per_particle)
+        obj_cat = shared_object_catalogue.ReturnSharedObjectCatalog(halos)
         obj_cat.send(2)
 
-        pt.barrier()
+        assert halos._index_lists.particle_index_list is not None
+        assert hasattr(halos._index_lists.particle_index_list, '_shared_fname')
+
     else:
-        iords = np.arange(len(object_id_per_particle))
-        obj_cat = shared_object_catalogue.SharedObjectCatalogue.receive(1)
+        halos_remote = shared_object_catalogue.ReturnSharedObjectCatalog.receive(1).attach_to_simulation(sim)
         for id_ in np.unique(object_id_per_particle):
-            assert (obj_cat.get_object(id_, iords) == iords[object_id_per_particle == id_]).all()
-        pt.barrier()
+            assert (halos[id_]['iord'] == halos_remote[id_]['iord']).all()
+
+        assert hasattr(halos_remote._index_lists.particle_index_list, '_shared_fname')
+
+    pt.barrier()
 
 @using_parallel_tasks(3)
 def test_server_generates_portable_catalogue():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640", shared_mem=True)
-    obj_cat = ps.shared_object_catalogue.get_shared_object_catalogue_from_server(conn.filename, 'halo', 0)
+    obj_cat = ps.shared_object_catalogue.get_shared_object_catalogue_from_server(conn.shared_mem_view, 'halo', 0)
     local_halo = handler.load_object("tiny.000640", 1, 1, mode=None)
 
-    assert (obj_cat.get_object(1, conn.shared_mem_view)['iord'] == local_halo['iord']).all()
+    assert (obj_cat[1]['iord'] == local_halo['iord']).all()
 
 
 def test_portable_catalogue_generated_only_once():
     log = test_server_generates_portable_catalogue() # runs on two processes, should only get one cat
-    assert log.count("Generating a shared object catalogue for halos") == 1
+    assert log.count("Generating a shared object catalogue for 'halo's") == 1

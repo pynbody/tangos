@@ -177,9 +177,7 @@ class ChangaBHImporter(GenericTangosTool):
         bh_halos = None
         import pynbody
 
-        if isinstance(pynbody_halos, pynbody.halo.RockstarIntermediateCatalogue):
-            bh_cen_halos = pynbody_halos.get_group_array(family='BH')
-        elif isinstance(pynbody_halos, pynbody.halo.AHFCatalogue):
+        if isinstance(pynbody_halos, pynbody.halo.ahf.AHFCatalogue):
             bh_cen_halos = pynbody_halos.get_group_array(top_level=False, family='bh')
             bh_halos = pynbody_halos.get_group_array(top_level=True, family='bh')
         else:

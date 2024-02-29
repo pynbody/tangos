@@ -398,7 +398,7 @@ class RemoteSnapshotConnection:
             if typetag not in self.shared_mem_catalogues:
                 from . import shared_object_catalogue
                 self.shared_mem_catalogues[typetag] = (shared_object_catalogue.
-                        get_shared_object_catalogue_from_server(self.filename, typetag, self._server_id))
+                        get_shared_object_catalogue_from_server(self.shared_mem_view, typetag, self._server_id))
             shared_cat = self.shared_mem_catalogues[typetag]
             if shared_cat is not None:
                 return shared_cat.get_index_list(filter_or_object_spec.object_index)

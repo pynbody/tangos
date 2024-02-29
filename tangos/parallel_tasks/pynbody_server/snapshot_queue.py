@@ -1,11 +1,12 @@
 import multiprocessing
+
 import pynbody
 
-from .. import log
 from ...parallel_tasks.async_message import AsyncProcessedMessage
 from ...parallel_tasks.message import Message
 from ...util.check_deleted import check_deleted
-from .. import config
+from .. import config, log
+
 
 class ConfirmLoadPynbodySnapshot(Message):
     pass
@@ -92,23 +93,12 @@ class PynbodySnapshotQueue:
 
     def get_shared_catalogue(self, type_tag):
         if type_tag in self.current_portable_catalogues:
-            log.logger.debug("Pynbody server: cache hit for object number array %r", type_tag)
+            log.logger.debug("Pynbody server: cache hit for catalogue %r", type_tag)
             return self.current_portable_catalogues[type_tag]
         else:
-            log.logger.debug("Pynbody server: cache miss for object number array %r", type_tag)
-            try:
-                from .shared_object_catalogue import (
-                    make_shared_object_catalogue_from_pynbody_halos,
-                )
-                log.logger.info("Generating a shared object catalogue for %ss", type_tag)
-                portacat = make_shared_object_catalogue_from_pynbody_halos(self.get_catalogue(type_tag))
-                log.logger.info("Done")
-            except Exception as e:
-                log.logger.error("Error generating shared object_catalogue for %ss: %s", type_tag, e)
-                portacat = None
-
-            self.current_portable_catalogues[type_tag] = portacat
-            return portacat
+            log.logger.info("Generating a shared object catalogue for %rs", type_tag)
+            self.current_portable_catalogues[type_tag] = self.get_catalogue(type_tag)
+            return self.current_portable_catalogues[type_tag]
 
     def build_tree(self):
         if not hasattr(self.current_snapshot, "kdtree"):
