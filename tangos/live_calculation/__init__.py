@@ -261,7 +261,7 @@ class Calculation:
 
             augmented_query = augmented_query.options(
                 load_options_this_level.contains_eager(halo_alias.all_properties.of_type(halo_property_alias)).
-                       undefer("*").joinedload(halo_property_alias.name),
+                       undefer("*").options(joinedload(halo_property_alias.name)).contains_eager(halo_property_alias.halo.of_type(halo_alias)),
                 load_options_this_level_links,
             )
 
