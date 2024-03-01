@@ -5,7 +5,7 @@ For more overview information, see live_calculation.md. """
 import warnings
 
 import numpy as np
-from sqlalchemy.orm import Load, aliased, contains_eager, defaultload
+from sqlalchemy.orm import Load, aliased, contains_eager, defaultload, joinedload
 
 import tangos.core.dictionary
 import tangos.core.halo
@@ -256,10 +256,12 @@ class Calculation:
                                                   (halo_alias.id==halo_link_alias.halo_from_id)
                                                   & link_name_condition)
 
-            load_options_this_level_links = load_options_this_level.contains_eager(halo_alias.all_links.of_type(halo_link_alias))
+            load_options_this_level_links = (load_options_this_level.contains_eager(halo_alias.all_links.of_type(halo_link_alias))
+                                             .options(joinedload(halo_link_alias.relation)))
 
             augmented_query = augmented_query.options(
-                load_options_this_level.contains_eager(halo_alias.all_properties.of_type(halo_property_alias)).undefer("*"),
+                load_options_this_level.contains_eager(halo_alias.all_properties.of_type(halo_property_alias)).
+                       undefer("*").joinedload(halo_property_alias.name),
                 load_options_this_level_links,
             )
 
