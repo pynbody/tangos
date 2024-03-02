@@ -18,12 +18,10 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.9, "3.10", "3.11", "3.12"]
-        sqlalchemy-version: ["1.4", "2.0"]
+        sqlalchemy-version: ["2.0"]
         numpy-version: ["1.22", "1.26"]
         TANGOS_TESTING_DB_BACKEND: [sqlite, mysql+pymysql, postgresql+psycopg2]
         exclude:
-          - python-version: "3.12"
-            sqlalchemy-version: "1.4"
           - python-version: "3.12"
             numpy-version: "1.22"
 

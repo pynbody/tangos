@@ -1,7 +1,7 @@
 install_requires = [
     'setuptools',
     'numpy >= 1.10.0',
-    'sqlalchemy >= 1.4.0', # moving towards sqlalchemy 2.0 eventually
+    'sqlalchemy >= 2.0', 
     'pyparsing >= 2.1.0',
     'WebOb >= 1.7.0rc2', # Response.has_body
     'repoze.lru >= 0.4', # py3 compat
