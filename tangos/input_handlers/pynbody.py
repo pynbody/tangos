@@ -356,7 +356,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
     auxiliary_file_patterns =["groups_???"]
 
     snap_class_name = "pynbody.snapshot.gadget.GadgetSnap" # annoyingly, has to be string because pynbody isn't imported at module import time
-    catalogue_class_name = "pynbody.halo.SubfindCatalogue"
+    catalogue_class_name = "pynbody.halo.subfind.SubfindCatalogue"
 
     _property_prefix_for_type = {'halo': 'sub_'}
 
@@ -464,7 +464,7 @@ class Gadget4HDFSubfindInputHandler(GadgetSubfindInputHandler):
     patterns = ["snapshot_???.hdf5", "snapshot_???.0.hdf5", "snap_???.hdf5", "snap_???.0.hdf5"]
     auxiliary_file_patterns =["fof_subhalo_tab_???.hdf5", "fof_subhalo_tab_???.0.hdf5"]
     snap_class_name = "pynbody.snapshot.gadgethdf.GadgetHDFSnap"
-    catalogue_class_name = "pynbody.halo.Gadget4SubfindHDFCatalogue"
+    catalogue_class_name = "pynbody.halo.subfindhdf.Gadget4SubfindHDFCatalogue"
 
     _property_prefix_for_type = {'halo': 'Subhalo', 'group': 'Group'}
 
