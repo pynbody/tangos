@@ -376,7 +376,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         if mode=='subfind-properties':
             h = self.get_catalogue(ts_extension, object_typetag)
-            return h.get_halo_properties(finder_offset,with_unit=False)
+            return h._get_properties_one_halo(finder_id)
         else:
             return super().load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
 
@@ -407,7 +407,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
 
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
         cat = self.get_catalogue(ts_extension, object_typetag)
-        properties = list(cat.get_halo_properties(0, False).keys())
+        properties = list(cat._get_properties_one_halo(0).keys())
         pynbody_prefix = self._property_prefix_for_type.get(object_typetag, '')
         for i,p in enumerate(properties):
             if p.startswith(pynbody_prefix):
@@ -432,7 +432,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
         for i in range(len(h)):
             all_data = [i, i]
             for k in property_names:
-                pynbody_properties = h.get_halo_properties(i,with_unit=False)
+                pynbody_properties = h._get_properties_one_halo(i)
 
                 if k=='parent':
                     for adapted_k in self._sub_parent_names:
