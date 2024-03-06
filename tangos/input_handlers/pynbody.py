@@ -131,7 +131,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         if mode=='partial':
             h = self.get_catalogue(ts_extension, object_typetag)
-            h_file = h.load_copy(finder_offset)
+            h_file = h.load_copy(finder_id)
             h_file.physical_units()
             return h_file
         elif mode=='server' :
@@ -160,7 +160,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
         elif mode is None:
             h = self.get_catalogue(ts_extension, object_typetag)
-            return h[finder_offset]
+            return h[finder_id]
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
@@ -543,7 +543,7 @@ class AHFInputHandler(PynbodyInputHandler):
 
         return (
             [
-                key for key in h[1].properties.keys()
+                key for key in h[0].properties.keys()
                 if key not in self._excluded_precalculated_properties
             ] + list(self._included_additional_properties)
         )
