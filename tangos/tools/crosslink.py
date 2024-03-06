@@ -87,6 +87,8 @@ class GenericLinker(GenericTangosTool):
     def create_db_objects_from_catalog(self, cat, finder_offset_to_halos_1, finder_offset_to_halos_2, same_d_id):
         items = []
         missing_db_object = 0
+        #import pdb
+        #pdb.set_trace()
         for i, possibilities in enumerate(cat):
             h1 = finder_offset_to_halos_1.get(i, None)
             for cat_i, weight in possibilities:
