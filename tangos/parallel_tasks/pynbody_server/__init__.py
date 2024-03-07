@@ -401,7 +401,7 @@ class RemoteSnapshotConnection:
                         get_shared_object_catalogue_from_server(self.shared_mem_view, typetag, self._server_id))
             shared_cat = self.shared_mem_catalogues[typetag]
             if shared_cat is not None:
-                return shared_cat.get_index_list(filter_or_object_spec.object_index)
+                return shared_cat.get_index_list(filter_or_object_spec.object_number)
 
         # was not able to do anything smart with shared memory, so get the server to figure out the index list
         RequestIndexList(filter_or_object_spec).send(self._server_id)

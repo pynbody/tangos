@@ -34,8 +34,8 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __new__(cls, *args, **kwargs):
         import pynbody as pynbody_local
 
-        if pynbody_local.__version__<"1.5.0":
-            raise ImportError("Using tangos with pynbody requires pynbody 1.5.0 or later")
+        if pynbody_local.__version__<"2.0.0-beta":
+            raise ImportError("Using tangos with pynbody requires pynbody 2.0.0 or later")
 
         global pynbody
         pynbody = pynbody_local
@@ -274,20 +274,13 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
             logger.warning(" => enumerating %ss directly using pynbody", object_typetag)
 
-            istart = 1
 
-            if isinstance(h, pynbody.halo.subfind.SubfindCatalogue) \
-                or isinstance(h, pynbody.halo.subfindhdf.SubFindHDFHaloCatalogue) \
-                or isinstance(h, pynbody.halo.hop.HOPCatalogue):
-                istart = 0 # indexes from zero
-
-            if hasattr(h, 'precalculate'):
-                h.precalculate()
+            h.load_all()
 
 
-            for i in range(istart, len(h)+istart):
+            for hi in h:
                 try:
-                    hi = h[i]
+                    i = hi.properties['halo_number']
                     if len(hi.dm) + len(hi.star) + len(hi.gas) >= min_halo_particles:
                         yield i, i, len(hi.dm), len(hi.star), len(hi.gas)
                 except (ValueError, KeyError) as e:

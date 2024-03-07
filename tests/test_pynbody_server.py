@@ -128,8 +128,8 @@ def test_nonexistent_array():
 @using_parallel_tasks
 def test_halo_array():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.snapshot_queue.ObjectSpecification(1, 1))
-    f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[1]
+    f = conn.get_view(ps.snapshot_queue.ObjectSpecification(0, 0))
+    f_local = pynbody.load(tangos.config.base+"test_simulations/test_tipsy/tiny.000640").halos()[0]
     assert len(f)==len(f_local)
     assert (f['x'] == f_local['x']).all()
     assert (f.gas['temp'] == f_local.gas['temp']).all()
@@ -139,9 +139,9 @@ def test_halo_array():
 @using_parallel_tasks
 def test_remote_file_index(shared_mem):
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640", shared_mem=shared_mem)
-    index_list = conn.get_index_list(ps.snapshot_queue.ObjectSpecification(1, 1))
+    index_list = conn.get_index_list(ps.snapshot_queue.ObjectSpecification(0, 0))
 
-    f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[1]
+    f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[0]
     local_index_list = f_local.get_index_list(f_local.ancestor)
 
     assert (index_list==local_index_list).all()
@@ -151,7 +151,7 @@ def test_shared_file_index_uses_shared_obj_catalogue():
     @using_parallel_tasks
     def test():
         conn = ps.RemoteSnapshotConnection(handler, "tiny.000640", shared_mem=True)
-        conn.get_index_list(ps.snapshot_queue.ObjectSpecification(1, 1))
+        conn.get_index_list(ps.snapshot_queue.ObjectSpecification(0, 0))
 
     log = test()
     assert "Generating a shared object catalogue" in log
@@ -164,8 +164,8 @@ def test_lazy_evaluation_is_local(mode):
     f_local.physical_units()
     h_local = f_local.halos()
 
-    remote_view = handler.load_object("tiny.000640", 1, 1, 'halo', mode=mode)
-    comparator = h_local[1]
+    remote_view = handler.load_object("tiny.000640", 0, 0, 'halo', mode=mode)
+    comparator = h_local[0]
 
     centre_offset = (-6017.0,-123.8,566.4)
     remote_view['pos']-=centre_offset
@@ -185,7 +185,7 @@ def test_lazy_evaluation_is_local(mode):
 @using_parallel_tasks
 def _test_no_repeat_failing_queries(mode):
     ts = handler.load_timestep("tiny.000640", mode=mode)
-    f = handler.load_object("tiny.000640", 1, 1, 'halo', mode=mode)
+    f = handler.load_object("tiny.000640", 0, 0, 'halo', mode=mode)
 
     for i in range(10):
         # the following fails on the server (due to it being run with derived arrays off), but succeeds locally
@@ -207,8 +207,8 @@ def tipsy_specific_derived_array(sim):
 @using_parallel_tasks
 def test_underlying_class():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640")
-    f = conn.get_view(ps.snapshot_queue.ObjectSpecification(1, 1))
-    f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[1]
+    f = conn.get_view(ps.snapshot_queue.ObjectSpecification(0, 0))
+    f_local = pynbody.load(tangos.config.base + "test_simulations/test_tipsy/tiny.000640").halos()[0]
     f_local.physical_units()
     npt.assert_almost_equal(f['tipsy_specific_derived_array'],f_local['tipsy_specific_derived_array'], decimal=4)
     assert f.connection.underlying_pynbody_class is pynbody.snapshot.tipsy.TipsySnap
@@ -218,11 +218,11 @@ def test_correct_object_loading():
     """This regression test looks for a bug where the pynbody_server module assumed halos could be
     loaded just by calling f.halos() where f was the SimSnap. This is not true in general; for example,
     for SubFind catalogues one has both halos and groups and the correct arguments must be passed."""
-    f_remote = handler.load_object('tiny.000640', 1, 1, mode='server')
-    f_local = handler.load_object('tiny.000640', 1, 1, mode=None)
+    f_remote = handler.load_object('tiny.000640', 0, 0, mode='server')
+    f_local = handler.load_object('tiny.000640', 0, 0, mode=None)
     assert (f_remote['iord']==f_local['iord']).all()
-    f_remote = handler.load_object('tiny.000640', 1, 1, 'test-objects', mode='server')
-    f_local = handler.load_object('tiny.000640', 1, 1, 'test-objects', mode=None)
+    f_remote = handler.load_object('tiny.000640', 0, 0, 'test-objects', mode='server')
+    f_local = handler.load_object('tiny.000640', 0, 0, 'test-objects', mode=None)
     assert (f_remote['iord'] == f_local['iord']).all()
 
 @using_parallel_tasks
@@ -276,8 +276,8 @@ def test_mixed_derived_loaded_arrays(mode):
     is the mass array for gas in ramses snapshots. Previously accessing this array in a remotesnap could cause errors,
     specifically a "derived array is not writable" error on the server. This test ensures that the correct behaviour"""
 
-    f_remote = handler.load_object('tiny.000640', 1, 1, mode=mode)
-    f_local = handler.load_object('tiny.000640', 1, 1, mode=None)
+    f_remote = handler.load_object('tiny.000640', 0, 0, mode=mode)
+    f_local = handler.load_object('tiny.000640', 0, 0, mode=None)
     assert (f_remote.dm['metals'] == f_local.dm['metals']).all()
     assert (f_remote.st['metals'] == f_local.st['metals']).all()
 
@@ -291,7 +291,7 @@ def test_shmem_simulation(load_sphere):
         if load_sphere:
             return handler.load_region("tiny.000640", sphere_filter, **kwargs)
         else:
-            return handler.load_object("tiny.000640", 1, 1, **kwargs)
+            return handler.load_object("tiny.000640", 0, 0, **kwargs)
     if pt.backend.rank()==1:
         f_remote = loader_function(mode='server-shared-mem')
         f_local = loader_function(mode=None)
@@ -419,9 +419,9 @@ def test_transmit_receive_portable_catalogue():
 def test_server_generates_portable_catalogue():
     conn = ps.RemoteSnapshotConnection(handler, "tiny.000640", shared_mem=True)
     obj_cat = ps.shared_object_catalogue.get_shared_object_catalogue_from_server(conn.shared_mem_view, 'halo', 0)
-    local_halo = handler.load_object("tiny.000640", 1, 1, mode=None)
+    local_halo = handler.load_object("tiny.000640", 0, 0, mode=None)
 
-    assert (obj_cat[1]['iord'] == local_halo['iord']).all()
+    assert (obj_cat[0]['iord'] == local_halo['iord']).all()
 
 
 def test_portable_catalogue_generated_only_once():

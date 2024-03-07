@@ -14,7 +14,7 @@ class PortableCatalogue(pynbody.halo.HaloCatalogue):
         self._index_lists = particle_indices
 
     def get_index_list(self, halo_number):
-        return self._index_lists.get_particle_index_list_for_halo(halo_number)
+        return self._index_lists.get_particle_index_list_for_halo(self._number_mapper.number_to_index(halo_number))
 
 class ReturnSharedObjectCatalog(Message):
     def __init__(self, halo_catalogue = None, number_mapper=None, indices = None):
