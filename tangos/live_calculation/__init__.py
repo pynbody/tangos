@@ -5,7 +5,14 @@ For more overview information, see live_calculation.md. """
 import warnings
 
 import numpy as np
-from sqlalchemy.orm import Load, aliased, contains_eager, defaultload, joinedload, undefer
+from sqlalchemy.orm import (
+    Load,
+    aliased,
+    contains_eager,
+    defaultload,
+    joinedload,
+    undefer,
+)
 
 import tangos.core.dictionary
 import tangos.core.halo
