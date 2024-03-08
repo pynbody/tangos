@@ -38,6 +38,10 @@ def add_serve_tool(subparse):
         if port is None:
             port = find_free_port(6543)
 
+        if options.title:
+            import tangos.web.crumbs
+            tangos.web.crumbs.servername = options.title
+
 
         sys.argv = ["",ini_path,f"port={port}"]
         sys.exit(
@@ -51,6 +55,9 @@ def add_serve_tool(subparse):
     web_subparser.add_argument('port', action='store', nargs="?",
                                help="The port to listen on. If not specified, looks for a free port starting at 6543.",
                                default="auto")
+    web_subparser.add_argument('--title', '-t', action='store', nargs="?",
+                               help="The mame of the server to display in the web interface. Default is 'tangos on [hostname]'",
+                               default=None)
     web_subparser.set_defaults(func=serve)
 
 def add_commands(subparse):

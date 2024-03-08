@@ -41,5 +41,7 @@ class BreadCrumbs:
         return links
 
 def breadcrumbs(request):
-    c = BreadCrumbs(request.url, servername="tangos on "+socket.gethostname())
+    c = BreadCrumbs(request.url, servername=servername)
     return " &rarr; ".join(c.links)
+
+servername = "tangos on "+socket.gethostname()
