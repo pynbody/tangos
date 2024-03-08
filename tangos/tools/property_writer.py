@@ -110,7 +110,12 @@ class PropertyWriter(GenericTangosTool):
                 timestep_filter &= subfilter
 
             files = core.get_default_session().query(core.timestep.TimeStep).filter(timestep_filter). \
-                order_by(core.timestep.TimeStep.time_gyr).all()
+                order_by(core.timestep.TimeStep.time_gyr).options(
+                  sqlalchemy.orm.joinedload(core.timestep.TimeStep.simulation)
+                  # this joined load might seem like overkill but without it
+                  # test_db_writer.py:test_writer_with_property_accessing_timestep will fail because the
+                  # timestep gets updated by a later query to have raiseload("*")
+               ).all()
 
 
 
@@ -209,8 +214,6 @@ class PropertyWriter(GenericTangosTool):
         # lazy-loaded later when we have relinquished the lock, SQLite may get upset
         halo_query = (core.get_default_session().query(core.halo.SimulationObjectBase).
                       options(sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.timestep),
-                              sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.all_links,
-                                                        core.halo_data.HaloLink.halo_to),
                               sqlalchemy.orm.raiseload("*")).
                       order_by(core.halo.SimulationObjectBase.halo_number).filter(query))
         if self._include:

@@ -59,7 +59,10 @@ class TimeStep(Base):
         extra = ""
         if not self.available:
             extra += " unavailable"
-        path = self.path
+        try:
+            path = self.path
+        except Exception:
+            path = "[error retrieving path]"
         if self.redshift is None:
             return "<TimeStep %r%s>"%(path,extra)
         else:
