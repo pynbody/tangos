@@ -583,6 +583,14 @@ class CalculationSuccessTracker(accumulative_statistics.StatisticsAccumulatorBas
 
         self._posted_errors = parallel_tasks.shared_set.SharedSet('posted_errors',allow_parallel)
 
+        if parallel_tasks.backend and parallel_tasks.backend.rank()>0:
+            # because shared sets are named objects, if it was created before it might still be populated
+            # this is most relevant in a testing setting (in realistic property_writer runs it won't have
+            # been created before) but has caused problems before so we clear it and wait for all processes
+            self._posted_errors.clear()
+            parallel_tasks.barrier()
+
+
     def should_log_error(self, exception):
         tb = "\n".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
         return not self._posted_errors.add_if_not_exists(tb)

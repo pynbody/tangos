@@ -437,6 +437,10 @@ def test_local_set():
     assert not set.add_if_not_exists("foo")
     assert set.add_if_not_exists("foo")
 
+    set = pt.shared_set.SharedSet("test_local_set")
+    assert set.add_if_not_exists("foo")
+
+
 def test_iteration_state_closes_tasks():
     from tangos.parallel_tasks.jobs import IterationState
 
