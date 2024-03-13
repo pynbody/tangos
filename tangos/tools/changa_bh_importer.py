@@ -184,8 +184,17 @@ class ChangaBHImporter(GenericTangosTool):
         if 'hostHalo' in pynbody_halos.get_dummy_halo(0).properties:
             bh_halos = bh_cen_halos
             continue_searching = True
+            iteration_count = 0
+
             # recursively substitute the halos with their parents
             while continue_searching:
+                if iteration_count > 10:
+                    logger.warn("BH halo assignment did not converge after 10 iterations, suggesting a problem with the parent/child relationships")
+                    logger.warn("Check the BH assignment to halos carefully")
+                    break
+
+                iteration_count += 1
+
                 # find the parent halos of the bh_cen_halos
                 bh_halos_new = [pynbody_halos.get_dummy_halo(i).properties['hostHalo'] for i in bh_halos]
 
@@ -194,6 +203,7 @@ class ChangaBHImporter(GenericTangosTool):
 
                 # but if the parent is -1, record  the original halo number
                 bh_halos = [bh_halos_new[i] if bh_halos_new[i] != -1 else bh_halos[i] for i in range(len(bh_halos))]
+
         else:
             bh_halos = None
 
