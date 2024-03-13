@@ -369,7 +369,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         if mode=='subfind-properties':
             h = self.get_catalogue(ts_extension, object_typetag)
-            return h._get_properties_one_halo(finder_id)
+            return h.get_properties_one_halo(finder_id)
         else:
             return super().load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
 
@@ -391,16 +391,9 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
         else:
             raise ValueError("Unknown halo type %r" % object_typetag)
 
-    @staticmethod
-    def _resolve_units(value):
-        if (pynbody.units.is_unit(value)):
-            return float(value)
-        else:
-            return value
-
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
         cat = self.get_catalogue(ts_extension, object_typetag)
-        properties = list(cat._get_properties_one_halo(0).keys())
+        properties = list(cat.get_properties_one_halo(0).keys())
         pynbody_prefix = self._property_prefix_for_type.get(object_typetag, '')
         for i,p in enumerate(properties):
             if p.startswith(pynbody_prefix):
@@ -422,31 +415,31 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
 
         pynbody_prefix = self._property_prefix_for_type.get(object_typetag, '')
 
+        all_properties = h.get_properties_all_halos(with_units=False)
+
         for i in range(len(h)):
             all_data = [i, i]
             for k in property_names:
-                pynbody_properties = h._get_properties_one_halo(i)
-
                 if k=='parent':
                     for adapted_k in self._sub_parent_names:
-                        if adapted_k in pynbody_properties.keys():
+                        if adapted_k in all_properties.keys():
                             break
                 else:
                     adapted_k = pynbody_prefix + k
-                    if adapted_k not in pynbody_properties:
+                    if adapted_k not in all_properties:
                         adapted_k = pynbody_prefix + "_" + k
 
-                if adapted_k in pynbody_properties:
-                    data = self._resolve_units(pynbody_properties[adapted_k])
+                if adapted_k in all_properties:
+                    data = all_properties[adapted_k][i]
                     if adapted_k in self._sub_parent_names and data is not None:
                         # turn into a link
                         data = proxy_object.IncompleteProxyObjectFromFinderId(data, 'group')
-                elif k=='child' and "children" in pynbody_properties:
+                elif k=='child' and "children" in all_properties:
                     # subfind does not actually store a list of children; but pynbody infers it from
                     # the parent data in the halo catalogue. Note children are always halos, even if
                     # the parent is group.
                     data = [proxy_object.IncompleteProxyObjectFromFinderId(data_i, 'halo')
-                            for data_i in pynbody_properties['children']]
+                            for data_i in all_properties['children'][i]]
                 else:
                     data = None
 
