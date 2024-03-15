@@ -14,7 +14,7 @@ class PortableCatalogue(pynbody.halo.HaloCatalogue):
         self._index_lists = particle_indices
 
     def get_index_list(self, halo_number):
-        return self._index_lists.get_particle_index_list_for_halo(self._number_mapper.number_to_index(halo_number))
+        return self._index_lists.get_particle_index_list_for_halo(self.number_mapper.number_to_index(halo_number))
 
 class ReturnSharedObjectCatalog(Message):
     def __init__(self, halo_catalogue = None, number_mapper=None, indices = None):
@@ -22,16 +22,16 @@ class ReturnSharedObjectCatalog(Message):
         assert halo_catalogue is not None or (number_mapper is not None and indices is not None)
         if halo_catalogue is not None:
             halo_catalogue.load_all()
-            if halo_catalogue._number_mapper is None or halo_catalogue._index_lists is None:
+            if halo_catalogue.number_mapper is None or halo_catalogue._index_lists is None:
                 raise ValueError("Tangos doesn't know how to make a portable catalogue from this halo catalogue")
             index_lists = halo_catalogue._index_lists
             index_lists.particle_index_list = self._as_shared_memory_array(index_lists.particle_index_list)
             index_lists.particle_index_list_boundaries = self._as_shared_memory_array(index_lists.particle_index_list_boundaries)
 
-            self._number_mapper = halo_catalogue._number_mapper
+            self.number_mapper = halo_catalogue.number_mapper
             self._index_lists = halo_catalogue._index_lists
         else:
-            self._number_mapper = number_mapper
+            self.number_mapper = number_mapper
             self._index_lists = indices
 
         super().__init__()
@@ -46,7 +46,7 @@ class ReturnSharedObjectCatalog(Message):
             return shared
 
     def attach_to_simulation(self, sim):
-        return PortableCatalogue(sim, self._number_mapper, self._index_lists)
+        return PortableCatalogue(sim, self.number_mapper, self._index_lists)
 
     @classmethod
     def deserialize(cls, source, message):
@@ -57,7 +57,7 @@ class ReturnSharedObjectCatalog(Message):
         return cls(number_mapper = number_mapper, indices = indices)
 
     def serialize(self):
-        return pickle.dumps(self._number_mapper)
+        return pickle.dumps(self.number_mapper)
 
     def send(self, destination):
         # send envelope
