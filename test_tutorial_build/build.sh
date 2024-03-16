@@ -7,7 +7,7 @@ get_tutorial_data() {
       wget -nv -O - https://zenodo.org/record/5155467/files/$1.tar.gz?download=1 | tar -xzv
     else
       echo "Downloading mini tutorial data for $1"
-      wget -nv -O - https://zenodo.org/records/10825079/files/$1.tar.gz?download=1 | tar -xzv
+      wget -nv -O - https://zenodo.org/records/10825178/files/$1.tar.gz?download=1 | tar -xzv
     fi
   fi
 }
