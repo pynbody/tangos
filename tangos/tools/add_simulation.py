@@ -2,8 +2,7 @@ import numbers
 
 import numpy as np
 
-from .. import config, core
-from .. import parallel_tasks as pt
+from .. import config, core, parallel_tasks as pt
 from ..core import Simulation, TimeStep
 from ..log import logger
 

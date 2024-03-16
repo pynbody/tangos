@@ -1,6 +1,7 @@
 import multiprocessing
 import multiprocessing.resource_tracker
 import os
+import select
 import signal
 import sys
 import threading
@@ -18,6 +19,9 @@ _recv_buffer = []
 
 _print_exceptions = True
 
+send_lock = threading.Lock() # a lock to make sure if multiple threads are running, only one can send/receive at a time
+receive_lock = threading.Lock()
+
 # Compatibility fix for python >=3.8 on MacOS, where the default process start
 # method changed:
 if sys.version_info[:2]>=(3,3):
@@ -30,22 +34,24 @@ class NoMatchingItem(Exception):
 
 
 def send(data, destination, tag=0):
-    _pipe.send((data, destination, tag))
+    with send_lock:
+        _pipe.send((data, destination, tag))
 
 def receive_any(source=None):
     return receive(source,None,True)
 
 
 def receive(source=None, tag=0, return_tag=False):
-    while True:
-        try:
-            item = _pop_first_match_from_reception_buffer(source, tag)
-            if return_tag:
-                return item
-            else:
-                return item[0]
-        except NoMatchingItem:
-            _receive_item_into_buffer()
+    with receive_lock:
+        while True:
+            try:
+                item = _pop_first_match_from_reception_buffer(source, tag)
+                if return_tag:
+                    return item
+                else:
+                    return item[0]
+            except NoMatchingItem:
+                _receive_item_into_buffer()
 
 
 NUMPY_SPECIAL_TAG = 1515
@@ -160,7 +166,9 @@ def launch_functions(functions, args, capture_log=False):
     log = "" if capture_log else None
 
     while any(running):
-        for i, pipe_i in enumerate(parent_connections):
+        readable_pipes, _, _ = select.select(parent_connections, [], [])
+        for pipe_i in readable_pipes:
+            i = parent_connections.index(pipe_i)
             if pipe_i.poll():
                 message = pipe_i.recv()
                 if message=='exit':
@@ -173,10 +181,7 @@ def launch_functions(functions, args, capture_log=False):
                 elif isinstance(message[0], str) and message[0]=='log':
                     log+=message[1]
                 else:
-                    #print "multiprocessing backend: pass message ",i,"->",message[1]
                     parent_connections[message[1]].send((message[0],i,message[2]))
-
-    #print "multiprocessing backend: all finished"
 
     for pipe_i in parent_connections:
         pipe_i.close()

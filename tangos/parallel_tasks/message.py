@@ -1,6 +1,29 @@
+reception_timing_monitor = None
+
+def _setup_message_reception_timing_monitor():
+    global reception_timing_monitor
+
+    from ..util import timing_monitor
+    from . import backend
+    if backend is None or backend.rank() == 0:
+        # server can't gather its own timing information
+        reception_timing_monitor = timing_monitor.TimingMonitor(allow_parallel=False, label='idle')
+    else:
+        reception_timing_monitor = timing_monitor.TimingMonitor(allow_parallel=True, label='response wait',
+                                                                num_chars=40, show_percentages=False)
+    return reception_timing_monitor
+
+def update_performance_stats():
+    from . import backend
+    if reception_timing_monitor is not None and backend is not None:
+        assert backend.rank() != 0
+        reception_timing_monitor.report_to_log_or_server(None)
+
 class MessageMetaClass(type):
     _message_classes = {}
     _next_tag = 100
+
+    timing_monitor = None
 
     def __new__(meta, name, bases, dct):
         return super().__new__(meta, name, bases, dct)
@@ -27,6 +50,14 @@ class MessageMetaClass(type):
             raise AttributeError("Attempting to register duplicate message class %r"%cls)
         MessageMetaClass._message_classes[tag] = cls
         cls._tag = tag
+
+class MessageWithResponseMetaClass(MessageMetaClass):
+    def __init__(cls, name, bases, dct):
+        super().__init__(name, bases, dct)
+        response_class = type(cls.__name__+"Response", (ServerResponseMessage,), {})
+        assert response_class.__name__ not in globals()
+        globals()[response_class.__name__] = response_class # for Pickle
+        cls._response_class = response_class
 
 
 class Message(metaclass=MessageMetaClass):
@@ -62,8 +93,14 @@ class Message(metaclass=MessageMetaClass):
     @classmethod
     def receive(cls, source=None):
         from . import backend
+        global reception_timing_monitor
 
-        msg, source, tag = backend.receive_any(source=None)
+        if reception_timing_monitor is not None:
+            with reception_timing_monitor(cls):
+                msg, source, tag = backend.receive_any(source=None)
+        else:
+            msg, source, tag = backend.receive_any(source=None)
+
         obj = Message.interpret_and_deserialize(tag, source, msg)
 
         if not isinstance(obj, cls):
@@ -74,22 +111,22 @@ class Message(metaclass=MessageMetaClass):
         return obj
 
     def process(self):
-        raise NotImplementedError("No process implemented for this message")
+        raise NotImplementedError(f"No process implemented for this message of type {type(self)}")
 
 class ServerResponseMessage(Message):
     pass
 
-class MessageWithResponse(Message):
+class MessageWithResponse(Message, metaclass=MessageWithResponseMetaClass):
     """An extension of the message class where the server can return a response to each process"""
     def respond(self, response):
-        return ServerResponseMessage(response).send(self.source)
+        return self._response_class(response).send(self.source)
 
     def send_and_get_response(self, destination):
         self.send(destination)
         return self.get_response(destination)
 
     def get_response(self, receiving_from):
-        return ServerResponseMessage.receive(receiving_from).contents
+        return self._response_class.receive(receiving_from).contents
 
 class BarrierMessageWithResponse(MessageWithResponse):
     """An extension of the message class where the client blocks until all processes have made the request, and then the server responds"""
@@ -117,7 +154,7 @@ class BarrierMessageWithResponse(MessageWithResponse):
 
     def respond(self, response):
         from . import backend
-        response = ServerResponseMessage(response)
+        response = self._response_class(response)
         for i in range(1, backend.size()):
             response.send(i)
 

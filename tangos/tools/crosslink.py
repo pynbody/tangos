@@ -84,13 +84,13 @@ class GenericLinker(GenericTangosTool):
             return False
         return True
 
-    def create_db_objects_from_catalog(self, cat, finder_offset_to_halos_1, finder_offset_to_halos_2, same_d_id):
+    def create_db_objects_from_catalog(self, cat, finder_id_to_halos_1, finder_id_to_halos_2, same_d_id):
         items = []
         missing_db_object = 0
         for i, possibilities in enumerate(cat):
-            h1 = finder_offset_to_halos_1.get(i, None)
+            h1 = finder_id_to_halos_1.get(i, None)
             for cat_i, weight in possibilities:
-                h2 = finder_offset_to_halos_2.get(cat_i, None)
+                h2 = finder_id_to_halos_2.get(cat_i, None)
 
                 if h1 is not None and h2 is not None:
                     items.append(core.halo_data.HaloLink(h1, h2, same_d_id, weight))
@@ -102,9 +102,9 @@ class GenericLinker(GenericTangosTool):
                         missing_db_object)
         return items
 
-    def make_finder_offset_to_halo_map(self, ts, object_typecode):
+    def make_finder_id_to_halo_map(self, ts, object_typecode):
         halos = ts.objects.filter_by(object_typecode=object_typecode).all()
-        halos_map = {h.finder_offset: h for h in halos}
+        halos_map = {h.finder_id: h for h in halos}
         return halos_map
 
     def crosslink_ts(self, ts1, ts2, halo_min=0, halo_max=None, dmonly=False, threshold=config.default_linking_threshold, object_typecode=0):
@@ -113,8 +113,8 @@ class GenericLinker(GenericTangosTool):
         :type ts1 tangos.core.TimeStep
         :type ts2 tangos.core.TimeStep"""
         logger.info("Gathering halo information for %r and %r", ts1, ts2)
-        halos1 = self.make_finder_offset_to_halo_map(ts1, object_typecode)
-        halos2 = self.make_finder_offset_to_halo_map(ts2, object_typecode)
+        halos1 = self.make_finder_id_to_halo_map(ts1, object_typecode)
+        halos2 = self.make_finder_id_to_halo_map(ts2, object_typecode)
 
         same_d_id = self._get_linkname_dictionaryitem()
 

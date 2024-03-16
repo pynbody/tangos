@@ -3,9 +3,7 @@ import os
 from pytest import fixture
 
 import tangos as db
-from tangos import input_handlers, log
-from tangos import parallel_tasks as pt
-from tangos import testing, tools
+from tangos import input_handlers, log, parallel_tasks as pt, testing, tools
 from tangos.input_handlers import output_testing
 from tangos.tools import add_simulation
 

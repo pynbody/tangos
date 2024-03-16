@@ -147,6 +147,7 @@ def test_summed_reconstruction_across_simulations():
 
     finally:
         ts2.simulation = db.query.get_simulation("sim")
+        session.commit()
 
 
 def test_custom_delta_t():

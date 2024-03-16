@@ -1,12 +1,16 @@
+import multiprocessing
+
 import pynbody
 
-from tangos import log
-from tangos.parallel_tasks.message import Message
-from tangos.util.check_deleted import check_deleted
+from ...parallel_tasks.async_message import AsyncProcessedMessage
+from ...parallel_tasks.message import Message
+from ...util.check_deleted import check_deleted
+from .. import config, log
 
 
 class ConfirmLoadPynbodySnapshot(Message):
     pass
+
 
 
 class PynbodySnapshotQueue:
@@ -19,7 +23,9 @@ class PynbodySnapshotQueue:
         self.current_snapshot = None
         self.current_subsnap_cache = {}
         self.current_handler = None
+        self.current_portable_catalogues = {}
         self.in_use_by = []
+
 
     def add(self, requester, handler, filename, shared_mem=False):
         log.logger.debug("Pynbody server: client %d requests access to %r", requester, filename)
@@ -51,7 +57,10 @@ class PynbodySnapshotQueue:
             if fam is None:
                 return self.current_snapshot
             else:
-                return self.current_snapshot[fam]
+                if fam not in self.current_subsnap_cache.keys():
+                    self.current_subsnap_cache[fam] = self.current_snapshot[fam]
+                return self.current_subsnap_cache[fam]
+
         elif (filter_or_object_spec, fam) in self.current_subsnap_cache:
             log.logger.debug("Pynbody server: cache hit for %r (fam %r)",filter_or_object_spec, fam)
             return self.current_subsnap_cache[(filter_or_object_spec, fam)]
@@ -79,7 +88,28 @@ class PynbodySnapshotQueue:
 
         return snap
 
+    def get_catalogue(self, type_tag):
+        return self.current_handler.get_catalogue(self.current_timestep, type_tag)
 
+    def get_shared_catalogue(self, type_tag):
+        if type_tag in self.current_portable_catalogues:
+            log.logger.debug("Pynbody server: cache hit for catalogue %r", type_tag)
+            return self.current_portable_catalogues[type_tag]
+        else:
+            log.logger.info("Generating a shared object catalogue for %rs", type_tag)
+            self.current_portable_catalogues[type_tag] = self.get_catalogue(type_tag)
+            return self.current_portable_catalogues[type_tag]
+
+    def build_tree(self):
+        if not hasattr(self.current_snapshot, "kdtree"):
+            log.logger.info("Building KDTree")
+            if config.pynbody_build_kdtree_all_cpus:
+                # get number of processors on this system using python multiprocessing module
+                num_threads = multiprocessing.cpu_count()
+            else:
+                num_threads = None
+            self.current_snapshot.build_tree(num_threads=num_threads,
+                                             shared_mem=self.current_shared_mem_flag)
 
     def _free_if_unused(self):
         if len(self.in_use_by)==0:
@@ -95,6 +125,7 @@ class PynbodySnapshotQueue:
                 self.current_snapshot = None
                 self.current_timestep = None
                 self.current_subsnap_cache = {}
+                self.current_portable_catalogues = {}
                 self.current_handler = None
 
     def _notify_available(self, node):
@@ -148,12 +179,12 @@ class PynbodySnapshotQueue:
 _server_queue = PynbodySnapshotQueue()
 
 
-class RequestLoadPynbodySnapshot(Message):
+class RequestLoadPynbodySnapshot(AsyncProcessedMessage):
     def process(self):
         _server_queue.add(self.source, *self.contents)
 
 
-class ReleasePynbodySnapshot(Message):
+class ReleasePynbodySnapshot(AsyncProcessedMessage):
     def process(self):
         _server_queue.free(self.source)
 

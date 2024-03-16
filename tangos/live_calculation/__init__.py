@@ -5,19 +5,24 @@ For more overview information, see live_calculation.md. """
 import warnings
 
 import numpy as np
-from sqlalchemy.orm import Load, aliased, contains_eager, defaultload
+from sqlalchemy.orm import (
+    Load,
+    aliased,
+    contains_eager,
+    defaultload,
+    joinedload,
+    undefer,
+)
 
 import tangos.core.dictionary
 import tangos.core.halo
 import tangos.core.halo_data
 from tangos.core import extraction_patterns
 from tangos.live_calculation.query_masking import QueryMask
-from tangos.live_calculation.query_multivalue_folding import \
-    QueryMultivalueFolding
+from tangos.live_calculation.query_multivalue_folding import QueryMultivalueFolding
 from tangos.util import consistent_collection
 
-from .. import core
-from .. import temporary_halolist as thl
+from .. import core, temporary_halolist as thl
 
 
 class UnknownValue:
@@ -233,7 +238,7 @@ class Calculation:
             halo_alias = tangos.core.halo.SimulationObjectBase
         augmented_query = halo_query
         order_bys = []
-        load_options_this_level = Load(halo_alias)
+        load_options = Load(halo_alias)
 
         for i in range(self.n_join_levels()):
             halo_property_alias = aliased(tangos.core.halo_data.HaloProperty)
@@ -258,25 +263,38 @@ class Calculation:
                                                   (halo_alias.id==halo_link_alias.halo_from_id)
                                                   & link_name_condition)
 
-            load_options_this_level_links = load_options_this_level.contains_eager(halo_alias.all_links.of_type(halo_link_alias))
-
-            augmented_query = augmented_query.options(
-                load_options_this_level.contains_eager(halo_alias.all_properties.of_type(halo_property_alias)).undefer("*"),
-                load_options_this_level_links,
+            # use the options to make sure all the halo property information is available
+            load_options = load_options.options(
+                contains_eager(halo_alias.all_properties.of_type(halo_property_alias)).options(
+                    joinedload(halo_property_alias.name),
+                    contains_eager(halo_property_alias.halo.of_type(halo_alias)),
+                    undefer(halo_property_alias.data_array)
+                )
             )
 
-            order_bys+=[halo_link_alias.id,halo_property_alias.id]
+            order_bys += [halo_link_alias.id, halo_property_alias.id]
 
-            if i<self.n_join_levels()-1:
-                next_level_halo_alias = aliased(tangos.core.halo.SimulationObjectBase)
-                load_options_next_level = load_options_this_level_links.contains_eager(halo_link_alias.halo_to.of_type(next_level_halo_alias))
-                augmented_query = augmented_query.outerjoin(next_level_halo_alias,
-                                                            (halo_link_alias.halo_to_id==next_level_halo_alias.id)).\
-                                                  options(load_options_next_level)
+            # now set up the next level of halos
+            next_level_halo_alias = aliased(tangos.core.halo.SimulationObjectBase)
+            augmented_query = augmented_query.outerjoin(next_level_halo_alias,
+                                                        (halo_link_alias.halo_to_id==next_level_halo_alias.id))
 
-                halo_alias = next_level_halo_alias
-                load_options_this_level = load_options_next_level
-        augmented_query = augmented_query.order_by(*order_bys)
+            # prepare for next level by following the halo link into the new halo. Along the way make sure we
+            # load the 'relation' property of the link, and the timestep of the new halo.
+            load_options = load_options.contains_eager(
+                halo_alias.all_links.of_type(halo_link_alias)
+            ).options(
+                joinedload(halo_link_alias.relation)
+            ).contains_eager(
+                halo_link_alias.halo_to.of_type(next_level_halo_alias)
+            ).options(joinedload(next_level_halo_alias.timestep))
+
+            # ready to process the next level of halos!
+            halo_alias = next_level_halo_alias
+
+
+
+        augmented_query = augmented_query.order_by(*order_bys).options(load_options)
         return augmented_query
 
     def proxy_value(self):

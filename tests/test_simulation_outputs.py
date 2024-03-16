@@ -71,8 +71,12 @@ def test_enumerate_objects_using_statfile():
 def test_enumerate_objects_using_pynbody():
     config.min_halo_particles = 400
     halos = list(output_manager.enumerate_objects("tiny.000832", min_halo_particles=200))
-    npt.assert_equal(halos[0], [1, 1, 477,80, 48])
-    assert len(halos)==1
+    # NB one of these halos is actually halo -1 which is the particles not in any halo
+    # but right now pynbody is returning that as a 'halo' when using grp arrays, so... we accept that as
+    # the 'correct' behaviour since it's a pynbody-dependent thing
+
+    npt.assert_equal(halos[1], [0, 0, 477,80, 48])
+    assert len(halos)==2
 
 def test_load_timestep():
     add_test_simulation_to_db()
@@ -108,6 +112,7 @@ def test_partial_load_tracker_halo():
     assert pynbody_h.ancestor is pynbody_h
 
 def test_load_persistence():
+    add_test_simulation_to_db()
     f = db.get_timestep("test_tipsy/tiny.000640").load()
     f2 = db.get_timestep("test_tipsy/tiny.000640").load()
     h = db.get_halo("test_tipsy/tiny.000640/1").load()
@@ -158,8 +163,21 @@ def assert_is_subview_of_full_file(pynbody_h):
     assert len(pynbody_h.ancestor) == len(db.get_timestep("test_tipsy/tiny.000640").load())
 
 def test_load_region():
+    add_test_simulation_to_db()
     region = db.get_timestep("test_tipsy/tiny.000640").load_region(pynbody.filt.Sphere(2000,[1000,1000,1000]))
     assert (region['iord']==[ 9980437, 10570437, 10630437, 10640437, 10770437, 10890437,
        10900437, 10960437, 11030437, 11090437, 11480437, 11490437,
        11550437, 11740437, 12270437, 12590437, 12600437, 12920437,
        13380437, 13710437]).all()
+
+def test_load_region_uses_cache():
+    add_test_simulation_to_db()
+    filt1 = pynbody.filt.Sphere(2000,[1000,1000,1000])
+    filt2 = pynbody.filt.Sphere(2000,[1001,1000,1000])
+
+    region1a = db.get_timestep("test_tipsy/tiny.000640").load_region(filt1)
+    region2 = db.get_timestep("test_tipsy/tiny.000640").load_region(filt2)
+    region1b = db.get_timestep("test_tipsy/tiny.000640").load_region(filt1)
+
+    assert id(region1a) == id(region1b)
+    assert id(region1a) != id(region2)

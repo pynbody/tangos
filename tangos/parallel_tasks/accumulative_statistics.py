@@ -46,7 +46,12 @@ class CreateNewAccumulatorMessage(BarrierMessageWithResponse):
 
         from . import on_exit_parallelism
 
-        new_accumulator = self.contents()
+        if self.contents[1]:
+            # has kwargs
+            new_accumulator = self.contents[0](**self.contents[1])
+        else:
+            new_accumulator = self.contents[0]()
+
         accumulator_id = len(_existing_accumulators)
         _existing_accumulators.append(new_accumulator)
 
@@ -64,7 +69,7 @@ class AccumulateStatisticsMessage(Message):
 
 class StatisticsAccumulatorBase:
     REPORT_AFTER = PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES
-    def __init__(self, allow_parallel=False):
+    def __init__(self, allow_parallel=False, accumulator_init_kwargs=None):
         """This is a base class for accumulating statistics, possibly in parallel across multiple processes.
 
         Note that if allow_parallel is True, then all processes must create an instance of this class
@@ -76,7 +81,7 @@ class StatisticsAccumulatorBase:
         self._parallel = allow_parallel and parallelism_is_active() and backend.rank() != 0
         if self._parallel:
             logger.debug(f"Registering {self.__class__}")
-            self.id = CreateNewAccumulatorMessage(self.__class__).send_and_get_response(0)
+            self.id = CreateNewAccumulatorMessage((self.__class__, accumulator_init_kwargs)).send_and_get_response(0)
             logger.debug(f"Received accumulator id={ self.id}")
         self._state_at_last_report = copy.deepcopy(self)
 

@@ -1,4 +1,5 @@
 import os
+import socket
 import sys
 
 import tangos.tools
@@ -16,6 +17,15 @@ def add_generic_tool(subparse, class_, command, help):
         parallel_tasks.launch(obj.run_calculation_loop, [])
     this_subparser.set_defaults(func=run)
 
+def find_free_port(start=6543):
+    for port in range(start, 65535):  # 65535 is the maximum port number
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("localhost", port))  # Try to bind to the port
+                return port  # If successful, this is a free port
+            except OSError:
+                pass  # If unsuccessful, the port is in use. Continue to the next port.
+
 def add_serve_tool(subparse):
     def serve(options):
         from pkg_resources import load_entry_point
@@ -24,7 +34,16 @@ def add_serve_tool(subparse):
             ini_path = ini_file
         else:
             ini_path = os.path.join(__path__[0],"web",ini_file)
-        sys.argv = ["",ini_path]
+        port = int(options.port) if options.port != "auto" else None
+        if port is None:
+            port = find_free_port(6543)
+
+        if options.title:
+            import tangos.web.crumbs
+            tangos.web.crumbs.servername = options.title
+
+
+        sys.argv = ["",ini_path,f"port={port}"]
         sys.exit(
             load_entry_point('pyramid','console_scripts','pserve')()
         )
@@ -33,6 +52,12 @@ def add_serve_tool(subparse):
     web_subparser.add_argument('config', action='store', nargs="?",
                                help="The name of the pserve configuration file; either a path or production.ini/development.ini to use tangos' suggested configurations",
                                default="production.ini")
+    web_subparser.add_argument('port', action='store', nargs="?",
+                               help="The port to listen on. If not specified, looks for a free port starting at 6543.",
+                               default="auto")
+    web_subparser.add_argument('--title', '-t', action='store', nargs="?",
+                               help="The mame of the server to display in the web interface. Default is 'tangos on [hostname]'",
+                               default=None)
     web_subparser.set_defaults(func=serve)
 
 def add_commands(subparse):

@@ -46,7 +46,7 @@ class CaterpillarInputHandler(PynbodyInputHandler):
         try:
             import pynbody
             f = pynbody.load(self._pynbody_path_from_snapdir_path(filepath))
-            h = pynbody.halo.RockstarCatalogue(f, pathname=self._rockstar_path_from_snapdir_path(filepath),
+            h = pynbody.halo.rockstar.RockstarCatalogue(f, pathname=self._rockstar_path_from_snapdir_path(filepath),
                                                format_revision='caterpillar')
             return True
         except (OSError, RuntimeError):

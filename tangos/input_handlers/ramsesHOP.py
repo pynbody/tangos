@@ -71,7 +71,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
         return contamination_fraction
 
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
-        h = self._construct_halo_cat(ts_extension, object_typetag)
+        h = self.get_catalogue(ts_extension, object_typetag)
 
         halo_attributes = list(h._halo_attributes)
         if h._read_contamination:
@@ -94,7 +94,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
             return value
 
     def _get_map_child_subhalos(self, ts_extension):
-        h = self._construct_halo_cat(ts_extension, 'halo')
+        h = self.get_catalogue(ts_extension, 'halo')
         halo_children = {}
         for halo_i in range(1, len(h)+1):  # AdaptaHOP catalogues start at 1
             halo_props = h[halo_i].properties
@@ -107,7 +107,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
         return halo_children
 
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
-        h = self._construct_halo_cat(ts_extension, object_typetag)
+        h = self.get_catalogue(ts_extension, object_typetag)
         # For AdaptaHOP handler, we do not need to load the entire snaphshot to enumerate
         # properties in the halo catalogue. If pynbody supports this, ask it to do so.
         h._index_parent = False
@@ -170,7 +170,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
             logger.warning("No %s statistics file found for timestep %r", object_typetag, ts_extension)
 
             try:
-                h = self._construct_halo_cat(ts_extension, object_typetag)
+                h = self.get_catalogue(ts_extension, object_typetag)
                 h._index_parent = False
             except:
                 logger.warning("Unable to read %ss using pynbody; assuming step has none", object_typetag)

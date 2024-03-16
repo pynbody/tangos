@@ -127,11 +127,15 @@ class HandlerBase:
             _loaded_timesteps[ts_hash] = data
             return data
 
-    def load_region(self, ts_extension, region_specification, mode=None):
+    def load_region(self, ts_extension, region_specification, mode=None, expected_number_of_queries=None):
         """Returns an object that connects to the data for a timestep on disk, filtered using the
         specified region specification. Acceptable region specifications are output handler dependent.
 
-        The returned object may be a sub-view of a cached in-memory timestep."""
+        The returned object may be a sub-view of a cached in-memory timestep.
+
+        The expected_number_of_queries parameter can be provided to give optimization hints to the
+        underlying loader class. If so, it should be an integer set to the number of load_region calls
+        expected on the given timestep."""
         raise NotImplementedError
 
     def load_timestep_without_caching(self, ts_extension, mode=None):

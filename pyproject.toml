@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools"]
+
+[tool.pytest.ini_options]
+testpaths = ['tests']
+addopts = "--tb=short"
+
+[tool.isort]
+profile = "black"
+combine_as_imports = true
+known_first_party = [
+  "tangos",
+]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]

@@ -5,8 +5,7 @@ import pytest
 
 import tangos
 import tangos.testing.simulation_generator
-from tangos import parallel_tasks as pt
-from tangos import testing
+from tangos import parallel_tasks as pt, testing
 from tangos.log import logger
 from tangos.parallel_tasks import testing as pt_testing
 
@@ -437,6 +436,10 @@ def test_local_set():
     set = pt.shared_set.SharedSet("test_local_set")
     assert not set.add_if_not_exists("foo")
     assert set.add_if_not_exists("foo")
+
+    set = pt.shared_set.SharedSet("test_local_set")
+    assert set.add_if_not_exists("foo")
+
 
 def test_iteration_state_closes_tasks():
     from tangos.parallel_tasks.jobs import IterationState

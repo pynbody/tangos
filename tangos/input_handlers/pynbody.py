@@ -34,8 +34,10 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __new__(cls, *args, **kwargs):
         import pynbody as pynbody_local
 
-        if pynbody_local.__version__<"1.5.0":
-            raise ImportError("Using tangos with pynbody requires pynbody 1.5.0 or later")
+        min_version = "2.0.0-beta.5"
+
+        if pynbody_local.__version__ < min_version:
+            raise ImportError(f"Using tangos with pynbody requires pynbody {min_version} or later")
 
         global pynbody
         pynbody = pynbody_local
@@ -87,22 +89,38 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
-    def load_region(self, ts_extension, region_specification, mode=None):
+    def _build_kdtree(self, timestep, mode):
+        timestep.build_tree()
+
+    def load_region(self, ts_extension, region_specification, mode=None, expected_number_of_queries=None):
+        timestep = self.load_timestep(ts_extension, mode)
+
+        timestep._tangos_cached_regions = getattr(timestep, '_tangos_cached_regions', {})
+
+        key = (region_specification, mode)
+
+        # we store a cache in the timestep object, so that it is automatically cleared when the timestep is
+        if key in timestep._tangos_cached_regions:
+            return timestep._tangos_cached_regions[key]
+
+        result = self._load_region_uncached(timestep, ts_extension, region_specification, mode, expected_number_of_queries)
+        timestep._tangos_cached_regions[key] = result
+
+        return result
+
+    def _load_region_uncached(self, timestep, ts_extension, region_specification, mode=None, expected_number_of_queries=None):
+        if expected_number_of_queries is not None and expected_number_of_queries>config.pynbody_build_kdtree_threshold_count:
+            self._build_kdtree(timestep, mode)
         if mode is None:
-            timestep = self.load_timestep(ts_extension, mode)
             return timestep[region_specification]
         elif mode=='server':
-            timestep = self.load_timestep(ts_extension, mode)
             return timestep.get_view(region_specification)
         elif mode=='server-shared-mem':
             from ..parallel_tasks import pynbody_server as ps
-            timestep = self.load_timestep(ts_extension, mode)
             simsnap = timestep.shared_mem_view
             return simsnap[region_specification].get_copy_on_access_simsnap()
         elif mode=='server-partial':
-            timestep = self.load_timestep(ts_extension, mode)
-            view = timestep.get_view(region_specification)
-            load_index = view['remote-index-list']
+            load_index = timestep.get_index_list(region_specification)
             logger.info("Partial load %r, taking %d particles",ts_extension,len(load_index))
             f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
             f.physical_units()
@@ -114,8 +132,8 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         if mode=='partial':
-            h = self._construct_halo_cat(ts_extension, object_typetag)
-            h_file = h.load_copy(finder_offset)
+            h = self.get_catalogue(ts_extension, object_typetag)
+            h_file = h.load_copy(finder_id)
             h_file.physical_units()
             return h_file
         elif mode=='server' :
@@ -126,9 +144,10 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         elif mode=='server-partial':
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps
-            view = timestep.get_view(
-                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag))
-            load_index = view['remote-index-list']
+            load_index = timestep.get_index_list(
+                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag)
+            )
+
             logger.info("Partial load %r, taking %d particles", ts_extension, len(load_index))
             f = pynbody.load(self._extension_to_filename(ts_extension), take=load_index)
             f.physical_units()
@@ -136,14 +155,14 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         elif mode=='server-shared-mem':
             timestep = self.load_timestep(ts_extension, mode)
             from ..parallel_tasks import pynbody_server as ps
-            view = timestep.get_view(
-                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag))
-            view_index = view['remote-index-list']
-            return timestep.shared_mem_view[view_index].get_copy_on_access_simsnap()
+            index_list = timestep.get_index_list(
+                ps.snapshot_queue.ObjectSpecification(finder_id, finder_offset, object_typetag)
+            )
+            return timestep.shared_mem_view[index_list].get_copy_on_access_simsnap()
 
         elif mode is None:
-            h = self._construct_halo_cat(ts_extension, object_typetag)
-            return h[finder_offset]
+            h = self.get_catalogue(ts_extension, object_typetag)
+            return h[finder_id]
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
@@ -187,16 +206,19 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
 
 
-    def _construct_halo_cat(self, ts_extension, object_typetag):
+    def get_catalogue(self, ts_extension, object_typetag):
         if object_typetag!= 'halo':
             raise ValueError("Unknown object type %r" % object_typetag)
         f = self.load_timestep(ts_extension)
         h = _loaded_halocats.get(id(f), lambda: None)()
         if h is None:
             h = self._construct_pynbody_halos(f)
-            if isinstance(h, pynbody.halo.SubfindCatalogue) or isinstance(h, pynbody.halo.SubFindHDFHaloCatalogue):
+            if isinstance(h, pynbody.halo.subfind.SubfindCatalogue) or isinstance(h, pynbody.halo.subfindhdf.SubFindHDFHaloCatalogue):
                 # ugly fix - loads groups by default, wanted halos
                 h = self._construct_pynbody_halos(f, subs=True)
+            if hasattr(h, 'precalculate'):
+                # speeds up getting individual halos etc:
+                h.precalculate()
             _loaded_halocats[id(f)] = weakref.ref(h)
             f._db_current_halocat = h # keep alive for lifetime of simulation
         return h  # pynbody.halo.AmigaGrpCatalogue(f)
@@ -212,15 +234,15 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             only_family=None
 
         f1 = self.load_timestep(ts1)
-        h1 = self._construct_halo_cat(ts1, object_typetag)
+        h1 = self.get_catalogue(ts1, object_typetag)
 
         if output_handler_for_ts2:
             assert isinstance(output_handler_for_ts2, PynbodyInputHandler)
             f2 = output_handler_for_ts2.load_timestep(ts2)
-            h2 = output_handler_for_ts2._construct_halo_cat(ts2, object_typetag)
+            h2 = output_handler_for_ts2.get_catalogue(ts2, object_typetag)
         else:
             f2 = self.load_timestep(ts2)
-            h2 = self._construct_halo_cat(ts2, object_typetag)
+            h2 = self.get_catalogue(ts2, object_typetag)
 
         if halo_max is None:
             halo_max = max(len(h2), len(h1))
@@ -247,27 +269,20 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
             snapshot_keep_alive = self.load_timestep(ts_extension)
             try:
-                h = self._construct_halo_cat(ts_extension, object_typetag)
+                h = self.get_catalogue(ts_extension, object_typetag)
             except:
                 logger.warning("Unable to read %ss using pynbody; assuming step has none", object_typetag)
                 return
 
             logger.warning(" => enumerating %ss directly using pynbody", object_typetag)
 
-            istart = 1
 
-            if isinstance(h, pynbody.halo.SubfindCatalogue) \
-                or isinstance(h, pynbody.halo.SubFindHDFHaloCatalogue) \
-                or isinstance(h, pynbody.halo.HOPCatalogue):
-                istart = 0 # indexes from zero
-
-            if hasattr(h, 'precalculate'):
-                h.precalculate()
+            h.load_all()
 
 
-            for i in range(istart, len(h)+istart):
+            for hi in h:
                 try:
-                    hi = h[i]
+                    i = hi.properties['halo_number']
                     if len(hi.dm) + len(hi.star) + len(hi.gas) >= min_halo_particles:
                         yield i, i, len(hi.dm), len(hi.star), len(hi.gas)
                 except (ValueError, KeyError) as e:
@@ -336,13 +351,13 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
     auxiliary_file_patterns =["groups_???"]
 
     snap_class_name = "pynbody.snapshot.gadget.GadgetSnap" # annoyingly, has to be string because pynbody isn't imported at module import time
-    catalogue_class_name = "pynbody.halo.SubfindCatalogue"
+    catalogue_class_name = "pynbody.halo.subfind.SubfindCatalogue"
 
     _property_prefix_for_type = {'halo': 'sub_'}
 
     _sub_parent_names = ['sub_groupNr']
 
-    _hidden_properties = ['children', 'group_len', 'group_off', 'Nsubs', 'groupNr', 'len', 'off']
+    _hidden_properties = ['group_len', 'group_off', 'Nsubs', 'groupNr', 'len', 'off']
 
     def _is_able_to_load(self, filepath):
         try:
@@ -355,8 +370,8 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
 
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         if mode=='subfind-properties':
-            h = self._construct_halo_cat(ts_extension, object_typetag)
-            return h.get_halo_properties(finder_offset,with_unit=False)
+            h = self.get_catalogue(ts_extension, object_typetag)
+            return h.get_properties_one_halo(finder_id)
         else:
             return super().load_object(ts_extension, finder_id, finder_offset, object_typetag, mode)
 
@@ -370,24 +385,17 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
             f._db_current_groupcat = h  # keep alive for lifetime of simulation
         return h
 
-    def _construct_halo_cat(self, ts_extension, object_typetag):
+    def get_catalogue(self, ts_extension, object_typetag):
         if object_typetag== 'halo':
-            return super()._construct_halo_cat(ts_extension, object_typetag)
+            return super().get_catalogue(ts_extension, object_typetag)
         elif object_typetag== 'group':
             return self._construct_group_cat(ts_extension)
         else:
             raise ValueError("Unknown halo type %r" % object_typetag)
 
-    @staticmethod
-    def _resolve_units(value):
-        if (pynbody.units.is_unit(value)):
-            return float(value)
-        else:
-            return value
-
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
-        cat = self._construct_halo_cat(ts_extension, object_typetag)
-        properties = list(cat.get_halo_properties(0, False).keys())
+        cat = self.get_catalogue(ts_extension, object_typetag)
+        properties = list(cat.get_properties_one_halo(0).keys())
         pynbody_prefix = self._property_prefix_for_type.get(object_typetag, '')
         for i,p in enumerate(properties):
             if p.startswith(pynbody_prefix):
@@ -397,7 +405,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
                 properties[i] = new_p
             if p in self._sub_parent_names:
                 properties[i] = 'parent'
-            if p == 'children': # NB 'children' is generated by pynbody for both Subfind and SubfindHDF catalogues
+            if p == 'children':
                 properties[i] = 'child'
 
         properties = [p for p in properties if p not in self._hidden_properties]
@@ -405,35 +413,35 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
 
 
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
-        h = self._construct_halo_cat(ts_extension, object_typetag)
+        h = self.get_catalogue(ts_extension, object_typetag)
 
         pynbody_prefix = self._property_prefix_for_type.get(object_typetag, '')
+
+        all_properties = h.get_properties_all_halos(with_units=False)
 
         for i in range(len(h)):
             all_data = [i, i]
             for k in property_names:
-                pynbody_properties = h.get_halo_properties(i,with_unit=False)
-
                 if k=='parent':
                     for adapted_k in self._sub_parent_names:
-                        if adapted_k in pynbody_properties.keys():
+                        if adapted_k in all_properties.keys():
                             break
                 else:
                     adapted_k = pynbody_prefix + k
-                    if adapted_k not in pynbody_properties:
+                    if adapted_k not in all_properties:
                         adapted_k = pynbody_prefix + "_" + k
 
-                if adapted_k in pynbody_properties:
-                    data = self._resolve_units(pynbody_properties[adapted_k])
+                if adapted_k in all_properties:
+                    data = all_properties[adapted_k][i]
                     if adapted_k in self._sub_parent_names and data is not None:
                         # turn into a link
                         data = proxy_object.IncompleteProxyObjectFromFinderId(data, 'group')
-                elif k=='child' and "children" in pynbody_properties:
+                elif k=='child' and "children" in all_properties:
                     # subfind does not actually store a list of children; but pynbody infers it from
                     # the parent data in the halo catalogue. Note children are always halos, even if
                     # the parent is group.
                     data = [proxy_object.IncompleteProxyObjectFromFinderId(data_i, 'halo')
-                            for data_i in pynbody_properties['children']]
+                            for data_i in all_properties['children'][i]]
                 else:
                     data = None
 
@@ -444,7 +452,7 @@ class Gadget4HDFSubfindInputHandler(GadgetSubfindInputHandler):
     patterns = ["snapshot_???.hdf5", "snapshot_???.0.hdf5", "snap_???.hdf5", "snap_???.0.hdf5"]
     auxiliary_file_patterns =["fof_subhalo_tab_???.hdf5", "fof_subhalo_tab_???.0.hdf5"]
     snap_class_name = "pynbody.snapshot.gadgethdf.GadgetHDFSnap"
-    catalogue_class_name = "pynbody.halo.Gadget4SubfindHDFCatalogue"
+    catalogue_class_name = "pynbody.halo.subfindhdf.Gadget4SubfindHDFCatalogue"
 
     _property_prefix_for_type = {'halo': 'Subhalo', 'group': 'Group'}
 
@@ -468,7 +476,7 @@ class GadgetRockstarInputHandler(PynbodyInputHandler):
     def _is_able_to_load(self, filepath):
         try:
             f = pynbody.load(filepath)
-            h = pynbody.halo.RockstarCatalogue(f)
+            h = pynbody.halo.rockstar.RockstarCatalogue(f)
             return True
         except (OSError, RuntimeError):
             return False
@@ -519,18 +527,18 @@ class AHFInputHandler(PynbodyInputHandler):
     )
 
     def available_object_property_names_for_timestep(self, ts_extension, object_typetag):
-        h = self._construct_halo_cat(ts_extension, object_typetag)
+        h = self.get_catalogue(ts_extension, object_typetag)
 
         return (
             [
-                key for key in h[1].properties.keys()
+                key for key in h[0].properties.keys()
                 if key not in self._excluded_precalculated_properties
             ] + list(self._included_additional_properties)
         )
 
 
     def _get_map_child_subhalos(self, ts_extension):
-        h = self._construct_halo_cat(ts_extension, 'halo')
+        h = self.get_catalogue(ts_extension, 'halo')
         halo_children = defaultdict(list)
         for halo in h:
             iparent = halo.properties["hostHalo"] # Returns the unique ID (NOT the halo_id index) of the host
@@ -545,13 +553,13 @@ class AHFInputHandler(PynbodyInputHandler):
         # IDs and halo_ids are usually related by ID = halo_id - 1,
         # but they can be entirely independent when using specific AHF options or running with MPI
         # This allows to map between one and the other
-        h = self._construct_halo_cat(ts_extension, 'halo')
+        h = self.get_catalogue(ts_extension, 'halo')
         return {
             halo.properties["ID"]: halo.properties["halo_id"] for halo in h
         }
 
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
-        h = self._construct_halo_cat(ts_extension, object_typetag)
+        h = self.get_catalogue(ts_extension, object_typetag)
 
         h.physical_units()
 

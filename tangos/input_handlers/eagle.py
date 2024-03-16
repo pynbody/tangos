@@ -67,7 +67,7 @@ class EagleLikeInputHandler(PynbodyInputHandler):
 
         return True
 
-    def _construct_halo_cat(self, ts_extension, object_typetag):
+    def get_catalogue(self, ts_extension, object_typetag):
         from .pynbody import pynbody
         if object_typetag!= 'halo' and object_typetag!='group':
             raise ValueError("Unknown object type %r" % object_typetag)
@@ -89,8 +89,8 @@ class EagleLikeInputHandler(PynbodyInputHandler):
             # each object, so we need to map these pairs to a sensible unique subgroup
             self._create_unique_subgroup_ids(f_subfind)
 
-            h_halo = pynbody.halo.GrpCatalogue(f_subfind, 'TangosSubGroupNumber',
-                                          ignore=f_subfind['TangosSubGroupNumber'].max())
+            h_halo = pynbody.halo.number_array.HaloNumberArray(f_subfind, 'TangosSubGroupNumber',
+                                                               ignore=f_subfind['TangosSubGroupNumber'].max())
             logger.debug("Eagle input handler found on-disk total of %d groups and %d subgroups" % (len(h_group), len(h_halo)))
             h_halo.precalculate()
             h_group.precalculate()

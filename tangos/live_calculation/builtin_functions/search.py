@@ -1,9 +1,14 @@
 import numpy as np
 
-from ... import core, relation_finding
-from ... import temporary_halolist as thl
-from .. import (BuiltinFunction, FixedInput, FixedNumericInput,
-                MultiCalculation, ReturnInputHalos, StoredProperty)
+from ... import core, relation_finding, temporary_halolist as thl
+from .. import (
+    BuiltinFunction,
+    FixedInput,
+    FixedNumericInput,
+    MultiCalculation,
+    ReturnInputHalos,
+    StoredProperty,
+)
 
 
 def _find_progenitor_or_descendant(source_halos, property_proxy, property_criterion, strategy):

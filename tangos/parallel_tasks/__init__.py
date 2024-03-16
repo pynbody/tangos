@@ -122,6 +122,9 @@ def _exec_function_or_server(function, connection_info, args):
         log.logger.debug("Reinitialising database, args "+str(connection_info))
         core.init_db(*connection_info)
 
+    from .message import _setup_message_reception_timing_monitor
+    _setup_message_reception_timing_monitor()
+
     if backend.rank()==0:
         _server_thread()
     else:
@@ -136,9 +139,9 @@ class MessageExit(message.Message):
 
 
 def _server_thread():
-    # Sit idle until request for a job comes in, then assign first
-    # available job and move on. Jobs are labelled through the
-    # provided iterator
+
+    from .async_message import init_async_processing_thread
+    init_async_processing_thread() # uses on_exit_parallelism to ensure thread is cleared up
 
     alive = [True for i in range(backend.size())]
 
@@ -169,6 +172,6 @@ def _shutdown_parallelism():
 
 
 
-from . import remote_import, shared_set
+from . import async_message, remote_import, shared_set
 from .barrier import barrier
 from .lock import ExclusiveLock

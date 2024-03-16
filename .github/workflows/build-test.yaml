@@ -18,12 +18,10 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.9, "3.10", "3.11", "3.12"]
-        sqlalchemy-version: ["1.4", "2.0"]
+        sqlalchemy-version: ["2.0"]
         numpy-version: ["1.22", "1.26"]
         TANGOS_TESTING_DB_BACKEND: [sqlite, mysql+pymysql, postgresql+psycopg2]
         exclude:
-          - python-version: "3.12"
-            sqlalchemy-version: "1.4"
           - python-version: "3.12"
             numpy-version: "1.22"
 
@@ -69,6 +67,7 @@ jobs:
     - name: Build and install tangos
       run: |
         pip install -e .[test,rmdbs]
+        pip install pytest-random-order
     - name: Check that tangos can import without pynbody
       run: |
          python -c "import tangos"
@@ -80,4 +79,4 @@ jobs:
         sudo /etc/init.d/mysql start
     - name: Run all tests
       working-directory: tests
-      run: python -m pytest
+      run: python -m pytest -v --random-order-seed=11

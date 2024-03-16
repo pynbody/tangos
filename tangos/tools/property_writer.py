@@ -110,7 +110,12 @@ class PropertyWriter(GenericTangosTool):
                 timestep_filter &= subfilter
 
             files = core.get_default_session().query(core.timestep.TimeStep).filter(timestep_filter). \
-                order_by(core.timestep.TimeStep.time_gyr).all()
+                order_by(core.timestep.TimeStep.time_gyr).options(
+                  sqlalchemy.orm.joinedload(core.timestep.TimeStep.simulation)
+                  # this joined load might seem like overkill but without it
+                  # test_db_writer.py:test_writer_with_property_accessing_timestep will fail because the
+                  # timestep gets updated by a later query to have raiseload("*")
+               ).all()
 
 
 
@@ -205,7 +210,12 @@ class PropertyWriter(GenericTangosTool):
 
         needed_properties = self._required_and_calculated_property_names()
 
-        halo_query = core.get_default_session().query(core.halo.SimulationObjectBase).order_by(core.halo.SimulationObjectBase.halo_number).filter(query)
+        # it's important that anything we need from the database is loaded now, as if it's
+        # lazy-loaded later when we have relinquished the lock, SQLite may get upset
+        halo_query = (core.get_default_session().query(core.halo.SimulationObjectBase).
+                      options(sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.timestep),
+                              sqlalchemy.orm.raiseload("*")).
+                      order_by(core.halo.SimulationObjectBase.halo_number).filter(query))
         if self._include:
             needed_properties.append(self._include)
 
@@ -279,6 +289,9 @@ class PropertyWriter(GenericTangosTool):
             self.tracker.report_to_log_or_server(logger)
             self.timing_monitor.report_to_log_or_server(logger)
 
+            from ..parallel_tasks import message
+            message.update_performance_stats()
+
     def _commit_results(self):
         insert_list(self._pending_properties)
         self._pending_properties = []
@@ -324,34 +337,34 @@ class PropertyWriter(GenericTangosTool):
         if self._current_timestep_id == db_timestep.id:
             return
 
-        self._unload_timestep()
-
-        if self._must_load_timestep_particles():
-            self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
-
-        elif self._should_load_halo_particles():
-            # Keep a snapshot alive for this timestep, even if should_load_timestep_particles is False,
-            # because it might be needed for the iord's if we are in partial-load mode.
-            try:
-                self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
-            except OSError:
-                pass
-
-        if self.options.load_mode is None:
-            self._run_preloop(self._loaded_timestep, db_timestep,
-                              self._property_calculator_instances, self._existing_properties_all_halos)
-        else:
-            self._run_preloop(None, db_timestep,
-                              self._property_calculator_instances, self._existing_properties_all_halos)
-
-        self._current_timestep_id = db_timestep.id
-
-
-    def _set_current_halo(self, db_halo):
         with parallel_tasks.lock.SharedLock("insert_list"):
             # don't want this to happen in parallel with a database write -- seems to lazily fetch
             # rows in the background
-            self._set_current_timestep(db_halo.timestep)
+            self._unload_timestep()
+
+            if self._must_load_timestep_particles():
+                self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
+
+            elif self._should_load_halo_particles():
+                # Keep a snapshot alive for this timestep, even if should_load_timestep_particles is False,
+                # because it might be needed for the iord's if we are in partial-load mode.
+                try:
+                    self._loaded_timestep = db_timestep.load(mode=self.options.load_mode)
+                except OSError:
+                    pass
+
+            if self.options.load_mode is None:
+                self._run_preloop(self._loaded_timestep, db_timestep,
+                                  self._property_calculator_instances, self._existing_properties_all_halos)
+            else:
+                self._run_preloop(None, db_timestep,
+                                  self._property_calculator_instances, self._existing_properties_all_halos)
+
+            self._current_timestep_id = db_timestep.id
+
+
+    def _set_current_halo(self, db_halo):
+        self._set_current_timestep(db_halo.timestep)
 
         if self._loaded_halo_id==db_halo.id:
             return
@@ -368,7 +381,8 @@ class PropertyWriter(GenericTangosTool):
 
 
     def _get_current_halo_specified_region_particles(self, db_halo, region_spec):
-        return db_halo.timestep.load_region(region_spec,self.options.load_mode)
+        return db_halo.timestep.load_region(region_spec, self.options.load_mode,
+                                            self._estimate_num_region_calculations_this_timestep())
 
     def _get_halo_snapshot_data_if_appropriate(self, db_halo, db_data, property_calculator):
 
@@ -478,6 +492,15 @@ class PropertyWriter(GenericTangosTool):
 
         self._commit_results_if_needed()
 
+    def _estimate_num_region_calculations_this_timestep(self):
+        num_region_props = 0
+        for prop in self._property_calculator_instances:
+            if prop.region_specification is not properties.PropertyCalculation.region_specification:
+                # assume overriding means the class isn't just going to be returning None!
+                num_region_props += 1
+        num_objs = len(self._existing_properties_all_halos)
+        return num_region_props * num_objs
+
 
     def run_timestep_calculation(self, db_timestep):
         self._log_once_per_timestep("Processing %r", db_timestep)
@@ -559,6 +582,14 @@ class CalculationSuccessTracker(accumulative_statistics.StatisticsAccumulatorBas
         super().__init__(allow_parallel=allow_parallel)
 
         self._posted_errors = parallel_tasks.shared_set.SharedSet('posted_errors',allow_parallel)
+
+        if parallel_tasks.backend and parallel_tasks.backend.rank()>0:
+            # because shared sets are named objects, if it was created before it might still be populated
+            # this is most relevant in a testing setting (in realistic property_writer runs it won't have
+            # been created before) but has caused problems before so we clear it and wait for all processes
+            self._posted_errors.clear()
+            parallel_tasks.barrier()
+
 
     def should_log_error(self, exception):
         tb = "\n".join(traceback.format_exception(type(exception), exception, exception.__traceback__))

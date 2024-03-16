@@ -12,8 +12,11 @@ from pyramid.response import Response
 from pyramid.view import view_config
 
 from ... import core
-from ...config import (webview_cache_time, webview_default_image_format,
-                       webview_plots_dpi)
+from ...config import (
+    webview_cache_time,
+    webview_default_image_format,
+    webview_plots_dpi,
+)
 from ...log import logger
 from ...util.cache_dict import CacheDict
 from . import halo_from_request, simulation_from_request, timestep_from_request

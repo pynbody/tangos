@@ -45,9 +45,9 @@ class TimeStep(Base):
         handler = self.simulation.get_output_handler()
         return handler.load_timestep(self.extension, mode=mode)
 
-    def load_region(self, region_specification, mode=None):
+    def load_region(self, region_specification, *args, **kwargs):
         handler = self.simulation.get_output_handler()
-        return handler.load_region(self.extension, region_specification, mode=mode)
+        return handler.load_region(self.extension, region_specification, *args, **kwargs)
 
     def __init__(self, simulation, extension):
         from . import creator
@@ -59,7 +59,10 @@ class TimeStep(Base):
         extra = ""
         if not self.available:
             extra += " unavailable"
-        path = self.path
+        try:
+            path = self.path
+        except Exception:
+            path = "[error retrieving path]"
         if self.redshift is None:
             return "<TimeStep %r%s>"%(path,extra)
         else:

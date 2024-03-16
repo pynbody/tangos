@@ -5,8 +5,15 @@ import pyparsing as pp
 
 _parsing_lock = threading.Lock() # pyparsing is NOT thread safe
 
-from . import (Calculation, FixedInput, FixedNumericInput, Link, LiveProperty,
-               MultiCalculation, StoredProperty)
+from . import (
+    Calculation,
+    FixedInput,
+    FixedNumericInput,
+    Link,
+    LiveProperty,
+    MultiCalculation,
+    StoredProperty,
+)
 
 
 def pack_args(for_function):

@@ -5,9 +5,13 @@ import numpy as np
 from sqlalchemy.orm import object_session
 
 from .. import core, live_calculation, temporary_halolist
-from ..config import (mergertree_max_hops, mergertree_max_nhalos,
-                      mergertree_min_fractional_NDM,
-                      mergertree_min_fractional_weight, mergertree_timeout)
+from ..config import (
+    mergertree_max_hops,
+    mergertree_max_nhalos,
+    mergertree_min_fractional_NDM,
+    mergertree_min_fractional_weight,
+    mergertree_timeout,
+)
 from ..log import logger
 from . import MultiHopAllProgenitorsStrategy
 

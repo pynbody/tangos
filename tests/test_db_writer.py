@@ -100,6 +100,25 @@ class DummyPropertyAccessingSimulationProperty(properties.PropertyCalculation):
         # caught by the db_writer so wouldn't directly result in a failure)
         return 1,
 
+class DummyPropertyAccessingTimestep(properties.PropertyCalculation):
+    names = "dummy_property_accessing_timestep",
+
+    def calculate(self, data, entry):
+        # we are going to access the timestep of the current halo and also a linked halo
+        # this used to trigger a lazy database query, but now we try to bullet-proof things
+        # with raiseload("*") when building properties, so it will just cause an exception
+        # unless the timesteps are already loaded
+        dl = entry['dummy_link']
+        entry_timestep = entry.timestep.time_gyr
+        linked_timestep = dl.timestep.time_gyr
+        return entry_timestep - linked_timestep,
+
+    def requires_property(self):
+        return ["dummy_link"]
+
+    @classmethod
+    def no_proxies(self):
+        return True
 
 def run_writer_with_args(*args, parallel=False, allow_resume=False):
     writer = property_writer.PropertyWriter()
@@ -343,6 +362,9 @@ def test_writer_reports_aggregates(fresh_database):
     assert "Succeeded: 15 property calculations" in res
     assert "myPropertyTakingTime         1.5s" in res
 
+    assert "CUMULATIVE RESPONSE WAIT" in res
+    assert "MessageRequestJobResponse" in res # checking the server response time stats are being printed
+
 
 class MoreThanOneDummyProperty(properties.PropertyCalculation):
     names = "dummy_property_t1", "dummy_property_t2"
@@ -360,3 +382,31 @@ def test_writer_doesnt_duplicate_property_classes(fresh_database):
     assert "Already exists: 0" in res
     assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property_t1'] == 1.0
     assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property_t2'] == 2.0
+
+def test_write_include_only(fresh_database):
+    run_writer_with_args("dummy_property")
+    run_writer_with_args("another_dummy_property","--include","dummy_property<5")
+
+    dp, _ = db.get_timestep("%/step.1").calculate_all("dummy_property","another_dummy_property")
+    # the above only returns halos where another_dummy_property has been written, which should
+    # correspond to just those with dummy_property<5
+    assert((dp<5).all())
+    assert len(dp)==4
+
+    dp, _ = db.get_timestep("%/step.2").calculate_all("dummy_property", "another_dummy_property")
+    assert ((dp < 5).all())
+    assert len(dp)==2
+
+def test_writer_num_regions_optimization(fresh_database):
+    log = run_writer_with_args("dummy_property", "dummy_region_property")
+
+    # there are 10 halos, and dummy_region_property requests a region. dummy_property
+    # does not request a region. So the expected number of region queries is 10.
+    assert "load_region expected_number_of_queries=10" in log
+
+def test_writer_with_property_accessing_timestep(fresh_database):
+    db.get_halo("%/step.1/halo_1")['dummy_link'] = db.get_halo("%/step.2/halo_1")
+
+    run_writer_with_args("dummy_property_accessing_timestep")
+
+    assert db.get_halo("%/step.1/halo_1")['dummy_property_accessing_timestep'] == -1.0

@@ -173,23 +173,44 @@ class ChangaBHImporter(GenericTangosTool):
 
     def _get_bh_halo_assignments(self, pynbody_snapshot):
         pynbody_halos = pynbody_snapshot.halos()
-        bh_cen_halos = None
-        bh_halos = None
-        import pynbody
+        pynbody_halos.load_all()
 
-        if isinstance(pynbody_halos, pynbody.halo.RockstarIntermediateCatalogue):
-            bh_cen_halos = pynbody_halos.get_group_array(family='BH')
-        elif isinstance(pynbody_halos, pynbody.halo.AHFCatalogue):
-            bh_cen_halos = pynbody_halos.get_group_array(top_level=False, family='bh')
-            bh_halos = pynbody_halos.get_group_array(top_level=True, family='bh')
+        if 'bh' in pynbody_snapshot.families():
+            bh_cen_halos = pynbody_halos.get_group_array(family='bh')
         else:
-            pynbody_snapshot['gp'] = pynbody_halos.get_group_array()
-            bh_cen_halos = pynbody_snapshot.star['gp'][np.where(pynbody_snapshot.star['tform'] < 0)[0]]
+            bh_cen_halos = pynbody_halos.get_group_array(family='star')
+            bh_cen_halos = bh_cen_halos[pynbody_snapshot.st['tform']<0]
+
+        if 'hostHalo' in pynbody_halos.get_dummy_halo(0).properties:
+            bh_halos = bh_cen_halos
+            continue_searching = True
+            iteration_count = 0
+
+            # recursively substitute the halos with their parents
+            while continue_searching:
+                if iteration_count > 10:
+                    logger.warn("BH halo assignment did not converge after 10 iterations, suggesting a problem with the parent/child relationships")
+                    logger.warn("Check the BH assignment to halos carefully")
+                    break
+
+                iteration_count += 1
+
+                # find the parent halos of the bh_cen_halos
+                bh_halos_new = [pynbody_halos.get_dummy_halo(i).properties['hostHalo'] for i in bh_halos]
+
+                # if the parent is -1, we have definitely found the top level halos
+                continue_searching = not all([bhi==-1 for bhi in bh_halos_new])
+
+                # but if the parent is -1, record  the original halo number
+                bh_halos = [bh_halos_new[i] if bh_halos_new[i] != -1 else bh_halos[i] for i in range(len(bh_halos))]
+
+        else:
+            bh_halos = None
 
         with check_deleted(pynbody_halos):
             del pynbody_halos
 
-        return bh_cen_halos, bh_halos
+        return bh_cen_halos, np.asarray(bh_halos)
 
     def _import_black_holes(self):
         for timestep in parallel_tasks.distributed(self._get_timesteps()):
@@ -260,7 +281,7 @@ class ChangaBHImporter(GenericTangosTool):
         halos = timestep.halos.filter_by(object_typecode=0).all()
 
         halo_nums = [h.halo_number for h in halos]
-        halo_catind = [h.finder_offset for h in halos]
+        halo_catind = [h.finder_id for h in halos]
         halo_ids = np.array([h.id for h in halos])
 
         logger.info("Gathering bh halo information for %r", timestep)

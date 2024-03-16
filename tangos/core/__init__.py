@@ -187,8 +187,11 @@ def close_session():
     if Session is not None:
         Session = None
 
-from .dictionary import (_get_dict_cache_for_session, get_dict_id,
-                         get_or_create_dictionary_item)
+from .dictionary import (
+    _get_dict_cache_for_session,
+    get_dict_id,
+    get_or_create_dictionary_item,
+)
 
 __all__ = ['DictionaryItem',
            'sim_query_from_name_list', 'sim_query_from_args',

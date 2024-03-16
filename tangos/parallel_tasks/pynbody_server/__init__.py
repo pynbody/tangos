@@ -9,11 +9,15 @@ import pynbody.snapshot.copy_on_access
 import tangos.parallel_tasks.pynbody_server.snapshot_queue
 
 from .. import log, remote_import
+from ..async_message import AsyncProcessedMessage
 from ..message import ExceptionMessage, Message
-from . import snapshot_queue, transfer_array
-from .snapshot_queue import (ConfirmLoadPynbodySnapshot,
-                             ReleasePynbodySnapshot,
-                             RequestLoadPynbodySnapshot, _server_queue)
+from . import shared_object_catalogue, snapshot_queue, transfer_array
+from .snapshot_queue import (
+    ConfirmLoadPynbodySnapshot,
+    ReleasePynbodySnapshot,
+    RequestLoadPynbodySnapshot,
+    _server_queue,
+)
 
 
 class ReturnPynbodyArray(Message):
@@ -33,7 +37,7 @@ class ReturnPynbodyArray(Message):
                 contents = contents.view(pynbody.array.SimArray)
             contents.units = units
 
-        obj = ReturnPynbodyArray(contents, shared_mem=shared_mem)
+        obj = cls(contents, shared_mem=shared_mem)
         obj.source = source
 
         return obj
@@ -55,7 +59,50 @@ class ReturnPynbodyArray(Message):
         # send contents
         transfer_array.send_array(self.contents, destination, use_shared_memory=self.shared_mem)
 
-class RequestPynbodyArray(Message):
+class BuildRemoteTree(AsyncProcessedMessage):
+    def process_async(self):
+        log.logger.debug("Processing tree build request from %d", self.source)
+        start = time.time()
+        _server_queue.build_tree()
+        log.logger.debug("Tree built after %.2fs", time.time()-start)
+
+class ReturnSharedTree(Message):
+    def __init__(self, leafsize, boxsize, kdnodes, offsets):
+        super().__init__()
+        self.leafsize = leafsize
+        self.boxsize = boxsize
+        self.kdnodes = kdnodes
+        self.offsets = offsets
+
+    def serialize(self):
+        return self.leafsize, self.boxsize
+
+    @classmethod
+    def deserialize(cls, source, message):
+        leafsize, boxsize = message
+        kdnodes = transfer_array.receive_array(source, use_shared_memory=True)
+        offsets = transfer_array.receive_array(source, use_shared_memory=True)
+        obj = cls(leafsize, boxsize, kdnodes, offsets)
+        obj.source = source
+        return obj
+
+    def send(self, destination):
+        super().send(destination)
+        transfer_array.send_array(self.kdnodes, destination, use_shared_memory=True)
+        transfer_array.send_array(self.offsets, destination, use_shared_memory=True)
+
+    def import_tree_into_local_view(self, sim):
+        sim.import_tree((self.leafsize, self.boxsize, self.kdnodes, self.offsets))
+
+
+class GetSharedTree(AsyncProcessedMessage):
+    def process_async(self):
+        assert _server_queue.current_shared_mem_flag
+        assert hasattr(_server_queue.current_snapshot, "kdtree")
+        serialized_tree = _server_queue.current_snapshot.kdtree.serialize()
+        ReturnSharedTree(*serialized_tree).send(self.source)
+
+class RequestPynbodyArray(AsyncProcessedMessage):
     _time_to_start_processing = []
 
     def __init__(self, filter_or_object_spec, array, fam=None, request_sent_time=None):
@@ -66,7 +113,7 @@ class RequestPynbodyArray(Message):
 
     @classmethod
     def deserialize(cls, source, message):
-        obj = RequestPynbodyArray(*message)
+        obj = cls(*message)
         obj.source = source
         return obj
 
@@ -102,7 +149,7 @@ class RequestPynbodyArray(Message):
     def reset_performance_stats(cls):
         cls._time_to_start_processing = []
 
-    def process(self):
+    def process_async(self):
         start_time = time.time()
         self._time_to_start_processing.append(start_time - self.request_sent_time)
 
@@ -114,13 +161,8 @@ class RequestPynbodyArray(Message):
             with subsnap.immediate_mode, subsnap.lazy_derive_off:
                 if subsnap._array_name_implies_ND_slice(self.array):
                     raise KeyError("Not transferring a single slice %r of a ND array"%self.array)
-                if self.array=='remote-index-list':
-                    subarray = subsnap.get_index_list(subsnap.ancestor).view(pynbody.array.SimArray)
-                    # this won't be actually in shared memory – it's a regular numpy array
-                    transfer_via_shared_mem = False
-                else:
-                    subarray = subsnap[self.array]
-                    assert isinstance(subarray, pynbody.array.SimArray)
+                subarray = subsnap[self.array]
+                assert isinstance(subarray, pynbody.array.SimArray)
                 array_result = ReturnPynbodyArray(subarray, transfer_via_shared_mem)
 
         except Exception as e:
@@ -131,6 +173,32 @@ class RequestPynbodyArray(Message):
         gc.collect()
         log.logger.debug("Array sent after %.2fs"%(time.time()-start_time))
 
+class RequestIndexList(RequestPynbodyArray):
+    def __init__(self, filter_or_object_spec, request_sent_time=None):
+        super().__init__(filter_or_object_spec, 'remote-index-list', None, request_sent_time)
+
+    def serialize(self):
+        return self.filter_or_object_spec, time.time()
+
+    def process_async(self):
+        start_time = time.time()
+        self._time_to_start_processing.append(start_time - self.request_sent_time)
+
+        try:
+            log.logger.debug("Receive request for array %r from %d",self.array,self.source)
+            subsnap = _server_queue.get_subsnap(self.filter_or_object_spec, self.fam)
+
+            subarray = subsnap.get_index_list(subsnap.ancestor).view(pynbody.array.SimArray)
+
+            array_result = ReturnPynbodyArray(subarray)
+
+        except Exception as e:
+            array_result = ExceptionMessage(e)
+
+        array_result.send(self.source)
+        del array_result
+        gc.collect()
+        log.logger.debug("Array sent after %.2fs"%(time.time()-start_time))
 
 
 class ReturnPynbodySubsnapInfo(Message):
@@ -153,7 +221,7 @@ class ReturnPynbodySubsnapInfo(Message):
 
 
 
-class RequestPynbodySubsnapInfo(Message):
+class RequestPynbodySubsnapInfo(AsyncProcessedMessage):
     def __init__(self, filename, filter_):
         super().__init__()
         self.filename = filename
@@ -168,7 +236,7 @@ class RequestPynbodySubsnapInfo(Message):
     def serialize(self):
         return (self.filename, self.filter_or_object_spec)
 
-    def process(self):
+    def process_async(self):
         start_time = time.time()
         assert(_server_queue.current_timestep == self.filename)
         if self.filter_or_object_spec is not None:
@@ -182,6 +250,9 @@ class RequestPynbodySubsnapInfo(Message):
         lkeys = obj.loadable_keys()
         ReturnPynbodySubsnapInfo(families, fam_lengths, obj.properties, lkeys, fam_lkeys).send(self.source)
         log.logger.debug("Info sent after %.2f",(time.time()-start_time))
+
+
+
 
 
 class RemoteSnap(pynbody.snapshot.copy_on_access.UnderlyingClassMixin, pynbody.snapshot.SimSnap):
@@ -212,10 +283,15 @@ class RemoteSnap(pynbody.snapshot.copy_on_access.UnderlyingClassMixin, pynbody.s
         self._fam_loadable_keys = {fam: lk for fam, lk in zip(info.families, info.fam_loadable_keys)}
         self._filter_or_object_spec = filter_or_object_spec
 
+        self._unavailable_arrays = []
+
 
 
 
     def _load_array(self, array_name, fam=None):
+        if (array_name, fam) in self._unavailable_arrays:
+            raise OSError("No such array %r available from the remote"%array_name)
+
         RequestPynbodyArray(self._filter_or_object_spec, array_name, fam).send(self._server_id)
         try:
             start_time=time.time()
@@ -223,6 +299,7 @@ class RemoteSnap(pynbody.snapshot.copy_on_access.UnderlyingClassMixin, pynbody.s
             data = ReturnPynbodyArray.receive(self._server_id).contents
             log.logger.debug("Array received; waited %.2fs",time.time()-start_time)
         except KeyError:
+            self._unavailable_arrays.append((array_name, fam))
             raise OSError("No such array %r available from the remote"%array_name)
         with self.auto_propagate_off:
             if len(data.shape)==1:
@@ -273,10 +350,13 @@ class RemoteSnapshotConnection:
 
         self._server_id = server_id
         self._input_handler = input_handler
+        self._has_tree = False
         self.filename = ts_extension
         self.identity = "%d: %s"%(self._server_id, ts_extension)
         self.connected = False
         self.shared_mem = shared_mem
+
+        self.shared_mem_catalogues = {}
 
         # ensure server knows what our messages are about
         remote_import.ImportRequestMessage(__name__).send(self._server_id)
@@ -301,6 +381,31 @@ class RemoteSnapshotConnection:
         (typetag, number), which are respectively the object type tag and object number to be loaded
         """
         return RemoteSnap(self, filter_or_object_spec)
+
+    def build_tree(self):
+        if self._has_tree:
+            return
+        BuildRemoteTree().send(self._server_id)
+        if self.shared_mem:
+            GetSharedTree().send(self._server_id)
+            shared_tree = ReturnSharedTree.receive(self._server_id)
+            shared_tree.import_tree_into_local_view(self.shared_mem_view)
+        self._has_tree = True
+
+    def get_index_list(self, filter_or_object_spec: snapshot_queue.ObjectSpecification):
+        typetag = filter_or_object_spec.object_typetag
+        if self.shared_mem:
+            if typetag not in self.shared_mem_catalogues:
+                from . import shared_object_catalogue
+                self.shared_mem_catalogues[typetag] = (shared_object_catalogue.
+                        get_shared_object_catalogue_from_server(self.shared_mem_view, typetag, self._server_id))
+            shared_cat = self.shared_mem_catalogues[typetag]
+            if shared_cat is not None:
+                return shared_cat.get_index_list(filter_or_object_spec.object_number)
+
+        # was not able to do anything smart with shared memory, so get the server to figure out the index list
+        RequestIndexList(filter_or_object_spec).send(self._server_id)
+        return ReturnPynbodyArray.receive(self._server_id).contents
 
     def disconnect(self):
 

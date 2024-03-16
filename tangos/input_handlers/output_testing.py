@@ -2,6 +2,8 @@ import glob
 import os
 import os.path
 
+from tangos.log import logger
+
 from .. import config
 from . import HandlerBase
 
@@ -67,9 +69,10 @@ class TestInputHandler(HandlerBase):
                                  float(self._get_ts_property(ts_extension, 'time')),
                                  int(self._get_ts_property(ts_extension, 'halos')))
 
-    def load_region(self, ts_extension, region_specification, mode=None):
+    def load_region(self, ts_extension, region_specification, mode=None, expected_number_of_queries=None):
         data = self.load_timestep(ts_extension)
         data.message = data.message[region_specification]
+        logger.info(f"load_region expected_number_of_queries={expected_number_of_queries}")
         return data
 
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):

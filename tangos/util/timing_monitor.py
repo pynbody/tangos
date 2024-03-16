@@ -11,9 +11,14 @@ class TimingMonitor(accumulative_statistics.StatisticsAccumulatorBase):
     """This class keeps track of how long a Property is taking to evaluate, and (if the Property is implemented
     to take advantage of this), the time spent on sub-tasks. It provides formatting to place this information
     into the log."""
-    def __init__(self, allow_parallel=False):
+    def __init__(self, allow_parallel=False, label="running times", num_chars=20, show_percentages=True):
+        self._label = label
+        self._num_chars = num_chars
+        self._show_percentages = show_percentages
         self.reset()
-        super().__init__(allow_parallel=allow_parallel)
+        super().__init__(allow_parallel=allow_parallel,
+                         accumulator_init_kwargs={'label': label, 'num_chars': num_chars,
+                                                  'show_percentages': show_percentages})
         self._monitoring = None
 
     @contextlib.contextmanager
@@ -54,7 +59,10 @@ class TimingMonitor(accumulative_statistics.StatisticsAccumulatorBase):
 
     def _end(self):
         """End a timer for the specified object."""
-        cl = type(self._monitoring)
+        if isinstance(self._monitoring, type):
+            cl = self._monitoring
+        else:
+            cl = type(self._monitoring)
         self._unset_as_monitor_for(self._monitoring)
         self._time_marks_info.append("end")
         self._time_marks.append(time.time())
@@ -100,7 +108,7 @@ class TimingMonitor(accumulative_statistics.StatisticsAccumulatorBase):
         if len(self.timings_by_class) == 0:
             return
         logger.info("")
-        logger.info("CUMULATIVE RUNNING TIMES, summed over all processes, if applicable")
+        logger.info(f"CUMULATIVE {self._label.upper()}, summed over all processes, if applicable")
         v_tot = 1e-10
         for k, v in self.timings_by_class.items():
             v_tot += sum(v)
@@ -108,8 +116,11 @@ class TimingMonitor(accumulative_statistics.StatisticsAccumulatorBase):
         for k, v in self.timings_by_class.items():
             name = str(k)[:-2]
             name = name.split(".")[-1]
-            name = "%20s " % (name[-20:])
-            logger.info(" " + name + f"{self.format_time(sum(v)):>12} | {100 * sum(v) / v_tot:4.1f}%")
+            name = ("%"+str(self._num_chars)+"s ") % (name[-self._num_chars:])
+            if self._show_percentages:
+                logger.info(" " + name + f"{self.format_time(sum(v)):>12} | {100 * sum(v) / v_tot:4.1f}%")
+            else:
+                logger.info(" " + name + f"{self.format_time(sum(v)):>12}")
             if len(v)>1:
                 marks_info = self.labels_by_class[k]
                 logger.info("  ------------ INTERNAL BREAKDOWN ------------" )
