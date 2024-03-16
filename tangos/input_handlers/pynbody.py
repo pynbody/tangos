@@ -403,6 +403,8 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
                 properties[i] = new_p
             if p in self._sub_parent_names:
                 properties[i] = 'parent'
+            if p == 'children':
+                properties[i] = 'child'
 
         properties = [p for p in properties if p not in self._hidden_properties]
         return properties
