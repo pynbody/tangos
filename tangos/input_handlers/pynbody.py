@@ -34,8 +34,10 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def __new__(cls, *args, **kwargs):
         import pynbody as pynbody_local
 
-        if pynbody_local.__version__<"2.0.0-beta":
-            raise ImportError("Using tangos with pynbody requires pynbody 2.0.0 or later")
+        min_version = "2.0.0-beta.5"
+
+        if pynbody_local.__version__ < min_version:
+            raise ImportError(f"Using tangos with pynbody requires pynbody {min_version} or later")
 
         global pynbody
         pynbody = pynbody_local
