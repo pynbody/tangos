@@ -29,10 +29,10 @@ class UnsignedInteger(types.TypeDecorator):
 class SimulationObjectBase(Base):
     __tablename__= "halos"
 
-    id = Column(Integer, primary_key=True) #the unique ID value of the database object created for this halo
-    halo_number = Column(BigInteger) #by default this will be the halo's rank in terms of particle count
-    finder_id = Column(BigInteger) #raw halo ID from the halo catalog
-    finder_offset = Column(BigInteger) #index of halo within halo catalog, primary identifier used when reading catalog/simulation data
+    id = Column(Integer, primary_key=True) # the unique ID value of the database object created for this halo
+    halo_number = Column(BigInteger) # by default this will be the halo's rank in terms of particle count
+    finder_id = Column(BigInteger) # raw halo ID from the halo catalog, now passed to pynbody
+    finder_offset = Column(BigInteger) # DEPRECATED - used to be the halo number in pynbody pre-v2
     timestep_id = Column(Integer, ForeignKey('timesteps.id'))
     timestep = relationship(TimeStep, backref=backref(
         'objects', order_by=halo_number, cascade_backrefs=False, lazy='dynamic'), cascade='')

@@ -131,6 +131,9 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
+        if not isinstance(finder_id, int) and not isinstance(finder_id, np.integer):
+            raise ValueError("finder_id must be an integer. If you are seeing this unexpectedly, "
+                             "you may have a malformed database; reach out to the tangos developers for help.")
         if mode=='partial':
             h = self.get_catalogue(ts_extension, object_typetag)
             h_file = h.load_copy(finder_id)
