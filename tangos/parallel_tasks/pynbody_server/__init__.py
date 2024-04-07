@@ -67,22 +67,23 @@ class BuildRemoteTree(AsyncProcessedMessage):
         log.logger.debug("Tree built after %.2fs", time.time()-start)
 
 class ReturnSharedTree(Message):
-    def __init__(self, leafsize, boxsize, kdnodes, offsets):
+    def __init__(self, leafsize, boxsize, kdnodes, offsets, kernel_id):
         super().__init__()
         self.leafsize = leafsize
         self.boxsize = boxsize
         self.kdnodes = kdnodes
         self.offsets = offsets
+        self.kernel_id = kernel_id
 
     def serialize(self):
-        return self.leafsize, self.boxsize
+        return self.leafsize, self.boxsize, self.kernel_id
 
     @classmethod
     def deserialize(cls, source, message):
-        leafsize, boxsize = message
+        leafsize, boxsize, kernel_id = message
         kdnodes = transfer_array.receive_array(source, use_shared_memory=True)
         offsets = transfer_array.receive_array(source, use_shared_memory=True)
-        obj = cls(leafsize, boxsize, kdnodes, offsets)
+        obj = cls(leafsize, boxsize, kdnodes, offsets, kernel_id)
         obj.source = source
         return obj
 
@@ -92,7 +93,7 @@ class ReturnSharedTree(Message):
         transfer_array.send_array(self.offsets, destination, use_shared_memory=True)
 
     def import_tree_into_local_view(self, sim):
-        sim.import_tree((self.leafsize, self.boxsize, self.kdnodes, self.offsets))
+        sim.import_tree((self.leafsize, self.boxsize, self.kdnodes, self.offsets, self.kernel_id))
 
 
 class GetSharedTree(AsyncProcessedMessage):
