@@ -53,7 +53,7 @@ def test_get_array():
 @using_parallel_tasks(3)
 def test_get_shared_array():
     if pt.backend.rank()==1:
-        shared_array = pynbody.array._array_factory((10,), int, True, True)
+        shared_array = pynbody.array.array_factory((10,), int, True, True)
         shared_array[:] = np.arange(0,10)
         pt.pynbody_server.transfer_array.send_array(shared_array, 2, True)
         assert shared_array[2]==2
@@ -74,7 +74,7 @@ def test_get_shared_array():
 def test_get_shared_array_slice():
     """Like test_get_shared_array, but with a slice"""
     if pt.backend.rank()==1:
-        shared_array = pynbody.array._array_factory((10,), int, True, True)
+        shared_array = pynbody.array.array_factory((10,), int, True, True)
         shared_array[:] = np.arange(0,10)
         pt.pynbody_server.transfer_array.send_array(shared_array[1:7:2], 2, True)
         assert shared_array[3] == 3
