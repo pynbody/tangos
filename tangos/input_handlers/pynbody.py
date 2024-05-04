@@ -46,11 +46,10 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
     @classmethod
     def _construct_pynbody_halos(cls, sim, *args, **kwargs):
-        if cls.pynbody_halo_class_name is None:
-            return sim.halos(*args, **kwargs)
-        else:
-            halo_class = getattr(pynbody.halo, cls.pynbody_halo_class_name)
-            return halo_class(sim, *args, **kwargs)
+        if cls.pynbody_halo_class_name is not None:
+            kwargs['priority'] = [cls.pynbody_halo_class_name]
+
+        return sim.halos(*args, **kwargs)
 
     def _is_able_to_load(self, ts_extension):
         filepath = self._extension_to_filename(ts_extension)

@@ -214,6 +214,25 @@ def init_blank_db_for_testing(**init_kwargs):
 
     return db_is_blank
 
+@contextlib.contextmanager
+def blank_db_for_testing(**kwargs):
+    """Context manager to create a blank database, then on exit restores the previous database.
+
+    For arguments, see init_blank_db_for_testing.
+    """
+
+    old_engine = core.get_default_engine()
+    old_session = core.get_default_session()
+    old_session_class = core.Session
+    core._internal_session = None
+    core._engine = None
+    init_blank_db_for_testing(**kwargs)
+    yield
+    core.close_db()
+    core._engine = old_engine
+    core.Session = old_session_class
+    core.set_default_session(old_session)
+
 def using_parallel_tasks(fn_or_num_processes, num_processes = 2):
     """Decorator for tests, using parallel_tasks multiprocessing backend to launch
 
