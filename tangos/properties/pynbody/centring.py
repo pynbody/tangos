@@ -27,7 +27,8 @@ class CentreAndRadius(PynbodyPropertyCalculation):
         # ensure the box is wrapped correctly by centring on one of the particles:
         temporary_centre = np.array(particle_data['pos'][0])
         with _recenter(particle_data, temporary_centre):
-            center = pynbody.analysis.halo.shrink_sphere_center(particle_data, shrink_factor=0.8, velocity=False)
+            center = pynbody.analysis.halo.shrink_sphere_center(particle_data, shrink_factor=0.8,
+                                                                particles_for_velocity=0) # i.e., don't calc velocity
 
             # mark_timer can be used to track timing of parts of the calculation. The results of these timings
             # appears in the tangos_writer logs:
