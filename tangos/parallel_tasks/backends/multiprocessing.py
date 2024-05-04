@@ -8,9 +8,9 @@ import threading
 import time
 from typing import Optional
 
-from ...log import logger
-
 import tblib.pickling_support
+
+from ...log import logger
 
 _slave = False
 _rank = None
