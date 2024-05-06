@@ -23,8 +23,7 @@ class BaryonicImages(SphericalRegionPropertyCalculation):
         import pynbody.analysis.angmom as angmom
         size = self.plot_extent()
         g, s = self._render_gas(particle_data, size), self._render_stars(particle_data, size)
-        with angmom.sideon(particle_data, return_transform=True,
-                               cen_size=self.get_simulation_property("approx_resolution_kpc", 0.1)*10.):
+        with angmom.sideon(particle_data):
             g_side, s_side = self._render_gas(particle_data, size), self._render_stars(particle_data, size)
             with particle_data.rotate_x(90):
                 g_face, s_face = self._render_gas(particle_data, size), self._render_stars(particle_data, size)
@@ -33,8 +32,8 @@ class BaryonicImages(SphericalRegionPropertyCalculation):
 
     def _render_projected(self, f, size):
         import pynbody.plot
-        im = pynbody.plot.sph.image(f[pynbody.filt.BandPass(
-            'z', -size / 2, size / 2)], 'rho', size, units="Msol kpc^-2", noplot=True)
+        im = pynbody.plot.sph.image(f, 'rho', size, units="Msol kpc^-2", noplot=True, restrict_depth=True,
+                                    resolution=500)
         return im
 
     def _render_gas(self, f, size):
@@ -47,6 +46,7 @@ class BaryonicImages(SphericalRegionPropertyCalculation):
         import pynbody.plot
         if len(f.st)>0:
             return pynbody.plot.stars.render(f.st[pynbody.filt.HighPass('tform',0) & pynbody.filt.BandPass('z', -size / 2, size / 2)],
-                                         width=size, plot=False, ret_im=True, mag_range=(16,22))
+                                             width=size, noplot=True, return_image=True, mag_range=(16,22),
+                                             resolution=500)
         else:
             return None

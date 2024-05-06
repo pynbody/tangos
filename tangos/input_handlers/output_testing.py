@@ -56,12 +56,10 @@ class TestInputHandler(HandlerBase):
         if halo_max is None:
             halo_max = f1.max_halos
         halo_max = min((halo_max,f1.max_halos,f2.max_halos))
-        return_matches = [tuple()]
+        return_matches = {}
         for i in range(1,halo_max+1):
             if i>=halo_min:
-                return_matches.append(((i, 1.0),(i+1,0.05),))
-            else:
-                return_matches.append(tuple())
+                return_matches[i] = (((i, 1.0),(i+1,0.05),))
         return return_matches
 
     def load_timestep_without_caching(self, ts_extension, mode=None):

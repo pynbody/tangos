@@ -313,6 +313,7 @@ def diff(options):
     differ = db_diff.TangosDbDiff(options.uri1, options.uri2, ignore_keys=options.ignore_value_of)
     if options.property_tolerance is not None:
         for k, rtol, atol in options.property_tolerance:
+            if k == '.': k = None
             differ.set_tolerance(k, float(rtol), float(atol))
 
     if options.simulation:

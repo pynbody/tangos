@@ -23,7 +23,7 @@ jobs:
       CXX: g++-10
     steps:
     - name: Install Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -33,7 +33,7 @@ jobs:
         sudo apt-get update -qq
         sudo apt install gcc-10 g++-10
 
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Update python pip/setuptools/wheel
       run: |
@@ -54,7 +54,7 @@ jobs:
       working-directory: test_tutorial_build
       run: export INTEGRATION_TESTING=1; bash build.sh
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: Tangos database
         path: test_tutorial_build/data.db
@@ -62,7 +62,7 @@ jobs:
     - name: Verify database
       working-directory: test_tutorial_build
       run: |
-        wget https://zenodo.org/record/10825178/files/reference_database.db?download=1 -O reference_database.db -nv
+        wget https://zenodo.org/record/11122073/files/reference_database.db?download=1 -O reference_database.db -nv
         tangos diff data.db reference_database.db --property-tolerance dm_density_profile 1e-2 0 --property-tolerance gas_map 1e-2 0 --property-tolerance gas_map_sideon 1e-2 0 --property-tolerance gas_map_faceon 1e-2 0
       # --property-tolerance dm_density_profile here is because if a single particle crosses between bins
       # (which seems to happen due to differing library versions), the profile can change by this much

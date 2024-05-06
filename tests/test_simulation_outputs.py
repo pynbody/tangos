@@ -1,6 +1,7 @@
 import gc
 import os
 
+import numpy as np
 import numpy.testing as npt
 import pynbody
 
@@ -41,14 +42,14 @@ def test_handler_properties_quicker_flag():
     output_manager.quicker = True
     prop = output_manager.get_properties()
     npt.assert_allclose(prop['approx_resolution_kpc'], 33.590757, rtol=1e-5)
-    npt.assert_allclose(prop['approx_resolution_Msol'], 2.412033e+10, rtol=1e-5)
+    npt.assert_allclose(prop['approx_resolution_Msol'], 2.412033e+10, rtol=1e-4)
 
 def test_enumerate():
     assert set(output_manager.enumerate_timestep_extensions())=={"tiny.000640","tiny.000832"}
 
 def test_timestep_properties():
     props = output_manager.get_timestep_properties("tiny.000640")
-    npt.assert_allclose(props['time_gyr'],2.17328504831)
+    npt.assert_allclose(props['time_gyr'],2.173236752357068)
     npt.assert_allclose(props['redshift'], 2.96382819878)
 
 def test_enumerate_objects():
@@ -181,3 +182,34 @@ def test_load_region_uses_cache():
 
     assert id(region1a) == id(region1b)
     assert id(region1a) != id(region2)
+
+
+class DummyHaloClass(pynbody.halo.number_array.HaloNumberCatalogue):
+    def __init__(self, sim):
+        sim['grp'] = np.empty(len(sim), dtype=int)
+        sim['grp'].fill(-1)
+        sim['grp'][:1000] = 0
+        sim['grp'][1000:2000] = 1
+        super().__init__(sim, 'grp', ignore=-1)
+
+    @classmethod
+    def _can_load(cls, sim, arr_name='grp'):
+        return True
+
+
+class DummyPynbodyHandler(pynbody_outputs.ChangaInputHandler):
+    pynbody_halo_class_name = "DummyHaloClass"
+
+    def _can_enumerate_objects_from_statfile(self, ts_extension, object_typetag):
+        return False # test requires enumerating halos via pynbody, to verify right halo class is used
+
+def test_halo_class_priority():
+    with testing.blank_db_for_testing(testing_db_name="test_halo_class_priority", erase_if_exists=True):
+        handler = DummyPynbodyHandler("test_tipsy")
+
+        with log.LogCapturer():
+            add.SimulationAdderUpdater(handler).scan_simulation_and_add_all_descendants()
+        h = db.get_halo("test_tipsy/tiny.000640/1").load()
+        assert (h.get_index_list(h.ancestor) == np.arange(1000)).all()
+        h = db.get_halo("test_tipsy/tiny.000640/2").load()
+        assert (h.get_index_list(h.ancestor) == np.arange(1000, 2000)).all()

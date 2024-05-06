@@ -41,6 +41,10 @@ def setup_module():
 
     session.commit()
 
+    adder = add_simulation.SimulationAdderUpdater(sim.get_output_handler())
+    adder.min_halo_particles = 300000
+    adder.add_objects_to_timestep(ts1)
+
     parallel_tasks.use('null')
 
 def teardown_module():
@@ -80,10 +84,15 @@ def test_mpi_ahf_values():
 
 
 def test_insert_halos():
-    #stat.HaloStatFile(ts1.filename).add_halos(min_NDM=200000)
+
+    # insert has already happened in the setup
+    for h in ts1.halos:
+        db.get_default_session().delete(h) # remove previous objects so that we can add them afresh
+
     adder = add_simulation.SimulationAdderUpdater(sim.get_output_handler())
     adder.min_halo_particles = 300000
     adder.add_objects_to_timestep(ts1)
+
     assert ts1.halos.count()==3
     assert ts1.halos[0].NDM==4348608
     assert ts1.halos[1].NDM==402567

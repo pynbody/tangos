@@ -10,6 +10,8 @@ from typing import Optional
 
 import tblib.pickling_support
 
+from ...log import logger
+
 _slave = False
 _rank = None
 _size = None
@@ -188,9 +190,12 @@ def launch_functions(functions, args, capture_log=False):
 
     for proc_i in processes:
         if error:
-            #print "multiprocessing backend: send signal to",proc_i.pid
             os.kill(proc_i.pid, signal.SIGTERM)
-        proc_i.join()
+        proc_i.join(timeout=1.0)
+        if proc_i.is_alive():
+            logger.warn("Process %d did not terminate in a timely way; sending SIGKILL", proc_i.pid)
+            os.kill(proc_i.pid, signal.SIGKILL)
+            proc_i.join()
 
     if error is not None:
         raise error.with_traceback(traceback)

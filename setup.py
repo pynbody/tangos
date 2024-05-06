@@ -24,13 +24,14 @@ install_requires = [
     'matplotlib >= 3.0.0', # for web interface
     'tqdm >= 4.59.0',
     'tblib >= 3.0.0',
+    'packaging >= 22.0'
     ]
 
 tests_require = [
     'pytest >= 5.0.0',
     'webtest >= 2.0',
     'pyquery >= 1.3.0',
-    'pynbody >= 2.0.0-beta.5',
+    'pynbody >= 2.0.0-beta.8',
     'yt>=3.4.0',
     'PyMySQL>=1.0.2',
     ]

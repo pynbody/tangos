@@ -9,9 +9,11 @@ def send_array(array: pynbody.array.SimArray, destination: int, use_shared_memor
         if not hasattr(array, "_shared_fname"):
             if isinstance(array, np.ndarray) and hasattr(array, "base") and hasattr(array.base, "_shared_fname"):
                 array._shared_fname = array.base._shared_fname # the strides/offset will point into the same memory
+                array._shared_owner = False # otherwise the memory will be deleted
             else:
                 raise ValueError("Array %r has no shared memory information" % array)
         _send_array_shared_memory(array, destination)
+
     else:
         _send_array_copy(array, destination)
 
