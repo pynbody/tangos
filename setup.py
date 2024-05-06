@@ -24,6 +24,7 @@ install_requires = [
     'matplotlib >= 3.0.0', # for web interface
     'tqdm >= 4.59.0',
     'tblib >= 3.0.0',
+    'packaging >= 22.0'
     ]
 
 tests_require = [

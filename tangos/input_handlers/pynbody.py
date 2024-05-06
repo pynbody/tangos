@@ -6,6 +6,7 @@ import weakref
 from collections import defaultdict
 
 import numpy as np
+from packaging.version import Version
 
 from ..util import proxy_object
 
@@ -36,7 +37,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
         min_version = "2.0.0-beta.8"
 
-        if pynbody_local.__version__ < min_version:
+        if Version(pynbody_local.__version__) < Version(min_version):
             raise ImportError(f"Using tangos with pynbody requires pynbody {min_version} or later")
 
         global pynbody
@@ -246,15 +247,21 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         if halo_max is None:
             halo_max = max(len(h2), len(h1))
 
-        return self.create_bridge(f1, f2).fuzzy_match_catalog(
-            halo_min,
-            halo_max,
-            threshold=threshold,
-            only_family=only_family,
-            groups_1=h1,
-            groups_2=h2,
+        matches = self.create_bridge(f1, f2).fuzzy_match_halos(
+            h1, h2, threshold=threshold, use_family=only_family,
             **fuzzy_match_kwa,
         )
+
+        del_keys = []
+        for k in matches:
+            if k < halo_min or k > halo_max:
+                del_keys.append(k)
+
+        for k in del_keys:
+            del matches[k]
+
+        return matches
+
 
     @classmethod
     def create_bridge(cls, f1, f2):
@@ -492,7 +499,6 @@ class RamsesCatalogueMixin:
 
     def match_objects(self, ts1, ts2, halo_min, halo_max, dm_only=True, threshold=0.005,
                       object_typetag="halo", output_handler_for_ts2=None):
-        import pynbody
         if not dm_only:
             logger.warning(
                 "`match_objects` was called with dm_only=%s, but %s only supports DM-only"
@@ -508,8 +514,7 @@ class RamsesCatalogueMixin:
             dm_only=dm_only,
             threshold=threshold,
             object_typetag=object_typetag,
-            output_handler_for_ts2=output_handler_for_ts2,
-            fuzzy_match_kwa={"use_family": pynbody.family.dm}
+            output_handler_for_ts2=output_handler_for_ts2
         )
 
 

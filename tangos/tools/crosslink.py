@@ -87,7 +87,7 @@ class GenericLinker(GenericTangosTool):
     def create_db_objects_from_catalog(self, cat, finder_id_to_halos_1, finder_id_to_halos_2, same_d_id):
         items = []
         missing_db_object = 0
-        for i, possibilities in enumerate(cat):
+        for i, possibilities in cat.items():
             h1 = finder_id_to_halos_1.get(i, None)
             for cat_i, weight in possibilities:
                 h2 = finder_id_to_halos_2.get(cat_i, None)
