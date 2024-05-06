@@ -32,7 +32,8 @@ class BaryonicImages(SphericalRegionPropertyCalculation):
 
     def _render_projected(self, f, size):
         import pynbody.plot
-        im = pynbody.plot.sph.image(f, 'rho', size, units="Msol kpc^-2", noplot=True, restrict_depth=True)
+        im = pynbody.plot.sph.image(f, 'rho', size, units="Msol kpc^-2", noplot=True, restrict_depth=True,
+                                    resolution=500)
         return im
 
     def _render_gas(self, f, size):
@@ -45,6 +46,7 @@ class BaryonicImages(SphericalRegionPropertyCalculation):
         import pynbody.plot
         if len(f.st)>0:
             return pynbody.plot.stars.render(f.st[pynbody.filt.HighPass('tform',0) & pynbody.filt.BandPass('z', -size / 2, size / 2)],
-                                             width=size, noplot=True, return_image=True, mag_range=(16,22))
+                                             width=size, noplot=True, return_image=True, mag_range=(16,22),
+                                             resolution=500)
         else:
             return None
