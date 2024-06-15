@@ -1,6 +1,7 @@
 import glob
 import os
 import os.path
+import pathlib
 import time
 import weakref
 from collections import defaultdict
@@ -367,7 +368,7 @@ class GadgetSubfindInputHandler(PynbodyInputHandler):
 
     def _is_able_to_load(self, filepath):
         try:
-            f = eval(self.snap_class_name)(filepath)
+            f = eval(self.snap_class_name)(pathlib.Path(filepath))
             h = f.halos()
             if isinstance(h, eval(self.catalogue_class_name)):
                 return True
@@ -472,6 +473,33 @@ class Gadget4HDFSubfindInputHandler(GadgetSubfindInputHandler):
             return extension_name[:-7]
         else:
             return extension_name
+
+class Gadget4HBTPlusInputHandler(Gadget4HDFSubfindInputHandler):
+    auxiliary_file_patterns = ["SubSnap_???.hdf5", "SubSnap_???.0.hdf5"]
+    catalogue_class_name = "pynbody.halo.hbtplus.HBTPlusCatalogue"
+
+    def get_catalogue(self, ts_extension, object_typetag):
+        if object_typetag== 'halo':
+            return super().get_catalogue(ts_extension, object_typetag)
+        elif object_typetag== 'group':
+            return self._construct_group_cat(ts_extension)
+        else:
+            raise ValueError("Unknown halo type %r" % object_typetag)
+
+    @classmethod
+    def _construct_pynbody_halos(cls, sim, *args, **kwargs):
+        if kwargs.pop('subs', False):
+            return pynbody.halo.hbtplus.HBTPlusCatalogue(f)
+        else:
+            return super()._construct_pynbody_halos(sim, *args, **kwargs)
+
+    def _is_able_to_load(self, filepath):
+        try:
+            f = eval(self.snap_class_name)(pathlib.Path(filepath))
+            h = pynbody.halo.hbtplus.HBTPlusCatalogue(f)
+            return True
+        except (OSError, RuntimeError):
+            return False
 
 
 
@@ -751,10 +779,14 @@ class ChangaIgnoreIDLInputHandler(ChangaInputHandler):
     pynbody_halo_class_name = "AHFCatalogue"
     halo_stat_file_class_name = "AHFStatFile"
 
+    enable_autoselect = False
+
 class ChangaUseIDLInputHandler(ChangaInputHandler):
     pynbody_halo_class_name = "AmigaGrpCatalogue"
     halo_stat_file_class_name = "AmigaIDLStatFile"
     auxiliary_file_patterns = ["*.amiga.grp"]
+
+    enable_autoselect = False
 
 from . import caterpillar, eagle, ramsesHOP
 

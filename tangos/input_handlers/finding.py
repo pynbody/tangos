@@ -42,10 +42,12 @@ class PatternBasedFileDiscovery:
     # will not be used for finding the snapshots, but if files matching these patterns are present
     # the handler is more likely to be selected automatically. See e.g. GadgetRockstarInputHandler.
 
+    enable_autoselect = True # set to False if user must select manually via --input-handler when adding
+
     @classmethod
     def best_matching_handler(cls, basename):
         handler_names = []
-        handler_timestep_lengths = []
+        handler_scores = []
         base = os.path.join(config.base, basename)
 
         # Add all subclasses, sub-subclasses, sub-subclasses, ...
@@ -57,8 +59,23 @@ class PatternBasedFileDiscovery:
             timesteps_detected = find(basename=base + "/", patterns=possible_handler.patterns)
             other_files_detected = find(basename=base+"/", patterns=possible_handler.auxiliary_file_patterns)
             handler_names.append(possible_handler)
-            handler_timestep_lengths.append(len(timesteps_detected)+len(other_files_detected))
-        best_handler = handler_names[np.argmax(handler_timestep_lengths)]
+            handler_scores.append(len(timesteps_detected)+len(other_files_detected))
+
+        handler_scores = np.array(handler_scores)
+
+        max_length_mask = (handler_scores == np.max(handler_scores))
+        if np.sum(max_length_mask) > 1:
+            logger.warning("Multiple handlers have the same score. Adding specialisation to the decision process.")
+            # work out how many subclasses below HandlerBase each handler is:
+            handler_subclass_depths = np.array([len(handler.__mro__) for handler in handler_names])
+            handler_scores += handler_subclass_depths
+
+        max_length_mask = (handler_scores == np.max(handler_scores))
+        if np.sum(max_length_mask) > 1:
+            logger.warning("Multiple handlers still have the same score, after adding specialisation score. Choosing the first one.")
+
+
+        best_handler = handler_names[np.argmax(handler_scores)]
         logger.debug("Detected best handler (of %d) is %s",len(all_possible_handlers), best_handler)
 
         return best_handler
