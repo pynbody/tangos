@@ -87,8 +87,13 @@ class PropertyImporter(GenericTangosTool):
         self._object_cache = timestep_object_cache.TimestepObjectCache(ts)
         self._session = core.Session.object_session(ts)
 
-        property_db_names = [core.dictionary.get_or_create_dictionary_item(self._session, name) for name in
-                             property_names]
+        with parallel_tasks.ExclusiveLock("add_properties"):
+            # if a dictionary item may be created, we need the database locked. But note this may be highly inefficent.
+            # Leaving it for now since this whole property_importer step isn't a rate limiting factor in any known workflow
+            property_db_names = [core.dictionary.get_or_create_dictionary_item(self._session, name) for name in
+                                 property_names]
+            self._session.commit()
+
         rows_to_store = []
         for values in self.handler.iterate_object_properties_for_timestep(ts.extension, object_typetag, property_names):
             if len(values)!=2+len(property_db_names):
