@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import glob
 import os
 import os.path
@@ -16,6 +18,10 @@ pynbody = None # deferred import; occurs when a PynbodyInputHandler is construct
 from .. import config
 from ..log import logger
 from . import HandlerBase, finding
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import pynbody
 
 _loaded_halocats = {}
 
@@ -78,7 +84,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
                    'available': True}
         return results
 
-    def load_timestep_without_caching(self, ts_extension, mode=None):
+    def load_timestep_without_caching(self, ts_extension, mode=None) -> pynbody.snapshot.simsnap.SimSnap:
         if mode=='partial' or mode is None:
             f = pynbody.load(self._extension_to_filename(ts_extension))
             f.physical_units()
@@ -93,7 +99,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
     def _build_kdtree(self, timestep, mode):
         timestep.build_tree()
 
-    def load_region(self, ts_extension, region_specification, mode=None, expected_number_of_queries=None):
+    def load_region(self, ts_extension, region_specification, mode=None, expected_number_of_queries=None) -> pynbody.snapshot.simsnap.SimSnap:
         timestep = self.load_timestep(ts_extension, mode)
 
         timestep._tangos_cached_regions = getattr(timestep, '_tangos_cached_regions', {})
@@ -131,7 +137,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
-    def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
+    def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None) -> pynbody.snapshot.simsnap.SimSnap:
         if mode=='partial':
             h = self.get_catalogue(ts_extension, object_typetag)
             h_file = h.load_copy(finder_id)
@@ -167,7 +173,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         else:
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
-    def load_tracked_region(self, ts_extension, track_data, mode=None):
+    def load_tracked_region(self, ts_extension, track_data, mode=None) -> pynbody.snapshot.simsnap.SimSnap:
         f = self.load_timestep(ts_extension, mode)
         indices = self._get_indices_for_snapshot(f, track_data)
         if mode=='partial':
@@ -207,7 +213,7 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
 
 
-    def get_catalogue(self, ts_extension, object_typetag):
+    def get_catalogue(self, ts_extension, object_typetag) -> pynbody.halo.HaloCatalogue:
         if object_typetag!= 'halo':
             raise ValueError("Unknown object type %r" % object_typetag)
         f = self.load_timestep(ts_extension)
@@ -275,11 +281,9 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             logger.warning("No %s statistics file found for timestep %r", object_typetag, ts_extension)
 
             snapshot_keep_alive = self.load_timestep(ts_extension)
-            try:
-                h = self.get_catalogue(ts_extension, object_typetag)
-            except:
-                logger.warning("Unable to read %ss using pynbody; assuming step has none", object_typetag)
-                return
+
+            h = self.get_catalogue(ts_extension, object_typetag)
+
 
             logger.warning(" => enumerating %ss directly using pynbody", object_typetag)
 
@@ -476,22 +480,27 @@ class Gadget4HDFSubfindInputHandler(GadgetSubfindInputHandler):
 
 class Gadget4HBTPlusInputHandler(Gadget4HDFSubfindInputHandler):
     auxiliary_file_patterns = ["SubSnap_???.hdf5", "SubSnap_???.0.hdf5"]
-    catalogue_class_name = "pynbody.halo.hbtplus.HBTPlusCatalogue"
-
-    def get_catalogue(self, ts_extension, object_typetag):
-        if object_typetag== 'halo':
-            return super().get_catalogue(ts_extension, object_typetag)
-        elif object_typetag== 'group':
-            return self._construct_group_cat(ts_extension)
-        else:
-            raise ValueError("Unknown halo type %r" % object_typetag)
+    catalogue_class_name = "pynbody.halo.hbtplus.HBTPlusCatalogueWithGroups"
+    _sub_parent_names = ['HostHaloId']
+    _property_prefix_for_type = {'group': 'Group'}
 
     @classmethod
     def _construct_pynbody_halos(cls, sim, *args, **kwargs):
         if kwargs.pop('subs', False):
-            return pynbody.halo.hbtplus.HBTPlusCatalogue(f)
+            h = pynbody.halo.hbtplus.HBTPlusCatalogue(sim)
+            h.load_all()
+            return h
         else:
             return super()._construct_pynbody_halos(sim, *args, **kwargs)
+
+    def _construct_group_cat(self, ts_extension):
+        sim = self.load_timestep(ts_extension)
+        groups = super()._construct_pynbody_halos(sim, subs=False)
+        # can't call super()._construct_group_cat because that verifies the type of the catalogue, which is wrong
+        # until we do the modification below
+
+        hbt_halos = self._construct_pynbody_halos(sim, subs=True)
+        return hbt_halos.with_groups_from(groups)
 
     def _is_able_to_load(self, filepath):
         try:
@@ -500,6 +509,39 @@ class Gadget4HBTPlusInputHandler(Gadget4HDFSubfindInputHandler):
             return True
         except (OSError, RuntimeError):
             return False
+
+    def match_objects(self, ts1, ts2, halo_min, halo_max,
+                      dm_only=False, threshold=0.005, object_typetag='halo',
+                      output_handler_for_ts2=None,
+                      fuzzy_match_kwa={}):
+
+        if object_typetag=='halo' and output_handler_for_ts2 is self:
+            # specialised case
+            f1 = self.load_timestep(ts1)
+            h1 = self.get_catalogue(ts1, 'halo')
+            f2 = self.load_timestep(ts2)
+            h2 = self.get_catalogue(ts2, 'halo')
+
+            id1_to_number1 = h1.number_mapper.index_to_number
+            id2_to_number2 = h2.number_mapper.index_to_number
+
+            props1 = h1.get_properties_all_halos()
+            props2 = h2.get_properties_all_halos()
+
+            id1_to_trackid = props1['TrackId']
+            id2_to_trackid = props2['TrackId']
+
+            trackid_to_id2 = {trackid: id2 for id2,trackid in enumerate(id2_to_trackid)}
+            number1_to_number2 = {id1_to_number1(id1): [(id2_to_number2(trackid_to_id2[trackid]), 1.0)]
+                                  if trackid in trackid_to_id2 else []
+                                  for id1, trackid in enumerate(id1_to_trackid)}
+
+            return number1_to_number2
+
+
+        else:
+            return super().match_objects(ts1, ts2, halo_min, halo_max, dm_only, threshold, object_typetag,
+                                         output_handler_for_ts2, fuzzy_match_kwa)
 
 
 
