@@ -35,6 +35,7 @@ IN_OPS = [("**", "power"),
           ("|", "logical_or"),
           ("&", "logical_and"),
           ("==", "equal"),
+          ("!=", "not_equal"),
           (">=", "greater_equal"),
           ("<=", "less_equal")]
 
