@@ -241,4 +241,3 @@ def test_input_handler_priority():
     # if we select handler 3 manually, we should get it
     handler = DummyPynbodyHandler3.best_matching_handler("test_tipsy")
     assert handler is DummyPynbodyHandler3
-

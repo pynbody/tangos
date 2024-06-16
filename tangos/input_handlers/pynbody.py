@@ -15,11 +15,12 @@ from ..util import proxy_object
 
 pynbody = None # deferred import; occurs when a PynbodyInputHandler is constructed
 
+from typing import TYPE_CHECKING
+
 from .. import config
 from ..log import logger
 from . import HandlerBase, finding
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import pynbody
 
