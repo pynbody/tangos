@@ -283,8 +283,11 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
             snapshot_keep_alive = self.load_timestep(ts_extension)
 
-            h = self.get_catalogue(ts_extension, object_typetag)
-
+            try:
+                h = self.get_catalogue(ts_extension, object_typetag)
+            except Exception as e:
+                logger.warning("Unable to read %ss using pynbody; assuming step has none", object_typetag)
+                return
 
             logger.warning(" => enumerating %ss directly using pynbody", object_typetag)
 
