@@ -485,7 +485,7 @@ class Gadget4HDFSubfindInputHandler(GadgetSubfindInputHandler):
 class Gadget4HBTPlusInputHandler(Gadget4HDFSubfindInputHandler):
     auxiliary_file_patterns = ["SubSnap_???.hdf5", "SubSnap_???.0.hdf5"]
     catalogue_class_name = "pynbody.halo.hbtplus.HBTPlusCatalogueWithGroups"
-    _sub_parent_names = ['HostHaloId']
+    _sub_parent_names = [] # although HBTplus stores this as 'HostHaloId', pynbody already translates it to 'parent'
     _property_prefix_for_type = {'group': 'Group'}
 
     @classmethod
