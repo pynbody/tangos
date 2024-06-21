@@ -172,7 +172,7 @@ class RamsesAdaptaHOPInputHandler(RamsesCatalogueMixin, PynbodyInputHandler):
             try:
                 h = self.get_catalogue(ts_extension, object_typetag)
                 h._index_parent = False
-            except:
+            except Exception as e:
                 logger.warning("Unable to read %ss using pynbody; assuming step has none", object_typetag)
                 return
 

@@ -213,3 +213,31 @@ def test_halo_class_priority():
         assert (h.get_index_list(h.ancestor) == np.arange(1000)).all()
         h = db.get_halo("test_tipsy/tiny.000640/2").load()
         assert (h.get_index_list(h.ancestor) == np.arange(1000, 2000)).all()
+
+def test_input_handler_priority():
+    handler = pynbody_outputs.ChangaInputHandler.best_matching_handler("test_tipsy")
+    assert handler is DummyPynbodyHandler
+
+
+    # test that if we specialise further, we get the more specialised handler
+    class DummyPynbodyHandler2(DummyPynbodyHandler):
+        pass
+
+    handler = pynbody_outputs.ChangaInputHandler.best_matching_handler("test_tipsy")
+    assert handler is DummyPynbodyHandler2
+
+
+    # specialise still further, but disable autoselect so that we don't get this handler returned
+    class DummyPynbodyHandler3(DummyPynbodyHandler2):
+        enable_autoselect = False
+        pass
+
+    handler = pynbody_outputs.ChangaInputHandler.best_matching_handler("test_tipsy")
+    assert handler is DummyPynbodyHandler2
+
+    handler = DummyPynbodyHandler2.best_matching_handler("test_tipsy")
+    assert handler is DummyPynbodyHandler2
+
+    # if we select handler 3 manually, we should get it
+    handler = DummyPynbodyHandler3.best_matching_handler("test_tipsy")
+    assert handler is DummyPynbodyHandler3

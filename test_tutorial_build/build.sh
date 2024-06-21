@@ -7,7 +7,7 @@ get_tutorial_data() {
       wget -nv -O - https://zenodo.org/record/5155467/files/$1.tar.gz?download=1 | tar -xzv
     else
       echo "Downloading mini tutorial data for $1"
-      wget -nv -O - https://zenodo.org/records/10825178/files/$1.tar.gz?download=1 | tar -xzv
+      wget -nv -O - https://zenodo.org/records/12189455/files/$1.tar.gz?download=1 | tar -xzv
     fi
   fi
 }
@@ -31,6 +31,16 @@ build_gadget4() {
   tangos import-properties --for tutorial_gadget4
   tangos import-properties --for tutorial_gadget4 --type group
   $MPI tangos $MPIBACKEND write dm_density_profile --with-prerequisites --include-only="NDM()>5000" --type=halo --for tutorial_gadget4
+}
+
+build_gadget4_hbtplus() {
+  get_tutorial_data tutorial_gadget4
+  get_tutorial_data tutorial_gadget4_hbtplus
+  tangos add tutorial_gadget4_hbtplus
+  tangos link --for tutorial_gadget4_hbtplus
+  tangos import-properties --for tutorial_gadget4_hbtplus
+  tangos import-properties --for tutorial_gadget4_hbtplus --type group
+  $MPI tangos $MPIBACKEND write dm_density_profile --with-prerequisites --include-only="NDM()>5000" --type=halo --for tutorial_gadget4_hbtplus
 }
 
 build_gadget_subfind() {
@@ -128,6 +138,7 @@ clearup_files tutorial_gadget_rockstar
 build_ramses
 clearup_files tutorial_ramses
 build_gadget4
+build_gadget4_hbtplus
 clearup_files tutorial_gadget4
 build_enzo_yt
 clearup_files enzo.tinycosmo
