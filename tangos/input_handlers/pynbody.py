@@ -705,7 +705,8 @@ class RamsesAHFInputHandler(RamsesCatalogueMixin, AHFInputHandler):
 
 class ChangaInputHandler(PynbodyInputHandler):
     flags_include = ["dPhysDenMin", "dCStar", "dTempMax",
-                     "dESN", "bLowTCool", "bSelfShield", "dExtraCoolShutoff"]
+                     "dESN", "bLowTCool", "bSelfShield", "dExtraCoolShutoff", 
+                     "dHubble0", "dOmega0", "dLambda", "dMsolUnit", "dKpcUnit", "dStarFormEfficiencyH2"]
 
     patterns = ["*.00???","*.00????","*.0????"]
 
