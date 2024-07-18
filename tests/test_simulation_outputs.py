@@ -32,7 +32,7 @@ def test_handler_name():
 
 def test_handler_properties():
     prop = output_manager.get_properties()
-    assert len(prop) == 10
+    assert len(prop) == 15
     assert 'approx_resolution_kpc' in prop
     assert 'approx_resolution_Msol' in prop
     npt.assert_allclose(prop['approx_resolution_kpc'], 0.3499348849)
