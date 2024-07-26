@@ -31,6 +31,7 @@ class BHLogData:
             import pynbody
             f = pynbody.load(filename)
             obj.boxsize = float(f.properties['boxsize'].in_units('kpc', a=f.properties['a']))
+            logger.info("Found cached log information. Updating physical boxsize to %f", obj.boxsize)
             return obj
 
         obj = cls(filename)

@@ -63,9 +63,9 @@ class ChangaBHImporter(GenericTangosTool):
     def _generate_halolinks(self, pairs):
         for ts1, ts2 in parallel_tasks.distributed(pairs):
             if BlackHolesLog.can_load(ts2.filename):
-                bh_log = BlackHolesLog(ts2.filename)
+                bh_log = BlackHolesLog.get_existing_or_new(ts2.filename)
             elif ShortenedOrbitLog.can_load(ts2.filename):
-                bh_log = ShortenedOrbitLog(ts2.filename)
+                bh_log = ShortenedOrbitLog.get_existing_or_new(ts2.filename)
             else:
                 logger.error("Warning! No orbit file found!")
 
