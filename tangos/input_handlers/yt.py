@@ -231,8 +231,8 @@ class YtRamsesRockstarInputHandler(YtInputHandler):
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
             yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
         else:
-            logger.warn("No halo statistics file found for timestep %r", ts_extension)
-            logger.warn(" => enumerating %ss directly using yt", object_typetag)
+            logger.warning("No halo statistics file found for timestep %r", ts_extension)
+            logger.warning(" => enumerating %ss directly using yt", object_typetag)
 
             _catalogue, catalogue_data = self._load_halo_cat(ts_extension, object_typetag)
             num_objects = len(catalogue_data["halos", "virial_radius"])
@@ -329,13 +329,11 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
             rockfiles = np.array(rockfiles)[sortord]
             timestep_ind = np.argwhere(np.array([s.split('/')[-1] for s in snapfiles])==ts_extension.split('/')[0])[0]
             fnum = int(rockfiles[timestep_ind][0].split('.')[0].split('_')[-1])
-        cat = yt.load(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
+        cat = yt.load(self._extension_to_filename(f"halos_{fnum}.0.bin"))
         cat_data = cat.all_data()
         # Check whether rockstar was run with Behroozi's distribution or Wise's
         if np.any(cat_data["halos","particle_identifier"]<0):
-            del cat
-            del cat_data
-            cat = yt.load(self._extension_to_filename("halos_"+str(fnum)+".0.bin"))
+            cat = yt.load(self._extension_to_filename(f"halos_{fnum}.0.bin"))
             cat.parameters['format_revision'] = 2 #
             cat_data = cat.all_data()
         return cat, cat_data
@@ -345,20 +343,21 @@ class YtEnzoRockstarInputHandler(YtInputHandler):
             return
         if self._can_enumerate_objects_from_statfile(ts_extension, object_typetag):
             yield from self._enumerate_objects_from_statfile(ts_extension, object_typetag)
-        else:
-            logger.warn("No halo statistics file found for timestep %r", ts_extension)
-            logger.warn(" => enumerating %ss directly using yt", object_typetag)
+            return
 
-            catalogue, catalogue_data = self._load_halo_cat(ts_extension, object_typetag)
-            num_objects = len(catalogue_data["halos", "virial_radius"])
+        logger.warning("No halo statistics file found for timestep %r", ts_extension)
+        logger.warning(" => enumerating %ss directly using yt", object_typetag)
 
-            for i in range(num_objects):
-                obj = self.load_object(ts_extension, int(catalogue_data["halos","particle_identifier"][i]), i, object_typetag)
-                NDM = len(obj["dark_matter","particle_mass"])
-                NGas = 0 # cells
-                NStar = len(obj["stars","particle_mass"])
-                if NDM + NGas + NStar> min_halo_particles:
-                    yield i, int(catalogue_data["halos","particle_identifier"][i]), NDM, NStar, NGas
+        catalogue, catalogue_data = self._load_halo_cat(ts_extension, object_typetag)
+        num_objects = len(catalogue_data["halos", "virial_radius"])
+
+        for i in range(num_objects):
+            obj = self.load_object(ts_extension, int(catalogue_data["halos","particle_identifier"][i]), i, object_typetag)
+            NDM = len(obj["dark_matter","particle_mass"])
+            NGas = 0 # cells
+            NStar = len(obj["stars","particle_mass"])
+            if NDM + NGas + NStar> min_halo_particles:
+                yield i, int(catalogue_data["halos","particle_identifier"][i]), NDM, NStar, NGas
 
     def load_object(self, ts_extension, finder_id, finder_offset, object_typetag='halo', mode=None):
         f = self.load_timestep(ts_extension, mode)
