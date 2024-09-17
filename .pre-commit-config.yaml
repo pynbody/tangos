@@ -31,7 +31,7 @@ repos:
   rev: 1.8.7
   hooks:
     - id: nbqa-pyupgrade
-      args: [--py37-plus]
+      args: [--py38-plus]
     - id: nbqa-isort
 
 -   repo: https://github.com/PyCQA/isort
