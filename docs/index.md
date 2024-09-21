@@ -16,17 +16,20 @@ Pontzen & Tremmel, 2018, ApJS 237, 2. [DOI 10.3847/1538-4365/aac832](https://doi
 Installation: the very quick version
 ------------
 
-To install _tangos_ first clone the repository, then use the standard setuptools `install` command;
-for the most recent published version use:
-
+You have a few options. For the most recent published version use:
 ```
 pip install tangos
 ```
+or, for pre-release versions (for example if you are working with pynbody v2) use:
+```
+pip install --pre tangos
+```
+or, for the latest version from the repository use 
+```
+pip install git+https://github.com/pynbody/tangos.git
+```
 
-or, for the latest version from the repository use `pip install git+https://github.com/pynbody/tangos.git`.
-
-
-This should check for and install the _minimum_ prerequisites, but doesn't install _pynbody_. That's because _tangos_ is
+Pip should check for and install the _minimum_ prerequisites, but doesn't install _pynbody_. That's because _tangos_ is
 written to be agnostic about how the underlying simulation snapshots are read so in principle you could use e.g. _yt_.
 For all current tutorials, _pynbody_ is the preferred reading system and so for an easy life you should install it:
 `pip install pynbody`, or again for the latest version you can use `pip install git+https://github.com/pynbody/pynbody.git`.
@@ -41,10 +44,11 @@ above use:
 ```
 git clone https://github.com/pynbody/tangos.git
 cd tangos
-python setup.py develop
+pip install -e .[test]
 ```
 
-To run the tests, you will also need to install _yt_, _pytest_, _webtest_, _pyquery and _pynbody_ e.g. using `pip install yt pyquery pytest webtest pynbody`.
+The `[test]` specified ensures that additional packages needed for testing are installed. This includes _pynbody_ and _yt_,
+as well as _pytest_. 
 
 Once installed, you should check that _tangos_ is functioning correctly by entering the `tests` folder and
 typing `pytest`. You should see a bunch of text scrolling by, ultimately finishing with the simple message `OK`.
