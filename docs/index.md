@@ -30,9 +30,12 @@ pip install git+https://github.com/pynbody/tangos.git
 ```
 
 Pip should check for and install the _minimum_ prerequisites, but doesn't install _pynbody_. That's because _tangos_ is
-written to be agnostic about how the underlying simulation snapshots are read so in principle you could use e.g. _yt_.
-For all current tutorials, _pynbody_ is the preferred reading system and so for an easy life you should install it:
-`pip install pynbody`, or again for the latest version you can use `pip install git+https://github.com/pynbody/pynbody.git`.
+written to be agnostic about how the underlying simulation snapshots are read, and so you might prefer to use _yt_ for example.
+If you want to use _pynbody_, install it at the same time, e.g.
+
+```
+pip install tangos pynbody
+```
 
 
 Installation with tests and ancillary dependencies
