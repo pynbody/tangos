@@ -106,9 +106,16 @@ class ChangaBHImporter(GenericTangosTool):
             logger.info("Generated %d tracker links between steps %r and %r", len(links), ts1, ts2)
 
             logger.info("Generating BH Merger information for steps %r and %r", ts1, ts2)
+            #get information needed from simulation to convert time from simulation units
+            import pynbody
+            f = pynbody.load(ts1.filename)
+            tunits = f.infer_original_units('Gyr')
+            gyr_ratio = pynbody.Gyr.ratio(tunits)
             for l in open(self._bhmerger_filename):
                 l_split = l.split()
-                t = float(l_split[6])
+                #convert time to Gyr and account for negative times
+                #(for "fake" mergers but we'd still want them if the BHs actually make it to the database)
+                t = float(np.abs(l_split[6]))*gyr_ratio
                 bh_dest_id = int(l_split[0])
                 bh_src_id = int(l_split[1])
                 ratio = float(l_split[4])
