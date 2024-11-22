@@ -835,6 +835,13 @@ class ChangaUseIDLInputHandler(ChangaInputHandler):
 
     enable_autoselect = False
 
+class ChangaAHFv1InputHandler(ChangaInputHandler):
+    @classmethod
+    def _construct_pynbody_halos(cls, sim, *args, **kwargs):
+        kwargs['halo_numbers'] = 'v1'
+        return super()._construct_pynbody_halos(sim, *args, **kwargs)
+
+
 from . import caterpillar, eagle, ramsesHOP
 
 RamsesHOPInputHandler = ramsesHOP.RamsesHOPInputHandler
