@@ -615,37 +615,12 @@ class AHFInputHandler(PynbodyInputHandler):
         )
 
 
-    def _get_map_child_subhalos(self, ts_extension):
-        h = self.get_catalogue(ts_extension, 'halo')
-        halo_children = defaultdict(list)
-        for halo in h:
-            iparent = halo.properties["hostHalo"] # Returns the unique ID (NOT the halo_id index) of the host
-            if iparent == -1: # If halo is its own host (i.e. -1), move on to next object
-                continue
-
-            halo_children[iparent].append(halo.properties["halo_id"]) # Otherwise store the halo_id index of the host
-        return halo_children
-
-
-    def _get_map_IDs_to_halo_ids(self, ts_extension):
-        # IDs and halo_ids are usually related by ID = halo_id - 1,
-        # but they can be entirely independent when using specific AHF options or running with MPI
-        # This allows to map between one and the other
-        h = self.get_catalogue(ts_extension, 'halo')
-        return {
-            halo.properties["ID"]: halo.properties["halo_id"] for halo in h
-        }
-
     def iterate_object_properties_for_timestep(self, ts_extension, object_typetag, property_names):
         h = self.get_catalogue(ts_extension, object_typetag)
 
         h.physical_units()
 
-        if "child" in property_names:
-            map_child_parent = self._get_map_child_subhalos(ts_extension)
-
-        if "parent" in property_names:
-            map_ID_to_halo_id = self._get_map_IDs_to_halo_ids(ts_extension)
+        # Manually mapping IDs etc used to be setup here, but should no longer be required with pynbody v2
 
         for halo in h:
             # Tangos expect us to yield first the finder offset (index in the pynbody catalogue, halo_id in our case)
@@ -659,7 +634,7 @@ class AHFInputHandler(PynbodyInputHandler):
                     if parent_ID != -1:
                         # If halo is not its own parent, link to parent
                         data = proxy_object.IncompleteProxyObjectFromFinderId(
-                            map_ID_to_halo_id[parent_ID],
+                            parent_ID,
                             'halo'
                         )
                     else:
@@ -668,12 +643,10 @@ class AHFInputHandler(PynbodyInputHandler):
                             halo_props['halo_id'],
                             'halo'
                         )
-
-
                 elif k == "child":
                     data = [
                         proxy_object.IncompleteProxyObjectFromFinderId(ichild, 'halo')
-                        for ichild in map_child_parent[halo_props["ID"]]
+                        for ichild in halo_props['children']
                     ]
                 elif k == "shrink_center":
                     data = np.array([halo_props[k] for k in ("Xc", "Yc", "Zc")])
