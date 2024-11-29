@@ -24,7 +24,7 @@ or, for pre-release versions (for example if you are working with pynbody v2) us
 ```
 pip install --pre tangos
 ```
-or, for the latest version from the repository use 
+or, for the latest version from the repository use
 ```
 pip install git+https://github.com/pynbody/tangos.git
 ```
@@ -51,7 +51,7 @@ pip install -e .[test]
 ```
 
 The `[test]` specified ensures that additional packages needed for testing are installed. This includes _pynbody_ and _yt_,
-as well as _pytest_. 
+as well as _pytest_.
 
 Once installed, you should check that _tangos_ is functioning correctly by entering the `tests` folder and
 typing `pytest`. You should see a bunch of text scrolling by, ultimately finishing with the simple message `OK`.
