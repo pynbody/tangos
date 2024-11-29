@@ -836,6 +836,7 @@ class ChangaUseIDLInputHandler(ChangaInputHandler):
     enable_autoselect = False
 
 class ChangaAHFv1InputHandler(ChangaInputHandler):
+    patterns=[] #emtpy so that this is only used when explicitly asked for
     @classmethod
     def _construct_pynbody_halos(cls, sim, *args, **kwargs):
         kwargs['halo_numbers'] = 'v1'
