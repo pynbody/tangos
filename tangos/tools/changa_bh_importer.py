@@ -203,7 +203,7 @@ class ChangaBHImporter(GenericTangosTool):
                 iteration_count += 1
 
                 # find the parent halos of the bh_cen_halos
-                bh_halos_new = [pynbody_halos.get_dummy_halo(i).properties['hostHalo'] for i in bh_halos]
+                bh_halos_new = [pynbody_halos.get_dummy_halo(i).properties['hostHalo'] if i!=-1 else -1 for i in bh_halos]
 
                 # if the parent is -1, we have definitely found the top level halos
                 continue_searching = not all([bhi==-1 for bhi in bh_halos_new])
