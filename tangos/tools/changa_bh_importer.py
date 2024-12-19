@@ -63,9 +63,9 @@ class ChangaBHImporter(GenericTangosTool):
     def _generate_halolinks(self, pairs):
         for ts1, ts2 in parallel_tasks.distributed(pairs):
             if BlackHolesLog.can_load(ts2.filename):
-                bh_log = BlackHolesLog(ts2.filename)
+                bh_log = BlackHolesLog.get_existing_or_new(ts2.filename)
             elif ShortenedOrbitLog.can_load(ts2.filename):
-                bh_log = ShortenedOrbitLog(ts2.filename)
+                bh_log = ShortenedOrbitLog.get_existing_or_new(ts2.filename)
             else:
                 logger.error("Warning! No orbit file found!")
 
@@ -106,9 +106,16 @@ class ChangaBHImporter(GenericTangosTool):
             logger.info("Generated %d tracker links between steps %r and %r", len(links), ts1, ts2)
 
             logger.info("Generating BH Merger information for steps %r and %r", ts1, ts2)
+            #get information needed from simulation to convert time from simulation units
+            import pynbody
+            f = pynbody.load(ts1.filename)
+            tunits = f.infer_original_units('Gyr')
+            gyr_ratio = pynbody.units.Gyr.ratio(tunits)
             for l in open(self._bhmerger_filename):
                 l_split = l.split()
-                t = float(l_split[6])
+                #convert time to Gyr and account for negative times
+                #(for "fake" mergers but we'd still want them if the BHs actually make it to the database)
+                t = np.abs(float(l_split[6]))/gyr_ratio
                 bh_dest_id = int(l_split[0])
                 bh_src_id = int(l_split[1])
                 ratio = float(l_split[4])
@@ -196,7 +203,7 @@ class ChangaBHImporter(GenericTangosTool):
                 iteration_count += 1
 
                 # find the parent halos of the bh_cen_halos
-                bh_halos_new = [pynbody_halos.get_dummy_halo(i).properties['hostHalo'] for i in bh_halos]
+                bh_halos_new = [pynbody_halos.get_dummy_halo(i).properties['hostHalo'] if i!=-1 else -1 for i in bh_halos]
 
                 # if the parent is -1, we have definitely found the top level halos
                 continue_searching = not all([bhi==-1 for bhi in bh_halos_new])
