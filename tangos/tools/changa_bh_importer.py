@@ -110,7 +110,7 @@ class ChangaBHImporter(GenericTangosTool):
             import pynbody
             f = pynbody.load(ts1.filename)
             tunits = f.infer_original_units('Gyr')
-            gyr_ratio = pynbody.Gyr.ratio(tunits)
+            gyr_ratio = pynbody.units.Gyr.ratio(tunits)
             for l in open(self._bhmerger_filename):
                 l_split = l.split()
                 #convert time to Gyr and account for negative times
