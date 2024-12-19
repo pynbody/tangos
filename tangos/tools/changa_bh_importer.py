@@ -115,7 +115,7 @@ class ChangaBHImporter(GenericTangosTool):
                 l_split = l.split()
                 #convert time to Gyr and account for negative times
                 #(for "fake" mergers but we'd still want them if the BHs actually make it to the database)
-                t = float(np.abs(l_split[6]))*gyr_ratio
+                t = np.abs(float(l_split[6]))*gyr_ratio
                 bh_dest_id = int(l_split[0])
                 bh_src_id = int(l_split[1])
                 ratio = float(l_split[4])
