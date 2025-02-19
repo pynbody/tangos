@@ -11,4 +11,4 @@ from . import core, log, properties
 from .core import *
 from .query import *
 
-__version__ = '1.9.3-beta'
+__version__ = '1.10.0'
