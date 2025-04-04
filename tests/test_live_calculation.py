@@ -216,6 +216,10 @@ def test_comparison():
     assert h.calculate("1.0>=1.0")
     assert h.calculate("1.0<=1.0")
     assert h.calculate("1.0>=0.5")
+    assert h.calculate("1==1")
+    assert h.calculate("finder_id()==1")
+    assert h.calculate("1!=2")
+    assert h.calculate("finder_id()!=2")
     assert not h.calculate("1.0<=0.5")
 
 
