@@ -109,7 +109,7 @@ class BHLogData:
     def get_at_stepnum_for_id(self, stepnum, bhid):
         vars = self.get_at_stepnum(stepnum)
         try:
-            index = np.where(vars['bhid']==bhid)[0][0]
+            index = np.where(vars['bhid']==bhid)[0][-1]
         except IndexError:
             raise ValueError("BH %d not found in step %d"%(bhid,stepnum))
         vars_this = {k:v[index] for k, v in vars.items()}
