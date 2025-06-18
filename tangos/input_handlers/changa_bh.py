@@ -135,6 +135,11 @@ class BHLogData:
         stepnum = int(stepnum)
         return self.get_at_stepnum(stepnum)
 
+    def get_for_named_snapshot_for_id(self,filename,bhid):
+        name, stepnum = re.match(r"^(.*)\.(0[0-9]*)$", filename).groups()
+        stepnum = int(stepnum)
+        return self.get_at_stepnum_for_id(stepnum,bhid)
+
 class BlackHolesLog(BHLogData):
     _n_cols = 18
     _col_types = [int, float, float, float, float, float,
