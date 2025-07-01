@@ -37,20 +37,7 @@ class BH(PynbodyPropertyCalculation):
             raise RuntimeError("No proxies, please")
         boxsize = self.log.boxsize
 
-        vars = self.log.get_for_named_snapshot(self.filename)
-
-        mask = vars['bhid'] == properties.halo_number
-        if (mask.sum() == 0):
-            raise RuntimeError("Can't find BH in .orbit file")
-
-        # work out who's the main halo
-        # main_halo = None
-        # for i in properties.reverse_links:
-        #    if i.relation.text.startswith("BH"):
-        #        main_halo = i.halo_from
-        #        break
-        # if main_halo is None:
-        #    raise RuntimeError("Can't relate BH to its parent halo")
+        bh_data = self.log.get_for_named_snapshot_for_id(self.filename,properties.halo_number)
 
         try:
             main_halo = properties['host_halo']
@@ -65,21 +52,14 @@ class BH(PynbodyPropertyCalculation):
             except KeyError:
                 main_halo_ssc = None
 
-        entry = np.where(mask)[0]
-
-        print("target entry is", entry)
-        final = {}
-        for t in 'x', 'y', 'z', 'vx', 'vy', 'vz', 'mdot', 'mass', 'mdotmean':
-            final[t] = float(vars[t][entry])
-
         if main_halo_ssc is None:
             offset = np.array((0, 0, 0))
         else:
-            offset = np.array((final['x'], final['y'], final['z'])) - main_halo_ssc
+            offset = np.array((bh_data['x'], bh_data['y'], bh_data['z'])) - main_halo_ssc
             bad, = np.where(np.abs(offset) > boxsize / 2.)
             offset[bad] = -1.0 * (offset[bad] / np.abs(offset[bad])) * np.abs(boxsize - np.abs(offset[bad]))
 
-        return final['mdot'], final['mdotmean'], offset, np.linalg.norm(offset), final['mass']
+        return bh_data['mdot'], bh_data['mdotmean'], offset, np.linalg.norm(offset), bh_data['mass']
 
 
 class BHAccHistogram(TimeChunkedProperty):
