@@ -77,6 +77,7 @@ class ChangaBHImporter(GenericTangosTool):
                 dict_obj = core.get_or_create_dictionary_item(self._session, "tracker")
                 dict_obj_next = core.get_or_create_dictionary_item(self._session, "BH_merger_next")
                 dict_obj_prev = core.get_or_create_dictionary_item(self._session, "BH_merger_prev")
+                self._session.commit()
 
             track_links_n, idf_n, idt_n = tracking.get_tracker_links(self._session, dict_obj_next)
             bh_objects_1, nums1, id1 = self._get_bh_objs_numbers_and_dbids(ts1)
