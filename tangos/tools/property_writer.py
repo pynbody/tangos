@@ -506,6 +506,10 @@ class PropertyWriter(GenericTangosTool):
 
 
     def run_timestep_calculation(self, db_timestep):
+        # previous steps may have updated the dictionary. Especially with multiple CPUs in operation,
+        # things could be in an inconsistent state, so clear caches.
+        core.dictionary.clear_dictionary_caches()
+
         self._log_once_per_timestep("Processing %r", db_timestep)
         self._property_calculator_instances = properties.instantiate_classes(db_timestep.simulation,
                                                                              self.options.properties,
