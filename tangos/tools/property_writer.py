@@ -242,7 +242,10 @@ class PropertyWriter(GenericTangosTool):
     def _build_existing_properties(self, db_halo):
         existing_properties = db_halo.all_properties
         need_data = self._required_and_calculated_property_names()
-        need_data_ids = [core.get_dict_id(x,None) for x in need_data]
+
+        # allow_query = False below otherwise database gets repeatedly hammered looking for
+        # dictionary items that don't yet exist
+        need_data_ids = [core.get_dict_id(x,None, allow_query=False) for x in need_data]
 
         existing_properties_data = AttributableDict()
         for x in existing_properties:
