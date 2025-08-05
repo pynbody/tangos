@@ -553,6 +553,9 @@ class PropertyWriter(GenericTangosTool):
                 logger.debug("End halo list query")
 
             self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
+            session = core.get_default_session()
+            for halo in db_halos:
+                session.expunge(halo)
             self._transmit_existing_halos_and_properties(db_halos)
         else:
             print("Running on non-lead rank %d" % parallel_tasks.backend.rank())
