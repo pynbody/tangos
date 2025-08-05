@@ -14,6 +14,7 @@ from .. import config, core, live_calculation, parallel_tasks, properties
 from ..cached_writer import insert_list
 from ..log import logger
 from ..parallel_tasks import accumulative_statistics
+from ..parallel_tasks.message import Message
 from ..util import proxy_object, terminalcontroller, timing_monitor
 from ..util.check_deleted import check_deleted
 from . import GenericTangosTool
@@ -21,7 +22,6 @@ from . import GenericTangosTool
 
 class AttributableDict(dict):
     pass
-
 
 class PropertyWriter(GenericTangosTool):
     tool_name = "write"
@@ -190,11 +190,12 @@ class PropertyWriter(GenericTangosTool):
         else:
             self._include = None
 
+    def _is_lead_rank(self):
+        return parallel_tasks.backend is None or parallel_tasks.backend.rank()==1 or self.options.load_mode is None
+
     def _log_once_per_timestep(self, *args):
-        if parallel_tasks.backend is None or parallel_tasks.backend.rank()==1 or self.options.load_mode is None:
+        if self._is_lead_rank():
             logger.info(*args)
-
-
 
     def _build_halo_list(self, db_timestep):
         query = core.halo.SimulationObjectBase.timestep == db_timestep
@@ -260,23 +261,25 @@ class PropertyWriter(GenericTangosTool):
                 existing_properties_data[name] = x.halo_to
 
         existing_properties_data.halo_number = db_halo.halo_number
+        existing_properties_data.finder_id = db_halo.finder_id
+        existing_properties_data.finder_offset = db_halo.finder_offset
         existing_properties_data.NDM = db_halo.NDM
         existing_properties_data.NGas = db_halo.NGas
         existing_properties_data.NStar = db_halo.NStar
+        existing_properties_data.object_typecode = db_halo.object_typecode
         existing_properties_data['halo_number'] = db_halo.halo_number
         existing_properties_data['finder_id'] = db_halo.finder_id
+        existing_properties_data.id = db_halo.id
         return existing_properties_data
 
     def _build_existing_properties_all_halos(self, halos):
         return [self._build_existing_properties(h) for h in halos]
 
 
-    def _is_commit_needed(self, end_of_timestep, end_of_simulation):
+    def _is_commit_needed(self, end_of_timestep):
         if len(self._pending_properties)==0:
             return False
-        if end_of_simulation:
-            return True
-        elif end_of_timestep and (time.time() - self._last_commit_time > self._writer_minimum):
+        elif end_of_timestep:
             return True
         elif time.time() - self._last_commit_time > self._writer_timeout:
             return True
@@ -284,9 +287,9 @@ class PropertyWriter(GenericTangosTool):
             return False
 
 
-    def _commit_results_if_needed(self, end_of_timestep=False, end_of_simulation=False):
+    def _commit_results_if_needed(self, end_of_timestep=False):
 
-        if self._is_commit_needed(end_of_timestep, end_of_simulation):
+        if self._is_commit_needed(end_of_timestep):
             self._commit_results()
 
             self.tracker.report_to_log_or_server(logger)
@@ -296,21 +299,19 @@ class PropertyWriter(GenericTangosTool):
             message.update_performance_stats()
 
     def _commit_results(self):
-        insert_list(self._pending_properties)
+        commit_on_server = self.options.load_mode and self.options.load_mode.startswith('server')
+        insert_list(self._pending_properties, self._current_timestep_id, commit_on_server)
         self._pending_properties = []
         self._last_commit_time = time.time()
 
     def _queue_results_for_later_commit(self, db_halo, names, results, existing_properties_data):
         for n, r in zip(names, results):
-            if isinstance(r, proxy_object.ProxyObjectBase):
-                # TODO: possible optimization here using relative_to_timestep_cache
-                r = r.relative_to_timestep_id(self._current_timestep_id).resolve(core.get_default_session())
             if self.options.force or (n not in list(existing_properties_data.keys())):
                 existing_properties_data[n] = r
                 if self.options.debug:
                     logger.info("Debug mode - not creating property %r for %r with value %r", n, db_halo, r)
                 else:
-                    self._pending_properties.append((db_halo, n, r))
+                    self._pending_properties.append((proxy_object.ProxyObjectFromDatabaseId(db_halo.id), n, r))
 
     def _required_and_calculated_property_names(self):
         needed = []
@@ -365,9 +366,21 @@ class PropertyWriter(GenericTangosTool):
 
             self._current_timestep_id = db_timestep.id
 
+    def _clear_timestep_region_cache(self):
+        if self._loaded_timestep is None:
+            return
+
+        if hasattr(self._loaded_timestep, '_tangos_cached_regions'):
+            self._loaded_timestep._tangos_cached_regions.clear()
+
 
     def _set_current_halo(self, db_halo):
         self._set_current_timestep(db_halo.timestep)
+
+        # in shared-mem mode, region cache can end up unexpectedly using lots of mem per process since it's stored
+        # in a per-process cache. Let's assume there is not much performance penalty to just clearing it after each
+        # halo is procssed:
+        self._clear_timestep_region_cache()
 
         if self._loaded_halo_id==db_halo.id:
             return
@@ -504,6 +517,20 @@ class PropertyWriter(GenericTangosTool):
         num_objs = len(self._existing_properties_all_halos)
         return num_region_props * num_objs
 
+    def _transmit_existing_halos_and_properties(self, db_halos):
+        if parallel_tasks.backend is None or self.options.load_mode is None:
+            return
+        assert self._is_lead_rank()
+        message = Message((db_halos, self._existing_properties_all_halos))
+        for i in range(2, parallel_tasks.backend.size()):
+            message.send(i)
+
+    def _receive_existing_halos_and_properties(self):
+        assert parallel_tasks.backend is not None and self.options.load_mode is not None
+        assert not self._is_lead_rank()
+        result = Message.receive(1).contents
+        return result
+
 
     def run_timestep_calculation(self, db_timestep):
         # previous steps may have updated the dictionary. Especially with multiple CPUs in operation,
@@ -517,12 +544,26 @@ class PropertyWriter(GenericTangosTool):
         if self.options.with_prerequisites:
             self._add_prerequisites_to_calculator_instances(db_timestep)
 
-        with parallel_tasks.lock.SharedLock("insert_list"):
-            logger.debug("Start halo list query")
-            db_halos = self._build_halo_list(db_timestep)
-            logger.debug("End halo list query")
+        if self._is_lead_rank():
+            with parallel_tasks.lock.SharedLock("insert_list"):
+                logger.debug("Start halo list query")
+                db_halos = self._build_halo_list(db_timestep)
+                # the db_halos are used both as a starting point for caching properties required during the
+                # calculation, and as the starting point for loading particle data.
+                logger.debug("End halo list query")
 
-        self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
+            self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
+            self._transmit_existing_halos_and_properties(db_halos)
+        else:
+            print("Running on non-lead rank %d" % parallel_tasks.backend.rank())
+            db_halos, self._existing_properties_all_halos = self._receive_existing_halos_and_properties()
+            # NB db_halos are not valid ORM objects -- they are not connected to any session. They will only
+            # be used as stubs to load the relavant particle data, below.
+            #
+            # There is a historical oddity here - the "existing_properties_all_halos" also act like 'ORM-object-like'
+            # things with limited capabilities. This could probably all be brought together into single objects that
+            # serve all purposes included the ability to load particle data.
+
 
         self._log_once_per_timestep("Successfully gathered existing properties; calculating halo properties now...")
 
@@ -542,9 +583,12 @@ class PropertyWriter(GenericTangosTool):
             self.run_halo_calculation(db_halo, existing_properties)
 
         self._log_once_per_timestep("Done with %r", db_timestep)
-        self._unload_timestep()
 
         self._commit_results_if_needed(end_of_timestep=True)
+
+        self._unload_timestep()
+
+
 
     def _add_prerequisites_to_calculator_instances(self, db_timestep):
         will_calculate = []
@@ -580,7 +624,6 @@ class PropertyWriter(GenericTangosTool):
         for f_obj in self._get_parallel_timestep_iterator():
             self.run_timestep_calculation(f_obj)
 
-        self._commit_results_if_needed(True,True)
 
 
 class CalculationSuccessTracker(accumulative_statistics.StatisticsAccumulatorBase):

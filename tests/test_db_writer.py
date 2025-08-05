@@ -146,16 +146,16 @@ def test_basic_writing(fresh_database):
 
 @pytest.mark.parametrize('load_mode', [None, 'server'])
 def test_parallel_writing(fresh_database, load_mode):
-    parallel_tasks.use('multiprocessing-2')
+    parallel_tasks.use('multiprocessing-3')
     if load_mode is None:
         run_writer_with_args("dummy_property", parallel=True)
     else:
-        run_writer_with_args("dummy_property", "--load-mode="+load_mode, parallel=True)
+        print(run_writer_with_args("dummy_property", "--load-mode="+load_mode, parallel=True))
 
     _assert_properties_as_expected()
 
 def test_resuming(fresh_database):
-    parallel_tasks.use("multiprocessing-2")
+    parallel_tasks.use("multiprocessing-3")
     log = []
     for allow_resume in [False, False, True]:
         log.append(run_writer_with_args("dummy_property", parallel=True, allow_resume=allow_resume))
