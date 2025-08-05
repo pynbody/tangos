@@ -1,6 +1,8 @@
+from tangos import parallel_tasks as pt
+
 from . import core
 from .util import proxy_object
-from tangos import parallel_tasks as pt
+
 
 def create_property(halo, name, prop, session):
 
@@ -56,6 +58,3 @@ class PropertyListCommitMessage(pt.message.MessageWithResponse):
     def process(self):
         result = _insert_list_unlocked(*self.contents)
         self.respond(result)
-
-
-
