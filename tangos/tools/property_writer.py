@@ -558,7 +558,6 @@ class PropertyWriter(GenericTangosTool):
                 session.expunge(halo)
             self._transmit_existing_halos_and_properties(db_halos)
         else:
-            print("Running on non-lead rank %d" % parallel_tasks.backend.rank())
             db_halos, self._existing_properties_all_halos = self._receive_existing_halos_and_properties()
             # NB db_halos are not valid ORM objects -- they are not connected to any session. They will only
             # be used as stubs to load the relavant particle data, below.
