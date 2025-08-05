@@ -237,6 +237,11 @@ class PropertyWriter(GenericTangosTool):
             self._log_once_per_timestep("User-specified inclusion criterion excluded %d of %d halos",
                                         len(inclusion) - len(halos), len(inclusion))
 
+        # now 'disconnect' the halos from the database, so that they can be exchanged
+        # between processes if needed
+        for halo in halos:
+            sqlalchemy.orm.make_transient(halo)
+
         return halos
 
 
@@ -335,7 +340,6 @@ class PropertyWriter(GenericTangosTool):
         with check_deleted(self._loaded_timestep):
             self._loaded_timestep=None
             self._current_timestep_id = None
-
 
     def _set_current_timestep(self, db_timestep):
         if self._current_timestep_id == db_timestep.id:
@@ -553,9 +557,6 @@ class PropertyWriter(GenericTangosTool):
                 logger.debug("End halo list query")
 
             self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
-            session = core.get_default_session()
-            for halo in db_halos:
-                session.expunge(halo)
             self._transmit_existing_halos_and_properties(db_halos)
         else:
             db_halos, self._existing_properties_all_halos = self._receive_existing_halos_and_properties()
