@@ -48,7 +48,7 @@ jobs:
       # Or: python -m pip install git+https://github.com/pynbody/pynbody.git
 
     - name: Install yt
-      run: python -m pip install 'yt<4.4.0'
+      run: python -m pip install yt
 
     - name: Build test database
       working-directory: test_tutorial_build
