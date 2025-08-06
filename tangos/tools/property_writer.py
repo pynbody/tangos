@@ -131,7 +131,11 @@ class PropertyWriter(GenericTangosTool):
     @property
     def files(self):
         if not hasattr(self, '_files'):
-            self._build_file_list()
+            if self._is_lead_rank():
+                self._build_file_list()
+                self._transmit_file_list()
+            else:
+                self._files = self._receive_file_list()
         return self._files
 
 
@@ -520,12 +524,28 @@ class PropertyWriter(GenericTangosTool):
         return num_region_props * num_objs
 
     def _transmit_existing_halos_and_properties(self, db_halos):
-        if parallel_tasks.backend is None or self.options.load_mode is None:
+        if not self._should_share_query_results():
             return
         assert self._is_lead_rank()
         message = Message((db_halos, self._existing_properties_all_halos))
         for i in range(2, parallel_tasks.backend.size()):
             message.send(i)
+
+    def _transmit_file_list(self):
+        if not self._should_share_query_results():
+            return
+        assert self._is_lead_rank()
+        message = Message(self.files)
+        for i in range(2, parallel_tasks.backend.size()):
+            message.send(i)
+
+    def _receive_file_list(self):
+        assert self._should_share_query_results() and not self._is_lead_rank()
+        result = Message.receive(1).contents
+        return result
+
+    def _should_share_query_results(self):
+        return parallel_tasks.backend is not None and self.options.load_mode is not None
 
     def _receive_existing_halos_and_properties(self):
         assert parallel_tasks.backend is not None and self.options.load_mode is not None
@@ -626,12 +646,17 @@ class PropertyWriter(GenericTangosTool):
 
 
     def run_calculation_loop(self):
+        if self._should_share_query_results() and not self._is_lead_rank():
+            # we are not going to touch the database from this rank
+            core.get_default_session().close()
+            core.get_default_engine().dispose()
+        else:
+            parallel_tasks.database.synchronize_creator_object()
+
         # NB both these objects must be created at the same place in all processes,
         # since creating them is a 'barrier'-like operation
         self.timing_monitor = timing_monitor.TimingMonitor(allow_parallel=True)
         self.tracker = CalculationSuccessTracker(allow_parallel=True)
-
-        parallel_tasks.database.synchronize_creator_object()
 
         self._last_commit_time = time.time()
         self._pending_properties = []
