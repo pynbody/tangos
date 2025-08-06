@@ -198,30 +198,7 @@ class PropertyWriter(GenericTangosTool):
             logger.info(*args)
 
     def _build_halo_list(self, db_timestep):
-        query = core.halo.SimulationObjectBase.timestep == db_timestep
-        if self.options.htype is not None:
-            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.object_typecode
-                                    == core.halo.SimulationObjectBase.object_typecode_from_tag(self.options.htype))
-
-        if self.options.hmin is not None:
-            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.halo_number>=self.options.hmin)
-
-        if self.options.hmax is not None:
-            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.halo_number<=self.options.hmax)
-
-        needed_properties = self._required_and_calculated_property_names()
-
-        # it's important that anything we need from the database is loaded now, as if it's
-        # lazy-loaded later when we have relinquished the lock, SQLite may get upset
-        halo_query = (core.get_default_session().query(core.halo.SimulationObjectBase).
-                      options(sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.timestep),
-                              sqlalchemy.orm.raiseload("*")).
-                      order_by(core.halo.SimulationObjectBase.halo_number).filter(query))
-        if self._include:
-            needed_properties.append(self._include)
-
-        logger.debug('Gathering existing properties for all halos in timestep %r',db_timestep)
-        halo_query = live_calculation.MultiCalculation(*needed_properties).supplement_halo_query(halo_query)
+        halo_query = self._get_halo_list_query(db_timestep)
 
         halos = halo_query.all()
 
@@ -244,6 +221,27 @@ class PropertyWriter(GenericTangosTool):
 
         return halos
 
+    def _get_halo_list_query(self, db_timestep):
+        query = core.halo.SimulationObjectBase.timestep == db_timestep
+        if self.options.htype is not None:
+            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.object_typecode
+                                    == core.halo.SimulationObjectBase.object_typecode_from_tag(self.options.htype))
+        if self.options.hmin is not None:
+            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.halo_number >= self.options.hmin)
+        if self.options.hmax is not None:
+            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.halo_number <= self.options.hmax)
+        needed_properties = self._required_and_calculated_property_names()
+        # it's important that anything we need from the database is loaded now, as if it's
+        # lazy-loaded later when we have relinquished the lock, SQLite may get upset
+        halo_query = (core.get_default_session().query(core.halo.SimulationObjectBase).
+                      options(sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.timestep),
+                              sqlalchemy.orm.raiseload("*")).
+                      order_by(core.halo.SimulationObjectBase.halo_number).filter(query))
+        if self._include:
+            needed_properties.append(self._include)
+        logger.debug('Gathering existing properties for all halos in timestep %r', db_timestep)
+        halo_query = live_calculation.MultiCalculation(*needed_properties).supplement_halo_query(halo_query)
+        return halo_query
 
     def _build_existing_properties(self, db_halo):
         existing_properties = db_halo.all_properties
@@ -559,6 +557,8 @@ class PropertyWriter(GenericTangosTool):
             self._existing_properties_all_halos = self._build_existing_properties_all_halos(db_halos)
             self._transmit_existing_halos_and_properties(db_halos)
         else:
+            self._prepare_sqlalchemy_paths()
+
             db_halos, self._existing_properties_all_halos = self._receive_existing_halos_and_properties()
             # NB db_halos are not valid ORM objects -- they are not connected to any session. They will only
             # be used as stubs to load the relavant particle data, below.
@@ -591,7 +591,19 @@ class PropertyWriter(GenericTangosTool):
 
         self._unload_timestep()
 
+    def _prepare_sqlalchemy_paths(self):
+        """This strange-looking function was developed by trial and error to prepare sqlalchemy
+        for receiving pickled transient halos from a remote process. It's designed to fail
+        without actually issuing a query, but prompts sqlalchemy to get the path registry into
+        a state where it can receive pickled results from a succeeding queries.
 
+        Note that just building the query is not enough, one must actually attempt to execute it.
+        """
+        try:
+            non_existent_timestep = core.TimeStep(core.Simulation('bla'), 'bla')
+            self._get_halo_list_query(non_existent_timestep).first()
+        except:
+            pass
 
     def _add_prerequisites_to_calculator_instances(self, db_timestep):
         will_calculate = []
