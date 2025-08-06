@@ -1,8 +1,16 @@
+"""An implementation of a multiprocessing backend for parallel tasks in Tangos.
+
+This implements an MPI-like interface using a 'manager' process which relays messages between worker processes.
+Messages are thus sent and received using a star-like topology, but this should be transparent to the user.
+"""
+
 import multiprocessing
 import multiprocessing.resource_tracker
 import os
+import pickle
 import select
 import signal
+import struct
 import sys
 import threading
 import time
@@ -37,7 +45,9 @@ class NoMatchingItem(Exception):
 
 def send(data, destination, tag=0):
     with send_lock:
-        _pipe.send((data, destination, tag))
+        payload = pickle.dumps(data)
+        header = struct.pack("ii", destination, tag)
+        _pipe.send_bytes(header+payload)
 
 def receive_any(source=None):
     return receive(source,None,True)
@@ -76,7 +86,10 @@ def _pop_first_match_from_reception_buffer(source, tag):
 def _receive_item_into_buffer():
     if _recv_lock.acquire(False):
         try:
-            _recv_buffer.append(_pipe.recv())
+            message = _pipe.recv_bytes()
+            source, tag = struct.unpack("ii", message[:8])
+            payload = pickle.loads(message[8:])
+            _recv_buffer.append((payload, source, tag))
         finally:
             _recv_lock.release()
     else:
@@ -120,8 +133,8 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in, capture_log):
         else:
             target_fn(*args_in)
         if result is not None:
-            _pipe.send(("log", result))
-        _pipe.send("exit")
+            send(("log", result), -1, -1)
+        send("exit", -1, -1)
     except Exception as e:
         import sys
         import traceback
@@ -132,8 +145,8 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in, capture_log):
             traceback.print_exception(exc_type, exc_value, exc_traceback,
                                       file=sys.stderr)
         if result is not None:
-            _pipe.send(("log", result))
-        _pipe.send(("error", exc_value, exc_traceback))
+            send(("log", result), -1, -1)
+        send(("error", exc_value, exc_traceback), -1, -1)
 
 
     _pipe.close()
@@ -170,20 +183,26 @@ def launch_functions(functions, args, capture_log=False):
     while any(running):
         readable_pipes, _, _ = select.select(parent_connections, [], [])
         for pipe_i in readable_pipes:
-            i = parent_connections.index(pipe_i)
+            source = parent_connections.index(pipe_i)
             if pipe_i.poll():
-                message = pipe_i.recv()
-                if message=='exit':
-                    running[i]=False
-                elif isinstance(message[0], str) and message[0]=='error':
-                    error = message[1]
-                    traceback = message[2]
-                    running = [False]
-                    break
-                elif isinstance(message[0], str) and message[0]=='log':
-                    log+=message[1]
+                message = pipe_i.recv_bytes()
+                destination, tag = struct.unpack("ii", message[:8])
+                if destination == -1:
+                    # special message, not for a specific process
+                    message = pickle.loads(message[8:])
+                    if message=='exit':
+                        running[source]=False
+                    elif isinstance(message[0], str) and message[0]=='error':
+                        error = message[1]
+                        traceback = message[2]
+                        running = [False]
+                        break
+                    elif isinstance(message[0], str) and message[0]=='log':
+                        log+=message[1]
                 else:
-                    parent_connections[message[1]].send((message[0],i,message[2]))
+                    new_header = struct.pack("ii", source, tag)
+                    payload = message[8:]
+                    parent_connections[destination].send_bytes(new_header + payload)
 
     for pipe_i in parent_connections:
         pipe_i.close()
