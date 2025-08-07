@@ -23,6 +23,12 @@ from . import GenericTangosTool
 class AttributableDict(dict):
     pass
 
+class FileListMessage(Message):
+    pass
+
+class ExistingHalosAndPropertiesMessage(Message):
+    pass
+
 class PropertyWriter(GenericTangosTool):
     tool_name = "write"
     tool_description = "Calculate properties and write them into the tangos database"
@@ -301,10 +307,12 @@ class PropertyWriter(GenericTangosTool):
 
 
     def _commit_results_if_needed(self, end_of_timestep=False):
+        need_to_commit = self._is_commit_needed(end_of_timestep)
 
-        if self._is_commit_needed(end_of_timestep):
+        if need_to_commit:
             self._commit_results()
 
+        if need_to_commit or end_of_timestep:
             self.tracker.report_to_log_or_server(logger)
             self.timing_monitor.report_to_log_or_server(logger)
 
@@ -533,7 +541,7 @@ class PropertyWriter(GenericTangosTool):
         if not self._should_share_query_results():
             return
         assert self._is_lead_rank()
-        message = Message((db_halos, self._existing_properties_all_halos))
+        message = ExistingHalosAndPropertiesMessage((db_halos, self._existing_properties_all_halos))
         for i in range(2, parallel_tasks.backend.size()):
             message.send(i)
 
@@ -541,13 +549,13 @@ class PropertyWriter(GenericTangosTool):
         if not self._should_share_query_results():
             return
         assert self._is_lead_rank()
-        message = Message(self.files)
+        message = FileListMessage(self.files)
         for i in range(2, parallel_tasks.backend.size()):
             message.send(i)
 
     def _receive_file_list(self):
         assert self._should_share_query_results() and not self._is_lead_rank()
-        result = Message.receive(1).contents
+        result = FileListMessage.receive(1).contents
         return result
 
     def _should_share_query_results(self):
@@ -556,7 +564,7 @@ class PropertyWriter(GenericTangosTool):
     def _receive_existing_halos_and_properties(self):
         assert parallel_tasks.backend is not None and self.options.load_mode is not None
         assert not self._is_lead_rank()
-        result = Message.receive(1).contents
+        result = ExistingHalosAndPropertiesMessage.receive(1).contents
         return result
 
 

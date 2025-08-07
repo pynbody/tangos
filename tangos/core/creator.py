@@ -72,6 +72,11 @@ def get_creator(session=None):
     else:
         return session.query(Creator).filter_by(id=_current_creator.id).first()
 
+def get_creator_id():
+    """Get the ID of the current Creator object for this process."""
+    global _current_creator
+    _ensure_current_creator_is_valid()
+    return _current_creator.id
 
 def _ensure_current_creator_is_valid():
     from sqlalchemy import inspect

@@ -141,7 +141,7 @@ def run_writer_with_args(*args, parallel=False, allow_resume=False):
 
 
 def test_basic_writing(fresh_database):
-    run_writer_with_args("dummy_property")
+    print(run_writer_with_args("dummy_property"))
     _assert_properties_as_expected()
 
 @pytest.mark.parametrize('load_mode', [None, 'server'])
@@ -157,7 +157,9 @@ def test_parallel_writing(fresh_database, load_mode):
 def test_property_gathering_across_processes(fresh_database):
     print(run_writer_with_args('dummy_property'))
     parallel_tasks.use('multiprocessing-5')
-    print(run_writer_with_args("dummy_property", "--load-mode=server-shared-mem", parallel=True))
+    results = run_writer_with_args("dummy_property", "--load-mode=server-shared-mem", parallel=True)
+    print(results)
+    assert "Already exists: 15" in results
 
 def test_resuming(fresh_database):
     parallel_tasks.use("multiprocessing-3")
