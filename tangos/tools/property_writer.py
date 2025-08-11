@@ -215,6 +215,36 @@ class PropertyWriter(GenericTangosTool):
         if self._is_lead_rank():
             logger.info(*args)
 
+    def _recursive_make_transient(self, object_list):
+        """
+        Make all objects in the list transient, including their properties and links.
+        This is used to ensure that the objects are not tied to the database session
+        and can be modified freely.
+        """
+
+        ids = [obj.id for obj in object_list]
+
+        for obj in object_list:
+            sqlalchemy.orm.make_transient(obj)
+            for prop in obj.all_properties:
+                sqlalchemy.orm.make_transient(prop)
+            for link in obj.all_links:
+                sqlalchemy.orm.make_transient(link)
+                if link.halo_to_id not in ids:
+                    ids.append(link.halo_to_id)
+                    object_list.append(link.halo_to)
+            for link in obj.reverse_links:
+                sqlalchemy.orm.make_transient(link)
+                if link.halo_from_id not in ids:
+                    ids.append(link.halo_from_id)
+                    object_list.append(link.halo_from)
+
+        unique_timesteps = {h.timestep for h in object_list}
+
+        for ts in unique_timesteps:
+            ts.simulation = None # don't transmit simulations, just their ids.
+            sqlalchemy.orm.make_transient(ts)
+
     def _build_object_list(self, db_timestep):
         object_query = self._get_object_list_query(db_timestep)
 
@@ -232,17 +262,7 @@ class PropertyWriter(GenericTangosTool):
             self._log_once_per_timestep("User-specified inclusion criterion excluded %d of %d objects",
                                         len(inclusion) - len(db_objects), len(inclusion))
 
-        unique_timesteps = {h.timestep for h in db_objects}
-        unique_simulations = {h.timestep.simulation for h in db_objects}
-
-        for sim in unique_simulations:
-            sqlalchemy.orm.make_transient(sim)
-
-        for ts in unique_timesteps:
-            sqlalchemy.orm.make_transient(ts)
-
-        for h in db_objects:
-            sqlalchemy.orm.make_transient(h)
+        self._recursive_make_transient(db_objects)
 
         return db_objects
 
@@ -468,7 +488,7 @@ class PropertyWriter(GenericTangosTool):
                 self.tracker.register_error()
 
                 if self.tracker.should_log_error(e):
-                    logger.info("Uncaught exception {!r} during property calculation {!r} applied to {!r}".format(e, property_calculator, db_object))
+                    logger.info(f"Uncaught exception {e!r} during property calculation {property_calculator!r} applied to {db_object!r}")
                     exc_data = traceback.format_exc()
                     for line in exc_data.split("\n"):
                         logger.info(line)
