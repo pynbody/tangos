@@ -59,7 +59,6 @@ class PropertyCalculation(metaclass=PropertyCalculationMetaClass):
         :type simulation: tangos.core.simulation.Simulation
         """
         self.__simulation = simulation
-        self.__simulation_property_cache = {}
         self.timing_monitor = timing_monitor.TimingMonitor()
 
     def get_simulation_property(self, name, default):
@@ -71,25 +70,7 @@ class PropertyCalculation(metaclass=PropertyCalculationMetaClass):
         This is safe to call even if the database might be locked. It also implements a
         cache at the object level, so in the unlikely event that a simulation property is
         updated mid-calculation, it may return old results."""
-        if name not in self.__simulation_property_cache:
-            self.__simulation_property_cache[name] = \
-                self._get_simulation_property_uncached(name, self.__no_result)
-        result = self.__simulation_property_cache[name]
-        if result is self.__no_result:
-            return default
-        else:
-            return result
-
-    def _get_simulation_property_uncached(self, name, default):
-        """Query the database for a property of the simulation on which this calculation is being computed
-
-        :param name: The name of the property to retrieve
-        :param default: The default value to return if no such property exists
-
-        This is safe to call even if the database might be locked.
-        """
-        with parallel_tasks.lock.SharedLock("insert_list"):
-            return self.__simulation.get(name, default)
+        return self.__simulation.get(name, default)
 
     @classmethod
     def index_of_name(cls, name):

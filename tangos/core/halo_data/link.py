@@ -56,7 +56,7 @@ class HaloLink(Base):
 
         self.weight = weight
 
-        self.creator = creator.get_creator(Session.object_session(halo_from))
+        self.creator_id = creator.get_creator_id()
 
     def __repr__(self):
         if self.weight is None:
