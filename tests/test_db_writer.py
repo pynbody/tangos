@@ -155,11 +155,13 @@ def test_parallel_writing(fresh_database, load_mode):
     _assert_properties_as_expected()
 
 def test_property_gathering_across_processes(fresh_database):
-    print(run_writer_with_args('dummy_property'))
     parallel_tasks.use('multiprocessing-5')
+    results = run_writer_with_args('dummy_property',  parallel=True)
+    assert "Succeeded: 15 property calculations" in results
+
     results = run_writer_with_args("dummy_property", "--load-mode=server-shared-mem", parallel=True)
-    print(results)
     assert "Already exists: 15" in results
+
 
 def test_resuming(fresh_database):
     parallel_tasks.use("multiprocessing-3")

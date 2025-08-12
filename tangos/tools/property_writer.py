@@ -225,25 +225,24 @@ class PropertyWriter(GenericTangosTool):
         ids = [obj.id for obj in object_list]
 
         for obj in object_list:
+            obj.timestep = None # no need to transmit this again
+
             sqlalchemy.orm.make_transient(obj)
+
+            # not sure why make_transient doesn't clear this... you'd think it should?
+            obj._sa_instance_state.committed_state = {}
+
             for prop in obj.all_properties:
                 sqlalchemy.orm.make_transient(prop)
+                prop.halo = None
             for link in obj.all_links:
                 sqlalchemy.orm.make_transient(link)
                 if link.halo_to_id not in ids:
                     ids.append(link.halo_to_id)
                     object_list.append(link.halo_to)
-            for link in obj.reverse_links:
-                sqlalchemy.orm.make_transient(link)
-                if link.halo_from_id not in ids:
-                    ids.append(link.halo_from_id)
-                    object_list.append(link.halo_from)
 
-        unique_timesteps = {h.timestep for h in object_list}
 
-        for ts in unique_timesteps:
-            ts.simulation = None # don't transmit simulations, just their ids.
-            sqlalchemy.orm.make_transient(ts)
+
 
     def _build_object_list(self, db_timestep):
         object_query = self._get_object_list_query(db_timestep)
