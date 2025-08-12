@@ -419,3 +419,49 @@ def test_writer_with_property_accessing_timestep(fresh_database):
     run_writer_with_args("dummy_property_accessing_timestep")
 
     assert db.get_halo("%/step.1/halo_1")['dummy_property_accessing_timestep'] == -1.0
+
+@pytest.fixture
+def db_with_trackers():
+    import numpy as np
+    from tangos.input_handlers import pynbody
+    parallel_tasks.use('null')
+
+    testing.init_blank_db_for_testing()
+    db.config.base = os.path.join(os.path.dirname(__file__), "test_simulations")
+    manager = add_simulation.SimulationAdderUpdater(pynbody.ChangaInputHandler("test_tipsy"))
+    with log.LogCapturer():
+        manager.scan_simulation_and_add_all_descendants()
+
+    sim = db.get_simulation("test_tipsy")
+    track_id_data = tangos.core.tracking.TrackData(sim)
+    track_id_data.halo_number = 1
+    track_id_data.particle_array = np.array([20000, 40000, 60000])
+    track_id_data.use_iord = True
+
+    db.get_default_session().add(track_id_data)
+    db.get_default_session().commit()
+
+    track_id_data.create_objects()
+
+class CheckTrackerProperty(properties.pynbody.PynbodyPropertyCalculation):
+    """A property that checks that the tracker objects have been created"""
+    names = "check_tracker_property"
+
+    def requires_property(self):
+        return []
+
+    def calculate(self, data, entry):
+        if (data['iord'] == [20000, 40000, 60000]).all():
+            return 1
+        else:
+            return -1
+
+
+
+def test_writer_with_trackers(db_with_trackers):
+    """Test that the writer can handle trackers"""
+    print(run_writer_with_args("check_tracker_property", "--type", "tracker"))
+
+    assert db.get_halo("test_tipsy/%640/tracker_1")['check_tracker_property'] == 1
+    assert db.get_halo("test_tipsy/%832/tracker_1")['check_tracker_property'] == 1
+
