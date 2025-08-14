@@ -416,13 +416,14 @@ def test_writer_num_regions_optimization(fresh_database):
 def test_writer_with_property_accessing_timestep(fresh_database):
     db.get_halo("%/step.1/halo_1")['dummy_link'] = db.get_halo("%/step.2/halo_1")
 
-    run_writer_with_args("dummy_property_accessing_timestep")
+    print(run_writer_with_args("dummy_property_accessing_timestep"))
 
     assert db.get_halo("%/step.1/halo_1")['dummy_property_accessing_timestep'] == -1.0
 
 @pytest.fixture
 def db_with_trackers():
     import numpy as np
+
     from tangos.input_handlers import pynbody
     parallel_tasks.use('null')
 
@@ -457,11 +458,19 @@ class CheckTrackerProperty(properties.pynbody.PynbodyPropertyCalculation):
             return -1
 
 
+@pytest.mark.parametrize('load_mode', [None, 'partial', 'server', 'server-shared-mem'])
+def test_writer_with_trackers(db_with_trackers, load_mode):
+    """Test that the writer can handle trackers. Server-partial mode is not supported."""
 
-def test_writer_with_trackers(db_with_trackers):
-    """Test that the writer can handle trackers"""
-    print(run_writer_with_args("check_tracker_property", "--type", "tracker"))
+    load_mode_args = []
+    if load_mode is not None:
+        load_mode_args = ["--load-mode", load_mode]
+
+    is_parallel = load_mode is not None and load_mode != 'partial'
+    if is_parallel:
+        parallel_tasks.use('multiprocessing-3')
+    print(run_writer_with_args("check_tracker_property", "--type", "tracker", *load_mode_args,
+                               parallel = is_parallel,))
 
     assert db.get_halo("test_tipsy/%640/tracker_1")['check_tracker_property'] == 1
     assert db.get_halo("test_tipsy/%832/tracker_1")['check_tracker_property'] == 1
-

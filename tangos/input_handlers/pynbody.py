@@ -175,29 +175,39 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             raise NotImplementedError("Load mode %r is not implemented"%mode)
 
     def load_tracked_region(self, ts_extension, track_data, mode=None) -> pynbody.snapshot.simsnap.SimSnap:
-        f = self.load_timestep(ts_extension, mode)
-        indices = self._get_indices_for_snapshot(f, track_data)
-        if mode=='partial':
-            return pynbody.load(f.filename, take=indices)
-        elif mode is None:
-            return f[indices]
+        from ..parallel_tasks import pynbody_server as ps
+
+        timestep = self.load_timestep(ts_extension, mode)
+        if mode is None:
+            indices = self._get_indices_for_snapshot(timestep, track_data)
+            return timestep[indices]
+        elif mode=='partial':
+            indices = self._get_indices_for_snapshot(timestep, track_data)
+            return pynbody.load(timestep.filename, take=indices)
+        elif mode=='server':
+            return timestep.get_view(
+                ps.snapshot_queue.TrackingSpecification(track_data.id, track_data)
+            )
+        elif mode=='server-shared-mem':
+            indices = self._get_indices_for_snapshot(timestep.shared_mem_view, track_data)
+            return timestep.shared_mem_view[indices].get_copy_on_access_simsnap()
         else:
-            raise NotImplementedError("Load mode %r is not implemented"%mode)
+            raise NotImplementedError("Load mode %r is not implemented for trackers"%mode)
 
 
     def _get_indices_for_snapshot(self, f, track_data):
         pt = track_data.particles
         if track_data.use_iord is True:
 
-            dm_part = f.dm[np.in1d(f.dm['iord'], pt)]
+            dm_part = f.dm[np.isin(f.dm['iord'], pt)]
 
             try:
-                star_part = f.star[np.in1d(f.star['iord'], pt)]
+                star_part = f.star[np.isin(f.star['iord'], pt)]
             except KeyError:
                 star_part = f[0:0]
 
             try:
-                gas_part = f.gas[np.in1d(f.gas['iord'], pt)]
+                gas_part = f.gas[np.isin(f.gas['iord'], pt)]
             except KeyError:
                 gas_part = f[0:0]
 

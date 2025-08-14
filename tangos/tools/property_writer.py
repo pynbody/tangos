@@ -261,9 +261,30 @@ class PropertyWriter(GenericTangosTool):
             self._log_once_per_timestep("User-specified inclusion criterion excluded %d of %d objects",
                                         len(inclusion) - len(db_objects), len(inclusion))
 
+        self._attach_track_data_to_trackers(db_objects)
+
         self._recursive_make_transient(db_objects)
 
         return db_objects
+
+    def _attach_track_data_to_trackers(self, db_objects):
+        track_objects = []
+        track_ids = []
+        for dbo in db_objects:
+            if isinstance(dbo, core.halo.Tracker):
+                track_objects.append(dbo)
+                track_ids.append(dbo.halo_number)
+        all_track_data : list[core.tracking.TrackData] = core.get_default_session().query(core.tracking.TrackData).filter(
+            core.tracking.TrackData.id.in_(track_ids)).all()
+        track_id_to_trackdata = {trackdata.id: trackdata for trackdata in all_track_data}
+        for t in all_track_data:
+            sqlalchemy.orm.make_transient(t)
+
+        for tracker in track_objects:
+            if tracker.halo_number in track_id_to_trackdata:
+                tracker._tracker = track_id_to_trackdata[tracker.halo_number]
+            else:
+                logger.warning("Tracker %r not found in the database, skipping", tracker.halo_number)
 
     def _get_object_list_query(self, db_timestep):
         query = core.halo.SimulationObjectBase.timestep == db_timestep

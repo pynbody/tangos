@@ -442,7 +442,9 @@ class Tracker(SimulationObjectBase):
 
     @property
     def tracker(self):
-        return self.timestep.simulation.trackers.filter_by(halo_number=self.halo_number).first()
+        if not hasattr(self, "_tracker"):
+            self._tracker = self.timestep.simulation.trackers.filter_by(halo_number=self.halo_number).first()
+        return self._tracker
 
     def load(self, mode=None):
         handler = self.timestep.simulation.get_output_handler()
