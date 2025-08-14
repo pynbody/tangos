@@ -284,7 +284,8 @@ class PropertyWriter(GenericTangosTool):
             if tracker.halo_number in track_id_to_trackdata:
                 tracker._tracker = track_id_to_trackdata[tracker.halo_number]
             else:
-                logger.warning("Tracker %r not found in the database, skipping", tracker.halo_number)
+                logger.warning("Particle IDs for tracker %r not found in the database", tracker.halo_number)
+                tracker._tracker = None
 
     def _get_object_list_query(self, db_timestep):
         query = core.halo.SimulationObjectBase.timestep == db_timestep
