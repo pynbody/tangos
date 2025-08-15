@@ -73,14 +73,22 @@ class Simulation(Base):
         else:
             return self._get_sim_property_from_database(name)
 
+    def __raise_key_error(self, name):
+        raise KeyError(f"Simulation property '{name}' not found")
+
     def _get_sim_property_from_cache(self, name):
+        if name not in self._properties_cache:
+            self.__raise_key_error(name)
         return self._properties_cache[name]
 
     def _get_sim_property_from_database(self, name):
         session = Session.object_session(self)
         did = get_dict_id(name, session=session)
-        return session.query(SimulationProperty).filter_by(name_id=did,
-                                                           simulation_id=self.id).first().data
+        result = session.query(SimulationProperty).filter_by(name_id=did,
+                                                           simulation_id=self.id).first()
+        if result is None:
+            self.__raise_key_error(name)
+        return result.data
 
     def __setitem__(self, st, data):
         from . import Session

@@ -1,5 +1,6 @@
 import os
 
+import pytest
 from pytest import fixture
 
 import tangos as db
@@ -15,6 +16,10 @@ def setup_func(add=True):
         manager = add_simulation.SimulationAdderUpdater(output_testing.TestInputHandler("dummy_sim_1"))
         with log.LogCapturer():
             manager.scan_simulation_and_add_all_descendants()
+
+    sess = db.core.get_default_session()
+    db.core.dictionary.get_or_create_dictionary_item(sess, "dummy_dictionary_item")
+    sess.commit()
 
 def teardown_func():
     db.core.close_db()
@@ -46,9 +51,20 @@ def test_step_info(fresh_database):
     assert db.get_timestep("dummy_sim_1/step.1").time_gyr==1
     assert db.get_timestep("dummy_sim_1/step.1").redshift==0.5
 
-def test_simulation_properties(fresh_database):
-    assert db.get_simulation("dummy_sim_1").properties.count()==3
-    assert db.get_simulation("dummy_sim_1")['dummy_sim_property']=='42'
+@pytest.mark.parametrize("use_caching", [True, False])
+def test_simulation_properties(fresh_database, use_caching):
+    sim = db.get_simulation("dummy_sim_1")
+    if use_caching:
+        sim.cache_properties()
+    assert sim.properties.count()==3
+    assert sim['dummy_sim_property']=='42'
+
+    with pytest.raises(KeyError):
+        _ = sim['nonexistent_property']
+
+    with pytest.raises(KeyError):
+        _ = sim['dummy_dictionary_item'] # exists in dictionary, but not as a sim property
+
 
 def test_readd_simulation(fresh_database):
     manager = add_simulation.SimulationAdderUpdater(output_testing.TestInputHandler("dummy_sim_1"))

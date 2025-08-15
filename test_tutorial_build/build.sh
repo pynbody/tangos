@@ -99,7 +99,7 @@ build_enzo_yt() {
 }
 
 clearup_files() {
-  if [ ! -z "$INTEGRATION_TESTING" ]; then
+  if [ ! -z "$SAVE_DISK_SPACE" ]; then
     rm -rf $1
   fi
 }
