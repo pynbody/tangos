@@ -196,6 +196,8 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
 
     def _get_indices_for_snapshot(self, f, track_data):
+        if track_data is None:
+            return np.array([], dtype=np.intp)
         pt = track_data.particles
         if track_data.use_iord is True:
 
