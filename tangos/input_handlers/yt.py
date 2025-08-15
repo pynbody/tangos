@@ -57,6 +57,8 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         threshold:float =0.005,
         object_typetag: str="halo",
         output_handler_for_ts2=None,
+        members1=None,
+        members2=None,
         fuzzy_match_kwa={},
     ) -> Tuple[List[int], List[List[Tuple[int, int]]]]:
         if output_handler_for_ts2 is None:
@@ -78,41 +80,36 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
             h2, _ = self._load_halo_cat(ts2, object_typetag)
         else:
             h2, _ = output_handler_for_ts2._load_halo_cat(ts2, object_typetag)
-
-        # Compute the sets of particle ids in each halo
-        members2 = np.concatenate([
-            h2.halo("halos", i).member_ids
-            for i in h2.r["particle_identifier"].astype(int)
-            if halo_min <= i <= halo_max
-        ])
-
-        # members2halo2 = np.concatenate([
-        #     np.repeat(itangos, len(h2.halo("halos", irockstar).member_ids))
-        #     for itangos, irockstar in enumerate(h2.r["particle_identifier"].astype(int))
-        #     if halo_min <= itangos <= halo_max
-        # ])
         
-        logger.info("Computing halo members of %r halos for %r", len(h2.r["particle_identifier"].astype(int)), ts2)
-        # Alternative approach to compute the sets of particle ids in each halo.
-        # Faster as it avoids repeated calls to h2.halo(), which dominates the runtime,
-        # at the cost of some memory overhead.
-        members2 = [h2.halo("halos", irockstar).member_ids for irockstar in h2.r["particle_identifier"].astype(int) if halo_min <= irockstar <= halo_max]
+        if members1 is None and members2 is None:
+            members_cached = False
+            # logger.info("Computing halo members for timesteps %r and %r", ts1, ts2)
+            # Alternative approach to compute the sets of particle ids in each halo.
+            # Faster as it avoids repeated calls to h2.halo(), which dominates the runtime,
+            # at the cost of some memory overhead.
+            members2 = [h2.halo("halos", irockstar).member_ids
+                        for irockstar in h2.r["particle_identifier"].astype(int)
+                        if halo_min <= irockstar <= halo_max]
+            members1 = [h1.halo("halos", irockstar).member_ids
+                        for irockstar in h1.r["particle_identifier"].astype(int)
+                        if halo_min <= irockstar <= halo_max]
+        else:
+            members_cached = True
+            # logger.info("Using cached halo members for timesteps %r and %r", ts1, ts2)
+            
         members2halo2 = np.concatenate([np.full(len(ids), i, dtype=int) for i, ids in enumerate(members2)])
-        
-        members2 = np.concatenate(members2)
+        members2_flattened = np.concatenate(members2)
 
         # Sort for np.searchsorted
-        members2_sorted = np.sort(members2)
-        members2halo2_sorted = members2halo2[np.argsort(members2)]
+        members2_sorted = np.sort(members2_flattened)
+        members2halo2_sorted = members2halo2[np.argsort(members2_flattened)]
 
-        logger.info("Computing intersection of halo members between %r and %r", ts1, ts2)
+        # logger.info("Computing intersection of halo members between %r and %r", ts1, ts2)
         # Compute size of intersection of all sets in h1 with those in h2
         cat = []
-        for ihalo1_tangos, ihalo1_rockstar in enumerate(h1.r["particle_identifier"].astype(int)):
+        for ihalo1_tangos, ids1 in enumerate(members1):
             if not (halo_min <= ihalo1_tangos <= halo_max):
                 continue
-
-            ids1 = h1.halo("halos", ihalo1_rockstar).member_ids
             
             # NOTE: Need to make the array unique as there are particles in ts2 which are not in any
             #       halos compared to ts1 (ex: stripping, ejected particles, etc.).
@@ -156,7 +153,10 @@ class YtInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
 
             cat.append(list(zip(idhalo2, weights)))
 
-        return cat
+        if members_cached:
+            return cat
+        else:
+            return cat, members1, members2
 
     def enumerate_objects(self, ts_extension, object_typetag="halo", min_halo_particles=config.min_halo_particles):
         if object_typetag!="halo":
