@@ -52,7 +52,7 @@ jobs:
 
     - name: Build test database
       working-directory: test_tutorial_build
-        run: export INTEGRATION_TESTING=1; export SAVE_DISK_SPACE=1; bash build.sh
+      run: export INTEGRATION_TESTING=1; export SAVE_DISK_SPACE=1; bash build.sh
 
     - uses: actions/upload-artifact@v4
       with:
