@@ -89,7 +89,11 @@ def _ensure_current_creator_is_valid():
         default_session.commit()
     else:
         current_creator_session = Session.object_session(_current_creator)
-        if  current_creator_session is not default_session:
+        if current_creator_session is None:
+            # If the current creator is not associated with any session, add it to the default session
+            default_session.add(_current_creator)
+            default_session.commit()
+        elif current_creator_session is not default_session:
             if not inspect(_current_creator).persistent:
                 current_creator_session.commit()
             with default_session.no_autoflush:
