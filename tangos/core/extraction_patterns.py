@@ -123,7 +123,7 @@ class HaloPropertyValueGetter(HaloPropertyGetter):
             # Optimisation: figure out a providing class for the first output and assume it's ok for all of them
             try:
                 self._providing_class = property_object.name.providing_class(property_object.halo.handler_class)
-            except NameError:
+            except (NameError, AttributeError):
                 pass
 
     def _postprocess_one_result(self, property_object):

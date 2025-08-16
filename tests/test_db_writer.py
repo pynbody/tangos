@@ -243,10 +243,17 @@ class DummyPropertyRequiringLink(DummyProperty):
     names = "dummy_property_requiring_link",
 
     def requires_property(self):
-        return ["dummy_link"]
+        return ["dummy_link.halo_number()"]
+
+    def calculate(self, data, entry):
+        if entry['dummy_link.halo_number()'] is not None:
+            return entry['dummy_link.halo_number()'],
+        else:
+            raise ValueError("No link found for halo %s" % entry.id)
+
 
 def test_link_property(fresh_database):
-    run_writer_with_args("dummy_link")
+    print(run_writer_with_args("dummy_link"))
     assert db.get_default_session().query(db.core.HaloLink).count() == 15
     db.testing.assert_halolists_equal([db.get_halo(2)['dummy_link']], [db.get_halo(1)])
 
@@ -256,11 +263,16 @@ def test_link_dependency(fresh_database):
 
 
     run_writer_with_args("dummy_link")
-    run_writer_with_args("dummy_property_requiring_link")
+    print(run_writer_with_args("dummy_property_requiring_link"))
     assert db.get_default_session().query(db.core.HaloProperty).count() == 15
+
+    assert db.get_halo("dummy_sim_1/step.2/1")['dummy_property_requiring_link'] == 1
 
 def test_writer_sees_raw_properties(fresh_database):
     # regression test for issue #121
+    # Note that this is desirable to prevent long reconstructions from being run (see issue discussion),
+    # but now actually happens as a beneficial side-effect of the way the writer disconnects objects from
+    # the session before running calculations.
     run_writer_with_args("dummy_property_with_reconstruction")
     assert db.get_halo(2)['dummy_property_with_reconstruction']==2.0
     assert db.get_halo(2).calculate('raw(dummy_property_with_reconstruction)')==1.0

@@ -337,9 +337,6 @@ class MultiCalculation(Calculation):
         for c in self.calculations:
             values, description = c.values_and_description(mask.mask(halos))
             results[c_column:c_column+c.n_columns()] = mask.unmask(values)
-            # TODO: in principle this masking should _not_ occur unless we know the user has called values_sanitized
-            # - other calls should not cross-contaminate columns in this way
-            mask.mark_nones_as_masked(values)
             c_column+=c.n_columns()
 
         # TODO - problem: there is no good description of multiple properties
@@ -712,14 +709,15 @@ class StoredProperty(Calculation):
         self._multivalued=multivalued
 
     def values(self, halos):
-        self._name_id = tangos.core.dictionary.get_dict_id(self._name)
+        self._name_id = tangos.core.dictionary.get_dict_id(self._name, default=None)
         ret = np.empty((1,len(halos)),dtype=object)
-        for i, h in enumerate(halos):
-            if self._extraction_pattern.cache_contains(h, self._name_id):
-                if self._multivalued:
-                    ret[0,i]=self._extraction_pattern.get_from_cache(h, self._name_id)
-                else:
-                    ret[0, i] = self._extraction_pattern.get_from_cache(h, self._name_id)[0]
+        if self._name_id is not None:
+            for i, h in enumerate(halos):
+                if self._extraction_pattern.cache_contains(h, self._name_id):
+                    if self._multivalued:
+                        ret[0,i]=self._extraction_pattern.get_from_cache(h, self._name_id)
+                    else:
+                        ret[0, i] = self._extraction_pattern.get_from_cache(h, self._name_id)[0]
         return ret
 
     def values_and_description(self, halos):

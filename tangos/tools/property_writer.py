@@ -1,4 +1,5 @@
 import argparse
+import copy
 import pdb
 import random
 import sys
@@ -222,6 +223,8 @@ class PropertyWriter(GenericTangosTool):
         and can be modified freely.
         """
 
+        object_list = copy.copy(object_list) # so we can extend
+
         ids = [obj.id for obj in object_list]
 
         for obj in object_list:
@@ -248,6 +251,7 @@ class PropertyWriter(GenericTangosTool):
         object_query = self._get_object_list_query(db_timestep)
 
         db_objects = object_query.all()
+        test = live_calculation.MultiCalculation("host_halo.shrink_center").values(db_objects)
 
         if self._include:
             inclusion, = self._include.values(db_objects)
@@ -288,14 +292,14 @@ class PropertyWriter(GenericTangosTool):
                 tracker._tracker = None
 
     def _get_object_list_query(self, db_timestep):
-        query = core.halo.SimulationObjectBase.timestep == db_timestep
+        object_filter = core.halo.SimulationObjectBase.timestep == db_timestep
         if self.options.htype is not None:
-            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.object_typecode
+            object_filter = sqlalchemy.and_(object_filter, core.halo.SimulationObjectBase.object_typecode
                                     == core.halo.SimulationObjectBase.object_typecode_from_tag(self.options.htype))
         if self.options.hmin is not None:
-            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.halo_number >= self.options.hmin)
+            object_filter = sqlalchemy.and_(object_filter, core.halo.SimulationObjectBase.halo_number >= self.options.hmin)
         if self.options.hmax is not None:
-            query = sqlalchemy.and_(query, core.halo.SimulationObjectBase.halo_number <= self.options.hmax)
+            object_filter = sqlalchemy.and_(object_filter, core.halo.SimulationObjectBase.halo_number <= self.options.hmax)
         needed_properties = self._required_and_calculated_property_names()
         # it's important that anything we need from the database is loaded now, as if it's
         # lazy-loaded later when we have relinquished the lock, SQLite may get upset
@@ -303,7 +307,7 @@ class PropertyWriter(GenericTangosTool):
                       options(sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.timestep),
                               sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.timestep, core.TimeStep.simulation),
                               sqlalchemy.orm.raiseload("*")).
-                      order_by(core.halo.SimulationObjectBase.halo_number).filter(query))
+                      order_by(core.halo.SimulationObjectBase.halo_number).filter(object_filter))
         if self._include:
             needed_properties.append(self._include)
         logger.debug('Gathering existing properties for all halos in timestep %r', db_timestep)
@@ -312,34 +316,26 @@ class PropertyWriter(GenericTangosTool):
 
     def _build_existing_properties(self, db_object):
         existing_properties = db_object.all_properties
-        need_data = self._required_and_calculated_property_names()
+        needed_properties = self._required_and_calculated_property_names()
 
-        # allow_query = False below otherwise database gets repeatedly hammered looking for
-        # dictionary items that don't yet exist
-        need_data_ids = [core.get_dict_id(x,None, allow_query=False) for x in need_data]
+        existing_properties_ar = live_calculation.MultiCalculation(*needed_properties).value(db_object)
 
         existing_properties_data = AttributableDict()
-        for x in existing_properties:
-            if x.name_id in need_data_ids:
-                name = need_data[need_data_ids.index(x.name_id)]
-                existing_properties_data[name] = x.data_raw
 
-        existing_links = db_object.all_links
-        for x in existing_links:
-            if x.relation_id in need_data_ids:
-                name = need_data[need_data_ids.index(x.relation_id)]
-                existing_properties_data[name] = x.halo_to
+        for k, v in zip(needed_properties, existing_properties_ar):
+            if v is not None:
+                existing_properties_data[k] = v
 
-        existing_properties_data.halo_number = db_object.halo_number
-        existing_properties_data.finder_id = db_object.finder_id
-        existing_properties_data.finder_offset = db_object.finder_offset
-        existing_properties_data.NDM = db_object.NDM
-        existing_properties_data.NGas = db_object.NGas
-        existing_properties_data.NStar = db_object.NStar
-        existing_properties_data.object_typecode = db_object.object_typecode
-        existing_properties_data['halo_number'] = db_object.halo_number
-        existing_properties_data['finder_id'] = db_object.finder_id
-        existing_properties_data.id = db_object.id
+        existing_properties_data.halo_number = existing_properties_data['halo_number()']
+        existing_properties_data.finder_id = existing_properties_data['finder_id()']
+        existing_properties_data.finder_offset = existing_properties_data['finder_offset()']
+        existing_properties_data.NDM = existing_properties_data['NDM()']
+        existing_properties_data.NGas = existing_properties_data['NGas()']
+        existing_properties_data.NStar = existing_properties_data['NStar()']
+        existing_properties_data.object_typecode = existing_properties_data['type()']
+        existing_properties_data['halo_number'] = existing_properties_data.halo_number
+        existing_properties_data['finder_id'] = existing_properties_data.finder_id
+        existing_properties_data.id = existing_properties_data['dbid()']
 
         return existing_properties_data
 
@@ -391,7 +387,8 @@ class PropertyWriter(GenericTangosTool):
             else:
                 needed.extend([name for name in x.names])
             needed.extend([name for name in x.requires_property()])
-        return list(np.unique(needed))
+        return (["NDM()", "NStar()", "NGas()", "halo_number()", "finder_id()", "finder_offset()",
+                 "dbid()", "type()"] + [str(s) for s in np.unique(needed)])
 
     def _should_load_particles(self):
         return any([x.requires_particle_data for x in self._property_calculator_instances])

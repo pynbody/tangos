@@ -118,7 +118,7 @@ class PropertyCalculation(metaclass=PropertyCalculationMetaClass):
 
     def accept(self, db_entry):
         for x in self.requires_property():
-            if db_entry.get(x, None) is None:
+            if (db_entry.get(x, None) is None) and ("." not in x):
                 return False
         return True
 

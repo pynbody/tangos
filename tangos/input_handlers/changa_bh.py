@@ -111,7 +111,7 @@ class BHLogData:
         try:
             index = np.where(vars['bhid']==bhid)[0][-1]
         except IndexError:
-            raise ValueError("BH %d not found in step %d"%(bhid,stepnum))
+            raise ValueError("BH %d not found in step %d"%(bhid,stepnum)) from None
         vars_this = {k:v[index] for k, v in vars.items()}
         return vars_this
 

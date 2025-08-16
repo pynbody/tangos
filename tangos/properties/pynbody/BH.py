@@ -18,10 +18,6 @@ class BH(PynbodyPropertyCalculation):
     def requires_property(self):
         return ['host_halo.shrink_center']
 
-    @classmethod
-    def no_proxies(self):
-        return True
-
     def preloop(self, f, db_timestep):
         if BlackHolesLog.can_load(db_timestep.filename):
             self.log = BlackHolesLog.get_existing_or_new(db_timestep.filename)
@@ -33,24 +29,9 @@ class BH(PynbodyPropertyCalculation):
         print(self.log)
 
     def calculate(self, halo, properties):
-        if not isinstance(properties, tangos.core.halo.BH):
-            raise RuntimeError("No proxies, please")
         boxsize = self.log.boxsize
-
         bh_data = self.log.get_for_named_snapshot_for_id(self.filename, properties.halo_number)
-
-        try:
-            main_halo = properties['host_halo']
-        except KeyError:
-            main_halo = None
-
-        if main_halo is None:
-            main_halo_ssc = None
-        else:
-            try:
-                main_halo_ssc = main_halo['shrink_center']
-            except KeyError:
-                main_halo_ssc = None
+        main_halo_ssc = properties['host_halo.shrink_center']
 
         if main_halo_ssc is None:
             offset = np.array((0, 0, 0))
