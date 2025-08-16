@@ -16,7 +16,7 @@ class BH(PynbodyPropertyCalculation):
 
 
     def requires_property(self):
-        return ['host_halo']
+        return ['host_halo.shrink_center']
 
     @classmethod
     def no_proxies(self):
@@ -42,15 +42,6 @@ class BH(PynbodyPropertyCalculation):
         mask = vars['bhid'] == properties.halo_number
         if (mask.sum() == 0):
             raise RuntimeError("Can't find BH in .orbit file")
-
-        # work out who's the main halo
-        # main_halo = None
-        # for i in properties.reverse_links:
-        #    if i.relation.text.startswith("BH"):
-        #        main_halo = i.halo_from
-        #        break
-        # if main_halo is None:
-        #    raise RuntimeError("Can't relate BH to its parent halo")
 
         try:
             main_halo = properties['host_halo']
