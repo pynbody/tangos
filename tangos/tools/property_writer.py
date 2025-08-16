@@ -275,8 +275,8 @@ class PropertyWriter(GenericTangosTool):
                 track_objects.append(dbo)
                 track_ids.append(dbo.halo_number)
         all_track_data : list[core.tracking.TrackData] = core.get_default_session().query(core.tracking.TrackData).filter(
-            core.tracking.TrackData.id.in_(track_ids)).all()
-        track_id_to_trackdata = {trackdata.id: trackdata for trackdata in all_track_data}
+            core.tracking.TrackData.halo_number.in_(track_ids)).all()
+        track_id_to_trackdata = {trackdata.halo_number: trackdata for trackdata in all_track_data}
         for t in all_track_data:
             sqlalchemy.orm.make_transient(t)
 

@@ -435,7 +435,7 @@ def db_with_trackers():
 
     sim = db.get_simulation("test_tipsy")
     track_id_data = tangos.core.tracking.TrackData(sim)
-    track_id_data.halo_number = 1
+    track_id_data.halo_number = 2 # not 1, as we want to check the id and halo_number don't get confused
     track_id_data.particle_array = np.array([20000, 40000, 60000])
     track_id_data.use_iord = True
 
@@ -472,5 +472,5 @@ def test_writer_with_trackers(db_with_trackers, load_mode):
     print(run_writer_with_args("check_tracker_property", "--type", "tracker", *load_mode_args,
                                parallel = is_parallel,))
 
-    assert db.get_halo("test_tipsy/%640/tracker_1")['check_tracker_property'] == 1
-    assert db.get_halo("test_tipsy/%832/tracker_1")['check_tracker_property'] == 1
+    assert db.get_halo("test_tipsy/%640/tracker_2")['check_tracker_property'] == 1
+    assert db.get_halo("test_tipsy/%832/tracker_2")['check_tracker_property'] == 1
