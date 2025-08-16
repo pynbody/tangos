@@ -109,7 +109,7 @@ class BHLogData:
     def get_at_stepnum_for_id(self, stepnum, bhid):
         vars = self.get_at_stepnum(stepnum)
         try:
-            index = np.where(vars['bhid']==bhid)[0][0]
+            index = np.where(vars['bhid']==bhid)[0][-1]
         except IndexError:
             raise ValueError("BH %d not found in step %d"%(bhid,stepnum))
         vars_this = {k:v[index] for k, v in vars.items()}
@@ -134,6 +134,11 @@ class BHLogData:
         name, stepnum = re.match(r"^(.*)\.(0[0-9]*)$", filename).groups()
         stepnum = int(stepnum)
         return self.get_at_stepnum(stepnum)
+
+    def get_for_named_snapshot_for_id(self,filename,bhid):
+        name, stepnum = re.match(r"^(.*)\.(0[0-9]*)$", filename).groups()
+        stepnum = int(stepnum)
+        return self.get_at_stepnum_for_id(stepnum,bhid)
 
 class BlackHolesLog(BHLogData):
     _n_cols = 18
