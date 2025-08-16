@@ -160,7 +160,7 @@ def test_BH_redirection_function():
 
 def test_non_existent_property():
     halo = tangos.get_halo("sim/ts1/1")
-    with assert_raises(KeyError):
+    with assert_raises(tangos.live_calculation.NoResultsError):
         halo.calculate("non_existent_property")
 
 def test_non_existent_redirection():
@@ -291,4 +291,3 @@ def test_faulty_multi_calculation():
 
     dbid1, mass, dbid2 = calc.values(halos)
     assert (dbid1 == dbid2).all()
-

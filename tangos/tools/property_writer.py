@@ -205,7 +205,7 @@ class PropertyWriter(GenericTangosTool):
         if self.options.include_only:
             includes = ["("+s+")" for s in self.options.include_only]
             include_only_combined = " & ".join(includes)
-            self._include = live_calculation.parser.parse_property_name(include_only_combined)
+            self._include = include_only_combined
         else:
             self._include = None
 
@@ -249,32 +249,27 @@ class PropertyWriter(GenericTangosTool):
 
     def _build_object_list(self, db_timestep):
         object_query = self._get_object_list_query(db_timestep)
+        self._objects_this_timestep = object_query.all()
 
-        db_objects = object_query.all()
-        test = live_calculation.MultiCalculation("host_halo.shrink_center").values(db_objects)
-
+    def _filter_object_list(self):
         if self._include:
-            inclusion, = self._include.values(db_objects)
+            inclusion = self._inclusion_mask_this_timestep
             if any([not (np.issubdtype(inc_i, np.bool_) or inc_i is None) for inc_i in inclusion]):
                 raise ValueError("Specified inclusion criterion does not return a boolean")
-            if len(inclusion)!=len(db_objects):
+            if len(inclusion) != len(self._objects_this_timestep):
                 raise ValueError("Inclusion criterion did not generate results for all the objects")
 
-            # perform filtering:
-            db_objects = [halo_i for halo_i, include_i in zip(db_objects, inclusion) if include_i]
             self._log_once_per_timestep("User-specified inclusion criterion excluded %d of %d objects",
-                                        len(inclusion) - len(db_objects), len(inclusion))
+                                        len(inclusion) - len(self._objects_this_timestep), len(inclusion))
 
-        self._attach_track_data_to_trackers(db_objects)
+            self._objects_this_timestep = [halo_i for halo_i, include_i in zip(self._objects_this_timestep, inclusion)
+                                           if include_i]
 
-        self._recursive_make_transient(db_objects)
 
-        return db_objects
-
-    def _attach_track_data_to_trackers(self, db_objects):
+    def _attach_track_data_to_trackers(self):
         track_objects = []
         track_ids = []
-        for dbo in db_objects:
+        for dbo in self._objects_this_timestep:
             if isinstance(dbo, core.halo.Tracker):
                 track_objects.append(dbo)
                 track_ids.append(dbo.halo_number)
@@ -308,36 +303,58 @@ class PropertyWriter(GenericTangosTool):
                               sqlalchemy.orm.joinedload(core.halo.SimulationObjectBase.timestep, core.TimeStep.simulation),
                               sqlalchemy.orm.raiseload("*")).
                       order_by(core.halo.SimulationObjectBase.halo_number).filter(object_filter))
-        if self._include:
-            needed_properties.append(self._include)
+
         logger.debug('Gathering existing properties for all halos in timestep %r', db_timestep)
         halo_query = live_calculation.MultiCalculation(*needed_properties).supplement_halo_query(halo_query)
         return halo_query
 
-    def _build_existing_properties(self, db_object):
-        existing_properties = db_object.all_properties
+    def _build_existing_properties(self):
+        db_objects = self._objects_this_timestep
+
+        existing_properties = []
         needed_properties = self._required_and_calculated_property_names()
+        calculation = live_calculation.MultiCalculation(*needed_properties)
 
-        existing_properties_ar = live_calculation.MultiCalculation(*needed_properties).value(db_object)
+        for c in calculation.calculations:
+            if isinstance(c, live_calculation.StoredProperty):
+                c.set_extraction_pattern(live_calculation.extraction_patterns.HaloPropertyRawValueGetter())
 
-        existing_properties_data = AttributableDict()
+        existing_properties_ar = calculation.values(db_objects)
 
-        for k, v in zip(needed_properties, existing_properties_ar):
-            if v is not None:
-                existing_properties_data[k] = v
+        orm_warning_issued = False
 
-        existing_properties_data.halo_number = existing_properties_data['halo_number()']
-        existing_properties_data.finder_id = existing_properties_data['finder_id()']
-        existing_properties_data.finder_offset = existing_properties_data['finder_offset()']
-        existing_properties_data.NDM = existing_properties_data['NDM()']
-        existing_properties_data.NGas = existing_properties_data['NGas()']
-        existing_properties_data.NStar = existing_properties_data['NStar()']
-        existing_properties_data.object_typecode = existing_properties_data['type()']
-        existing_properties_data['halo_number'] = existing_properties_data.halo_number
-        existing_properties_data['finder_id'] = existing_properties_data.finder_id
-        existing_properties_data.id = existing_properties_data['dbid()']
+        for i, db_object in enumerate(db_objects):
 
-        return existing_properties_data
+            properties_this_halo = AttributableDict()
+
+            for j, k in enumerate(needed_properties):
+                existing_property = existing_properties_ar[j][i]
+                if isinstance(existing_property, core.halo.SimulationObjectBase):
+                    if not orm_warning_issued:
+                        self._log_once_per_timestep("Cannot pass database objects to a calculation; request specific properties instead")
+                        orm_warning_issued = True
+                    existing_property = None
+
+                properties_this_halo[k] = existing_property
+
+            properties_this_halo.halo_number = properties_this_halo['halo_number()']
+            properties_this_halo.finder_id = properties_this_halo['finder_id()']
+            properties_this_halo.finder_offset = properties_this_halo['finder_offset()']
+            properties_this_halo.NDM = properties_this_halo['NDM()']
+            properties_this_halo.NGas = properties_this_halo['NGas()']
+            properties_this_halo.NStar = properties_this_halo['NStar()']
+            properties_this_halo.object_typecode = properties_this_halo['type()']
+            properties_this_halo['halo_number'] = properties_this_halo.halo_number
+            properties_this_halo['finder_id'] = properties_this_halo.finder_id
+            properties_this_halo.id = properties_this_halo['dbid()']
+
+            existing_properties.append(properties_this_halo)
+
+        if self._include is not None:
+            _inclusion_column = needed_properties.index(self._include)
+            self._inclusion_mask_this_timestep = existing_properties_ar[_inclusion_column]
+
+        self._existing_properties_this_timestep = existing_properties
 
 
     def _is_commit_needed(self, end_of_timestep):
@@ -372,7 +389,7 @@ class PropertyWriter(GenericTangosTool):
 
     def _queue_results_for_later_commit(self, db_object, names, results, existing_properties_data):
         for n, r in zip(names, results):
-            if self.options.force or (n not in list(existing_properties_data.keys())):
+            if self.options.force or existing_properties_data[n] is None:
                 existing_properties_data[n] = r
                 if self.options.debug:
                     logger.info("Debug mode - not creating property %r for %r with value %r", n, db_object, r)
@@ -387,6 +404,10 @@ class PropertyWriter(GenericTangosTool):
             else:
                 needed.extend([name for name in x.names])
             needed.extend([name for name in x.requires_property()])
+
+        if self._include:
+            needed.append(self._include)
+
         return (["NDM()", "NStar()", "NGas()", "halo_number()", "finder_id()", "finder_offset()",
                  "dbid()", "type()"] + [str(s) for s in np.unique(needed)])
 
@@ -483,15 +504,11 @@ class PropertyWriter(GenericTangosTool):
         return [None]*num
 
     def _get_property_value(self, db_object, property_calculator, existing_properties):
-        if property_calculator.no_proxies():
-            db_data = db_object
-        else:
-            db_data = existing_properties
 
         result = self._get_standin_property_value(property_calculator)
 
         try:
-            snapshot_data = self._get_object_snapshot_data_if_appropriate(db_object, db_data, property_calculator)
+            snapshot_data = self._get_object_snapshot_data_if_appropriate(db_object, existing_properties, property_calculator)
         except OSError:
             logger.warning("Failed to load snapshot data for %r; skipping", db_object)
             self.tracker.register_loading_error()
@@ -500,7 +517,7 @@ class PropertyWriter(GenericTangosTool):
         with self.timing_monitor(property_calculator):
             try:
                 with self.redirect:
-                    result = property_calculator.calculate(snapshot_data, db_data)
+                    result = property_calculator.calculate(snapshot_data, existing_properties)
                     self.tracker.register_success()
             except Exception as e:
                 self.tracker.register_error()
@@ -542,7 +559,7 @@ class PropertyWriter(GenericTangosTool):
         else:
             listize = False
 
-        if all([name in list(existing_properties.keys()) for name in names]) and not self.options.force:
+        if all([existing_properties[name] is not None for name in names]) and not self.options.force:
             self.tracker.register_already_exists()
             return
 
@@ -576,11 +593,11 @@ class PropertyWriter(GenericTangosTool):
         num_objs = len(self._objects_this_timestep)
         return num_region_props * num_objs
 
-    def _transmit_objects_list(self, db_objects):
+    def _transmit_objects_list(self):
         if not self._should_share_query_results():
             return
         assert self._is_lead_rank()
-        message = ObjectsListMessage(db_objects)
+        message = ObjectsListMessage((self._existing_properties_this_timestep, self._objects_this_timestep))
         for i in range(2, parallel_tasks.backend.size()):
             message.send(i)
 
@@ -603,8 +620,7 @@ class PropertyWriter(GenericTangosTool):
     def _receive_objects_list(self):
         assert parallel_tasks.backend is not None and self.options.load_mode is not None
         assert not self._is_lead_rank()
-        result = ObjectsListMessage.receive(1).contents
-        return result
+        self._existing_properties_this_timestep, self._objects_this_timestep = ObjectsListMessage.receive(1).contents
 
 
     def run_timestep_calculation(self, db_timestep):
@@ -617,21 +633,32 @@ class PropertyWriter(GenericTangosTool):
                                                                              self.options.properties,
                                                                              explain=self.options.explain_classes)
 
+        for x in self._property_calculator_instances:
+            if x.no_proxies():
+                self._log_once_per_timestep("-"*80)
+                self._log_once_per_timestep("IMPORTANT -- property calculator %r asks for no proxies, but this is no longer supported.", x.__class__)
+                self._log_once_per_timestep("If your calculations succeed nonetheless, you can simply remove your override of no_proxies()")
+                self._log_once_per_timestep("If they fail, you need to update your code; please refer to https://pynbody.github.io/tangos/custom_properties.html")
+                self._log_once_per_timestep("-"*80)
+
         if self.options.with_prerequisites:
             self._add_prerequisites_to_calculator_instances(db_timestep)
 
         if self._is_lead_rank():
             with parallel_tasks.lock.SharedLock("insert_list"):
                 logger.debug("Start object list query")
-                self._objects_this_timestep = self._build_object_list(db_timestep)
-                # the db_halos are used both as a starting point for caching properties required during the
-                # calculation, and as the starting point for loading particle data.
+                self._build_object_list(db_timestep)
+                self._build_existing_properties()
+                self._filter_object_list()
+                self._attach_track_data_to_trackers()
+
+                self._recursive_make_transient(self._objects_this_timestep)
                 logger.debug("End object list query")
 
-            self._transmit_objects_list(self._objects_this_timestep)
+            self._transmit_objects_list()
         else:
             logger.debug("Get object list from remote process")
-            self._objects_this_timestep = self._receive_objects_list()
+            self._receive_objects_list()
             logger.debug("Success!")
 
         self._log_once_per_timestep("Successfully gathered existing properties; calculating halo properties now...")
@@ -647,15 +674,14 @@ class PropertyWriter(GenericTangosTool):
             self._log_once_per_timestep(f"    {x_type.__module__}.{x_type.__qualname__}")
 
         self._set_current_timestep(db_timestep)
-        for db_halo in self._get_parallel_object_iterator(self._objects_this_timestep):
 
+        for idx in self._get_parallel_object_iterator(range(len(self._objects_this_timestep))):
+            db_halo = self._objects_this_timestep[idx]
+            existing_properties = self._existing_properties_this_timestep[idx]
             # all ORM objs are transient; db_timestep has the simulation properties loaded/cached
             db_halo.timestep = db_timestep
 
-            # the "existing properties" is a historical anomaly - a way of storing properties without
-            # passing in an ORM object. But now we make our ORM objects transient, so they can safely
-            # be passed around anyway.
-            self.run_object_calculation(db_halo, self._build_existing_properties(db_halo))
+            self.run_object_calculation(db_halo, existing_properties)
 
         self._log_once_per_timestep("Done with %r", db_timestep)
 

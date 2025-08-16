@@ -100,25 +100,6 @@ class DummyPropertyAccessingSimulationProperty(properties.PropertyCalculation):
         # caught by the db_writer so wouldn't directly result in a failure)
         return 1,
 
-class DummyPropertyAccessingTimestep(properties.PropertyCalculation):
-    names = "dummy_property_accessing_timestep",
-
-    def calculate(self, data, entry):
-        # we are going to access the timestep of the current halo and also a linked halo
-        # this used to trigger a lazy database query, but now we try to bullet-proof things
-        # with raiseload("*") when building properties, so it will just cause an exception
-        # unless the timesteps are already loaded
-        dl = entry['dummy_link']
-        entry_timestep = entry.timestep.time_gyr
-        linked_timestep = dl.timestep.time_gyr
-        return entry_timestep - linked_timestep,
-
-    def requires_property(self):
-        return ["dummy_link"]
-
-    @classmethod
-    def no_proxies(self):
-        return True
 
 def run_writer_with_args(*args, parallel=False, allow_resume=False):
     writer = property_writer.PropertyWriter()
@@ -187,8 +168,9 @@ def test_exception_reporting(fresh_database, parallel):
     if parallel:
         parallel_tasks.use('multiprocessing-3')
     log = run_writer_with_args("dummy_property", "dummy_property_with_exception", parallel=parallel)
+    print(log)
     assert "Uncaught exception RuntimeError('Test of exception handling') during property calculation" in log
-    assert ":     result = property_calculator.calculate(snapshot_data, db_data)" in log
+    assert ":     result = property_calculator.calculate(snapshot_data, existing_properties)" in log
     # above tests that a bit of the traceback is present, but also that it has been put on a formatted line
 
     # count occurrences of the traceback, should be only one:
@@ -425,13 +407,6 @@ def test_writer_num_regions_optimization(fresh_database):
     # does not request a region. So the expected number of region queries is 10.
     assert "load_region expected_number_of_queries=10" in log
 
-def test_writer_with_property_accessing_timestep(fresh_database):
-    db.get_halo("%/step.1/halo_1")['dummy_link'] = db.get_halo("%/step.2/halo_1")
-
-    print(run_writer_with_args("dummy_property_accessing_timestep"))
-
-    assert db.get_halo("%/step.1/halo_1")['dummy_property_accessing_timestep'] == -1.0
-
 @pytest.fixture
 def db_with_trackers():
     import numpy as np
@@ -486,3 +461,45 @@ def test_writer_with_trackers(db_with_trackers, load_mode):
 
     assert db.get_halo("test_tipsy/%640/tracker_2")['check_tracker_property'] == 1
     assert db.get_halo("test_tipsy/%832/tracker_2")['check_tracker_property'] == 1
+
+class DummyPropertyWithNoProxies(properties.PropertyCalculation):
+    """A property that accesses a timestep, but does not use proxies."""
+    names = "dummy_property_with_no_proxies",
+
+    def calculate(self, data, entry):
+        return 1.0,
+
+    @classmethod
+    def no_proxies(self):
+        return True
+
+
+def test_proxies_warning(fresh_database):
+    """Test that proxies are not used in the writer, and that a warning is issued if they are."""
+    output = run_writer_with_args("dummy_property_with_no_proxies")
+
+    print(output)
+    # should have issued warning and succeeded
+    assert "asks for no proxies, but this is no longer supported" in output
+    assert db.get_halo("dummy_sim_1/step.1/1")['dummy_property_with_no_proxies'] == 1.0
+
+
+class DummyPropertyAccessingLink(properties.PropertyCalculation):
+    """A property that accesses a link, but does not use proxies."""
+    names = "dummy_property_accessing_link",
+
+    def calculate(self, data, entry):
+        dl = entry['link(dummy_link)']
+        return dl.id, # should FAIL
+
+    def requires_property(self):
+        return ["link(dummy_link)"]
+
+def test_writer_cannot_see_links(fresh_database):
+    """Test that the writer cannot see links, and that a warning is issued if it tries."""
+    output = run_writer_with_args("dummy_link")
+    output = run_writer_with_args("dummy_property_accessing_link")
+
+    assert "Cannot pass database objects" in output
+    assert "Missing pre-requisite: 15" in output
+    assert "Succeeded: 0" in output

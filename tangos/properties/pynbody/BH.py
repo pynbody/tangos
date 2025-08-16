@@ -59,27 +59,23 @@ class BHAccHistogram(TimeChunkedProperty):
         else:
             raise RuntimeError("cannot find recognizable log file")
 
-    @classmethod
-    def no_proxies(self):
-        return True
-
     def plot_xlabel(self):
         return "t/Gyr"
 
     def plot_ylabel(self):
         return r"$\dot{M}/M_{\odot}\,yr^{-1}$"
 
-    def calculate(self, halo, properties):
+    def calculate(self, particles, properties):
 
-        halo = halo.s
+        particles = particles.s
 
-        if len(halo) != 1:
+        if len(particles) != 1:
             raise RuntimeError("Not a BH!")
 
-        if halo['tform'][0] > 0:
+        if particles['tform'][0] > 0:
             raise RuntimeError("Not a BH!")
 
-        mask = self.log.vars['bhid'] == halo['iord']
+        mask = self.log.vars['bhid'] == particles['iord']
         if (mask.sum() == 0):
             raise RuntimeError("Can't find BH in .orbit file")
 
@@ -100,10 +96,6 @@ class BHAccHistogram(TimeChunkedProperty):
 
 class BHAccHistogramMerged(PynbodyPropertyCalculation):
     names = "BH_mdot_histogram_all"
-
-    @classmethod
-    def no_proxies(self):
-        return True
 
     def requires_property(self):
         return ["BH_mdot_histogram"]

@@ -533,7 +533,7 @@ def providing_classes(property_name_list, handler_class, silent_fail=False, expl
 
     return classes
 
-def instantiate_classes(simulation, property_name_list, silent_fail=False, explain=False):
+def instantiate_classes(simulation, property_name_list, silent_fail=False, explain=False) -> list[PropertyCalculation]:
     """Instantiate appropriate property calculation classes for a given simulation and list of property names."""
     instances = []
     already_instantiated_classes = []
