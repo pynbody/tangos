@@ -509,8 +509,11 @@ class PropertyWriter(GenericTangosTool):
 
         try:
             snapshot_data = self._get_object_snapshot_data_if_appropriate(db_object, existing_properties, property_calculator)
-        except OSError:
-            logger.warning("Failed to load snapshot data for %r; skipping", db_object)
+        except OSError as e:
+            if self.tracker.should_log_error(e):
+                logger.warning("Failed to load snapshot data for %r; skipping", db_object)
+                self._log_traceback()
+                logger.info("If this error arises again, it will be counted but not individually reported.")
             self.tracker.register_loading_error()
             return result
 
@@ -524,9 +527,7 @@ class PropertyWriter(GenericTangosTool):
 
                 if self.tracker.should_log_error(e):
                     logger.info(f"Uncaught exception {e!r} during property calculation {property_calculator!r} applied to {db_object!r}")
-                    exc_data = traceback.format_exc()
-                    for line in exc_data.split("\n"):
-                        logger.info(line)
+                    self._log_traceback()
                     logger.info("If this error arises again, it will be counted but not individually reported.")
 
                 if self.options.catch:
@@ -536,6 +537,10 @@ class PropertyWriter(GenericTangosTool):
 
         return result
 
+    def _log_traceback(self):
+        exc_data = traceback.format_exc()
+        for line in exc_data.split("\n"):
+            logger.info(line)
 
     def _run_preloop(self, f, db_timestep, cinstances, existing_properties_all_halos):
         for x in cinstances:
