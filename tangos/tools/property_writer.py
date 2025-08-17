@@ -656,7 +656,7 @@ class PropertyWriter(GenericTangosTool):
                 self._build_existing_properties()
                 self._filter_object_list()
                 self._attach_track_data_to_trackers()
-
+                core.get_default_session().expunge_all()
                 self._recursive_make_transient(self._objects_this_timestep)
                 logger.debug("End object list query")
 
