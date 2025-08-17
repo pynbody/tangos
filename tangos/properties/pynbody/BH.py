@@ -34,7 +34,7 @@ class BH(PynbodyPropertyCalculation):
         main_halo_ssc = properties['host_halo.shrink_center']
 
         if main_halo_ssc is None:
-            raise ValueError("No shrink center found for BH %s" % properties.halo_number)
+            offset = [0.0, 0.0, 0.0]
         else:
             offset = np.array((bh_data['x'], bh_data['y'], bh_data['z'])) - main_halo_ssc
             bad, = np.where(np.abs(offset) > boxsize / 2.)
@@ -77,7 +77,7 @@ class BHAccHistogram(TimeChunkedProperty):
 
         mask = self.log.vars['bhid'] == particles['iord']
         if (mask.sum() == 0):
-            raise RuntimeError("Can't find BH in .orbit file")
+            raise RuntimeError(f"Can't find BH {particles['iord']} in .orbit file")
 
         t_orbit = self.log.vars['time'][mask]
         Mdot_orbit = self.log.vars['mdotmean'][mask]
