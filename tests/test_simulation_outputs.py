@@ -124,10 +124,30 @@ def test_load_persistence():
 
     old_id = id(f)
 
+    # Enable GC debugging
+    gc.set_debug(gc.DEBUG_LEAK | gc.DEBUG_COLLECTABLE | gc.DEBUG_UNCOLLECTABLE)
+
     del f, f2, h, h_tracker
     gc.collect()
 
     f3 = db.get_timestep("test_tipsy/tiny.000640").load()
+    if id(f3)==old_id:
+        print("------ Referrers: ---")
+        referrers = gc.get_referrers(f3)
+        print("Number of referrers:", len(referrers))
+        for i, ref in enumerate(referrers):
+            print(f"Referrer {i}: type={type(ref)}, repr={repr(ref)[:200]}")
+        print("------ GC objects tracked: ---")
+        print("Total objects tracked by GC:", len(gc.get_objects()))
+        print("Types of objects tracked (top 10):")
+        from collections import Counter
+        type_counts = Counter(type(obj) for obj in gc.get_objects())
+        for t, c in type_counts.most_common(10):
+            print(f"{t}: {c}")
+        print("------ End debug info ------")
+
+    gc.set_debug(0)
+
     assert id(f3)!=old_id
 
 def test_load_tracker_iord_halo():
