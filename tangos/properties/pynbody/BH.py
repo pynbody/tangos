@@ -28,13 +28,13 @@ class BH(PynbodyPropertyCalculation):
         self.filename = db_timestep.filename
         print(self.log)
 
-    def calculate(self, halo, properties):
+    def calculate(self, bh_particle, properties):
         boxsize = self.log.boxsize
         bh_data = self.log.get_for_named_snapshot_for_id(self.filename, properties.halo_number)
         main_halo_ssc = properties['host_halo.shrink_center']
 
         if main_halo_ssc is None:
-            offset = np.array((0, 0, 0))
+            raise ValueError("No shrink center found for BH %s" % properties.halo_number)
         else:
             offset = np.array((bh_data['x'], bh_data['y'], bh_data['z'])) - main_halo_ssc
             bad, = np.where(np.abs(offset) > boxsize / 2.)
