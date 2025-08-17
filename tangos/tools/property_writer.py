@@ -678,8 +678,9 @@ class PropertyWriter(GenericTangosTool):
         for idx in self._get_parallel_object_iterator(range(len(self._objects_this_timestep))):
             db_halo = self._objects_this_timestep[idx]
             existing_properties = self._existing_properties_this_timestep[idx]
-            # all ORM objs are transient; db_timestep has the simulation properties loaded/cached
+
             db_halo.timestep = db_timestep
+            existing_properties.timestep = db_timestep
 
             self.run_object_calculation(db_halo, existing_properties)
 
