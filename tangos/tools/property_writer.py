@@ -225,6 +225,10 @@ class PropertyWriter(GenericTangosTool):
         for obj in object_list:
             sqlalchemy.orm.make_transient(obj)
             obj.timestep = None # no need to transmit this again
+
+            # not sure why make_transient doesn't clear this... you'd think it should?
+            obj._sa_instance_state.committed_state = {}
+
             obj.all_properties.clear()
             obj.all_links.clear()
 
