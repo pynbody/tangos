@@ -28,7 +28,7 @@ def find_free_port(start=6543):
 
 def add_serve_tool(subparse):
     def serve(options):
-        from pkg_resources import load_entry_point
+
         ini_file = options.config
         if os.path.exists(ini_file):
             ini_path = ini_file
@@ -44,9 +44,18 @@ def add_serve_tool(subparse):
 
 
         sys.argv = ["",ini_path,f"port={port}"]
-        sys.exit(
-            load_entry_point('pyramid','console_scripts','pserve')()
+
+        from importlib.metadata import entry_points
+
+        # Find the 'pserve' entry point in the 'console_scripts' group
+        pserve_entry_point = next(
+            (ep for ep in entry_points(group='console_scripts') if ep.name == 'pserve'),
+            None
         )
+        if pserve_entry_point is None:
+            raise RuntimeError("Could not find the 'pserve' entry point in 'console_scripts'.")
+
+        sys.exit(pserve_entry_point.load()())
 
     web_subparser = subparse.add_parser("serve", help="Start a web server (shortcut to Pyramid's pserve)")
     web_subparser.add_argument('config', action='store', nargs="?",
