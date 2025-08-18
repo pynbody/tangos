@@ -216,33 +216,17 @@ class PropertyWriter(GenericTangosTool):
         if self._is_lead_rank():
             logger.info(*args)
 
-    def _recursive_make_transient(self, object_list):
+    def _make_transient(self, object_list: list[core.halo.SimulationObjectBase]):
         """
-        Make all objects in the list transient, including their properties and links.
-        This is used to ensure that the objects are not tied to the database session
-        and can be modified freely.
+        Prepare a stripped-back version of the objects in object_list for transmission/
+        isolation from the database itself
         """
-
-        object_list = copy.copy(object_list) # so we can extend
-
-        ids = [obj.id for obj in object_list]
 
         for obj in object_list:
-            obj.timestep = None # no need to transmit this again
-
             sqlalchemy.orm.make_transient(obj)
-
-            # not sure why make_transient doesn't clear this... you'd think it should?
-            obj._sa_instance_state.committed_state = {}
-
-            for prop in obj.all_properties:
-                sqlalchemy.orm.make_transient(prop)
-                prop.halo = None
-            for link in obj.all_links:
-                sqlalchemy.orm.make_transient(link)
-                if link.halo_to_id not in ids:
-                    ids.append(link.halo_to_id)
-                    object_list.append(link.halo_to)
+            obj.timestep = None # no need to transmit this again
+            obj.all_properties.clear()
+            obj.all_links.clear()
 
 
 
@@ -657,7 +641,7 @@ class PropertyWriter(GenericTangosTool):
                 self._filter_object_list()
                 self._attach_track_data_to_trackers()
                 core.get_default_session().expunge_all()
-                self._recursive_make_transient(self._objects_this_timestep)
+                self._make_transient(self._objects_this_timestep)
                 logger.debug("End object list query")
 
             self._transmit_objects_list()
