@@ -36,7 +36,7 @@ def get_tracker_halos(ts):
     return halos, np.array(num), np.array(hid)
 
 def get_tracker_links(session, relation):
-    links = session.query(HaloLink).filter_by(relation=relation).all()
+    links = session.query(HaloLink).filter_by(relation_id=relation.id).all()
     idf = [tl.halo_from_id for tl in links]
     idt = [tl.halo_to_id for tl in links]
     return links, np.array(idf), np.array(idt)
