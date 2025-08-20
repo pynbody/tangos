@@ -427,3 +427,17 @@ def test_server_generates_portable_catalogue():
 def test_portable_catalogue_generated_only_once():
     log = test_server_generates_portable_catalogue() # runs on two processes, should only get one cat
     assert log.count("Generating a shared object catalogue for 'halo's") == 1
+
+@using_parallel_tasks(2)
+def test_region_cache():
+    """Test that the region cache works correctly"""
+    handler.load_timestep('tiny.000640', mode='server-shared-mem')
+
+    f1 = handler.load_region("tiny.000640", pynbody.filt.Sphere("3 Mpc"), mode='server-shared-mem')
+    f2 = handler.load_region("tiny.000640", pynbody.filt.Sphere("3 Mpc"), mode='server-shared-mem')
+
+    assert f1 is f2  # should be the same object
+
+    # now check that a different filter gives a different object
+    f3 = handler.load_region("tiny.000640", pynbody.filt.Sphere("4 Mpc"), mode='server-shared-mem')
+    assert f3 is not f1

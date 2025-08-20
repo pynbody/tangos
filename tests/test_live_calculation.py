@@ -160,7 +160,7 @@ def test_BH_redirection_function():
 
 def test_non_existent_property():
     halo = tangos.get_halo("sim/ts1/1")
-    with assert_raises(KeyError):
+    with assert_raises(tangos.live_calculation.NoResultsError):
         halo.calculate("non_existent_property")
 
 def test_non_existent_redirection():
@@ -279,3 +279,15 @@ def test_non_existent_redirection_multihalo():
     vals1, vals2 = tangos.get_timestep("sim/ts3").calculate_all("BH_mass","later(1).BH_mass")
     assert len(vals1)==0
     assert len(vals2)==0
+
+def test_faulty_multi_calculation():
+    # Check that one bad calculation does not prevent the others from being calculated
+    session = tangos.get_default_session()
+    calc = lc.MultiCalculation("dbid()", "BH_mass", "dbid()")
+    query = session.query(tangos.core.halo.Halo)
+    query = calc.supplement_halo_query(query)
+
+    halos = query.all()
+
+    dbid1, mass, dbid2 = calc.values(halos)
+    assert (dbid1 == dbid2).all()

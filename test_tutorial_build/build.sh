@@ -66,8 +66,8 @@ build_ramses() {
     get_tutorial_data tutorial_ramses
     tangos add tutorial_ramses --min-particles 100 --no-renumber
     $MPI tangos link --for tutorial_ramses $MPIBACKEND
-    $MPI tangos write contamination_fraction --for tutorial_ramses $MPIBACKEND
-    $MPI tangos write dm_density_profile --with-prerequisites --include-only="contamination_fraction<0.01" --for tutorial_ramses $MPIBACKEND
+    $MPI tangos write contamination_fraction --for tutorial_ramses $MPILOADMODE $MPIBACKEND
+    $MPI tangos write dm_density_profile --with-prerequisites --include-only="contamination_fraction<0.01" --for tutorial_ramses $MPILOADMODE $MPIBACKEND
 }
 
 build_changa() {
@@ -99,7 +99,7 @@ build_enzo_yt() {
 }
 
 clearup_files() {
-  if [ ! -z "$INTEGRATION_TESTING" ]; then
+  if [ ! -z "$SAVE_DISK_SPACE" ]; then
     rm -rf $1
   fi
 }

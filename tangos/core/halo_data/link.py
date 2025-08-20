@@ -39,13 +39,24 @@ class HaloLink(Base):
 
 
     def __init__(self,  halo_from, halo_to, relationship, weight=1.0):
-        self.halo_from = halo_from
-        self.halo_to = halo_to
+        if isinstance(halo_from, SimulationObjectBase):
+            self.halo_from = halo_from
+        else:
+            self.halo_from_id = halo_from
 
-        self.relation = relationship
+        if isinstance(halo_to, SimulationObjectBase):
+            self.halo_to = halo_to
+        else:
+            self.halo_to_id = halo_to
+
+        if isinstance(relationship, DictionaryItem):
+            self.relation = relationship
+        else:
+            self.relation_id = relationship
+
         self.weight = weight
 
-        self.creator = creator.get_creator(Session.object_session(halo_from))
+        self.creator_id = creator.get_creator_id()
 
     def __repr__(self):
         if self.weight is None:

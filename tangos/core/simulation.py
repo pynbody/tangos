@@ -51,6 +51,10 @@ class Simulation(Base):
     def keys(self):
         return [prop.name.text for prop in self.properties.all()]
 
+    def cache_properties(self):
+        """Cache the properties of this simulation in a dictionary for faster/disconnected access."""
+        self._properties_cache = {prop.name.text: prop.data for prop in self.properties.all()}
+
     def __contains__(self, item):
         return item in list(self.keys())
 
@@ -59,15 +63,32 @@ class Simulation(Base):
         if isinstance(i, int):
             return self.timesteps[i]
         else:
-            session = Session.object_session(self)
-            did = get_dict_id(i, session=session)
-            try:
-                return session.query(SimulationProperty).filter_by(name_id=did,
-                                                                   simulation_id=self.id).first().data
-            except AttributeError:
-                pass
+            return self._get_sim_property(i)
 
         raise KeyError(i)
+
+    def _get_sim_property(self, name):
+        if hasattr(self, "_properties_cache"):
+            return self._get_sim_property_from_cache(name)
+        else:
+            return self._get_sim_property_from_database(name)
+
+    def __raise_key_error(self, name):
+        raise KeyError(f"Simulation property '{name}' not found")
+
+    def _get_sim_property_from_cache(self, name):
+        if name not in self._properties_cache:
+            self.__raise_key_error(name)
+        return self._properties_cache[name]
+
+    def _get_sim_property_from_database(self, name):
+        session = Session.object_session(self)
+        did = get_dict_id(name, session=session)
+        result = session.query(SimulationProperty).filter_by(name_id=did,
+                                                           simulation_id=self.id).first()
+        if result is None:
+            self.__raise_key_error(name)
+        return result.data
 
     def __setitem__(self, st, data):
         from . import Session

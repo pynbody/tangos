@@ -73,9 +73,11 @@ def _issue_next_lock(lock_id, impose_filesystem_delay=False):
         shared = queue[0][1]
         if shared:
             _issue_shared_locks(lock_id, impose_filesystem_delay)
-        else:
+        elif proc!=0:
             log.logger.debug("Issue lock %r to proc %d", lock_id, proc)
             MessageGrantLock((lock_id, impose_filesystem_delay)).send(proc)
+        else:
+            pass # the server has to handle being at the top of the queue directly
 
 def _issue_shared_locks(lock_id, impose_filesystem_delay=False):
     queue = _get_lock_queue(lock_id)
@@ -126,14 +128,22 @@ class ExclusiveLock:
         if not parallelism_is_active():
             return
         if self._count==0:
-            MessageRequestLock(self.name, self._shared).send(0)
-            start = time.time()
-            granted = MessageGrantLock.receive(0)
-            lock_id, delay = granted.contents
-            assert lock_id==self.name, "Received a lock that was not requested. The implementation of ExclusiveLock is not locally thread-safe; are you using multiple threads in one process?"
-            if delay:
-                time.sleep(self._delay)
-            log.logger.debug("Lock %r acquired in %.1fs",self.name, time.time()-start)
+            from . import backend
+            if backend is not None and backend.rank() == 0:
+                # Server process - directly handle locking without messaging
+                if self._shared:
+                    raise RuntimeError("Server process cannot participate in shared locks")
+                self._acquire_on_server()
+            else:
+                # Client process - use existing message-based approach
+                MessageRequestLock(self.name, self._shared).send(0)
+                start = time.time()
+                granted = MessageGrantLock.receive(0)
+                lock_id, delay = granted.contents
+                assert lock_id==self.name, "Received a lock that was not requested. The implementation of ExclusiveLock is not locally thread-safe; are you using multiple threads in one process?"
+                if delay:
+                    time.sleep(self._delay)
+                log.logger.debug("Lock %r acquired in %.1fs",self.name, time.time()-start)
         self._count+=1
 
     def release(self):
@@ -141,13 +151,57 @@ class ExclusiveLock:
             return
         self._count-=1
         if self._count==0:
-            MessageRelinquishLock(self.name).send(0)
+            from . import backend
+            if backend is not None and backend.rank() == 0:
+                # Server process - directly handle lock release without messaging
+                self._release_on_server()
+            else:
+                # Client process - use existing message-based approach
+                MessageRelinquishLock(self.name).send(0)
 
     def __enter__(self):
         self.acquire()
 
     def __exit__(self,type, value, traceback):
         self.release()
+
+    def _acquire_on_server(self):
+        """Directly acquire lock on server without messaging"""
+        start = time.time()
+        lock_id = self.name
+        log.logger.debug("Server requesting lock %r", lock_id)
+        queue = _get_lock_queue(lock_id)
+        
+        # Add server (rank 0) to the queue
+        queue.append((0, self._shared))
+        
+        # If we're the only one in queue, we can proceed immediately
+        if len(queue) == 1:
+            if self._shared:
+                _increment_lock_num_shared(lock_id, 1)
+            log.logger.debug("Server acquired lock %r immediately in %.1fs", self.name, time.time()-start)
+            return
+
+        # Otherwise, we need to wait for our turn
+        # Poll until we're at the front of the queue and can be granted the lock
+        while True:
+            # Check if we're at the front of the queue
+            if len(queue) > 0 and queue[0] == (0, self._shared):
+                break
+            
+            # Wait a short time before polling again
+            time.sleep(0.001)
+            
+        log.logger.debug("Server acquired lock %r in %.1fs", self.name, time.time()-start)
+
+    def _release_on_server(self):
+        """Directly release lock on server without messaging"""
+        lock_id = self.name
+        log.logger.debug("Server releasing lock %r", lock_id)
+        if self._shared:
+            _release_lock_shared(lock_id, 0)  # rank 0 = server
+        else:
+            _release_lock_exclusive(lock_id, 0)  # rank 0 = server
 
 
 class SharedLock(ExclusiveLock):

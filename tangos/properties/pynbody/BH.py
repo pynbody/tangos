@@ -16,11 +16,7 @@ class BH(PynbodyPropertyCalculation):
 
 
     def requires_property(self):
-        return ['host_halo']
-
-    @classmethod
-    def no_proxies(self):
-        return True
+        return ['host_halo.shrink_center']
 
     def preloop(self, f, db_timestep):
         if BlackHolesLog.can_load(db_timestep.filename):
@@ -32,28 +28,13 @@ class BH(PynbodyPropertyCalculation):
         self.filename = db_timestep.filename
         print(self.log)
 
-    def calculate(self, halo, properties):
-        if not isinstance(properties, tangos.core.halo.BH):
-            raise RuntimeError("No proxies, please")
+    def calculate(self, bh_particle, properties):
         boxsize = self.log.boxsize
-
-        bh_data = self.log.get_for_named_snapshot_for_id(self.filename,properties.halo_number)
-
-        try:
-            main_halo = properties['host_halo']
-        except KeyError:
-            main_halo = None
-
-        if main_halo is None:
-            main_halo_ssc = None
-        else:
-            try:
-                main_halo_ssc = main_halo['shrink_center']
-            except KeyError:
-                main_halo_ssc = None
+        bh_data = self.log.get_for_named_snapshot_for_id(self.filename, properties.halo_number)
+        main_halo_ssc = properties['host_halo.shrink_center']
 
         if main_halo_ssc is None:
-            offset = np.array((0, 0, 0))
+            offset = [0.0, 0.0, 0.0]
         else:
             offset = np.array((bh_data['x'], bh_data['y'], bh_data['z'])) - main_halo_ssc
             bad, = np.where(np.abs(offset) > boxsize / 2.)
@@ -78,29 +59,25 @@ class BHAccHistogram(TimeChunkedProperty):
         else:
             raise RuntimeError("cannot find recognizable log file")
 
-    @classmethod
-    def no_proxies(self):
-        return True
-
     def plot_xlabel(self):
         return "t/Gyr"
 
     def plot_ylabel(self):
         return r"$\dot{M}/M_{\odot}\,yr^{-1}$"
 
-    def calculate(self, halo, properties):
+    def calculate(self, particles, properties):
 
-        halo = halo.s
+        particles = particles.s
 
-        if len(halo) != 1:
+        if len(particles) != 1:
             raise RuntimeError("Not a BH!")
 
-        if halo['tform'][0] > 0:
+        if particles['tform'][0] > 0:
             raise RuntimeError("Not a BH!")
 
-        mask = self.log.vars['bhid'] == halo['iord']
+        mask = self.log.vars['bhid'] == particles['iord']
         if (mask.sum() == 0):
-            raise RuntimeError("Can't find BH in .orbit file")
+            raise RuntimeError(f"Can't find BH {particles['iord']} in .orbit file")
 
         t_orbit = self.log.vars['time'][mask]
         Mdot_orbit = self.log.vars['mdotmean'][mask]
@@ -119,10 +96,6 @@ class BHAccHistogram(TimeChunkedProperty):
 
 class BHAccHistogramMerged(PynbodyPropertyCalculation):
     names = "BH_mdot_histogram_all"
-
-    @classmethod
-    def no_proxies(self):
-        return True
 
     def requires_property(self):
         return ["BH_mdot_histogram"]

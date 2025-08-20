@@ -118,3 +118,9 @@ def get_lexicon(session):
     """Get a list of all strings known in the dictionary table"""
     dict_cache = _get_dict_cache_for_session(session)
     return dict_cache.keys()
+
+def clear_dictionary_caches():
+    """Clear all dictionary caches"""
+    global _dict_id, _dict_obj
+    _dict_id = {}
+    _dict_obj = {}

@@ -80,6 +80,8 @@ class PynbodySnapshotQueue:
             snap = self.current_handler.load_object(self.current_timestep, filter_or_object_spec.object_number,
                                                     filter_or_object_spec.object_index,
                                                     filter_or_object_spec.object_typetag)
+        elif isinstance(filter_or_object_spec, TrackingSpecification):
+            snap = self.current_handler.load_tracked_region(self.current_timestep, filter_or_object_spec.track_data)
         else:
             raise TypeError("filter_or_object_spec must be either a pynbody filter or an ObjectRequestInformation object")
 
@@ -208,3 +210,19 @@ class ObjectSpecification:
 
     def __hash__(self):
         return hash((self.object_number, self.object_index, self.object_typetag))
+
+class TrackingSpecification:
+    def __init__(self, track_number, track_data):
+        self.track_number = track_number
+        self.track_data = track_data
+
+    def __repr__(self):
+        return f"TrackNumber({self.track_number})"
+
+    def __eq__(self, other):
+        if not isinstance(other, TrackingSpecification):
+            return False
+        return self.track_number==other.track_number
+
+    def __hash__(self):
+        return hash((self.track_number,self.track_data))

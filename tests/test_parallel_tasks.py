@@ -441,6 +441,146 @@ def test_local_set():
     assert set.add_if_not_exists("foo")
 
 
+class MessageTestServerLock(pt.message.Message):
+    """Message to test server-side lock acquisition"""
+    def __init__(self, lock_name, delay):
+        self.lock_name = lock_name
+        self.delay = delay
+    
+    @classmethod
+    def deserialize(cls, source, message):
+        obj = cls(*message)
+        obj.source = source
+        return obj
+    
+    def serialize(self):
+        return (self.lock_name, self.delay)
+    
+    def process(self):
+        import threading
+        import time
+        
+        def run_server_test():
+            time.sleep(self.delay)
+            pt_testing.log("Server requesting exclusive lock")
+            with pt.ExclusiveLock(self.lock_name, 0):
+                pt_testing.log("Server acquired exclusive lock")
+                time.sleep(0.1)
+                pt_testing.log("Server releasing exclusive lock")
+        
+        # Run the test in a separate thread so server can continue processing messages
+        thread = threading.Thread(target=run_server_test)
+        thread.start()
+
+
+def _test_server_exclusive_lock(server_first):
+    """Test server exclusive lock acquisition with different orderings"""
+    rank = pt.backend.rank()
+    server_delay = 0.0 if server_first else 0.01
+    if rank == 1:
+        # Server gets lock first
+        MessageTestServerLock('server_exclusive_test', server_delay).send(0)
+
+    if server_first:
+        time.sleep(0.02*rank)
+    else:
+        time.sleep(0.02*(rank-1))
+
+    # Now client tries to get the same lock
+    pt_testing.log("Client requesting exclusive lock")
+    with pt.ExclusiveLock('server_exclusive_test', 0):
+        pt_testing.log("Client acquired exclusive lock")
+        time.sleep(0.05)
+        pt_testing.log("Client releasing exclusive lock")
+    time.sleep(0.1)
+
+
+@pytest.mark.parametrize("server_first", [True, False])
+def test_server_exclusive_lock(server_first):
+    """Test that server can acquire exclusive locks directly in different orderings"""
+    nclients = 3
+    pt.use(f"multiprocessing-{nclients+1}")
+    pt_testing.initialise_log()
+    pt.launch(_test_server_exclusive_lock, args=(server_first,))
+    log = pt_testing.get_log()
+    
+    # Check that both server and client acquired locks
+    server_acquired = None
+    client_acquired = None
+    for i, line in enumerate(log):
+        if "Server acquired exclusive lock" in line:
+            server_acquired = i
+        elif "Client acquired exclusive lock" in line and client_acquired is None:
+            client_acquired = i
+    
+    assert server_acquired is not None, f"Server should have acquired lock. Log: {log}"
+    assert client_acquired is not None, f"Client should have acquired lock. Log: {log}"
+
+
+    if server_first:
+        assert server_acquired < client_acquired, "When server_first=True, server should acquire lock before client"
+    else:
+        assert client_acquired < server_acquired, "When server_first=False, client should acquire lock before server"
+
+
+class MessageTestServerSharedLock(pt.message.Message):
+    """Message to test that server shared lock raises an exception"""
+    def __init__(self, lock_name):
+        self.lock_name = lock_name
+    
+    @classmethod
+    def deserialize(cls, source, message):
+        obj = cls(*message)
+        obj.source = source
+        return obj
+    
+    def serialize(self):
+        return (self.lock_name,)
+    
+    def process(self):
+        import threading
+        
+        def run_server_shared_test():
+            try:
+                with pt.lock.SharedLock(self.lock_name, 0):
+                    pt_testing.log("Server acquired shared lock - should not happen!")
+            except RuntimeError as e:
+                pt_testing.log(f"Server shared lock correctly raised: {e}")
+        
+        # Run the test in a separate thread so server can continue processing messages
+        thread = threading.Thread(target=run_server_shared_test)
+        thread.start()
+
+
+def _test_server_shared_lock_prohibition():
+    """Test that server cannot use shared locks"""
+    rank = pt.backend.rank()
+    
+    if rank == 1:
+        # Client tells server to try shared lock (should fail)
+        MessageTestServerSharedLock('server_shared_prohibition_test').send(0)
+        
+        # Client can still use shared locks normally
+        with pt.lock.SharedLock('server_shared_prohibition_test', 0):
+            pt_testing.log("Client acquired shared lock")
+            time.sleep(0.05)
+            pt_testing.log("Client releasing shared lock")
+
+def test_server_shared_lock_prohibition():
+    """Test that server raises exception when trying to use shared locks"""
+    pt.use("multiprocessing-3")
+    pt_testing.initialise_log()
+    pt.launch(_test_server_shared_lock_prohibition)
+    log = pt_testing.get_log()
+    
+    # Check that server raised the expected exception
+    server_error = any("Server shared lock correctly raised: Server process cannot participate in shared locks" in line for line in log)
+    client_acquired = any("Client acquired shared lock" in line for line in log)
+    
+    assert server_error, f"Server should have raised RuntimeError for shared lock. Log: {log}"
+    assert client_acquired, f"Client should have acquired shared lock. Log: {log}"
+
+
 def test_iteration_state_closes_tasks():
     from tangos.parallel_tasks.jobs import IterationState
 

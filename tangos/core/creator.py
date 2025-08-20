@@ -72,6 +72,11 @@ def get_creator(session=None):
     else:
         return session.query(Creator).filter_by(id=_current_creator.id).first()
 
+def get_creator_id():
+    """Get the ID of the current Creator object for this process."""
+    global _current_creator
+    _ensure_current_creator_is_valid()
+    return _current_creator.id
 
 def _ensure_current_creator_is_valid():
     from sqlalchemy import inspect
@@ -79,18 +84,26 @@ def _ensure_current_creator_is_valid():
     default_session = get_default_session()
 
     if _current_creator is None:
-        _current_creator = Creator()
-        default_session.add(_current_creator)
-        default_session.commit()
+        _make_new_creator(default_session)
     else:
         current_creator_session = Session.object_session(_current_creator)
-        if  current_creator_session is not default_session:
+        if current_creator_session is None:
+            # If the current creator is not associated with any session, something has gone weirdly wrong; recreate
+            _make_new_creator(default_session)
+        elif current_creator_session is not default_session:
             if not inspect(_current_creator).persistent:
                 current_creator_session.commit()
             with default_session.no_autoflush:
                 _current_creator = default_session.query(Creator).filter_by(id=_current_creator.id).first()
 
     assert inspect(_current_creator).persistent
+
+
+def _make_new_creator(default_session):
+    global _current_creator
+    _current_creator = Creator()
+    default_session.add(_current_creator)
+    default_session.commit()
 
 
 def get_creator_id():
