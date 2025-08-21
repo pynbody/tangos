@@ -26,6 +26,10 @@ def test_get_handler():
 
 def test_get_deprecated_handler():
     assert db.input_handlers.get_named_handler_class('pynbody.ChangaOutputSetHandler') == pynbody_outputs.ChangaInputHandler
+    
+def test_get_multi_level_handler():
+    assert db.input_handlers.get_named_handler_class('tangos.input_handlers.pynbody.ChangaInputHandler') == pynbody_outputs.ChangaInputHandler
+    assert db.input_handlers.get_named_handler_class('tangos.input_handlers.pynbody.ChangaOutputSetHandler') == pynbody_outputs.ChangaInputHandler
 
 def test_handler_name():
     assert pynbody_outputs.ChangaInputHandler.handler_class_name()=="pynbody.ChangaInputHandler"

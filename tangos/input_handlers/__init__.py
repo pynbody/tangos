@@ -209,13 +209,22 @@ def _map_deprecated_handler_name(handler):
 def get_named_handler_class(handler):
     """Get a HandlerBase identified by the given name.
 
-    The name is of the format submodule.ClassName
+    The name is of the format submodule.ClassName or package.submodule.ClassName
 
     :rtype HandlerBase"""
     handler = _map_deprecated_handler_name(handler)
+
+    if '.' not in handler:
+        raise ValueError("Handler name must be in the format module.ClassName")
+
+    module_name, class_name = handler.rsplit('.', 1)
+
     try:
-        output_module = importlib.import_module('.'+handler.split('.')[0],__name__)
-    except ImportError:
-        output_module = importlib.import_module(handler.split('.')[0])
-    output_class = getattr(output_module, handler.split('.')[1])
+        # First, try a relative import within tangos.input_handlers
+        output_module = importlib.import_module('.' + module_name, __name__)
+    except (ImportError, ModuleNotFoundError):
+        # If that fails, try an absolute import
+        output_module = importlib.import_module(module_name)
+
+    output_class = getattr(output_module, class_name)
     return output_class
