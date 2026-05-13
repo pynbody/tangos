@@ -6,7 +6,7 @@ from sqlalchemy import func
 import tangos
 from tangos import core
 
-from . import simulation_from_request
+from . import simulation_from_request, web_properties
 
 
 @view_config(route_name='simulation_view', renderer='../templates/simulation_view.jinja2')
@@ -34,7 +34,7 @@ def simulation_view(request):
     simname = sim.basename
 
     props = []
-    for q in sim.properties:
+    for q in web_properties(sim.properties):
         props.append((q.name.text, q.data_repr()))
 
     return {'simulation':simname,
