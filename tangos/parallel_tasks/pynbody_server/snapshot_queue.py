@@ -110,6 +110,7 @@ class PynbodySnapshotQueue:
                 num_threads = multiprocessing.cpu_count()
             else:
                 num_threads = None
+            self.current_snapshot.wrap() # Because we have converted pos to kpc, FP roundoff may place particles at the boundaries outside the period of the box.
             self.current_snapshot.build_tree(num_threads=num_threads,
                                              shared_mem=self.current_shared_mem_flag)
 
