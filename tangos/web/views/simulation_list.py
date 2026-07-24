@@ -13,9 +13,9 @@ from . import filter_properties_for_web_display
 def simulation_list(request):
     session = request.dbsession
 
-    cats = session.query(core.DictionaryItem).join(core.simulation.SimulationProperty).all()
+    cats = filter_properties_for_web_display(session.query(core.DictionaryItem).join(core.simulation.SimulationProperty).all())
 
-    titles = ["Name"] + [z.text for z in cats if z.text[-5:] != 'noweb']
+    titles = ["Name"] + [z.text for z in cats]
     ids = [z.id for z in cats]
 
     sims = session.query(tangos.core.simulation.Simulation).all()
