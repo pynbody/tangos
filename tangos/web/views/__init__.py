@@ -28,7 +28,8 @@ def simulation_from_request(request):
         raise exc.HTTPNotFound()
     return sim
 
-# This method allows you to add simulation properties that will not be displayed by the web interface
-# (for example, if you want to store large metadata in your DB)
-def web_properties(properties):
+# This method allows you to add simulation properties that will not be
+# displayed by the web interface (for example, if you want to store large
+# metadata in your DB)
+def filter_properties_for_web_display(properties):
     return [q for q in properties if q.name.text[-5:] != 'noweb']

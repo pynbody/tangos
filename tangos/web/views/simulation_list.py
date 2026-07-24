@@ -6,7 +6,7 @@ from pyramid.view import view_config
 import tangos
 from tangos import core
 
-from . import web_properties
+from . import filter_properties_for_web_display
 
 
 @view_config(route_name='simulation_list', renderer='../templates/simulation_list.jinja2')
@@ -25,7 +25,7 @@ def simulation_list(request):
     for x in sims:
         s = [x.basename] + ["&ndash;"] * (len(titles) - 1)
 
-        for q in web_properties(x.properties):
+        for q in filter_properties_for_web_display(x.properties):
             s[1 + ids.index(q.name_id)] = q.data_repr()
 
         simulations.append(s)
