@@ -252,6 +252,8 @@ class PropertyWriter(GenericTangosTool):
 
             self._objects_this_timestep = [halo_i for halo_i, include_i in zip(self._objects_this_timestep, inclusion)
                                            if include_i]
+            self._existing_properties_this_timestep = [halo_i for halo_i, include_i in zip(self._existing_properties_this_timestep, inclusion)
+                                                       if include_i]
 
 
     def _attach_track_data_to_trackers(self):
@@ -559,6 +561,9 @@ class PropertyWriter(GenericTangosTool):
         if not property_calculator.accept(existing_properties):
             self.tracker.register_missing_prerequisite()
             return
+        if db_object.finder_id != existing_properties.finder_id:
+            raise RuntimeError("A mismatched has occurred between db_object and existing_properties", 
+                               db_object.finder_id, existing_properties.finder_id)
 
         results = self._get_property_value(db_object, property_calculator, existing_properties)
 
