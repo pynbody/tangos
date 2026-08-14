@@ -503,3 +503,37 @@ def test_writer_cannot_see_links(fresh_database):
     assert "Cannot pass database objects" in output
     assert "Missing pre-requisite: 15" in output
     assert "Succeeded: 0" in output
+
+class DummyPropertyForFiltering(properties.PropertyCalculation):
+    """Used by test_property_deleter"""
+    names = "filtering_dummy_property",
+    requires_particle_data = True
+
+    def requires_property(self):
+        return []
+
+    def calculate(self, data, entry):
+        out = 10
+        if entry.halo_number==5:
+            out = 4
+        return out,
+
+
+class DummyPropertyEchoingEntry(properties.PropertyCalculation):
+    names = "echoed_halo_number",
+    requires_particle_data = False
+
+    def requires_property(self):
+        return []
+
+    def calculate(self, data, entry):
+        return entry.halo_number,
+
+def test_include_only_keeps_existing_properties_aligned(fresh_database):
+    """The existing-properties list must be filtered alongside the object list (issue #292)"""
+    run_writer_with_args("filtering_dummy_property")
+    run_writer_with_args("echoed_halo_number", "--include", "filtering_dummy_property>5")
+    #the above line should skip one halo in the middle of the database
+    hn, echoed = db.get_timestep("dummy_sim_1/step.1").calculate_all("halo_number()",
+                                                                    "echoed_halo_number")
+    npt.assert_equal(echoed, hn)
