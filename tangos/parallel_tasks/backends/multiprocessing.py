@@ -34,10 +34,7 @@ receive_lock = threading.Lock()
 
 # Use spawn context to avoid inheriting unsafe thread state (e.g. OpenMP pools)
 # from the parent process.
-if sys.version_info[:2]>=(3,3):
-    mp_context = multiprocessing.get_context('spawn')
-else :
-    mp_context = multiprocessing
+mp_context = multiprocessing.get_context('spawn')
 
 class NoMatchingItem(Exception):
     pass

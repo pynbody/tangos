@@ -8,3 +8,4 @@ dist/*
 tests/test_dbs/
 .DS_store
 .pytest_cache/
+parallel_tasks_test_log.txt
