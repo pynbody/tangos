@@ -16,6 +16,7 @@ import threading
 import time
 from typing import Optional
 
+import cloudpickle
 import tblib.pickling_support
 
 from ...log import logger
@@ -108,8 +109,9 @@ def barrier():
 def finalize():
     pass
 
-def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in, capture_log):
+def launch_wrapper(serialized_invocation, rank_in, size_in, pipe_in, capture_log):
     tblib.pickling_support.install()
+    target_fn, args_in = cloudpickle.loads(serialized_invocation)
 
     global _slave, _rank, _size, _pipe, _recv_lock
     _rank = rank_in
@@ -166,12 +168,13 @@ def launch_functions(functions, args, capture_log=False):
     multiprocessing.resource_tracker.ensure_running()
 
     num_procs = len(functions)
+    invocations = [cloudpickle.dumps((function, args_i)) for function, args_i in zip(functions, args)]
 
 
     child_connections, parent_connections = list(zip(*[mp_context.Pipe() for rank in range(num_procs)]))
-    processes = [mp_context.Process(target=launch_wrapper, args=(function, rank, num_procs, pipe, args_i, capture_log))
-                 for rank, (pipe, function, args_i) in
-                 enumerate(zip(child_connections, functions, args))]
+    processes = [mp_context.Process(target=launch_wrapper, args=(invocation, rank, num_procs, pipe, capture_log))
+                 for rank, (pipe, invocation) in
+                 enumerate(zip(child_connections, invocations))]
 
     for proc_i in processes:
         proc_i.start()
