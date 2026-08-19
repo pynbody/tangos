@@ -1,4 +1,0 @@
-[2] Before barrier
-[1] Before barrier
-[1] After barrier
-[2] After barrier
