@@ -32,10 +32,10 @@ _print_exceptions = True
 send_lock = threading.Lock() # a lock to make sure if multiple threads are running, only one can send/receive at a time
 receive_lock = threading.Lock()
 
-# Compatibility fix for python >=3.8 on MacOS, where the default process start
-# method changed:
+# Use spawn context to avoid inheriting unsafe thread state (e.g. OpenMP pools)
+# from the parent process.
 if sys.version_info[:2]>=(3,3):
-    mp_context = multiprocessing.get_context('fork')
+    mp_context = multiprocessing.get_context('spawn')
 else :
     mp_context = multiprocessing
 
@@ -119,6 +119,10 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in, capture_log):
     _size = size_in
     _pipe = pipe_in
     _recv_lock = threading.Lock()
+    import tangos.parallel_tasks as parallel_tasks
+    parallel_tasks.backend = sys.modules[__name__]
+    parallel_tasks._backend_name = "multiprocessing"
+    parallel_tasks._num_procs = size_in
 
     result = None
 
@@ -136,7 +140,6 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in, capture_log):
             send(("log", result), -1, -1)
         send("exit", -1, -1)
     except Exception as e:
-        import sys
         import traceback
         exc_type, exc_value, exc_traceback = sys.exc_info()
         global _print_exceptions

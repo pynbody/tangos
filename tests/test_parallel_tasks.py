@@ -25,6 +25,11 @@ def teardown_module():
     pt.use("multiprocessing-6")
     pt.launch(tangos.core.close_db)
 
+def test_multiprocessing_backend_uses_spawn_start_method():
+    from tangos.parallel_tasks.backends import multiprocessing as multiprocessing_backend
+
+    assert multiprocessing_backend.mp_context.get_start_method() == "spawn"
+
 
 def _add_property():
     for i in pt.distributed(list(range(1,10))):
