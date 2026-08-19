@@ -117,7 +117,8 @@ def launch_wrapper(target_fn, rank_in, size_in, pipe_in, args_in, capture_log):
     _pipe = pipe_in
     _recv_lock = threading.Lock()
     import tangos.parallel_tasks as parallel_tasks
-    parallel_tasks.backend = sys.modules[__name__]
+    import tangos.parallel_tasks.backends.multiprocessing as multiprocessing_backend
+    parallel_tasks.backend = multiprocessing_backend
     parallel_tasks._backend_name = "multiprocessing"
     parallel_tasks._num_procs = size_in
 
