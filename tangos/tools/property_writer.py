@@ -723,12 +723,12 @@ class PropertyWriter(GenericTangosTool):
 
 
     def run_calculation_loop(self):
+        parallel_tasks.database.synchronize_creator_object()
         if self._should_share_query_results() and not self._is_lead_rank():
             # we are not going to touch the database from this rank
             core.get_default_session().close()
             core.get_default_engine().dispose()
-        else:
-            parallel_tasks.database.synchronize_creator_object()
+            
 
         # NB both these objects must be created at the same place in all processes,
         # since creating them is a 'barrier'-like operation
