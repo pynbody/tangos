@@ -8,7 +8,7 @@ from .. import core
 from ..cached_writer import _insert_list_unlocked
 from ..log import logger
 from . import GenericTangosTool
-
+from .db_importer import _create_foreign_keys, _drop_foreign_keys, _drop_or_create_indexes
 
 class PickledResultsWriter(GenericTangosTool):
     tool_name = 'write-pickled-results'
@@ -35,14 +35,33 @@ class PickledResultsWriter(GenericTangosTool):
     def run_calculation_loop(self):
         files = self._expand_files()
         session = core.get_default_session()
+        # indexes are dropped/recreated on their own connection, independent of the ORM session's
+        # transaction, since _insert_list_unlocked below commits the session itself
+        engine = session.get_bind()
 
-        for filename in tqdm.tqdm(files, desc="Committing pickled results", unit="file"):
-            with open(filename, "rb") as f:
-                timestep_id, pending_properties, creator_id = pickle.load(f)
-            # attribute the committed properties to the run that calculated them, not this tool
-            creator = session.query(core.creator.Creator).filter_by(id=creator_id).first()
-            core.creator.set_creator(creator)
-            _insert_list_unlocked(pending_properties, timestep_id)
+        logger.info("Dropping foreign key constraints...")
+        _drop_foreign_keys(session)
+
+        logger.info("Dropping indexes...")
+        with engine.connect() as connection:
+            _drop_or_create_indexes(connection, mode='drop')
+
+        try:
+            logger.info("Committing %d pickled result files...", len(files))
+            for filename in tqdm.tqdm(files, desc="Committing pickled results", unit="file"):
+                with open(filename, "rb") as f:
+                    timestep_id, pending_properties, creator_id = pickle.load(f)
+                # attribute the committed properties to the run that calculated them, not this tool
+                creator = session.query(core.creator.Creator).filter_by(id=creator_id).first()
+                core.creator.set_creator(creator)
+                _insert_list_unlocked(pending_properties, timestep_id)
+        finally:
+            logger.info("Recreating indexes...")
+            with engine.connect() as connection:
+                _drop_or_create_indexes(connection, mode='create')
+
+            logger.info("Recreating foreign keys...")
+            _create_foreign_keys(session)
 
         logger.info("All %d pickled result files committed successfully; deleting them", len(files))
 
