@@ -8,7 +8,12 @@ from .. import core
 from ..cached_writer import _insert_list_unlocked
 from ..log import logger
 from . import GenericTangosTool
-from .db_importer import _create_foreign_keys, _drop_foreign_keys, _drop_or_create_indexes
+from .db_importer import (
+    _create_foreign_keys,
+    _drop_foreign_keys,
+    _drop_or_create_indexes,
+)
+
 
 class PickledResultsWriter(GenericTangosTool):
     tool_name = 'write-pickled-results'

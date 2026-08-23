@@ -3,11 +3,14 @@ import os
 import shutil
 
 import pytest
+from test_db_writer import (
+    _assert_properties_as_expected,
+    fresh_database,
+    run_writer_with_args,
+)
 
 import tangos as db
 from tangos.tools import pickled_results_writer
-
-from test_db_writer import _assert_properties_as_expected, fresh_database, run_writer_with_args
 
 
 @pytest.fixture
