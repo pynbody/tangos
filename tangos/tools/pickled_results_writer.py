@@ -46,5 +46,5 @@ class PickledResultsWriter(GenericTangosTool):
 
         logger.info("All %d pickled result files committed successfully; deleting them", len(files))
 
-        for filename in tqdm.tqdm(files, desc="Deleting pickle files", unit="file"):
+        for filename in files:
             os.remove(filename)

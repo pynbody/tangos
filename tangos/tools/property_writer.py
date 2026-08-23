@@ -96,8 +96,11 @@ class PropertyWriter(GenericTangosTool):
                             help="Specify a filter that describes which objects the calculation should be executed for. Multiple filters may be specified, in which case they must all evaluate to true for the object to be included.")
         parser.add_argument('--explain-classes', action='store_true',
                             help="Log some explanation for why property classes are selected (when there is any ambiguity)"),
-        parser.add_argument('--pickle-results', action='store_true',
-                            help="Instead of committing results to the database, create pickle files. Import them later with tangos import-pickle-results")
+        parser.add_argument('--pickle-results', action='store', nargs='?', const='tangos_results', default=None,
+                            metavar='PATH',
+                            help="Instead of committing results to the database, create pickle files in the "
+                                 "specified folder (default: tangos_results). Import them later with "
+                                 "tangos write-pickled-results")
 
     def _create_parser_obj(self):
         parser = argparse.ArgumentParser()
@@ -377,9 +380,10 @@ class PropertyWriter(GenericTangosTool):
 
     def _commit_results(self):
         if self.options.pickle_results:
-            os.makedirs("tangos_results", exist_ok=True)
+            pickle_dir = self.options.pickle_results
+            os.makedirs(pickle_dir, exist_ok=True)
             rank = parallel_tasks.backend.rank() if parallel_tasks.backend is not None else 0
-            filename = os.path.join("tangos_results", "results_%d_%d.pickle" % (rank, random.getrandbits(63)))
+            filename = os.path.join(pickle_dir, "results_%d_%d.pickle" % (rank, random.getrandbits(63)))
             creator_id = core.creator.get_creator_id()
             with open(filename, "wb") as f:
                 pickle.dump((self._current_timestep_id, self._pending_properties, creator_id), f)

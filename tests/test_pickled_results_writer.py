@@ -50,6 +50,21 @@ def test_pickled_results_preserve_original_creator(fresh_database, tangos_result
     assert "write-pickled-results" not in prop.creator.command_line
 
 
+def test_pickle_results_respects_custom_path(fresh_database, tmp_path):
+    custom_dir = str(tmp_path / "custom_pickle_dir")
+
+    run_writer_with_args("dummy_property", "--pickle-results", custom_dir)
+
+    files = sorted(glob.glob(os.path.join(custom_dir, "*.pickle")))
+    assert len(files) > 0
+    assert glob.glob("tangos_results/*.pickle") == []
+
+    _commit_pickled_results(files)
+
+    _assert_properties_as_expected()
+    assert glob.glob(os.path.join(custom_dir, "*.pickle")) == []
+
+
 def test_no_files_deleted_if_a_commit_fails(fresh_database, tangos_results_dir):
     run_writer_with_args("dummy_property", "--pickle-results")
     files = sorted(glob.glob(os.path.join(tangos_results_dir, "*.pickle")))
