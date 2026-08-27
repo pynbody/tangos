@@ -6,6 +6,8 @@ import pyparsing as pp
 _parsing_lock = threading.Lock() # pyparsing is NOT thread safe
 
 from . import (
+    IN_OPS,
+    UNARY_OPS,
     Calculation,
     FixedInput,
     FixedNumericInput,
@@ -25,23 +27,8 @@ pp.ParserElement.enable_packrat()
 
 numerical_value = pp.Regex(r'-?\d+(\.\d*)?([eE]-?\d+)?').set_parse_action(pack_args(FixedNumericInput))
 
-IN_OPS = [("**", "power"),
-          ("*", "multiply"),
-          ("/", "divide"),
-          ("+", "add"),
-          ("-", "subtract"),
-          (">", "greater"),
-          ("<", "less"),
-          ("|", "logical_or"),
-          ("&", "logical_and"),
-          ("==", "equal"),
-          ("!=", "not_equal"),
-          (">=", "greater_equal"),
-          ("<=", "less_equal")]
-
-UNARY_OPS = [("!", "logical_not"),
-             ("~", "logical_not"), # ~ mirrors python, so that lambdas can be used interchangeably
-             ("-", "negate")]
+# n.b. IN_OPS and UNARY_OPS are defined alongside the Calculation classes, which need
+# them to write calculations back out in operator form
 
 IN_OPS_PYPARSING = []
 UNARY_OPS_PYPARSING = []
@@ -75,7 +62,14 @@ redirection = pp.Forward().setParseAction(pack_args(Link))
 
 element_identifier = pp.Literal("[").suppress()+numerical_value+pp.Literal("]").suppress();
 
-multiple_properties = pp.Forward().setParseAction(pack_args(MultiCalculation))
+def generate_multiple_properties_or_group(*tokens):
+    """Brackets around a single calculation are just grouping; more make a MultiCalculation"""
+    if len(tokens)==1:
+        return tokens[0]
+    else:
+        return MultiCalculation(*tokens)
+
+multiple_properties = pp.Forward().setParseAction(pack_args(generate_multiple_properties_or_group))
 
 property_identifier = (redirection | array_element | live_calculation_property | stored_property | multiple_properties)
 

@@ -24,6 +24,64 @@ from tangos.util import consistent_collection
 
 from .. import core, temporary_halolist as thl
 
+#: infix operators of the mini-language, tightest-binding first, as
+#: (symbol, live-calculation function name). All are right-associative.
+IN_OPS = [("**", "power"),
+          ("*", "multiply"),
+          ("/", "divide"),
+          ("+", "add"),
+          ("-", "subtract"),
+          (">", "greater"),
+          ("<", "less"),
+          ("|", "logical_or"),
+          ("&", "logical_and"),
+          ("==", "equal"),
+          ("!=", "not_equal"),
+          (">=", "greater_equal"),
+          ("<=", "less_equal")]
+
+#: prefix operators of the mini-language. These bind less tightly than any of the
+#: infix operators, so that e.g. -a+b is negate(add(a,b)).
+UNARY_OPS = [("!", "logical_not"),
+             ("~", "logical_not"), # ~ mirrors python, so that lambdas can be used interchangeably
+             ("-", "negate")]
+
+
+def _operator_table(operators, first_precedence=0):
+    """Build a mapping from function name to (symbol, precedence) from an operator list.
+
+    Where more than one symbol maps to the same function, the first is used for
+    printing, but each keeps its own precedence, mirroring the parser.
+    """
+    table = {}
+    for precedence, (symbol, function_name) in enumerate(operators, start=first_precedence):
+        table.setdefault(function_name, (symbol, precedence))
+    return table
+
+
+_INFIX_OPERATORS = _operator_table(IN_OPS)
+_PREFIX_OPERATORS = _operator_table(UNARY_OPS, len(IN_OPS))
+
+
+def _str_operand(calculation, tighter_than):
+    """Return str(calculation) for use as an operand, bracketed if it binds too loosely"""
+    operator = calculation._operator_and_precedence()
+    if operator is not None and operator[1] > tighter_than:
+        return "(" + str(calculation) + ")"
+    return str(calculation)
+
+
+def _str_atomic(calculation):
+    """Return a string for calculation in a context where operators cannot appear.
+
+    Brackets are not an option in such contexts (the mini-language only allows a
+    property or function to the left of a '.'), so an operator is written out in its
+    underlying function form instead, e.g. add(a,b).c rather than a+b.c
+    """
+    if calculation._operator_and_precedence() is not None:
+        return calculation._as_function_str()
+    return str(calculation)
+
 
 class UnknownValue:
     """A dummy object returned by Calculation.proxy_value when the value of the calculation cannot be predicted"""
@@ -52,6 +110,13 @@ class Calculation:
 
     def __str__(self):
         raise NotImplementedError
+
+    def _operator_and_precedence(self):
+        """Return (symbol, precedence, number of operands) if this prints as an operator.
+
+        Returns None for calculations that are not written as an operator, which is
+        the case for everything except the arithmetic and logic functions."""
+        return None
 
     def set_extraction_pattern(self, extraction_pattern):
         self._extraction_pattern = extraction_pattern
@@ -396,8 +461,35 @@ class LiveProperty(Calculation):
         self._name = str(tokens[0])
         self._inputs = list(tokens[1:])
 
-    def __str__(self):
+    def _as_function_str(self):
         return self._name + "(" + (",".join(str(x) for x in self._inputs)) + ")"
+
+    def _operator_and_precedence(self):
+        if len(self._inputs) == 2 and self._name in _INFIX_OPERATORS:
+            symbol, precedence = _INFIX_OPERATORS[self._name]
+            return symbol, precedence, 2
+        elif len(self._inputs) == 1 and self._name in _PREFIX_OPERATORS:
+            symbol, precedence = _PREFIX_OPERATORS[self._name]
+            return symbol, precedence, 1
+        else:
+            return None
+
+    def __str__(self):
+        operator = self._operator_and_precedence()
+        if operator is None:
+            return self._as_function_str()
+
+        symbol, precedence, num_operands = operator
+        if num_operands == 1:
+            # prefix operators are right-associative, so an operand at the same
+            # precedence needs no brackets, e.g. --a
+            return symbol + _str_operand(self._inputs[0], precedence)
+        else:
+            # infix operators are right-associative, so the left operand must bind
+            # more tightly than this operator, whereas the right operand need only
+            # bind at least as tightly
+            return (_str_operand(self._inputs[0], precedence - 1) + symbol
+                    + _str_operand(self._inputs[1], precedence))
 
     def name(self):
         return self._name
@@ -581,7 +673,7 @@ class Link(Calculation):
 
 
     def __str__(self):
-        return str(self.locator)+"."+str(self.property)
+        return _str_atomic(self.locator)+"."+_str_atomic(self.property)
 
     def name(self):
         return self.property.name()

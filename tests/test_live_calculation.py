@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from pytest import raises as assert_raises
 
 import tangos
@@ -149,6 +150,77 @@ def test_logical_not_operators():
     assert halo.calculate("~has_property(nonexistent_property)")
     assert np.allclose(halo.calculate("~~dummy_property_3"),
                        halo.calculate("!!dummy_property_3"))
+
+#: expressions used to check that calculations are written back out in a form which
+#: parses to the same calculation
+REPRESENTATION_CASES = [
+    "Mvir",
+    "Vvir()",
+    "Mvir/Vvir()",
+    "a+b*c",
+    "(a+b)*c",
+    "a-b-c",
+    "(a-b)-c",
+    "a**b**c",
+    "(a**b)**c",
+    "a<10&b>5",
+    "(a==1)|(b!=2)",
+    "a>=1",
+    "a<=1",
+    "-a+b",
+    "-(a+b)",
+    "a-(-b)",
+    "a--2.5",
+    "!has_property(a)",
+    "!(a>1)",
+    "-!a",
+    "2**(-a)",
+    "abs(a-b)",
+    "sqrt(a)/2",
+    "at(Rvir/2,dm_density_profile)",
+    "a.b.c",
+    "add(a,b).c",
+    "a.b*c",
+    "later(5).a[0]",
+    "later(5).Mvir/Rvir",
+    "(a,b)",
+    "(a+b,c*d)",
+    "f((a,b))",
+    'link(BH,BH_mass,"max",BH_central_distance<10)',
+    'find_progenitor(SFR,"max").mass',
+]
+
+@pytest.mark.parametrize("expression", REPRESENTATION_CASES)
+def test_representation_round_trips(expression):
+    """Writing out a calculation must generate a string that parses back to a copy"""
+    calculation = lc.parser.parse_property_name(expression)
+    reparsed = lc.parser.parse_property_name(str(calculation))
+    assert str(reparsed) == str(calculation)
+    assert type(reparsed) is type(calculation)
+
+def test_operators_are_written_out_as_operators():
+    """Operators are written back out in operator form, not as the underlying functions"""
+    def as_string(expression):
+        return str(lc.parser.parse_property_name(expression))
+
+    assert as_string("Mvir/Vvir()") == "Mvir/Vvir()"
+    assert as_string("at(Rvir/2,dm_density_profile)") == "at(Rvir/2,dm_density_profile)"
+    assert as_string("a<10 & b>5") == "a<10&b>5"
+    assert as_string("~a") == "!a"
+    # brackets appear only where the mini-language would otherwise regroup; note
+    # that the operators are right-associative, so a*(b+c) needs them but a+b*c
+    # does not
+    assert as_string("(a+b)*c") == "(a+b)*c"
+    assert as_string("a*(b+c)") == "a*(b+c)"
+    assert as_string("a+b*c") == "a+b*c"
+    assert as_string("a+(b*c)") == "a+b*c"
+    # ... and cannot be used to the left of a redirection, where the underlying
+    # function form is used instead
+    assert as_string("add(a,b).c") == "add(a,b).c"
+
+def test_brackets_around_a_single_calculation_are_grouping():
+    assert isinstance(lc.parser.parse_property_name("(Mvir)"), lc.StoredProperty)
+    assert isinstance(lc.parser.parse_property_name("(a,b)"), lc.MultiCalculation)
 
 def test_abcissa_passing_function():
     """In this example, the x-coordinates need to be successfully passed "through" the abs function for the
