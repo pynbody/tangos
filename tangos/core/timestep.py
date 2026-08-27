@@ -117,7 +117,9 @@ class TimeStep(Base):
 
         The parameters passed name the properties (or live-calculations) to return.
         For example m,r = ts.calculate_all("mass","radius") generates an array of mass and
-        radius for all objects in timestep ts.
+        radius for all objects in timestep ts. Each may equivalently be given as a lambda
+        taking no arguments, e.g. ts.calculate_all(lambda: mass, lambda: radius), or as a
+        live_calculation.Calculation object.
 
         :param object_type: integer or string representing the particular object type
                             (e.g. 'halo', 'BH' or 'group'). If None (default), all

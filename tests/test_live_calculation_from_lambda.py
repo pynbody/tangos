@@ -392,3 +392,47 @@ def test_calculate_all_from_lambda():
     from_string_result, = timestep.calculate_all("dummy_property_3*2")
     assert np.allclose(from_lambda_result, from_string_result)
     assert np.allclose(from_lambda_result, [-5.0])
+
+
+# ------------------------------- lambdas passed directly, wherever strings are accepted
+
+def test_calculate_accepts_a_lambda():
+    halo = tangos.get_halo("sim/ts1/1")
+    assert np.allclose(halo.calculate(lambda: dummy_property_3*2),
+                       halo.calculate("dummy_property_3*2"))
+
+
+def test_calculate_all_accepts_lambdas_alongside_strings():
+    timestep = tangos.get_timestep("sim/ts1")
+    from_lambda_result, from_string_result = timestep.calculate_all(
+        lambda: dummy_property_3*2, "dummy_property_3*2")
+    assert np.allclose(from_lambda_result, from_string_result)
+    assert np.allclose(from_lambda_result, [-5.0])
+
+
+def test_calculate_for_descendants_accepts_a_lambda():
+    halo = tangos.get_halo("sim/ts1/1")
+    from_lambda_result, = halo.calculate_for_descendants(lambda: dummy_property_3)
+    from_string_result, = halo.calculate_for_descendants("dummy_property_3")
+    assert np.allclose(from_lambda_result, from_string_result)
+    assert np.allclose(from_lambda_result, [-2.5, 5.0])
+
+
+def test_calculate_for_progenitors_accepts_a_lambda():
+    halo = tangos.get_halo("sim/ts2/1")
+    from_lambda_result, = halo.calculate_for_progenitors(lambda: dummy_property_3)
+    assert np.allclose(from_lambda_result, [5.0, -2.5])
+
+
+def test_calculations_can_be_built_from_lambdas():
+    """Anywhere a Calculation can be assembled from strings, a lambda also works"""
+    assert str(lc.MultiCalculation(lambda: Mvir, "Rvir")) \
+           == str(parser.parse_property_name("(Mvir,Rvir)"))
+    assert str(lc.Link(lambda: BH, "BH_mass")) \
+           == str(parser.parse_property_name("BH.BH_mass"))
+
+
+def test_unusable_calculation_type_rejected():
+    halo = tangos.get_halo("sim/ts1/1")
+    with assert_raises(TypeError):
+        halo.calculate(42)

@@ -103,6 +103,29 @@ progenitors of a galaxy where the `SFR` property was maximum, and return its `ma
 h.calculate('find_progenitor(SFR, "max").mass')
 ```
 
+Writing calculations as python lambdas
+--------------------------------------
+
+Anywhere a calculation can be given as a string, it can equivalently be written as a python lambda taking no arguments:
+
+```python
+h.calculate(lambda: Vvir())
+h.calculate(lambda: at(Rvir/2, dm_density_profile))
+ts.calculate_all(lambda: later(5).Mvir, lambda: Mvir)
+h.calculate_for_progenitors(lambda: SFR_histogram[0])
+```
+
+Names that do not correspond to a python variable are interpreted as database properties or live-calculation functions, exactly as in the string form. Names that _do_ resolve to a python variable holding a number, a string or another calculation are substituted into the calculation, so that
+
+```python
+radius = 5.0
+h.calculate(lambda: at(radius, dm_density_profile))
+```
+
+is equivalent to `h.calculate("at(5.0,dm_density_profile)")`.
+
+Because the lambda is genuine python, python's rules apply. In particular, `!` becomes `~`; python's operator precedence applies, so comparisons combined with `&` or `|` need brackets, e.g. `lambda: (BH_mass>1e6) & (BH_central_distance<10)`; and control flow (`if`/`else`, `and`, `or`, `not`, comprehensions) cannot be used. The mini-language has no equivalent for control flow, so it is rejected with an explanation rather than silently misinterpreted. For more detail, see the documentation of the `tangos.live_calculation.from_lambda` module.
+
 General Syntax Notes
 ------------
 - a given live calculation function, `f()`, returns a value using already calculated properties of a halo

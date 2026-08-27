@@ -169,7 +169,9 @@ class SimulationObjectBase(Base):
         See the data exploration tutorials at https://pynbody.github.io/tangos/data_exploration.html
         for an introduction to the system.
 
-        :param calculation: the calculation (or a string representation of it to be parsed)
+        :param calculation: the calculation to perform, specified either as a string in
+                            the mini-language, as a lambda taking no arguments
+                            (e.g. lambda: Mvir/Rvir), or as a Calculation object
         :param return_description: if True, return both the value and the PropertyCalculation class describing it.
         :returns: The result of the calculation, or a tuple containing the result and the description if
                   return_description is True.
@@ -345,8 +347,9 @@ class SimulationObjectBase(Base):
     def calculate_for_descendants(self, *plist, **kwargs):
         """Run the specified calculations on this halo and its descendants
 
-        Each argument is a string (or an instance of live_calculation.Calculation), following the syntax
-        described in live_calculation.md.
+        Each argument is a string following the syntax described in live_calculation.md,
+        or a lambda taking no arguments (e.g. lambda: Mvir/Rvir), or an instance of
+        live_calculation.Calculation.
 
         *kwargs*:
 

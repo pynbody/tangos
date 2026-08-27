@@ -396,7 +396,7 @@ class MultiCalculation(Calculation):
     """Represents a single calculation that returns the results from multiple sub-calculations."""
     def __init__(self, *calculations):
         super().__init__()
-        self.calculations = [c if isinstance(c, Calculation) else parser.parse_property_name(c) for c in calculations]
+        self.calculations = [parser.parse_property_name_if_required(c) for c in calculations]
 
     def retrieves(self):
         x = set()
@@ -693,16 +693,14 @@ class Link(Calculation):
         self._multi_selection_column = None
         self._constraints_columns = []
         self._expect_multivalues = False
-        if not isinstance(self.locator, Calculation):
-            self.locator = parser.parse_property_name(self.locator)
+        self.locator = parser.parse_property_name_if_required(self.locator)
 
         if isinstance(self.locator, StoredProperty):
             self.locator.set_extraction_pattern(extraction_patterns.HaloLinkTargetGetter())
             self.locator.set_multivalued() # we want to at least know if there are multiple possible links to follow
             self._expect_multivalues = True
 
-        if not isinstance(self.property, Calculation):
-            self.property = parser.parse_property_name(self.property)
+        self.property = parser.parse_property_name_if_required(self.property)
 
 
     def __str__(self):
