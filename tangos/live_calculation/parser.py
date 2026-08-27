@@ -40,6 +40,7 @@ IN_OPS = [("**", "power"),
           ("<=", "less_equal")]
 
 UNARY_OPS = [("!", "logical_not"),
+             ("~", "logical_not"), # ~ mirrors python, so that lambdas can be used interchangeably
              ("-", "negate")]
 
 IN_OPS_PYPARSING = []

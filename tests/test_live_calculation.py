@@ -140,6 +140,16 @@ def test_unary_minus_function():
     assert np.allclose(halo.calculate("-dummy_property_3"), 2.5)
     assert np.allclose(halo.calculate("--dummy_property_3"), -2.5)
 
+def test_logical_not_operators():
+    """logical_not can be spelled either ! (traditional) or ~ (as in python)"""
+    halo = tangos.get_halo("sim/ts1/1")
+    assert not halo.calculate("!has_property(dummy_property_1)")
+    assert not halo.calculate("~has_property(dummy_property_1)")
+    assert halo.calculate("!has_property(nonexistent_property)")
+    assert halo.calculate("~has_property(nonexistent_property)")
+    assert np.allclose(halo.calculate("~~dummy_property_3"),
+                       halo.calculate("!!dummy_property_3"))
+
 def test_abcissa_passing_function():
     """In this example, the x-coordinates need to be successfully passed "through" the abs function for the
     at function to return the correct result."""

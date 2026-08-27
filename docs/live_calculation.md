@@ -140,7 +140,7 @@ Note that _string_ inputs must have quotes when used, but property names and _ex
 * Binary operators: `*`, `/`, `+`, `-`, `**` (power)
 * Binary logic operators: `<`, `>`, `&`, `|`
 * Unary operators: `abs`, `sqrt`, `log`, `log10`
-* Unary logic operator: `!` (not)
+* Unary logic operator: `!` or, equivalently, `~` (not)
 
 **Links**
 
