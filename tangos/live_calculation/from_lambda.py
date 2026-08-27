@@ -482,7 +482,7 @@ class _Attribute(_Symbolic):
         return self._link_to(StoredProperty(self._name))
 
     def _description(self):
-        return "%s.%s" % (self._parent._description(), self._name)
+        return f"{self._parent._description()}.{self._name}"
 
     def _apply_call(self, arguments):
         return self._link_to(LiveProperty(self._name, *arguments))
