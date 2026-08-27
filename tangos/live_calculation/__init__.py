@@ -71,14 +71,28 @@ def _str_operand(calculation, tighter_than):
     return str(calculation)
 
 
-def _str_atomic(calculation):
+def _str_without_operators(calculation):
     """Return a string for calculation in a context where operators cannot appear.
 
-    Brackets are not an option in such contexts (the mini-language only allows a
-    property or function to the left of a '.'), so an operator is written out in its
-    underlying function form instead, e.g. add(a,b).c rather than a+b.c
+    Brackets are not an option in such contexts (the mini-language allows only a
+    property, function or array element on either side of a '.'), so an operator is
+    written out in its underlying function form instead, e.g. add(a,b).c rather
+    than a+b.c
     """
     if calculation._operator_and_precedence() is not None:
+        return calculation._as_function_str()
+    return str(calculation)
+
+
+def _str_as_property_or_function(calculation):
+    """Return a string for calculation where only a property or function may appear.
+
+    This is more restrictive than _str_without_operators: to the left of a '.' or a
+    '[', the mini-language accepts neither operators nor array elements, so anything
+    calculated by a function is written out in function form, e.g. element(a,0).b
+    rather than a[0].b
+    """
+    if isinstance(calculation, LiveProperty):
         return calculation._as_function_str()
     return str(calculation)
 
@@ -474,7 +488,26 @@ class LiveProperty(Calculation):
         else:
             return None
 
+    def _as_element_str(self):
+        """Return the array-indexing form of this calculation, e.g. my_profile[3].
+
+        Returns None if this calculation is not an extraction of a single array
+        element, or if the index is not a literal number as the mini-language
+        requires."""
+        if self._name != "element" or len(self._inputs) != 2:
+            return None
+        array, index = self._inputs
+        if not isinstance(index, FixedNumericInput):
+            return None
+        if not isinstance(array, (StoredProperty, LiveProperty)):
+            return None
+        return _str_as_property_or_function(array) + "[" + str(index) + "]"
+
     def __str__(self):
+        as_element = self._as_element_str()
+        if as_element is not None:
+            return as_element
+
         operator = self._operator_and_precedence()
         if operator is None:
             return self._as_function_str()
@@ -673,7 +706,10 @@ class Link(Calculation):
 
 
     def __str__(self):
-        return _str_atomic(self.locator)+"."+_str_atomic(self.property)
+        # the locator is more restricted than the target: a[0].b is not valid in the
+        # mini-language, whereas a.b[0] is
+        return (_str_as_property_or_function(self.locator) + "."
+                + _str_without_operators(self.property))
 
     def name(self):
         return self.property.name()

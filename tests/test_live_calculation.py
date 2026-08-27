@@ -180,6 +180,12 @@ REPRESENTATION_CASES = [
     "at(Rvir/2,dm_density_profile)",
     "a.b.c",
     "add(a,b).c",
+    "a[0]",
+    "a()[0]",
+    "a[-1]",
+    "a.b[0]",
+    "abs(a)[2]",
+    "a[3]*2",
     "a.b*c",
     "later(5).a[0]",
     "later(5).Mvir/Rvir",
@@ -217,6 +223,28 @@ def test_operators_are_written_out_as_operators():
     # ... and cannot be used to the left of a redirection, where the underlying
     # function form is used instead
     assert as_string("add(a,b).c") == "add(a,b).c"
+
+def test_array_elements_are_written_out_with_brackets():
+    """Extraction of an array element is written back out as my_array[i]"""
+    def as_string(expression):
+        return str(lc.parser.parse_property_name(expression))
+
+    assert as_string("element(dm_density_profile,3)") == "dm_density_profile[3]"
+    assert as_string("later(5).element(a,0)") == "later(5).a[0]"
+    assert as_string("element(a(),0)*2") == "a()[0]*2"
+
+def test_array_elements_that_cannot_use_brackets():
+    """Where the mini-language does not allow the bracket form, functions are used"""
+    def element(array, index):
+        return lc.LiveProperty("element", array, lc.FixedNumericInput(index))
+
+    inner = element(lc.StoredProperty("a"), "0")
+    # a[0][1] and a[0].b are not valid in the mini-language
+    assert str(element(inner, "1")) == "element(a,0)[1]"
+    assert str(lc.Link(inner, lc.StoredProperty("b"))) == "element(a,0).b"
+    # neither is a.b[0] a way of writing the element of a redirected property
+    assert str(element(lc.Link(lc.StoredProperty("a"), lc.StoredProperty("b")), "0")) \
+           == "element(a.b,0)"
 
 def test_brackets_around_a_single_calculation_are_grouping():
     assert isinstance(lc.parser.parse_property_name("(Mvir)"), lc.StoredProperty)
