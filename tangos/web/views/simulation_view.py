@@ -6,7 +6,7 @@ from sqlalchemy import func
 import tangos
 from tangos import core
 
-from . import simulation_from_request, filter_properties_for_web_display
+from . import filter_properties_for_web_display, simulation_from_request
 
 
 @view_config(route_name='simulation_view', renderer='../templates/simulation_view.jinja2')
