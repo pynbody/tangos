@@ -66,6 +66,27 @@ A name appearing in a lambda may be intended as a tangos property (``Mvir``) or 
 be a genuine python variable that should be interpolated into the calculation
 (``lambda: at(my_radius, profile)``). The ``name_resolution`` argument to
 :func:`to_calculation` chooses between the possible policies; see its docstring.
+
+Python functions and lambdas
+----------------------------
+
+Unless ``name_resolution='tangos'`` is in force, a name that resolves to a python
+function is used as that function rather than as a live-calculation name:
+
+* a lambda taking no arguments stands for a calculation in its own right, and may be
+  written either bare or called, so that given ``half_radius = lambda: Rvir/2`` both
+  ``lambda: at(half_radius, profile)`` and ``lambda: at(half_radius(), profile)``
+  give ``at(Rvir/2,profile)``;
+
+* a function taking arguments is genuinely called while tracing, with the
+  calculations written in the lambda as its arguments, so that it can assemble part
+  of the calculation::
+
+      difference = lambda a, b: a-b
+      to_calculation(lambda: difference(MDM, Mgas))     # MDM-Mgas
+
+  The arguments must therefore match the function's signature, and names *inside*
+  the function are ordinary python names rather than live-calculation names.
 """
 
 import dis
@@ -259,6 +280,11 @@ def as_calculation(value):
     if value is None:
         raise LambdaCalculationError(
             "cannot use None in a live calculation")
+    if isinstance(value, (_PythonFunction, types.FunctionType)):
+        raise LambdaCalculationError(
+            "cannot use the python function %s as a value in a live calculation; "
+            "call it, so that its result becomes part of the calculation"
+            % _function_description(value))
     raise LambdaCalculationError(
         "cannot use %r (of type %s) in a live calculation; only numbers, strings, "
         "tuples and other calculations can be included"
@@ -271,7 +297,7 @@ def _can_be_calculation(value):
         return True
     if isinstance(value, tuple):
         return all(_can_be_calculation(v) for v in value)
-    return _is_nullary_function(value)
+    return isinstance(value, types.FunctionType)
 
 
 # --------------------------------------------------------------- symbolic stand-ins
@@ -491,6 +517,61 @@ class _Attribute(_Symbolic):
         return self._link_to(_make_element(StoredProperty(self._name), index))
 
 
+class _InlinedLambda(_Value):
+    """A stand-in for a python lambda that stands for a calculation of its own.
+
+    It can be used either as a value or called with no arguments, so that both
+    lambda: my_lambda/Mvir and lambda: my_lambda()/Mvir mean the same thing."""
+
+    __slots__ = ("_name",)
+
+    def __init__(self, name, calculation):
+        super().__init__(calculation)
+        self._name = name
+
+    def _apply_call(self, arguments):
+        if arguments:
+            raise LambdaCalculationError(
+                "the python lambda %s takes no arguments, but was called with %d"
+                % (self._name, len(arguments)))
+        return self._calculation
+
+
+class _PythonFunction:
+    """A stand-in for a python function taking arguments.
+
+    Calling it really calls the function, with the arguments being the calculations
+    written in the lambda, so that the function assembles part of the calculation."""
+
+    __slots__ = ("_name", "_function")
+
+    def __init__(self, name, function):
+        self._name = name
+        self._function = function
+
+    def __call__(self, *args, **kwargs):
+        try:
+            inspect.signature(self._function).bind(*args, **kwargs)
+        except TypeError as exception:
+            raise LambdaCalculationError(
+                "cannot call the python function %s: %s"
+                % (self._name, exception)) from None
+        return self._function(*args, **kwargs)
+
+    def __repr__(self):
+        return "<python function being traced: %s>" % self._name
+
+
+def _function_description(value):
+    """Describe a python function, for use in error messages"""
+    if isinstance(value, _PythonFunction):
+        return value._name
+    if value.__name__ == "<lambda>":
+        return "lambda at %s:%d" % (value.__code__.co_filename,
+                                    value.__code__.co_firstlineno)
+    return value.__name__
+
+
 # --------------------------------------------------------------------------- tracing
 
 NAME_RESOLUTION_MODES = ("auto", "python", "tangos")
@@ -530,7 +611,13 @@ def _substitute(name, value, name_resolution, _tracing):
     if isinstance(value, Calculation):
         return _Value(value)
     if _is_nullary_function(value):
-        return _Value(_trace(value, name_resolution, _tracing))
+        # a lambda taking no arguments is a calculation in its own right, so it is
+        # converted here and inlined wherever the name is used
+        return _InlinedLambda(name, _trace(value, name_resolution, _tracing))
+    if isinstance(value, types.FunctionType):
+        # a function taking arguments is called while tracing, so that it can
+        # assemble part of the calculation from the arguments it is given
+        return _PythonFunction(name, value)
     # anything else is passed through as its real python value, so that e.g.
     # arithmetic between python variables happens as python arithmetic
     return value

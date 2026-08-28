@@ -170,6 +170,13 @@ python_sub_lambda = lambda: Mgas + Mstar
 python_module = np
 python_shadowing_property = 4.0
 python_multiple_calculation = parser.parse_property_name("(Mgas,Mstar)")
+python_difference = lambda a, b: a-b
+python_nullary_lambda = lambda: rho
+python_unary_lambda = lambda x: rho
+
+
+def python_named_function(a, b=1.0):
+    return a*b
 
 
 def test_python_values_are_interpolated():
@@ -189,6 +196,57 @@ def test_calculations_are_inlined():
 def test_sub_lambdas_are_inlined():
     assert_matches_string(lambda: at(python_sub_lambda, dm_density_profile),
                           "at(Mgas+Mstar,dm_density_profile)")
+
+
+def test_sub_lambdas_can_be_called_or_used_as_values():
+    """A python lambda standing for a calculation works with or without the ()"""
+    assert_matches_string(lambda: python_nullary_lambda/mvir, "rho/mvir")
+    assert_matches_string(lambda: python_nullary_lambda()/mvir, "rho/mvir")
+    assert_matches_string(lambda: python_nullary_lambda()/mvir, "rho/mvir",
+                          name_resolution='python')
+
+
+def test_calling_a_sub_lambda_with_arguments_rejected():
+    assert_rejected(lambda: python_nullary_lambda(2), contains="takes no arguments")
+
+
+def test_python_functions_are_called_with_the_calculations_as_arguments():
+    """A python function of several arguments builds part of the calculation"""
+    assert_matches_string(lambda: python_difference(MDM, Mgas), "MDM-Mgas")
+    assert_matches_string(lambda: python_difference(MDM, Mgas), "MDM-Mgas",
+                          name_resolution='python')
+    assert_matches_string(lambda: python_difference(MDM, 2)/Mgas, "(MDM-2)/Mgas")
+    assert_matches_string(lambda: at(python_difference(Rvir, 1), dm_density_profile),
+                          "at(Rvir-1,dm_density_profile)")
+
+
+def test_python_functions_may_be_named_functions_with_defaults():
+    assert_matches_string(lambda: python_named_function(Mgas), "Mgas*1.0")
+    assert_matches_string(lambda: python_named_function(Mgas, 2), "Mgas*2")
+    # unlike a live calculation function, a python function may take keyword
+    # arguments, since it is genuinely called
+    assert_matches_string(lambda: python_named_function(Mgas, b=2), "Mgas*2")
+
+
+def test_calling_a_python_function_with_the_wrong_arguments_rejected():
+    """The python function is really called, so its arguments must match"""
+    message = assert_rejected(lambda: python_unary_lambda()/mvir,
+                              contains="python_unary_lambda")
+    assert "argument" in message
+    assert_rejected(lambda: python_difference(Mgas), contains="argument")
+    assert_rejected(lambda: python_difference(MDM, Mgas, Mvir), contains="argument")
+
+
+def test_python_functions_are_tangos_names_in_tangos_mode():
+    assert_matches_string(lambda: python_unary_lambda()/mvir,
+                          "python_unary_lambda()/mvir", name_resolution='tangos')
+    assert_matches_string(lambda: python_difference(MDM, Mgas),
+                          "python_difference(MDM,Mgas)", name_resolution='tangos')
+
+
+def test_python_function_used_as_a_value_rejected():
+    assert_rejected(lambda: at(python_difference, dm_density_profile),
+                    contains="python_difference")
 
 
 def test_default_mode_ignores_uninterpolatable_values():
@@ -289,6 +347,8 @@ def test_control_flow_in_a_called_function_rejected():
     def branching_function(value):
         return 1 if value else 2
 
+    with assert_raises(ControlFlowError):
+        to_calculation(lambda: branching_function(Mgas))
     with assert_raises(ControlFlowError):
         to_calculation(lambda: branching_function(Mgas), name_resolution='python')
 
