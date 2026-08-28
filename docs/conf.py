@@ -61,14 +61,6 @@ numpydoc_show_class_members = False
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 
-# autodoc: don't fail the build over modules/objects that can't be introspected
-# cleanly; just note them and move on.
-autodoc_default_options = {
-    'members': True,
-    'undoc-members': True,
-    'show-inheritance': True,
-}
-
 # A handful of tangos submodules do a genuine runtime import of an optional
 # dependency that isn't (and shouldn't need to be) part of the docs build
 # environment: most of the pynbody/yt input handlers do their own lazy/deferred
