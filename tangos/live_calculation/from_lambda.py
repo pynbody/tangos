@@ -2,8 +2,8 @@
 
 The live-calculation mini-language is normally written as a string and turned into
 :class:`~tangos.live_calculation.Calculation` objects by
-:mod:`tangos.live_calculation.parser`. This module offers an alternative front-end
-where the calculation is written as a python lambda instead::
+:mod:`tangos.live_calculation.parser`. This module offers an alternative front-end,
+new in tangos 1.12.0, where the calculation is written as a python lambda instead::
 
     from tangos.live_calculation.from_lambda import to_calculation
 

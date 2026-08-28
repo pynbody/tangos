@@ -171,7 +171,8 @@ class SimulationObjectBase(Base):
 
         :param calculation: the calculation to perform, specified either as a string in
                             the mini-language, as a lambda taking no arguments
-                            (e.g. lambda: Mvir/Rvir), or as a Calculation object
+                            (e.g. lambda: Mvir/Rvir; new in tangos 1.12.0), or as a
+                            Calculation object
         :param return_description: if True, return both the value and the PropertyCalculation class describing it.
         :returns: The result of the calculation, or a tuple containing the result and the description if
                   return_description is True.
@@ -348,8 +349,8 @@ class SimulationObjectBase(Base):
         """Run the specified calculations on this halo and its descendants
 
         Each argument is a string following the syntax described in live_calculation.md,
-        or a lambda taking no arguments (e.g. lambda: Mvir/Rvir), or an instance of
-        live_calculation.Calculation.
+        or a lambda taking no arguments (e.g. lambda: Mvir/Rvir; new in tangos 1.12.0),
+        or an instance of live_calculation.Calculation.
 
         *kwargs*:
 

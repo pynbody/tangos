@@ -36,10 +36,11 @@ For most interactive and scripted work the lambda form is the more comfortable o
 It is genuine python, so your editor highlights it, matches your brackets, and complains if
 you leave one unclosed; and there is no quoting to get right.
 
-The string form remains fully supported, and is the one to reach for whenever a calculation
-has to exist as text: typed into the [web interface](data_exploration_webserver.md), read
-from a configuration file or a command line argument, or stored in a database. It is also
-the form used in most existing tangos scripts and in the tutorial notebooks.
+The lambda form is new in tangos 1.12.0. The string form has always been available, and
+remains fully supported; it is the one to reach for whenever a calculation has to exist as
+text: typed into the [web interface](data_exploration_webserver.md), read from a
+configuration file or a command line argument, or stored in a database. It is also the form
+used in most existing tangos scripts and in the tutorial notebooks.
 
 Both forms may be passed anywhere a calculation is expected — `Halo.calculate`,
 `TimeStep.calculate_all`, `Halo.calculate_for_progenitors`,
@@ -298,7 +299,8 @@ ts.calculate_all("!has_property(Mvir)")
 
 Note the spelling difference: the string form accepts either `!` or `~` for logical not,
 whereas the lambda form must use `~`, since python's `not` cannot be used (see
-[below](#what-cannot-be-written-as-a-lambda)).
+[below](#what-cannot-be-written-as-a-lambda)). The `~` spelling in a string is itself new in
+tangos 1.12.0; older versions accept only `!`.
 
 
 Histogram properties
