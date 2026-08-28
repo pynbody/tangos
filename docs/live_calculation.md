@@ -88,7 +88,7 @@ The same calculation can be applied to every object in a timestep at once. This 
 system earns its keep:
 
 ```python
-ratio = ts.calculate_all(lambda: Mvir/Rvir)
+ratio, = ts.calculate_all(lambda: Mvir/Rvir)
 ```
 
 or along the major progenitor branch of a single halo:

@@ -73,6 +73,7 @@ PARITY_CASES = [
     (lambda: a()[0], "a()[0]"),
     (lambda: later(5).a[0], "later(5).a[0]"),
     (lambda: (Mvir, Rvir), "(Mvir,Rvir)"),
+    (lambda: (Mvir,), "(Mvir)"),
     (lambda: f((Mvir, Rvir)), "f((Mvir,Rvir))"),
     (lambda: reassemble(SFR_histogram, 'sum'), "reassemble(SFR_histogram,'sum')"),
     (lambda: raw(SFR_histogram), "raw(SFR_histogram)"),

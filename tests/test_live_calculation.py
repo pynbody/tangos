@@ -393,6 +393,15 @@ def test_calculate_all_object_restriction():
     assert np.all(tangos.get_timestep("sim/ts1").calculate_all("dbid()",object_type='halo')[0] == [1,2])
     assert np.all(tangos.get_timestep("sim/ts1").calculate_all("dbid()", object_type='BH')[0] == [3, 4])
 
+def test_calculate_all_calculation_object_with_further_arguments():
+    """A prebuilt Calculation can be combined with further calculations"""
+    ts = tangos.get_timestep("sim/ts1")
+    calculation = lc.parser.parse_property_name("dbid()")
+    dbid, = ts.calculate_all(calculation)
+    dbid_again, dbid_from_string = ts.calculate_all(calculation, "dbid()")
+    assert np.all(dbid == dbid_again)
+    assert np.all(dbid == dbid_from_string)
+
 def test_non_existent_redirection_multihalo():
     # See issue #46
     vals1, vals2 = tangos.get_timestep("sim/ts3").calculate_all("BH_mass","later(1).BH_mass")

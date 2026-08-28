@@ -274,6 +274,10 @@ def as_calculation(value):
         if len(value) == 0:
             raise LambdaCalculationError(
                 "cannot use an empty tuple in a live calculation")
+        if len(value) == 1:
+            # brackets around a single calculation are just grouping, matching the
+            # way the string parser reads (Mvir)
+            return as_calculation(value[0])
         return MultiCalculation(*[as_calculation(v) for v in value])
     if isinstance(value, (list, set)):
         raise LambdaCalculationError(

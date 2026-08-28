@@ -368,7 +368,7 @@ class SimulationObjectBase(Base):
         strategy = kwargs.get('strategy', relation_finding.MultiHopMajorDescendantsStrategy)
         strategy_kwargs = kwargs.get('strategy_kwargs', {})
 
-        if isinstance(plist[0], live_calculation.Calculation):
+        if len(plist) == 1 and isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]
         else:
             property_description = live_calculation.parser.parse_property_names(*plist)

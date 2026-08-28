@@ -148,7 +148,7 @@ class TimeStep(Base):
         if object_typetag:
             object_typecode = SimulationObjectBase.object_typecode_from_tag(object_typetag)
 
-        if isinstance(plist[0], live_calculation.Calculation):
+        if len(plist) == 1 and isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]
         else:
             property_description = live_calculation.parser.parse_property_names(*plist)
