@@ -71,6 +71,7 @@ from . import (
     crosslink,
     db_importer,
     merger_tree_patcher,
+    pickled_results_writer,
     property_deleter,
     property_importer,
     property_writer,
