@@ -40,6 +40,12 @@ class PickledResultsWriter(GenericTangosTool):
     def run_calculation_loop(self):
         files = self._expand_files()
         session = core.get_default_session()
+        # the session may still have an open transaction left over from an earlier lazy-load
+        # (e.g. re-reading an expired Creator object during 'write --pickle-results'). On
+        # MySQL/PostgreSQL, that would make the DDL below -- issued on separate connections --
+        # block indefinitely waiting for a lock the same process is already holding.
+        session.commit()
+
         # indexes are dropped/recreated on their own connection, independent of the ORM session's
         # transaction, since _insert_list_unlocked below commits the session itself
         engine = session.get_bind()
