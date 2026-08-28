@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from . import Base, get_default_session
 
 _current_creator = None
+_current_creator_id = None
 
 class Creator(Base):
     __tablename__ = 'creators'
@@ -73,10 +74,16 @@ def get_creator(session=None):
         return session.query(Creator).filter_by(id=_current_creator.id).first()
 
 def get_creator_id():
-    """Get the ID of the current Creator object for this process."""
-    global _current_creator
-    _ensure_current_creator_is_valid()
-    return _current_creator.id
+    """Get the ID of the current Creator object for this process.
+
+    This is cached independently of the Creator ORM object, so it remains stable even if the
+    default session is later closed (e.g. by worker processes that no longer need direct database
+    access) -- unlike the Creator object itself, which needs to stay attached to a live session."""
+    global _current_creator_id
+    if _current_creator_id is None:
+        _ensure_current_creator_is_valid()
+        _current_creator_id = _current_creator.id
+    return _current_creator_id
 
 def _ensure_current_creator_is_valid():
     from sqlalchemy import inspect
@@ -106,14 +113,12 @@ def _make_new_creator(default_session):
     default_session.commit()
 
 
-def get_creator_id():
-    return get_creator().id
-
 def set_creator(creator):
     """Set the Creator object to be used in all writes during the lifetime of the current process.
 
     A Creator object is normally constructed automatically, but this function allows all future writes to be
     associated with a different Creator. This is mainly used by MPI runs to give the illusion that all data was
     written by one process."""
-    global _current_creator
+    global _current_creator, _current_creator_id
     _current_creator = creator
+    _current_creator_id = creator.id if creator is not None else None

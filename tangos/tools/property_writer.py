@@ -1,6 +1,8 @@
 import argparse
 import copy
+import os
 import pdb
+import pickle
 import random
 import sys
 import time
@@ -93,7 +95,12 @@ class PropertyWriter(GenericTangosTool):
         parser.add_argument('--include-only', action='append', type=str,
                             help="Specify a filter that describes which objects the calculation should be executed for. Multiple filters may be specified, in which case they must all evaluate to true for the object to be included.")
         parser.add_argument('--explain-classes', action='store_true',
-                            help="Log some explanation for why property classes are selected (when there is any ambiguity)")
+                            help="Log some explanation for why property classes are selected (when there is any ambiguity)"),
+        parser.add_argument('--pickle-results', action='store', nargs='?', const='tangos_results', default=None,
+                            metavar='PATH',
+                            help="Instead of committing results to the database, create pickle files in the "
+                                 "specified folder (default: tangos_results). Import them later with "
+                                 "tangos write-pickled-results")
 
     def _create_parser_obj(self):
         parser = argparse.ArgumentParser()
@@ -372,8 +379,17 @@ class PropertyWriter(GenericTangosTool):
             message.update_performance_stats()
 
     def _commit_results(self):
-        commit_on_server = self.options.load_mode and self.options.load_mode.startswith('server')
-        insert_list(self._pending_properties, self._current_timestep_id, commit_on_server)
+        if self.options.pickle_results:
+            pickle_dir = self.options.pickle_results
+            os.makedirs(pickle_dir, exist_ok=True)
+            rank = parallel_tasks.backend.rank() if parallel_tasks.backend is not None else 0
+            filename = os.path.join(pickle_dir, "results_%d_%d.pickle" % (rank, random.getrandbits(63)))
+            creator_id = core.creator.get_creator_id()
+            with open(filename, "wb") as f:
+                pickle.dump((self._current_timestep_id, self._pending_properties, creator_id), f)
+        else:
+            commit_on_server = self.options.load_mode and self.options.load_mode.startswith('server')
+            insert_list(self._pending_properties, self._current_timestep_id, commit_on_server)
         self._pending_properties = []
         self._last_commit_time = time.time()
 
@@ -711,12 +727,12 @@ class PropertyWriter(GenericTangosTool):
 
 
     def run_calculation_loop(self):
+        parallel_tasks.database.synchronize_creator_object()
         if self._should_share_query_results() and not self._is_lead_rank():
             # we are not going to touch the database from this rank
             core.get_default_session().close()
             core.get_default_engine().dispose()
-        else:
-            parallel_tasks.database.synchronize_creator_object()
+            
 
         # NB both these objects must be created at the same place in all processes,
         # since creating them is a 'barrier'-like operation
