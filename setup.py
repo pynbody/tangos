@@ -37,6 +37,23 @@ tests_require = [
     'PyMySQL>=1.0.2',
     ]
 
+# Documentation build. Mirrors pynbody's `docs` extra so that the two projects'
+# documentation builds stay in step; see docs/conf.py. pynbody itself is not
+# listed: the tangos docs mock it (autodoc_mock_imports) rather than paying for
+# a compiled install on Read the Docs.
+docs_require = [
+    'ipython>=3',
+    'Sphinx>=7,<8.2.0',
+    # pinned to match pynbody: sphinx-book-theme>=1.3.0 pulls in
+    # pydata-sphinx-theme>=0.17, whose sidebar rework breaks opening the primary
+    # sidebar on narrow viewports. Unpin once that's fixed upstream.
+    'sphinx-book-theme==1.2.0',
+    'sphinx-copybutton',
+    'numpydoc',
+    'nbsphinx',
+    'myst-parser',
+    ]
+
 import codecs
 import os.path
 
@@ -106,6 +123,7 @@ setup(name='tangos',
       long_description_content_type='text/markdown',
       extras_require={'test': tests_require,
                       'rmdbs': ['PyMySQL[rsa]',
-                                'psycopg2-binary']
+                                'psycopg2-binary'],
+                      'docs': docs_require
                       }
       )
