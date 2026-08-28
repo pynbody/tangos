@@ -409,10 +409,10 @@ database property: if it holds a number, string or calculation it will be interp
 the property of that name will not be consulted. Avoid, for example, storing a radius in a
 variable called `Rvir` and then writing `lambda: at(Rvir/2, dm_density_profile)`.
 
-Finer control over all of this is available through the `name_resolution` argument of
+Finer control over all of this is available through the `python_names` argument of
 `tangos.live_calculation.from_lambda.to_calculation`, which can force every name to be
-treated as a tangos name, or conversely make python scoping rules apply throughout; see its
-docstring for details.
+treated as a tangos name (`python_names='never'`), or conversely make python scoping rules
+apply throughout (`python_names='always'`); see its docstring for details.
 
 ### What cannot be written as a lambda
 

@@ -64,13 +64,15 @@ Name resolution
 
 A name appearing in a lambda may be intended as a tangos property (``Mvir``) or may
 be a genuine python variable that should be interpolated into the calculation
-(``lambda: at(my_radius, profile)``). The ``name_resolution`` argument to
-:func:`to_calculation` chooses between the possible policies; see its docstring.
+(``lambda: at(my_radius, profile)``). A name that does not resolve to a python
+variable is always a live-calculation name; the ``python_names`` argument to
+:func:`to_calculation` controls what happens when it does resolve. See its
+docstring for the possible policies.
 
 Python functions and lambdas
 ----------------------------
 
-Unless ``name_resolution='tangos'`` is in force, a name that resolves to a python
+Unless ``python_names='never'`` is in force, a name that resolves to a python
 function is used as that function rather than as a live-calculation name:
 
 * a lambda taking no arguments stands for a calculation in its own right, and may be
@@ -574,7 +576,7 @@ def _function_description(value):
 
 # --------------------------------------------------------------------------- tracing
 
-NAME_RESOLUTION_MODES = ("auto", "python", "tangos")
+PYTHON_NAMES_MODES = ("if_usable", "always", "never")
 
 
 def _is_nullary_function(value):
@@ -602,18 +604,18 @@ def _check_is_nullary_function(function):
             "cannot convert a generator or coroutine into a live calculation")
 
 
-def _substitute(name, value, name_resolution, _tracing):
+def _substitute(name, value, python_names, _tracing):
     """Return the object to bind to name while tracing, given its python value"""
-    if name_resolution == "tangos":
+    if python_names == "never":
         return _Name(name)
-    if name_resolution == "auto" and not _can_be_calculation(value):
+    if python_names == "if_usable" and not _can_be_calculation(value):
         return _Name(name)
     if isinstance(value, Calculation):
         return _Value(value)
     if _is_nullary_function(value):
         # a lambda taking no arguments is a calculation in its own right, so it is
         # converted here and inlined wherever the name is used
-        return _InlinedLambda(name, _trace(value, name_resolution, _tracing))
+        return _InlinedLambda(name, _trace(value, python_names, _tracing))
     if isinstance(value, types.FunctionType):
         # a function taking arguments is called while tracing, so that it can
         # assemble part of the calculation from the arguments it is given
@@ -629,20 +631,20 @@ def _global_names(code):
             if instruction.opname == "LOAD_GLOBAL"}
 
 
-def _traced_globals(function, name_resolution, _tracing):
+def _traced_globals(function, python_names, _tracing):
     # builtins are deliberately excluded: the live calculation language has functions
     # such as abs() and sum() of its own, and those should win over python's
     traced = {"__builtins__": {}}
     for name in _global_names(function.__code__):
         if name in function.__globals__:
             traced[name] = _substitute(name, function.__globals__[name],
-                                       name_resolution, _tracing)
+                                       python_names, _tracing)
         else:
             traced[name] = _Name(name)
     return traced
 
 
-def _traced_closure(function, name_resolution, _tracing):
+def _traced_closure(function, python_names, _tracing):
     if not function.__closure__:
         return None
     cells = []
@@ -653,11 +655,11 @@ def _traced_closure(function, name_resolution, _tracing):
             cells.append(cell)
             continue
         cells.append(types.CellType(
-            _substitute(name, value, name_resolution, _tracing)))
+            _substitute(name, value, python_names, _tracing)))
     return tuple(cells)
 
 
-def _trace(function, name_resolution, _tracing):
+def _trace(function, python_names, _tracing):
     _check_is_nullary_function(function)
     check_traceable(function)
 
@@ -669,10 +671,10 @@ def _trace(function, name_resolution, _tracing):
 
     shadow = types.FunctionType(
         function.__code__,
-        _traced_globals(function, name_resolution, _tracing),
+        _traced_globals(function, python_names, _tracing),
         function.__name__,
         function.__defaults__,
-        _traced_closure(function, name_resolution, _tracing))
+        _traced_closure(function, python_names, _tracing))
 
     return as_calculation(shadow())
 
@@ -691,7 +693,7 @@ def _describe(function):
     return function.__name__
 
 
-def to_calculation(function, name_resolution="auto"):
+def to_calculation(function, python_names="if_usable"):
     """Convert a lambda expression into a tangos live calculation.
 
     For example, to_calculation(lambda: later(5).Mvir/Rvir) returns the same
@@ -701,35 +703,37 @@ def to_calculation(function, name_resolution="auto"):
       appearing within it that do not resolve to python variables are interpreted as
       live-calculation property or function names.
 
-    :param name_resolution: how to treat names that *do* resolve to a python variable
+    :param python_names: how to treat names that *do* resolve to a python variable
       in the scope surrounding the lambda:
 
-      * 'auto' (default): interpolate the python value if it is something a live
-        calculation can contain (a number, a string, a tuple of those, a Calculation
-        or another lambda taking no arguments); otherwise ignore the python variable
-        and interpret the name as a live-calculation name.
-      * 'python': always use the python value. This is the closest to normal python
-        scoping rules, and allows e.g. numpy.pi to be interpolated, but a variable
-        that happens to share the name of a database property will silently shadow it.
-      * 'tangos': never use the python value; every name is a live-calculation name.
+      * 'if_usable' (default): use the python value if it is something a live
+        calculation can contain (a number, a string, a tuple of those, a Calculation,
+        or a python function or lambda); otherwise ignore the python variable and
+        interpret the name as a live-calculation name.
+      * 'always': always use the python value where the name resolves. This is the
+        closest to normal python scoping rules, and allows e.g. numpy.pi to be
+        interpolated, but a variable that happens to share the name of a database
+        property will silently shadow it.
+      * 'never': never consult the python scope; every name is a live-calculation
+        name.
 
       In all cases, python's builtins are excluded, so that live-calculation functions
       like abs() and sum() are not shadowed by the python functions of the same name.
 
     :returns: a Calculation object, equivalent to one generated by the parser
     """
-    if name_resolution not in NAME_RESOLUTION_MODES:
-        raise ValueError("name_resolution must be one of %s, not %r"
-                         % (", ".join(repr(m) for m in NAME_RESOLUTION_MODES),
-                            name_resolution))
-    return _trace(function, name_resolution, frozenset())
+    if python_names not in PYTHON_NAMES_MODES:
+        raise ValueError("python_names must be one of %s, not %r"
+                         % (", ".join(repr(m) for m in PYTHON_NAMES_MODES),
+                            python_names))
+    return _trace(function, python_names, frozenset())
 
 
-def to_calculations(*functions, name_resolution="auto"):
+def to_calculations(*functions, python_names="if_usable"):
     """Convert multiple lambda expressions into a single MultiCalculation.
 
     This is the lambda equivalent of parser.parse_property_names. See
-    :func:`to_calculation` for the meaning of name_resolution.
+    :func:`to_calculation` for the meaning of python_names.
     """
-    return MultiCalculation(*[to_calculation(f, name_resolution)
+    return MultiCalculation(*[to_calculation(f, python_names)
                               for f in functions])

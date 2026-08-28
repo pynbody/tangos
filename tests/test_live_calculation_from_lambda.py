@@ -203,7 +203,7 @@ def test_sub_lambdas_can_be_called_or_used_as_values():
     assert_matches_string(lambda: python_nullary_lambda/mvir, "rho/mvir")
     assert_matches_string(lambda: python_nullary_lambda()/mvir, "rho/mvir")
     assert_matches_string(lambda: python_nullary_lambda()/mvir, "rho/mvir",
-                          name_resolution='python')
+                          python_names='always')
 
 
 def test_calling_a_sub_lambda_with_arguments_rejected():
@@ -214,7 +214,7 @@ def test_python_functions_are_called_with_the_calculations_as_arguments():
     """A python function of several arguments builds part of the calculation"""
     assert_matches_string(lambda: python_difference(MDM, Mgas), "MDM-Mgas")
     assert_matches_string(lambda: python_difference(MDM, Mgas), "MDM-Mgas",
-                          name_resolution='python')
+                          python_names='always')
     assert_matches_string(lambda: python_difference(MDM, 2)/Mgas, "(MDM-2)/Mgas")
     assert_matches_string(lambda: at(python_difference(Rvir, 1), dm_density_profile),
                           "at(Rvir-1,dm_density_profile)")
@@ -237,11 +237,11 @@ def test_calling_a_python_function_with_the_wrong_arguments_rejected():
     assert_rejected(lambda: python_difference(MDM, Mgas, Mvir), contains="argument")
 
 
-def test_python_functions_are_tangos_names_in_tangos_mode():
+def test_python_functions_are_tangos_names_in_never_mode():
     assert_matches_string(lambda: python_unary_lambda()/mvir,
-                          "python_unary_lambda()/mvir", name_resolution='tangos')
+                          "python_unary_lambda()/mvir", python_names='never')
     assert_matches_string(lambda: python_difference(MDM, Mgas),
-                          "python_difference(MDM,Mgas)", name_resolution='tangos')
+                          "python_difference(MDM,Mgas)", python_names='never')
 
 
 def test_python_function_used_as_a_value_rejected():
@@ -249,24 +249,24 @@ def test_python_function_used_as_a_value_rejected():
                     contains="python_difference")
 
 
-def test_default_mode_ignores_uninterpolatable_values():
-    """In 'auto' mode a name bound to something that isn't a calculation is a property"""
+def test_if_usable_mode_ignores_uninterpolatable_values():
+    """In 'if_usable' mode a name bound to something that isn't a calculation is a property"""
     assert_matches_string(lambda: python_module.pi, "python_module.pi")
 
 
-def test_python_mode_uses_the_python_value():
+def test_always_mode_uses_the_python_value():
     assert_matches_string(lambda: python_module.pi * Mvir,
-                          "%r*Mvir" % np.pi, name_resolution='python')
+                          "%r*Mvir" % np.pi, python_names='always')
     assert_matches_string(lambda: python_shadowing_property,
-                          "4.0", name_resolution='python')
+                          "4.0", python_names='always')
 
 
-def test_tangos_mode_ignores_the_python_scope():
+def test_never_mode_ignores_the_python_scope():
     assert_matches_string(lambda: python_radius, "python_radius",
-                          name_resolution='tangos')
+                          python_names='never')
     assert_matches_string(lambda: at(python_radius, dm_density_profile),
                           "at(python_radius,dm_density_profile)",
-                          name_resolution='tangos')
+                          python_names='never')
 
 
 def test_python_builtins_do_not_shadow_live_calculation_functions():
@@ -284,19 +284,19 @@ def test_closure_variables_are_interpolated():
         "at(5.0,dm_density_profile)"))
 
 
-def test_closure_variables_respect_tangos_mode():
+def test_closure_variables_respect_never_mode():
     def enclosing_scope():
         dm_density_profile = "not actually a profile"
         return to_calculation(lambda: at(5.0, dm_density_profile),
-                              name_resolution='tangos')
+                              python_names='never')
 
     assert str(enclosing_scope()) == str(parser.parse_property_name(
         "at(5.0,dm_density_profile)"))
 
 
-def test_unknown_name_resolution_mode():
+def test_unknown_python_names_mode():
     with assert_raises(ValueError):
-        to_calculation(lambda: Mvir, name_resolution='something_else')
+        to_calculation(lambda: Mvir, python_names='something_else')
 
 
 # ----------------------------------------------------------------------- rejections
@@ -350,7 +350,7 @@ def test_control_flow_in_a_called_function_rejected():
     with assert_raises(ControlFlowError):
         to_calculation(lambda: branching_function(Mgas))
     with assert_raises(ControlFlowError):
-        to_calculation(lambda: branching_function(Mgas), name_resolution='python')
+        to_calculation(lambda: branching_function(Mgas), python_names='always')
 
 
 def test_lambda_with_arguments_rejected():
