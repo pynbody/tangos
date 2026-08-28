@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from pytest import raises as assert_raises
 
 import tangos
@@ -139,6 +140,115 @@ def test_unary_minus_function():
     halo = tangos.get_halo("sim/ts1/1")
     assert np.allclose(halo.calculate("-dummy_property_3"), 2.5)
     assert np.allclose(halo.calculate("--dummy_property_3"), -2.5)
+
+def test_logical_not_operators():
+    """logical_not can be spelled either ! (traditional) or ~ (as in python)"""
+    halo = tangos.get_halo("sim/ts1/1")
+    assert not halo.calculate("!has_property(dummy_property_1)")
+    assert not halo.calculate("~has_property(dummy_property_1)")
+    assert halo.calculate("!has_property(nonexistent_property)")
+    assert halo.calculate("~has_property(nonexistent_property)")
+    assert np.allclose(halo.calculate("~~dummy_property_3"),
+                       halo.calculate("!!dummy_property_3"))
+
+#: expressions used to check that calculations are written back out in a form which
+#: parses to the same calculation
+REPRESENTATION_CASES = [
+    "Mvir",
+    "Vvir()",
+    "Mvir/Vvir()",
+    "a+b*c",
+    "(a+b)*c",
+    "a-b-c",
+    "(a-b)-c",
+    "a**b**c",
+    "(a**b)**c",
+    "a<10&b>5",
+    "(a==1)|(b!=2)",
+    "a>=1",
+    "a<=1",
+    "-a+b",
+    "-(a+b)",
+    "a-(-b)",
+    "a--2.5",
+    "!has_property(a)",
+    "!(a>1)",
+    "-!a",
+    "2**(-a)",
+    "abs(a-b)",
+    "sqrt(a)/2",
+    "at(Rvir/2,dm_density_profile)",
+    "a.b.c",
+    "add(a,b).c",
+    "a[0]",
+    "a()[0]",
+    "a[-1]",
+    "a.b[0]",
+    "abs(a)[2]",
+    "a[3]*2",
+    "a.b*c",
+    "later(5).a[0]",
+    "later(5).Mvir/Rvir",
+    "(a,b)",
+    "(a+b,c*d)",
+    "f((a,b))",
+    'link(BH,BH_mass,"max",BH_central_distance<10)',
+    'find_progenitor(SFR,"max").mass',
+]
+
+@pytest.mark.parametrize("expression", REPRESENTATION_CASES)
+def test_representation_round_trips(expression):
+    """Writing out a calculation must generate a string that parses back to a copy"""
+    calculation = lc.parser.parse_property_name(expression)
+    reparsed = lc.parser.parse_property_name(str(calculation))
+    assert str(reparsed) == str(calculation)
+    assert type(reparsed) is type(calculation)
+
+def test_operators_are_written_out_as_operators():
+    """Operators are written back out in operator form, not as the underlying functions"""
+    def as_string(expression):
+        return str(lc.parser.parse_property_name(expression))
+
+    assert as_string("Mvir/Vvir()") == "Mvir/Vvir()"
+    assert as_string("at(Rvir/2,dm_density_profile)") == "at(Rvir/2,dm_density_profile)"
+    assert as_string("a<10 & b>5") == "a<10&b>5"
+    assert as_string("~a") == "!a"
+    # brackets appear only where the mini-language would otherwise regroup; note
+    # that the operators are right-associative, so a*(b+c) needs them but a+b*c
+    # does not
+    assert as_string("(a+b)*c") == "(a+b)*c"
+    assert as_string("a*(b+c)") == "a*(b+c)"
+    assert as_string("a+b*c") == "a+b*c"
+    assert as_string("a+(b*c)") == "a+b*c"
+    # ... and cannot be used to the left of a redirection, where the underlying
+    # function form is used instead
+    assert as_string("add(a,b).c") == "add(a,b).c"
+
+def test_array_elements_are_written_out_with_brackets():
+    """Extraction of an array element is written back out as my_array[i]"""
+    def as_string(expression):
+        return str(lc.parser.parse_property_name(expression))
+
+    assert as_string("element(dm_density_profile,3)") == "dm_density_profile[3]"
+    assert as_string("later(5).element(a,0)") == "later(5).a[0]"
+    assert as_string("element(a(),0)*2") == "a()[0]*2"
+
+def test_array_elements_that_cannot_use_brackets():
+    """Where the mini-language does not allow the bracket form, functions are used"""
+    def element(array, index):
+        return lc.LiveProperty("element", array, lc.FixedNumericInput(index))
+
+    inner = element(lc.StoredProperty("a"), "0")
+    # a[0][1] and a[0].b are not valid in the mini-language
+    assert str(element(inner, "1")) == "element(a,0)[1]"
+    assert str(lc.Link(inner, lc.StoredProperty("b"))) == "element(a,0).b"
+    # neither is a.b[0] a way of writing the element of a redirected property
+    assert str(element(lc.Link(lc.StoredProperty("a"), lc.StoredProperty("b")), "0")) \
+           == "element(a.b,0)"
+
+def test_brackets_around_a_single_calculation_are_grouping():
+    assert isinstance(lc.parser.parse_property_name("(Mvir)"), lc.StoredProperty)
+    assert isinstance(lc.parser.parse_property_name("(a,b)"), lc.MultiCalculation)
 
 def test_abcissa_passing_function():
     """In this example, the x-coordinates need to be successfully passed "through" the abs function for the
@@ -282,6 +392,15 @@ def test_calculate_all_object_restriction():
     assert np.all(tangos.get_timestep("sim/ts1").calculate_all("dbid()")[0] == [1,2,3,4])
     assert np.all(tangos.get_timestep("sim/ts1").calculate_all("dbid()",object_type='halo')[0] == [1,2])
     assert np.all(tangos.get_timestep("sim/ts1").calculate_all("dbid()", object_type='BH')[0] == [3, 4])
+
+def test_calculate_all_calculation_object_with_further_arguments():
+    """A prebuilt Calculation can be combined with further calculations"""
+    ts = tangos.get_timestep("sim/ts1")
+    calculation = lc.parser.parse_property_name("dbid()")
+    dbid, = ts.calculate_all(calculation)
+    dbid_again, dbid_from_string = ts.calculate_all(calculation, "dbid()")
+    assert np.all(dbid == dbid_again)
+    assert np.all(dbid == dbid_from_string)
 
 def test_non_existent_redirection_multihalo():
     # See issue #46

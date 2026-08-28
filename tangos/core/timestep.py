@@ -117,7 +117,9 @@ class TimeStep(Base):
 
         The parameters passed name the properties (or live-calculations) to return.
         For example m,r = ts.calculate_all("mass","radius") generates an array of mass and
-        radius for all objects in timestep ts.
+        radius for all objects in timestep ts. Each may equivalently be given as a lambda
+        taking no arguments, e.g. ts.calculate_all(lambda: mass, lambda: radius) (new in
+        tangos 1.12.0), or as a live_calculation.Calculation object.
 
         :param object_type: integer or string representing the particular object type
                             (e.g. 'halo', 'BH' or 'group'). If None (default), all
@@ -146,7 +148,7 @@ class TimeStep(Base):
         if object_typetag:
             object_typecode = SimulationObjectBase.object_typecode_from_tag(object_typetag)
 
-        if isinstance(plist[0], live_calculation.Calculation):
+        if len(plist) == 1 and isinstance(plist[0], live_calculation.Calculation):
             property_description = plist[0]
         else:
             property_description = live_calculation.parser.parse_property_names(*plist)
