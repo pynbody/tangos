@@ -38,7 +38,15 @@ pip install -e .[docs]      # pandoc must also be installed for nbsphinx
 cd docs && python -m sphinx -b html . _build/html
 ```
 
-The full build takes a few minutes, mostly autosummary.
+The full build takes a few minutes.
+
+**If you have a checkout from before the curated reference landed**, delete
+`docs/reference/_autosummary/` once. It holds 657 generated stubs from the old
+recursive reference, it is gitignored so no branch change can remove it for you, and
+now that `reference/index.rst` is gone Sphinx picks them up as orphaned pages: 445
+"document isn't included in any toctree" warnings plus ~129 "duplicate object
+description" clashes against the curated pages. A fresh clone and the Read the Docs
+build are unaffected.
 
 ## Status
 
@@ -63,7 +71,7 @@ remainder deepens it.
 - [x] Site-wide rebuild-in-progress banner, linking to the old docs (**temporary**, see
       **Before merging to master**)
 - [x] Implement the curated reference
-- [ ] Turn on `-W` now that the reference work has landed and the count is zero
+- [x] Turn on `-W` (`fail_on_warning: true` in `.readthedocs.yaml`)
 - [ ] Stage 5 decision deferred: `reference/index` no longer exists as a file, and
       `reference/api/index` is the sole entry point. When `simulation_formats`,
       `live_calculation_language`, `cli`, `property_calculation_api` and

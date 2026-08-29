@@ -19,6 +19,10 @@ build:
 
 sphinx:
    configuration: docs/conf.py
+   # The build is warning-free and must stay that way; see "Invariants" in
+   # DOCS_PLAN.md. If this starts failing on a stale checkout rather than on CI,
+   # remove docs/reference/_autosummary/ -- see the same file.
+   fail_on_warning: true
 
 python:
   install:
