@@ -117,5 +117,5 @@ live_calculation
 custom_input_handlers
 histogram_properties
 old
-reference/index
+reference/api/index
 ```
