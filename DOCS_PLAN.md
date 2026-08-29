@@ -56,25 +56,40 @@ remainder deepens it.
 - [x] Sidebar brand shows the logo and the "tangos" wordmark in a horizontal row
 - [x] Site-wide rebuild-in-progress banner, linking to the old docs (**temporary**, see
       **Before merging to master**)
-- [ ] Decide recursive vs. curated reference (see **Open questions**)
-- [ ] Add `sphinx-design` (needed by stage 2's tabs)
-- [ ] Add the `.. ipython::` directive and port pynbody's exception-fails-build
-      logging filter verbatim from `pynbody/docs/conf.py:78-91` (needed by stage 3)
-- [ ] Add `sphinx-argparse` (needed by stage 5's CLI reference)
-- [ ] Get the build to zero warnings, then turn on `-W` (see **Invariants**).
-      105 remain: 29 MyST "headings start at H2" nits from pages using `---` Setext
-      underlines for titles; ~52 from SQLAlchemy docstrings pulled in by
-      `:inherited-members:` on tangos classes subclassing SQLAlchemy types
-      (`UnsignedInteger`, `Tracker`) — unknown `:paramref:` role and `:ref:` targets
-      into SQLAlchemy's own docs, fixable by diverging `_templates/autosummary/class.rst`
-      from pynbody's or adding per-class `:no-inherited-members:`, without touching
-      any docstring; ~20 genuinely malformed reST in tangos docstrings, in
-      `tangos/core/halo.py`, `tangos/live_calculation/__init__.py`,
+- [ ] Implement the curated reference (decision settled — see **Decisions already
+      made**; another PR/agent owns `docs/reference/`)
+- [x] Add `sphinx-design` (needed by stage 2's tabs); verified a `tab-set` with
+      `:sync:` tab-items renders
+- [x] Add the `.. ipython::` directive and port pynbody's exception-fails-build
+      logging filter verbatim from `pynbody/docs/conf.py:65-91` (needed by stage 3);
+      verified an unmarked exception fails the build and `:okexcept:` passes it
+- [x] Add `sphinx-argparse` (needed by stage 5's CLI reference)
+- [x] Get the build to zero warnings (see **Invariants**). Was 105: 29 MyST
+      "headings start at H2" nits from pages using a `---` Setext underline (or, for
+      `mpi.md`, an ATX `##`) for their title instead of `===`/`#` (fixed by promoting
+      just the title, plus `mpi.md`'s four `###` subsections one level to keep the
+      hierarchy consecutive); ~52 from SQLAlchemy docstrings pulled in via
+      `:inherited-members:` on `tangos.core.halo.UnsignedInteger` (see **Decisions
+      already made** for the fix and the 3-warning residual it doesn't reach, and
+      how that residual is resolved instead); ~20 genuinely malformed reST in tangos
+      docstrings, in `tangos/core/halo.py`, `tangos/live_calculation/__init__.py`,
       `tangos/properties/__init__.py`, `tangos/properties/pynbody/zoom.py`,
       `tangos/relation_finding/tree.py`, `tangos/testing/__init__.py`,
       `tangos/input_handlers/halo_stat_files/__init__.py`,
-      `tangos/web/views/merger_tree.py`; and 2 dead internal anchors
-      (`first_steps_changa+ahf.md:97`, `mpi.md:74`)
+      `tangos/web/views/merger_tree.py` (the last of these had no malformed reST of
+      its own — the warning was a duplicate of `tree.py`'s, surfaced again because
+      `WebMergerTree.__init__` inherits `MergerTree.__init__`'s docstring); and 2
+      dead internal anchors (`first_steps_changa+ahf.md:97`, `mpi.md:74`), both
+      fixed by `myst_heading_anchors = 3` plus, for the same-page case, writing the
+      link with its own filename instead of a bare `#anchor` (MyST resolves
+      cross-document and same-document anchor links via different code paths; only
+      the filename-qualified form is checked against `myst_heading_anchors`).
+      **`-W` is deliberately NOT turned on yet** despite reaching zero, matching this
+      task's brief — the curated-reference implementation (rest of this stage-0 item,
+      above) is still outstanding and owned by another PR/agent, actively editing
+      `docs/reference/`; turning `-W` on now would make any transient warning from
+      that in-flight work a hard build failure, for a flag nothing needs enforced
+      until stage 5. Flip it on once that work merges.
 - [ ] Start the redirect map (see **Invariants**)
 
 ### Stage 1 — the newcomer path (5 d)
@@ -272,6 +287,43 @@ Read these before changing the build. Several look like omissions and are not.
   pre-1.0 README of `halo_database` — `:9` says `python setup.py install`, `:116`
   sources a `~/halo_database/environment.sh`, `:132` refers to files that no longer
   exist. Nothing links to it.
+- **The reference will be curated, not recursive.** Recursive `autosummary
+  :recursive:` generates 657 stubs against a codebase with 19% docstring coverage
+  (327/1761, measured) — more faithful to "identical to pynbody", but a wall of
+  near-empty pages. A hand-curated reference of the genuinely public entry points
+  looks more professional today and grows naturally. Settled ahead of stage 5; the
+  `:recursive:` autosummary machinery stays in place until the curated contents
+  replace it (tracked as a stage 0 checkbox; another PR/agent is designing the
+  actual contents of `docs/reference/index.rst`).
+- **`_templates/autosummary/class.rst` drops `:inherited-members:`, diverging from
+  pynbody's copy.** On `tangos.core.halo.UnsignedInteger` (a `TypeDecorator`) it
+  pulled in SQLAlchemy's own `TypeEngine.Comparator` → `ColumnOperators`/`Operators`
+  machinery — dozens of inherited comparator methods (`.contains()`, `.startswith()`,
+  `.bool_op()`, ...) that are SQLAlchemy-internal plumbing, not part of tangos' API,
+  and whose docstrings use SQLAlchemy's own `:paramref:` role (not a stock Sphinx
+  role) and `:ref:` targets that only resolve inside SQLAlchemy's own Sphinx build.
+  That's ~49 of the ~52 SQLAlchemy warnings gone in one line, with no docstring
+  touched and no loss of anything a tangos user would want to see. A residual 3
+  warnings remain on that same class (`cache_ok`, `process_bind_param`,
+  `process_result_value`): these are genuine tangos-authored members, but their
+  *docstrings* are still borrowed from SQLAlchemy verbatim by autodoc's own
+  docstring-inheritance fallback (`autodoc_inherit_docstrings`, left on — it is what
+  lets tangos' own documented base classes cover their subclasses, which matters
+  more here than these three warnings), and those two SQLAlchemy docstrings `:ref:`
+  two labels (`sql_caching`, `types_typedecorator`) that don't exist outside
+  SQLAlchemy's build. `nitpick_ignore` cannot fix this — Sphinx only consults it in
+  nitpicky mode, which this build doesn't turn on — and `suppress_warnings` for
+  `ref.ref` would hide every broken `:ref:` project-wide, including future ones in
+  tangos' own prose. So `docs/conf.py` instead resolves just those two labels by
+  name via a `missing-reference` handler, to plain unlinked text. The tradeoff of
+  dropping `:inherited-members:` project-wide: a subclass's own reference page no
+  longer inline-lists methods it only inherits (e.g. from a genuinely-documented
+  tangos base class) — a reader now has to follow `:show-inheritance:`'s "Bases:
+  ..." link to the parent class's page to find them, rather than seeing them
+  in-place. Given the reference is moving to curated (above) rather than the
+  recursive 657-stub wall this was generating, that one extra click is an
+  acceptable price for not resurfacing SQLAlchemy internals on the one class where
+  it currently bites.
 
 ## Blocked on a human
 
@@ -346,12 +398,8 @@ explained once.
 
 ## Open questions
 
-- **Recursive or curated reference?** The reference currently mirrors pynbody's
-  `autosummary :recursive:` and generates **657 stubs** against a codebase with
-  **19% docstring coverage** (327/1761, measured; pynbody's is 48%). Recursive is
-  more faithful to "identical to pynbody"; a hand-curated reference of ~20 public
-  entry points looks more professional today and grows naturally. One-file change
-  either way, but it should be settled before stage 5.
+None currently open. (The reference recursive-vs-curated question is settled —
+see **Decisions already made**.)
 
 ## Definition of done
 
