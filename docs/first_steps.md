@@ -1,5 +1,5 @@
 Generating your first tangos database
--------------------------------------
+=======================================
 
 There are currently various sample simulations available to illustrate the use of tangos. They are respectively:
 

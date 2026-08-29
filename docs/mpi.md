@@ -1,4 +1,4 @@
-## Parallelisation
+# Parallelisation
 
 
 If you want to speed up time-consuming `tangos` operations from your command line, you can run many of them in parallel. For this you can either use python's built-in `multiprocessing` module, or MPI.
@@ -14,7 +14,7 @@ The eligible `tangos` commands for parallel execution are:
 * `tangos crosslink`
 * `tangos add` (since 1.8.0)
 
-### How to run in parallel with `multiprocessing` (since 1.8.0)
+## How to run in parallel with `multiprocessing` (since 1.8.0)
 
 From your command line or job script use:
 
@@ -25,7 +25,7 @@ tangos [normal tangos command here] --backend multiprocessing-<N>
 where `<N>` should be replaced by the number of processes to
 use.  See notes below on how to choose the number of processes (it's _not_ necessarily just the number of cores available).
 
-### How to run in parallel with `mpi4py`
+## How to run in parallel with `mpi4py`
 
 You first need to install MPI and `mpi4py` on your machine. This is straight-forward
 with, for example, anaconda python distributions – just type `conda install mpi4py`. With regular python distributions, you need to install MPI on your machine and then `pip install mpi4py` (which will compile the python bindings).
@@ -47,7 +47,7 @@ Here,
    Limitations in the MPI library mean it's not possible for tangos to reliably auto-detect it has been MPI-launched.*
 
 
-### Important options for tangos write
+## Important options for tangos write
 
 
 For tangos write, there are multiple parallelisation modes. For best results, it's important to understand which is appropriate for your use case -- they balance file IO, memory usage and throughput differently.
@@ -66,7 +66,7 @@ a given time). However it increases communication needs between processes, which
 * `--load-mode=server-shared-mem`: available from version 1.9.0 onwards, this is the most powerful option, but it only works if all your processes are on the same physical machine. A server process handles loading data as above, making the memory and IO requirements the same as `--load-mode=server`. But then, in `server-shared-mem` mode, the server makes the data available to all other processes through _shared memory_, which is extremely efficient.
 
 
-### Older load modes
+## Older load modes
 
 The below are still available, but are less flexible and
 are rarely likely to be the best option.
