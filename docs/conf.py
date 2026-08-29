@@ -5,9 +5,8 @@
 # https://github.com/pynbody/pynbody/blob/master/docs/conf.py) so that the two
 # projects' documentation share a look and feel. See the tangos docs README /
 # the accompanying report for a list of what was deliberately dropped relative
-# to the pynbody version (the IPython `.. ipython::` exception-hooking, the
-# matplotlib `.. plot::` directive support, and inheritance diagrams) because
-# nothing in tangos' docs currently uses them.
+# to the pynbody version (the matplotlib `.. plot::` directive support and
+# inheritance diagrams) because nothing in tangos' docs currently uses them.
 
 import os
 import sys
@@ -29,7 +28,48 @@ extensions = ['sphinx.ext.autodoc',
               'numpydoc',
               'nbsphinx',
               'myst_parser',
+              'sphinx_design',
+              'sphinxarg.ext',
               ]
+
+# ipython_savefig_dir is where `.. ipython::` @savefig figures land; ported
+# from pynbody as-is. plot_working_directory is a matplotlib.sphinxext.plot_directive
+# setting that pynbody sets alongside it -- that directive itself is not enabled here
+# (see the module docstring above), but the value is harmless to carry over and saves
+# a surprise if/when stage 3 or later turns .. plot:: on.
+ipython_savefig_dir = 'plots'
+plot_working_directory = '.'
+
+extensions += ['IPython.sphinxext.ipython_console_highlighting',
+               'IPython.sphinxext.ipython_directive']
+
+# ipython_warning_is_error is kept at False (rather than its usual default of True):
+# that flag makes *both* unexpected exceptions and unexpected python warnings raised
+# inside `.. ipython::` blocks fatal, and we only want the former (regressions that leave
+# a traceback in the rendered docs), not the latter (e.g. informational/deprecation
+# warnings, which are routine and shouldn't break the readthedocs build). So instead we
+# hook the specific log message that IPython.sphinxext.ipython_directive emits for an
+# unmarked exception (one raised inside a block that isn't marked with :okexcept:) and
+# turn just that into a build failure.
+ipython_warning_is_error = False
+
+import logging as _logging
+
+
+class _FailOnUnexpectedIPythonException(_logging.Filter):
+    def filter(self, record):
+        message = record.getMessage()
+        if "Exception in " in message and "at block ending on line" in message:
+            raise RuntimeError(
+                "An ipython:: block raised an exception that isn't marked with :okexcept:; "
+                "see above for the traceback. If the exception is intentional (e.g. "
+                "illustrating an error case), add :okexcept: to the block.\n" + message
+            )
+        return True
+
+
+_logging.getLogger('sphinx.IPython.sphinxext.ipython_directive').addFilter(
+    _FailOnUnexpectedIPythonException())
 
 # tangos' existing tutorial pages are plain markdown (ported from the old
 # Jekyll site) rather than reST, so both suffixes are source files. myst_parser
@@ -39,11 +79,16 @@ source_suffix = {
     '.md': 'markdown',
 }
 
+# Without this, MyST does not generate an #anchor for any heading, so plain markdown
+# links from one page to a heading on another (or within the same page) -- e.g.
+# `custom_properties.md#using-the-particle-data-outside-the-halo` -- have nothing to
+# land on. Depth 3 covers every heading level currently in use (the pages are at most
+# title/H1 + a couple of H2/H3 sections deep).
+myst_heading_anchors = 3
+
 nbsphinx_input_prompt = 'In [%s]:'
 nbsphinx_output_prompt = 'Out[%s]:'
 nbsphinx_execute = 'never'  # the notebook is expensive to evaluate, so we need it pre-evaluated
-
-autosummary_generate = True
 
 # numpydoc's strict docstring validation (numpydoc_validation_checks) is off by
 # default and left that way here: tangos' docstrings are known to be sparse and
@@ -85,7 +130,20 @@ project = 'tangos'
 copyright = '2018-%Y'
 author = 'tangos team'
 
+from sqlalchemy.orm import configure_mappers
+
 import tangos
+
+# tangos' ORM relationships are attached via SQLAlchemy `backref`, which is not
+# materialised on the class until the mappers are configured (normally the first
+# time a session is used). The curated API reference documents several of these
+# backref-only attributes explicitly by name (e.g. Simulation.timesteps,
+# SimulationObjectBase.links) -- autodoc inspects the class directly, without ever
+# opening a database, so without this call those attributes are invisible to it and
+# autodoc emits "missing attribute mentioned in :members: option". The call must
+# follow `import tangos`; keep this comment on the call rather than on the import,
+# so isort does not separate it from what it explains.
+configure_mappers()
 
 version = ".".join(tangos.__version__.split(".")[:2])
 release = tangos.__version__

@@ -35,8 +35,8 @@ class MergerTree:
 
         Note that the method construct() must be called to actually build the tree.
 
-        :argument base_halo - the halo to build the tree from
-        :argument with_calculations - a list of strings for property calculations to perform on each halo node;
+        :argument base_halo: the halo to build the tree from
+        :argument with_calculations: a list of strings for property calculations to perform on each halo node;
                                       default is ["Mvir"] if 'Mvir' is in the database; empty list otherwise.
         """
         if with_calculations is None:

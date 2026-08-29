@@ -52,6 +52,8 @@ docs_require = [
     'numpydoc',
     'nbsphinx',
     'myst-parser',
+    'sphinx-design',    # for stage 2's tab-set tutorial steps
+    'sphinx-argparse',  # for stage 5's CLI reference
     ]
 
 import codecs

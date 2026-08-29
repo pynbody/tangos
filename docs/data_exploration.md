@@ -1,5 +1,5 @@
 Data exploration with tangos
-----------------------------
+=============================
 
 To see how _tangos_ can be used to explore your simulation data, you first need to
 [set up the package and paths](index.md) and then ensure you have a working database in place.

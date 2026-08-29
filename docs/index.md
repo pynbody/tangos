@@ -8,7 +8,7 @@ Once tangos is set up, you'll be able to access your simulations from a web brow
 
 
 Acknowledging the code
-----------------------
+========================
 When using _tangos_, please acknowledge it by citing the release paper:
 Pontzen & Tremmel, 2018, ApJS 237, 2. [DOI 10.3847/1538-4365/aac832](https://doi.org/10.3847/1538-4365/aac832);  [arXiv:1803.00010](https://arxiv.org/pdf/1803.00010.pdf). Optionally you can also cite the Zenodo DOI for the specific version of _tangos_ that you are using, which may be found [here](https://doi.org/10.5281/zenodo.1243070).
 
@@ -117,5 +117,5 @@ live_calculation
 custom_input_handlers
 histogram_properties
 old
-reference/index
+reference/api/index
 ```

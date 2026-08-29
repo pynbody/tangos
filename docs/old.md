@@ -1,7 +1,7 @@
 
 
 Quick-start: if you already have a .db file and want to run the webserver
--------------------------------------------------------------------------
+===========================================================================
 
 If running on a remote server, you will need to forward the appropriate port using `ssh address.of.remote.server -L5000:localhost:5000`. Then follow these instructions:
 
