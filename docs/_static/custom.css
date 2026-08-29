@@ -73,8 +73,17 @@ html[data-theme="dark"] {
   max-width: none;
 }
 
+/* The wordmark matches the tangos web interface rather than the Sphinx theme:
+ * Quicksand bold in #bb4400, which is what the application uses for its own
+ * headings (tangos/web/static/css/stylesheet.css:5-15). The colour comes via
+ * --pst-color-primary, which is that exact orange in light mode and lightens to
+ * #ff8c4b in dark mode, where #bb4400 would be close to unreadable.
+ */
 .navbar-brand .logo__title {
+  font-family: "Quicksand", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700;
   font-size: 1.6rem;
+  color: var(--pst-color-primary);
   text-align: left;
   white-space: nowrap;
 }

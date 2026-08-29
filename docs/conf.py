@@ -124,7 +124,13 @@ html_theme_options = {
 html_logo = "_static/logo.svg"
 
 html_static_path = ['_static']
-html_css_files = ['custom.css']
+# Quicksand is the tangos web interface's font (see tangos/web/templates/
+# layout.jinja2), loaded here from the same Google Fonts URL with the same weights,
+# so the docs' wordmark matches the application's.
+html_css_files = [
+    'https://fonts.googleapis.com/css?family=Quicksand:400,500,700',
+    'custom.css',
+]
 
 htmlhelp_basename = 'tangosdoc'
 
