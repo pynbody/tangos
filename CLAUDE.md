@@ -13,3 +13,5 @@ you will otherwise undo them.
 Stages branch off, and merge into, the long-lived `docs-refactor-main` branch rather
 than `master`. Tick your stage's boxes in `DOCS_PLAN.md` in the same commit that
 does the work.
+
+Run `pre-commit run --all-files` before pushing, and commit whatever it changes.

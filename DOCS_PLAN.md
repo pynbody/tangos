@@ -40,6 +40,11 @@ cd docs && python -m sphinx -b html . _build/html
 
 The full build takes a few minutes.
 
+**Run `pre-commit run --all-files` before you push**, and commit anything it changes.
+The repository's hooks run in CI and will fail the build otherwise; isort in particular
+reorders imports in `docs/conf.py`, which is easy to miss because nothing about the
+documentation build itself complains. Install it once with `pip install pre-commit`.
+
 **If you have a checkout from before the curated reference landed**, delete
 `docs/reference/_autosummary/` once. It holds 657 generated stubs from the old
 recursive reference, it is gitignored so no branch change can remove it for you, and
@@ -57,7 +62,7 @@ Stage 0 is the only stage in progress. Nothing below it has started.
 Effort estimates are person-days. **Stages 1–2 alone ship a coherent site**; the
 remainder deepens it.
 
-### Stage 0 — build system (0.5 d, in progress)
+### Stage 0 — build system (0.5 d, **complete**)
 
 - [x] Sphinx replaces Jekyll: `docs/conf.py` modelled on pynbody's, `sphinx_book_theme`,
       `myst_parser` so existing `.md` pages render unchanged
@@ -72,16 +77,6 @@ remainder deepens it.
       **Before merging to master**)
 - [x] Implement the curated reference
 - [x] Turn on `-W` (`fail_on_warning: true` in `.readthedocs.yaml`)
-- [ ] Stage 5 decision deferred: `reference/index` no longer exists as a file, and
-      `reference/api/index` is the sole entry point. When `simulation_formats`,
-      `live_calculation_language`, `cli`, `property_calculation_api` and
-      `builtin_properties` exist, decide whether to reintroduce a `reference/index`
-      landing page above them or keep `api/index`'s toctree as-is
-- [ ] Several `:doc:`/`:ref:` mentions in the reference are deliberately plain text,
-      because their targets do not exist yet (`reference/cli`,
-      `reference/live_calculation_language`, `reference/builtin_properties`,
-      `reference/simulation_formats`, `configuration`, `explanation/concepts`).
-      Convert each to a real cross-reference as the page it names lands
 - [x] Add `sphinx-design` (needed by stage 2's tabs); verified a `tab-set` with
       `:sync:` tab-items renders
 - [x] Add the `.. ipython::` directive and port pynbody's exception-fails-build
@@ -114,7 +109,6 @@ remainder deepens it.
       `docs/reference/`; turning `-W` on now would make any transient warning from
       that in-flight work a hard build failure, for a flag nothing needs enforced
       until stage 5. Flip it on once that work merges.
-- [ ] Start the redirect map (see **Invariants**)
 
 ### Stage 1 — the newcomer path (5 d)
 
@@ -133,6 +127,10 @@ Simulation → TimeStep → object typetags (`halo`/`group`/`BH`/`tracker`/`phan
 → properties → links → creators — before the commands start. Every page silently
 assumes it.
 
+- [ ] Start the redirect map (see **Invariants**). Stage 1 is where URLs first move,
+      as `index` is rewritten and the notebook's content becomes `tutorials/quickstart`.
+      Stage 2 deletes far more pages and has its own redirects item; this is the same
+      map, begun here rather than a second one
 - [ ] `explanation/concepts` (new, ~150 lines) — the data model. Highest
       value-per-line item in the whole plan
 - [ ] `index` — rewrite as a landing page (currently `index.md` is the Sphinx root
@@ -230,6 +228,15 @@ Gotcha found: `add_objects_to_timestep(10)` produces an `NDM=0` halo and
       Missing: `import` (merge a sqlite file into a server, the obvious sequel to
       `rdbms.md`), `rollback`, `recent-runs`, `delete-properties`, `thin-timesteps`,
       `diff`, `prune`/`patch-trees`, `write-pickled-results`
+- [ ] Decide the reference's top level: `reference/index` no longer exists as a file
+      and `reference/api/index` is the sole entry point. Once the pages below exist,
+      either reintroduce a `reference/index` landing page above them, or keep
+      `api/index`'s toctree as-is
+- [ ] Convert to real cross-references the `:doc:`/`:ref:` mentions left as plain text
+      in `reference/api/` because their targets did not exist yet: `reference/cli`,
+      `reference/live_calculation_language`, `reference/builtin_properties`,
+      `reference/simulation_formats`, `configuration`, `explanation/concepts`. Do each
+      as the page it names lands, rather than all at the end
 - [ ] `reference/live_calculation_language` — from `live_calculation.md:347-652`
 - [ ] `reference/property_calculation_api` — from `custom_properties.md:218-312`
 - [ ] `reference/builtin_properties`

@@ -130,17 +130,19 @@ project = 'tangos'
 copyright = '2018-%Y'
 author = 'tangos team'
 
+from sqlalchemy.orm import configure_mappers
+
 import tangos
 
 # tangos' ORM relationships are attached via SQLAlchemy `backref`, which is not
-# materialised on the class until the mappers are configured (normally the
-# first time a session is used). The curated API reference documents several
-# of these backref-only attributes explicitly by name (e.g. Simulation.timesteps,
-# SimulationObjectBase.links) -- autodoc inspects the class directly, without
-# ever opening a database, so without this call those attributes are invisible
-# to it and autodoc emits "missing attribute mentioned in :members: option".
-from sqlalchemy.orm import configure_mappers
-
+# materialised on the class until the mappers are configured (normally the first
+# time a session is used). The curated API reference documents several of these
+# backref-only attributes explicitly by name (e.g. Simulation.timesteps,
+# SimulationObjectBase.links) -- autodoc inspects the class directly, without ever
+# opening a database, so without this call those attributes are invisible to it and
+# autodoc emits "missing attribute mentioned in :members: option". The call must
+# follow `import tangos`; keep this comment on the call rather than on the import,
+# so isort does not separate it from what it explains.
 configure_mappers()
 
 version = ".".join(tangos.__version__.split(".")[:2])
