@@ -98,9 +98,27 @@ pygments_style = 'sphinx'
 
 html_theme = 'sphinx_book_theme'
 
+# The "logo" dict adds a wordmark next to the logo image. pynbody does not need
+# this because its logo.svg is a wide banner with the word "pynbody" already
+# drawn into the artwork; the tangos logo is a tall, square-ish glyph with no
+# wordmark, so the name has to come from the theme instead. custom.css then lays
+# the two out as a horizontal row -- see the note there.
+#
+# The announcement is a temporary, site-wide banner for the duration of the
+# documentation rebuild. REMOVE IT when docs-refactor-main merges into master
+# (tracked in DOCS_PLAN.md).
 html_theme_options = {
     "repository_url": "https://github.com/pynbody/tangos",
     "use_repository_button": True,
+    "logo": {
+        "text": "tangos",
+    },
+    "announcement": (
+        "<strong>This documentation is being rebuilt.</strong> "
+        "Pages may be incomplete, out of date, or not work as described. "
+        "The previous documentation remains available at "
+        "<a href='https://pynbody.github.io/tangos/'>pynbody.github.io/tangos</a>."
+    ),
 }
 
 html_logo = "_static/logo.svg"

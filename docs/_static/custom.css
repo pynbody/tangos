@@ -42,3 +42,63 @@ html[data-theme="dark"] {
   --pst-color-inline-code: #ffb388;
   --pst-color-inline-code-links: #ff8c4b;
 }
+
+/* Sidebar brand: logo and wordmark in a horizontal row.
+ *
+ * sphinx-book-theme puts navbar-logo.html in the *sidebar* (see its theme.conf)
+ * and overrides pydata's header styling with
+ *   .navbar-brand { flex-direction: column; height: unset; max-height: unset }
+ *   .navbar-brand .logo__image { height: unset }
+ * i.e. a vertical stack with no height cap. That suits pynbody, whose logo.svg
+ * is a wide 310x57 banner with the wordmark drawn in, so it renders short and
+ * wide with no text element at all. The tangos logo is a 118x149 portrait glyph,
+ * so the same rules blow it up to the full width of the sidebar.
+ *
+ * Put the row back and cap the image height, so the glyph sits beside the
+ * "tangos" wordmark supplied by html_theme_options["logo"]["text"]. These
+ * selectors match the theme's own specificity and win only because custom.css is
+ * appended after the theme stylesheet.
+ */
+
+.navbar-brand {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.6rem;
+}
+
+.navbar-brand .logo__image {
+  height: 2.75rem;
+  width: auto;
+  max-width: none;
+}
+
+.navbar-brand .logo__title {
+  font-size: 1.6rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* Rebuild-in-progress announcement banner.
+ *
+ * TEMPORARY: remove along with html_theme_options["announcement"] when
+ * docs-refactor-main merges into master. Styled as a warning rather than
+ * inheriting the theme's primary colour, so it does not read as branding.
+ */
+
+.bd-header-announcement {
+  background: var(--pst-color-warning-bg, #fdf1e0);
+  border-bottom: 1px solid var(--pst-color-warning, #d97706);
+  color: var(--pst-color-text-base);
+  font-size: 0.95rem;
+}
+
+.bd-header-announcement a {
+  color: var(--pst-color-primary-highlight);
+  text-decoration: underline;
+}
+
+html[data-theme="dark"] .bd-header-announcement {
+  background: #3a2c17;
+  border-bottom-color: #f6cc5d;
+}
