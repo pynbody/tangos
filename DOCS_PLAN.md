@@ -1,19 +1,17 @@
 # Documentation overhaul: plan and progress
 
 The tangos documentation is being rebuilt, in stages, from a Jekyll site of loose
-markdown files into Sphinx documentation hosted on Read the Docs, following
-pynbody's setup closely so that the two projects' documentation shares a look and
-feel.
+markdown files into Sphinx documentation on Read the Docs, following pynbody's setup
+closely so the two projects' documentation shares a look and feel.
 
 The work spans many pull requests. **This file is the source of truth for both the
-plan and the progress**: each PR ticks its own boxes in the same commit that does
-the work, so status cannot drift from reality.
+plan and the progress**: each PR ticks its own boxes in the same commit that does the
+work, so status cannot drift from reality.
 
 ## How to work on this
 
-Stages merge progressively into the long-lived `docs-refactor-main` branch, not
-into `master`. Branch each stage off `docs-refactor-main`, and open the PR against
-`docs-refactor-main`:
+Stages merge progressively into the long-lived `docs-refactor-main` branch, not into
+`master`:
 
 ```
 git fetch origin docs-refactor-main
@@ -21,143 +19,101 @@ git checkout -b docs-stage-N origin/docs-refactor-main
 ```
 
 Title PRs `docs: stage N — <thing>` and label them `docs-overhaul`. Do one stage per
-PR and get it merged before starting the next: almost every stage touches the
-`index.md` toctree, and stage 2's deletions collide with anything else editing
-those files. `docs-refactor-main` merges into `master` once the suite is complete.
+PR and merge it before starting the next: almost every stage touches the `index`
+toctree, and stage 2's deletions collide with anything else editing those files.
+`docs-refactor-main` merges into `master` once the suite is complete.
 
-Read the **Decisions already made** section below before changing anything under
-`docs/`. Several of the entries there look like omissions or mistakes and are not.
+Read **Decisions already made** before changing anything under `docs/`. Several of
+those entries look like omissions or mistakes and are not.
 
-Things you find along the way that need fixing in the code, rather than in the docs,
-go in `KNOWN_ISSUES.md` at the repository root.
+Things you find that need fixing in the *code* rather than the docs go in
+`KNOWN_ISSUES.md` at the repository root.
 
 Build the docs with:
 
 ```
-pip install -e .[docs]      # pandoc must also be installed for nbsphinx
-cd docs && python -m sphinx -b html . _build/html
+pip install -e .[docs]      # pandoc must also be installed, for nbsphinx
+cd docs && python -m sphinx -W -b html . _build/html
 ```
 
-The full build takes a few minutes.
+It takes a few minutes. `-W` matches CI: the build is warning-free and must stay so.
 
 **Run `pre-commit run --all-files` before you push**, and commit anything it changes.
-The repository's hooks run in CI and will fail the build otherwise; isort in particular
-reorders imports in `docs/conf.py`, which is easy to miss because nothing about the
-documentation build itself complains. Install it once with `pip install pre-commit`.
-
-**If you have a checkout from before the curated reference landed**, delete
-`docs/reference/_autosummary/` once. It holds 657 generated stubs from the old
-recursive reference, it is gitignored so no branch change can remove it for you, and
-now that `reference/index.rst` is gone Sphinx picks them up as orphaned pages: 445
-"document isn't included in any toctree" warnings plus ~129 "duplicate object
-description" clashes against the curated pages. A fresh clone and the Read the Docs
-build are unaffected.
+The hooks run in CI and will fail the build otherwise. isort in particular reorders
+imports in `docs/conf.py`, which is easy to miss because nothing in the documentation
+build itself complains.
 
 ## Status
 
-Stage 0 is the only stage in progress. Nothing below it has started.
+Stage 0 is complete. Stages 1–5 have not started.
 
 ## Stages
 
-Effort estimates are person-days. **Stages 1–2 alone ship a coherent site**; the
-remainder deepens it.
+Effort estimates are person-days. **Stages 1–2 alone ship a coherent site**; the rest
+deepens it.
 
-### Stage 0 — build system (0.5 d, **complete**)
+### Stage 0 — build system (complete)
 
-- [x] Sphinx replaces Jekyll: `docs/conf.py` modelled on pynbody's, `sphinx_book_theme`,
-      `myst_parser` so existing `.md` pages render unchanged
-- [x] tangos colour palette in `docs/_static/custom.css`, logo as `html_logo`
-- [x] `.readthedocs.yaml`, `docs` extra in `setup.py`, `docs/Makefile`
-- [x] Reference section, now hand-curated: 11 audience-organised pages under
-      `docs/reference/api/` (see **Decisions already made**). Replaced the original
-      `autosummary :recursive:` version, whose 657 stub pages are gone along with
-      `docs/_templates/autosummary/`
-- [x] Sidebar brand shows the logo and the "tangos" wordmark in a horizontal row
-- [x] Site-wide rebuild-in-progress banner, linking to the old docs (**temporary**, see
-      **Before merging to master**)
-- [x] Implement the curated reference
-- [x] Turn on `-W` (`fail_on_warning: true` in `.readthedocs.yaml`)
-- [x] Add `sphinx-design` (needed by stage 2's tabs); verified a `tab-set` with
-      `:sync:` tab-items renders
-- [x] Add the `.. ipython::` directive and port pynbody's exception-fails-build
-      logging filter verbatim from `pynbody/docs/conf.py:65-91` (needed by stage 3);
-      verified an unmarked exception fails the build and `:okexcept:` passes it
-- [x] Add `sphinx-argparse` (needed by stage 5's CLI reference)
-- [x] Get the build to zero warnings (see **Invariants**). Was 105: 29 MyST
-      "headings start at H2" nits from pages using a `---` Setext underline (or, for
-      `mpi.md`, an ATX `##`) for their title instead of `===`/`#` (fixed by promoting
-      just the title, plus `mpi.md`'s four `###` subsections one level to keep the
-      hierarchy consecutive); ~52 from SQLAlchemy docstrings pulled in via
-      `:inherited-members:` on `tangos.core.halo.UnsignedInteger` (see **Decisions
-      already made** for the fix and the 3-warning residual it doesn't reach, and
-      how that residual is resolved instead); ~20 genuinely malformed reST in tangos
-      docstrings, in `tangos/core/halo.py`, `tangos/live_calculation/__init__.py`,
-      `tangos/properties/__init__.py`, `tangos/properties/pynbody/zoom.py`,
-      `tangos/relation_finding/tree.py`, `tangos/testing/__init__.py`,
-      `tangos/input_handlers/halo_stat_files/__init__.py`,
-      `tangos/web/views/merger_tree.py` (the last of these had no malformed reST of
-      its own — the warning was a duplicate of `tree.py`'s, surfaced again because
-      `WebMergerTree.__init__` inherits `MergerTree.__init__`'s docstring); and 2
-      dead internal anchors (`first_steps_changa+ahf.md:97`, `mpi.md:74`), both
-      fixed by `myst_heading_anchors = 3` plus, for the same-page case, writing the
-      link with its own filename instead of a bare `#anchor` (MyST resolves
-      cross-document and same-document anchor links via different code paths; only
-      the filename-qualified form is checked against `myst_heading_anchors`).
-      **`-W` is deliberately NOT turned on yet** despite reaching zero, matching this
-      task's brief — the curated-reference implementation (rest of this stage-0 item,
-      above) is still outstanding and owned by another PR/agent, actively editing
-      `docs/reference/`; turning `-W` on now would make any transient warning from
-      that in-flight work a hard build failure, for a flag nothing needs enforced
-      until stage 5. Flip it on once that work merges.
+What now exists, as context for later stages:
+
+- Sphinx with `sphinx_book_theme`, configured in `docs/conf.py` closely following
+  pynbody's. `myst_parser` renders the existing `.md` pages unchanged; `nbsphinx`
+  renders the notebook. The page structure is still the old one, ported as-is.
+- tangos palette and wordmark in `docs/_static/custom.css`; `.readthedocs.yaml`;
+  `docs` extra in `setup.py`; `docs/Makefile`.
+- A curated API reference: 11 audience-organised pages under `docs/reference/api/`,
+  hand-written `autoclass`/`autofunction` stanzas. This replaced a recursive
+  `autosummary` version that generated 657 near-empty stubs.
+- A temporary site-wide banner saying the docs are being rebuilt, linking to the old
+  site. See **Before merging to master**.
+- Extensions later stages depend on, installed and verified: `sphinx-design` (stage
+  2's tabs), `sphinx-argparse` (stage 5's CLI reference), and the `.. ipython::`
+  directive together with pynbody's logging filter that turns an unmarked exception
+  inside such a block into a build failure (stage 3).
+- Zero warnings, with `-W` enforced via `fail_on_warning: true` in
+  `.readthedocs.yaml`.
 
 ### Stage 1 — the newcomer path (5 d)
 
 Essentially all of the newcomer benefit is concentrated here. Two problems drive it:
 
-*The path is inverted.* `docs/index.md:92` sends a first-time reader to
-`first_steps.md` — build a database from multi-GB raw data, four CLI commands,
-requires pynbody — before `data_exploration.md`, which merely queries an existing
-sqlite file. The shortest documented route from `pip install` to a first plot is
-measured in hours. Flipping it costs little, because the content already exists
-inside the notebook.
+*The path is inverted.* `index.md` sends a first-time reader to `first_steps.md` —
+build a database from multi-GB raw data, four CLI commands, requires pynbody —
+before `data_exploration.md`, which merely queries an existing sqlite file. The
+shortest documented route from `pip install` to a first plot is measured in hours.
+Flipping it costs little, because the content already exists inside the notebook.
 
 *There is no explanation tier at all.* The docs are roughly 55% tutorial, 35%
-how-to, 10% reference, 0% explanation. Nothing explains the data model —
-Simulation → TimeStep → object typetags (`halo`/`group`/`BH`/`tracker`/`phantom`)
-→ properties → links → creators — before the commands start. Every page silently
-assumes it.
+how-to, 10% reference, 0% explanation. Nothing explains the data model — Simulation
+→ TimeStep → object typetags (`halo`/`group`/`BH`/`tracker`/`phantom`) → properties
+→ links → creators — before the commands start. Every page silently assumes it.
 
-- [ ] Start the redirect map (see **Invariants**). Stage 1 is where URLs first move,
-      as `index` is rewritten and the notebook's content becomes `tutorials/quickstart`.
-      Stage 2 deletes far more pages and has its own redirects item; this is the same
-      map, begun here rather than a second one
 - [ ] `explanation/concepts` (new, ~150 lines) — the data model. Highest
       value-per-line item in the whole plan
-- [ ] `index` — rewrite as a landing page (currently `index.md` is the Sphinx root
-      doc with an appended toctree; see **Decisions**)
+- [ ] `index` — rewrite as a real landing page
 - [ ] `installation`
-- [ ] `configuration` (new) — `config_local.py` is documented in `tangos/config.py:1-3`
+- [ ] `configuration` (new) — `config_local.py` is documented in `tangos/config.py`
       and nowhere in `docs/`
 - [ ] `tutorials/quickstart` — from notebook cells 0–16
 - [ ] `tutorials/time_series` — from notebook cells 17–19, 28–32
 - [ ] `tutorials/live_calculations` — from `live_calculation.md:1-346`
 - [ ] `tutorials/webserver` — grow the 21-line stub
+- [ ] Start the redirect map (see **Invariants**). URLs first move here; stage 2
+      moves many more and continues the same map
 
-These can be written with plain `code-block`s before the demo database of stage 3
-exists; converting them to `ipython` later does not change a word of the prose.
+These can be written with plain `code-block`s before stage 3's demo database exists;
+converting them to `ipython` later does not change a word of the prose.
 
 ### Stage 2 — collapse the first_steps combinatorics (4 d)
 
-The six `first_steps_*` pages are ~70% byte-identical. The "all tangos
-command-line tools provide help" paragraph is verbatim in all six; the entire
-`--with-prerequisites`/`--include-only` bullet list is word-for-word across
-subfind, rockstar and ramses. Only eight things vary, and only **two** branch the
-command *sequence*: whether the finder supplies its own merger trees, and whether
-the format has a group/halo hierarchy.
+The six `first_steps_*` pages are ~70% byte-identical — the `--with-prerequisites`
+bullet list is word-for-word across subfind, rockstar and ramses. Only eight things
+vary, and only **two** branch the command *sequence*: whether the finder supplies its
+own merger trees, and whether the format has a group/halo hierarchy.
 
-- [ ] `tutorials/first_database` — one canonical page on **ChaNGa+AHF** (the only
+- [ ] `tutorials/first_database` — one canonical page on **ChaNGa+AHF**: the only
       dataset with baryons, so `uvi_image`/`SFR_histogram` work and everything
-      downstream depends on them; it also has the black-hole companion run)
+      downstream depends on them, and it has the black-hole companion run
 - [ ] `sphinx-design` `tab-set` with `:sync:` keys at exactly two steps — "import
       finder properties" and "build the merger tree" — so choosing a finder once
       reconfigures the page. Every other step stays single-path prose
@@ -166,43 +122,48 @@ the format has a group/halo hierarchy.
 - [ ] Keep EAGLE and yt as separate short pages; their differences are not in the
       command sequence
 - [ ] Retire `old.md`, `advanced.md`, `first_steps.md`, `data_exploration.md`,
-      `bluewaters.md`, `troubleshooting.md`, and the Jekyll files — the last of
-      these only once the Pages question below is settled
+      `bluewaters.md`, `troubleshooting.md`. Leave the Jekyll files until the Pages
+      question in **Before merging to master** is settled
 - [ ] Redirects for every deleted URL
 
 The tradeoff of tabs is real: they defeat Ctrl-F and PDF output, and deep-linking
-gets worse. That is exactly why they are restricted to two steps and backed by a
-searchable flat table.
+gets worse. That is why they are restricted to two steps and backed by a searchable
+flat table.
 
 ### Stage 3 — make the examples executable and verified (3 d)
 
 tangos cannot do directly what pynbody does. pynbody's build-time dependency is a
-snapshot file it reads itself; tangos needs a *populated database*, which means
-pynbody + yt + particle data + hours of `tangos write` (`build.sh` says 35 GB).
-But that database is **already built on every PR**:
+snapshot file it reads itself; tangos needs a *populated database*, meaning pynbody +
+yt + particle data + hours of `tangos write` (`build.sh` says 35 GB). But that
+database is **already built on every PR**:
 `.github/workflows/integration-test.yaml` runs `INTEGRATION_TESTING=1 bash build.sh`
-against mini data (Zenodo 12189455), uploads `data.db` as an artifact, and verifies
-it with `tangos diff`. So decouple database *production* from docs *building*.
+against mini data (Zenodo 12189455), uploads `data.db` as an artifact, and verifies it
+with `tangos diff`. So decouple database *production* from docs *building*.
 
+- [ ] **Needs a human first**: measure `data.db`'s size and the wall time of
+      `INTEGRATION_TESTING=1 bash build.sh`. If it is under ~10 minutes, `pre_build`
+      could just run the build and most of this stage is unnecessary. It probably is
+      not. Zenodo returns 403 through sandboxes, so an agent cannot measure this
 - [ ] Publish that artifact as a versioned `tangos_tutorial_data.db`
 - [ ] Add `tangos.test_utils.precache_tutorial_database()`, a direct analogue of
       `pynbody.test_utils.precache_test_data()`. **Highest-leverage new code in the
-      plan**: it fixes the RTD build, fixes reproducibility, and replaces four
-      separate hand-written Zenodo-URL paragraphs that all point at a 2021 database
-- [ ] `pre_build` in `.readthedocs.yaml` downloads only that sqlite file. Budget:
-      ~1 min pip (no pynbody, no compiler) + ≤2 min download + ~2–4 min for ~100
-      ipython blocks ≈ 5–7 min, well inside RTD's ~30 min cap. Explicitly excluded:
+      plan**: it fixes the RTD build and reproducibility, and replaces four separate
+      hand-written Zenodo-URL paragraphs that all point at a 2021 database
+- [ ] `pre_build` in `.readthedocs.yaml` downloads only that sqlite file. Budget: ~1
+      min pip (no pynbody, no compiler) + ≤2 min download + ~2–4 min for ~100 ipython
+      blocks ≈ 5–7 min, well inside RTD's ~30 min cap. Explicitly excluded:
       pynbody/yt installs, particle data, any `tangos write`
 - [ ] Convert tutorial code fences to `.. ipython::` / `@savefig`
 - [ ] Bind the write-side shell commands to `build.sh` — shared `_snippets/*.sh` via
-      `literalinclude`, or a grep test. They are already CI-verified; the docs
-      simply do not reuse that fact
+      `literalinclude`, or a grep test. They are already CI-verified; the docs simply
+      do not reuse that fact
+- [ ] Re-enable the integration test workflow (see **Before merging to master**) —
+      this stage depends on the database it builds, so restore it here rather than at
+      the end
 
-Fallback, worth adopting as a floor regardless: `SimulationGeneratorForTests`
-builds 8 timesteps × 9 halos with links in **1.7 s**, no pynbody and no data
-(verified). That alone keeps the language reference executable if a download fails.
-Gotcha found: `add_objects_to_timestep(10)` produces an `NDM=0` halo and
-`link_last_halos()` then divides by zero.
+Fallback, worth adopting as a floor regardless: `SimulationGeneratorForTests` builds
+8 timesteps × 9 halos with links in 1.7 s, with no pynbody and no data. That alone
+keeps the language reference executable if a download fails.
 
 ### Stage 4 — gap-filling how-tos and remaining tutorials (5 d)
 
@@ -214,13 +175,13 @@ Gotcha found: `add_objects_to_timestep(10)` produces an `NDM=0` halo and
 - [ ] Web interface, currently a 21-line stub. Undocumented: arbitrary
       live-calculation expressions as timestep-view columns (arguably the killer
       feature), the merger-tree viewer, and the entire URL API in
-      `tangos/web/routes.py:22-29` — `.../{x}/vs/{y}.csv`,
+      `tangos/web/routes.py` — `.../{x}/vs/{y}.csv`,
       `.../gather/{typetag}/{name}.json`, `cascade_plot`
 - [ ] The four supported code × finder combinations with no page at all:
-      Gadget-4+SubFind, Gadget-4+HBT+, Ramses+AdaptaHOP, Enzo+Rockstar-via-yt.
-      Two of them are built by `build.sh` on every PR
+      Gadget-4+SubFind, Gadget-4+HBT+, Ramses+AdaptaHOP, Enzo+Rockstar-via-yt. Two are
+      built by `build.sh` on every PR
 - [ ] `--pickle-results` — the actual answer to the sqlite-locking failure that
-      `rdbms.md:13-20` warns about, undocumented
+      `rdbms.md` warns about, undocumented
 
 ### Stage 5 — reference (4 d)
 
@@ -228,29 +189,27 @@ Gotcha found: `add_objects_to_timestep(10)` produces an `NDM=0` halo and
       Missing: `import` (merge a sqlite file into a server, the obvious sequel to
       `rdbms.md`), `rollback`, `recent-runs`, `delete-properties`, `thin-timesteps`,
       `diff`, `prune`/`patch-trees`, `write-pickled-results`
-- [ ] Decide the reference's top level: `reference/index` no longer exists as a file
-      and `reference/api/index` is the sole entry point. Once the pages below exist,
-      either reintroduce a `reference/index` landing page above them, or keep
-      `api/index`'s toctree as-is
-- [ ] Convert to real cross-references the `:doc:`/`:ref:` mentions left as plain text
-      in `reference/api/` because their targets did not exist yet: `reference/cli`,
-      `reference/live_calculation_language`, `reference/builtin_properties`,
-      `reference/simulation_formats`, `configuration`, `explanation/concepts`. Do each
-      as the page it names lands, rather than all at the end
 - [ ] `reference/live_calculation_language` — from `live_calculation.md:347-652`
 - [ ] `reference/property_calculation_api` — from `custom_properties.md:218-312`
-- [ ] `reference/builtin_properties`
+- [ ] `reference/builtin_properties` — a table of the ~60 names, not class pages
+- [ ] Decide the reference's top level: `reference/api/index` is currently the sole
+      entry point. Once the pages above exist, either add a `reference/index` landing
+      page over them or keep `api/index`'s toctree as-is
+- [ ] Convert to real cross-references the `:doc:`/`:ref:` mentions left as plain text
+      in `reference/api/` because their targets did not exist: `reference/cli`,
+      `reference/live_calculation_language`, `reference/builtin_properties`,
+      `reference/simulation_formats`, `configuration`, `explanation/concepts`. Do each
+      as the page it names lands
 - [ ] FAQ, link audit
 
 ## Target architecture
 
 **Setup** — `index` · `installation` · `configuration`
 
-**Tutorials**, linear and in this order. Pages 1–5 need no simulation data and no
-pynbody: `explanation/concepts` → `tutorials/quickstart` → `tutorials/time_series`
-→ `tutorials/live_calculations` → `tutorials/webserver` →
-`tutorials/first_database` → `custom_properties` → `histograms` → `black_holes` →
-`crossmatching` → `tracking`
+**Tutorials**, linear and in this order. The first five need no simulation data and
+no pynbody: `explanation/concepts` → `tutorials/quickstart` → `tutorials/time_series`
+→ `tutorials/live_calculations` → `tutorials/webserver` → `tutorials/first_database`
+→ `custom_properties` → `histograms` → `black_holes` → `crossmatching` → `tracking`
 
 **How-to** — `parallel` · `managing_a_database` · `database_backends` ·
 `large_simulations` · `custom_handlers` · `eagle`
@@ -260,151 +219,79 @@ pynbody: `explanation/concepts` → `tutorials/quickstart` → `tutorials/time_s
 
 ## Decisions already made
 
-Read these before changing the build. Several look like omissions and are not.
+### About the content
 
-- **`autodoc_default_options` must stay unset.** Setting it makes the autosummary
-  templates' bare `automodule` calls expand every member, duplicating what the
-  `:toctree:` stubs already generate: ~1460 "duplicate object description"
-  warnings. pynbody does not set it either.
-- **Do not copy these from pynbody — they are dead there.**
-  `docs/_templates/layout.html` and `fulltoc.html` reference `customise.css` and
-  `styles.css` that do not exist and override a block `sphinx_book_theme` does not
-  define (leftovers from an abandoned Bootstrap theme); `_static/alabaster.css` is
-  unused because the theme is not alabaster; `docs/tutorials/example_code/` (13
-  scripts) is referenced by nothing; `matplotlib.sphinxext.plot_directive` is
-  loaded but no `.. plot::` appears anywhere. Only
-  `_templates/autosummary/{class,module}.rst` are live, and those were copied.
-- **The sidebar brand needs both `logo.text` and CSS, unlike pynbody.**
-  sphinx-book-theme renders `navbar-logo.html` in the *sidebar* and overrides
-  pydata's styling with `.navbar-brand {flex-direction: column; height: unset;
-  max-height: unset}` and `.logo__image {height: unset}` — a vertical stack with no
-  height cap. That suits pynbody, whose `logo.svg` is a wide 310x57 banner with the
-  wordmark drawn into the artwork, so it renders short and wide and needs no text
-  element at all. The tangos logo is a 118x149 portrait glyph, which the same rules
-  blow up to the full sidebar width. So tangos sets
-  `html_theme_options["logo"]["text"]` for the wordmark and restores a capped
-  horizontal row in `custom.css`. Do not "simplify" either half back towards
-  pynbody's config; the two logos are different shapes.
-- **Prefer `get_object` over `get_halo` everywhere.** Both work and both are
-  documented in the reference, but `get_object` is the one to use and the one new
-  prose should call. The existing pages use `get_halo` throughout (12 occurrences
-  plus every notebook cell); that sweep happens as each page is rewritten in stages
-  1-5, not as a separate mass edit, and is tracked in `KNOWN_ISSUES.md`.
+- **Prefer `get_object` over `get_halo` everywhere.** Both work and both are in the
+  reference, but `get_object` is the one new prose should call. The existing pages use
+  `get_halo` throughout; that sweep happens as each page is rewritten, not as a mass
+  edit, and is tracked in `KNOWN_ISSUES.md`.
+- **The notebook is converted to `.rst` and retired, not kept.** Its content is the
+  best material tangos has; its container is failing it — reachable only via an
+  nbviewer link, invisible to site search, 278 KB of undiffable base64, unchanged
+  since 2022, and every calculation uses the string form that `live_calculation.md`
+  now de-emphasises. Converting is the moment to rewrite all 20 cells in lambda form.
+- **`live_calculation.md` splits at line 347; do not rewrite it.** It was rewritten in
+  August 2026 for the 1.12.0 lambda work and is the best file in the docs: tutorial
+  above that line, reference below. `custom_properties.md` splits the same way at line
+  218, where `region_specification`/`preloop` stop being a learning path and become
+  API contracts.
+- **`old.md` is retired, but salvage three fragments first**: `:23-37` is the only
+  documentation anywhere of `recent-runs`; `:199-207` has better `at()` examples than
+  the current pages; `:106-126` is a real PBS script. It is otherwise the pre-1.0
+  README of `halo_database` and nothing links to it.
+
+### About the build
+
 - **`conf.py` must call `configure_mappers()` after importing tangos.**
   `Simulation.timesteps`, `SimulationObjectBase.links`/`reverse_links` and
   `Simulation.trackers` are SQLAlchemy backrefs that do not exist on the class until
-  mappers are configured -- `getattr(Simulation, 'timesteps')` raises `AttributeError`
-  without it. Autodoc would silently omit exactly the object-model relationships the
-  reference exists to document, with no warning to tell you.
+  mappers are configured. Without it autodoc silently omits exactly the object-model
+  relationships the reference exists to document, and does not warn.
 - **`autosummary` and `autoclass`/`autofunction` resolve dotted names differently.**
   Under a `currentmodule`, autosummary prepends the module to a partial dotted name;
-  autodoc's own directives do not, and silently mis-resolve instead of erroring. The
-  existing reference pages are written to avoid this; whoever adds `reference/cli` or
-  the other stage 5 pages should expect to hit it.
-- **`numpydoc` silently auto-loads `sphinx.ext.autosummary`**, which is why neither
-  project lists it in `extensions`.
+  autodoc's own directives do not, and silently mis-resolve rather than erroring.
+  Expect to hit this when adding stage 5's pages.
+- **`autodoc_default_options` stays unset**, as in pynbody. Setting it makes autodoc
+  expand every member of anything documented, duplicating explicit stanzas.
+- **The sidebar needs both `logo.text` and CSS, unlike pynbody.** sphinx-book-theme
+  renders the brand in the *sidebar* as a vertical stack with no height cap. That
+  suits pynbody, whose logo is a wide banner with the wordmark drawn into the artwork.
+  The tangos logo is a portrait glyph, which the same rules blow up to the full
+  sidebar width, and carries no wordmark. So tangos sets
+  `html_theme_options["logo"]["text"]` and restores a capped horizontal row in
+  `custom.css`. Do not "simplify" either half towards pynbody's config.
+- **Do not copy pynbody's `docs/_templates/`, `_static/alabaster.css`,
+  `docs/tutorials/example_code/`, or `matplotlib.sphinxext.plot_directive`** when
+  syncing against it. All are dead in pynbody itself: templates referencing
+  stylesheets that do not exist and overriding a block the theme does not define,
+  a stylesheet for a theme neither project uses, 13 scripts nothing references, and an
+  extension loaded although no `.. plot::` appears anywhere.
 - **tangos' packaging is `setup.py`, not `pyproject.toml`**, unlike pynbody. The
-  `docs` extra lives in `setup.py`; `pyproject.toml` has no `[project]` table.
+  `docs` extra lives there; `pyproject.toml` has no `[project]` table.
 - **`sphinx-book-theme` is pinned to 1.2.0**, matching pynbody: 1.3.0 pulls in
   `pydata-sphinx-theme>=0.17`, whose sidebar rework breaks the primary sidebar on
   narrow viewports.
-- **`pandoc` is a build dependency**, not an optional one: nbsphinx shells out to it
-  to render the notebook.
-- **`index.md` is the Sphinx root doc**, with a MyST `{toctree}` appended, rather
-  than a separate `index.rst`. This was the right call for a placeholder that ports
-  markdown in place; stage 1 rewrites it as a real landing page.
-- **The notebook gets converted to `.rst` and retired, not kept.** Its content is
-  the best material tangos has and must survive; its container is failing it —
-  reachable only via an nbviewer link (`data_exploration.md:21`), invisible to site
-  search, 278 KB of undiffable base64, unchanged since 2022, kernel metadata says
-  Python 3.6.1, and every calculation uses the string form that
-  `live_calculation.md:38-45` now de-emphasises. Converting is the moment to rewrite
-  all 20 cells in lambda form. The pynbody precedent argues *for* conversion:
-  `images.ipynb` is kept pre-executed only because it is 8.5 MB of expensive
-  renderings (`pynbody/docs/conf.py:52`); tangos' notebook is cheap to re-execute
-  once the demo database exists.
-- **`live_calculation.md` is three documents with a clean seam at line 347.** It was
-  rewritten in August 2026 for the 1.12.0 lambda work and is now the best file in
-  the docs — do not rewrite it, split it. `custom_properties.md` splits the same way
-  at line 218, where `region_specification`/`preloop` stop being a learning path and
-  become API contracts.
-- **`old.md` is retired, but three fragments are worth salvaging first**: `:23-37` is
-  the only documentation anywhere of `recent-runs`; `:199-207` has better `at()`
-  examples than the current pages; `:106-126` is a real PBS script. It is the
-  pre-1.0 README of `halo_database` — `:9` says `python setup.py install`, `:116`
-  sources a `~/halo_database/environment.sh`, `:132` refers to files that no longer
-  exist. Nothing links to it.
-- **The reference will be curated, not recursive.** Recursive `autosummary
-  :recursive:` generates 657 stubs against a codebase with 19% docstring coverage
-  (327/1761, measured) — more faithful to "identical to pynbody", but a wall of
-  near-empty pages. A hand-curated reference of the genuinely public entry points
-  looks more professional today and grows naturally. Settled ahead of stage 5; the
-  `:recursive:` autosummary machinery stays in place until the curated contents
-  replace it (tracked as a stage 0 checkbox; another PR/agent is designing the
-  actual contents of `docs/reference/index.rst`).
-- **`_templates/autosummary/class.rst` drops `:inherited-members:`, diverging from
-  pynbody's copy.** On `tangos.core.halo.UnsignedInteger` (a `TypeDecorator`) it
-  pulled in SQLAlchemy's own `TypeEngine.Comparator` → `ColumnOperators`/`Operators`
-  machinery — dozens of inherited comparator methods (`.contains()`, `.startswith()`,
-  `.bool_op()`, ...) that are SQLAlchemy-internal plumbing, not part of tangos' API,
-  and whose docstrings use SQLAlchemy's own `:paramref:` role (not a stock Sphinx
-  role) and `:ref:` targets that only resolve inside SQLAlchemy's own Sphinx build.
-  That's ~49 of the ~52 SQLAlchemy warnings gone in one line, with no docstring
-  touched and no loss of anything a tangos user would want to see. A residual 3
-  warnings remain on that same class (`cache_ok`, `process_bind_param`,
-  `process_result_value`): these are genuine tangos-authored members, but their
-  *docstrings* are still borrowed from SQLAlchemy verbatim by autodoc's own
-  docstring-inheritance fallback (`autodoc_inherit_docstrings`, left on — it is what
-  lets tangos' own documented base classes cover their subclasses, which matters
-  more here than these three warnings), and those two SQLAlchemy docstrings `:ref:`
-  two labels (`sql_caching`, `types_typedecorator`) that don't exist outside
-  SQLAlchemy's build. `nitpick_ignore` cannot fix this — Sphinx only consults it in
-  nitpicky mode, which this build doesn't turn on — and `suppress_warnings` for
-  `ref.ref` would hide every broken `:ref:` project-wide, including future ones in
-  tangos' own prose. So `docs/conf.py` instead resolves just those two labels by
-  name via a `missing-reference` handler, to plain unlinked text. The tradeoff of
-  dropping `:inherited-members:` project-wide: a subclass's own reference page no
-  longer inline-lists methods it only inherits (e.g. from a genuinely-documented
-  tangos base class) — a reader now has to follow `:show-inheritance:`'s "Bases:
-  ..." link to the parent class's page to find them, rather than seeing them
-  in-place. Given the reference is moving to curated (above) rather than the
-  recursive 657-stub wall this was generating, that one extra click is an
-  acceptable price for not resurfacing SQLAlchemy internals on the one class where
-  it currently bites.
-
-## Blocked on a human
-
-Neither of these can be done from a Claude session or verified from a checkout.
-Do not spend time rediscovering them.
-
-- [ ] **Import the repo on readthedocs.org** and point it at `.readthedocs.yaml`,
-      which is ready and waiting.
-- [ ] **Check Settings → Pages before deleting any Jekyll file.** No workflow
-      deploys the current site, so Pages is almost certainly configured to serve
-      Jekyll straight from `docs/` on `master` — a setting invisible from a
-      checkout. Deleting `_config.yml` while that is still set would break the live
-      site. The Pages source must be switched, or disabled, at the same moment RTD
-      goes live.
-- [ ] **Measure the `data.db` size and the wall time of
-      `INTEGRATION_TESTING=1 bash build.sh`.** This single measurement decides
-      whether stage 3 needs artifact-publishing machinery at all: under ~10 minutes
-      and `pre_build` could just run the build. It probably is not. Zenodo returns
-      403 through the sandbox proxy, so this cannot be measured from a Claude
-      session.
+- **`pandoc` is a build dependency**, not optional: nbsphinx shells out to it.
+- **`index.md` is currently the Sphinx root doc**, with a MyST `{toctree}` appended,
+  rather than a separate `index.rst`. That suited a placeholder porting markdown in
+  place; stage 1 rewrites it.
 
 ## Before merging to master
 
+- [ ] **Check Settings → Pages before deleting any Jekyll file** (`_config.yml`,
+      `Gemfile`, `_layouts/`, `_sass/`). No workflow deploys the current site, so
+      Pages is almost certainly configured to serve Jekyll straight from `docs/` on
+      `master` — a setting invisible from a checkout. Deleting `_config.yml` while
+      that is still set would break the live site, so the Pages source must be
+      switched or disabled at the same moment.
 - [ ] **Re-enable the integration test workflow**: uncomment `pull_request:` in
-      `.github/workflows/integration-test.yaml`. It was disabled for the duration of
-      the rebuild because it builds a test database from real simulation data on every
-      PR, which no docs change warrants. Note that **stage 3 needs it back before the
-      final merge**: the database it builds is the source of the tutorial data, so
-      restore the trigger when that stage starts rather than leaving it to the end.
-- [ ] **Remove the rebuild-in-progress banner**: `html_theme_options["announcement"]`
-      in `docs/conf.py` and the `.bd-header-announcement` rules in
-      `docs/_static/custom.css`. It exists only while `docs-refactor-main` is
-      unmerged, and points readers at the old site
-      (https://pynbody.github.io/tangos/), which merging this work retires.
+      `.github/workflows/integration-test.yaml`. It was disabled for the rebuild
+      because it builds a test database from real simulation data on every PR, which
+      no docs change warrants. Stage 3 needs it back earlier than this.
+- [ ] **Remove the rebuild-in-progress banner**:
+      `html_theme_options["announcement"]` in `docs/conf.py` and the
+      `.bd-header-announcement` rules in `docs/_static/custom.css`. It points readers
+      at the old site, which merging this work retires.
 
 ## Invariants
 
@@ -412,7 +299,7 @@ These span PRs and are easy to break one stage at a time.
 
 - **Every deleted page URL gets a redirect.** The six `first_steps_*.html` URLs are
   linked from the README and probably from published papers.
-- **`sphinx-build -W` stays passing** once stage 0 reaches zero warnings.
+- **`sphinx-build -W` stays passing.**
 - **Every `tangos …` command shown in the docs also appears in `build.sh`**, enforced
   by a test, from stage 3 onward.
 - **An unmarked exception in any `.. ipython::` block fails the build**, from stage 3
@@ -421,33 +308,22 @@ These span PRs and are easy to break one stage at a time.
 
 ## Style conventions
 
-Second person, present tense. Drop the `_tangos_` italics (12 occurrences in
-`custom_properties.md` alone) for pynbody's ``literal``/plain convention. If code
-can execute it must be `.. ipython::`, never a hand-typed `# -> 42.0`. One standard
-prerequisites `.. note::` modelled on `pynbody/docs/tutorials/quickstart.rst:30-37`,
-replacing the six verbatim copies of "Make sure you have followed the initial set up
-instructions". `:ref:` labels on every page; `:func:`/`:class:`/`:meth:` roles
-throughout, so the reference section earns its keep; `.. seealso::` closing each
-tutorial; `.. versionadded::` for the inline "since version 1.8.0" notes.
-Lowercase-underscore filenames — no `+`, no spaces. A
+Second person, present tense. Drop the `_tangos_` italics for pynbody's
+``literal``/plain convention. If code can execute it must be `.. ipython::`, never a
+hand-typed `# -> 42.0`. One standard prerequisites `.. note::` modelled on
+`pynbody/docs/tutorials/quickstart.rst:30-37`, replacing the six verbatim copies of
+"Make sure you have followed the initial set up instructions". `:ref:` labels on every
+page; `:func:`/`:class:`/`:meth:` roles throughout, so the reference earns its keep;
+`.. seealso::` closing each tutorial; `.. versionadded::` for the inline "since
+version 1.8.0" notes. Lowercase-underscore filenames — no `+`, no spaces. A
 `.. Last checked by <initials>: <date>` line at the top of every file, as in
-`pynbody/docs/tutorials/tutorials.rst:1`. One canonical halo-path spelling,
-explained once.
-
-## Known rot, broken code, and other findings
-
-Recorded in `KNOWN_ISSUES.md` at the repository root, not here: the list grows with
-every stage, and most entries are code bugs that outlive this documentation project.
-Add to it as you find things; tick items off as they are fixed.
-
-## Open questions
-
-None currently open. (The reference recursive-vs-curated question is settled —
-see **Decisions already made**.)
+`pynbody/docs/tutorials/tutorials.rst:1`. One canonical halo-path spelling, explained
+once.
 
 ## Definition of done
 
 `sphinx-build -W` is clean; an unmarked exception in any ipython block fails the
-build; every `tangos …` command shown also appears in `build.sh`, enforced by a
-test; every deleted URL redirects; the rebuild banner is gone; and a newcomer gets from `pip install` to a
-plotted merger history in under 20 minutes without touching raw simulation data.
+build; every `tangos …` command shown also appears in `build.sh`, enforced by a test;
+every deleted URL redirects; the rebuild banner is gone; and a newcomer gets from
+`pip install` to a plotted merger history in under 20 minutes without touching raw
+simulation data.
