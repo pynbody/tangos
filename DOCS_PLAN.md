@@ -295,6 +295,12 @@ Do not spend time rediscovering them.
 
 ## Before merging to master
 
+- [ ] **Re-enable the integration test workflow**: uncomment `pull_request:` in
+      `.github/workflows/integration-test.yaml`. It was disabled for the duration of
+      the rebuild because it builds a test database from real simulation data on every
+      PR, which no docs change warrants. Note that **stage 3 needs it back before the
+      final merge**: the database it builds is the source of the tutorial data, so
+      restore the trigger when that stage starts rather than leaving it to the end.
 - [ ] **Remove the rebuild-in-progress banner**: `html_theme_options["announcement"]`
       in `docs/conf.py` and the `.bd-header-announcement` rules in
       `docs/_static/custom.css`. It exists only while `docs-refactor-main` is
