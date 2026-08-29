@@ -90,8 +90,6 @@ nbsphinx_input_prompt = 'In [%s]:'
 nbsphinx_output_prompt = 'Out[%s]:'
 nbsphinx_execute = 'never'  # the notebook is expensive to evaluate, so we need it pre-evaluated
 
-autosummary_generate = True
-
 # numpydoc's strict docstring validation (numpydoc_validation_checks) is off by
 # default and left that way here: tangos' docstrings are known to be sparse and
 # uneven at this stage, and that is expected and not something this pass fixes.
@@ -159,6 +157,17 @@ copyright = '2018-%Y'
 author = 'tangos team'
 
 import tangos
+
+# tangos' ORM relationships are attached via SQLAlchemy `backref`, which is not
+# materialised on the class until the mappers are configured (normally the
+# first time a session is used). The curated API reference documents several
+# of these backref-only attributes explicitly by name (e.g. Simulation.timesteps,
+# SimulationObjectBase.links) -- autodoc inspects the class directly, without
+# ever opening a database, so without this call those attributes are invisible
+# to it and autodoc emits "missing attribute mentioned in :members: option".
+from sqlalchemy.orm import configure_mappers
+
+configure_mappers()
 
 version = ".".join(tangos.__version__.split(".")[:2])
 release = tangos.__version__
