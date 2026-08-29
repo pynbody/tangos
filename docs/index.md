@@ -91,3 +91,31 @@ Where next?
 
 Now that you've set up the basics, you can either [make your first _tangos_ database](first_steps.md)
 using some tutorial data or [download an existing database to perform data analysis](data_exploration.md).
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+
+first_steps
+first_steps_gadget+AHF
+first_steps_gadget+rockstar
+first_steps_gadget+subfind
+first_steps_ramses+hop
+first_steps_changa+ahf
+first_steps_eagle
+black_holes_and_crossmatching
+using_with_yt
+data_exploration
+Data exploration with python
+data_exploration_webserver
+advanced
+rdbms
+custom_properties
+tracking
+mpi
+live_calculation
+custom_input_handlers
+histogram_properties
+old
+reference/index
+```

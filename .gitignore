@@ -8,3 +8,5 @@ dist/*
 tests/test_dbs/
 .DS_store
 .pytest_cache/
+docs/_build/
+docs/reference/_autosummary/

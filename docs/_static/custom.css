@@ -1,0 +1,44 @@
+/* tangos colour palette.
+ *
+ * pynbody's docs use the sphinx-book-theme / pydata-sphinx-theme defaults
+ * (a teal primary). tangos gets its own palette instead, derived from the
+ * single colour used in the existing tangos logo (docs/images/tangos.svg,
+ * fill #bb4400 -- a burnt orange). We only override the "primary" and
+ * "secondary" theme colour variables (and the handful of variants pydata's
+ * button/link CSS derives from them) for both the light and dark themes;
+ * everything else about the theme (layout, spacing, fonts) is untouched.
+ */
+
+html[data-theme="light"] {
+  --pst-color-primary: #bb4400;
+  --pst-color-primary-bg: #f7e9e0;
+  --pst-color-primary-text: #ffffff;
+  --pst-color-primary-highlight: #923500;
+  --pst-color-primary-highlight-text: #ffffff;
+
+  --pst-color-secondary: #6b4a1f;
+  --pst-color-secondary-bg: #ece3d6;
+  --pst-color-secondary-text: #ffffff;
+  --pst-color-secondary-highlight: #55391a;
+  --pst-color-secondary-highlight-text: #ffffff;
+
+  --pst-color-inline-code: #923500;
+  --pst-color-inline-code-links: #bb4400;
+}
+
+html[data-theme="dark"] {
+  --pst-color-primary: #ff8c4b;
+  --pst-color-primary-bg: #372925;
+  --pst-color-primary-text: #14181e;
+  --pst-color-primary-highlight: #ffb388;
+  --pst-color-primary-highlight-text: #14181e;
+
+  --pst-color-secondary: #f6cc5d;
+  --pst-color-secondary-bg: #3a301a;
+  --pst-color-secondary-text: #14181e;
+  --pst-color-secondary-highlight: #ffdd85;
+  --pst-color-secondary-highlight-text: #14181e;
+
+  --pst-color-inline-code: #ffb388;
+  --pst-color-inline-code-links: #ff8c4b;
+}
