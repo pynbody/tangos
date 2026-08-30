@@ -101,8 +101,11 @@ how-to, 10% reference, 0% explanation. Nothing explains the data model — Simul
 - [ ] Start the redirect map (see **Invariants**). URLs first move here; stage 2
       moves many more and continues the same map
 
-These can be written with plain `code-block`s before stage 3's demo database exists;
-converting them to `ipython` later does not change a word of the prose.
+These should be written as `ipython` blocks as far as possible. For development
+purposes, the sample database is available at https://pub-d85a828023a1452bbd3a294bc72003f0.r2.dev/data.db
+This should enable successful recalculation of all the existing notebook cells; if not,
+pause and ask for advice.
+
 
 ### Stage 2 — collapse the first_steps combinatorics (4 d)
 
@@ -140,11 +143,8 @@ database is **already built on every PR**:
 against mini data (Zenodo 12189455), uploads `data.db` as an artifact, and verifies it
 with `tangos diff`. So decouple database *production* from docs *building*.
 
-- [ ] **Needs a human first**: measure `data.db`'s size and the wall time of
-      `INTEGRATION_TESTING=1 bash build.sh`. If it is under ~10 minutes, `pre_build`
-      could just run the build and most of this stage is unnecessary. It probably is
-      not. Zenodo returns 403 through sandboxes, so an agent cannot measure this
-- [ ] Publish that artifact as a versioned `tangos_tutorial_data.db`
+- [ ] **Needs a human first**: publish the tutorial database and the files needed to
+      recreate it in a location with better scaling than Zenodo.
 - [ ] Add `tangos.test_utils.precache_tutorial_database()`, a direct analogue of
       `pynbody.test_utils.precache_test_data()`. **Highest-leverage new code in the
       plan**: it fixes the RTD build and reproducibility, and replaces four separate
