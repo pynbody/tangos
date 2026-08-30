@@ -62,6 +62,17 @@ most cases, running the code at the point it was added.
       Connection()`. A file-based sqlite URI (`init_db('/tmp/x.db')`) is
       unaffected. Found while trying to reproduce the item above.
 
+- [ ] `config.property_modules` is a one-shot `map` object that is always
+      already exhausted by the time anyone can read it. `tangos/config.py:74`
+      ends with `property_modules = map(str.strip, property_modules)` rather
+      than materialising a list. `tangos/properties/__init__.py:570` consumes it
+      when `tangos.properties` is imported, which happens during `import
+      tangos`, so afterwards the iterator is spent. Reproduced: after `import
+      tangos.config`, `type(...)` is `map` and two successive `list()` calls
+      both return `[]`. So the setting cannot be inspected, and any second call
+      to `_import_configured_property_modules()` silently imports nothing.
+      Setting it to a real list in `config_local.py` is unaffected. Fix:
+      `property_modules = [s.strip() for s in property_modules]`.
 - [ ] `tangos.get_simulation` treats `_` as a wildcard, so almost every lookup
       by exact name is silently a pattern match. `tangos/query.py:22` switches
       to `Simulation.basename.like(id)` whenever the id contains `%` **or**
@@ -145,6 +156,14 @@ most cases, running the code at the point it was added.
       `docs/reference/api/query.rst`; the tutorial pages themselves still need
       the sweep.)
 
+- [ ] `docs/rdbms.md` gives the wrong install command for the server backends:
+      it says `pip install PyMySQL` / `pip install psycopg2-binary` rather than
+      `pip install tangos[rmdbs]`, and omits the `[rsa]` extra that
+      `setup.py:127` pins because MySQL 8's default `caching_sha2_password`
+      auth needs it. A reader following the page as written can install
+      PyMySQL and still fail to connect. This is separate from the truncated
+      sentence on the same page recorded above. `docs/installation.rst` gives
+      the correct form.
 - [ ] `tangos/input_handlers/__init__.py:7` sends readers to
       `https://pynbody.github.io/tangos/input_handlers.html`, which does not
       exist and never has — the page is `custom_input_handlers.html`. This is a

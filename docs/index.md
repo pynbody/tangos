@@ -96,6 +96,8 @@ using some tutorial data or [download an existing database to perform data analy
 :maxdepth: 2
 :hidden:
 
+installation
+configuration
 explanation/concepts
 tutorials/quickstart
 first_steps
