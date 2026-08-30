@@ -16,6 +16,10 @@ a live calculation into a column of a table without your writing any code.
  :ref:`installation` covers both. The examples here query an existing
  database, so you need no simulation files.
 
+ Code snippets can be copied from this page and pasted into python,
+ ipython or jupyter. Hover over the code and click the button that
+ appears.
+
 Starting the server
 -------------------
 

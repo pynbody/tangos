@@ -92,7 +92,8 @@ halo absorbed something substantial.
 
 "Major progenitor" here means exactly what :ref:`concepts` says it means:
 there is no flag in the database marking one progenitor as the important one.
-At each step ``calculate_for_progenitors`` takes the incoming link of largest
+At each step :meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors`
+takes the incoming link of largest
 weight -- the progenitor that contributed the most particles -- and continues
 from there. The curve above is the record of following the heaviest link nine
 times.
@@ -105,7 +106,8 @@ Many objects at one timestep
 
 The other axis is a whole population at a fixed time.
 :meth:`~tangos.core.timestep.TimeStep.calculate_all` takes the same
-calculations as ``calculate_for_progenitors`` and evaluates them for every
+calculations as :meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors`
+and evaluates them for every
 object in a timestep:
 
 .. ipython::

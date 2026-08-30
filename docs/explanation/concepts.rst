@@ -97,7 +97,7 @@ Black hole association is the same mechanism again: a black hole links to its
 halo as ``host_halo``, and the halo links back as ``BH`` and ``BH_central``, so
 ``bh['host_halo']`` reaches the host and ``halo['BH_central']`` the black
 holes. Link names and property names share one namespace, which is why both
-turn up in ``keys()``.
+turn up in :meth:`~tangos.core.halo.SimulationObjectBase.keys`.
 
 Major progenitors are not flagged
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
