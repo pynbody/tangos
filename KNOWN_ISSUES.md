@@ -62,6 +62,51 @@ most cases, running the code at the point it was added.
       Connection()`. A file-based sqlite URI (`init_db('/tmp/x.db')`) is
       unaffected. Found while trying to reproduce the item above.
 
+- [ ] `tangos.get_simulation` treats `_` as a wildcard, so almost every lookup
+      by exact name is silently a pattern match. `tangos/query.py:22` switches
+      to `Simulation.basename.like(id)` whenever the id contains `%` **or**
+      `_`, but in SQL `LIKE` an underscore matches any single character. Every
+      tutorial simulation name contains one (`tutorial_changa`), so essentially
+      all real lookups go through wildcard matching. Reproduced:
+      `tangos.get_simulation('tutorial_gadge_')` — not the name of any
+      simulation — returns `<Simulation("tutorial_gadget")>`. In an unlucky
+      case this returns the wrong simulation, or raises the "Multiple matches"
+      error for a name the user typed exactly. Only `%` should trigger the
+      `LIKE` branch.
+- [ ] Querying a database that does not exist silently creates an empty one,
+      then reports the wrong problem. `tangos/core/__init__.py:170` calls
+      `Base.metadata.create_all(_engine)` on every `init_db()` with no check
+      for whether the target existed, and for a `sqlite:///` URI that creates
+      the file. The user then gets `RuntimeError: No simulation matches ...`
+      from `tangos/query.py:29`, which points at their query rather than at
+      their `TANGOS_DB_CONNECTION`. Reproduced: with
+      `TANGOS_DB_CONNECTION=/tmp/nonexistent_demo.db`, a single
+      `get_simulation()` call leaves an 80 KB empty database on disk and
+      reports only the "No simulation matches" error. A newcomer with a
+      mistyped path hits this immediately, and the empty file they are left
+      with makes the next attempt fail the same way.
+- [ ] Reading a property's *metadata* requires pynbody, though the metadata is
+      entirely in the database. `HaloProperty.description`
+      (`tangos/core/halo_data/property.py:80-82`) goes through `self.halo.handler`
+      — the handler *instance* — and `Simulation.get_output_handler()`
+      (`tangos/core/simulation.py:36-43`) constructs it, which imports pynbody
+      at `tangos/input_handlers/pynbody.py:43-44`. Plain data access
+      (`halo['Mvir']`) instead uses `handler_class`
+      (`tangos/core/halo.py:141-145`), which resolves the class without
+      constructing it and so needs no pynbody. The consequence is that
+      `halo.get_description(...)` and `HaloProperty.x_values()` raise
+      `ModuleNotFoundError: No module named 'pynbody'` on a machine that is
+      only ever reading an existing database. Found while checking whether the
+      documentation tutorials can be built without pynbody: they cannot, purely
+      because of this path.
+- [ ] `tangos/config.py:128-131` swallows every error from `config_local.py`,
+      not just its absence. The `try: from .config_local import *` is guarded by
+      a bare `except: pass`, so a `SyntaxError` or a typo raising `NameError`
+      inside a user's `config_local.py` silently discards the whole file. The
+      user is left believing their configuration is active when none of it is,
+      with no warning. Catching `ImportError` (and letting anything else
+      propagate) would be the fix.
+
 ## Misleading or wrong documentation
 
 - [ ] `docs/custom_input_handlers.md:143` calls `.earlier` on the result of
@@ -99,6 +144,25 @@ most cases, running the code at the point it was added.
       explained nowhere. (The curated API reference now explains it once, on
       `docs/reference/api/query.rst`; the tutorial pages themselves still need
       the sweep.)
+
+- [ ] `tangos/input_handlers/__init__.py:7` sends readers to
+      `https://pynbody.github.io/tangos/input_handlers.html`, which does not
+      exist and never has — the page is `custom_input_handlers.html`. This is a
+      dead link in shipped code, independent of the documentation rebuild.
+- [ ] Which `tangos.config` settings can be changed at runtime is inconsistent
+      and undocumented. Some are read as `config.X` at the point of use and so
+      respond to a later assignment (`config.db`, `config.base`,
+      `config.min_halo_particles`, ...), while others are captured by value at
+      their consuming module's import time via `from ..config import X` and
+      silently ignore any later change — among them every `mergertree_*`
+      setting (`tangos/relation_finding/tree.py:9-13`), every `webview_*`
+      setting (`tangos/web/routes.py:3`), `DB_IMPORT_CHUNK_SIZE`
+      (`tangos/tools/db_importer.py:12`) and
+      `DEFAULT_SLEEP_BEFORE_ALLOWING_NEXT_LOCK` (`tangos/parallel_tasks/lock.py:3`).
+      A reader who learns "set `tangos.config.X = ...`" from one example will
+      find it silently does nothing for roughly half the settings. The
+      `configuration` page must state which is which; better still would be to
+      make the access pattern uniform.
 
 ## Deprecated / vestigial
 
