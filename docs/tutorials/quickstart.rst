@@ -18,7 +18,7 @@ and the halo paths that appear part-way through are introduced in
 place to look if a term or a path is puzzling.
 
 .. note:: Before you start, make sure tangos is installed and
- ``TANGOS_DB_CONNECTION`` points at the tutorial database;
+ can find the tutorial database;
  :ref:`installation` covers both. The examples here query an existing
  database, so you need no simulation files.
 
@@ -81,7 +81,7 @@ returns the same halo:
 
 .. ipython::
 
- In [1]: tangos.get_object("tutorial_changa/%384/halo_4")
+ In [1]: tangos.get_object("tutorial_changa/%832/halo_4")
 
 The three parts are the simulation, the timestep and the object. The ``%`` is a
 wildcard saving you from typing the full output name; :ref:`concepts` explains
@@ -136,6 +136,10 @@ Properties are not all single numbers. ``uvi_image`` is a rendered
 false-colour image of the halo's stars, stored as an array, and it plots like
 any other array:
 
+Figures do not appear on their own in a plain session: in ipython or a
+notebook run ``%matplotlib`` first, and in plain python call ``p.show()`` when
+you have finished a plot.
+
 .. ipython::
 
  In [1]: import pylab as p
@@ -150,7 +154,14 @@ How big is that image?
 
 The axes above are pixel numbers, which say nothing about how much of the
 universe you are looking at. Properties carry metadata as well as values, so
-ask:
+you can ask.
+
+Unlike everything else on this page, this one call needs pynbody installed:
+:meth:`~tangos.core.halo.SimulationObjectBase.get_description` asks the code
+that *would* calculate the property to describe itself, which builds the
+simulation's input handler, whereas reading a stored value never does. Without
+pynbody it raises ``ModuleNotFoundError``, while ``halo['uvi_image']`` above
+keeps working.
 
 .. ipython::
 
@@ -158,11 +169,7 @@ ask:
 
  In [2]: side
 
-The image is 15 kpc across. Unlike everything else on this page, this one call
-needs pynbody installed:
-:meth:`~tangos.core.halo.SimulationObjectBase.get_description` asks the code
-that *would* calculate the property to describe itself, which builds the
-simulation's input handler, whereas reading a stored value never does.
+The image is 15 kpc across.
 
 With the extent in hand the picture can carry physical axes:
 

@@ -79,17 +79,23 @@ you add it to your shell startup file or, better, record the setting once in a
 
 .. warning::
    **A path that does not exist does not produce an error.** If
-   ``TANGOS_DB_CONNECTION`` names an sqlite file that is not there — a typo, a
-   half-finished download, a relative path interpreted from the wrong working
-   directory — tangos creates an empty database at that path instead of
-   complaining. Your first query then fails with
+   ``TANGOS_DB_CONNECTION`` names an sqlite file that is not there — a typo, or
+   a relative path interpreted from the wrong working directory — tangos
+   creates an empty database at that path instead of complaining. Your first query then fails with
 
    .. code-block:: text
 
       RuntimeError: No simulation matches 'tutorial_changa'
 
    which points at the query rather than at the real problem, and you are left
-   with an empty file that makes the next attempt fail identically.
+   with an empty file that makes the next attempt fail identically. Check
+   ``tangos.config.db`` to see which path tangos is actually using, delete the
+   stray empty file, and try again.
+
+   A download that was interrupted rather than never started fails differently:
+   the file exists but is truncated, and tangos reports
+   ``sqlalchemy.exc.DatabaseError: (sqlite3.DatabaseError) database disk image
+   is malformed``. Delete it and fetch it again.
 
    You can recognise it in one line: :func:`tangos.all_simulations` returns an
    empty list on an empty database, whereas a real database returns at least

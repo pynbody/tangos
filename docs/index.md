@@ -14,8 +14,9 @@ You can then explore that database from python, or from a web browser:
 
 ## Start here
 
-**New to tangos?** You do not need any simulation data, or even pynbody, to
-learn what tangos does. Install it, download the ready-made tutorial database,
+**New to tangos?** You do not need any simulation data to learn what tangos
+does, and almost nothing here needs pynbody either -- only one call in the
+quick-start, which says so where it appears. Install it, download the ready-made tutorial database,
 and query it:
 
 1. [Installation](installation.rst) -- tangos and the tutorial database, in
@@ -53,14 +54,29 @@ which may be found [here](https://doi.org/10.5281/zenodo.1243070).
 ```{toctree}
 :maxdepth: 2
 :hidden:
+:caption: Setup
 
 installation
 configuration
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Tutorials
+
 explanation/concepts
 tutorials/quickstart
 tutorials/time_series
 tutorials/live_calculations
 tutorials/webserver
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Building a database
+
 first_steps
 first_steps_gadget+AHF
 first_steps_gadget+rockstar
@@ -68,19 +84,40 @@ first_steps_gadget+subfind
 first_steps_ramses+hop
 first_steps_changa+ahf
 first_steps_eagle
-black_holes_and_crossmatching
 using_with_yt
+custom_input_handlers
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Going further
+
+custom_properties
+histogram_properties
+black_holes_and_crossmatching
+tracking
+mpi
+rdbms
+advanced
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Reference
+
+live_calculation
+reference/api/index
+```
+
+```{toctree}
+:maxdepth: 1
+:hidden:
+:caption: Older material
+
 data_exploration
 Data exploration with python
 data_exploration_webserver
-advanced
-rdbms
-custom_properties
-tracking
-mpi
-live_calculation
-custom_input_handlers
-histogram_properties
 old
-reference/api/index
 ```

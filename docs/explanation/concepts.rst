@@ -22,7 +22,7 @@ A :class:`~tangos.core.simulation.Simulation` is one simulation run; a
 halo finder identified in that snapshot, plus the other kinds described below.
 
 .. note:: Before you start, make sure tangos is installed and
- ``TANGOS_DB_CONNECTION`` points at the tutorial database;
+ can find the tutorial database;
  :ref:`installation` covers both. The examples here query an existing
  database, so you need no simulation files.
 

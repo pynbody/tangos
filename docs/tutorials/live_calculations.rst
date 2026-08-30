@@ -24,7 +24,7 @@ calculation is typically far faster than the equivalent python loop.
 This page explains how to write live calculations, starting from simple
 examples and building up to links and histogram reassembly. The full syntax,
 and the complete list of built-in functions, are in
-``reference/live_calculation_language`` (forthcoming).
+:doc:`/live_calculation`.
 
 If you have not yet got a database to play with, see :doc:`quickstart`. The
 vocabulary used below -- objects, properties, links, timesteps, halo paths --
@@ -41,8 +41,8 @@ equivalent -- they produce the same calculation, and run at the same speed:
 
 .. code-block:: python
 
-    h.calculate(lambda: at(Rvir/2, dm_density_profile))
-    h.calculate("at(Rvir/2, dm_density_profile)")
+    h.calculate(lambda: at(Rvir/4, dm_density_profile))
+    h.calculate("at(Rvir/4, dm_density_profile)")
 
 For most interactive and scripted work the lambda form is the more comfortable
 of the two. It is genuine python, so your editor highlights it, matches your
@@ -72,14 +72,14 @@ be mixed freely in a single call:
 
 The examples below give both forms side by side. Everything else on this page
 applies to both, except for the wrinkles specific to each, which are described
-in ``reference/live_calculation_language`` (forthcoming).
+in :doc:`/live_calculation`.
 
 
 First steps
 -----------
 
 .. note:: Before you start, make sure tangos is installed and
- ``TANGOS_DB_CONNECTION`` points at the tutorial database;
+ can find the tutorial database;
  :ref:`installation` covers both. The examples here query an existing
  database, so you need no simulation files.
 
@@ -178,10 +178,26 @@ calculated from the already-stored ``Mvir`` and ``Rvir``:
     h.calculate(lambda: Vvir())
     h.calculate("Vvir()")
 
-The brackets are what distinguishes a live property from a stored one, so
-``h['Vvir']`` would fail where ``h.calculate(lambda: Vvir())`` succeeds. A live
-property works out for itself which stored properties it needs; you never have
-to tell it.
+``Vvir`` comes from a property module that is not installed here, so that pair
+is an illustration rather than something you can run against the tutorial
+database. The rule it illustrates is real, though, and ``t()`` -- the time at
+which an object was measured -- is a live property that is always available:
+
+.. ipython::
+
+ In [1]: h.calculate(lambda: t())
+
+The brackets are what distinguish a live property from a stored one. Ask for
+the same name as though it were stored, and there is nothing of that name in
+the database to find:
+
+.. ipython::
+ :okexcept:
+
+ In [1]: h['t']
+
+A live property works out for itself which stored properties it needs; you
+never have to tell it.
 
 Live properties can take arguments, which may be numbers, strings, stored
 properties, or whole expressions:
@@ -196,7 +212,7 @@ They can also be nested inside each other. All of the following are legitimate:
 
     h.calculate(lambda: at(5.0, dm_density_profile))
     h.calculate(lambda: at(Rhalf_V, dm_density_profile))
-    h.calculate(lambda: at(Rvir/2, dm_density_profile))
+    h.calculate(lambda: at(Rvir/4, dm_density_profile))
     h.calculate(lambda: at(5.0, ColdGasMass_encl/GasMass_encl))
 
 
@@ -223,7 +239,7 @@ a profile it is normally a physical radius in kpc:
 
 * ``at(5.0, dm_density_profile)`` is the dark matter density at 5 kpc;
 * ``at(Rhalf_V, dm_density_profile)`` is the density at the V-band half light radius;
-* ``at(Rvir/2, dm_density_profile)`` is the density at half the virial radius.
+* ``at(Rvir/4, dm_density_profile)`` is the density a quarter of the way out to the virial radius.
 
 The first argument may be a number or any expression, including a stored
 property; the second must be an array-valued property (possibly with arithmetic
@@ -267,7 +283,7 @@ can be calculated after a redirection, including further redirections:
 .. code-block:: python
 
     ts.calculate_all(lambda: earlier(10).Vvir())
-    ts.calculate_all(lambda: earlier(2).at(Rvir/2, GasMass_encl))
+    ts.calculate_all(lambda: earlier(2).at(Rvir/4, GasMass_encl))
     ts.calculate_all(lambda: match('tutorial_changa_blackholes').star_mass_profile[-1])
 
 Links that a property module has written into the database are followed the
@@ -390,7 +406,7 @@ for objects that have the named link. These are most useful negated:
 
 Note the spelling difference: the string form accepts either ``!`` or ``~`` for
 logical not, whereas the lambda form must use ``~``, since python's ``not``
-cannot be used (see ``reference/live_calculation_language``, forthcoming).
+cannot be used (see :doc:`/live_calculation`).
 
 .. versionadded:: 1.12.0
    The ``~`` spelling in the string form; older versions accept only ``!``.

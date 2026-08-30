@@ -16,7 +16,7 @@ Both of them are still single database queries against an existing tangos
 database. Nothing here opens a simulation file.
 
 .. note:: Before you start, make sure tangos is installed and
- ``TANGOS_DB_CONNECTION`` points at the tutorial database;
+ can find the tutorial database;
  :ref:`installation` covers both. The examples here query an existing
  database, so you need no simulation files.
 
@@ -80,10 +80,12 @@ of :math:`10^{10} h^{-1} M_\odot`, hence the factor below:
 
 .. ipython::
 
- In [1]: p.plot(time, 1e10*M, 'o-')
+ In [1]: p.figure()
+
+ In [2]: p.plot(time, 1e10*M, 'o-');
 
  @savefig time_series_major_progenitor_mass.png width=6in
- In [2]: p.xlabel("t/Gyr")
+ In [3]: p.xlabel("t/Gyr")
     ...: p.ylabel(r"$M/h^{-1} M_{\odot}$")
     ...: p.semilogy()
 
@@ -122,10 +124,9 @@ object in a timestep:
 
 .. ipython::
 
- @suppress
- In [1]: p.clf()
+ In [1]: p.figure()
 
- In [2]: p.plot(1e10*M, vmax, 'k.')
+ In [2]: p.plot(1e10*M, vmax, 'k.');
 
  @savefig time_series_mass_vmax.png width=6in
  In [3]: p.xlabel(r"$M/h^{-1} M_{\odot}$")
@@ -174,12 +175,11 @@ halos in the timestep.
 
 .. ipython::
 
- @suppress
- In [1]: p.clf()
+ In [1]: p.figure()
 
- In [2]: p.axhline(0.0, color="gray")
+ In [2]: p.axhline(0.0, color="gray");
 
- In [3]: p.plot(1e10*M, growth, "r.", alpha=0.2)
+ In [3]: p.plot(1e10*M, growth, "r.", alpha=0.2);
 
  @savefig time_series_mass_growth.png width=6in
  In [4]: p.semilogx()

@@ -12,13 +12,9 @@ timesteps, plots any property against any other, draws merger trees, and turns
 a live calculation into a column of a table without your writing any code.
 
 .. note:: Before you start, make sure tangos is installed and
- ``TANGOS_DB_CONNECTION`` points at the tutorial database;
+ can find the tutorial database;
  :ref:`installation` covers both. The examples here query an existing
  database, so you need no simulation files.
-
- Code snippets can be copied from this page and pasted into python,
- ipython or jupyter. Hover over the code and click the button that
- appears.
 
 Starting the server
 -------------------
@@ -42,14 +38,15 @@ more than one open at once:
 
 .. code-block:: bash
 
-  $ tangos serve --title "black holes run" 6544
+  $ tangos serve --title "black holes run" production.ini 6544
 
 Stop the server with :kbd:`Control-c`.
 
 .. note:: ``tangos serve`` is a shortcut to Pyramid's ``pserve``. The optional
-   first argument names the configuration file: ``development.ini`` (the
-   default) or ``production.ini`` for tangos' suggested production settings,
-   or a path to one of your own.
+   first positional argument names the configuration file -- ``production.ini``
+   (the default), ``development.ini``, or a path to one of your own -- and the
+   port is the *second*. That ordering is why the port has to be given after a
+   configuration file, as above, rather than on its own.
 
 What the interface gives you
 ----------------------------
@@ -65,7 +62,7 @@ The part worth singling out, because it is easy to miss and hard to match from
 a plain database browser: a timestep's table of objects takes *live
 calculation expressions* as columns. Anything you could pass to
 :meth:`~tangos.core.timestep.TimeStep.calculate_all` in
-:doc:`/tutorials/live_calculations` -- ``earlier(2).mass``, ``at(Rvir/2,
+:doc:`/tutorials/live_calculations` -- ``earlier(2).mass``, ``at(Rvir/4,
 dm_density_profile)``, a redirection through a link -- can be typed into a
 column heading and evaluated for every object in the timestep. The browser then
 becomes a way of exploring the calculation language interactively, which is
@@ -76,9 +73,9 @@ URLs you can fetch from a script rather than a browser.
 
 .. seealso::
 
-   The web interface is documented more fully in a later stage of this
-   documentation rebuild, including the merger-tree viewer and the URL API for
-   fetching data programmatically. Until then, :doc:`/tutorials/quickstart` and
+   Fuller documentation of the web interface -- the merger-tree viewer and the
+   URL API for fetching data programmatically -- is still to be written.
+   :doc:`/tutorials/quickstart` and
    :doc:`/tutorials/live_calculations` cover the same ground from python, and
    :ref:`configuration` lists the ``webview_`` settings that control image
    format, resolution and caching.
