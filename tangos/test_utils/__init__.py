@@ -98,8 +98,18 @@ def precache_tutorial_database(path=None, verbose=True):
     if verbose:
         print(f"Downloading tutorial database to {path}")
 
+    # An explicit User-Agent is required, not cosmetic. Cloudflare serves the
+    # r2.dev endpoint with bot protection that rejects urllib's default
+    # "Python-urllib/x.y" with HTTP 403, while accepting any other value --
+    # which is why this works from curl but not from a bare urlopen(). Verified
+    # by probing the endpoint with several agents.
+    request = urllib.request.Request(
+        TUTORIAL_DATABASE_URL,
+        headers={"User-Agent": "tangos test_utils (documentation build)"},
+    )
+
     try:
-        with urllib.request.urlopen(TUTORIAL_DATABASE_URL) as response, \
+        with urllib.request.urlopen(request) as response, \
                 open(partial_path, "wb") as target:
             shutil.copyfileobj(response, target)
         partial_path.replace(path)
