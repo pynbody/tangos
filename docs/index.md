@@ -96,6 +96,7 @@ using some tutorial data or [download an existing database to perform data analy
 :maxdepth: 2
 :hidden:
 
+explanation/concepts
 first_steps
 first_steps_gadget+AHF
 first_steps_gadget+rockstar

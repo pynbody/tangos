@@ -163,6 +163,15 @@ most cases, running the code at the point it was added.
       find it silently does nothing for roughly half the settings. The
       `configuration` page must state which is which; better still would be to
       make the access pattern uniform.
+- [ ] `TimeStep.trackers` also returns black holes, but
+      `docs/reference/api/objects.rst` lists `trackers` and `bhs` as sibling
+      accessors, which reads as though they were disjoint sets. `BH`
+      subclasses `Tracker` (`tangos/core/halo.py:456`) and `TimeStep.trackers`
+      is a polymorphic relationship on `Tracker` (`:493`), so every `BH` row is
+      returned by both. Confirmed on `tutorial_changa_blackholes/%960`:
+      `trackers.count()` and `bhs.count()` are both 39, and `trackers.first()`
+      is a `BH`. Either document the containment or give `trackers` a
+      tracker-only variant.
 
 ## Deprecated / vestigial
 
