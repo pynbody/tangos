@@ -38,8 +38,8 @@ Some tangos surfaces are documented elsewhere rather than on these pages:
   *python objects* behind that language; see :doc:`live_calculation`.
 - The names of the properties tangos ships with (``Mvir``, ``shrink_center``, ...)
   are listed in ``reference/builtin_properties`` (forthcoming), not here.
-- Configuration settings (``config_local.py``) are documented on a
-  ``configuration`` page (forthcoming), not as a module dump here.
+- Configuration settings (``config_local.py``) are documented on the
+  :doc:`/configuration` page, not as a module dump here.
 
 A few things are deliberately left out of the whole reference, not just moved
 elsewhere: the ``tangos.web`` Pyramid application (no user-subclassable surface;

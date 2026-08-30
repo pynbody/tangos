@@ -30,7 +30,20 @@ extensions = ['sphinx.ext.autodoc',
               'myst_parser',
               'sphinx_design',
               'sphinxarg.ext',
+              'sphinx_reredirects',
               ]
+
+# Every page URL this rebuild retires gets a redirect, because the old URLs are
+# linked from the README, from docstrings inside tangos itself, and probably from
+# published papers (see "Invariants" in DOCS_PLAN.md). The map grows with each
+# stage; stage 2, which retires six first_steps_* pages at once, is the big one.
+#
+# Keys are the old document names, without extension; values are paths relative to
+# the old page. sphinx-reredirects writes a small HTML file at each old URL.
+redirects = {
+    # Stage 1: the 21-line stub grew into a full page under tutorials/.
+    "data_exploration_webserver": "tutorials/webserver.html",
+}
 
 # ipython_savefig_dir is where `.. ipython::` @savefig figures land; ported
 # from pynbody as-is. plot_working_directory is a matplotlib.sphinxext.plot_directive
@@ -114,6 +127,9 @@ napoleon_numpy_docstring = True
 # tangos.scripts.preprocess_bh import their optional dependency at module
 # level. Mock those so autosummary can still document the modules that need
 # them, rather than installing pynbody/yt/mpi4py just to build the docs.
+# pynbody is mocked for autodoc even though it is now a real documentation
+# dependency (see setup.py): the tutorials import it at build time, but autodoc
+# should not need a working pynbody to read signatures out of tangos' own modules.
 autodoc_mock_imports = ['mpi4py', 'pypar', 'Simpy', 'pynbody']
 
 # Add any paths that contain templates here, relative to this directory.

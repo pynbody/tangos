@@ -156,6 +156,15 @@ most cases, running the code at the point it was added.
       `docs/reference/api/query.rst`; the tutorial pages themselves still need
       the sweep.)
 
+- [ ] `TimeStep.trackers` also returns black holes, though nothing says so.
+      `BH` subclasses `Tracker` (`tangos/core/halo.py:456`) and
+      `TimeStep.trackers` (`:493`) is a polymorphic relationship on `Tracker`,
+      so `BH` rows come back too. Reproduced on
+      `tutorial_changa_blackholes/%960`: `trackers.count()` and `bhs.count()`
+      are both 39, and `trackers.first()` is a `BH`.
+      `docs/reference/api/objects.rst` lists `trackers` and `bhs` as sibling
+      accessors, which reads as though they were disjoint. Either document the
+      containment or give `trackers` a filter that excludes black holes.
 - [ ] `docs/rdbms.md` gives the wrong install command for the server backends:
       it says `pip install PyMySQL` / `pip install psycopg2-binary` rather than
       `pip install tangos[rmdbs]`, and omits the `[rsa]` extra that

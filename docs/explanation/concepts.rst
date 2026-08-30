@@ -21,6 +21,15 @@ A :class:`~tangos.core.simulation.Simulation` is one simulation run; a
 ``redshift`` and ``time_gyr``. Each timestep contains *objects*: the halos a
 halo finder identified in that snapshot, plus the other kinds described below.
 
+.. note:: Before you start, make sure tangos is installed and
+ ``TANGOS_DB_CONNECTION`` points at the tutorial database;
+ :ref:`installation` covers both. The examples here query an existing
+ database, so you need no simulation files.
+
+ Code snippets can be copied from this page and pasted into python,
+ ipython or jupyter. Hover over the code and click the button that
+ appears.
+
 .. ipython::
 
  In [1]: import tangos
@@ -238,6 +247,9 @@ relationship.
    database but cannot ask what its units are.
 
 .. seealso::
+
+   :doc:`/tutorials/quickstart` puts all of this to work: it finds a halo,
+   reads its properties and plots an image of a galaxy.
 
    :doc:`/reference/api/objects` for the classes named here, and
    :doc:`/reference/api/query` for the full halo-path syntax table.

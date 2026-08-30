@@ -9,8 +9,8 @@ Every tangos database holds the same chain of objects: a
 :class:`~tangos.core.simulation.Simulation` contains
 :class:`~tangos.core.timestep.TimeStep`\ s, each of which contains halos (and
 BHs, groups, trackers, phantoms), each of which carries properties and links to
-other objects. This page documents that chain. For the bigger picture, see the
-data-model explanation (forthcoming).
+other objects. This page documents that chain. For the bigger picture, see
+:ref:`concepts`.
 
 .. note::
    Despite appearances, ``tangos.core.Halo`` does **not** exist.

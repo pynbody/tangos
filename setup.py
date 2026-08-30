@@ -54,6 +54,13 @@ docs_require = [
     'myst-parser',
     'sphinx-design',    # for stage 2's tab-set tutorial steps
     'sphinx-argparse',  # for stage 5's CLI reference
+    'sphinx-reredirects',  # redirects for pages that have moved; see docs/conf.py
+    # pynbody IS needed to build the docs, despite the comment above: asking a
+    # property to describe itself (get_description, x_values) constructs the
+    # simulation's input handler, which imports pynbody, and the tutorials do
+    # that. Reading stored values does not. It is a pure wheel, so this costs
+    # a download and no compilation. See KNOWN_ISSUES.md.
+    'pynbody',
     ]
 
 import codecs
