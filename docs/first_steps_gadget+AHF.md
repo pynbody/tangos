@@ -7,7 +7,7 @@ Initial set up
 This tutorial imports a gadget-run simulation with an [AHF](http://popia.ft.uam.es/AHF/Download.html)
 halo catalogue and its associated merger tree information.
 
-Make sure you have followed the [initial set up instructions](index.md).
+Make sure you have followed the [initial set up instructions](installation.rst).
 
 Then download the raw simulation data
 required for this tutorial. You need two files:

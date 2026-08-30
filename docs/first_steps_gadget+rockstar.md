@@ -7,7 +7,7 @@ Initial set up
 This tutorial imports a gadget-run simulation with a [Rockstar](https://bitbucket.org/gfcstanford/rockstar/)
 halo catalogue and [consistent-trees](https://bitbucket.org/pbehroozi/consistent-trees) merger information.
 
-Make sure you have followed the [initial set up instructions](index.md).
+Make sure you have followed the [initial set up instructions](installation.rst).
 
 Then download the raw simulation data
 required for this tutorial. You need two files:

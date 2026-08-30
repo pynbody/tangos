@@ -4,7 +4,7 @@ Tangos Tutorial – Gadget+SubFind
 Initial set up
 --------------
 
-Make sure you have followed the [initial set up instructions](index.md). Then download the
+Make sure you have followed the [initial set up instructions](installation.rst). Then download the
 [raw simulation data](https://zenodo.org/record/5155467/files/tutorial_gadget.tar.gz?download=1) required for this tutorial.
 Unpack the tar file either in your home folder or the folder that you pointed the `TANGOS_SIMULATION_FOLDER` environment
 variable to.
