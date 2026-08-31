@@ -9,16 +9,31 @@ checked off as they are fixed. Each item below was verified by reading and, in
 most cases, running the code at the point it was added.
 
 ## Major problems with documentation
-- [ ] `live_calculations.rst` section on "Live properties" is problematic because
+- [x] `live_calculations.rst` section on "Live properties" is problematic because
       it leads on the exception rather than the rule. That is `t()`, `z()` etc are
       weird live properties that actually access stored information (albeit in the
       timestep, not the object). And the one "normal" example given doesn't
       actually exist (`Vvir()`). Proposed solution: implement `Vvir()` live property
       within tangos' default shipped live properties. Lead on that, then mention
       `z()`, `t()` etc and note that they are live properties because they're not
-      literally stored with the object, even though they are stored.
+      literally stored with the object, even though they are stored. Fixed:
+      `Vvir` is now shipped as a live property in `tangos/properties/derived.py`,
+      and the documentation section has been rewritten accordingly.
 
 ## Broken code
+
+- [ ] `tests/test_live_calculation.py` is order-dependent and fails
+      intermittently under `pytest-random-order`, which CI uses
+      (`.github/workflows/build-test.yaml:41`). The tests share one database
+      built in `setup_module`, and several mutate it, so some orderings leave
+      later tests without the rows they expect. Reproduced on a checkout that
+      predates the `Vvir` work, with `--random-order-seed=3`: four failures,
+      including `test_property_redirection` and `test_nested_abs_at_function`,
+      reporting `NoResultsError: Calculation BH.BH_mass returned no results`
+      and the equivalent for `abs(at(3.0,dummy_property_2))`. Over ten random
+      orderings, five runs failed. This is pre-existing and unrelated to any
+      documentation change; it means a red CI run on this file may be
+      ordering, not a real regression.
 
 - [ ] `tangos.getdb` raises `NameError` when called. It is exported in
       `tangos.query.__all__` (and so is `tangos.getdb`), but the branch that

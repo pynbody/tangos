@@ -579,4 +579,4 @@ def _import_configured_property_modules():
         module.load()
 
 _import_configured_property_modules()
-from . import intrinsic, live_profiles, pynbody, yt
+from . import derived, intrinsic, live_profiles, pynbody, yt

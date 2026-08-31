@@ -154,8 +154,24 @@ Live properties
 
 Some quantities are not stored in the database at all, but can be computed on
 demand from things that are. These are called *live properties*, and they are
-written like function calls. For example ``t()``, ``z()`` and ``a()`` return
-the time, redshift and scalefactor of the snapshot the object belongs to:
+written like function calls. ``Vvir()``, the circular velocity at the virial
+radius, is a typical example: it is not itself stored, but is computed on
+demand from the already-stored ``Mvir`` and ``Rvir``:
+
+.. ipython::
+
+ In [1]: h.calculate(lambda: Vvir())
+
+ In [2]: h.calculate("Vvir()")
+
+The set of live properties available depends on which property modules you
+have installed: they are defined by
+:class:`~tangos.properties.LivePropertyCalculation` classes, and you can write
+your own (see :doc:`/custom_properties`).
+
+Not every live property works this way, though. ``t()``, ``z()`` and ``a()``
+return the time, redshift and scalefactor of the snapshot an object belongs
+to:
 
 .. ipython::
 
@@ -167,25 +183,11 @@ the time, redshift and scalefactor of the snapshot the object belongs to:
 
  In [4]: time[:5]
 
-The set of live properties available depends on which property modules you have
-installed: they are defined by
-:class:`~tangos.properties.LivePropertyCalculation` classes, and you can write
-your own (see :doc:`/custom_properties`). A common example is a virial velocity
-calculated from the already-stored ``Mvir`` and ``Rvir``:
-
-.. code-block:: python
-
-    h.calculate(lambda: Vvir())
-    h.calculate("Vvir()")
-
-``Vvir`` comes from a property module that is not installed here, so that pair
-is an illustration rather than something you can run against the tutorial
-database. The rule it illustrates is real, though, and ``t()`` -- the time at
-which an object was measured -- is a live property that is always available:
-
-.. ipython::
-
- In [1]: h.calculate(lambda: t())
+These are live properties too, but not because the information is unstored --
+it is stored, just not *on the object*. The time, redshift and scalefactor
+belong to the timestep the object belongs to, rather than to the object
+itself, so they still have to be written as function calls rather than looked
+up as ``h['t']``.
 
 The brackets are what distinguish a live property from a stored one. Ask for
 the same name as though it were stored, and there is nothing of that name in
