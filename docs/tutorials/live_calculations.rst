@@ -169,7 +169,16 @@ have installed: they are defined by
 :class:`~tangos.properties.LivePropertyCalculation` classes, and you can write
 your own (see :doc:`/custom_properties`).
 
-Not every live property works this way, though. ``t()``, ``z()`` and ``a()``
+Live properties can take arguments, which may be numbers, strings, stored
+properties, or whole expressions:
+
+.. ipython::
+
+ In [1]: h.calculate(lambda: at(5.0, dm_density_profile))
+
+This interpolates the value of an array at a specified physical location; see the section on arrays below.
+
+Not every live property calculates anything, though. ``t()``, ``z()`` and ``a()``
 return the time, redshift and scalefactor of the snapshot an object belongs
 to:
 
@@ -197,25 +206,6 @@ the database to find:
  :okexcept:
 
  In [1]: h['t']
-
-A live property works out for itself which stored properties it needs; you
-never have to tell it.
-
-Live properties can take arguments, which may be numbers, strings, stored
-properties, or whole expressions:
-
-.. ipython::
-
- In [1]: h.calculate(lambda: at(5.0, dm_density_profile))
-
-They can also be nested inside each other. All of the following are legitimate:
-
-.. code-block:: python
-
-    h.calculate(lambda: at(5.0, dm_density_profile))
-    h.calculate(lambda: at(Rhalf_V, dm_density_profile))
-    h.calculate(lambda: at(Rvir/4, dm_density_profile))
-    h.calculate(lambda: at(5.0, ColdGasMass_encl/GasMass_encl))
 
 
 Arrays and profiles
