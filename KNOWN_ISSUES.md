@@ -8,6 +8,16 @@ docs page that surfaced them is finished. Items are grouped by kind and
 checked off as they are fixed. Each item below was verified by reading and, in
 most cases, running the code at the point it was added.
 
+## Major problems with documentation
+- [ ] `live_calculations.rst` section on "Live properties" is problematic because
+      it leads on the exception rather than the rule. That is `t()`, `z()` etc are
+      weird live properties that actually access stored information (albeit in the
+      timestep, not the object). And the one "normal" example given doesn't
+      actually exist (`Vvir()`). Proposed solution: implement `Vvir()` live property
+      within tangos' default shipped live properties. Lead on that, then mention
+      `z()`, `t()` etc and note that they are live properties because they're not
+      literally stored with the object, even though they are stored.
+
 ## Broken code
 
 - [ ] `tangos.getdb` raises `NameError` when called. It is exported in
