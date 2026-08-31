@@ -1,4 +1,4 @@
-.. Checked and edited by AP 31/08/26 - one outstanding issue added to KNOWN_ISSUES
+.. Checked and edited by AP 31/08/26 
 
 .. _live_calculations:
 
