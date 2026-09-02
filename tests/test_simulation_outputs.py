@@ -59,6 +59,10 @@ def test_timestep_properties():
     npt.assert_allclose(props['time_gyr'],2.173236752357068)
     npt.assert_allclose(props['redshift'], 2.96382819878)
 
+    # these must be plain floats, not pynbody SimArrays; psycopg2 refuses to store the latter
+    assert isinstance(props['time_gyr'], float)
+    assert isinstance(props['redshift'], float)
+
 def test_enumerate_objects():
     halos = list(output_manager.enumerate_objects("tiny.000640"))
     assert len(halos)==9
