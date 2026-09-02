@@ -7,6 +7,7 @@ from pynbody.array.shared import (
 )
 from pynbody.halo.portable import map_arrays
 
+from .. import log
 from ..async_message import AsyncProcessedMessage
 from ..message import Message
 
@@ -29,6 +30,13 @@ class ReturnSharedObjectCatalog(Message):
         # Two passes: the first gets the arrays into shared memory, which the second requires before it
         # can reduce them to picklable references.
         shared_state = map_arrays(halo_catalogue.get_portable_state(), _as_shared_memory_array)
+
+        # Report the volume, so that moving a large catalogue into shared memory is not silent.
+        copied = []
+        map_arrays(shared_state, copied.append)
+        log.logger.info("Halo catalogue occupies %.1f MB of shared memory",
+                        sum(ar.nbytes for ar in copied) / 1e6)
+
         message = cls(map_arrays(shared_state, to_shared_reference))
         message._shared_state = shared_state
         return message
@@ -40,9 +48,15 @@ class ReturnSharedObjectCatalog(Message):
 
 
 def _as_shared_memory_array(array):
-    """Return *array* if it is already backed by shared memory, otherwise a copy of it that is"""
-    if hasattr(array, "_shared_fname"):
-        return array
+    """Return a copy of *array* that is backed by shared memory.
+
+    The copy is unconditional, because nothing reaching here is ever already shared: a halo
+    catalogue derives its index lists (and the arrays behind its properties) in its own process's
+    heap, and the portable state presents them as plain numpy arrays regardless. The copy is
+    therefore what makes the catalogue visible to the other processes at all, rather than an
+    avoidable duplication; it costs one transient copy of the index list per catalogue, since the
+    resulting message is cached by the snapshot queue and the source catalogue is then released.
+    """
     shared = pynbody.array.shared.make_shared_array(array.shape, array.dtype, False)
     shared[...] = array
     return shared
