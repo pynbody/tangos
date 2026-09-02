@@ -94,13 +94,18 @@ class PynbodySnapshotQueue:
         return self.current_handler.get_catalogue(self.current_timestep, type_tag)
 
     def get_shared_catalogue(self, type_tag):
+        """Get a message describing the specified catalogue, with its contents in shared memory.
+
+        The message is cached, both so that the transfer to shared memory happens only once, and so that
+        the shared memory stays alive for as long as the snapshot is in use."""
         if type_tag in self.current_portable_catalogues:
             log.logger.debug("Pynbody server: cache hit for catalogue %r", type_tag)
-            return self.current_portable_catalogues[type_tag]
         else:
+            from .shared_object_catalogue import ReturnSharedObjectCatalog
             log.logger.info("Generating a shared object catalogue for %rs", type_tag)
-            self.current_portable_catalogues[type_tag] = self.get_catalogue(type_tag)
-            return self.current_portable_catalogues[type_tag]
+            self.current_portable_catalogues[type_tag] = \
+                ReturnSharedObjectCatalog.from_halo_catalogue(self.get_catalogue(type_tag))
+        return self.current_portable_catalogues[type_tag]
 
     def build_tree(self):
         if not hasattr(self.current_snapshot, "kdtree"):

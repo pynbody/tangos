@@ -1,73 +1,52 @@
-import pickle
-
 import pynbody.array.shared
-import pynbody.halo.details.particle_indices
+import pynbody.halo
+from pynbody.array.shared import (
+    SharedArrayReference,
+    from_shared_reference,
+    to_shared_reference,
+)
+from pynbody.halo.portable import map_arrays
 
 from ..async_message import AsyncProcessedMessage
 from ..message import Message
-from . import transfer_array
 
-
-class PortableCatalogue(pynbody.halo.HaloCatalogue):
-    def __init__(self, sim, number_mapper, particle_indices: pynbody.halo.details.particle_indices.HaloParticleIndices):
-        super().__init__(sim, number_mapper=number_mapper)
-        self._index_lists = particle_indices
-
-    def get_index_list(self, halo_number):
-        return self._index_lists.get_particle_index_list_for_halo(self.number_mapper.number_to_index(halo_number))
 
 class ReturnSharedObjectCatalog(Message):
-    def __init__(self, halo_catalogue = None, number_mapper=None, indices = None):
-        assert halo_catalogue is None or (number_mapper is None and indices is None)
-        assert halo_catalogue is not None or (number_mapper is not None and indices is not None)
-        if halo_catalogue is not None:
-            halo_catalogue.load_all()
-            if halo_catalogue.number_mapper is None or halo_catalogue._index_lists is None:
-                raise ValueError("Tangos doesn't know how to make a portable catalogue from this halo catalogue")
-            index_lists = halo_catalogue._index_lists
-            index_lists.particle_index_list = self._as_shared_memory_array(index_lists.particle_index_list)
-            index_lists.particle_index_list_boundaries = self._as_shared_memory_array(index_lists.particle_index_list_boundaries)
+    """Transmits a halo catalogue to other processes, carrying its contents in shared memory.
 
-            self.number_mapper = halo_catalogue.number_mapper
-            self._index_lists = halo_catalogue._index_lists
-        else:
-            self.number_mapper = number_mapper
-            self._index_lists = indices
-
-        super().__init__()
+    The catalogue is described by its portable state (see
+    :meth:`pynbody.halo.HaloCatalogue.get_portable_state`), a structure of numpy arrays and python
+    primitives. Every array in it is placed in shared memory and replaced by a reference, so the message
+    itself stays small and neither end needs to know what any individual array is for.
+    """
 
     @classmethod
-    def _as_shared_memory_array(cls, array):
-        if hasattr(array, "_shared_fname"):
-            return array
-        else:
-            shared = pynbody.array.shared.make_shared_array(array.shape, array.dtype, False)
-            shared[:] = array
-            return shared
+    def from_halo_catalogue(cls, halo_catalogue: pynbody.halo.HaloCatalogue):
+        """Create a message describing *halo_catalogue*, with its arrays copied into shared memory.
 
-    def attach_to_simulation(self, sim):
-        return PortableCatalogue(sim, self.number_mapper, self._index_lists)
+        The returned message keeps those arrays alive, so it must be retained for as long as any
+        recipient may still be using the catalogue."""
+        # Two passes: the first gets the arrays into shared memory, which the second requires before it
+        # can reduce them to picklable references.
+        shared_state = map_arrays(halo_catalogue.get_portable_state(), _as_shared_memory_array)
+        message = cls(map_arrays(shared_state, to_shared_reference))
+        message._shared_state = shared_state
+        return message
 
-    @classmethod
-    def deserialize(cls, source, message):
-        number_mapper = pickle.loads(message)
-        index_list = transfer_array.receive_array(source, use_shared_memory=True)
-        index_list_boundaries = transfer_array.receive_array(source, use_shared_memory=True)
-        indices = pynbody.halo.details.particle_indices.HaloParticleIndices(index_list, index_list_boundaries)
-        return cls(number_mapper = number_mapper, indices = indices)
+    def attach_to_simulation(self, sim) -> pynbody.halo.HaloCatalogue:
+        """Recreate the catalogue described by this message, attached to the specified simulation"""
+        state = map_arrays(self.contents, from_shared_reference, types=SharedArrayReference)
+        return pynbody.halo.HaloCatalogue.from_portable_state(state, sim)
 
-    def serialize(self):
-        return pickle.dumps(self.number_mapper)
 
-    def send(self, destination):
-        # send envelope
-        super().send(destination)
+def _as_shared_memory_array(array):
+    """Return *array* if it is already backed by shared memory, otherwise a copy of it that is"""
+    if hasattr(array, "_shared_fname"):
+        return array
+    shared = pynbody.array.shared.make_shared_array(array.shape, array.dtype, False)
+    shared[...] = array
+    return shared
 
-        # send contents
-        transfer_array.send_array(self._index_lists.particle_index_list, destination,
-                                  use_shared_memory=True)
-        transfer_array.send_array(self._index_lists.particle_index_list_boundaries, destination,
-                                  use_shared_memory=True)
 
 class RequestSharedObjectCatalogue(AsyncProcessedMessage):
     def __init__(self, object_typetag):
@@ -85,8 +64,7 @@ class RequestSharedObjectCatalogue(AsyncProcessedMessage):
 
     def process_async(self):
         from . import snapshot_queue
-        object_ar = snapshot_queue._server_queue.get_shared_catalogue(self.type_tag)
-        ReturnSharedObjectCatalog(halo_catalogue=object_ar).send(self.source)
+        snapshot_queue._server_queue.get_shared_catalogue(self.type_tag).send(self.source)
 
 def get_shared_object_catalogue_from_server(sim, typetag, server_id):
     """Get the server to create and send us a shared object catalogue through the parallel"""

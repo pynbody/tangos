@@ -420,16 +420,18 @@ def test_transmit_receive_portable_catalogue():
 
     if pt.backend.rank()==1:
 
-        obj_cat = shared_object_catalogue.ReturnSharedObjectCatalog(halos)
+        obj_cat = shared_object_catalogue.ReturnSharedObjectCatalog.from_halo_catalogue(halos)
         obj_cat.send(2)
 
-        assert halos._index_lists.particle_index_list is not None
-        assert hasattr(halos._index_lists.particle_index_list, '_shared_fname')
+        # the catalogue being transmitted is left alone; only the copy in shared memory is affected
+        assert not hasattr(halos._index_lists.particle_index_list, '_shared_fname')
 
     else:
         halos_remote = shared_object_catalogue.ReturnSharedObjectCatalog.receive(1).attach_to_simulation(sim)
         for id_ in np.unique(object_id_per_particle):
             assert (halos[id_]['iord'] == halos_remote[id_]['iord']).all()
+
+        assert halos_remote.get_properties_all_halos().keys() == halos.get_properties_all_halos().keys()
 
         assert hasattr(halos_remote._index_lists.particle_index_list, '_shared_fname')
 
