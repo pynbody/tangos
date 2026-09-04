@@ -14,6 +14,20 @@ import sys
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
 
+# Force the non-interactive Agg backend before anything else touches
+# matplotlib. IPython.sphinxext.ipython_directive normally does this itself
+# (via ipython_mplbackend below), but its guard against doing so twice checks
+# `'matplotlib.backends' not in sys.modules` -- and on current matplotlib that
+# submodule is already imported as a side effect of `import matplotlib`, so
+# the guard is always false and the directive silently skips setting the
+# backend. Without this, the first figure created during the build resolves
+# to the platform's interactive backend (e.g. macosx), which then crashes
+# with `NotImplementedError: Implement enable_gui in a subclass` because the
+# ipython directive's embedded shell doesn't support a GUI event loop.
+import matplotlib
+
+matplotlib.use('agg')
+
 # -- General configuration -----------------------------------------------------
 
 extensions = ['sphinx.ext.autodoc',
