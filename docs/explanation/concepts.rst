@@ -116,8 +116,8 @@ holes:
     ...:     print(f"{link.relation.text:16s} {link.weight:8.4f}  {link.halo_to.path}")
     ...:
 
- Link names and property names share one namespace, which is why both
-turn up in :meth:`~tangos.core.halo.SimulationObjectBase.keys`.
+Link names and property names share one namespace, which is why both turn up
+in :meth:`~tangos.core.halo.SimulationObjectBase.keys`.
 
 Major progenitors are not flagged
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

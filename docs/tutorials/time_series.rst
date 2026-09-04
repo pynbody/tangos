@@ -104,6 +104,94 @@ times.
 :meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_descendants` is the
 mirror image, following links forwards in time instead.
 
+What the branch leaves out
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Following the heaviest link is a choice, and it discards everything else the
+tree knows. ``match_reduce(target, quantity, reduction)`` reaches every
+progenitor at a given timestep at once and reduces over them, so you can ask
+what the branch is a fraction *of*:
+
+.. ipython::
+
+ In [1]: halo.calculate(lambda: earlier(7).mass)
+
+ In [2]: halo.calculate(lambda: match_reduce('tutorial_gadget/snapshot_013', mass, 'sum'))
+
+ In [3]: halo.calculate(lambda: match_reduce('tutorial_gadget/snapshot_013', mass, 'max'))
+
+Seven steps back -- ``snapshot_013``, inside the range of the plot above --
+this halo has four progenitors. The one the branch follows holds under a third
+of the mass already assembled, and, more surprisingly, it is not the most
+massive of the four. That is worth pausing on, because it is the difference
+between two things that sound alike: the branch follows the heaviest *link*,
+the progenitor sharing the most particles, which is not necessarily the most
+massive *halo*.
+
+To see the whole tree rather than one timestep of it, ask for the progenitors
+directly. :class:`~tangos.relation_finding.multi_hop.MultiHopAllProgenitorsStrategy`
+returns every object that leads to this halo, at every timestep:
+
+.. ipython::
+
+ In [1]: import numpy as np
+
+ In [2]: from tangos.relation_finding import MultiHopAllProgenitorsStrategy
+
+ In [3]: progenitors = MultiHopAllProgenitorsStrategy(halo).all()
+
+ In [4]: len(progenitors)
+
+Forty-three objects, where the branch had nine. Their masses and times plot
+straight over the curve you already have:
+
+.. ipython::
+
+ In [1]: t_all = np.array([q.timestep.time_gyr for q in progenitors])
+    ...: M_all = np.array([q['mass'] for q in progenitors])
+
+ In [2]: t_step = np.unique(t_all)
+    ...: M_step = np.array([M_all[t_all == ti].sum() for ti in t_step])
+
+ In [3]: p.figure()
+
+ In [4]: p.plot(t_all, 1e10*M_all, 'o', color='0.7', label="all progenitors");
+    ...: p.plot(t_step, 1e10*M_step, 'r^--', label="summed over the tree");
+    ...: p.plot(time, 1e10*M, 'ko-', label="major progenitor branch");
+
+ @savefig time_series_all_progenitors.png width=6in
+ In [5]: p.xlabel("t/Gyr")
+    ...: p.ylabel(r"$M/h^{-1} M_{\odot}$")
+    ...: p.semilogy()
+    ...: p.legend(loc="lower right")
+    ...: p.tight_layout()
+
+The black curve is the plot from the previous section. The grey points are the
+objects it never visits, and the red curve totals the tree at each step. Early
+on the two curves differ by a factor of about two: read as a history of how
+much material had assembled, the major progenitor branch understates it, and
+the gap closes only as the tree narrows towards the present.
+
+Mergers themselves can be extracted as events.
+:func:`~tangos.examples.mergers.get_mergers_of_major_progenitor` walks the
+branch and returns the redshift and mass ratio of everything that joined it:
+
+.. ipython::
+
+ In [1]: from tangos.examples.mergers import get_mergers_of_major_progenitor
+
+ In [2]: z, ratio, objects = get_mergers_of_major_progenitor(halo)
+
+ In [3]: len(z)
+
+ In [4]: ratio.min(), z[np.argmin(ratio)]
+
+Fifteen mergers over nine snapshots, so this history is not smooth accretion.
+The smallest ratio is below one, which is to say that at :math:`z \approx 2.2`
+the object arriving was heavier than the branch it joined -- another way of
+seeing that "major progenitor" is a statement about links, not about which
+halo was biggest.
+
 Many objects at one timestep
 ----------------------------
 
