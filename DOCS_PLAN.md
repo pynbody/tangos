@@ -359,7 +359,12 @@ These span PRs and are easy to break one stage at a time.
 
 - **Every deleted page URL gets a redirect.** The six `first_steps_*.html` URLs are
   linked from the README and probably from published papers.
-- **`sphinx-build -W` stays passing.**
+- **`sphinx-build -W` stays passing.** Check it on Python 3.13, which is what
+  Read the Docs uses (`.readthedocs.yaml`), not only on whatever is to hand: an
+  invalid escape sequence such as `"$M_\odot$"` is a `DeprecationWarning` on
+  3.11, and so silently ignored, but a `SyntaxWarning` on 3.12+, which the
+  ipython directive turns into a build failure. Write LaTeX in labels as a raw
+  string — `r"$M_\odot$"` — as the existing figures do.
 - **Every `tangos …` command shown in the docs also appears in `build.sh`**, enforced
   by a test, from stage 3 onward.
 - **An unmarked exception in any `.. ipython::` block fails the build**, from stage 3

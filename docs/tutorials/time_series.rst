@@ -306,8 +306,8 @@ Reaching across requires using the ``match`` redirection. For example
  In [3]: p.plot(stellar_mass_no_bh, stellar_mass_with_bh, 'k.')
 
  @savefig matched_stellar_masses.png width=6in
- In [4]: p.xlabel("stellar mass without BHs / $M_\odot$")
-    ...: p.ylabel("stellar mass with BHs / $M_\odot$")
+ In [4]: p.xlabel(r"stellar mass without BHs / $M_\odot$")
+    ...: p.ylabel(r"stellar mass with BHs / $M_\odot$")
     ...: p.plot([1e6,1e12], [1e6,1e12], 'r:')
     ...: p.xlim(1e7,1e11); p.ylim(1e7,1e11)
     ...: p.loglog()
