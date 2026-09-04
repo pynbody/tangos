@@ -114,7 +114,7 @@ found in a specified snapshot:
 
  In [1]: halo.calculate(lambda: earlier(7).mass)
 
- In [2]: halo.calculate(lambda: at('tutorial_gadget/snapshot_013').mass) # <- the same
+ In [2]: halo.calculate(lambda: match('tutorial_gadget/snapshot_013').mass) # <- the same
 
 Both these approaches follow the heaviest link at each step. That is not always the
 right choice; ``match_reduce(target, quantity, reduction)`` reaches every
