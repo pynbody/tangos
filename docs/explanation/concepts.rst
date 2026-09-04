@@ -125,7 +125,7 @@ Major progenitors are not flagged
 One consequence of the link concept is **there is no "main progenitor" flag anywhere in
 tangos.** The main progenitor is simply the progenitor link of largest weight. You
 use higher-level methods to extract that kind of information. At its simplest, 
-objects have a `previous` and a `next` attribute, which follow the heaviest link in 
+objects have a ``previous`` and a ``next`` attribute, which follow the heaviest link in 
 either time direction:
 
 .. ipython::
