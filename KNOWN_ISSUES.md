@@ -228,6 +228,10 @@ most cases, running the code at the point it was added.
 
 ## Deprecated / vestigial
 
+- [ ] Consider changing `.keys()` on halos to return only one instance of each
+      key, even where there are multiple links etc. This matches the existing dict-style
+      behaviour: the key is passed *once* to `__getitem__`, the multiple values 
+      are returned in one shot.
 - [ ] **Replace all remaining `get_halo` references with `get_object`.** The
       project prefers `get_object` everywhere now (`get_halo` is kept as a
       working alias, not marked deprecated, because the tutorials still teach
