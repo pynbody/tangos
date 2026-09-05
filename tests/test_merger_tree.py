@@ -41,15 +41,22 @@ def setup_module():
     generator.link_last_halos()
 
     # these properties are present on all halos except halo 3 of ts1, so that the handling
-    # of missing values can be tested for each type of column. big_id is deliberately too
-    # large to survive conversion to floating point.
+    # of missing values can be tested for a float, an integer and an array column.
+    # NB the integer property must fit in a 32 bit integer, since HaloProperty.data_int is
+    # a plain Integer column, which is only dynamically sized on sqlite.
     for ts_number in range(1, 7):
         for halo in tangos.get_timestep("sim/ts%d" % ts_number).halos:
             if ts_number == 1 and halo.halo_number == 3:
                 continue
             halo["Mvir"] = 1e10 * float(halo.NDM)
-            halo["big_id"] = np.iinfo(np.int64).max - 10 - halo.halo_number
+            halo["int_prop"] = 1000 + halo.halo_number
             halo["profile"] = np.arange(4) * float(halo.NDM)
+
+    # finder_id is a BigInteger, so it can hold identifiers too large to survive a round
+    # trip through floating point; give ts1 such identifiers to check they are preserved
+    for halo in tangos.get_timestep("sim/ts1").halos:
+        halo.finder_id = np.iinfo(np.int64).max - 10 - halo.halo_number
+
     tangos.core.get_default_session().commit()
 
     # a second simulation containing black holes, to verify that trees are not specific
@@ -265,20 +272,32 @@ def test_calculate_all_gap_in_float_column():
     assert not np.isnan(np.delete(mvir, gap)).any()
 
 def test_calculate_all_gap_in_integer_column():
-    """A gap in an integer column is marked by None, as promoting to float would lose
-    precision on the large identifiers tangos supports"""
+    """A gap in an integer column is marked by None, since promoting the column to float
+    to make room for NaN would lose precision on large identifiers"""
     mt = tree.MergerTree(tangos.get_halo("sim/ts6/2"))
     gap = mt.index(tangos.get_halo("sim/ts1/3"))
 
-    big_id, = mt.calculate_all("big_id")
+    int_prop, = mt.calculate_all("int_prop")
 
-    assert len(big_id) == len(mt)
-    assert big_id.dtype == object
-    assert big_id[gap] is None
+    assert len(int_prop) == len(mt)
+    assert int_prop.dtype == object
+    assert int_prop[gap] is None
     for i, obj in enumerate(mt.objects):
         if i != gap:
-            # exact, which would not be the case had the column been promoted to float
-            assert big_id[i] == np.iinfo(np.int64).max - 10 - obj.halo_number
+            assert int_prop[i] == 1000 + obj.halo_number
+
+def test_calculate_all_preserves_large_integers():
+    """Integer columns keep their exact values, which float promotion would destroy"""
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+    finder_id, = mt.calculate_all("finder_id()")
+
+    assert finder_id.dtype == np.int64
+    for i, obj in enumerate(mt.objects):
+        assert finder_id[i] == obj.finder_id
+        # the ts1 identifiers are chosen to be beyond the reach of float64
+        # (NB done in python ints, since the round trip overflows int64)
+        if obj.timestep.extension == "ts1":
+            assert int(finder_id[i]) != int(float(int(finder_id[i])))
 
 def test_calculate_all_gap_in_array_column():
     """A gap in an array-valued column is marked by None, rather than by an array of NaNs
@@ -298,10 +317,10 @@ def test_calculate_all_gap_in_array_column():
 def test_calculate_all_columns_without_gaps_are_typed():
     """Without gaps, columns are converted exactly as TimeStep.calculate_all would"""
     mt = tree.MergerTree(tangos.get_halo("sim/ts6/1")) # contains no incomplete halo
-    mvir, big_id, profile = mt.calculate_all("Mvir", "big_id", "profile")
+    mvir, int_prop, profile = mt.calculate_all("Mvir", "int_prop", "profile")
 
     assert mvir.dtype == np.float64
-    assert big_id.dtype == np.int64
+    assert int_prop.dtype == np.int64
     assert profile.shape == (len(mt), 4)
     assert profile.dtype == np.float64
 
@@ -310,11 +329,11 @@ def test_repeated_calculate_all_does_not_poison_the_session():
     must not be run in the tree's own session"""
     mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
 
-    big_id_first, = mt.calculate_all("big_id")
+    int_prop_first, = mt.calculate_all("int_prop")
     mvir_second, = mt.calculate_all("Mvir")
     profile_third, = mt.calculate_all("profile")
 
-    assert (big_id_first != None).all() # noqa: E711 - object array, so `is not None` will not do
+    assert (int_prop_first != None).all() # noqa: E711 - object array, so `is not None` will not do
     npt.assert_allclose(mvir_second, [1e10*float(obj.NDM) for obj in mt.objects])
     npt.assert_allclose(profile_third, [np.arange(4)*float(obj.NDM) for obj in mt.objects])
 
@@ -332,15 +351,15 @@ def test_calculate_all_with_no_values_at_all():
 def test_calculate_all_gaps_match_sanitize_false_elsewhere():
     """The representation of a gap should be the same as TimeStep.calculate_all gives"""
     mt = tree.MergerTree(tangos.get_halo("sim/ts6/2"))
-    from_tree = mt.calculate_all("big_id", "profile")
+    from_tree = mt.calculate_all("int_prop", "profile")
 
-    for obj, big_id, profile in zip(mt.objects, *from_tree):
-        expected = obj.timestep.calculate_all("dbid()", "big_id", "profile", sanitize=False)
+    for obj, int_prop, profile in zip(mt.objects, *from_tree):
+        expected = obj.timestep.calculate_all("dbid()", "int_prop", "profile", sanitize=False)
         expected = {row[0]: row[1:] for row in expected.T}[obj.id]
-        assert (big_id is None) == (expected[0] is None)
+        assert (int_prop is None) == (expected[0] is None)
         assert (profile is None) == (expected[1] is None)
-        if big_id is not None:
-            assert big_id == expected[0]
+        if int_prop is not None:
+            assert int_prop == expected[0]
             npt.assert_allclose(profile, expected[1])
 
 def test_walks_slice_properties():
