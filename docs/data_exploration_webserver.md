@@ -1,5 +1,5 @@
 Data exploration with tango's web interface
--------------------------------------------
+=============================================
 
 
 Before completing this tutorial, you need to have set up _tangos_ and added the

@@ -1,8 +1,8 @@
 Data exploration with tangos
-----------------------------
+=============================
 
 To see how _tangos_ can be used to explore your simulation data, you first need to
-[set up the package and paths](index.md) and then ensure you have a working database in place.
+[set up the package and paths](installation.rst) and then ensure you have a working database in place.
 
 For the latter, you can either follow the three [first steps](first_steps.md) tutorials which generate a database
 from raw simulation data; or you can skip straight to the good stuff by downloading an
@@ -10,7 +10,7 @@ from raw simulation data; or you can skip straight to the good stuff by download
 imported.
 
 Don't forget either `tangos_data.db` should be in your home folder or you need to set the environment variable
-`TANGOS_DB_CONNECTION` appropriately; see the [set up instructions](index.md).
+`TANGOS_DB_CONNECTION` appropriately; see the [set up instructions](installation.rst).
 
 Once all is ready, you can explore the data in one of two ways:
 

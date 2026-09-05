@@ -150,8 +150,8 @@ class SimulationObjectBase(Base):
         """Load the data for this halo, if it is present on this computer's filesystem.
 
         :param mode: the load mode to pass to the relevant input handler. For example with the pynbody input
-        handler this can be None or 'partial' (in a normal session) and, when running inside an MPI session,
-        'server' or 'server-partial'. See https://pynbody.github.io/tangos/mpi.html.
+            handler this can be None or 'partial' (in a normal session) and, when running inside an MPI session,
+            'server' or 'server-partial'. See https://pynbody.github.io/tangos/mpi.html.
         """
         halo_number = self.halo_number
         if not hasattr(self, "finder_id"):

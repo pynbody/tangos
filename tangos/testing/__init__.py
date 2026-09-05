@@ -106,7 +106,8 @@ class SqlExecutionTracker:
 
     Based on https://stackoverflow.com/questions/19073099/how-to-count-sqlalchemy-queries-in-unit-tests
 
-    Usage:
+    Usage::
+
         with SqlExecutionCounter(conn) as ctr:
             conn.execute("SELECT 1")
             conn.execute("SELECT 1")
@@ -236,15 +237,20 @@ def blank_db_for_testing(**kwargs):
 def using_parallel_tasks(fn_or_num_processes, num_processes = 2):
     """Decorator for tests, using parallel_tasks multiprocessing backend to launch
 
-    Usage:
+    Usage::
+
       @using_parallel_tasks
       def test_something():
           ...
+
     launches the test in a separate process with one server process and one client that runs the code
 
-    @using_parallel_tasks(4)
-    def test_something():
-        ...
+    ::
+
+      @using_parallel_tasks(4)
+      def test_something():
+          ...
+
     launches the test in a separate process with one server process and three clients that run the code
 
     the test function may take kwarg parameters, e.g. for use with pytest.mark.parametrize

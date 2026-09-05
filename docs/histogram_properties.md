@@ -1,5 +1,5 @@
 Understanding time-histogram properties
----------------------------------------
+========================================
 
 While the primary method for getting time series of data is through the
 `calculate_for_progenitors` and `calculate_for_descendants` methods provided by

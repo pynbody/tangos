@@ -1,0 +1,36 @@
+# .readthedocs.yaml
+# Read the Docs configuration file (https://docs.readthedocs.io/en/stable/config-file/v2.html)
+#
+# Modelled on pynbody's .readthedocs.yaml (https://github.com/pynbody/pynbody/blob/master/.readthedocs.yaml).
+# The stage 1 tutorials are live `.. ipython::` blocks evaluated against the tutorial database, so pre_build
+# fetches that database, just as pynbody's pre_build fetches its test data. Downloading it is the whole of
+# the data staging: no simulation files, and no `tangos write`, are involved in building these docs.
+# Deliberately NOT copied: pynbody's post_build step that copies matplotlib `.. plot::` output into place,
+# since tangos uses `@savefig` rather than that directive. If `@savefig` images turn out to be missing from
+# the published HTML, that post_build step is the first thing to try -- see DOCS_PLAN.md.
+
+version: 2
+
+build:
+   os: ubuntu-22.04
+   tools:
+     python: "3.13"
+   apt_packages:
+     - pandoc  # required by nbsphinx to render the markdown/rich-output cells of the tutorial notebook
+   jobs:
+     pre_build:
+       - python -c "import tangos.test_utils as tu; tu.precache_tutorial_database()"
+
+sphinx:
+   configuration: docs/conf.py
+   # The build is warning-free and must stay that way; see "Invariants" in
+   # DOCS_PLAN.md. If this starts failing on a stale checkout rather than on CI,
+   # remove docs/reference/_autosummary/ -- see the same file.
+   fail_on_warning: true
+
+python:
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs

@@ -4,7 +4,7 @@ Tangos Tutorial – Changa + AHF
 Initial set up
 --------------
 
-Make sure you have followed the [initial set up instructions](index.md).
+Make sure you have followed the [initial set up instructions](installation.rst).
 
 Next, download the
 [raw simulation data](https://zenodo.org/record/5155467/files/tutorial_changa.tar.gz?download=1) required for this tutorial.
@@ -94,7 +94,7 @@ Here,
 
 If you want to speed up this process, it can be [MPI parallelised](mpi.md).
 
-If you want to see how your database is looking, you can skip ahead to [data exploration](#explore-whats-possible),
+If you want to see how your database is looking, you can skip ahead to [data exploration](first_steps_changa+ahf.md#explore-whats-possible),
 though so far there's not a huge amount of interest to see.
 
 Add some more interesting properties
