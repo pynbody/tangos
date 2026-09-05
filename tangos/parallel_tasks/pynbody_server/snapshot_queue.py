@@ -97,7 +97,8 @@ class PynbodySnapshotQueue:
         """Get a message describing the specified catalogue, with its contents in shared memory.
 
         The message is cached, both so that the transfer to shared memory happens only once, and so that
-        the shared memory stays alive for as long as the snapshot is in use."""
+        it outlives every request for it: it owns the shared segments, which are unlinked when it is
+        dropped, and a client which had not yet mapped them would then be unable to find them."""
         if type_tag in self.current_portable_catalogues:
             log.logger.debug("Pynbody server: cache hit for catalogue %r", type_tag)
         else:

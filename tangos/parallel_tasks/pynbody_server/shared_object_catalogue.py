@@ -25,8 +25,10 @@ class ReturnSharedObjectCatalog(Message):
     def from_halo_catalogue(cls, halo_catalogue: pynbody.halo.HaloCatalogue):
         """Create a message describing *halo_catalogue*, with its arrays copied into shared memory.
 
-        The returned message keeps those arrays alive, so it must be retained for as long as any
-        recipient may still be using the catalogue."""
+        The message owns the shared segments, and dropping it unlinks them. A recipient which has
+        already mapped them is unaffected, but one which has not yet done so would no longer be able
+        to find them, so the message must outlive the requests it answers; that is what the caching
+        in :meth:`~.snapshot_queue.PynbodySnapshotQueue.get_shared_catalogue` guarantees."""
         # Two passes: the first gets the arrays into shared memory, which the second requires before it
         # can reduce them to picklable references.
         shared_state = map_arrays(halo_catalogue.get_portable_state(), _as_shared_memory_array)
