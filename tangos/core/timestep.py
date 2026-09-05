@@ -1,3 +1,4 @@
+import contextlib
 import os
 import os.path
 
@@ -148,15 +149,10 @@ class TimeStep(Base):
         if object_typetag:
             object_typecode = SimulationObjectBase.object_typecode_from_tag(object_typetag)
 
-        if len(plist) == 1 and isinstance(plist[0], live_calculation.Calculation):
-            property_description = plist[0]
-        else:
-            property_description = live_calculation.parser.parse_property_names(*plist)
+        property_description = live_calculation.parse_property_list(*plist)
 
-        # must be performed in its own session as we intentionally load in a lot of
-        # objects with incomplete lazy-loaded properties
-        session = Session()
-        try:
+        @contextlib.contextmanager
+        def objects_in_this_timestep(session):
             halo_alias = SimulationObjectBase
             raw_query = session.query(SimulationObjectBase).filter_by(timestep_id=self.id)
             if order_by_halo_number:
@@ -168,17 +164,12 @@ class TimeStep(Base):
                 # raw_query = raw_query.limit(limit).from_self()
                 halo_alias = aliased(SimulationObjectBase, raw_query.limit(limit).subquery())
                 raw_query = session.query(halo_alias)
+            yield raw_query, halo_alias
 
-            query = property_description.supplement_halo_query(raw_query, halo_alias)
-            sql_query_results = query.all()
-            if sanitize:
-                calculation_results = property_description.values_sanitized(sql_query_results,
-                                                                            Session.object_session(self))
-            else:
-                calculation_results = property_description.values(sql_query_results, Session.object_session(self))
-        finally:
-            session.close()
-        return calculation_results
+        return live_calculation.calculate_over_objects(property_description,
+                                                       objects_in_this_timestep,
+                                                       Session.object_session(self),
+                                                       sanitize=sanitize)
 
     def gather_property(self, *args, **kwargs):
         """The old alias for calculate_all, retained for compatibility"""

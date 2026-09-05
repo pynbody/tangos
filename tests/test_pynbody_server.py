@@ -11,6 +11,7 @@ import tangos.input_handlers.pynbody
 import tangos.parallel_tasks as pt
 import tangos.parallel_tasks.pynbody_server as ps
 import tangos.parallel_tasks.pynbody_server.snapshot_queue
+from tangos.parallel_tasks.message import Message
 from tangos.parallel_tasks.pynbody_server import shared_object_catalogue
 from tangos.testing import using_parallel_tasks
 
@@ -420,18 +421,19 @@ def test_transmit_receive_portable_catalogue():
 
     if pt.backend.rank()==1:
 
-        obj_cat = shared_object_catalogue.ReturnSharedObjectCatalog(halos)
+        obj_cat = shared_object_catalogue.ReturnSharedObjectCatalog.from_halo_catalogue(halos)
         obj_cat.send(2)
-
-        assert halos._index_lists.particle_index_list is not None
-        assert hasattr(halos._index_lists.particle_index_list, '_shared_fname')
 
     else:
         halos_remote = shared_object_catalogue.ReturnSharedObjectCatalog.receive(1).attach_to_simulation(sim)
+
+        # the receiver maps the shared memory, rather than being sent a copy of the arrays
+        assert hasattr(halos_remote._index_lists.particle_index_list, '_shared_fname')
+
         for id_ in np.unique(object_id_per_particle):
             assert (halos[id_]['iord'] == halos_remote[id_]['iord']).all()
 
-        assert hasattr(halos_remote._index_lists.particle_index_list, '_shared_fname')
+        assert halos_remote.get_properties_all_halos().keys() == halos.get_properties_all_halos().keys()
 
     pt.barrier()
 
@@ -447,6 +449,23 @@ def test_server_generates_portable_catalogue():
 def test_portable_catalogue_generated_only_once():
     log = test_server_generates_portable_catalogue() # runs on two processes, should only get one cat
     assert log.count("Generating a shared object catalogue for 'halo's") == 1
+
+@using_parallel_tasks(3)
+def test_shared_object_catalogue_is_mapped_not_copied():
+    """Two clients requesting the catalogue should map one shared segment, not get a copy each"""
+    conn = ps.RemoteSnapshotConnection(handler, "tiny.000640", shared_mem=True)
+    obj_cat = ps.shared_object_catalogue.get_shared_object_catalogue_from_server(
+        conn.shared_mem_view, 'halo', 0)
+
+    index_list = obj_cat._index_lists.particle_index_list
+    assert hasattr(index_list, '_shared_fname')
+
+    # both clients should be looking at the same memory, i.e. nothing in the chain from the server's
+    # single catalogue to each client copies it
+    if pt.backend.rank() == 1:
+        Message(index_list._shared_fname).send(2)
+    else:
+        assert Message.receive(1).contents == index_list._shared_fname
 
 @using_parallel_tasks(2)
 def test_region_cache():
