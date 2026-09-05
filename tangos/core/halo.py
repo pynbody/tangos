@@ -168,7 +168,7 @@ class SimulationObjectBase(Base):
     def calculate(self, calculation, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.
 
-        See the data exploration tutorials at https://pynbody.github.io/tangos/data_exploration.html
+        See the quick-start tutorial at https://pynbody.github.io/tangos/tutorials/quickstart.html
         for an introduction to the system.
 
         :param calculation: the calculation to perform, specified either as a string in

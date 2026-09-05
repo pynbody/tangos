@@ -57,6 +57,32 @@ extensions = ['sphinx.ext.autodoc',
 redirects = {
     # Stage 1: the 21-line stub grew into a full page under tutorials/.
     "data_exploration_webserver": "tutorials/webserver.html",
+    # Stage 2: the six first_steps_* pages collapse into one canonical
+    # ChaNGa+AHF walkthrough, and the per-combination detail that used to
+    # justify a page each now lives as rows in the simulation-formats table.
+    # So the two ChaNGa-flavoured URLs (and the old index over all six) go to
+    # the tutorial, and the other four go to the table.
+    "first_steps": "tutorials/first_database.html",
+    "first_steps_changa+ahf": "tutorials/first_database.html",
+    "first_steps_gadget+subfind": "reference/simulation_formats.html",
+    "first_steps_gadget+rockstar": "reference/simulation_formats.html",
+    "first_steps_gadget+AHF": "reference/simulation_formats.html",
+    "first_steps_ramses+hop": "reference/simulation_formats.html",
+    # EAGLE and yt keep their own short pages, moved under how-to/.
+    # how-to/yt.html is itself provisional: stage 4 folds it into
+    # how-to/custom_handlers, at which point this target needs updating and a
+    # second redirect adding for how-to/yt.html itself.
+    "first_steps_eagle": "how-to/eagle.html",
+    "using_with_yt": "how-to/yt.html",
+    # data_exploration.md was the "explore an existing database" page; that is
+    # now the quick-start tutorial.
+    "data_exploration": "tutorials/quickstart.html",
+    # old.md was the pre-1.0 halo_database README, mostly about building a
+    # database from scratch.
+    "old": "tutorials/first_database.html",
+    # advanced.md was nothing but a list of links to pages that all still
+    # exist, so the landing page is the closest thing to its content.
+    "advanced": "index.html",
 }
 
 # ipython_savefig_dir is where `.. ipython::` @savefig figures land; ported
