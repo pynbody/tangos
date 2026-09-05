@@ -5,6 +5,7 @@ ways to walk over it. :class:`MergerTreeLayout` turns a tree into a two-dimensio
 layout suitable for plotting; it underpins :meth:`MergerTree.plot` and the web interface.
 """
 
+import contextlib
 import math
 import time
 
@@ -17,7 +18,6 @@ from ..config import (
     mergertree_max_nhalos,
     mergertree_min_fractional_NDM,
     mergertree_min_fractional_weight,
-    mergertree_timeout,
 )
 from ..log import logger
 from . import MultiHopAllProgenitorsStrategy
@@ -33,7 +33,7 @@ class TreeNode:
     processes the tree recursively, such as :class:`MergerTreeLayout`.
     """
 
-    __slots__ = ('obj', 'parent', 'children', 'depth', 'weight', 'index')
+    __slots__ = ('children', 'depth', 'index', 'obj', 'parent', 'weight')
 
     def __init__(self, obj, parent, depth, weight):
         self.obj = obj
@@ -132,16 +132,14 @@ class MergerTree:
 
         # NB the defaults are resolved here, rather than in the signature, so that changes
         # to the module-level configuration are picked up by trees constructed afterwards
-        self.min_fractional_weight = mergertree_min_fractional_weight \
+        self._min_fractional_weight = mergertree_min_fractional_weight \
             if min_fractional_weight is None else min_fractional_weight
-        self.min_fractional_NDM = mergertree_min_fractional_NDM \
+        self._min_fractional_NDM = mergertree_min_fractional_NDM \
             if min_fractional_NDM is None else min_fractional_NDM
-        self.max_nobjects = mergertree_max_nhalos if max_nobjects is None else max_nobjects
-        self.max_hops = mergertree_max_hops if max_hops is None else max_hops
-        self.timeout = timeout
-        self.must_include = [] if must_include is None else list(must_include)
-
-        self.x_step = 5 # default horizontal spacing used by plot() and __str__()
+        self._max_nobjects = mergertree_max_nhalos if max_nobjects is None else max_nobjects
+        self._max_hops = mergertree_max_hops if max_hops is None else max_hops
+        self._timeout = timeout
+        self._must_include = [] if must_include is None else list(must_include)
 
         self._root = None
         self._nodes = None
@@ -151,11 +149,6 @@ class MergerTree:
         self._truncated = False
         self._link_cache = None
         self._construction_start_time = None
-
-    @property
-    def base_halo(self):
-        """Deprecated alias for :attr:`base_object`."""
-        return self.base_object
 
     def construct(self, force=False):
         """Construct the tree, if it has not already been constructed.
@@ -173,16 +166,8 @@ class MergerTree:
         # for a large tree the query is usually the more expensive of the two
         self._construction_start_time = time.time()
         self._generate_link_cache()
-        link_time = time.time() - self._construction_start_time
-
-        start_time = time.time()
         self._build_nodes()
-        build_time = time.time() - start_time
-
         self._link_cache = None # no longer needed, and potentially large
-
-        logger.info("Tree build complete; %d objects, progenitor query took %.2fs, "
-                    "tree construction took %.2fs", len(self._nodes), link_time, build_time)
 
     def _ensure_constructed(self):
         if self._nodes is None:
@@ -204,7 +189,7 @@ class MergerTree:
 
     def _generate_link_cache(self):
         """Query the database for the links making up the tree, and index them by source"""
-        strategy = MultiHopAllProgenitorsStrategy(self.base_object, nhops_max=self.max_hops)
+        strategy = MultiHopAllProgenitorsStrategy(self.base_object, nhops_max=self._max_hops)
         self._link_cache = {}
         for link in strategy._get_query_all():
             self._link_cache.setdefault(link.halo_from_id, []).append(link)
@@ -218,16 +203,16 @@ class MergerTree:
         # 'every object exactly once' promise made by walk_depth.
         visited = {self.base_object.id}
 
-        must_include = set(self.must_include)
+        must_include = set(self._must_include)
         self._truncated = False
 
         current_level = [root]
         while len(current_level) > 0:
-            if self.timeout is not None and \
-                    time.time() - self._construction_start_time > self.timeout:
+            if self._timeout is not None and \
+                    time.time() - self._construction_start_time > self._timeout:
                 self._truncated = True
                 logger.warning("Merger tree construction timed out after %.1fs; "
-                               "the tree returned is incomplete", self.timeout)
+                               "the tree returned is incomplete", self._timeout)
                 break
 
             links = []
@@ -262,8 +247,8 @@ class MergerTree:
         NDM = [link.halo_to.NDM for link in links]
         max_NDM = max(NDM)
 
-        if len(links) > self.max_nobjects:
-            NDM_cut = sorted(NDM)[-self.max_nobjects]
+        if len(links) > self._max_nobjects:
+            NDM_cut = sorted(NDM)[-self._max_nobjects]
         else:
             NDM_cut = None
 
@@ -274,8 +259,8 @@ class MergerTree:
 
         kept = []
         for link in links:
-            include = link.weight > max_weight_from[link.halo_from_id] * self.min_fractional_weight
-            include = include and ((link.halo_to.NDM > self.min_fractional_NDM * max_NDM)
+            include = link.weight > max_weight_from[link.halo_from_id] * self._min_fractional_weight
+            include = include and ((link.halo_to.NDM > self._min_fractional_NDM * max_NDM)
                                    or (link.halo_to.NDM == 0))
             if NDM_cut is not None:
                 include = include and (link.halo_to.NDM > NDM_cut)
@@ -328,12 +313,6 @@ class MergerTree:
         return list(self._objects)
 
     @property
-    def base_node(self):
-        """The :class:`TreeNode` at the root of the tree, corresponding to :attr:`base_object`."""
-        self._ensure_constructed()
-        return self._root
-
-    @property
     def timesteps(self):
         """The timesteps spanned by the tree, ordered from latest to earliest.
 
@@ -358,7 +337,7 @@ class MergerTree:
         self._ensure_constructed()
         return obj.id in self._node_from_object_id
 
-    def node(self, obj):
+    def _node(self, obj):
         """Return the :class:`TreeNode` occupied by the specified object.
 
         :raises ValueError: if the object is not in the tree
@@ -377,7 +356,7 @@ class MergerTree:
 
         :raises ValueError: if the object is not in the tree
         """
-        return self.node(obj).index
+        return self._node(obj).index
 
     def depth(self, obj):
         """Return the number of links separating the specified object from the base object.
@@ -388,7 +367,7 @@ class MergerTree:
 
         :raises ValueError: if the object is not in the tree
         """
-        return self.node(obj).depth
+        return self._node(obj).depth
 
     def weight(self, obj):
         """Return the cumulative weight of the route from the base object to this object.
@@ -401,7 +380,7 @@ class MergerTree:
 
         :raises ValueError: if the object is not in the tree
         """
-        return self.node(obj).weight
+        return self._node(obj).weight
 
     def descendant(self, obj):
         """Return the object into which the specified object merges, within this tree.
@@ -411,7 +390,7 @@ class MergerTree:
 
         :raises ValueError: if the object is not in the tree
         """
-        node = self.node(obj)
+        node = self._node(obj)
         return None if node.parent is None else node.parent.obj
 
     def progenitors(self, obj):
@@ -423,7 +402,7 @@ class MergerTree:
 
         :raises ValueError: if the object is not in the tree
         """
-        return [child.obj for child in self.node(obj).children]
+        return [child.obj for child in self._node(obj).children]
 
     # ------------------------------------------------------------------
     # properties
@@ -445,14 +424,7 @@ class MergerTree:
         be obtained are therefore *not* dropped, since that would break the alignment. Such
         a gap is marked by NaN in a column of floating point numbers, and by None
         otherwise, in which case the column is an object array — the same representation
-        that ``TimeStep.calculate_all(..., sanitize=False)`` uses. In particular, an
-        integer column is *not* promoted to floating point to make room for NaN, since
-        tangos supports integer identifiers too large to survive the round trip; and a gap
-        in an array-valued column is None rather than an array of NaNs, since the length
-        such an array should have is unknowable.
-
-        A column for which nothing at all could be evaluated is entirely None, as there is
-        then no evidence of what type it should have been.
+        that ``TimeStep.calculate_all(..., sanitize=False)`` uses.
 
         The arrays may be passed to :meth:`walk_depth` or :meth:`walk_branches`, which slice
         them to match the objects they yield.
@@ -464,33 +436,30 @@ class MergerTree:
         if len(properties) == 0:
             return []
 
-        # dbid() is prepended so that the results, which come back in an arbitrary order,
-        # can be matched up with the objects in the tree
-        calculation = live_calculation.parser.parse_property_names("dbid()", *properties)
+        # the database id is prepended to the calculation, so that the results, which come
+        # back in an order determined by the query, can be matched up with the tree
+        calculation = live_calculation.MultiCalculation(
+            live_calculation.LiveProperty("dbid"),
+            live_calculation.parse_property_list(*properties))
         n_columns = calculation.n_columns() - 1
 
         object_ids = [obj.id for obj in self._objects]
-        original_session = object_session(self.base_object)
 
-        # As in TimeStep.calculate_all, the query must be performed in its own session,
-        # because it deliberately loads objects with incomplete property collections. Were
-        # the tree's own session used, those incomplete collections would be cached in its
-        # identity map, and a later query for a different property would silently return
-        # nothing for objects already loaded.
-        session = core.Session()
-        try:
+        @contextlib.contextmanager
+        def objects_in_this_tree(session):
             with temporary_halolist.temporary_halolist_table(session, object_ids) as temptable:
-                query = calculation.supplement_halo_query(
-                    temporary_halolist.halo_query(temptable))
-                results = calculation.values(query.all(), original_session)
-        finally:
-            session.close()
+                yield temporary_halolist.halo_query(temptable), None
+
+        results = live_calculation.calculate_over_objects(
+            calculation, objects_in_this_tree, object_session(self.base_object),
+            sanitize=False)
 
         results_from_object_id = {row[0]: row[1:] for row in results.T}
         no_result = [None] * n_columns
         rows = [results_from_object_id.get(object_id, no_result) for object_id in object_ids]
 
-        return [_column_to_array([row[i] for row in rows]) for i in range(n_columns)]
+        return [live_calculation.values_to_array([row[i] for row in rows], mark_gaps=True)
+                for i in range(n_columns)]
 
     # ------------------------------------------------------------------
     # walking
@@ -501,8 +470,8 @@ class MergerTree:
         if self._timestep_groups is None:
             groups = {}
             for node in self._nodes:
-                timestep, indices = groups.setdefault(node.obj.timestep_id,
-                                                      (node.obj.timestep, []))
+                _, indices = groups.setdefault(node.obj.timestep_id,
+                                               (node.obj.timestep, []))
                 indices.append(node.index)
             self._timestep_groups = sorted(groups.values(),
                                            key=lambda group: group[0].time_gyr,
@@ -615,7 +584,8 @@ class MergerTree:
     def __repr__(self):
         if self._nodes is None:
             return "<MergerTree from %r (not yet constructed)>" % (self.base_object,)
-        return "<MergerTree from %r with %d objects>" % (self.base_object, len(self._nodes))
+        return "<MergerTree from %r with %d objects, maximum depth %d>" % (
+            self.base_object, len(self._nodes), max(node.depth for node in self._nodes))
 
 
 def _take(values, indices):
@@ -623,35 +593,6 @@ def _take(values, indices):
     if isinstance(values, np.ndarray):
         return values[indices]
     return [values[i] for i in indices]
-
-
-def _column_to_array(column):
-    """Convert a list of per-object results into an array, marking any missing results.
-
-    Missing results, which the live calculation machinery represents by None, are marked by
-    NaN if the column turns out to consist of floating point numbers, and are left as None
-    otherwise, in which case an object array is returned. See
-    :meth:`MergerTree.calculate_all` for the reasoning.
-    """
-    present = [value for value in column if value is not None]
-
-    if len(present) == len(column):
-        return live_calculation.Calculation._make_numpy_array(column)
-
-    if len(present) > 0:
-        # convert what is present in the usual way, to discover the type of the column
-        as_array = live_calculation.Calculation._make_numpy_array(present)
-        if isinstance(as_array, np.ndarray) and as_array.ndim == 1 \
-                and as_array.dtype.kind in "fc":
-            return np.array([np.nan if value is None else value for value in column],
-                            dtype=as_array.dtype)
-
-    # NB the object array is filled element by element; assigning the list in one go would
-    # let numpy try to broadcast any arrays it contains
-    result = np.empty(len(column), dtype=object)
-    for i, value in enumerate(column):
-        result[i] = value
-    return result
 
 
 class MergerTreeLayout:
@@ -666,23 +607,23 @@ class MergerTreeLayout:
     this is how the web interface adds the labels and links it needs.
     """
 
-    def __init__(self, tree, x_step=None):
+    def __init__(self, tree, x_step=5):
         """Set up a layout for the specified tree, constructing the tree if necessary.
 
         :param tree: the tree to lay out
         :type tree: MergerTree
-        :param x_step: the horizontal spacing between objects; defaults to ``tree.x_step``
+        :param x_step: the horizontal spacing between objects
         """
         self.tree = tree
         tree.construct()
-        self.x_step = tree.x_step if x_step is None else x_step
+        self.x_step = x_step
         self._treedata = None
 
     def as_dict(self):
         """Return the layout as a nested dictionary, with the base object at the top level"""
         if self._treedata is None:
             max_depth = max(node.depth for node in self.tree._nodes)
-            self._treedata = self._build(self.tree.base_node, max_depth)
+            self._treedata = self._build(self.tree._root, max_depth)
             self._postprocess()
         return self._treedata
 

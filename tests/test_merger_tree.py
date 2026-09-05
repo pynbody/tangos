@@ -79,7 +79,6 @@ def setup_module():
     tree.mergertree_min_fractional_weight = 0.02
     tree.mergertree_min_fractional_NDM = 0.0
     tree.mergertree_max_nhalos = 30
-    tree.mergertree_timeout = 15.0
     tree.mergertree_max_hops = 500
 
 def teardown_module():
@@ -404,7 +403,8 @@ def test_timeout_truncates_tree():
     assert len(mt) == 1 # only the base object survives
 
 def test_no_timeout_by_default():
-    assert tree.MergerTree(tangos.get_halo("sim/ts6/1")).timeout is None
+    """A scripted analysis should not silently get a different tree depending on load"""
+    assert tree.MergerTree(tangos.get_halo("sim/ts6/1"))._timeout is None
 
 def test_thinning_parameters_can_be_passed_explicitly():
     mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"), min_fractional_weight=0.8)

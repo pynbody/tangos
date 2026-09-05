@@ -265,7 +265,7 @@ class Calculation:
         if load_into_session is not None:
             self._refetch_halos_from_original_session(output_values, load_into_session)
 
-        return [self._make_numpy_array(x) for x in output_values]
+        return [values_to_array(x) for x in output_values]
 
     def _refetch_halos_from_original_session(self, unsanitized_values, session):
         output_halo_ids = []
@@ -288,18 +288,6 @@ class Calculation:
                     j+=1
 
 
-
-    @staticmethod
-    def _make_numpy_array(x):
-        if len(x)==0:
-            return x
-        if isinstance(x[0], np.ndarray):
-            try:
-                return np.array(list(x), dtype=x[0].dtype)
-            except ValueError:
-                return x
-        else:
-            return np.array(x, dtype=type(x[0]))
 
     def n_columns(self):
         """Return the number of separate properties returned for each halo.
@@ -872,6 +860,102 @@ class StoredProperty(Calculation):
 
 
 
+
+
+def values_to_array(values, mark_gaps=False):
+    """Convert the results of a calculation for a series of objects into a numpy array.
+
+    The dtype is taken from the first result, so that an integer column stays an integer
+    column, and a column of equal-length arrays is stacked into a two-dimensional array.
+    A column that cannot be stacked in this way is returned unchanged.
+
+    :param values: the results, one per object
+    :param mark_gaps: if False (default), every result must be present. If True, results
+      which could not be obtained (represented by None) are retained and marked: by NaN if
+      the column turns out to consist of floating point numbers, and otherwise by None in
+      an object array. An integer column is deliberately not promoted to floating point to
+      make room for NaN, since tangos supports integer identifiers too large to survive the
+      round trip; and a gap in an array-valued column is None rather than an array of NaNs,
+      since the length such an array should have is unknowable.
+    """
+    if mark_gaps:
+        present = [value for value in values if value is not None]
+        if len(present) < len(values):
+            if len(present) > 0:
+                # convert what is present, to discover the type of the column
+                as_array = values_to_array(present)
+                if isinstance(as_array, np.ndarray) and as_array.ndim == 1 \
+                        and as_array.dtype.kind in "fc":
+                    return np.array([np.nan if value is None else value for value in values],
+                                    dtype=as_array.dtype)
+
+            # NB filled element by element; assigning the list in one go would let numpy
+            # try to broadcast any arrays it contains
+            result = np.empty(len(values), dtype=object)
+            for i, value in enumerate(values):
+                result[i] = value
+            return result
+
+    if len(values) == 0:
+        return values
+    if isinstance(values[0], np.ndarray):
+        try:
+            return np.array(list(values), dtype=values[0].dtype)
+        except ValueError:
+            return values
+    else:
+        return np.array(values, dtype=type(values[0]))
+
+
+def parse_property_list(*plist):
+    """Return a single Calculation representing the properties requested of a gathering method.
+
+    Each argument may be a string, a lambda taking no arguments, or a Calculation. A lone
+    Calculation is returned unchanged, so that a MultiCalculation passed on its own keeps
+    all its columns.
+    """
+    if len(plist) == 1 and isinstance(plist[0], Calculation):
+        return plist[0]
+    return parser.parse_property_names(*plist)
+
+
+def calculate_over_objects(property_description, query_context, load_into_session,
+                           sanitize=True):
+    """Evaluate a calculation over a set of simulation objects, and return the results.
+
+    This underlies the various methods that gather properties for many objects at once,
+    such as :meth:`tangos.core.timestep.TimeStep.calculate_all`,
+    :meth:`tangos.core.halo.SimulationObjectBase.calculate_for_progenitors` and
+    :meth:`tangos.relation_finding.MergerTree.calculate_all`.
+
+    The query is performed in a session of its own, because supplement_halo_query
+    deliberately loads objects with incomplete property collections. Were the caller's own
+    session used, those incomplete collections would be cached in its identity map, and a
+    later query for a different property would then silently return nothing for objects
+    that had already been loaded.
+
+    :param property_description: the Calculation to evaluate
+    :param query_context: a context manager which is called with the private session and
+      yields a (query, halo_alias) pair, where the query returns the objects to evaluate
+      over and halo_alias may be None to refer to objects directly. It is a context manager
+      so that any temporary table underlying the query stays alive until the query has run.
+    :param load_into_session: the session into which any simulation objects appearing in
+      the results should be re-loaded; normally the caller's own session
+    :param sanitize: if True (default), drop rows for which any result is missing, and
+      return a list of typed arrays. If False, return the raw object array, of shape
+      n_columns x n_objects, with None marking a missing result.
+    """
+    session = core.Session()
+    try:
+        with query_context(session) as (raw_query, halo_alias):
+            query = property_description.supplement_halo_query(raw_query, halo_alias)
+            results = query.all()
+            if sanitize:
+                return property_description.values_sanitized(results, load_into_session)
+            else:
+                return property_description.values(results, load_into_session)
+    finally:
+        session.close()
 
 
 from . import builtin_functions, parser
