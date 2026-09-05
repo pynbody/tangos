@@ -907,6 +907,24 @@ def values_to_array(values, mark_gaps=False):
         return np.array(values, dtype=type(values[0]))
 
 
+def is_missing(value):
+    """True if a single calculation result represents a missing value.
+
+    Where results are gathered with the gaps retained (see :func:`values_to_array`), a gap
+    is marked either by None or, in a column of floating point numbers, by NaN. Which of
+    the two appears depends on the type of the column, and therefore on the data, so a
+    caller that wants to know whether a particular result is present should use this rather
+    than test for one representation alone.
+    """
+    if value is None:
+        return True
+    try:
+        return bool(np.isnan(value))
+    except (TypeError, ValueError):
+        # not a number at all (e.g. a string), or an array, and so not a gap
+        return False
+
+
 def parse_property_list(*plist):
     """Return a single Calculation representing the properties requested of a gathering method.
 

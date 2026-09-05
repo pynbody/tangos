@@ -1,6 +1,6 @@
 from pyramid.view import view_config
 
-from ... import core
+from ... import core, live_calculation
 from ...config import mergertree_timeout, webview_cache_time
 from ...relation_finding import tree
 from . import halo_from_request
@@ -46,9 +46,12 @@ class WebMergerTreeLayout(tree.MergerTreeLayout):
         else:
             moreinfo = "%s %d" % (obj.__class__.__name__, obj.halo_number)
 
-        Mvir = self._property_values.get("Mvir", None)
-        if Mvir is not None and Mvir[node.index] == Mvir[node.index]: # i.e. not NaN
-            moreinfo += ", {}={:.2e}".format("Mvir", Mvir[node.index])
+        if "Mvir" in self._property_values:
+            # NB Mvir may be in the database as a whole, and so requested here, while being
+            # absent from every object in this particular tree
+            Mvir = self._property_values["Mvir"][node.index]
+            if not live_calculation.is_missing(Mvir):
+                moreinfo += ", {}={:.2e}".format("Mvir", Mvir)
 
         nodeclass = 'node-dot-standard'
         name = str(obj.halo_number)

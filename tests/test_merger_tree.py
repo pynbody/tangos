@@ -323,6 +323,34 @@ def test_calculate_all_columns_without_gaps_are_typed():
     assert profile.shape == (len(mt), 4)
     assert profile.dtype == np.float64
 
+def test_is_missing_recognises_both_representations_of_a_gap():
+    """Which representation appears depends on the column type, so callers wanting to know
+    whether a single result is present need to accept either"""
+    import tangos.live_calculation as lc
+
+    assert lc.is_missing(None)
+    assert lc.is_missing(np.nan)
+    assert lc.is_missing(np.float64('nan'))
+
+    assert not lc.is_missing(0.0)
+    assert not lc.is_missing(0)
+    assert not lc.is_missing(np.int64(3))
+    assert not lc.is_missing(np.arange(3)) # an array is present; a gap would be None
+    assert not lc.is_missing("a string")
+
+def test_gaps_can_be_identified_regardless_of_column_type():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/2"))
+    gap = mt.index(tangos.get_halo("sim/ts1/3"))
+    import tangos.live_calculation as lc
+
+    for column in mt.calculate_all("Mvir", "int_prop", "profile"):
+        assert lc.is_missing(column[gap])
+        assert not any(lc.is_missing(column[i]) for i in range(len(mt)) if i != gap)
+
+    # a property absent from every object in the tree is missing everywhere
+    nonexistent, = mt.calculate_all("nonexistent_property")
+    assert all(lc.is_missing(value) for value in nonexistent)
+
 def test_repeated_calculate_all_does_not_poison_the_session():
     """Each query deliberately loads objects with incomplete property collections, so it
     must not be run in the tree's own session"""

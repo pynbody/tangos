@@ -42,6 +42,12 @@ def setup_module():
     tangos.get_default_session().commit()
 
 
+    # Mvir is stored on an object in ts4, which is not linked to any other timestep. The
+    # merger tree view therefore asks for Mvir, since it is in the database, but finds none
+    # of it in any tree.
+    tangos.get_item("sim/ts4/2")['Mvir'] = 1e12
+    tangos.get_default_session().commit()
+
     creator = tangos.testing.simulation_generator.SimulationGeneratorForTests("simname/has/slashes")
     creator.add_timestep()
     creator.add_objects_to_timestep(1)
@@ -176,6 +182,33 @@ def test_simulation_with_slash():
     halo_next_step_response = halo_response.click(r"\+1$").follow()
     assert "halo 1 of ts2" in halo_next_step_response
 
+
+def test_merger_tree():
+    response = app.get("/sim/ts3/1/merger/tree.json")
+    assert response.status_int == 200
+
+    tree = response.json['tree']
+    assert tree['halo_number'] == 1
+    assert tree['maxdepth'] == 3
+
+    # the tree should reach back to ts1 through ts2
+    assert len(tree['contents']) == 1
+    assert len(tree['contents'][0]['contents']) == 1
+    assert tree['contents'][0]['contents'][0]['contents'] == []
+
+    for node in (tree, tree['contents'][0]):
+        # Mvir is in the database, but not for any object in this tree, so it should
+        # simply be omitted rather than reported as a missing value
+        assert "Mvir" not in node['moreinfo']
+        assert "None" not in node['moreinfo']
+        assert node['nodeclass'].startswith('node-dot-')
+        assert node['url'].startswith('http://localhost/sim/')
+
+def test_merger_tree_reports_available_properties():
+    """Where a property is present, it should appear in the node description"""
+    response = app.get("/sim/ts4/2/merger/tree.json")
+    assert response.status_int == 200
+    assert "Mvir=1.00e+12" in response.json['tree']['moreinfo']
 
 def test_ordering_as_expected():
     """Tests for an issue where data returned to the web interface was in a different order to the initial table,
