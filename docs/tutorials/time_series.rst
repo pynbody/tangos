@@ -135,15 +135,70 @@ progressively through each timestep, meaning at each step it finds the progenito
 the most particles. That is not necessarily the most massive *halo*, especially when you
 go far back in the history.
 
+More advanced historical information can be obtained using the
+:class:`tangos.relation_finding.tree.MergerTree` class.
+
+.. versionadded:: 1.13.0
+
+  The public API for merger trees is new in version 1.13.0. Previously these
+  trees were available in the web interface but not for python querying.
+
+
+You can construct and inspect the merger tree as follows:
+
+.. ipython::
+
+ In [1]: from tangos.relation_finding import MergerTree
+
+ In [2]: tree = MergerTree(halo)
+
+ @savefig tree_abstract.png width=6in
+ In [3]: p.figure()
+    ...: p.axis("off")
+    ...: tree.plot()
+
+The :meth:`~tangos.relation_finding.tree.MergerTree.plot` method shows us an
+abstract representation of the tree, with the halo number at
+each timestep labelled.
+
+To calculate an expression such as mass at each timestep, we can use
+the :meth:`tangos.relation_finding.tree.MergerTree.calculate_all` method.
+This takes the same kinds of calculation arguments as
+:meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors`
+and evaluates them for every halo in the tree. To assign those results to
+particular timesteps use the :meth:`~tangos.relation_finding.tree.MergerTree.walk_depth`
+method; or, to assign them to particular branches, use
+:meth:`~tangos.relation_finding.tree.MergerTree.walk_branches` as follows:
+
+.. ipython::
+
+ In [3]: times, masses = tree.calculate_all(lambda: t(), lambda: mass)
+
+ In [4]: p.figure()
+
+ In [5]: for halo, time, mass in tree.walk_branches(times, masses):
+    ...:     p.plot(time, 1e10*mass, 'o-')
+
+ @savefig time_series_all_progenitors_mass.png width=6in
+ In [6]: p.xlabel("t/Gyr")
+    ...: p.ylabel(r"$M/h^{-1} M_{\odot}$")
+    ...: p.semilogy()
+    ...: p.tight_layout()
+
+.. note::
+
+  By default, the merger tree is 'thinned' to exclude very minor progenitors.
+  However, you can change this behaviour.
+  See :class:`~tangos.relation_finding.tree.MergerTree` for details.
+
+
 
 Many objects at one timestep
 ----------------------------
 
-The other axis is a whole population at a fixed time.
-:meth:`~tangos.core.timestep.TimeStep.calculate_all` takes the same
-calculations as :meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors`
-and evaluates them for every
-object in a timestep:
+The other axis is a whole population at a fixed time. Timesteps, like trees,
+also have a :meth:`~tangos.core.timestep.TimeStep.calculate_all` method,
+but they now evaluate expressions for every object in a timestep:
 
 .. ipython::
 
