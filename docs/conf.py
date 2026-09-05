@@ -57,6 +57,32 @@ extensions = ['sphinx.ext.autodoc',
 redirects = {
     # Stage 1: the 21-line stub grew into a full page under tutorials/.
     "data_exploration_webserver": "tutorials/webserver.html",
+    # Stage 2: the six first_steps_* pages collapse into one canonical
+    # ChaNGa+AHF walkthrough, and the per-combination detail that used to
+    # justify a page each now lives as rows in the simulation-formats table.
+    # So the two ChaNGa-flavoured URLs (and the old index over all six) go to
+    # the tutorial, and the other four go to the table.
+    "first_steps": "tutorials/first_database.html",
+    "first_steps_changa+ahf": "tutorials/first_database.html",
+    "first_steps_gadget+subfind": "reference/simulation_formats.html",
+    "first_steps_gadget+rockstar": "reference/simulation_formats.html",
+    "first_steps_gadget+AHF": "reference/simulation_formats.html",
+    "first_steps_ramses+hop": "reference/simulation_formats.html",
+    # EAGLE and yt keep their own short pages, moved under how-to/.
+    # how-to/yt.html is itself provisional: stage 4 folds it into
+    # how-to/custom_handlers, at which point this target needs updating and a
+    # second redirect adding for how-to/yt.html itself.
+    "first_steps_eagle": "how-to/eagle.html",
+    "using_with_yt": "how-to/yt.html",
+    # data_exploration.md was the "explore an existing database" page; that is
+    # now the quick-start tutorial.
+    "data_exploration": "tutorials/quickstart.html",
+    # old.md was the pre-1.0 halo_database README, mostly about building a
+    # database from scratch.
+    "old": "tutorials/first_database.html",
+    # advanced.md was nothing but a list of links to pages that all still
+    # exist, so the landing page is the closest thing to its content.
+    "advanced": "index.html",
 }
 
 # ipython_savefig_dir is where `.. ipython::` @savefig figures land; ported
@@ -227,3 +253,38 @@ copybutton_selector = "div.highlight > pre"
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.{3,5}: | {5,8}: "
 copybutton_prompt_is_regexp = True
 copybutton_only_copy_prompt_lines = True
+
+
+def _write_unquoted_redirect_stubs(app, exception):
+    """Also write each redirect stub at the *unquoted* filename.
+
+    Four of the retired pages have a ``+`` in their name (``first_steps_gadget+AHF``
+    and friends). sphinx-reredirects writes its stub at
+    ``builder.get_target_uri(docname)``, and Sphinx percent-encodes the docname
+    there, so the stub lands at ``first_steps_gadget%2BAHF.html`` -- while the URL
+    the Jekyll site published, and which the README and any citing paper link to, has
+    a literal ``+``. Nothing warns about this: the build succeeds under ``-W`` and the
+    redirect simply never fires.
+
+    So for any redirect whose docname is altered by quoting, copy the stub to the
+    literal name as well. Both files are left in place, since either spelling may be
+    what a given link uses. See "Invariants" in DOCS_PLAN.md.
+    """
+    if exception is not None or app.builder.name != "html":
+        return
+
+    from pathlib import Path
+    from urllib.parse import quote
+
+    outdir = Path(app.outdir)
+    for docname in redirects:
+        if quote(docname) == docname:
+            continue
+        quoted = outdir / (quote(docname) + ".html")
+        literal = outdir / (docname + ".html")
+        if quoted.exists() and not literal.exists():
+            literal.write_text(quoted.read_text(encoding="utf-8"), encoding="utf-8")
+
+
+def setup(app):
+    app.connect("build-finished", _write_unquoted_redirect_stubs)

@@ -109,7 +109,7 @@ obvious sequel to :doc:`/rdbms`.
 .. autoclass:: tangos.tools.property_importer.PropertyImporter
    :show-inheritance:
 
-``tangos property-import``.
+``tangos import-properties``.
 
 .. autoclass:: tangos.tools.pickled_results_writer.PickledResultsWriter
    :show-inheritance:

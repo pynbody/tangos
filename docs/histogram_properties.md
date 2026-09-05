@@ -3,13 +3,13 @@ Understanding time-histogram properties
 
 While the primary method for getting time series of data is through the
 `calculate_for_progenitors` and `calculate_for_descendants` methods provided by
-`Halo` objects (see [data exploration tutorial](data_exploration.md)) the time resolution of
+`Halo` objects (see [time series tutorial](tutorials/time_series.rst)) the time resolution of
 such methods is limited by the number of timesteps you have accessible.
 
 Some information needs to be sampled on shorter timescales for good physical insight.
 An example is the star formation rate of galaxies which can vary on very short timescales. For
 this purpose, _tangos_ offers histogram properties which are explored from the science
-perspective in the [data exploration tutorials](data_exploration.md). This document aims to
+perspective in the [time series tutorial](tutorials/time_series.rst). This document aims to
 explain a bit more about how they work by examining the star formation rate class provided
 in the example properties.
 
@@ -43,7 +43,7 @@ only a slice of that information (provided by the `TimeChunkedProperty.store_sli
 That slice represents the most recent star formation history of the object, and only that
 recent activity is stored in the database.
 
-You can see this for yourself; starting from the [sample database](data_exploration.md), try
+You can see this for yourself; starting from the [sample database](tutorials/quickstart.rst), try
 the following:
 
 ```python
