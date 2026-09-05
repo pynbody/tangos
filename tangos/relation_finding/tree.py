@@ -346,7 +346,7 @@ class MergerTree:
         try:
             return self._node_from_object_id[obj.id]
         except KeyError:
-            raise ValueError("{!r} is not in this merger tree".format(obj)) from None
+            raise ValueError(f"{obj!r} is not in this merger tree") from None
 
     def index(self, obj):
         """Return the canonical index of the specified object.
@@ -583,7 +583,7 @@ class MergerTree:
 
     def __repr__(self):
         if self._nodes is None:
-            return "<MergerTree from {!r} (not yet constructed)>".format(self.base_object)
+            return f"<MergerTree from {self.base_object!r} (not yet constructed)>"
         return "<MergerTree from %r with %d objects, maximum depth %d>" % (
             self.base_object, len(self._nodes), max(node.depth for node in self._nodes))
 
