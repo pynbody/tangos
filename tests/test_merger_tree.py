@@ -1,3 +1,5 @@
+import numpy as np
+import numpy.testing as npt
 from pytest import raises as assert_raises
 
 import tangos
@@ -38,6 +40,31 @@ def setup_module():
     generator.add_objects_to_timestep(5)
     generator.link_last_halos()
 
+    # Mvir is present on all halos except halo 3 of ts1, so that the handling of missing
+    # values can be tested
+    for ts_number in range(1, 7):
+        for halo in tangos.get_timestep("sim/ts%d" % ts_number).halos:
+            if ts_number == 1 and halo.halo_number == 3:
+                continue
+            halo["Mvir"] = 1e10 * float(halo.NDM)
+    tangos.core.get_default_session().commit()
+
+    # a second simulation containing black holes, to verify that trees are not specific
+    # to halos
+    bh_generator = tangos.testing.simulation_generator.SimulationGeneratorForTests("sim_bh")
+    bh_generator.add_timestep() # ts1
+    bh_generator.add_bhs_to_timestep(4)
+
+    bh_generator.add_timestep() # ts2
+    bh_generator.add_bhs_to_timestep(3)
+    bh_generator.link_last_halos_using_mapping({1: 1, 2: 2, 3: 3, 4: 3},
+                                              adjust_masses=False,
+                                              object_typecode=1) # BHs 3 & 4 merge
+
+    bh_generator.add_timestep() # ts3
+    bh_generator.add_bhs_to_timestep(3)
+    bh_generator.link_last_bhs()
+
     # setup the default options, so that these can change in the config without changing the tests
     tree.mergertree_min_fractional_weight = 0.02
     tree.mergertree_min_fractional_NDM = 0.0
@@ -49,11 +76,11 @@ def teardown_module():
     tangos.core.close_db()
 
 def test_default_tree_has_correct_structure():
-    mt = tree.MergerTree(tangos.get_halo("%/ts6/1"))
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
     mt.construct()
     assert mt.summarise()=="1(1(1(1(1(1),2(2))),6(6(7(7)))))"
 
-    mt = tree.MergerTree(tangos.get_halo("%/ts6/2"))
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/2"))
     mt.construct()
     assert mt.summarise() == "2(2(2(2(3(3)))))"
 
@@ -61,14 +88,249 @@ def test_filter_tree_by_minweight():
     old = tree.mergertree_min_fractional_weight
     try:
         tree.mergertree_min_fractional_weight = 0.8
-        mt = tree.MergerTree(tangos.get_halo("%/ts6/1"))
+        mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
         mt.construct()
         assert mt.summarise() == "1(1(1(1(1(1),2(2)))))"
     finally:
         tree.mergertree_min_fractional_weight = old
 
 def test_filter_tree_by_NDM():
-    tree.mergertree_min_fractional_NDM = 0.2
-    mt = tree.MergerTree(tangos.get_halo("%/ts6/1"))
+    old = tree.mergertree_min_fractional_NDM
+    try:
+        tree.mergertree_min_fractional_NDM = 0.2
+        mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+        mt.construct()
+        assert mt.summarise()=="1(1(1(1(1(1),2(2))),6))"
+    finally:
+        tree.mergertree_min_fractional_NDM = old
+
+
+def test_tree_is_constructed_lazily():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+    assert mt._nodes is None
+    assert len(mt) == 12
+    assert mt._nodes is not None
+
+def test_canonical_order_is_major_progenitor_first():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+    # depth-first, following the major progenitor branch to its end before backtracking
+    assert [str(obj.path) for obj in mt.objects] == \
+           ["sim/ts6/halo_1", "sim/ts5/halo_1", "sim/ts4/halo_1", "sim/ts3/halo_1",
+            "sim/ts2/halo_1", "sim/ts1/halo_1", "sim/ts2/halo_2", "sim/ts1/halo_2",
+            "sim/ts4/halo_6", "sim/ts3/halo_6", "sim/ts2/halo_7", "sim/ts1/halo_7"]
+
+def test_structural_accessors():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+    base = tangos.get_halo("sim/ts6/1")
+    merging = tangos.get_halo("sim/ts4/6")
+
+    assert mt.descendant(base) is None
+    assert mt.descendant(merging) == tangos.get_halo("sim/ts5/1")
+
+    assert mt.progenitors(tangos.get_halo("sim/ts5/1")) == [tangos.get_halo("sim/ts4/1"),
+                                                            tangos.get_halo("sim/ts4/6")]
+    assert mt.progenitors(tangos.get_halo("sim/ts1/1")) == []
+
+    assert mt.depth(base) == 0
+    assert mt.depth(merging) == 2
+    assert mt.index(base) == 0
+    assert mt.objects[mt.index(merging)] == merging
+
+    assert base in mt
+    assert tangos.get_halo("sim/ts6/2") not in mt
+    with assert_raises(ValueError):
+        mt.depth(tangos.get_halo("sim/ts6/2"))
+
+    assert mt.weight(base) == 1.0
+    # the major progenitor carries more weight than the object merging into it
+    assert mt.weight(tangos.get_halo("sim/ts4/1")) > mt.weight(merging)
+
+def test_timesteps():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+    assert [ts.extension for ts in mt.timesteps] == ["ts6", "ts5", "ts4", "ts3", "ts2", "ts1"]
+
+    # a tree that stops early does not report the timesteps it never reaches
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"), max_hops=2)
+    assert [ts.extension for ts in mt.timesteps] == ["ts6", "ts5", "ts4"]
+
+def test_walk_depth():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+
+    groups = list(mt.walk_depth())
+
+    # every object appears exactly once
+    walked = [obj for group in groups for obj in group]
+    assert sorted(obj.id for obj in walked) == sorted(obj.id for obj in mt.objects)
+    assert len(walked) == len(mt)
+
+    # each group is a single timestep, and timesteps run from latest to earliest
+    for group in groups:
+        assert all(obj.timestep.id == group[0].timestep.id for obj in group)
+    times = [group[0].timestep.time_gyr for group in groups]
+    assert times == sorted(times, reverse=True)
+
+    assert [[str(obj.path) for obj in group] for group in groups] == \
+           [["sim/ts6/halo_1"],
+            ["sim/ts5/halo_1"],
+            ["sim/ts4/halo_1", "sim/ts4/halo_6"],
+            ["sim/ts3/halo_1", "sim/ts3/halo_6"],
+            ["sim/ts2/halo_1", "sim/ts2/halo_2", "sim/ts2/halo_7"],
+            ["sim/ts1/halo_1", "sim/ts1/halo_2", "sim/ts1/halo_7"]]
+
+def test_walk_depth_reversed():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+    forwards = [[obj.id for obj in group] for group in mt.walk_depth()]
+    backwards = [[obj.id for obj in group] for group in mt.walk_depth(reverse=True)]
+    assert backwards == forwards[::-1]
+
+def test_walk_branches():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+
+    branches = list(mt.walk_branches())
+
+    assert [[str(obj.path) for obj in branch] for branch in branches] == \
+           [["sim/ts6/halo_1", "sim/ts5/halo_1", "sim/ts4/halo_1", "sim/ts3/halo_1",
+             "sim/ts2/halo_1", "sim/ts1/halo_1"],
+            ["sim/ts3/halo_1", "sim/ts2/halo_2", "sim/ts1/halo_2"],
+            ["sim/ts5/halo_1", "sim/ts4/halo_6", "sim/ts3/halo_6", "sim/ts2/halo_7",
+             "sim/ts1/halo_7"]]
+
+    # no more than one object per timestep within a branch
+    for branch in branches:
+        timestep_ids = [obj.timestep.id for obj in branch]
+        assert len(set(timestep_ids)) == len(timestep_ids)
+
+    # the first object of the first branch is the base object; the first object of every
+    # subsequent branch has been seen already, and is the descendant of the second object
+    assert branches[0][0] == mt.base_object
+    seen = set()
+    for i, branch in enumerate(branches):
+        if i > 0:
+            assert branch[0].id in seen
+            assert mt.descendant(branch[1]) == branch[0]
+        seen.update(obj.id for obj in branch)
+
+    # excluding the repeated first objects, every object appears exactly once
+    unrepeated = [obj for branch in branches[:1] for obj in branch] + \
+                 [obj for branch in branches[1:] for obj in branch[1:]]
+    assert sorted(obj.id for obj in unrepeated) == sorted(obj.id for obj in mt.objects)
+
+    # consecutive objects within a branch are linked
+    for branch in branches:
+        for descendant, progenitor in zip(branch[:-1], branch[1:]):
+            assert mt.descendant(progenitor) == descendant
+
+def test_walk_branches_on_linear_tree():
+    """A tree with no mergers should yield exactly one branch"""
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/2"))
+    branches = list(mt.walk_branches())
+    assert len(branches) == 1
+    assert [str(obj.path) for obj in branches[0]] == \
+           ["sim/ts6/halo_2", "sim/ts5/halo_2", "sim/ts4/halo_2", "sim/ts3/halo_2",
+            "sim/ts2/halo_3", "sim/ts1/halo_3"]
+
+def test_calculate_all():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+    mvir, ndm = mt.calculate_all(lambda: Mvir, lambda: NDM())
+
+    assert len(mvir) == len(mt)
+    assert len(ndm) == len(mt)
+
+    # results are aligned with tree.objects
+    for i, obj in enumerate(mt.objects):
+        npt.assert_allclose(mvir[i], 1e10*float(obj.NDM))
+        npt.assert_allclose(ndm[i], float(obj.NDM))
+
+    # string and lambda forms agree
+    mvir_from_string, = mt.calculate_all("Mvir")
+    npt.assert_allclose(mvir_from_string, mvir)
+
+    assert mt.calculate_all() == []
+
+def test_calculate_all_with_missing_values():
+    # this tree contains sim/ts1/3, which is the one halo without an Mvir
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/2"))
+    mvir, = mt.calculate_all(lambda: Mvir)
+
+    # rows are retained, so that the alignment with tree.objects is preserved
+    assert len(mvir) == len(mt)
+    missing = np.isnan(mvir)
+    assert missing.sum() == 1
+    assert mt.objects[np.argmax(missing)] == tangos.get_halo("sim/ts1/3")
+
+    mvir_zero, = mt.calculate_all(lambda: Mvir, fill_value=0.0)
+    assert (mvir_zero[missing] == 0.0).all()
+
+def test_calculate_all_with_no_values_at_all():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+    nonexistent, = mt.calculate_all("nonexistent_property")
+    assert len(nonexistent) == len(mt)
+    assert np.isnan(nonexistent).all()
+
+def test_walks_slice_properties():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+    mvir, ndm = mt.calculate_all(lambda: Mvir, lambda: NDM())
+
+    for objects, mvir_here, ndm_here in mt.walk_depth(mvir, ndm):
+        assert len(mvir_here) == len(objects)
+        for obj, m, n in zip(objects, mvir_here, ndm_here):
+            npt.assert_allclose(m, mvir[mt.index(obj)])
+            npt.assert_allclose(n, ndm[mt.index(obj)])
+
+    for objects, mvir_here in mt.walk_branches(mvir):
+        assert len(mvir_here) == len(objects)
+        for obj, m in zip(objects, mvir_here):
+            npt.assert_allclose(m, mvir[mt.index(obj)])
+
+    # lists are acceptable in place of arrays
+    labels = [str(obj.halo_number) for obj in mt.objects]
+    for objects, labels_here in mt.walk_depth(labels):
+        assert labels_here == [str(obj.halo_number) for obj in objects]
+
+def test_tree_of_black_holes():
+    """Trees are built from tangos objects in general, not specifically halos"""
+    mt = tree.MergerTree(tangos.get_item("sim_bh/ts3/1.1"))
+    assert [str(obj.path) for obj in mt.objects] == \
+           ["sim_bh/ts3/BH_1", "sim_bh/ts2/BH_1", "sim_bh/ts1/BH_1"]
+
+    mt = tree.MergerTree(tangos.get_item("sim_bh/ts3/1.3"))
+    assert mt.summarise() == "3(3(3,4))"
+    assert [[str(obj.path) for obj in branch] for branch in mt.walk_branches()] == \
+           [["sim_bh/ts3/BH_3", "sim_bh/ts2/BH_3", "sim_bh/ts1/BH_3"],
+            ["sim_bh/ts2/BH_3", "sim_bh/ts1/BH_4"]]
+
+def test_timeout_truncates_tree():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+    assert not mt.truncated
+    assert len(mt) == 12
+
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"), timeout=-1.0)
+    assert mt.truncated
+    assert len(mt) == 1 # only the base object survives
+
+def test_no_timeout_by_default():
+    assert tree.MergerTree(tangos.get_halo("sim/ts6/1")).timeout is None
+
+def test_thinning_parameters_can_be_passed_explicitly():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"), min_fractional_weight=0.8)
+    assert mt.summarise() == "1(1(1(1(1(1),2(2)))))"
+
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"), min_fractional_NDM=0.2)
+    assert mt.summarise() == "1(1(1(1(1(1),2(2))),6))"
+
+def test_construct_is_idempotent():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
     mt.construct()
-    assert mt.summarise()=="1(1(1(1(1(1),2(2))),6))"
+    nodes = mt._nodes
+    mt.construct()
+    assert mt._nodes is nodes
+    mt.construct(force=True)
+    assert mt._nodes is not nodes
+    assert len(mt) == 12
+
+def test_str_and_summarise():
+    mt = tree.MergerTree(tangos.get_halo("sim/ts6/1"))
+    assert mt.summarise() == "1(1(1(1(1(1),2(2))),6(6(7(7)))))"
+    # __str__ is a human-readable rendering with one line per timestep plus connectors
+    assert "1" in str(mt)
+    assert str(mt).count("\r\n") > 6

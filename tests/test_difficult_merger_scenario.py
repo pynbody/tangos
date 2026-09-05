@@ -73,5 +73,19 @@ def test_tree_from_ts5():
 def test_tree_from_ts4():
     t = tree.MergerTree(tangos.get_halo("sim/ts4/1"))
     t.construct()
-    # should now 'see' the earlier partial merger, but not the 5% mass transfer
-    assert t.summarise()=="1(1(1(1),2(2)))"
+    # should now 'see' the earlier partial merger, but not the 5% mass transfer.
+    # Note that halo 2 is listed before halo 1 at ts2, because progenitors are ordered by
+    # link weight rather than by halo number, and (as noted above) most of the material in
+    # the ts3 remnant comes from halo 2 despite halo 1 being the more massive.
+    assert t.summarise()=="1(1(2(2),1(1)))"
+
+def test_tree_main_branch_is_major_progenitor_branch():
+    """The first branch of the tree should agree with calculate_for_progenitors"""
+    for ts in (4, 5):
+        halo = tangos.get_halo("sim/ts%d/1" % ts)
+        expected, = halo.calculate_for_progenitors("halo_number()")
+
+        t = tree.MergerTree(halo)
+        main_branch, = list(t.walk_branches())[:1]
+
+        assert [obj.halo_number for obj in main_branch] == list(expected)

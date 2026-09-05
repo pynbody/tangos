@@ -7,3 +7,4 @@ from .multi_hop_variants import (
 )
 from .multi_source import MultiSourceMultiHopStrategy
 from .one_hop import HopMajorDescendantStrategy, HopMajorProgenitorStrategy, HopStrategy
+from .tree import MergerTree, MergerTreeLayout, TreeNode
