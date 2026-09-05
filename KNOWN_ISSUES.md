@@ -131,8 +131,69 @@ most cases, running the code at the point it was added.
       with no warning. Catching `ImportError` (and letting anything else
       propagate) would be the fix.
 
+- [ ] `tangos/scripts/import_from_ahf.py:16` tells the user to run a command
+      that does not exist. The deprecation notice says the `tangos_import_from_ahf`
+      script is "deprecated in favour of `tangos property-import`", but the
+      subcommand is `import-properties` (`tangos/tools/property_importer.py:12`
+      sets `tool_name = 'import-properties'`). So the one message a user of the
+      deprecated script sees points them at a name that fails. The same wrong
+      name was in `docs/reference/api/building.rst:112` and is fixed there in
+      stage 2 of the documentation rebuild.
+- [ ] `tangos/input_handlers/ahf_trees.py:38,42` uses bare `except:` around both
+      the standard and the cropped mtree read, so any genuine failure -- a
+      malformed file, a `MemoryError`, a bug in the reader -- is reported to the
+      user as `OSError("Could not load merger tree files")`, i.e. as a missing
+      file. Catching the specific read errors would leave real faults visible.
+- [ ] `AHFTreeImporter.filename_to_snapnum`
+      (`tangos/tools/ahf_merger_tree_importer.py:31-37`) is dead code:
+      `run_calculation_loop` never calls it, and it hard-codes a `snapdir_###`
+      layout that would not match the ChaNGa data the tool is actually tested
+      against (`tests/test_ahf_trees.py`).
+- [ ] `tangos import-subfind-trees` is the only merger-tree importer with no
+      test, no `build.sh` coverage and no documentation page. It is the intended
+      route for Gadget-4/Arepo's on-the-fly trees
+      (`tangos/tools/subfind_merger_tree_importer.py`), and
+      `build_gadget4()` in `test_tutorial_build/build.sh` builds no merger tree
+      at all, so the whole Gadget-4 tree path is unverified. The other two
+      importers (`import-consistent-trees`, `import-ahf-trees`) are both tested.
+      `docs/reference/simulation_formats` documents it, and says it is untested.
+- [ ] `build_enzo_yt` in `test_tutorial_build/build.sh` is wrapped in
+      `if [ -d enzo.tinycosmo ]`, so if the download does not produce the
+      directory the entire Enzo/yt combination silently drops out of the built
+      database -- and hence out of the `tangos diff` comparison that the
+      integration test relies on -- rather than failing loudly.
+- [ ] `HandlerBase.load_object` names its third parameter `catalog_pos`, while
+      every implementation and every caller uses `finder_offset`. The API
+      reference therefore documents a parameter name that does not exist
+      downstream.
+
 ## Misleading or wrong documentation
 
+- [ ] The tangos docs' own URLs percent-encode `+`, so four published page URLs
+      cannot be served by Sphinx as-is. `builder.get_target_uri()` quotes the
+      docname, so `first_steps_gadget+AHF` builds to
+      `first_steps_gadget%2BAHF.html` while the Jekyll site publishes (and the
+      README and any citing paper link to) the literal `+` spelling. Nothing
+      warns: the build is clean under `-W` and the page is simply unreachable at
+      its real URL. Stage 2 works around it for the *redirects* with a
+      `build-finished` hook in `docs/conf.py`. The general lesson for later
+      stages: never give a new page a name containing a character that
+      `urllib.parse.quote` alters (the style conventions in `DOCS_PLAN.md`
+      already require lowercase-underscore filenames, which is why only these
+      retired pages are affected).
+- [ ] `docs/Data exploration with python.ipynb` cell 1 links to
+      `https://pynbody.github.io/tangos/data_exploration.html`, a page retired in
+      stage 2. The redirect covers it, but the notebook is deliberately kept as
+      the only published copy of material not yet ported (histograms, black
+      holes, `match` crossmatching), so until stage 4 ports that material the
+      notebook advertises a retired page. Sphinx does not warn, since it is an
+      absolute URL.
+- [ ] Two more doc URLs embedded in code will break when their pages move in
+      stages 4-5, and have no redirect yet: `tangos/tools/property_writer.py:655`
+      points at `custom_properties.html` and `tangos/core/halo.py:154` at
+      `mpi.html`. Both pages are scheduled to move (`custom_properties` is ported,
+      `mpi` becomes `how-to/parallel`). Add redirects as each moves, alongside the
+      `input_handlers.html` dead link already recorded below.
 - [ ] `docs/custom_input_handlers.md:143` calls `.earlier` on the result of
       `get_halo(...)` (`tangos.get_halo("...").earlier.load()`). `earlier` is
       not an attribute of anything in the codebase; `.previous` is the

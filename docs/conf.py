@@ -253,3 +253,38 @@ copybutton_selector = "div.highlight > pre"
 copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.{3,5}: | {5,8}: "
 copybutton_prompt_is_regexp = True
 copybutton_only_copy_prompt_lines = True
+
+
+def _write_unquoted_redirect_stubs(app, exception):
+    """Also write each redirect stub at the *unquoted* filename.
+
+    Four of the retired pages have a ``+`` in their name (``first_steps_gadget+AHF``
+    and friends). sphinx-reredirects writes its stub at
+    ``builder.get_target_uri(docname)``, and Sphinx percent-encodes the docname
+    there, so the stub lands at ``first_steps_gadget%2BAHF.html`` -- while the URL
+    the Jekyll site published, and which the README and any citing paper link to, has
+    a literal ``+``. Nothing warns about this: the build succeeds under ``-W`` and the
+    redirect simply never fires.
+
+    So for any redirect whose docname is altered by quoting, copy the stub to the
+    literal name as well. Both files are left in place, since either spelling may be
+    what a given link uses. See "Invariants" in DOCS_PLAN.md.
+    """
+    if exception is not None or app.builder.name != "html":
+        return
+
+    from pathlib import Path
+    from urllib.parse import quote
+
+    outdir = Path(app.outdir)
+    for docname in redirects:
+        if quote(docname) == docname:
+            continue
+        quoted = outdir / (quote(docname) + ".html")
+        literal = outdir / (docname + ".html")
+        if quoted.exists() and not literal.exists():
+            literal.write_text(quoted.read_text(encoding="utf-8"), encoding="utf-8")
+
+
+def setup(app):
+    app.connect("build-finished", _write_unquoted_redirect_stubs)

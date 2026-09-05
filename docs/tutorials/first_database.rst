@@ -102,6 +102,8 @@ with recalculating them, so it is the natural first thing to put in the
 database.
 
 This is the first of the two steps that depend on your halo finder. Pick yours:
+the AHF tab is the one this tutorial follows, and the others show what to type
+for a simulation of your own -- substitute its name for ``my_simulation``.
 
 .. tab-set::
 
@@ -112,9 +114,133 @@ This is the first of the two steps that depend on your halo finder. Pick yours:
 
         $ tangos import-properties Mvir Rvir --for tutorial_changa
 
-      The named columns are read out of AHF's ``.AHF_halos`` stat files.
-      ``--for tutorial_changa`` says which simulation to apply this to, and can
-      be omitted when the database holds only one.
+      The names are column headings in AHF's ``.AHF_halos`` files, so anything
+      AHF wrote there can be imported the same way. ``--for tutorial_changa``
+      says which simulation to apply this to, and can be omitted when the
+      database holds only one.
+
+   .. tab-item:: SubFind
+      :sync: subfind
+
+      .. code-block:: bash
+
+        $ tangos import-properties --for my_simulation
+        $ tangos import-properties --type group --for my_simulation
+
+      With no property names given, everything the finder offers is imported.
+      Both passes matter: SubFind arranges objects into FoF *groups* containing
+      subhalos, and the two passes are what build that hierarchy in the
+      database -- the halo pass records each halo's parent group, the group
+      pass records each group's children.
+
+   .. tab-item:: Rockstar
+      :sync: rockstar
+
+      .. code-block:: bash
+
+        $ tangos import-properties Mvir Rvir X Y Z --for my_simulation
+
+      The names are columns of Rockstar's ``out_<N>.list`` files.
+
+   .. tab-item:: HOP
+      :sync: hop
+
+      There is nothing to import, and no way to import it: HOP writes no
+      catalogue of properties for tangos to read. Skip straight to the merger
+      tree, and let ``tangos write`` calculate what you need.
+
+   .. tab-item:: HBT+
+      :sync: hbtplus
+
+      .. code-block:: bash
+
+        $ tangos import-properties --for my_simulation
+        $ tangos import-properties --type group --for my_simulation
+
+      As for SubFind, with one ordering caveat: for HBT+, build the merger tree
+      *before* importing properties, because linking is what attaches each
+      subhalo to the track it belongs to.
+
+Build the merger tree
+---------------------
+
+The database now knows what exists at each output, but not what became of it.
+Linking establishes that: which object at one timestep is the progenitor of
+which at the next, and with what fraction of its particles. That is what makes
+``calculate_for_progenitors`` and the merger-tree viewer work at all; see
+:ref:`concepts` for what a link is.
+
+This is the second and last finder-dependent step. Two strategies exist, and
+which you use is not a matter of taste: either your finder already tracked
+objects between outputs and tangos imports that, or it did not and tangos works
+it out from the particles themselves.
+
+.. tab-set::
+
+   .. tab-item:: AHF
+      :sync: ahf
+
+      .. code-block:: bash
+
+        $ tangos link --for tutorial_changa
+
+      ``tangos link`` compares the particle membership of objects in adjacent
+      timesteps -- via pynbody's bridge -- and stores a link wherever they
+      overlap, weighted by how much. It needs no help from the finder, which is
+      why it is the fallback for any format.
+
+      This tutorial dataset has only a few timesteps, so its merger trees are
+      necessarily dull.
+
+   .. tab-item:: SubFind
+      :sync: subfind
+
+      .. code-block:: bash
+
+        $ tangos link --for my_simulation
+        $ tangos link --type group --for my_simulation
+
+      Halos and groups are linked separately, so both passes are needed if you
+      want a tree for each.
+
+   .. tab-item:: Rockstar
+      :sync: rockstar
+
+      .. code-block:: bash
+
+        $ tangos import-consistent-trees --for my_simulation
+
+      Rockstar is normally run with consistent-trees, which has already done
+      the work; importing it is faster and more faithful than re-deriving it
+      from particles, so **do not** also run ``tangos link``. tangos reads
+      ``trees/tree_0_0_0.dat`` and the ``outputs/`` files alongside your
+      snapshots.
+
+      Consistent-trees can recover an object the finder lost for a snapshot or
+      two. Where it does, tangos stores a *phantom* halo -- a placeholder with
+      no particles of its own -- so the tree stays connected.
+
+   .. tab-item:: HOP
+      :sync: hop
+
+      .. code-block:: bash
+
+        $ tangos link --for my_simulation
+
+      As for AHF: the tree is derived from particle membership.
+
+   .. tab-item:: HBT+
+      :sync: hbtplus
+
+      .. code-block:: bash
+
+        $ tangos link --for my_simulation
+
+      The command is the same one, but it is not doing the same thing. HBT+
+      tracks objects itself, and the Gadget-4/HBT+ handler uses those track
+      identities directly instead of comparing particles -- so this is a cheap,
+      exact operation rather than an expensive, approximate one. Run it before
+      importing properties.
 
 Add your first property
 -----------------------
