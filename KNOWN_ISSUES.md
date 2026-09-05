@@ -8,18 +8,6 @@ docs page that surfaced them is finished. Items are grouped by kind and
 checked off as they are fixed. Each item below was verified by reading and, in
 most cases, running the code at the point it was added.
 
-## Major problems with documentation
-- [x] `live_calculations.rst` section on "Live properties" is problematic because
-      it leads on the exception rather than the rule. That is `t()`, `z()` etc are
-      weird live properties that actually access stored information (albeit in the
-      timestep, not the object). And the one "normal" example given doesn't
-      actually exist (`Vvir()`). Proposed solution: implement `Vvir()` live property
-      within tangos' default shipped live properties. Lead on that, then mention
-      `z()`, `t()` etc and note that they are live properties because they're not
-      literally stored with the object, even though they are stored. Fixed:
-      `Vvir` is now shipped as a live property in `tangos/properties/derived.py`,
-      and the documentation section has been rewritten accordingly.
-
 ## Broken code
 
 - [ ] `tests/test_live_calculation.py` is order-dependent and fails
@@ -262,3 +250,6 @@ most cases, running the code at the point it was added.
       maintained since the Python 2 era. `docs/mpi.md` still lists it as an
       alternative to mpi4py (see the docs entry above). Candidate for deletion
       alongside that doc fix.
+- [ ] Integer halo (and other object) properties are stored as 32-bit except on
+      sqlite; probably unintentional and should be fixed provided we can retain
+      backwards compatibility with databases that have the 32-bit column.
