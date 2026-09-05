@@ -54,7 +54,7 @@ Adding and updating simulations
    :show-inheritance:
 
 ``tangos add`` in python. The constructor reads ``min_halo_particles`` and
-``max_num_objects`` from the ``configuration`` settings (forthcoming page) as
+``max_num_objects`` from the :doc:`/configuration` settings as
 defaults, and takes ``renumber``; all three end up as plain attributes on the
 instance, which you can reassign before calling
 ``scan_simulation_and_add_all_descendants``.

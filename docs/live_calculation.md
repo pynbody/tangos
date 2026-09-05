@@ -1,5 +1,5 @@
-The live calculation system
-===========================
+Live calculation language reference
+===================================
 
 Tangos stores properties of objects (halos, black holes, groups, ...) in a database. Often
 what you actually want is not a stored property but something derived from one: the virial

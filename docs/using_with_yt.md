@@ -10,7 +10,7 @@ As a demonstration, embryonic _yt_ support is included.
 Initial set-up: tangos+yt
 --------------------------
 
-Make sure you have followed the [initial set up instructions](index.md). Additionally,
+Make sure you have followed the [initial set up instructions](installation.rst). Additionally,
 you will need to install yt version 3.4.0 or later.
 
 Next, download the [raw simulation data](https://zenodo.org/record/5155467/files/tutorial_changa.tar.gz?download=1). Unpack the tar file either in your

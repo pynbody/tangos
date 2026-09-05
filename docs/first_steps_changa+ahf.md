@@ -4,7 +4,7 @@ Tangos Tutorial – Changa + AHF
 Initial set up
 --------------
 
-Make sure you have followed the [initial set up instructions](index.md).
+Make sure you have followed the [initial set up instructions](installation.rst).
 
 Next, download the
 [raw simulation data](https://zenodo.org/record/5155467/files/tutorial_changa.tar.gz?download=1) required for this tutorial.

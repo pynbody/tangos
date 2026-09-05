@@ -1,0 +1,217 @@
+.. Last checked by AP 31/08/26
+
+.. _installation:
+
+Installing tangos
+=================
+
+tangos is a pure-python package, so installing it takes seconds and needs no
+compiler. To follow the tutorials you need two things: tangos itself, and a
+database to query. Neither requires any simulation data, and neither requires
+pynbody.
+
+In brief
+--------
+
+**1. Install tangos.** You need Python 3.11 or newer:
+
+.. code-block:: bash
+
+  $ pip install tangos
+
+**2. Get the tutorial database.** This is a ready-made database describing five
+small simulations, and it is what every tutorial on this site queries. It is
+1.3 GB, so allow a few minutes:
+
+.. code-block:: bash
+
+  $ curl -o ~/tangos_data.db https://pub-d85a828023a1452bbd3a294bc72003f0.r2.dev/data.db
+
+Downloading it to ``~/tangos_data.db`` means there is nothing to configure:
+that is where tangos looks by default. To keep it anywhere else, see
+:ref:`pointing_tangos_at_a_database` below.
+
+**3. Check that it works.** From python:
+
+.. ipython::
+
+ In [1]: import tangos
+
+ In [2]: tangos.all_simulations()
+
+If you see those five simulations listed, you are ready to start on
+:ref:`concepts` and then the :ref:`quickstart` tutorial. If you see an empty
+list instead, read the warning below.
+
+.. _pointing_tangos_at_a_database:
+
+Pointing tangos at a database
+-----------------------------
+
+Except for advanced use cases, tangos opens exactly one database at a time.
+There are three ways in which the choice of database is determined:
+
+1. If the environment variable ``TANGOS_DB_CONNECTION`` is set, tangos treats
+   that as the path to the database file to use.
+
+2. If ``TANGOS_DB_CONNECTION`` is not set, tangos instead uses ``tangos_data.db``
+   in your home directory as a default location.
+
+3. From a python session, you can programatically open a different database
+   by calling ``tangos.init_db(path)`` with the appropriate path.
+
+The advantage of mechanism 2 is that it prevents you needing to specify the
+location of the database within your analysis code, or when running the ``tangos``
+command line tool. Before running anything, in your bash-like shell, use:
+
+.. code-block:: bash
+
+  $ export TANGOS_DB_CONNECTION=/path/to/data.db
+
+or, in csh:
+
+.. code-block:: csh
+
+  % setenv TANGOS_DB_CONNECTION /path/to/data.db
+
+A value with no ``//`` in it is taken to be the path to an sqlite file. You can
+also give a full `sqlalchemy URL
+<https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls>`_ to
+connect to a database server; see :ref:`other_database_backends` below.
+
+The variable is read once, when tangos is first imported, so it has to be set
+before you start python — exporting it from inside a running session has no
+effect. That also means you need to set it in every new shell session, unless
+you add it to your shell startup file or, better, record the setting once in a
+``config_local.py``; see :ref:`configuration`.
+
+.. warning::
+   **A path that does not exist does not produce an error.** If
+   ``TANGOS_DB_CONNECTION`` names an sqlite file that is not there — a typo, or
+   a relative path interpreted from the wrong working directory — tangos
+   creates an empty database at that path instead of complaining. Your first query then fails with
+
+   .. code-block:: text
+
+      RuntimeError: No simulation matches 'tutorial_changa'
+
+   which points at the query rather than at the real problem, and you are left
+   with an empty file that makes the next attempt fail identically. Check
+   ``tangos.config.db`` to see which path tangos is actually using, delete the
+   stray empty file, and try again.
+
+   A download that was interrupted rather than never started fails differently:
+   the file exists but is truncated, and tangos reports
+   ``sqlalchemy.exc.DatabaseError: (sqlite3.DatabaseError) database disk image
+   is malformed``. Delete it and fetch it again.
+
+   You can recognise it in one line: :func:`tangos.all_simulations` returns an
+   empty list on an empty database, whereas a real database returns at least
+   one simulation. ``tangos.config.db`` tells you which file tangos is actually
+   using; check that it is the file you meant, and delete any empty database
+   left behind before trying again.
+
+If you are also *building* databases from raw simulation output, a second
+variable, ``TANGOS_SIMULATION_FOLDER``, gives the parent directory that
+contains your simulation directories; it defaults to your home directory. You
+can ignore it entirely if you are only querying an existing database.
+
+What the install gives you
+--------------------------
+
+``pip install tangos`` pulls in everything needed to query, write and browse a
+database: the database layer, the property and live-calculation system,
+matplotlib, and the web interface (``tangos serve``). sqlite support comes with
+python itself, so no database server is needed.
+
+It deliberately does **not** install pynbody or yt. tangos is agnostic about
+how simulation snapshots are read, so the reader is your choice — install
+whichever you use alongside tangos:
+
+.. code-block:: bash
+
+  $ pip install tangos pynbody
+
+You need one of them only to *build* a database from simulation snapshots, or
+to calculate new properties from particle data. Reading an existing database
+needs neither: ``halo['Mvir']`` resolves the input handler class without ever
+constructing it.
+
+.. note::
+   The one exception is property *metadata*.
+   :meth:`~tangos.core.halo.SimulationObjectBase.get_description` and
+   :meth:`HaloProperty.x_values <tangos.core.halo_data.HaloProperty.x_values>`
+   construct the simulation's input handler, which imports pynbody. So a
+   pynbody-free environment can read every number in the database but cannot
+   ask what its units are.
+
+.. _other_database_backends:
+
+Other database backends
+-----------------------
+
+sqlite needs no extra packages and is the right choice for a single user with a
+single file. To put your database on a MySQL/MariaDB or PostgreSQL server
+instead — worth it if several people share one database, or if many processes
+write to it at once — install the drivers with the ``rmdbs`` extra:
+
+.. code-block:: bash
+
+  $ pip install tangos[rmdbs]
+
+and set ``TANGOS_DB_CONNECTION`` to a sqlalchemy URL such as
+``mysql+pymysql://user:password@localhost:3306/database_name`` or
+``postgresql+psycopg2://user:password@localhost/database_name``. All three
+backends are tested on every commit. See :doc:`/rdbms` for how to set a server
+up, including a one-line docker recipe for trying either of them out.
+
+Installing for development
+--------------------------
+
+If you want to run the test suite, or to change tangos itself, keep the source
+repository around and install from it:
+
+.. code-block:: bash
+
+  $ git clone https://github.com/pynbody/tangos.git
+  $ cd tangos
+  $ pip install -e .[test]
+
+The ``[test]`` extra adds pytest and the packages the tests exercise, pynbody
+and yt among them. Then run the tests from the root of the checkout:
+
+.. code-block:: bash
+
+  $ pytest
+
+pytest ends with a summary line counting the tests that passed, skipped and
+failed. If anything failed and you have not edited the code, please report it
+on the `issue tracker <https://github.com/pynbody/tangos/issues>`_ with as much
+detail about your setup as you can give.
+
+To match what continuous integration does, add the database drivers and the
+random-ordering plugin:
+
+.. code-block:: bash
+
+  $ pip install -e .[test,rmdbs]
+  $ pip install pytest-random-order
+
+If you plan to open a pull request, install the pre-commit hooks as well; they
+run in CI and will fail the build otherwise:
+
+.. code-block:: bash
+
+  $ pip install pre-commit
+  $ pre-commit install
+
+To build this documentation, use the ``docs`` extra (``pip install -e .[docs]``,
+with `pandoc <https://pandoc.org>`_ also installed) and run ``make html`` in the
+``docs`` directory.
+
+.. seealso::
+
+   :ref:`configuration` for everything tangos lets you configure.
+
+   :ref:`concepts` for what is actually inside the database you just
+   downloaded, followed by the :ref:`quickstart` tutorial.

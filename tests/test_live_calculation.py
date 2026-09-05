@@ -408,6 +408,15 @@ def test_non_existent_redirection_multihalo():
     assert len(vals1)==0
     assert len(vals2)==0
 
+def test_vvir():
+    halo = tangos.get_halo("sim/ts1/1")
+    halo['Mvir'] = 1e12
+    halo['Rvir'] = 200.0
+    expected = np.sqrt(4.30091e-6 * 1e12 / 200.0)
+    assert np.allclose(halo.calculate(lambda: Vvir()), expected)
+    assert np.allclose(halo.calculate("Vvir()"), expected)
+
+
 def test_faulty_multi_calculation():
     # Check that one bad calculation does not prevent the others from being calculated
     session = tangos.get_default_session()

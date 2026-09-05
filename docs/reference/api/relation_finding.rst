@@ -116,7 +116,7 @@ The merger tree
 -----------------
 
 .. autoclass:: tangos.relation_finding.tree.MergerTree
-   :members: construct, summarise, plot
+   :members:
    :undoc-members:
    :member-order: bysource
 
