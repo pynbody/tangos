@@ -77,7 +77,9 @@ class PynbodyInputHandler(finding.PatternBasedFileDiscovery, HandlerBase):
         ts_filename =  self._extension_to_filename(ts_extension)
         f = pynbody.load(ts_filename)
         try:
-            time_gyr = f.properties['time'].in_units("Gyr",**f.conversion_context())
+            # NB float() is important: pynbody >= 2.7 returns a SimArray here, which some
+            # database backends cannot store
+            time_gyr = float(f.properties['time'].in_units("Gyr",**f.conversion_context()))
         except:
             time_gyr = -1
 
