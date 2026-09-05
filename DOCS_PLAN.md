@@ -182,9 +182,12 @@ with `tangos diff`. So decouple database *production* from docs *building*.
       `tangos write`. pynbody is now installed, contrary to the original budget —
       see **Decisions already made**.
 - [ ] Convert tutorial code fences to `.. ipython::` / `@savefig`
-- [ ] Bind the write-side shell commands to `build.sh` — shared `_snippets/*.sh` via
-      `literalinclude`, or a grep test. They are already CI-verified; the docs simply
-      do not reuse that fact
+- [ ] Bind the write-side shell commands to `build.sh` — a grep test comparing
+      subcommands and flags, not whole command lines (see **Invariants**: the docs
+      deliberately differ from `build.sh` in argument *values*). Sharing literal
+      `_snippets/*.sh` via `literalinclude` was the original idea and is ruled out
+      by that: it would force the docs to adopt CI's values. They are already
+      CI-verified; the docs simply do not reuse that fact
 - [ ] Re-enable the integration test workflow (see **Before merging to master**) —
       this stage depends on the database it builds, so restore it here rather than at
       the end
@@ -253,6 +256,13 @@ and no pynbody except for the one metadata call noted below: `explanation/concep
   reference, but `get_object` is the one new prose should call. The existing pages use
   `get_halo` throughout; that sweep happens as each page is rewritten, not as a mass
   edit, and is tracked in `KNOWN_ISSUES.md`.
+- **The docs may differ from `build.sh` in argument *values*, never in command
+  *shape*.** `build.sh` exists to build a test database quickly on CI hardware, not
+  to teach; its choices are tuned for that. `tutorials/first_database` therefore
+  keeps `--include-only="NDM()>1000"` where `build.sh` filters at 5000, because a
+  1000-particle cut is the one a reader should actually learn. The stage 3 test
+  enforces the shape (subcommand and flags), not the numbers — see **Invariants**.
+
 - **The notebook is converted to `.rst` and retired, not kept.** Its content is the
   best material tangos has; its container is failing it — reachable only via an
   nbviewer link, invisible to site search, 278 KB of undiffable base64, unchanged
@@ -365,8 +375,14 @@ These span PRs and are easy to break one stage at a time.
   3.11, and so silently ignored, but a `SyntaxWarning` on 3.12+, which the
   ipython directive turns into a build failure. Write LaTeX in labels as a raw
   string — `r"$M_\odot$"` — as the existing figures do.
-- **Every `tangos …` command shown in the docs also appears in `build.sh`**, enforced
-  by a test, from stage 3 onward.
+- **Every `tangos …` command shown in the docs is CI-exercised in *form***: its
+  subcommand, and every flag it uses, appear somewhere in `build.sh`. Enforced by a
+  test from stage 3 onward. The test compares command *shapes*, not argument values.
+  A page is free to choose a different threshold, property list or simulation name
+  from whatever CI happens to build with, and `tutorials/first_database` does:
+  it filters on `--include-only="NDM()>1000"` where `build.sh` uses `5000`, which is
+  far too conservative to make a good tutorial. What the invariant buys is that no
+  page can go on showing a subcommand or flag that has been renamed or removed.
 - **An unmarked exception in any `.. ipython::` block fails the build**, from stage 3
   onward. This is the entire difference between examples that are executed and
   examples that are *verified*.
@@ -388,7 +404,8 @@ once.
 ## Definition of done
 
 `sphinx-build -W` is clean; an unmarked exception in any ipython block fails the
-build; every `tangos …` command shown also appears in `build.sh`, enforced by a test;
+build; every `tangos …` command shown is CI-exercised in form — its subcommand and
+flags appear in `build.sh` — enforced by a test;
 every deleted URL redirects; the rebuild banner is gone; and a newcomer gets from
 `pip install` to a plotted merger history in under 20 minutes without touching raw
 simulation data.
