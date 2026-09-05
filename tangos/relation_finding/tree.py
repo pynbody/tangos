@@ -6,7 +6,6 @@ layout suitable for plotting; it underpins :meth:`MergerTree.plot` and the web i
 """
 
 import math
-import numbers
 import time
 
 import numpy as np
@@ -430,7 +429,7 @@ class MergerTree:
     # properties
     # ------------------------------------------------------------------
 
-    def calculate_all(self, *properties, fill_value=np.nan):
+    def calculate_all(self, *properties):
         """Evaluate the specified properties or live calculations for every object in the tree.
 
         For example:
@@ -443,15 +442,20 @@ class MergerTree:
         The returned arrays are aligned with :attr:`objects`: element ``i`` of each array
         refers to ``tree.objects[i]``. Unlike
         :meth:`tangos.core.timestep.TimeStep.calculate_all`, rows for which no result could
-        be obtained are therefore *not* removed, since that would break the alignment;
-        instead they are filled with ``fill_value`` where the property is numeric, and with
-        None otherwise.
+        be obtained are therefore *not* dropped, since that would break the alignment. Such
+        a gap is marked by NaN in a column of floating point numbers, and by None
+        otherwise, in which case the column is an object array — the same representation
+        that ``TimeStep.calculate_all(..., sanitize=False)`` uses. In particular, an
+        integer column is *not* promoted to floating point to make room for NaN, since
+        tangos supports integer identifiers too large to survive the round trip; and a gap
+        in an array-valued column is None rather than an array of NaNs, since the length
+        such an array should have is unknowable.
+
+        A column for which nothing at all could be evaluated is entirely None, as there is
+        then no evidence of what type it should have been.
 
         The arrays may be passed to :meth:`walk_depth` or :meth:`walk_branches`, which slice
         them to match the objects they yield.
-
-        :param fill_value: the value to substitute where a property could not be evaluated
-          (default: NaN)
 
         :returns: a list with one array per property, each of length ``len(tree)``
         """
@@ -466,18 +470,27 @@ class MergerTree:
         n_columns = calculation.n_columns() - 1
 
         object_ids = [obj.id for obj in self._objects]
-        session = object_session(self.base_object)
+        original_session = object_session(self.base_object)
 
-        with temporary_halolist.temporary_halolist_table(session, object_ids) as temptable:
-            query = calculation.supplement_halo_query(temporary_halolist.halo_query(temptable))
-            results = calculation.values(query.all(), session)
+        # As in TimeStep.calculate_all, the query must be performed in its own session,
+        # because it deliberately loads objects with incomplete property collections. Were
+        # the tree's own session used, those incomplete collections would be cached in its
+        # identity map, and a later query for a different property would silently return
+        # nothing for objects already loaded.
+        session = core.Session()
+        try:
+            with temporary_halolist.temporary_halolist_table(session, object_ids) as temptable:
+                query = calculation.supplement_halo_query(
+                    temporary_halolist.halo_query(temptable))
+                results = calculation.values(query.all(), original_session)
+        finally:
+            session.close()
 
         results_from_object_id = {row[0]: row[1:] for row in results.T}
         no_result = [None] * n_columns
         rows = [results_from_object_id.get(object_id, no_result) for object_id in object_ids]
 
-        return [_column_to_array([row[i] for row in rows], fill_value)
-                for i in range(n_columns)]
+        return [_column_to_array([row[i] for row in rows]) for i in range(n_columns)]
 
     # ------------------------------------------------------------------
     # walking
@@ -612,35 +625,32 @@ def _take(values, indices):
     return [values[i] for i in indices]
 
 
-def _column_to_array(column, fill_value=np.nan):
-    """Convert a list of per-object results into an array, substituting for missing results.
+def _column_to_array(column):
+    """Convert a list of per-object results into an array, marking any missing results.
 
-    Missing results, which are represented by None, are replaced by fill_value if the
-    property is numeric (or an array of numbers), and are otherwise left as None in an
-    object array.
+    Missing results, which the live calculation machinery represents by None, are marked by
+    NaN if the column turns out to consist of floating point numbers, and are left as None
+    otherwise, in which case an object array is returned. See
+    :meth:`MergerTree.calculate_all` for the reasoning.
     """
-    n_missing = sum(1 for value in column if value is None)
+    present = [value for value in column if value is not None]
 
-    if n_missing == 0:
+    if len(present) == len(column):
         return live_calculation.Calculation._make_numpy_array(column)
 
-    if n_missing == len(column):
-        return np.full(len(column), fill_value)
+    if len(present) > 0:
+        # convert what is present in the usual way, to discover the type of the column
+        as_array = live_calculation.Calculation._make_numpy_array(present)
+        if isinstance(as_array, np.ndarray) and as_array.ndim == 1 \
+                and as_array.dtype.kind in "fc":
+            return np.array([np.nan if value is None else value for value in column],
+                            dtype=as_array.dtype)
 
-    template = next(value for value in column if value is not None)
-
-    if isinstance(template, np.ndarray) and template.dtype.kind in "fciu":
-        filler = np.full(template.shape, fill_value, dtype=float)
-        return live_calculation.Calculation._make_numpy_array(
-            [filler if value is None else value for value in column])
-
-    if isinstance(template, (numbers.Number, np.number)) and not isinstance(template, bool):
-        # NB deliberately promote to float, so that integer columns can carry NaN
-        return np.array([fill_value if value is None else value for value in column],
-                        dtype=float)
-
+    # NB the object array is filled element by element; assigning the list in one go would
+    # let numpy try to broadcast any arrays it contains
     result = np.empty(len(column), dtype=object)
-    result[:] = column
+    for i, value in enumerate(column):
+        result[i] = value
     return result
 
 
