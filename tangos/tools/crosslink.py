@@ -130,12 +130,13 @@ class GenericLinker(GenericTangosTool):
         snap2 = ts2.load()
 
         try:
-            cat = output_handler_1.match_objects(ts1.extension, ts2.extension, halo_min, halo_max, dmonly, threshold,
+            cat, members1, members2 = output_handler_1.match_objects(ts1.extension, ts2.extension, halo_min, halo_max, dmonly, threshold,
                                                  core.halo.SimulationObjectBase.object_typetag_from_code(object_typecode),
                                                  output_handler_for_ts2=output_handler_2)
             back_cat = output_handler_2.match_objects(ts2.extension, ts1.extension, halo_min, halo_max, dmonly, threshold,
                                                       core.halo.SimulationObjectBase.object_typetag_from_code(object_typecode),
-                                                      output_handler_for_ts2= output_handler_1)
+                                                      output_handler_for_ts2= output_handler_1,
+                                                      members1=members2, members2=members1)
         except Exception as e:
             if isinstance(e, KeyboardInterrupt):
                 raise
