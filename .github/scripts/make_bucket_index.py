@@ -34,8 +34,8 @@ _PAGE_TEMPLATE = """<!doctype html>
 </head>
 <body>
 <h1>tangos data</h1>
-<p>Tutorial simulations, example databases and test data for <a href="https://github.com/pynbody/tangos">tangos</a>.
-See the <a href="https://pynbody.github.io/tangos/">tangos documentation</a> for how they are used.</p>
+<p>Tutorial and continuous integration data for <a href="https://github.com/pynbody/tangos">tangos</a>.
+See the <a href="https://pynbody.github.io/tangos/">tangos documentation</a> for the tutorials that use it.</p>
 <p class="meta">{num_files} files, {total_size} in total. Generated {generated}.</p>
 {sections}
 </body>
