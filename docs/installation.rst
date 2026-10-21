@@ -25,7 +25,7 @@ small simulations, and it is what every tutorial on this site queries. It is
 
 .. code-block:: bash
 
-  $ curl -o ~/tangos_data.db https://pub-d85a828023a1452bbd3a294bc72003f0.r2.dev/data.db
+  $ curl -o ~/tangos_data.db https://tangos.pontzen.uk/tutorials//data.db
 
 Downloading it to ``~/tangos_data.db`` means there is nothing to configure:
 that is where tangos looks by default. To keep it anywhere else, see

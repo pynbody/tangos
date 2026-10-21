@@ -371,34 +371,34 @@ from end to end; the others are documented but not built.
    * - Dataset
      - Combination
      - Built by ``build.sh``
-   * - `tutorial_changa <https://zenodo.org/record/5155467/files/tutorial_changa.tar.gz?download=1>`__
+   * - `tutorial_changa <https://tangos.pontzen.uk/tutorials/tutorial_changa.tar.gz>`__
      - ChaNGa + AHF. The only tutorial dataset with baryons
      - yes
-   * - `tutorial_changa_blackholes <https://zenodo.org/record/5155467/files/tutorial_changa_blackholes.tar.gz?download=1>`__
+   * - `tutorial_changa_blackholes <https://tangos.pontzen.uk/tutorials/tutorial_changa_blackholes.tar.gz>`__
      - ChaNGa + AHF, same initial conditions plus AGN feedback
      - yes
-   * - `tutorial_changa_yt <https://zenodo.org/record/5155467/files/tutorial_changa_yt.tar.gz?download=1>`__
+   * - `tutorial_changa_yt <https://tangos.pontzen.uk/tutorials/tutorial_changa_yt.tar.gz>`__
      - Symlinks presenting ``tutorial_changa`` in a layout yt can read
      - no
-   * - `tutorial_gadget <https://zenodo.org/record/5155467/files/tutorial_gadget.tar.gz?download=1>`__
+   * - `tutorial_gadget <https://tangos.pontzen.uk/tutorials/tutorial_gadget.tar.gz>`__
      - Gadget + SubFind
      - yes
-   * - `tutorial_gadget_rockstar <https://zenodo.org/record/5155467/files/tutorial_gadget_rockstar.tar.gz?download=1>`__
+   * - `tutorial_gadget_rockstar <https://tangos.pontzen.uk/tutorials/tutorial_gadget_rockstar.tar.gz>`__
      - Rockstar catalogues for ``tutorial_gadget``; needs both
      - yes
-   * - `tutorial_gadget_ahf <https://zenodo.org/record/5155467/files/tutorial_gadget_ahf.tar.gz?download=1>`__
+   * - `tutorial_gadget_ahf <https://tangos.pontzen.uk/tutorials/tutorial_gadget_ahf.tar.gz>`__
      - AHF catalogues and ``AHF_mtree`` files for ``tutorial_gadget``; needs both
      - no
-   * - `tutorial_gadget4 <https://zenodo.org/record/5155467/files/tutorial_gadget4.tar.gz?download=1>`__
+   * - `tutorial_gadget4 <https://tangos.pontzen.uk/tutorials/tutorial_gadget4.tar.gz>`__
      - Gadget-4 + SubFind
      - yes
-   * - `tutorial_gadget4_hbtplus <https://zenodo.org/record/5155467/files/tutorial_gadget4_hbtplus.tar.gz?download=1>`__
+   * - `tutorial_gadget4_hbtplus <https://tangos.pontzen.uk/tutorials/tutorial_gadget4_hbtplus.tar.gz>`__
      - HBT+ catalogues for ``tutorial_gadget4``; needs both
      - yes
-   * - `tutorial_ramses <https://zenodo.org/record/5155467/files/tutorial_ramses.tar.gz?download=1>`__
+   * - `tutorial_ramses <https://tangos.pontzen.uk/tutorials/tutorial_ramses.tar.gz>`__
      - RAMSES + HOP, a zoom simulation
      - yes
-   * - `enzo.tinycosmo <https://zenodo.org/record/5155467/files/enzo.tinycosmo.tar.gz?download=1>`__
+   * - `enzo.tinycosmo <https://tangos.pontzen.uk/tutorials/enzo.tinycosmo.tar.gz>`__
      - Enzo + Rockstar, read through yt
      - yes
 

@@ -21,12 +21,12 @@ Getting the simulation data
 ---------------------------
 
 Download the `raw simulation data
-<https://zenodo.org/record/5155467/files/tutorial_changa.tar.gz?download=1>`_.
+<https://tangos.pontzen.uk/tutorials/tutorial_changa.tar.gz>`_.
 Unpack the tar file either in your home folder or the folder that you pointed
 the ``TANGOS_SIMULATION_FOLDER`` environment variable to.
 
 Finally, download the `tutorial_changa_yt
-<https://zenodo.org/record/5155467/files/tutorial_changa_yt.tar.gz?download=1>`_
+<https://tangos.pontzen.uk/tutorials/tutorial_changa_yt.tar.gz>`_
 tar. Unpack the tar file in the same folder as you unpacked
 ``tutorial_changa``. The ``tutorial_changa_yt`` folder contains a series of
 symlinks that present the dataset with a slightly different files structure
