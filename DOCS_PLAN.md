@@ -186,14 +186,29 @@ database is **already built on every PR**:
 against mini data (Zenodo 12189455), uploads `data.db` as an artifact, and verifies it
 with `tangos diff`. So decouple database *production* from docs *building*.
 
-- [ ] **Needs a human first**: put the much larger *source files* — the raw
+- [x] **Needed a human first**: put the much larger *source files* — the raw
       simulation data and catalogues needed to recreate the tutorial database —
-      on the r2 bucket, and give the bucket a permanent public URL in place of
-      the current development one (`pub-d85a828023a1452bbd3a294bc72003f0.r2.dev`).
-      The database itself is already served from there fast enough (25 s for
-      1.28 GB, measured). The URL appears in exactly two places:
-      `TUTORIAL_DATABASE_URL` in `tangos/test_utils/__init__.py`, and step 2 of
-      `docs/installation.rst`.
+      somewhere permanent, and give it a public URL in place of the development
+      one (`pub-d85a828023a1452bbd3a294bc72003f0.r2.dev`). **Done**: everything
+      now lives under `https://tangos.pontzen.uk/`, with the tutorial data under
+      `/tutorials/` and the CI fixtures under `/continuous_integration/`.
+      `TUTORIAL_DATABASE_URL`, `docs/installation.rst`, `build.sh`,
+      `integration-test.yaml` and every dataset link in
+      `reference/simulation_formats` point there.
+
+      **But four datasets are not on the new server yet**, verified by two
+      rounds of HTTP requests: `tutorial_gadget`, `tutorial_gadget4`,
+      `tutorial_gadget4_hbtplus` and `enzo.tinycosmo` all return 404, while
+      `tutorial_changa`, `tutorial_changa_blackholes`, `tutorial_changa_yt`,
+      `tutorial_ramses`, `tutorial_gadget_ahf`, `tutorial_gadget_rockstar` and
+      `continuous_integration/reference_database.db` are present. That breaks
+      four of the ten dataset links in `reference/simulation_formats`, and it
+      breaks `build.sh`: `build_gadget_subfind`, `build_gadget4`,
+      `build_gadget4_hbtplus` and `build_enzo_yt` cannot fetch their data, and
+      `build_gadget_rockstar` needs `tutorial_gadget` as well as its own
+      catalogues. **Stage 3 depends on this**, because it re-enables the
+      integration test that runs `build.sh`. Needs a human with access to the
+      bucket.
 - [x] Add `tangos.test_utils.precache_tutorial_database()`, a direct analogue of
       `pynbody.test_utils.precache_test_data()` — **done in stage 1**, which
       needed it to build executable tutorials at all. It carries the same "must

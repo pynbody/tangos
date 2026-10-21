@@ -19,9 +19,9 @@ import pathlib
 import shutil
 import urllib.request
 
-# The tutorial database. This is currently a development URL; publishing the
-# database, and the much larger files needed to recreate it, at a permanent
-# public location is tracked in DOCS_PLAN.md.
+# The tutorial database, served from the project's permanent public location.
+# The raw simulation data used to recreate it lives alongside it under
+# /tutorials/; see DOCS_PLAN.md for which datasets are present.
 TUTORIAL_DATABASE_URL = "https://tangos.pontzen.uk/tutorials/data.db"
 
 # A tangos database that does not exist is silently created, empty, by anything

@@ -258,8 +258,11 @@ is which those are.
 * ``contamination_fraction`` is a built-in property giving the fraction of a
   halo's dark matter particles that came from outside the high resolution
   region. ``tangos list-possible-properties`` shows everything available.
-* ``--load-mode=server-shared-mem --backend=multiprocessing=8`` tells tangos to use 8 cores on the same machine, which
-    speeds up the calculation. :doc:`/mpi` gives more detail on these options.
+* ``--load-mode=server-shared-mem --backend=multiprocessing-4`` tells tangos to
+  spread the work over four processes on this machine. One of them is a server
+  that holds the simulation data, so this uses three cores for calculation;
+  raise the number to suit your machine. :doc:`/mpi` explains both options, and
+  when a different load mode is the right choice.
 
 A halo with a contamination fraction near zero is clean; one near one is mostly
 made of coarse particles and is an artefact of the zoom technique rather than
@@ -277,7 +280,7 @@ formation histories:
   $ tangos write dm_density_profile gas_density_profile uvi_image SFR_histogram \
       --with-prerequisites --include-only="contamination_fraction<0.01" \
       --include-only="NDM()>1000" --for tutorial_changa \
-      --load-mode=server-shared-mem --backend=multiprocessing=8
+      --load-mode=server-shared-mem --backend=multiprocessing-4
 
 Three of those options are worth understanding, because they are what make a
 database like this affordable to build:
