@@ -22,7 +22,7 @@ import urllib.request
 # The tutorial database. This is currently a development URL; publishing the
 # database, and the much larger files needed to recreate it, at a permanent
 # public location is tracked in DOCS_PLAN.md.
-TUTORIAL_DATABASE_URL = "https://tangos.pontzen.uk/tutorials//data.db"
+TUTORIAL_DATABASE_URL = "https://tangos.pontzen.uk/tutorials/data.db"
 
 # A tangos database that does not exist is silently created, empty, by anything
 # that opens a session (see KNOWN_ISSUES.md), and an empty one is around 80 KB.
