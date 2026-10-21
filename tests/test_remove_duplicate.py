@@ -21,9 +21,9 @@ def setup_module():
 
     session = core.get_default_session()
     px = create_property(halo, "Mvir", -1., session)
-    session.add(px, session)
+    session.add(px)
     px = create_property(halo, "Mvir", -2., session)
-    session.add(px, session)
+    session.add(px)
     session.commit()
 
     # Also create links between halos, including duplicates
