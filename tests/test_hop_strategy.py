@@ -252,6 +252,23 @@ def test_major_descendants():
     results = halo_finding.MultiHopMajorDescendantsStrategy(tangos.get_item("sim/ts1/2"), include_startpoint=True).all()
     testing.assert_halolists_equal(results, ["sim/ts1/2","sim/ts2/1","sim/ts3/1"])
 
+def test_major_descendants_ordered_by_time():
+    # All link weights in this test database are 1.0, so ordering by weight would leave the order of the
+    # descendants entirely to tie-breaking. The default ordering must therefore be by time.
+    strategy = halo_finding.MultiHopMajorDescendantsStrategy(tangos.get_item("sim/ts1/2"), include_startpoint=True)
+    assert strategy.weights() == [1.0, 1.0, 1.0]
+    assert strategy._order_by_names == ['time_asc', 'halo_number_asc']
+
+def test_ties_broken_by_halo_id():
+    for order_by in ['weight', 'time_asc', 'time_desc']:
+        results, weights = halo_finding.MultiHopStrategy(tangos.get_item("sim/ts3/1"), 2, 'backwards',
+                                                         order_by=order_by).all_and_weights()
+        assert len(results) > 1
+        for (h1, w1), (h2, w2) in zip(zip(results, weights), zip(results[1:], weights[1:])):
+            tied = w1 == w2 if order_by == 'weight' else h1.timestep_id == h2.timestep_id
+            if tied:
+                assert h1.id < h2.id
+
 
 def test_across():
     results = halo_finding.MultiHopStrategy(tangos.get_item("sim/ts2/2"),directed='across').all()

@@ -62,7 +62,8 @@ class HopStrategy:
          - 'halo_number_desc' - the halo number, descending
          - 'nhops' - the number of hops taken to reach the halo (MultiHopStrategy only)
 
-        Multiple names can be given to order by more than one property.
+        Multiple names can be given to order by more than one property. Any remaining ties are broken
+        by the database id of the halo reached, so that the ordering is deterministic.
         """
         if names is None:
             names = ['weight']
@@ -120,7 +121,9 @@ class HopStrategy:
             return link[0].halo_to
 
     def _order_by_clause(self, halo_alias, timestep_alias):
-        return [self._generate_order_arg_from_name(name, halo_alias, timestep_alias) for name in self._order_by_names]
+        # halo_to_id is appended as a final tiebreaker so that the ordering is fully determined
+        return [self._generate_order_arg_from_name(name, halo_alias, timestep_alias) for name in self._order_by_names] \
+               + [self._link_orm_class.halo_to_id]
 
     def _generate_order_arg_from_name(self, name, halo_alias, timestep_alias):
         if name == 'weight':

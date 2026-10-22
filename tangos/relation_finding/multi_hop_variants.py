@@ -57,12 +57,15 @@ class MultiHopMostRecentMergerStrategy(MultiHopAllProgenitorsStrategy):
 class MultiHopMajorDescendantsStrategy(MultiHopStrategy):
     """Suggests the major descendant for a halo at every step"""
 
-    def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False, **kwargs):
+    def __init__(self, halo_from, nhops_max=NHOPS_MAX_DEFAULT, include_startpoint=False, order_by=None, **kwargs):
+        if order_by is None:
+            order_by = ['time_asc', 'halo_number_asc']
         self.sim_id = halo_from.timestep.simulation_id
         super().__init__(halo_from, nhops_max,
                                                                directed='forwards',
                                                                include_startpoint=include_startpoint,
                                                                target=halo_from.timestep.simulation,
+                                                               order_by=order_by,
                                                                **kwargs)
 
     def _supplement_halolink_query_with_filter(self, query, table):
