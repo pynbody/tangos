@@ -1,4 +1,5 @@
 import functools
+import re
 import threading
 
 import pyparsing as pp
@@ -37,9 +38,22 @@ UNARY_OPS_PYPARSING = []
 def generate_property_from_inop(opFunctionName, tokens):
     return LiveProperty(opFunctionName, *tokens[0])
 
+_IN_OP_SYMBOLS = {opSymbol for opSymbol, _ in IN_OPS}
+
+def _matcher_for(opSymbol):
+    """Match opSymbol, but not when it is the prefix of a longer operator (e.g. > inside >=)
+
+    IN_OPS is ordered by precedence, so a shorter operator can be tried before a longer one
+    that it prefixes; a bare Literal would then consume part of the longer operator."""
+    longer = [s for s in _IN_OP_SYMBOLS if s != opSymbol and s.startswith(opSymbol)]
+    if not longer:
+        return pp.Literal(opSymbol)
+    suffixes = "|".join(re.escape(s[len(opSymbol):]) for s in longer)
+    return pp.Regex(re.escape(opSymbol) + f"(?!{suffixes})")
+
 for opSymbol, opFunctionName in IN_OPS:
     opGeneration = functools.partial(generate_property_from_inop, opFunctionName)
-    IN_OPS_PYPARSING.append((pp.Literal(opSymbol).suppress(), 2, pp.opAssoc.RIGHT, opGeneration))
+    IN_OPS_PYPARSING.append((_matcher_for(opSymbol).suppress(), 2, pp.opAssoc.RIGHT, opGeneration))
 
 for opSymbol, opFunctionName in UNARY_OPS:
     opGeneration = functools.partial(generate_property_from_inop, opFunctionName)
