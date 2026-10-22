@@ -4,10 +4,10 @@ get_tutorial_data() {
   if [ ! -d $1 ]; then
     if [ -z "$INTEGRATION_TESTING" ]; then
       echo "Downloading tutorial data for $1"
-      wget -nv -O - https://zenodo.org/record/5155467/files/$1.tar.gz?download=1 | tar -xzv
+      wget -nv -O - https://tangos.pontzen.uk/tutorials/$1.tar.gz | tar -xzv
     else
       echo "Downloading mini tutorial data for $1"
-      wget -nv -O - https://zenodo.org/records/12189455/files/$1.tar.gz?download=1 | tar -xzv
+      wget -nv -O - https://tangos.pontzen.uk/continuous_integration/$1.tar.gz | tar -xzv
     fi
   fi
 }
