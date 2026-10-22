@@ -143,6 +143,11 @@ class HopStrategy:
                or 'halo_number_desc' in self._order_by_names
 
     def _order_query(self, query):
+        query, order_clause = self._join_for_ordering(query)
+        return query.order_by(*order_clause)
+
+    def _join_for_ordering(self, query):
+        """Add any joins needed for the requested ordering; return the new query and the order clause"""
         assert isinstance(query, sqlalchemy.orm.query.Query)
         timestep_alias = None
         halo_alias = None
@@ -155,8 +160,7 @@ class HopStrategy:
                   contains_eager(self._link_orm_class.halo_to.of_type(halo_alias))\
                   .contains_eager(halo_alias.timestep.of_type(timestep_alias))
             )
-        query = query.order_by(*self._order_by_clause(halo_alias, timestep_alias))
-        return query
+        return query, self._order_by_clause(halo_alias, timestep_alias)
 
 class HopMajorDescendantStrategy(HopStrategy):
     """A hop strategy that suggests the major descendant for a halo"""

@@ -33,13 +33,15 @@ def _delete_temp_halolist(table):
     del _temp_sessions[id(table)]
 
 def _insert_into_temp_halolist(table, ids):
+    # Row ids are always set explicitly, since the order of the table (by id) is used to
+    # reconstruct the order of the input. Autoincrement order is not guaranteed by all backends.
     connection = _get_connection_for(table)
     if isinstance(ids, sqlalchemy.orm.query.Query):
-        connection.execute(table.insert().from_select(['halo_id'], ids))
+        connection.execute(table.insert().from_select(['halo_id', 'id'], ids))
     else:
         connection.execute(
             table.insert(),
-            [{'halo_id': id} for id in ids]
+            [{'id': i, 'halo_id': id} for i, id in enumerate(ids, 1)]
         )
 
 def _get_session_for(table):
@@ -75,6 +77,10 @@ def halolink_query(table):
 
 @contextlib.contextmanager
 def temporary_halolist_table(session, ids=None, callback=None):
+    """Create a temporary table listing halo ids, in order.
+
+    ids may be a list of halo ids, or a query returning (halo_id, rank) where the rank is a unique
+    integer defining the order of rows (e.g. from ROW_NUMBER() OVER (ORDER BY ...))."""
 
     table = _create_temp_halolist(session)
     if ids is not None:

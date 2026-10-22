@@ -109,10 +109,18 @@ class MultiHopStrategy(HopStrategy):
             raise
 
         thl = temporary_halolist.temporary_halolist_table(self.session,
-                                                          self._order_query(self._generate_query(halo_ids_only=True)),
+                                                          self._generate_ranked_id_query(),
                                                           callback=lambda: tt.__exit__(None, None, None)
                                                           )
         return thl
+
+    def _generate_ranked_id_query(self):
+        """Query returning (halo_to_id, rank), where rank is the position in the requested ordering.
+
+        The rank is used as the explicit id in the temporary halolist. Relying on an ORDER BY in
+        an INSERT ... SELECT to determine autoincrement order is not safe (e.g. on MySQL)."""
+        query, order_clause = self._join_for_ordering(self._generate_query(halo_ids_only=True))
+        return query.add_columns(sqlalchemy.func.row_number().over(order_by=order_clause))
 
     def _generate_multihop_results(self):
         self._seed_temp_table()
@@ -415,6 +423,6 @@ class MultiHopStrategy(HopStrategy):
 
     def _generate_order_arg_from_name(self, name, halo_alias, timestep_alias):
         if name == 'nhops':
-            return self._link_orm_class.c.nhops
+            return self._link_orm_class.nhops
         else:
             return super()._generate_order_arg_from_name(name, halo_alias, timestep_alias)
