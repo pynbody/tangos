@@ -12,9 +12,8 @@ on:
 
 jobs:
   update-index:
-    uses: pynbody/pynbody/.github/workflows/bucket-index.yaml@claude/festive-wright-ghh1dq
+    uses: pynbody/pynbody/.github/workflows/bucket-index.yaml@master
     with:
-      pynbody-ref: claude/festive-wright-ghh1dq
       title: tangos data
       description: >-
         Tutorial and continuous integration data for <a href="https://github.com/pynbody/tangos">tangos</a>.
