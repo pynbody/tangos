@@ -1,35 +1,22 @@
 name: Update data bucket index
 
-# Regenerates index.html at the root of the tangos data bucket,
-# listing everything in it. Run manually after changing the bucket's contents.
+# Regenerates index.html at the root of the tangos data bucket, listing everything in it.
+# Run manually after changing the bucket's contents. The work is done by pynbody's reusable
+# bucket-index workflow, using this repository's R2 secrets.
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - .github/scripts/make_bucket_index.py
-
-concurrency:
-  group: bucket-index
+      - .github/workflows/bucket-index.yaml
 
 jobs:
   update-index:
-    runs-on: ubuntu-latest
-    env:
-      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_BUCKET: ${{ secrets.R2_BUCKET }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      # newer boto3 versions add checksums that R2 has had trouble with
-      AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
-      AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
-    steps:
-    - uses: actions/checkout@v6
-    - name: Install Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: "3.12"
-    - name: Install boto3
-      run: python -m pip install boto3
-    - name: Generate and upload index.html
-      run: python .github/scripts/make_bucket_index.py
+    uses: pynbody/pynbody/.github/workflows/bucket-index.yaml@claude/festive-wright-ghh1dq
+    with:
+      pynbody-ref: claude/festive-wright-ghh1dq
+      title: tangos data
+      description: >-
+        Tutorial and continuous integration data for <a href="https://github.com/pynbody/tangos">tangos</a>.
+        See the <a href="https://pynbody.github.io/tangos/">tangos documentation</a> for the tutorials that use it.
+    secrets: inherit
