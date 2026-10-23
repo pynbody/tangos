@@ -62,7 +62,8 @@ class HopStrategy:
          - 'halo_number_desc' - the halo number, descending
          - 'nhops' - the number of hops taken to reach the halo (MultiHopStrategy only)
 
-        Multiple names can be given to order by more than one property.
+        Multiple names can be given to order by more than one property. Any remaining ties are broken
+        by the database id of the halo reached, so that the ordering is deterministic.
         """
         if names is None:
             names = ['weight']
@@ -120,7 +121,9 @@ class HopStrategy:
             return link[0].halo_to
 
     def _order_by_clause(self, halo_alias, timestep_alias):
-        return [self._generate_order_arg_from_name(name, halo_alias, timestep_alias) for name in self._order_by_names]
+        # halo_to_id is appended as a final tiebreaker so that the ordering is fully determined
+        return [self._generate_order_arg_from_name(name, halo_alias, timestep_alias) for name in self._order_by_names] \
+               + [self._link_orm_class.halo_to_id]
 
     def _generate_order_arg_from_name(self, name, halo_alias, timestep_alias):
         if name == 'weight':
@@ -143,6 +146,11 @@ class HopStrategy:
                or 'halo_number_desc' in self._order_by_names
 
     def _order_query(self, query):
+        query, order_clause = self._join_for_ordering(query)
+        return query.order_by(*order_clause)
+
+    def _join_for_ordering(self, query):
+        """Add any joins needed for the requested ordering; return the new query and the order clause"""
         assert isinstance(query, sqlalchemy.orm.query.Query)
         timestep_alias = None
         halo_alias = None
@@ -155,8 +163,7 @@ class HopStrategy:
                   contains_eager(self._link_orm_class.halo_to.of_type(halo_alias))\
                   .contains_eager(halo_alias.timestep.of_type(timestep_alias))
             )
-        query = query.order_by(*self._order_by_clause(halo_alias, timestep_alias))
-        return query
+        return query, self._order_by_clause(halo_alias, timestep_alias)
 
 class HopMajorDescendantStrategy(HopStrategy):
     """A hop strategy that suggests the major descendant for a halo"""

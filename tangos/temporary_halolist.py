@@ -15,7 +15,7 @@ def _create_temp_halolist(session):
     halolist_table = Table(
             'halolist_'+rstr,
             core.Base.metadata,
-            Column('id',Integer, primary_key=True),
+            Column('id',Integer, primary_key=True), # the order of rows is defined by this column
             Column('halo_id',Integer), # don't declare ForeignKey, as MySQL can't handle it
             prefixes = ["TEMPORARY"]
         )
@@ -32,15 +32,17 @@ def _delete_temp_halolist(table):
     core.Base.metadata.remove(table)
     del _temp_sessions[id(table)]
 
-def _insert_into_temp_halolist(table, ids):
+def _insert_into_temp_halolist(table, halo_ids):
+    # The id column, which defines the order of rows, is always populated explicitly rather than
+    # left to autoincrement, since not all backends assign autoincrement values in insertion order
     connection = _get_connection_for(table)
-    if isinstance(ids, sqlalchemy.orm.query.Query):
-        connection.execute(table.insert().from_select(['halo_id'], ids))
+    if isinstance(halo_ids, sqlalchemy.orm.query.Query):
+        # query returns (halo_id, rank) pairs; see temporary_halolist_table
+        connection.execute(table.insert().from_select(['halo_id', 'id'], halo_ids))
     else:
-        connection.execute(
-            table.insert(),
-            [{'halo_id': id} for id in ids]
-        )
+        rows = [{'halo_id': halo_id, 'id': rank} for rank, halo_id in enumerate(halo_ids, start=1)]
+        if len(rows) > 0: # SQLAlchemy deprecates executing with an empty parameter list
+            connection.execute(table.insert(), rows)
 
 def _get_session_for(table):
     global _temp_sessions
@@ -75,6 +77,10 @@ def halolink_query(table):
 
 @contextlib.contextmanager
 def temporary_halolist_table(session, ids=None, callback=None):
+    """Create a temporary table listing halo ids, in order.
+
+    ids may be a list of halo ids, or a query returning (halo_id, rank) where the rank is a unique
+    integer defining the order of rows (e.g. from ROW_NUMBER() OVER (ORDER BY ...))."""
 
     table = _create_temp_halolist(session)
     if ids is not None:
