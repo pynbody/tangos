@@ -1,0 +1,21 @@
+name: Update data bucket index
+
+# Regenerates index.html at the root of the tangos data bucket, listing everything in it.
+# Run manually after changing the bucket's contents. The work is done by pynbody's reusable
+# bucket-index workflow, using this repository's R2 secrets.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/bucket-index.yaml
+
+jobs:
+  update-index:
+    uses: pynbody/pynbody/.github/workflows/bucket-index.yaml@master
+    with:
+      title: tangos data
+      description: >-
+        Tutorial and continuous integration data for <a href="https://github.com/pynbody/tangos">tangos</a>.
+        See the <a href="https://pynbody.github.io/tangos/">tangos documentation</a> for the tutorials that use it.
+    secrets: inherit
