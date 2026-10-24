@@ -215,22 +215,35 @@ with `tangos diff`. So decouple database *production* from docs *building*.
       the docs half (`TUTORIAL_DATABASE_URL`, `docs/installation.rst`, every
       dataset link in `reference/simulation_formats`) is on this branch.
 
-      **Four datasets are still missing from `/tutorials/`**, verified by three
-      rounds of HTTP requests, most recently 2026-10-24: `tutorial_gadget`,
-      `tutorial_gadget4`, `tutorial_gadget4_hbtplus` and `enzo.tinycosmo` all
-      return 404 there. Needs a human with access to the bucket.
+      **One dataset is still missing from `/tutorials/`**: `tutorial_gadget`,
+      which 404s there although it is a genuine tutorial dataset that the old
+      Gadget+SubFind, +Rockstar and +AHF pages all told people to download.
+      Needs a human with access to the bucket. Note `tutorial_gadget_rockstar`
+      and `tutorial_gadget_ahf` are *catalogue-only* tarballs that need the
+      snapshots from `tutorial_gadget`, so this one gap takes out three
+      combinations for anyone working by hand.
 
-      Be precise about what that does and does not break, because it is easy to
-      overstate. `build.sh` chooses its path by `INTEGRATION_TESTING`:
+      `tutorial_gadget4`, `tutorial_gadget4_hbtplus` and `enzo.tinycosmo` also
+      404 there, but **that is correct and needs no upload**: no full dataset
+      for them has ever existed. Each was introduced purely as an integration
+      test fixture — "Add integration test for gadget 4 / HDF format"
+      (2022-07-05), "Add integration test for improved yt functionality"
+      (2022-09-14), "Add HBT+ mini-test set" (2024-06-20) — and no
+      documentation page has ever offered one for download; the only commit in
+      the whole history naming them under `docs/` is stage 2's own. They exist
+      solely as cut-down fixtures under `/continuous_integration/`.
+      `reference/simulation_formats` was initially wrong about this, inferring
+      `/tutorials/` URLs for them from `build.sh`'s pattern, and now says
+      plainly that the three have no tutorial dataset.
+
+      Be precise about what the real gap does and does not break, because it is
+      easy to overstate. `build.sh` chooses its path by `INTEGRATION_TESTING`:
       `/continuous_integration/` when set, `/tutorials/` when not. **All eight
       datasets it names are present under `/continuous_integration/`**, as is
       `reference_database.db`, and #310's integration test built the whole
       database and passed `tangos diff` against it — so CI is *not* blocked, and
-      neither is stage 3's use of it. What is broken is the human path: the four
-      dataset links in `reference/simulation_formats` 404, and anyone running
-      `build.sh` for real (the 35 GB route) cannot fetch those four, which also
-      takes out `build_gadget_rockstar`, since it needs `tutorial_gadget` as well
-      as its own catalogues.
+      neither is stage 3's use of it. What is broken is the human path: running
+      `build.sh` for real (the 35 GB route) cannot fetch `tutorial_gadget`.
 - [x] Add `tangos.test_utils.precache_tutorial_database()`, a direct analogue of
       `pynbody.test_utils.precache_test_data()` — **done in stage 1**, which
       needed it to build executable tutorials at all. It carries the same "must
@@ -274,7 +287,16 @@ keeps the language reference executable if a download fails.
       `.../gather/{typetag}/{name}.json`, `cascade_plot`
 - [ ] The four supported code × finder combinations with no page at all:
       Gadget-4+SubFind, Gadget-4+HBT+, Ramses+AdaptaHOP, Enzo+Rockstar-via-yt. Two are
-      built by `build.sh` on every PR
+      built by `build.sh` on every PR.
+
+      **None of them has data a reader can download**, so none can take the
+      shape of the other tutorials: there is no "fetch this tarball" step to
+      write. Gadget-4+SubFind, Gadget-4+HBT+ and Enzo+Rockstar-via-yt exist only
+      as integration test fixtures (see **Stage 3**), and Ramses+AdaptaHOP has no
+      dataset at all. Either publish real datasets first, or write these as
+      reference material addressed to someone who already has their own data —
+      which is what `reference/simulation_formats` currently does for them, and
+      may be all they need.
 - [ ] `--pickle-results` — the actual answer to the sqlite-locking failure that
       `rdbms.md` warns about, undocumented
 

@@ -98,14 +98,14 @@ The combinations
      - auto
      - ``tangos link``, or ``tangos import-subfind-trees``
      - yes
-     - ``tutorial_gadget4``
+     - --
    * - Gadget-4 (HDF5)
      - HBT+
      - :class:`~tangos.input_handlers.pynbody.Gadget4HBTPlusInputHandler`
      - auto
      - ``tangos link``, using HBT+'s own tracking
      - yes
-     - ``tutorial_gadget4_hbtplus``
+     - --
    * - Gadget HDF5, EAGLE layout
      - SubFind
      - :class:`~tangos.input_handlers.eagle.EagleLikeInputHandler`
@@ -154,7 +154,7 @@ The combinations
      - ``yt.YtInputHandler``
      - ``tangos import-consistent-trees``
      - no
-     - ``enzo.tinycosmo``
+     - --
 
 **Groups** says whether the format has a two-level FoF-group/subhalo hierarchy,
 which you populate with a second pass of each command carrying ``--type
@@ -265,8 +265,9 @@ explicitly, as above, still imports them individually.
 Gadget-4 + SubFind
 ~~~~~~~~~~~~~~~~~~
 
-As for Gadget + SubFind, both property passes are needed for the group
-hierarchy:
+``tutorial_gadget4`` here is the integration test's fixture, not a dataset you
+can download -- see :ref:`tutorial_datasets`. As for Gadget + SubFind, both
+property passes are needed for the group hierarchy:
 
 .. code-block:: bash
 
@@ -303,7 +304,8 @@ before the property imports:
    tangos import-properties --type group --for tutorial_gadget4_hbtplus
 
 The snapshots live in the ``tutorial_gadget4`` folder and the HBT+ catalogues
-in ``tutorial_gadget4_hbtplus``, so you need both unpacked.
+in ``tutorial_gadget4_hbtplus``, so you need both unpacked. Both are integration
+test fixtures rather than downloadable datasets -- see :ref:`tutorial_datasets`.
 
 RAMSES + HOP
 ~~~~~~~~~~~~
@@ -334,6 +336,9 @@ computed from the contamination counts if AdaptaHOP stored them.
 Enzo + Rockstar, through yt
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+``enzo.tinycosmo`` is the integration test's fixture, not a dataset you can
+download -- see :ref:`tutorial_datasets`.
+
 yt is not imported unless you ask for it, so this combination always names a
 handler; ``yt.YtInputHandler`` is enough, because the subclass is then chosen
 from the files present. You import properties twice, the second pass asking for
@@ -354,6 +359,8 @@ These two have pages of their own, because what differs is the data rather than
 the command sequence: :doc:`/how-to/eagle` covers the EAGLE directory layout and
 the registration needed to download the particle data, and :doc:`/how-to/yt`
 covers reading a ChaNGa+AHF run with yt in place of pynbody.
+
+.. _tutorial_datasets:
 
 Tutorial datasets
 -----------------
@@ -389,18 +396,18 @@ from end to end; the others are documented but not built.
    * - `tutorial_gadget_ahf <https://tangos.pontzen.uk/tutorials/tutorial_gadget_ahf.tar.gz>`__
      - AHF catalogues and ``AHF_mtree`` files for ``tutorial_gadget``; needs both
      - no
-   * - `tutorial_gadget4 <https://tangos.pontzen.uk/tutorials/tutorial_gadget4.tar.gz>`__
-     - Gadget-4 + SubFind
-     - yes
-   * - `tutorial_gadget4_hbtplus <https://tangos.pontzen.uk/tutorials/tutorial_gadget4_hbtplus.tar.gz>`__
-     - HBT+ catalogues for ``tutorial_gadget4``; needs both
-     - yes
    * - `tutorial_ramses <https://tangos.pontzen.uk/tutorials/tutorial_ramses.tar.gz>`__
      - RAMSES + HOP, a zoom simulation
      - yes
-   * - `enzo.tinycosmo <https://tangos.pontzen.uk/tutorials/enzo.tinycosmo.tar.gz>`__
-     - Enzo + Rockstar, read through yt
-     - yes
+
+Three supported combinations have no tutorial dataset at all: **Gadget-4 +
+SubFind**, **Gadget-4 + HBT+** and **Enzo + Rockstar through yt**. Each was
+added to tangos with a cut-down fixture built for the integration test and
+nothing else, so there is no published time series to play with -- only a
+handful of snapshots, sized for CI rather than for science. The commands shown
+for them above are taken from ``build.sh`` and are exercised on every run of
+the integration test, but you will need simulation data of your own to follow
+them.
 
 The full tutorial data comes to about 35 GB. If you only want to *query* a
 database rather than build one, you do not need any of it: the tutorials use a
