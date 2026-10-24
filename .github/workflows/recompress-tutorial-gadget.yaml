@@ -112,7 +112,10 @@ jobs:
               fail(f"{target_key} already exists; refusing to overwrite it. "
                    "Check it by hand and delete it first if it is the broken one.")
 
-          client.download_file(bucket, source_key, 'tutorial_gadget.tar')
+          # Both transfer helpers are called with keywords throughout: upload_file takes
+          # (Filename, Bucket, Key) and download_file takes (Bucket, Key, Filename), and
+          # passing either positionally invites binding the bucket to the filename.
+          client.download_file(Bucket=bucket, Key=source_key, Filename='tutorial_gadget.tar')
           on_disk = os.path.getsize('tutorial_gadget.tar')
           if on_disk != head['ContentLength']:
               fail(f"downloaded {on_disk} bytes but the object is {head['ContentLength']}")
@@ -186,7 +189,7 @@ jobs:
           # ContentType matches the .tar.gz objects already in the bucket, which are served
           # as application/x-tar. Deliberately no ContentEncoding: setting gzip there makes
           # some clients transparently decompress, which breaks `tar -xz`.
-          client.upload_file(bucket, Key=target_key, Filename='tutorial_gadget.tar.gz',
+          client.upload_file(Filename='tutorial_gadget.tar.gz', Bucket=bucket, Key=target_key,
                              ExtraArgs={'ContentType': 'application/x-tar'})
 
           uploaded = client.head_object(Bucket=bucket, Key=target_key)['ContentLength']
