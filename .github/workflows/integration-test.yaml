@@ -1,7 +1,17 @@
 name: Perform test database build and verification
 
+# TEMPORARILY DISABLED for the documentation rebuild: the `pull_request` trigger is
+# commented out, so this only runs when dispatched by hand. It builds a test database
+# from real simulation data and takes far longer than any docs change warrants.
+#
+# MUST BE RE-ENABLED before docs-refactor-main merges into master -- uncomment the
+# `pull_request:` line below. Tracked in DOCS_PLAN.md under "Before merging to master".
+#
+# Note this workflow is not merely incidental to the docs work: stage 3 of the plan
+# depends on the database it builds, so it needs restoring before that stage, not just
+# before the final merge.
 on:
-  pull_request:
+  # pull_request:
   workflow_dispatch:
 
 defaults:

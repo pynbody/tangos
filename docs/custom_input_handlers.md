@@ -6,7 +6,7 @@ The developers of _tangos_ use _pynbody_ for this purpose but it can be adapted 
 with relative ease.
 
 As a demonstration, embryonic _yt_ support is included; more information is in the
-[using with yt](using_with_yt.md) document.
+[using with yt](how-to/yt.rst) document.
 
 Tangos refers to systems that can load the raw simulation data as _handlers_.
 The remainder of this page explores the requirements for such handlers, and how they can be exposed

@@ -1,0 +1,473 @@
+.. Checked and edited by AP 31/08/26 
+
+.. _live_calculations:
+
+The live calculation system
+===========================
+
+Tangos stores properties of objects (halos, black holes, groups, ...) in a
+database. Often what you actually want is not a stored property but something
+derived from one: the virial velocity rather than the mass and radius; the
+density at half the virial radius rather than the whole density profile; the
+mass of a halo's descendant five snapshots later.
+
+You could of course loop over objects in python and work these things out one
+at a time. But that means a database query per object, and for a timestep with
+thousands of halos it is slow. The *live calculation* system instead lets you
+describe the derived quantity once, and then evaluates it for every object of
+interest in a small number of queries. Using
+:meth:`~tangos.core.timestep.TimeStep.calculate_all`,
+:meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors` or
+:meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_descendants` with a live
+calculation is typically far faster than the equivalent python loop.
+
+This page explains how to write live calculations, starting from simple
+examples and building up to links and histogram reassembly. The full syntax,
+and the complete list of built-in functions, are in
+:doc:`/live_calculation`.
+
+If you have not yet got a database to play with, see :doc:`quickstart`. The
+vocabulary used below -- objects, properties, links, timesteps, halo paths --
+is the vocabulary of
+:ref:`concepts`.
+
+
+Two ways to write a calculation
+-------------------------------
+
+A live calculation can be written either as a **python lambda taking no
+arguments**, or as a **string** in a small mini-language. The two are exactly
+equivalent -- they produce the same calculation, and run at the same speed:
+
+.. code-block:: python
+
+    h.calculate(lambda: at(Rvir/4, dm_density_profile))
+    h.calculate("at(Rvir/4, dm_density_profile)")
+
+For most interactive and scripted work the lambda form is the more comfortable
+of the two. It is genuine python, so your editor highlights it, matches your
+brackets, and complains if you leave one unclosed; and there is no quoting to
+get right.
+
+.. versionadded:: 1.12.0
+   The lambda form.
+
+The string form has always been available, and remains fully supported; it is
+the one to reach for whenever a calculation has to exist as text: typed into
+the
+:doc:`web interface <webserver>`, read from a configuration file or a command line argument,
+or stored in a database. It is also the form used in most existing tangos
+scripts and in the tutorial notebooks.
+
+Both forms may be passed anywhere a calculation is expected --
+:meth:`~tangos.core.halo.SimulationObjectBase.calculate`,
+:meth:`~tangos.core.timestep.TimeStep.calculate_all`,
+:meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors`,
+:meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_descendants` -- and the two may
+be mixed freely in a single call:
+
+.. code-block:: python
+
+    ts.calculate_all(lambda: later(5).Mvir, "Mvir")
+
+The examples below give both forms side by side. Everything else on this page
+applies to both, except for the wrinkles specific to each, which are described
+in :doc:`/live_calculation`.
+
+
+First steps
+-----------
+
+.. note:: Before you start, make sure tangos is installed and
+ can find the tutorial database;
+ :ref:`installation` covers both. The examples here query an existing
+ database, so you need no simulation files.
+
+ Code snippets can be copied from this page and pasted into python,
+ ipython or jupyter. Hover over the code and click the button that
+ appears.
+
+Suppose you have a timestep ``ts`` and a halo ``h``:
+
+.. ipython::
+
+ In [1]: import tangos
+
+ In [2]: ts = tangos.get_timestep("tutorial_changa/%960")
+
+ In [3]: h = tangos.get_object("tutorial_changa/%960/halo_1")
+
+The property names used in the examples below (``Mvir``,
+``dm_density_profile``, ``SFR_histogram`` and so on) are illustrative;
+substitute whatever your own database contains, which you can check with
+:meth:`h.keys() <tangos.core.halo.SimulationObjectBase.keys>`. Examples shown
+together with their output are the ones running against the tutorial database;
+those shown without output use names that the tutorial database happens not to
+contain.
+
+The simplest possible calculation is a single stored property. This is no more
+useful than ``h['Mvir']``, but it establishes the pattern:
+
+.. ipython::
+
+ In [1]: h.calculate(lambda: Mvir)
+
+ In [2]: h.calculate("Mvir")
+
+Arithmetic on stored properties works as you would expect, using ``+``, ``-``,
+``*``, ``/``, ``**`` and brackets:
+
+.. ipython::
+
+ In [1]: h.calculate(lambda: Mvir/Rvir)
+
+ In [2]: h.calculate("Mvir/Rvir")
+
+The same calculation can be applied to every object in a timestep at once. This
+is where the system earns its keep:
+
+.. ipython::
+
+ In [1]: ratio, = ts.calculate_all(lambda: Mvir/Rvir)
+
+ In [2]: ratio[:5]
+
+or along the major progenitor branch of a single halo:
+
+.. ipython::
+
+ In [1]: mass_history, time = h.calculate_for_progenitors(lambda: Mvir, lambda: t())
+
+ In [2]: mass_history
+
+ In [3]: time
+
+Note that :meth:`~tangos.core.timestep.TimeStep.calculate_all`,
+:meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors` and
+:meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_descendants` take any number of
+calculations and return one array for each. Only objects for which *all* of the
+requested calculations succeed are returned, so the arrays always line up with
+each other.
+
+Live properties
+~~~~~~~~~~~~~~~
+
+Some quantities are not stored in the database at all, but can be computed on
+demand from things that are. These are called *live properties*, and they are
+written like function calls. ``Vvir()``, the circular velocity at the virial
+radius, is a typical example: it is not itself stored, but is computed on
+demand from the already-stored ``Mvir`` and ``Rvir``:
+
+.. ipython::
+
+ In [1]: h.calculate(lambda: Vvir())
+
+ In [2]: h.calculate("Vvir()")
+
+The set of live properties available depends on which property modules you
+have installed: they are defined by
+:class:`~tangos.properties.LivePropertyCalculation` classes, and you can write
+your own (see :doc:`/custom_properties`).
+
+Live properties can take arguments, which may be numbers, strings, stored
+properties, or whole expressions:
+
+.. ipython::
+
+ In [1]: h.calculate(lambda: at(5.0, dm_density_profile))
+
+This interpolates the value of an array at a specified physical location; see the section on arrays below.
+
+Not every live property calculates anything, though. ``t()``, ``z()`` and ``a()``
+return the time, redshift and scalefactor of the snapshot an object belongs
+to:
+
+.. ipython::
+
+ In [1]: mass, time = ts.calculate_all(lambda: Mvir, lambda: t())
+
+ In [2]: mass, time = ts.calculate_all("Mvir", "t()")
+
+ In [3]: mass[:5]
+
+ In [4]: time[:5]
+
+These are live properties too, but not because the information is unstored --
+it is stored, just not *on the object*. The time, redshift and scalefactor
+belong to the timestep the object belongs to, rather than to the object
+itself, so they still have to be written as function calls rather than looked
+up as ``h['t']``.
+
+The brackets are what distinguish a live property from a stored one. Ask for
+the same name as though it were stored, and there is nothing of that name in
+the database to find:
+
+.. ipython::
+ :okexcept:
+
+ In [1]: h['t']
+
+
+Arrays and profiles
+-------------------
+
+Many stored properties are arrays -- density profiles, mass profiles, images,
+histograms. The live calculation system can pick values out of them.
+
+A specific element is selected by indexing with an integer, which may be
+negative to count from the end:
+
+.. ipython::
+
+ In [1]: final_star_mass, = ts.calculate_all(lambda: star_mass_profile[-1])
+
+ In [2]: final_star_mass, = ts.calculate_all("star_mass_profile[-1]")
+
+ In [3]: final_star_mass[:5]
+
+Often you don't want to worry about the indexing details and instead need
+information at a particular location. For such occasions, ``at(position, array)`` 
+interpolates the array at a given position. What "position" means is decided by 
+whoever wrote the property -- for a profile it is normally a physical radius in kpc:
+
+* ``at(5.0, dm_density_profile)`` is the dark matter density at 5 kpc;
+* ``at(Rhalf_V, dm_density_profile)`` is the density at the V-band half light radius;
+* ``at(Rvir/4, dm_density_profile)`` is the density a quarter of the way out to the virial radius.
+
+The first argument may be a number or any expression, including a stored
+property; the second must be an array-valued property (possibly with arithmetic
+applied to it), because ``at`` needs the property's own description of what its
+x-axis means.
+
+``array_smooth(array, npix)`` returns a Gaussian-smoothed copy of an array, and
+``max``, ``min``, ``posmax`` and ``posmin`` return the maximum and minimum
+value of an array and the positions at which they occur:
+
+.. ipython::
+
+ In [1]: h.calculate(lambda: posmax(dm_density_profile))
+
+ In [2]: h.calculate("posmax(dm_density_profile)")
+
+
+Links and redirection
+---------------------
+
+Objects in a tangos database are linked to each other: a halo is linked to its
+progenitors and descendants, to the black holes it hosts, to its counterpart in
+another simulation, and to anything else a property module has chosen to
+record.
+
+Some functions return a linked object rather than a value. To get a property of
+that object, follow it with a ``.``:
+
+.. code-block:: python
+
+    ts.calculate_all(lambda: later(5).Mvir, lambda: Mvir)
+    ts.calculate_all("later(5).Mvir", "Mvir")
+
+This returns the virial mass of each halo's descendant five snapshots later,
+alongside its present virial mass. ``earlier(n)`` does the same for the main
+progenitor ``n`` snapshots back, ``latest()`` and ``earliest()`` jump to the
+ends of the branch, and ``match(name)`` finds the counterpart of the object in
+a named timestep. In fact, ``match`` is even more powerful: it can find the
+counterpart of the object *in another simulation* where appropriate (e.g. 
+resimulations with different feedback physics), just by providing it with the 
+name of the other simulation.
+
+Anything that can be calculated on an object
+can be calculated after a redirection, including further redirections:
+
+.. code-block:: python
+
+    ts.calculate_all(lambda: earlier(10).Vvir())
+    ts.calculate_all(lambda: earlier(2).at(Rvir/4, GasMass_encl))
+    ts.calculate_all(lambda: match('tutorial_changa_blackholes').star_mass_profile[-1])
+
+Links that a property module has written into the database are followed the
+same way, simply by naming them. For example, the central black holes per halo in 
+``tutorial_changa_blackholes`` are stored as links named ``BH_central``:
+
+.. ipython::
+ :okwarning:
+
+ In [1]: h = tangos.get_object("tutorial_changa_blackholes/%960/halo_1")
+
+ In [2]: h.calculate(lambda: BH_central.BH_mass)
+
+ In [3]: h.calculate("BH_central.BH_mass")
+
+Choosing between several linked objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Often an object has several links under the same name -- a halo may host
+several black holes, all linked to it as ``BH``. In the example given,
+above ``BH_central`` is the single black hole nearest the halo centre. But 
+sometimes one wants more flexibility. The ``link()`` function picks
+one ``BH`` out, choosing the linked object with the maximum or minimum of some
+property:
+
+.. ipython::
+
+ In [1]: h.calculate(lambda: link(BH, BH_mass, "max"))
+
+ In [2]: h.calculate('link(BH, BH_mass, "max")')
+
+This returns the black hole linked to ``h`` under the name ``BH`` that has the
+largest ``BH_mass``. This may or may not be the same as ``BH_central``. (Recovering 
+``BH_central`` would require ``link(BH, BH_central_distance, "min")``.)
+
+Any number of constraints may be added. Each is an expression,
+evaluated on the candidate objects, that must be true:
+
+.. ipython::
+
+ In [1]: h.calculate(lambda: link(BH, BH_mass, "max", BH_central_distance<10))
+
+ In [2]: h.calculate('link(BH, BH_mass, "max", BH_central_distance<10)')
+
+This is the most massive black hole among only those within 10 kpc of the halo
+centre. Having picked the object you want, you can then ask for any of its
+properties:
+
+.. ipython::
+
+ In [1]: h.calculate(lambda: link(BH, BH_mass, "max", BH_central_distance<10, BH_mass>1e6).BH_mdot)
+
+ In [2]: h.calculate('link(BH, BH_mass, "max", BH_central_distance<10, BH_mass>1e6).BH_mdot')
+
+which gives the accretion rate of the most massive black hole that is both
+within 10 kpc of the centre and above 10\ :sup:`6` solar masses.
+
+
+Searching along the merger tree
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``find_progenitor(property, "max"|"min")`` searches the whole main progenitor
+branch for the step at which a property is largest or smallest, and returns the
+object at that step; ``find_descendant`` does the same going forwards. So to
+find the mass of a galaxy at the time its star formation rate peaked:
+
+.. code-block:: python
+
+    h.calculate(lambda: find_progenitor(SFR, "max").mass)
+    h.calculate('find_progenitor(SFR, "max").mass')
+
+Reducing over many linked objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Where ``match(name)`` picks a single counterpart, ``match_reduce(name,
+calculation, reduction)`` performs a calculation on *every* linked object in
+the target simulation or timestep and then combines the results with ``'sum'``,
+``'mean'``, ``'min'`` or ``'max'``. For example, the total stellar mass of all
+counterparts of each halo in another simulation:
+
+.. code-block:: python
+
+    ts.calculate_all(lambda: match_reduce('tutorial_changa', Mstar, 'sum'))
+    ts.calculate_all("match_reduce('tutorial_changa', Mstar, 'sum')")
+
+
+Comparisons and filters
+-----------------------
+
+Comparison operators (``>``, ``<``, ``>=``, ``<=``, ``==``, ``!=``) and logical
+operators (``&``, ``|`` and logical not) return boolean arrays, which is what
+makes constraints inside ``link()`` work. They are equally useful for filtering
+the output of
+:meth:`~tangos.core.timestep.TimeStep.calculate_all`, since a calculation that is ``False``
+for an object is still returned -- it is up to you to use it as a mask:
+
+.. ipython::
+
+ In [1]: mass, radius, is_big = ts.calculate_all(lambda: Mvir, lambda: Rvir, lambda: Mvir>1e12)
+
+ In [2]: mass = mass[is_big]
+
+ In [3]: mass[:5]
+
+Two functions test whether data exists at all: ``has_property(name)`` is true
+for objects that have the named property stored, and ``has_link(name)`` is true
+for objects that have the named link. These are most useful negated:
+
+.. ipython::
+
+ In [1]: no_mass, = ts.calculate_all(lambda: ~has_property(Mvir))
+
+ In [2]: no_mass, = ts.calculate_all("!has_property(Mvir)")
+
+ In [3]: no_mass.sum()
+
+Note the spelling difference: the string form accepts either ``!`` or ``~`` for
+logical not, whereas the lambda form must use ``~``, since python's ``not``
+cannot be used (see :doc:`/live_calculation`).
+
+.. versionadded:: 1.12.0
+   The ``~`` spelling in the string form; older versions accept only ``!``.
+
+
+Histogram properties
+--------------------
+
+For *histogram* properties (in the tutorial examples, ``SFR_histogram`` and
+``BH_mdot_histogram``), the live calculation system is also the interface to
+the way the histogram is put back together.
+
+Take the star formation rate as an example. If you have a halo ``h`` and ask
+for ``h['SFR_histogram']``, you get an SFR history back as you would expect,
+one bin per 20 Myr by default. However, what the database actually stores is a
+series of *chunks* of the star formation history, one per timestep, which are
+automatically reassembled for you along the *major progenitor* branch.
+
+You can instead ask for the SFR summed over *all* branches:
+
+.. ipython::
+
+ In [1]: sfr = h.calculate(lambda: reassemble(SFR_histogram, 'sum'))
+
+ In [2]: sfr = h.calculate("reassemble(SFR_histogram, 'sum')")
+
+ In [3]: sfr[-5:]
+
+and similarly for a black hole accretion history, following the link to the
+black hole first:
+
+.. ipython::
+ :okwarning:
+
+ In [1]: mdot = h.calculate(lambda: BH.reassemble(BH_mdot_histogram, 'sum'))
+
+ In [2]: mdot = h.calculate("BH.reassemble(BH_mdot_histogram, 'sum')")
+
+ In [3]: mdot[-5:]
+
+If you want to handle the reassembly yourself, ``'place'`` correctly zero-pads
+the histogram onto the full time axis but does not fill in any data from
+preceding steps, leaving you free to do that as you wish:
+
+.. ipython::
+
+ In [1]: placed = h.calculate(lambda: reassemble(SFR_histogram, 'place'))
+
+ In [2]: placed[:5]
+
+Under the hood this is implemented by the
+:meth:`~tangos.properties.TimeChunkedProperty.reassemble` method of
+:class:`~tangos.properties.TimeChunkedProperty`, which you can find in
+``tangos/properties/__init__.py``. It is therefore possible to implement
+further reassembly methods where more complex manipulations of the stored
+chunks are undertaken; see
+:doc:`/histogram_properties`.
+
+.. note::
+   **Technical note**: to get at the data exactly as stored in the database, with no
+   reassembly or placement at all, ask for ``raw(SFR_histogram)``. The default data access
+   ``h['SFR_histogram']``, or equivalently ``h.calculate(lambda: SFR_histogram)``, expands
+   to something equivalent to ``reassemble(SFR_histogram)``, whose default reassembly type
+   is ``'major'`` -- i.e., returned over the major progenitor branch.
+
+
+.. seealso::
+
+   :doc:`/tutorials/webserver` puts the same calculations behind a browser: any live
+   calculation you can write here can be typed into a column of the timestep view.

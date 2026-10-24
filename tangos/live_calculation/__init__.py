@@ -110,7 +110,7 @@ class Calculation:
 
     A typical Calculation is composed of many different Calculation subclasses arranged in some form of tree.
     For example A.B parses to Link(StoredProperty('A'), StoredProperty('B')) whereas
-                A.B() parses to Link(StoredProperty('A'), LiveProperty('B'))
+    A.B() parses to Link(StoredProperty('A'), LiveProperty('B'))
     and so on.
 
     It is normally easiest to instantiate Calculation objects using the parser in

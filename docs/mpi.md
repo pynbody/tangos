@@ -1,4 +1,4 @@
-## Parallelisation
+# Parallelisation
 
 
 If you want to speed up time-consuming `tangos` operations from your command line, you can run many of them in parallel. For this you can either use python's built-in `multiprocessing` module, or MPI.
@@ -14,7 +14,7 @@ The eligible `tangos` commands for parallel execution are:
 * `tangos crosslink`
 * `tangos add` (since 1.8.0)
 
-### How to run in parallel with `multiprocessing` (since 1.8.0)
+## How to run in parallel with `multiprocessing` (since 1.8.0)
 
 From your command line or job script use:
 
@@ -25,7 +25,7 @@ tangos [normal tangos command here] --backend multiprocessing-<N>
 where `<N>` should be replaced by the number of processes to
 use.  See notes below on how to choose the number of processes (it's _not_ necessarily just the number of cores available).
 
-### How to run in parallel with `mpi4py`
+## How to run in parallel with `mpi4py`
 
 You first need to install MPI and `mpi4py` on your machine. This is straight-forward
 with, for example, anaconda python distributions – just type `conda install mpi4py`. With regular python distributions, you need to install MPI on your machine and then `pip install mpi4py` (which will compile the python bindings).
@@ -47,7 +47,7 @@ Here,
    Limitations in the MPI library mean it's not possible for tangos to reliably auto-detect it has been MPI-launched.*
 
 
-### Important options for tangos write
+## Important options for tangos write
 
 
 For tangos write, there are multiple parallelisation modes. For best results, it's important to understand which is appropriate for your use case -- they balance file IO, memory usage and throughput differently.
@@ -66,7 +66,7 @@ a given time). However it increases communication needs between processes, which
 * `--load-mode=server-shared-mem`: available from version 1.9.0 onwards, this is the most powerful option, but it only works if all your processes are on the same physical machine. A server process handles loading data as above, making the memory and IO requirements the same as `--load-mode=server`. But then, in `server-shared-mem` mode, the server makes the data available to all other processes through _shared memory_, which is extremely efficient.
 
 
-### Older load modes
+## Older load modes
 
 The below are still available, but are less flexible and
 are rarely likely to be the best option.
@@ -85,7 +85,7 @@ are rarely likely to be the best option.
 
 
 Let's consider the longest process in the tutorials which involves writing images and more to
-the [changa+AHF](first_steps_changa+ahf.md) tutorial simulation.
+the [changa+AHF](tutorials/first_database.rst) tutorial simulation.
 
 Some of the underlying _pynbody_ manipulations are already parallelised. One can therefore experiment
 with different configurations but experience suggests the best option is to
@@ -95,7 +95,7 @@ are parallelised whereas _tangos_ is close to [embarassingly parallel](https://e
 Once pynbody threading is disabled, the version of the above command that is most efficient is:
 
  ```bash
-mpirun -np 5 tangos write dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="NDM()>5000" --include-only="contamination_fraction<0.01" --for tutorial_changa --backend mpi4py --load-mode server-shared-mem
+mpirun -np 5 tangos write dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="NDM()>1000" --include-only="contamination_fraction<0.01" --for tutorial_changa --backend mpi4py --load-mode server-shared-mem
 ```
 
 for a machine with 4 processors.
@@ -114,6 +114,45 @@ for a machine with 4 processors.
    but isn't needed here.
  * So we're left with `--load-mode=server` (for multi-node calculations) or `--load-mode=server-shared-mem` (for single-node calculations). Either is efficient in terms of computation and memory usage, but the latter is also efficient
   in terms of having minimal communication overheads between processes.
+
+## Running under a batch scheduler
+
+On a shared cluster you will not run these commands interactively; you submit them.
+The details differ between sites, but the shape of the job script does not. Here is a
+PBS example that builds a database for one simulation from end to end:
+
+```bash
+#PBS -S /bin/bash
+#PBS -N tangos-build
+#PBS -l select=2:ncpus=20:mpiprocs=15
+#PBS -l walltime=3:00:00
+#PBS -j oe
+cd $PBS_O_WORKDIR
+
+# activate whatever python environment tangos is installed into, and set
+# TANGOS_DB_CONNECTION / TANGOS_SIMULATION_FOLDER, as the compute nodes do not
+# necessarily inherit your login environment
+
+SIMS="my_simulation"
+
+mpirun tangos link --for $SIMS --backend mpi4py
+mpirun tangos write dm_density_profile --with-prerequisites --for $SIMS --load-mode=partial --backend mpi4py
+mpirun tangos import-changa-bh --for $SIMS --backend mpi4py
+mpirun tangos write BH_mass --for $SIMS --type BH --load-mode=partial --backend mpi4py
+```
+
+Two things in there are easy to get wrong and expensive to discover after a
+three-hour queue wait:
+
+* `mpiprocs` is deliberately lower than `ncpus`. Each rank needs memory as well as a
+  core, and the loading strategies above differ wildly in how much; a node that is
+  full of ranks and out of RAM makes no progress.
+* The compute nodes may not see your interactive environment at all, so the script
+  has to establish it itself — the python environment and both tangos environment
+  variables.
+
+The last two lines are specific to ChaNGa black holes; drop them for a simulation
+without them. `--type BH` says "do this for the black holes rather than the halos".
 
 tangos link / crosslink
 -----------------------

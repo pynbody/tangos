@@ -3,10 +3,13 @@ from . import PynbodyPropertyCalculation
 
 class Contamination(PynbodyPropertyCalculation):
     """ Calculates the contamination of a zoomed halo by heavier, unzoomed particles.
+
         The current behaviour returns:
+
             1.0 if the halo contains only heavy particles
             X.X if the halo contains a mixture of heavy and light particles
             0.0 if the halo contains exclusively light particles
+
         Heavies are defined as any particle heavier than the deepest zoom level if multiple zooms are performed
     """
 

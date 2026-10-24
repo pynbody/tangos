@@ -404,12 +404,12 @@ def all_properties(with_particle_data=True):
 def providing_class(property_name, handler_class=None, silent_fail=False, explain=False):
     """Return property calculator class for given property name when files will be loaded by specified handler.
 
-    :param property_name -- name of property to be calculated
-    :param handler_class -- class of handler that will be used to load files
+    :param property_name: name of property to be calculated
+    :param handler_class: class of handler that will be used to load files
                             (e.g. input_handlers.pynbody.PynbodyInputHandler).
                             If None, return "live" properties which can be calculated without particle data.
-    :param silent_fail -- if True, return None if no class is found, otherwise raise NameError
-    :param explain -- if True, print out the reason why a particular class was selected
+    :param silent_fail: if True, return None if no class is found, otherwise raise NameError
+    :param explain: if True, print out the reason why a particular class was selected
 
     When more than one possible class is capable of calculating the requested property, the following criteria
     are used to select one. The guiding criterion is to select user-provided code of the greatest specificity.
@@ -420,9 +420,9 @@ def providing_class(property_name, handler_class=None, silent_fail=False, explai
     2) Next, the class hierarchy of the properties themselves is inspected. If one class is a subclass of another,
        the more specialised class is selected. For example, if there are two classes calculating "my_prop", A and B,
        and B is a child class of A, B is selected.
-    2) If there is no class hierarchy, the class defined in the tangos codebase is de-prioritised over any externally
+    3) If there is no class hierarchy, the class defined in the tangos codebase is de-prioritised over any externally
        provided classes
-    3) If there is still a tie, the string representation of the classname (including the module) is used to sort
+    4) If there is still a tie, the string representation of the classname (including the module) is used to sort
        alphabetically. This has no particular rationale except to make reproducible results.
 
     """
@@ -579,4 +579,4 @@ def _import_configured_property_modules():
         module.load()
 
 _import_configured_property_modules()
-from . import intrinsic, live_profiles, pynbody, yt
+from . import derived, intrinsic, live_profiles, pynbody, yt

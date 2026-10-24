@@ -150,8 +150,8 @@ class SimulationObjectBase(Base):
         """Load the data for this halo, if it is present on this computer's filesystem.
 
         :param mode: the load mode to pass to the relevant input handler. For example with the pynbody input
-        handler this can be None or 'partial' (in a normal session) and, when running inside an MPI session,
-        'server' or 'server-partial'. See https://pynbody.github.io/tangos/mpi.html.
+            handler this can be None or 'partial' (in a normal session) and, when running inside an MPI session,
+            'server' or 'server-partial'. See https://pynbody.github.io/tangos/mpi.html.
         """
         halo_number = self.halo_number
         if not hasattr(self, "finder_id"):
@@ -168,7 +168,7 @@ class SimulationObjectBase(Base):
     def calculate(self, calculation, return_description=False):
         """Use the live-calculation system to calculate a user-specified function of the stored data.
 
-        See the data exploration tutorials at https://pynbody.github.io/tangos/data_exploration.html
+        See the quick-start tutorial at https://pynbody.github.io/tangos/tutorials/quickstart.html
         for an introduction to the system.
 
         :param calculation: the calculation to perform, specified either as a string in
