@@ -1,0 +1,200 @@
+name: One-off — re-compress tutorial_gadget.tar
+
+# ONE-OFF MAINTENANCE JOB. Delete this file once it has been run successfully.
+#
+# tutorials/tutorial_gadget.tar was uploaded to the data bucket uncompressed, under a name
+# without the .gz suffix. Everything that consumes it -- test_tutorial_build/build.sh, and
+# the download instructions in reference/simulation_formats -- expects
+# tutorials/tutorial_gadget.tar.gz and pipes it straight into `tar -xz`, so the dataset is
+# currently unobtainable: that one URL 404s, which also takes out the Rockstar and AHF
+# tutorials, whose tarballs carry catalogues only and need these snapshots alongside.
+#
+# This downloads the .tar, checks it contains the Gadget tutorial simulation and not
+# something else, gzips it, uploads it under the correct name, verifies the upload, and only
+# then deletes the original.
+#
+# Credentials follow .github/workflows/bucket-index.yaml: the same four R2_* repository
+# secrets, the same S3-compatible endpoint, and the same two checksum opt-outs that R2 needs
+# with current boto3.
+#
+# Rehearsed against the real object: 1,643,849,216 bytes in, 89 members (11 snapshots,
+# 010-020, each with its SubFind catalogues), compressing in about 80 s to 1,351,007,271
+# bytes -- only 82% of the original, as Gadget binary snapshots compress poorly. Expect the
+# whole job to be dominated by the transfers rather than the gzip.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Check and compress, but do not upload or delete. Leave on for a rehearsal.
+        type: boolean
+        default: true
+      delete_original:
+        description: Delete the .tar after the .tar.gz is uploaded and verified.
+        type: boolean
+        default: true
+
+concurrency:
+  group: recompress-tutorial-gadget
+
+jobs:
+  recompress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      # newer boto3 versions add checksums that R2 has had trouble with
+      AWS_REQUEST_CHECKSUM_CALCULATION: WHEN_REQUIRED
+      AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
+      SOURCE_KEY: tutorials/tutorial_gadget.tar
+      TARGET_KEY: tutorials/tutorial_gadget.tar.gz
+      DRY_RUN: ${{ inputs.dry_run }}
+      DELETE_ORIGINAL: ${{ inputs.delete_original }}
+    steps:
+      - name: Show free disk space
+        # the tar is ~1.6 GB and the gzip ~1.5 GB, so ~3.2 GB is needed
+        run: df -h /
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install boto3
+        run: python -m pip install boto3
+
+      - name: Re-compress and replace
+        run: |
+          python - <<'PY'
+          import gzip, os, re, shutil, sys, tarfile
+
+          import boto3
+
+          bucket = os.environ['R2_BUCKET']
+          source_key = os.environ['SOURCE_KEY']
+          target_key = os.environ['TARGET_KEY']
+          dry_run = os.environ['DRY_RUN'] == 'true'
+          delete_original = os.environ['DELETE_ORIGINAL'] == 'true'
+
+          client = boto3.client('s3', region_name='auto',
+                                endpoint_url=f"https://{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com")
+
+          def fail(message):
+              print(f"::error::{message}")
+              sys.exit(1)
+
+          # ---- fetch -------------------------------------------------------------------
+          head = client.head_object(Bucket=bucket, Key=source_key)
+          print(f"{source_key}: {head['ContentLength']} bytes, modified {head['LastModified']}")
+
+          try:
+              client.head_object(Bucket=bucket, Key=target_key)
+          except client.exceptions.ClientError:
+              pass
+          else:
+              fail(f"{target_key} already exists; refusing to overwrite it. "
+                   "Check it by hand and delete it first if it is the broken one.")
+
+          client.download_file(bucket, source_key, 'tutorial_gadget.tar')
+          on_disk = os.path.getsize('tutorial_gadget.tar')
+          if on_disk != head['ContentLength']:
+              fail(f"downloaded {on_disk} bytes but the object is {head['ContentLength']}")
+
+          # ---- check it is what we think it is -----------------------------------------
+          # The Gadget tutorial simulation, as GadgetSubfindInputHandler expects it:
+          # one top-level folder of snapshot_### files, each with a groups_### folder beside
+          # it holding the four SubFind catalogue files.
+          with tarfile.open('tutorial_gadget.tar') as tar:
+              members = tar.getmembers()
+
+          if not members:
+              fail("archive is empty")
+
+          for member in members:
+              if member.name.startswith('/') or '..' in member.name.split('/'):
+                  fail(f"unsafe member path: {member.name!r}")
+              if not (member.isreg() or member.isdir()):
+                  fail(f"unexpected member type in archive: {member.name!r}")
+
+          tops = {member.name.split('/')[0] for member in members}
+          if tops != {'tutorial_gadget'}:
+              fail(f"expected a single tutorial_gadget/ folder, found {sorted(tops)}")
+
+          snapshots = {m.group(1) for m in
+                       (re.fullmatch(r'tutorial_gadget/snapshot_(\d+)', member.name)
+                        for member in members if member.isreg()) if m}
+          groups = {m.group(1) for m in
+                    (re.fullmatch(r'tutorial_gadget/groups_(\d+)', member.name)
+                     for member in members if member.isdir()) if m}
+
+          if not snapshots:
+              fail("no snapshot_### files found")
+          if snapshots != groups:
+              fail(f"snapshots {sorted(snapshots)} do not match group catalogues {sorted(groups)}")
+
+          names = {member.name for member in members}
+          for number in sorted(snapshots):
+              for prefix in ('group_tab', 'group_ids', 'subhalo_tab', 'subhalo_ids'):
+                  expected = f"tutorial_gadget/groups_{number}/{prefix}_{number}.0"
+                  if expected not in names:
+                      fail(f"missing SubFind catalogue file {expected}")
+
+          content_bytes = sum(member.size for member in members)
+          print(f"{len(members)} members, {content_bytes} bytes of content, "
+                f"snapshots {min(snapshots)}-{max(snapshots)}")
+
+          # ---- compress ----------------------------------------------------------------
+          with open('tutorial_gadget.tar', 'rb') as raw, \
+               gzip.open('tutorial_gadget.tar.gz', 'wb', compresslevel=6) as compressed:
+              shutil.copyfileobj(raw, compressed, length=16 * 1024 * 1024)
+
+          compressed_size = os.path.getsize('tutorial_gadget.tar.gz')
+          print(f"compressed to {compressed_size} bytes "
+                f"({100 * compressed_size / on_disk:.1f}% of the original)")
+
+          # Read the compressed copy back and require an identical set of members, so a
+          # truncated or corrupt gzip cannot pass. This also exercises the exact path a
+          # reader takes: `curl ... | tar -xz`.
+          with tarfile.open('tutorial_gadget.tar.gz', 'r:gz') as tar:
+              roundtrip = {(member.name, member.size) for member in tar.getmembers()}
+          if roundtrip != {(member.name, member.size) for member in members}:
+              fail("the gzipped archive does not contain the same members as the original")
+          print("round-trip verified: member names and sizes match")
+
+          if dry_run:
+              print("::notice::dry run -- nothing uploaded, nothing deleted")
+              sys.exit(0)
+
+          # ---- upload ------------------------------------------------------------------
+          # ContentType matches the .tar.gz objects already in the bucket, which are served
+          # as application/x-tar. Deliberately no ContentEncoding: setting gzip there makes
+          # some clients transparently decompress, which breaks `tar -xz`.
+          client.upload_file(bucket, Key=target_key, Filename='tutorial_gadget.tar.gz',
+                             ExtraArgs={'ContentType': 'application/x-tar'})
+
+          uploaded = client.head_object(Bucket=bucket, Key=target_key)['ContentLength']
+          if uploaded != compressed_size:
+              fail(f"uploaded object is {uploaded} bytes, expected {compressed_size}")
+          print(f"uploaded {target_key} ({uploaded} bytes)")
+
+          # ---- delete the original -----------------------------------------------------
+          if not delete_original:
+              print(f"::notice::leaving {source_key} in place as requested")
+              sys.exit(0)
+
+          client.delete_object(Bucket=bucket, Key=source_key)
+          try:
+              client.head_object(Bucket=bucket, Key=source_key)
+          except client.exceptions.ClientError:
+              print(f"deleted {source_key}")
+          else:
+              fail(f"{source_key} is still present after the delete call")
+          PY
+
+      - name: Next steps
+        if: ${{ !inputs.dry_run }}
+        run: |
+          echo "Run the 'Update data bucket index' workflow to refresh index.html," >> $GITHUB_STEP_SUMMARY
+          echo "then delete .github/workflows/recompress-tutorial-gadget.yaml -- it is a one-off." >> $GITHUB_STEP_SUMMARY
