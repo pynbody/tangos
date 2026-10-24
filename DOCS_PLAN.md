@@ -64,10 +64,10 @@ line with a `.. Checked by <initials> <date>` line as you check a page: it is th
 only record of which pages have had human eyes on them, so do not let a page lose
 it in a rewrite.
 
-Two things outside this repository are still outstanding, and neither can be done
-from a checkout: one tutorial dataset is missing from the server (first item
-under **Stage 3**) and the Pages setting has not been checked (**Before merging to
-master**).
+One thing outside this repository is still outstanding, and it cannot be done
+from a checkout: the Pages setting has not been checked (**Before merging to
+master**). The tutorial data is no longer among them — every dataset the docs
+link to is now on the server; see the first item under **Stage 3**.
 
 ## Stages
 
@@ -215,35 +215,43 @@ with `tangos diff`. So decouple database *production* from docs *building*.
       the docs half (`TUTORIAL_DATABASE_URL`, `docs/installation.rst`, every
       dataset link in `reference/simulation_formats`) is on this branch.
 
-      **One dataset is still missing from `/tutorials/`**: `tutorial_gadget`,
-      which 404s there although it is a genuine tutorial dataset that the old
-      Gadget+SubFind, +Rockstar and +AHF pages all told people to download.
-      Needs a human with access to the bucket. Note `tutorial_gadget_rockstar`
-      and `tutorial_gadget_ahf` are *catalogue-only* tarballs that need the
-      snapshots from `tutorial_gadget`, so this one gap takes out three
-      combinations for anyone working by hand.
+      **All seven tutorial datasets are now present under `/tutorials/`**,
+      verified over HTTP on 2026-10-24: `tutorial_changa`,
+      `tutorial_changa_blackholes`, `tutorial_changa_yt`, `tutorial_gadget`,
+      `tutorial_gadget_rockstar`, `tutorial_gadget_ahf` and `tutorial_ramses`.
+      `tutorial_gadget` was the last gap, and was a mis-upload rather than a
+      missing file: it sat in the bucket as `tutorial_gadget.tar`, uncompressed
+      and without the `.gz` suffix that `build.sh` and
+      `reference/simulation_formats` both expect. A one-off GitHub Actions job
+      (#311, closed rather than merged, since it only ever needed to run once)
+      checked the archive, gzipped it, uploaded `tutorial_gadget.tar.gz` and
+      deleted the original. Confirmed afterwards by streaming the live URL
+      through `curl … | tar -tz`: 89 members, 11 snapshots, clean exit. That
+      mattered beyond one dataset, because `tutorial_gadget_rockstar` and
+      `tutorial_gadget_ahf` are *catalogue-only* tarballs that need the
+      snapshots from `tutorial_gadget` beside them.
 
-      `tutorial_gadget4`, `tutorial_gadget4_hbtplus` and `enzo.tinycosmo` also
-      404 there, but **that is correct and needs no upload**: no full dataset
-      for them has ever existed. Each was introduced purely as an integration
-      test fixture — "Add integration test for gadget 4 / HDF format"
-      (2022-07-05), "Add integration test for improved yt functionality"
-      (2022-09-14), "Add HBT+ mini-test set" (2024-06-20) — and no
-      documentation page has ever offered one for download; the only commit in
-      the whole history naming them under `docs/` is stage 2's own. They exist
-      solely as cut-down fixtures under `/continuous_integration/`.
+      `tutorial_gadget4`, `tutorial_gadget4_hbtplus` and `enzo.tinycosmo` do
+      404 under `/tutorials/`, but **that is correct and needs no upload**: no
+      full dataset for them has ever existed. Each was introduced purely as an
+      integration test fixture — "Add integration test for gadget 4 / HDF
+      format" (2022-07-05), "Add integration test for improved yt
+      functionality" (2022-09-14), "Add HBT+ mini-test set" (2024-06-20) — and
+      no documentation page has ever offered one for download; the only commit
+      in the whole history naming them under `docs/` is stage 2's own. They
+      exist solely as cut-down fixtures under `/continuous_integration/`.
       `reference/simulation_formats` was initially wrong about this, inferring
       `/tutorials/` URLs for them from `build.sh`'s pattern, and now says
       plainly that the three have no tutorial dataset.
 
-      Be precise about what the real gap does and does not break, because it is
-      easy to overstate. `build.sh` chooses its path by `INTEGRATION_TESTING`:
+      One distinction to keep straight, because it is easy to overstate a gap
+      here. `build.sh` chooses its path by `INTEGRATION_TESTING`:
       `/continuous_integration/` when set, `/tutorials/` when not. **All eight
       datasets it names are present under `/continuous_integration/`**, as is
       `reference_database.db`, and #310's integration test built the whole
-      database and passed `tangos diff` against it — so CI is *not* blocked, and
-      neither is stage 3's use of it. What is broken is the human path: running
-      `build.sh` for real (the 35 GB route) cannot fetch `tutorial_gadget`.
+      database and passed `tangos diff` against it. So a gap under
+      `/tutorials/` never blocks CI; it blocks the human path, someone running
+      `build.sh` for real over the 35 GB route.
 - [x] Add `tangos.test_utils.precache_tutorial_database()`, a direct analogue of
       `pynbody.test_utils.precache_test_data()` — **done in stage 1**, which
       needed it to build executable tutorials at all. It carries the same "must
