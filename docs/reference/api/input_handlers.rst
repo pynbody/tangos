@@ -10,8 +10,8 @@ Reading a new simulation format
 An input handler is how tangos reads a particular simulation code's raw
 output. This page documents the subclassing contract and every handler tangos
 ships with; for a walkthrough, see :doc:`/custom_input_handlers`, and for
-which handler goes with which finder, see ``reference/simulation_formats``
-(forthcoming).
+which handler goes with which finder, see
+:doc:`/reference/simulation_formats`.
 
 .. autosummary::
 
@@ -76,8 +76,8 @@ example ``--handler=pynbody.ChangaInputHandler``. Their ``patterns`` and
 ``auxiliary_file_patterns`` class attributes (inherited from
 :class:`~tangos.input_handlers.finding.PatternBasedFileDiscovery`) are the
 part of each worth reading; :doc:`the simulation-formats reference
-<input_handlers>` (forthcoming, ``reference/simulation_formats``) lists what
-each assumes about the files on disk in one table.
+</reference/simulation_formats>` lists what each assumes about the files on
+disk in one table.
 
 .. currentmodule:: tangos.input_handlers.pynbody
 
@@ -131,7 +131,7 @@ each assumes about the files on disk in one table.
 .. autoclass:: EagleLikeInputHandler
    :show-inheritance:
 
-See :doc:`/first_steps_eagle`.
+See :doc:`/how-to/eagle`.
 
 .. currentmodule:: tangos.input_handlers.caterpillar
 

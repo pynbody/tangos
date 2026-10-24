@@ -34,9 +34,12 @@ and query it:
    browser.
 
 **Building a database from your own simulation** starts at
-[making your first database](first_steps.md), which covers the supported
-simulation codes and halo finders. You will need the raw simulation output and
-a reader for it, usually pynbody.
+[making your first database](tutorials/first_database.rst), which walks through
+one simulation from start to finish. The
+[supported simulation formats](reference/simulation_formats.rst) table lists
+every simulation code and halo finder tangos can read, and what changes for
+each. You will need the raw simulation output and a reader for it, usually
+pynbody.
 
 **Configuring tangos** -- where the database lives, what gets written, how the
 merger trees are thinned -- is covered in
@@ -70,22 +73,19 @@ tutorials/quickstart
 tutorials/time_series
 tutorials/live_calculations
 tutorials/webserver
+tutorials/first_database
 ```
 
 ```{toctree}
 :maxdepth: 2
 :hidden:
-:caption: Building a database
+:caption: How-to
 
-first_steps
-first_steps_gadget+AHF
-first_steps_gadget+rockstar
-first_steps_gadget+subfind
-first_steps_ramses+hop
-first_steps_changa+ahf
-first_steps_eagle
-using_with_yt
+mpi
+rdbms
 custom_input_handlers
+how-to/eagle
+how-to/yt
 ```
 
 ```{toctree}
@@ -97,9 +97,6 @@ custom_properties
 histogram_properties
 black_holes_and_crossmatching
 tracking
-mpi
-rdbms
-advanced
 ```
 
 ```{toctree}
@@ -107,6 +104,7 @@ advanced
 :hidden:
 :caption: Reference
 
+reference/simulation_formats
 live_calculation
 reference/api/index
 ```
@@ -116,8 +114,5 @@ reference/api/index
 :hidden:
 :caption: Older material
 
-data_exploration
 Data exploration with python
-data_exploration_webserver
-old
 ```
