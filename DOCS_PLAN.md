@@ -65,7 +65,7 @@ only record of which pages have had human eyes on them, so do not let a page los
 it in a rewrite.
 
 Two things outside this repository are still outstanding, and neither can be done
-from a checkout: four tutorial datasets are missing from the server (first item
+from a checkout: one tutorial dataset is missing from the server (first item
 under **Stage 3**) and the Pages setting has not been checked (**Before merging to
 master**).
 
