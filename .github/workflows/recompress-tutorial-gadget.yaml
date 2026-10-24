@@ -1,6 +1,7 @@
 name: One-off — re-compress tutorial_gadget.tar
 
-# ONE-OFF MAINTENANCE JOB. Delete this file once it has been run successfully.
+# ONE-OFF MAINTENANCE JOB, AND IT ACTS ON THE LIVE DATA BUCKET WHEN THE PULL REQUEST
+# ADDING IT IS OPENED. Delete this file once it has been run successfully.
 #
 # tutorials/tutorial_gadget.tar was uploaded to the data bucket uncompressed, under a name
 # without the .gz suffix. Everything that consumes it -- test_tutorial_build/build.sh, and
@@ -23,10 +24,21 @@ name: One-off — re-compress tutorial_gadget.tar
 # whole job to be dominated by the transfers rather than the gzip.
 
 on:
+  # This runs FOR REAL when the pull request adding this file is opened -- it uploads the
+  # .tar.gz and deletes the .tar -- so the fix does not have to wait for a merge to master
+  # and a manual dispatch. Secrets are available because this is a same-repository pull
+  # request; from a fork they would not be, and the job would fail at the first R2 call.
+  #
+  # Every push to the branch re-triggers it. That is safe rather than destructive: the job
+  # refuses to overwrite an existing .tar.gz, and once the .tar is gone the next run stops
+  # at the first head_object. Re-runs fail; they do not re-do.
+  pull_request:
+    paths:
+      - .github/workflows/recompress-tutorial-gadget.yaml
   workflow_dispatch:
     inputs:
       dry_run:
-        description: Check and compress, but do not upload or delete. Leave on for a rehearsal.
+        description: Check and compress, but do not upload or delete. Hand dispatch only.
         type: boolean
         default: true
       delete_original:
@@ -36,6 +48,8 @@ on:
 
 concurrency:
   group: recompress-tutorial-gadget
+
+permissions: {}
 
 jobs:
   recompress:
@@ -51,8 +65,9 @@ jobs:
       AWS_RESPONSE_CHECKSUM_VALIDATION: WHEN_REQUIRED
       SOURCE_KEY: tutorials/tutorial_gadget.tar
       TARGET_KEY: tutorials/tutorial_gadget.tar.gz
-      DRY_RUN: ${{ inputs.dry_run }}
-      DELETE_ORIGINAL: ${{ inputs.delete_original }}
+      # The inputs apply to a hand dispatch only. A pull request run is the real thing.
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+      DELETE_ORIGINAL: ${{ github.event_name != 'workflow_dispatch' || inputs.delete_original == true }}
     steps:
       - name: Show free disk space
         # the tar is ~1.6 GB and the gzip ~1.5 GB, so ~3.2 GB is needed
@@ -194,7 +209,7 @@ jobs:
           PY
 
       - name: Next steps
-        if: ${{ !inputs.dry_run }}
+        if: ${{ env.DRY_RUN != 'true' }}
         run: |
           echo "Run the 'Update data bucket index' workflow to refresh index.html," >> $GITHUB_STEP_SUMMARY
           echo "then delete .github/workflows/recompress-tutorial-gadget.yaml -- it is a one-off." >> $GITHUB_STEP_SUMMARY
