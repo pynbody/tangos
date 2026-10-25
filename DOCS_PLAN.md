@@ -55,7 +55,7 @@ build itself complains.
 ## Status
 
 Stages 0, 1, 2 and 3 are complete; stages 4–5 have not started. Stage 0 landed in
-#296, stage 1 in #300, stage 2 in #305, stage 3 in STAGE3_PR.
+#296, stage 1 in #300, stage 2 in #305, stage 3 in #312.
 
 Every page from stages 0–2 has now been read by a human. Stage 3 changed the
 examples on `tutorials/live_calculations` after its check, and says so in a second
