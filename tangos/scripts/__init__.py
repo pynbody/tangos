@@ -73,10 +73,17 @@ def add_commands(subparse):
     tangos.tools.GenericTangosTool.add_tools(subparse)
     add_serve_tool(subparse)
 
-def main(argv=None):
-    parser, subparse = manager.get_argument_parser_and_subparsers()
+def get_argument_parser():
+    """Return the complete argument parser for the ``tangos`` command, with every subcommand.
 
+    Note that ``--backend`` is handled outside this parser: :mod:`tangos.parallel_tasks` strips it
+    out of ``sys.argv`` on import, wherever it appears, before the parser sees the command line."""
+    parser, subparse = manager.get_argument_parser_and_subparsers()
     add_commands(subparse)
+    return parser
+
+def main(argv=None):
+    parser = get_argument_parser()
 
     args = parser.parse_args(argv)
 
