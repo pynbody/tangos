@@ -40,7 +40,6 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx_copybutton',
               'numpydoc',
-              'nbsphinx',
               'myst_parser',
               'sphinx_design',
               'sphinxarg.ext',
@@ -83,6 +82,11 @@ redirects = {
     # advanced.md was nothing but a list of links to pages that all still
     # exist, so the landing page is the closest thing to its content.
     "advanced": "index.html",
+    # Stage 3: the notebook was the original data-exploration tutorial, converted
+    # cell by cell into quickstart, time_series and live_calculations in stage 1.
+    # Its name has spaces, which get_target_uri() quotes, so the build-finished
+    # hook below also writes this stub at the literal name.
+    "Data exploration with python": "tutorials/quickstart.html",
 }
 
 # ipython_savefig_dir is where `.. ipython::` @savefig figures land; ported
@@ -130,7 +134,7 @@ _logging.getLogger('sphinx.IPython.sphinxext.ipython_directive').addFilter(
 
 # tangos' existing tutorial pages are plain markdown (ported from the old
 # Jekyll site) rather than reST, so both suffixes are source files. myst_parser
-# renders the .md files; nbsphinx renders the one pre-executed .ipynb tutorial.
+# renders the .md files.
 source_suffix = {
     '.rst': 'restructuredtext',
     '.md': 'markdown',
@@ -142,10 +146,6 @@ source_suffix = {
 # land on. Depth 3 covers every heading level currently in use (the pages are at most
 # title/H1 + a couple of H2/H3 sections deep).
 myst_heading_anchors = 3
-
-nbsphinx_input_prompt = 'In [%s]:'
-nbsphinx_output_prompt = 'Out[%s]:'
-nbsphinx_execute = 'never'  # the notebook is expensive to evaluate, so we need it pre-evaluated
 
 # numpydoc's strict docstring validation (numpydoc_validation_checks) is off by
 # default and left that way here: tangos' docstrings are known to be sparse and

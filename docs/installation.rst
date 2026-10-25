@@ -205,9 +205,9 @@ run in CI and will fail the build otherwise:
   $ pip install pre-commit
   $ pre-commit install
 
-To build this documentation, use the ``docs`` extra (``pip install -e .[docs]``,
-with `pandoc <https://pandoc.org>`_ also installed) and run ``make html`` in the
-``docs`` directory.
+To build this documentation, use the ``docs`` extra (``pip install -e .[docs]``),
+fetch the tutorial database the examples run against (see above), and run
+``make html`` in the ``docs`` directory.
 
 .. seealso::
 

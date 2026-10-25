@@ -193,13 +193,16 @@ most cases, running the code at the point it was added.
       `urllib.parse.quote` alters (the style conventions in `DOCS_PLAN.md`
       already require lowercase-underscore filenames, which is why only these
       retired pages are affected).
-- [ ] `docs/Data exploration with python.ipynb` cell 1 links to
+- [x] `docs/Data exploration with python.ipynb` cell 1 links to
       `https://pynbody.github.io/tangos/data_exploration.html`, a page retired in
       stage 2. The redirect covers it, but the notebook is deliberately kept as
       the only published copy of material not yet ported (histograms, black
       holes, `match` crossmatching), so until stage 4 ports that material the
       notebook advertises a retired page. Sphinx does not warn, since it is an
-      absolute URL.
+      absolute URL. **Resolved in stage 3 by retiring the notebook**: since
+      `docs-refactor-main` reaches readers only when the whole suite merges,
+      keeping it bought nothing. The unported cells are pinned as a stage 4
+      item in `DOCS_PLAN.md`.
 - [ ] Two more doc URLs embedded in code will break when their pages move in
       stages 4-5, and have no redirect yet: `tangos/tools/property_writer.py:655`
       points at `custom_properties.html` and `tangos/core/halo.py:154` at
@@ -300,8 +303,8 @@ most cases, running the code at the point it was added.
       `docs/custom_input_handlers.md`, `docs/custom_properties.md`,
       `docs/first_steps_ramses+hop.md`, `docs/histogram_properties.md`,
       `docs/live_calculation.md`, `docs/tracking.md`, `docs/using_with_yt.md`
-      (13 occurrences across those seven files), plus 5 occurrences in
-      `docs/Data exploration with python.ipynb`. Deliberately **not** swept as
+      (13 occurrences across those seven files; the 5 in the notebook went
+      with it in stage 3). Deliberately **not** swept as
       a mass edit now — every one of these files is being rewritten in stages
       1–5 of `DOCS_PLAN.md`, so `get_object` replaces `get_halo` page by page,
       as each page is rewritten.

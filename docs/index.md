@@ -108,11 +108,3 @@ reference/simulation_formats
 live_calculation
 reference/api/index
 ```
-
-```{toctree}
-:maxdepth: 1
-:hidden:
-:caption: Older material
-
-Data exploration with python
-```

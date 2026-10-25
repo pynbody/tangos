@@ -15,8 +15,6 @@ build:
    os: ubuntu-22.04
    tools:
      python: "3.13"
-   apt_packages:
-     - pandoc  # required by nbsphinx to render the markdown/rich-output cells of the tutorial notebook
    jobs:
      pre_build:
        - python -c "import tangos.test_utils as tu; tu.precache_tutorial_database()"

@@ -50,7 +50,6 @@ docs_require = [
     'sphinx-book-theme==1.2.0',
     'sphinx-copybutton',
     'numpydoc',
-    'nbsphinx',
     'myst-parser',
     'sphinx-design',    # for stage 2's tab-set tutorial steps
     'sphinx-argparse',  # for stage 5's CLI reference
