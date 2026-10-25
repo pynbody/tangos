@@ -178,6 +178,19 @@ most cases, running the code at the point it was added.
       `tests/test_live_calculation_reduce.py` only covers targets that all
       carry the property. Found in stage 3, where the docs example had to
       switch to `Mvir` to run.
+- [ ] `--backend` handling in `tangos.parallel_tasks._process_command_line()`
+      breaks any argument that contains a space. On import it joins `sys.argv`
+      with spaces, cuts `--backend <name>` out with a regex, and assigns
+      `sys.argv = new_command_line.split()`, discarding the shell's quoting.
+      So `tangos write ... --include-only="NDM() > 1000" --backend mpi4py`
+      reaches argparse as `NDM()`, `>`, `1000`, while the same command without
+      `--backend` works. The regex would also catch `--backend` inside a quoted
+      argument. Every documented command happens to avoid spaces inside
+      arguments, which is why the docs have not hit this. Relatedly,
+      `tangos write` declares its own `--backend` option
+      (`tangos/tools/property_writer.py`), which is dead: the import-time
+      stripping always removes `--backend` before argparse runs. Found while
+      writing `tests/test_docs_commands.py` in stage 3.
 
 ## Misleading or wrong documentation
 

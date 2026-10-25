@@ -197,7 +197,7 @@ What stage 2 found that the next stages need to know:
   test, no `build.sh` line and no page. Recorded in `KNOWN_ISSUES.md`; the format
   reference says so on its face.
 
-### Stage 3 — make the examples executable and verified (3 d)
+### Stage 3 — make the examples executable and verified (complete)
 
 tangos cannot do directly what pynbody does. pynbody's build-time dependency is a
 snapshot file it reads itself; tangos needs a *populated database*, meaning pynbody +
@@ -268,20 +268,66 @@ with `tangos diff`. So decouple database *production* from docs *building*.
       clean local build of the whole site. Still excluded: yt, particle data, any
       `tangos write`. pynbody is now installed, contrary to the original budget —
       see **Decisions already made**.
-- [ ] Convert tutorial code fences to `.. ipython::` / `@savefig`
-- [ ] Bind the write-side shell commands to `build.sh` — a grep test comparing
+- [x] Convert tutorial code fences to `.. ipython::` / `@savefig`. Scoped to what
+      runs against the tutorial database on pages already ported: the six
+      hand-typed blocks on `tutorials/live_calculations`. Every other code block on
+      a stage 1–2 page is shell, a config file, or needs data the build does not
+      have (yt, EAGLE). The `.md` pages stages 4–5 rewrite were left alone, not
+      converted in place only to be re-ported
+- [x] Bind the write-side shell commands to `build.sh` — a test comparing
       subcommands and flags, not whole command lines (see **Invariants**: the docs
       deliberately differ from `build.sh` in argument *values*). Sharing literal
       `_snippets/*.sh` via `literalinclude` was the original idea and is ruled out
       by that: it would force the docs to adopt CI's values. They are already
-      CI-verified; the docs simply do not reuse that fact
+      CI-verified; the docs simply do not reuse that fact. Done as
+      `tests/test_docs_commands.py`, which parses with the real parser rather than
+      grepping; see **What stage 3 found**
+- [x] Fail the build if the tutorial database is absent or empty (added in
+      stage 3; see **How to work on this**)
+- [x] Retire the notebook, and `nbsphinx` and `pandoc` with it. Its URL
+      redirects to `tutorials/quickstart`; the cells nothing has ported yet are
+      pinned under **Stage 4**
 - [x] Re-enable the integration test workflow (see **Before merging to master**) —
       this stage depends on the database it builds, so restore it here rather than at
       the end. Done: the file is now byte-identical to master's
 
 Fallback, worth adopting as a floor regardless: `SimulationGeneratorForTests` builds
 8 timesteps × 9 halos with links in 1.7 s, with no pynbody and no data. That alone
-keeps the language reference executable if a download fails.
+keeps the language reference executable if a download fails. **Deferred to stage
+5**, where the language reference it would serve is written; stage 3 instead
+makes a missing database a hard failure, since a fallback would render the
+tutorial pages with meaningless output.
+
+What stage 3 found:
+
+- **An empty result is not verification.** Of the ten hand-typed calls on
+  `tutorials/live_calculations`, three raised, and four returned empty arrays
+  without complaint: `later(5)` from the final snapshot and `earlier(10)` in a
+  simulation with five. An `.. ipython::` block of those builds cleanly and proves
+  nothing. Look at the output of every block you add, and choose arguments that
+  return real data. The tutorial simulations have five snapshots each.
+- **Under `-W`, an unmarked python warning fails the build too**, not only an
+  unmarked exception: the ipython directive reports both as Sphinx warnings. Mark a
+  block `:okwarning:` when its warning is expected. The exception filter in
+  `conf.py` is what makes an unmarked exception fatal *without* `-W`. Both were
+  checked with deliberately failing blocks.
+- **How the command test works**, since stages 4–5 will meet it. It collects
+  every `tangos …` line from shell-like code blocks on every `.rst`/`.md` page
+  (rst `code-block`s, `::` literal blocks, markdown and MyST fences), and every
+  `tangos` line of `build.sh` with `$MPI…` expanded for both branches of
+  `detect_mpi`. It parses them all with `tangos.scripts.get_argument_parser()`,
+  added in this stage. Flags are compared by argparse dest, so `--for` and
+  `--sims` match, and so do abbreviations. A documented command must parse, its
+  subcommand and flags must appear in `build.sh` or in `ALLOWLIST`, and an
+  allowlist entry nothing needs fails as stale. A placeholder line, one with
+  `<N>` or `[…]` in it, is skipped. The allowlist has six entries, each with its
+  reason: `serve`, `recent-runs`, `import-ahf-trees`, `import-subfind-trees`,
+  `add --max-objects` (EAGLE), and `import-changa-bh --backend` (`mpi.md` runs
+  it under MPI, while `build.sh` runs it serially).
+- `match_reduce` crashes if a linked object lacks the property, and `--backend`
+  handling re-splits the command line on spaces. Both are in `KNOWN_ISSUES.md`.
+  The second matters to any page that shows `--backend` together with an
+  `--include-only` containing a space.
 
 ### Stage 4 — gap-filling how-tos and remaining tutorials (5 d)
 
@@ -324,6 +370,9 @@ keeps the language reference executable if a download fails.
       reference material addressed to someone who already has their own data —
       which is what `reference/simulation_formats` currently does for them, and
       may be all they need.
+- [ ] `how-to/parallel` (from `mpi.md`): its list of commands eligible for
+      parallel execution omits `import-changa-bh`, which its own PBS example runs
+      under MPI, and which is parallel-aware
 - [ ] `--pickle-results` — the actual answer to the sqlite-locking failure that
       `rdbms.md` warns about, undocumented
 
@@ -514,15 +563,17 @@ These span PRs and are easy to break one stage at a time.
   ipython directive turns into a build failure. Write LaTeX in labels as a raw
   string — `r"$M_\odot$"` — as the existing figures do.
 - **Every `tangos …` command shown in the docs is CI-exercised in *form***: its
-  subcommand, and every flag it uses, appear somewhere in `build.sh`. Enforced by a
-  test from stage 3 onward. The test compares command *shapes*, not argument values.
+  subcommand, and every flag it uses, appear somewhere in `build.sh`. Enforced
+  from stage 3 onward by `tests/test_docs_commands.py`, which also requires every
+  documented command to parse. A command that genuinely cannot run in
+  `build.sh` goes in its `ALLOWLIST`, with a reason. The test compares command *shapes*, not argument values.
   A page is free to choose a different threshold, property list or simulation name
   from whatever CI happens to build with, and `tutorials/first_database` does:
   it filters on `--include-only="NDM()>1000"` where `build.sh` uses `5000`, which is
   far too conservative to make a good tutorial. What the invariant buys is that no
   page can go on showing a subcommand or flag that has been renamed or removed.
 - **An unmarked exception in any `.. ipython::` block fails the build**, from stage 3
-  onward. This is the entire difference between examples that are executed and
+  onward, and under `-W` so does an unmarked warning. This is the entire difference between examples that are executed and
   examples that are *verified*.
 
 ## Style conventions
