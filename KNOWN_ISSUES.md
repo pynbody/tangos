@@ -166,6 +166,18 @@ most cases, running the code at the point it was added.
       every implementation and every caller uses `finder_offset`. The API
       reference therefore documents a parameter name that does not exist
       downstream.
+- [ ] `match_reduce` crashes if any linked object lacks the property being
+      reduced, rather than skipping it. `calculation.values()` yields `None`
+      for such an object and the reduction is applied to the raw list, so
+      `'sum'` and `'mean'` raise `TypeError: unsupported operand type(s) for
+      +: 'NoneType' and 'NoneType'` (and `'min'`/`'max'` would compare `None`
+      with numbers). Reproduced against the tutorial database:
+      `tangos.get_timestep("tutorial_changa/%960").calculate_all(lambda:
+      match_reduce('tutorial_changa/%832', star_mass_profile[-1], 'sum'))`;
+      the same call with `Mvir`, which every object has, works.
+      `tests/test_live_calculation_reduce.py` only covers targets that all
+      carry the property. Found in stage 3, where the docs example had to
+      switch to `Mvir` to run.
 
 ## Misleading or wrong documentation
 

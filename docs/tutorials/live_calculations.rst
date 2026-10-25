@@ -1,4 +1,7 @@
 .. Checked and edited by AP 31/08/26 
+.. Stage 3 (Claude, 2026-10-25): the remaining code blocks converted to ipython, with
+   examples changed where they returned nothing or failed against the tutorial
+   database; those changes not yet checked by a human.
 
 .. _live_calculations:
 
@@ -39,10 +42,14 @@ A live calculation can be written either as a **python lambda taking no
 arguments**, or as a **string** in a small mini-language. The two are exactly
 equivalent -- they produce the same calculation, and run at the same speed:
 
-.. code-block:: python
+.. ipython::
 
-    h.calculate(lambda: at(Rvir/4, dm_density_profile))
-    h.calculate("at(Rvir/4, dm_density_profile)")
+ @suppress
+ In [1]: import tangos; h = tangos.get_object("tutorial_changa/%960/halo_1"); ts = h.timestep
+
+ In [2]: h.calculate(lambda: at(Rvir/4, dm_density_profile))
+
+ In [3]: h.calculate("at(Rvir/4, dm_density_profile)")
 
 For most interactive and scripted work the lambda form is the more comfortable
 of the two. It is genuine python, so your editor highlights it, matches your
@@ -66,9 +73,11 @@ Both forms may be passed anywhere a calculation is expected --
 :meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_descendants` -- and the two may
 be mixed freely in a single call:
 
-.. code-block:: python
+.. ipython::
 
-    ts.calculate_all(lambda: later(5).Mvir, "Mvir")
+ In [1]: mass_before, mass_now = ts.calculate_all(lambda: earlier(2).Mvir, "Mvir")
+
+ In [2]: mass_before[:5]
 
 The examples below give both forms side by side. Everything else on this page
 applies to both, except for the wrinkles specific to each, which are described
@@ -100,10 +109,7 @@ Suppose you have a timestep ``ts`` and a halo ``h``:
 The property names used in the examples below (``Mvir``,
 ``dm_density_profile``, ``SFR_histogram`` and so on) are illustrative;
 substitute whatever your own database contains, which you can check with
-:meth:`h.keys() <tangos.core.halo.SimulationObjectBase.keys>`. Examples shown
-together with their output are the ones running against the tutorial database;
-those shown without output use names that the tutorial database happens not to
-contain.
+:meth:`h.keys() <tangos.core.halo.SimulationObjectBase.keys>`.
 
 The simplest possible calculation is a single stored property. This is no more
 useful than ``h['Mvir']``, but it establishes the pattern:
@@ -261,12 +267,19 @@ record.
 Some functions return a linked object rather than a value. To get a property of
 that object, follow it with a ``.``:
 
-.. code-block:: python
+.. ipython::
 
-    ts.calculate_all(lambda: later(5).Mvir, lambda: Mvir)
-    ts.calculate_all("later(5).Mvir", "Mvir")
+ In [1]: early_ts = tangos.get_timestep("tutorial_changa/%640")
 
-This returns the virial mass of each halo's descendant five snapshots later,
+ In [2]: mass_later, mass = early_ts.calculate_all(lambda: later(2).Mvir, lambda: Mvir)
+
+ In [3]: mass_later, mass = early_ts.calculate_all("later(2).Mvir", "Mvir")
+
+ In [4]: mass_later[:5]
+
+ In [5]: mass[:5]
+
+This returns the virial mass of each halo's descendant two snapshots later,
 alongside its present virial mass. ``earlier(n)`` does the same for the main
 progenitor ``n`` snapshots back, ``latest()`` and ``earliest()`` jump to the
 ends of the branch, and ``match(name)`` finds the counterpart of the object in
@@ -278,11 +291,15 @@ name of the other simulation.
 Anything that can be calculated on an object
 can be calculated after a redirection, including further redirections:
 
-.. code-block:: python
+.. ipython::
 
-    ts.calculate_all(lambda: earlier(10).Vvir())
-    ts.calculate_all(lambda: earlier(2).at(Rvir/4, GasMass_encl))
-    ts.calculate_all(lambda: match('tutorial_changa_blackholes').star_mass_profile[-1])
+ In [1]: h.calculate(lambda: earlier(2).Vvir())
+
+ In [2]: h.calculate(lambda: earlier(2).at(Rvir/4, gas_mass_profile))
+
+ In [3]: h.calculate(lambda: match('tutorial_changa_blackholes').star_mass_profile[-1])
+
+ In [4]: h.calculate(lambda: earlier(1).match('tutorial_changa_blackholes').Mvir)
 
 Links that a property module has written into the database are followed the
 same way, simply by naming them. For example, the central black holes per halo in 
@@ -345,13 +362,18 @@ Searching along the merger tree
 
 ``find_progenitor(property, "max"|"min")`` searches the whole main progenitor
 branch for the step at which a property is largest or smallest, and returns the
-object at that step; ``find_descendant`` does the same going forwards. So to
-find the mass of a galaxy at the time its star formation rate peaked:
+object at that step; ``find_descendant`` does the same going forwards. The
+property searched over must be a stored one, not a calculation. So to find the
+largest virial mass each halo has ever had, and count how many halos have since
+lost mass -- typically satellites being tidally stripped:
 
-.. code-block:: python
+.. ipython::
 
-    h.calculate(lambda: find_progenitor(SFR, "max").mass)
-    h.calculate('find_progenitor(SFR, "max").mass')
+ In [1]: peak_mass, mass = ts.calculate_all(lambda: find_progenitor(Mvir, "max").Mvir, lambda: Mvir)
+
+ In [2]: peak_mass, mass = ts.calculate_all('find_progenitor(Mvir, "max").Mvir', "Mvir")
+
+ In [3]: (mass < peak_mass).sum(), len(mass)
 
 Reducing over many linked objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -359,13 +381,20 @@ Reducing over many linked objects
 Where ``match(name)`` picks a single counterpart, ``match_reduce(name,
 calculation, reduction)`` performs a calculation on *every* linked object in
 the target simulation or timestep and then combines the results with ``'sum'``,
-``'mean'``, ``'min'`` or ``'max'``. For example, the total stellar mass of all
-counterparts of each halo in another simulation:
+``'mean'``, ``'min'`` or ``'max'``. For example, the total virial mass of all
+of each halo's progenitors in the previous snapshot, set beside the mass of its
+major progenitor alone:
 
-.. code-block:: python
+.. ipython::
 
-    ts.calculate_all(lambda: match_reduce('tutorial_changa', Mstar, 'sum'))
-    ts.calculate_all("match_reduce('tutorial_changa', Mstar, 'sum')")
+ In [1]: all_progenitors, major_progenitor = ts.calculate_all(lambda: match_reduce('tutorial_changa/%832', Mvir, 'sum'),
+    ...:                                                       lambda: earlier(1).Mvir)
+
+ In [2]: all_progenitors, = ts.calculate_all("match_reduce('tutorial_changa/%832', Mvir, 'sum')")
+
+ In [3]: all_progenitors[:5]
+
+ In [4]: major_progenitor[:5]
 
 
 Comparisons and filters
