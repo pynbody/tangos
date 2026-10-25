@@ -267,7 +267,7 @@ Gadget-4 + SubFind
 ~~~~~~~~~~~~~~~~~~
 
 ``tutorial_gadget4`` here is the integration test's fixture, not a dataset you
-can download -- see :ref:`tutorial_datasets`. As for Gadget + SubFind, both
+can download. As for Gadget + SubFind, both
 property passes are needed for the group hierarchy:
 
 .. code-block:: bash
@@ -306,7 +306,7 @@ before the property imports:
 
 The snapshots live in the ``tutorial_gadget4`` folder and the HBT+ catalogues
 in ``tutorial_gadget4_hbtplus``, so you need both unpacked. Both are integration
-test fixtures rather than downloadable datasets -- see :ref:`tutorial_datasets`.
+test fixtures rather than downloadable datasets.
 
 RAMSES + HOP
 ~~~~~~~~~~~~
@@ -338,7 +338,7 @@ Enzo + Rockstar, through yt
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``enzo.tinycosmo`` is the integration test's fixture, not a dataset you can
-download -- see :ref:`tutorial_datasets`.
+download.
 
 yt is not imported unless you ask for it, so this combination always names a
 handler; ``yt.YtInputHandler`` is enough, because the subclass is then chosen

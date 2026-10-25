@@ -96,14 +96,18 @@ plot_working_directory = '.'
 extensions += ['IPython.sphinxext.ipython_console_highlighting',
                'IPython.sphinxext.ipython_directive']
 
-# ipython_warning_is_error is kept at False (rather than its usual default of True):
-# that flag makes *both* unexpected exceptions and unexpected python warnings raised
-# inside `.. ipython::` blocks fatal, and we only want the former (regressions that leave
-# a traceback in the rendered docs), not the latter (e.g. informational/deprecation
-# warnings, which are routine and shouldn't break the readthedocs build). So instead we
-# hook the specific log message that IPython.sphinxext.ipython_directive emits for an
-# unmarked exception (one raised inside a block that isn't marked with :okexcept:) and
-# turn just that into a build failure.
+# ipython_warning_is_error is set to False, which means the ipython directive *reports*
+# an unmarked exception (inside a block not marked :okexcept:) or an unmarked python
+# warning (not marked :okwarning:) as a Sphinx warning instead of raising. Under -W --
+# and so on Read the Docs, with fail_on_warning -- either one fails the build. That is
+# wanted: mark a block :okwarning: when its warning is expected.
+#
+# Without -W (`make html`, whose SPHINXOPTS is empty), both would be let through and the
+# build would succeed with a traceback rendered into the page. The filter below makes an
+# unmarked exception fatal regardless of -W, with a message saying what to do about it.
+#
+# Verified in stage 3 with deliberately failing blocks, under -W: unmarked exception ->
+# fails (with or without the filter); :okexcept: -> passes; unmarked warning -> fails.
 ipython_warning_is_error = False
 
 import logging as _logging
@@ -200,6 +204,44 @@ import tangos
 # follow `import tangos`; keep this comment on the call rather than on the import,
 # so isort does not separate it from what it explains.
 configure_mappers()
+
+
+# Every `.. ipython::` block in the tutorials queries the tutorial database, but a
+# tangos database that does not exist is silently created, empty, by the first query
+# (see KNOWN_ISSUES.md). Without this check a build that skipped
+# precache_tutorial_database() stays green under -W, and every page renders with
+# empty output. So refuse to build unless the database is there and holds what the
+# tutorials expect. The check opens the file read-only, via sqlite3 rather than
+# tangos, precisely so that it cannot create the empty file it is guarding against.
+_TUTORIAL_SIMULATIONS = {"tutorial_changa", "tutorial_changa_blackholes", "tutorial_gadget",
+                         "tutorial_gadget_rockstar", "tutorial_ramses"}
+
+
+def _check_tutorial_database():
+    import sqlite3
+    from pathlib import Path
+
+    how_to_fix = ("Fetch it with\n\n"
+                  "    python -c \"import tangos.test_utils as tu; tu.precache_tutorial_database()\"\n\n"
+                  "before building the docs (see DOCS_PLAN.md).")
+    db = tangos.config.db
+    if "//" in db:
+        raise RuntimeError(f"The docs must be built against the tutorial database, which is an sqlite "
+                           f"file, but TANGOS_DB_CONNECTION names a database server ({db!r}). " + how_to_fix)
+    if not Path(db).is_file():
+        raise RuntimeError(f"The tutorial database was not found at {db}. " + how_to_fix)
+    try:
+        with sqlite3.connect(Path(db).absolute().as_uri() + "?mode=ro", uri=True) as connection:
+            present = {name for (name,) in connection.execute("SELECT basename FROM simulations")}
+    except sqlite3.Error as e:
+        raise RuntimeError(f"{db} is not a readable tangos database ({e}). " + how_to_fix) from e
+    missing = _TUTORIAL_SIMULATIONS - present
+    if missing:
+        raise RuntimeError(f"{db} does not hold the tutorial simulations: missing {sorted(missing)}. "
+                           + how_to_fix)
+
+
+_check_tutorial_database()
 
 version = ".".join(tangos.__version__.split(".")[:2])
 release = tangos.__version__
