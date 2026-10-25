@@ -79,9 +79,9 @@ be mixed freely in a single call:
 
  In [2]: mass_before[:5]
 
-The examples below give both forms side by side. Everything else on this page
-applies to both, except for the wrinkles specific to each, which are described
-in :doc:`/live_calculation`.
+The rest of this page uses the lambda form. Every example could equally be
+written as a string, and everything here applies to both, except for the
+wrinkles specific to each, which are described in :doc:`/live_calculation`.
 
 
 First steps
@@ -118,16 +118,12 @@ useful than ``h['Mvir']``, but it establishes the pattern:
 
  In [1]: h.calculate(lambda: Mvir)
 
- In [2]: h.calculate("Mvir")
-
 Arithmetic on stored properties works as you would expect, using ``+``, ``-``,
 ``*``, ``/``, ``**`` and brackets:
 
 .. ipython::
 
  In [1]: h.calculate(lambda: Mvir/Rvir)
-
- In [2]: h.calculate("Mvir/Rvir")
 
 The same calculation can be applied to every object in a timestep at once. This
 is where the system earns its keep:
@@ -168,8 +164,6 @@ demand from the already-stored ``Mvir`` and ``Rvir``:
 
  In [1]: h.calculate(lambda: Vvir())
 
- In [2]: h.calculate("Vvir()")
-
 The set of live properties available depends on which property modules you
 have installed: they are defined by
 :class:`~tangos.properties.LivePropertyCalculation` classes, and you can write
@@ -192,11 +186,9 @@ to:
 
  In [1]: mass, time = ts.calculate_all(lambda: Mvir, lambda: t())
 
- In [2]: mass, time = ts.calculate_all("Mvir", "t()")
+ In [2]: mass[:5]
 
- In [3]: mass[:5]
-
- In [4]: time[:5]
+ In [3]: time[:5]
 
 These are live properties too, but not because the information is unstored --
 it is stored, just not *on the object*. The time, redshift and scalefactor
@@ -227,9 +219,7 @@ negative to count from the end:
 
  In [1]: final_star_mass, = ts.calculate_all(lambda: star_mass_profile[-1])
 
- In [2]: final_star_mass, = ts.calculate_all("star_mass_profile[-1]")
-
- In [3]: final_star_mass[:5]
+ In [2]: final_star_mass[:5]
 
 Often you don't want to worry about the indexing details and instead need
 information at a particular location. For such occasions, ``at(position, array)`` 
@@ -253,8 +243,6 @@ value of an array and the positions at which they occur:
 
  In [1]: h.calculate(lambda: posmax(dm_density_profile))
 
- In [2]: h.calculate("posmax(dm_density_profile)")
-
 
 Links and redirection
 ---------------------
@@ -273,11 +261,9 @@ that object, follow it with a ``.``:
 
  In [2]: mass_later, mass = early_ts.calculate_all(lambda: later(2).Mvir, lambda: Mvir)
 
- In [3]: mass_later, mass = early_ts.calculate_all("later(2).Mvir", "Mvir")
+ In [3]: mass_later[:5]
 
- In [4]: mass_later[:5]
-
- In [5]: mass[:5]
+ In [4]: mass[:5]
 
 This returns the virial mass of each halo's descendant two snapshots later,
 alongside its present virial mass. ``earlier(n)`` does the same for the main
@@ -312,8 +298,6 @@ same way, simply by naming them. For example, the central black holes per halo i
 
  In [2]: h.calculate(lambda: BH_central.BH_mass)
 
- In [3]: h.calculate("BH_central.BH_mass")
-
 Choosing between several linked objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -328,8 +312,6 @@ property:
 
  In [1]: h.calculate(lambda: link(BH, BH_mass, "max"))
 
- In [2]: h.calculate('link(BH, BH_mass, "max")')
-
 This returns the black hole linked to ``h`` under the name ``BH`` that has the
 largest ``BH_mass``. This may or may not be the same as ``BH_central``. (Recovering 
 ``BH_central`` would require ``link(BH, BH_central_distance, "min")``.)
@@ -341,8 +323,6 @@ evaluated on the candidate objects, that must be true:
 
  In [1]: h.calculate(lambda: link(BH, BH_mass, "max", BH_central_distance<10))
 
- In [2]: h.calculate('link(BH, BH_mass, "max", BH_central_distance<10)')
-
 This is the most massive black hole among only those within 10 kpc of the halo
 centre. Having picked the object you want, you can then ask for any of its
 properties:
@@ -350,8 +330,6 @@ properties:
 .. ipython::
 
  In [1]: h.calculate(lambda: link(BH, BH_mass, "max", BH_central_distance<10, BH_mass>1e6).BH_mdot)
-
- In [2]: h.calculate('link(BH, BH_mass, "max", BH_central_distance<10, BH_mass>1e6).BH_mdot')
 
 which gives the accretion rate of the most massive black hole that is both
 within 10 kpc of the centre and above 10\ :sup:`6` solar masses.
@@ -371,9 +349,7 @@ lost mass -- typically satellites being tidally stripped:
 
  In [1]: peak_mass, mass = ts.calculate_all(lambda: find_progenitor(Mvir, "max").Mvir, lambda: Mvir)
 
- In [2]: peak_mass, mass = ts.calculate_all('find_progenitor(Mvir, "max").Mvir', "Mvir")
-
- In [3]: (mass < peak_mass).sum(), len(mass)
+ In [2]: (mass < peak_mass).sum(), len(mass)
 
 Reducing over many linked objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -390,11 +366,9 @@ major progenitor alone:
  In [1]: all_progenitors, major_progenitor = ts.calculate_all(lambda: match_reduce('tutorial_changa/%832', Mvir, 'sum'),
     ...:                                                       lambda: earlier(1).Mvir)
 
- In [2]: all_progenitors, = ts.calculate_all("match_reduce('tutorial_changa/%832', Mvir, 'sum')")
+ In [2]: all_progenitors[:5]
 
- In [3]: all_progenitors[:5]
-
- In [4]: major_progenitor[:5]
+ In [3]: major_progenitor[:5]
 
 
 Comparisons and filters
@@ -454,9 +428,7 @@ You can instead ask for the SFR summed over *all* branches:
 
  In [1]: sfr = h.calculate(lambda: reassemble(SFR_histogram, 'sum'))
 
- In [2]: sfr = h.calculate("reassemble(SFR_histogram, 'sum')")
-
- In [3]: sfr[-5:]
+ In [2]: sfr[-5:]
 
 and similarly for a black hole accretion history, following the link to the
 black hole first:
@@ -466,9 +438,7 @@ black hole first:
 
  In [1]: mdot = h.calculate(lambda: BH.reassemble(BH_mdot_histogram, 'sum'))
 
- In [2]: mdot = h.calculate("BH.reassemble(BH_mdot_histogram, 'sum')")
-
- In [3]: mdot[-5:]
+ In [2]: mdot[-5:]
 
 If you want to handle the reassembly yourself, ``'place'`` correctly zero-pads
 the histogram onto the full time axis but does not fill in any data from
