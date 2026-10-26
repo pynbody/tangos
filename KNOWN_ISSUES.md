@@ -199,6 +199,20 @@ most cases, running the code at the point it was added.
       gaps to the reader rather than hiding them. Fixing it means storing the
       interval back to the previous timestep, then rebuilding the tutorial
       database and `reference_database.db`. Found in stage 3.
+- [ ] Multi-hop strategies can fail intermittently with `sqlalchemy.exc.InvalidRequestError:
+      Table 'multihoplink_final_xxxx' is already defined for this MetaData instance`.
+      Seen once in CI on a stage 3 commit (`test_hop_strategy.py::test_multisource_forwards`,
+      MySQL, Python 3.14), in code the commit did not touch; the same job passed
+      on neighbouring commits. By reading `tangos/relation_finding/multi_hop.py`:
+      the temporary tables are named with just four random lowercase letters
+      (`rstr`, 26^4 ≈ 457k names), and a table can stay registered in
+      `core.Base.metadata` after use. `_manage_temp_table` is a `@contextmanager`
+      without `try/finally`, so an exception inside the block skips
+      `_delete_temp_table`; and `_temp_table_without_leaving_sql` only removes
+      its table through a callback that runs if the caller exits the returned
+      halolist context. Once a table has leaked, any later draw of the same four
+      letters collides. Proposed fix: wrap the `yield` in `try/finally`, and use a
+      longer suffix (e.g. `uuid.uuid4().hex[:16]`) for the table and index names.
 - [ ] `--backend` handling in `tangos.parallel_tasks._process_command_line()`
       breaks any argument that contains a space. On import it joins `sys.argv`
       with spaces, cuts `--backend <name>` out with a regex, and assigns
