@@ -178,8 +178,14 @@ most cases, running the code at the point it was added.
       `tests/test_live_calculation_reduce.py` only covers targets that all
       carry the property. Found in stage 3, where the docs example had to
       switch to `Mvir` to run.
-- [ ] Time-chunked histograms (`SFR_histogram`, `BH_mdot_histogram`) have gaps
-      wherever snapshots are more than 0.5 Gyr apart.
+- [x] Time-chunked histograms (`SFR_histogram`, `BH_mdot_histogram`) have gaps
+      wherever snapshots are more than 0.5 Gyr apart. **Fixed in stage 3** (on the
+      docs branch, at AP's request, so the docs could show sensible histories):
+      `store_slice` now reaches back to the previous timestep, never less than
+      `minimum_store_Gyr`, and to the beginning at the first timestep; tested in
+      `tests/test_histogram_property.py`. The tutorial and CI reference databases
+      still hold old-style chunks until rebuilt (see **Before merging to master**
+      in `DOCS_PLAN.md`).
       `TimeChunkedProperty.store_slice` (`tangos/properties/__init__.py`)
       always returns the fixed window `[t - minimum_store_Gyr, t]`, and the SF
       and BH properties store exactly that slice. So a snapshot stores the 0.5

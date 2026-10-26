@@ -240,10 +240,12 @@ the other branches and arrived later by merging:
     ...: p.tight_layout()
 
 The other progenitors add a little before about 1.5 Gyr, but in contrast to the
-mass, almost all of this galaxy's stars formed on its major branch. (Each
-snapshot stores only the 0.5 Gyr of history before it. The snapshots in this
-cut-down database start at 1.3 Gyr and are further apart than that, so the
-drops to zero are gaps in what was stored, not pauses in star formation.)
+mass, almost all of this galaxy's stars formed on its major branch. (The drops
+to zero are gaps in what this tutorial database stored, not pauses in star
+formation. It was built with an earlier version of tangos, in which each
+snapshot stored only the 0.5 Gyr of history before it; the snapshots here are
+further apart than that. tangos now stores the history back to the previous
+snapshot, and the whole history at the first.)
 
 The SFR is not the only history stored this way. Black hole accretion rates,
 ``BH_mdot_histogram``, are too, and reassemble in the same way once you follow

@@ -248,6 +248,8 @@ class TimeChunkedProperty(PropertyCalculation):
 
     def __init__(self, simulation):
         self.pixel_delta_t_Gyr = simulation.get("histogram_delta_t_Gyr", self.pixel_delta_t_Gyr)
+        self._store_slice_simulation = simulation
+        self._timestep_times_Gyr = None
         super().__init__(simulation)
 
 
@@ -260,8 +262,26 @@ class TimeChunkedProperty(PropertyCalculation):
 
     def store_slice(self, time):
         """Tells subclasses which have generated a histogram over all time which slice of that histogram
-        they should store."""
-        return slice(self.bin_index(time-self.minimum_store_Gyr), self.bin_index(time))
+        they should store.
+
+        The slice reaches back to the simulation's previous timestep, so that the slices stored at successive
+        timesteps leave no gaps between them, and back to the beginning for the first timestep. It always
+        covers at least minimum_store_Gyr."""
+        earlier_times = [t for t in self._get_timestep_times_Gyr() if t < time - self.pixel_delta_t_Gyr/2]
+        previous_time = earlier_times[-1] if earlier_times else 0.0
+        start = min(previous_time, time - self.minimum_store_Gyr)
+        return slice(self.bin_index(start), self.bin_index(time))
+
+    def _get_timestep_times_Gyr(self):
+        # Queried rather than read from simulation.timesteps, because the simulation object the property
+        # writer passes in does not have its timesteps loaded
+        if self._timestep_times_Gyr is None:
+            from .. import core
+            session = core.get_default_session()
+            times = session.query(core.TimeStep.time_gyr).filter(
+                core.TimeStep.simulation_id == self._store_slice_simulation.id)
+            self._timestep_times_Gyr = sorted(t for (t,) in times)
+        return self._timestep_times_Gyr
 
     def reassemble(self, property, reassembly_type='major'):
         """Reassemble a histogram by suitable treatment of the merger tree leading up to the current halo.

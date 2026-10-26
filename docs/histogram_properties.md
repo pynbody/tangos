@@ -40,8 +40,10 @@ This method is calculating a star formation histogram for all the stars in the h
 it has been provided. This is stored into `M` on the first line. However, it then returns
 only a slice of that information (provided by the `TimeChunkedProperty.store_slice` method).
 
-That slice represents the most recent star formation history of the object, and only that
-recent activity is stored in the database.
+That slice represents the star formation history of the object since the previous snapshot
+(and at least the last `minimum_store_Gyr`, 0.5 Gyr by default), or its whole history at the
+first snapshot. Only that recent activity is stored in the database; together, the slices
+stored at successive snapshots cover the whole history.
 
 You can see this for yourself; starting from the [sample database](tutorials/quickstart.rst), try
 the following:

@@ -33,7 +33,7 @@ def _setup_dummy_histogram_data(ts1, ts2):
 
     stored_log = log.LogCapturer()
     writer = property_writer.PropertyWriter()
-    writer.parse_command_line(["dummy_histogram"])
+    writer.parse_command_line(["dummy_histogram", "dummy_histogram_short_minimum"])
     with stored_log:
         writer.run_calculation_loop()
 
@@ -50,6 +50,11 @@ class DummyHistogramProperty(properties.TimeChunkedProperty):
         hist = test_histogram[self.store_slice(self.time)]/existing_properties.halo_number
         return hist
 
+class DummyHistogramPropertyShortMinimum(DummyHistogramProperty):
+    """As DummyHistogramProperty, but with the timesteps (0.9 Gyr apart) further apart than minimum_store_Gyr"""
+    minimum_store_Gyr = 0.2
+    names = "dummy_histogram_short_minimum"
+
 def test_histogram_written_as_expected():
     dumhistprop = DummyHistogramProperty(db.get_simulation("sim"))
     ts1 = db.get_timestep("sim/ts1")
@@ -63,6 +68,24 @@ def test_histogram_written_as_expected():
                             test_histogram[dumhistprop.store_slice(ts1.time_gyr)] * 0.5)
     npt.assert_almost_equal(ts2_h1.calculate('raw(dummy_histogram)'),
                             test_histogram[dumhistprop.store_slice(ts2.time_gyr)])
+
+def test_first_timestep_stores_whole_history():
+    ts1_h1 = db.get_halo("sim/ts1/1")
+    expected_length = int(ts1_h1.timestep.time_gyr/DummyHistogramProperty.pixel_delta_t_Gyr)
+    npt.assert_almost_equal(ts1_h1.calculate('raw(dummy_histogram_short_minimum)'),
+                            test_histogram[:expected_length])
+
+def test_later_timestep_stores_back_to_previous_timestep():
+    ts1 = db.get_timestep("sim/ts1")
+    ts2_h1 = db.get_halo("sim/ts2/1")
+    start = int(ts1.time_gyr/DummyHistogramProperty.pixel_delta_t_Gyr)
+    end = int(ts2_h1.timestep.time_gyr/DummyHistogramProperty.pixel_delta_t_Gyr)
+    npt.assert_almost_equal(ts2_h1.calculate('raw(dummy_histogram_short_minimum)'),
+                            test_histogram[start:end])
+
+def test_reconstruction_has_no_gaps_when_timesteps_exceed_minimum_store():
+    reconstructed = db.get_halo("sim/ts2/1")['dummy_histogram_short_minimum']
+    npt.assert_almost_equal(reconstructed, test_histogram[:len(reconstructed)])
 
 def test_default_reconstruction():
     ts2_h1 = db.get_halo("sim/ts2/1")

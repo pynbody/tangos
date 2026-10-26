@@ -406,6 +406,16 @@ What stage 3 found:
   reason: `serve`, `recent-runs`, `import-ahf-trees`, `import-subfind-trees`,
   `add --max-objects` (EAGLE), and `import-changa-bh --backend` (`mpi.md` runs
   it under MPI, while `build.sh` runs it serially).
+- **Time-chunked histograms had gaps, now fixed in code on this branch** (an
+  exception to "code fixes go to master", at AP's request, so the docs could
+  show sensible star formation histories). `TimeChunkedProperty.store_slice`
+  stored a fixed 0.5 Gyr window before each snapshot, so wherever snapshots were
+  further apart — as in the tutorial database, about 0.65 Gyr — the history
+  between them was never stored. It now reaches back to the previous timestep
+  (never less than `minimum_store_Gyr`) and to the beginning at the first, so the
+  chunks tile the whole history. Reassembly needed no change. Both databases
+  this branch depends on hold old-style chunks until rebuilt: see **Before
+  merging to master**.
 - `match_reduce` crashes if a linked object lacks the property, and `--backend`
   handling re-splits the command line on spaces. Both are in `KNOWN_ISSUES.md`.
   The second matters to any page that shows `--backend` together with an
@@ -652,6 +662,20 @@ and no pynbody except for the one metadata call noted below: `tutorials/quicksta
   place; stage 1 rewrites it.
 
 ## Before merging to master
+
+- [ ] **Regenerate the CI reference database.** Stage 3 changed what time-chunked
+      histograms store (see **What stage 3 found**), so the integration test's
+      `tangos diff` against `continuous_integration/reference_database.db` fails on
+      `SFR_histogram` and `BH_mdot_histogram` at the first ChaNGa snapshot, which
+      now stores its whole history. Rebuild it from this branch (the integration
+      test uploads `data.db` as an artifact) and upload it. Until then the
+      integration test on docs PRs is red for this reason alone; check that the
+      diff names nothing else
+- [ ] **Rebuild the tutorial database** with this branch and upload it, so that
+      `SFR_histogram` has no gaps. Then remove the parenthesis explaining the gaps
+      under "Star formation histories" in `tutorials/time_series`, and look at
+      the plot again: the contrast between the two curves may change once the
+      early history is stored
 
 - [ ] **Check Settings → Pages before deleting any Jekyll file** (`_config.yml`,
       `Gemfile`, `_layouts/`, `_sass/`). No workflow deploys the current site, so
