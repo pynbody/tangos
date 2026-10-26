@@ -54,7 +54,7 @@ build itself complains.
 
 ## Status
 
-Stages 0, 1, 2 and 3 are complete; stages 4–5 have not started. Stage 0 landed in
+Stages 0, 1, 2 and 3 are complete; stages 4–6 have not started. Stage 0 landed in
 #296, stage 1 in #300, stage 2 in #305, stage 3 in #312.
 
 Every page from stages 0–2 has now been read by a human. Stage 3 changed the
@@ -331,6 +331,28 @@ What stage 3 found:
 
 ### Stage 4 — gap-filling how-tos and remaining tutorials (5 d)
 
+- [ ] **First, triage `KNOWN_ISSUES.md`** (under a day). Stages 0–3 only ever
+      added to it: at the end of stage 3 it held 43 open items (21 broken code,
+      16 misleading documentation, 6 deprecated/vestigial) and nothing assigned
+      them to anyone. Tag every open item with one owner, in the item itself:
+      - **stage 4** or **stage 5** — a docs error on a page that stage rewrites
+        (e.g. `custom_input_handlers`, `rdbms`, pypar in `mpi.md`, and the doc
+        URLs embedded in code, for stage 4; halo-path spelling, the two
+        `trackers`/BH items and runtime-changeable config, for stage 5). The
+        stage fixes it as part of the rewrite and ticks it;
+      - **stage 6** — a code bug or dead code (see **Stage 6**);
+      - **close** — stale or not worth doing. At least three are already fixed
+        and only want ticking: the `first_steps_eagle`, `using_with_yt` and
+        `first_steps_ramses+hop` items, whose pages stage 2 retired without
+        carrying the errors into `how-to/eagle` or `how-to/yt` (checked in
+        stage 3). Design notes such as the `.keys()` one are also candidates.
+
+      Where a code bug changes what a stage 4 or 5 page should say — the
+      `--backend` re-splitting bug for `how-to/parallel`; the empty-database
+      creation, `get_simulation`'s `_` wildcard, `getdb` and
+      `tangos.core.__all__` for the API reference — note on the item that the
+      page depends on its fix, so the page documents the fixed behaviour or
+      flags the bug rather than enshrining it
 - [ ] `how-to/managing_a_database` (new) — the biggest single gap
 - [ ] `how-to/large_simulations` (new)
 - [ ] `how-to/parallel`, `how-to/database_backends`
@@ -395,6 +417,22 @@ What stage 3 found:
       `/first_steps_eagle` → `/how-to/eagle`), `configuration`,
       `explanation/concepts`. Do each as the page it names lands
 - [ ] FAQ, link audit
+
+### Stage 6 — code fixes from `KNOWN_ISSUES.md` (size set by the stage 4 triage)
+
+The items the stage 4 triage tags **stage 6**: bugs and dead code found while
+writing the docs. Unlike every other stage, this one **does not go through
+`docs-refactor-main`**. Each fix is a small PR against `master`, as #308 and #310
+were, reviewed as code and released on its own schedule rather than held until
+the whole documentation merges. `docs-refactor-main` picks the fixes up when it
+next merges `master`.
+
+- It can start as soon as the triage is done, and run alongside stages 4–5.
+- One fix per PR, each with a test, and ticked in `KNOWN_ISSUES.md` in the same
+  PR. Not a mass sweep: `get_halo` → `get_object` stays page by page, as
+  **Decisions already made** says.
+- It gates the final merge only where a page depends on a fix (the triage marks
+  those); everything else may finish after the docs ship.
 
 ## Target architecture
 
