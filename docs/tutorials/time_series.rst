@@ -4,8 +4,8 @@
    paragraph and mask example; reworded the start of "Following other branches";
    renamed the walk_branches loop variables so they no longer overwrite halo or time; the
    1.12.0 lambda note moved to the quick-start; motivated the switch to tutorial_gadget;
-   reconciled the halo and group counts; tidied the cross-simulation example. Not yet
-   checked by a human.
+   reconciled the halo and group counts; tidied the cross-simulation example; added
+   "Star formation histories". Not yet checked by a human.
 
 .. _time_series:
 
@@ -195,6 +195,61 @@ method; or, to assign them to particular branches, use
   However, you can change this behaviour.
   See :class:`~tangos.relation_finding.tree.MergerTree` for details.
 
+
+Star formation histories
+------------------------
+
+Some properties record a history at finer resolution than the snapshots.
+``SFR_histogram`` is one: a star formation rate in 20 Myr bins. Only the ChaNGa
+runs in the tutorial database have stars, so this section uses ChaNGa's
+``halo_1``, the galaxy imaged in the :ref:`quickstart`. Like the Gadget halo
+above, its major branch holds only part of the mass early on -- about half at
+the first snapshot:
+
+.. ipython::
+
+ In [1]: galaxy = tangos.get_object("tutorial_changa/%960/halo_1")
+
+ In [2]: galaxy.calculate(lambda: match('tutorial_changa/%384').Mvir)
+
+ In [3]: galaxy.calculate(lambda: match_reduce('tutorial_changa/%384', Mvir, 'sum'))
+
+Reading ``SFR_histogram`` gives the star formation history of the major
+progenitor branch alone. ``reassemble(SFR_histogram, 'sum')`` instead adds up
+the histories of *all* the progenitors, so it counts the stars that formed in
+the other branches and arrived later by merging:
+
+.. ipython::
+
+ In [1]: sfr_major = galaxy['SFR_histogram']
+
+ In [2]: sfr_all = galaxy.calculate(lambda: reassemble(SFR_histogram, 'sum'))
+
+ In [3]: t_bins = galaxy.get_description("SFR_histogram").plot_x_values(sfr_major)
+
+ In [4]: p.figure()
+
+ In [5]: p.plot(t_bins, sfr_all, label="all progenitors");
+
+ In [6]: p.plot(t_bins, sfr_major, label="major progenitor branch");
+
+ @savefig time_series_sfr_reassembly.png width=6in
+ In [7]: p.xlabel("t/Gyr")
+    ...: p.ylabel(r"SFR/$M_{\odot}\,{\rm yr}^{-1}$")
+    ...: p.legend()
+    ...: p.tight_layout()
+
+The other progenitors add a little before about 1.5 Gyr, but in contrast to the
+mass, almost all of this galaxy's stars formed on its major branch. (Each
+snapshot stores only the 0.5 Gyr of history before it. The snapshots in this
+cut-down database start at 1.3 Gyr and are further apart than that, so the
+drops to zero are gaps in what was stored, not pauses in star formation.)
+
+The SFR is not the only history stored this way. Black hole accretion rates,
+``BH_mdot_histogram``, are too, and reassemble in the same way once you follow
+the link to the black hole: ``BH.reassemble(BH_mdot_histogram, 'sum')``. See
+:doc:`/how-to/live_calculation_recipes` for that and the other reassembly
+options.
 
 
 Many objects at one timestep

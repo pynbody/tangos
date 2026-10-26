@@ -178,6 +178,21 @@ most cases, running the code at the point it was added.
       `tests/test_live_calculation_reduce.py` only covers targets that all
       carry the property. Found in stage 3, where the docs example had to
       switch to `Mvir` to run.
+- [ ] Time-chunked histograms (`SFR_histogram`, `BH_mdot_histogram`) have gaps
+      wherever snapshots are more than 0.5 Gyr apart.
+      `TimeChunkedProperty.store_slice` (`tangos/properties/__init__.py`)
+      always returns the fixed window `[t - minimum_store_Gyr, t]`, and the SF
+      and BH properties store exactly that slice. So a snapshot stores the 0.5
+      Gyr before it, whatever the spacing to the previous snapshot, and the
+      history between them is never stored. The attribute's name says
+      *minimum*, which suggests the intent was the larger of 0.5 Gyr and the
+      gap to the previous snapshot. Visible in the tutorial database, whose
+      ChaNGa snapshots are about 0.65 Gyr apart: `halo_1`'s reassembled SFR
+      drops to zero just after 1.53 and 2.17 Gyr, and is zero before 0.81 Gyr
+      (0.5 Gyr before the first snapshot). `tutorials/time_series` explains the
+      gaps to the reader rather than hiding them. Fixing it means storing the
+      interval back to the previous timestep, then rebuilding the tutorial
+      database and `reference_database.db`. Found in stage 3.
 - [ ] `--backend` handling in `tangos.parallel_tasks._process_command_line()`
       breaks any argument that contains a space. On import it joins `sys.argv`
       with spaces, cuts `--backend <name>` out with a regex, and assigns
