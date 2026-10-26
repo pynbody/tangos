@@ -5,7 +5,8 @@
    renamed the walk_branches loop variables so they no longer overwrite halo or time; the
    1.12.0 lambda note moved to the quick-start; motivated the switch to tutorial_gadget;
    reconciled the halo and group counts; tidied the cross-simulation example; added
-   "Star formation histories". Not yet checked by a human.
+   "Star formation histories"; SubFind masses now in physical units, as the
+   rebuilt tutorial database stores them. Not yet checked by a human.
 
 .. _time_series:
 
@@ -42,7 +43,7 @@ Following the major progenitor branch
 
 Most examples on this page use ``tutorial_gadget``, a SubFind catalogue with a
 merger tree. It has eleven snapshots to the ChaNGa run's five, so its histories
-are longer. Two things differ from the quick-start: SubFind's own mass is the
+are longer. Two things differ from the quick-start: SubFind's mass is the
 stored property ``mass`` rather than ``Mvir``, and each timestep holds SubFind's
 groups as well as its halos. Pick a halo in the final snapshot:
 
@@ -79,18 +80,17 @@ a live property, computed as the query runs -- here by reading the time of the
 time at which each entry in the array was measured. ``z()`` and ``a()`` give
 the redshift and scalefactor in the same way.
 
-That is enough for a merger history. ``mass`` is stored in SubFind's own units
-of :math:`10^{10} h^{-1} M_\odot`, hence the factor below:
+That is enough for a merger history:
 
 .. ipython::
 
  In [1]: p.figure()
 
- In [2]: p.plot(time, 1e10*M, 'o-');
+ In [2]: p.plot(time, M, 'o-');
 
  @savefig time_series_major_progenitor_mass.png width=6in
  In [3]: p.xlabel("t/Gyr")
-    ...: p.ylabel(r"$M/h^{-1} M_{\odot}$")
+    ...: p.ylabel(r"$M/M_{\odot}$")
     ...: p.semilogy()
     ...: p.tight_layout()
 
@@ -181,11 +181,11 @@ method; or, to assign them to particular branches, use
  In [4]: p.figure()
 
  In [5]: for _, branch_times, branch_masses in tree.walk_branches(times, masses):
-    ...:     p.plot(branch_times, 1e10*branch_masses, 'o-')
+    ...:     p.plot(branch_times, branch_masses, 'o-')
 
  @savefig time_series_all_progenitors_mass.png width=6in
  In [6]: p.xlabel("t/Gyr")
-    ...: p.ylabel(r"$M/h^{-1} M_{\odot}$")
+    ...: p.ylabel(r"$M/M_{\odot}$")
     ...: p.semilogy()
     ...: p.tight_layout()
 
@@ -240,12 +240,7 @@ the other branches and arrived later by merging:
     ...: p.tight_layout()
 
 The other progenitors add a little before about 1.5 Gyr, but in contrast to the
-mass, almost all of this galaxy's stars formed on its major branch. (The drops
-to zero are gaps in what this tutorial database stored, not pauses in star
-formation. It was built with an earlier version of tangos, in which each
-snapshot stored only the 0.5 Gyr of history before it; the snapshots here are
-further apart than that. tangos now stores the history back to the previous
-snapshot, and the whole history at the first.)
+mass, almost all of this galaxy's stars formed on its major branch.
 
 The SFR is not the only history stored this way. Black hole accretion rates,
 ``BH_mdot_histogram``, are too, and reassemble in the same way once you follow
@@ -275,10 +270,10 @@ but they now evaluate expressions for every object in a timestep:
 
  In [1]: p.figure()
 
- In [2]: p.plot(1e10*M, vmax, 'k.');
+ In [2]: p.plot(M, vmax, 'k.');
 
  @savefig time_series_mass_vmax.png width=6in
- In [3]: p.xlabel(r"$M/h^{-1} M_{\odot}$")
+ In [3]: p.xlabel(r"$M/M_{\odot}$")
     ...: p.ylabel(r"$v_{max}/{\rm km\,s^{-1}}$")
     ...: p.loglog()
     ...: p.tight_layout()
@@ -296,14 +291,14 @@ keyword that can restrict the query to a particular kind of object. See
 :meth:`~tangos.core.timestep.TimeStep.calculate_all` for more information.
 
 A calculation that *fails* is different from one that is merely ``False``. A
-comparison such as ``mass > 100`` (above :math:`10^{12} h^{-1} M_\odot`) is
+comparison such as ``mass > 1e12`` (above :math:`10^{12} M_\odot`) is
 ``False`` for the smaller halos, which is
 a value, so those halos are kept -- which makes a comparison useful as a mask.
 Here ``object_type='halo'`` leaves out the groups, which also carry a ``mass``:
 
 .. ipython::
 
- In [1]: M, is_big = timestep.calculate_all(lambda: mass, lambda: mass > 100, object_type='halo')
+ In [1]: M, is_big = timestep.calculate_all(lambda: mass, lambda: mass > 1e12, object_type='halo')
 
  In [2]: len(M), is_big.sum()
 
@@ -339,13 +334,13 @@ fewer rows come back than the timestep's 1027 halos.
 
  In [2]: p.axhline(0.0, color="gray");
 
- In [3]: p.plot(1e10*M, growth, "r.", alpha=0.2);
+ In [3]: p.plot(M, growth, "r.", alpha=0.2);
 
  @savefig time_series_mass_growth.png width=6in
  In [4]: p.semilogx()
     ...: p.xlim(4e11, 3e14)
     ...: p.ylim(-0.5, 1.0)
-    ...: p.xlabel(r"$M/h^{-1} M_{\odot}$")
+    ...: p.xlabel(r"$M/M_{\odot}$")
     ...: p.ylabel("fractional growth in mass")
     ...: p.tight_layout()
 

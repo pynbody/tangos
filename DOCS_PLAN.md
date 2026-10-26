@@ -666,7 +666,8 @@ and no pynbody except for the one metadata call noted below: `tutorials/quicksta
 
 ## Before merging to master
 
-- [ ] **Regenerate the CI reference database.** Stage 3 changed what time-chunked
+- [x] **Regenerate the CI reference database.** Done by AP on 2026-10-26, from this
+      branch. Stage 3 changed what time-chunked
       histograms store (see **What stage 3 found**), so the integration test's
       `tangos diff` against `continuous_integration/reference_database.db` fails on
       `SFR_histogram` and `BH_mdot_histogram` at the first ChaNGa snapshot, which
@@ -674,11 +675,16 @@ and no pynbody except for the one metadata call noted below: `tutorials/quicksta
       test uploads `data.db` as an artifact) and upload it. Until then the
       integration test on docs PRs is red for this reason alone; check that the
       diff names nothing else
-- [ ] **Rebuild the tutorial database** with this branch and upload it, so that
-      `SFR_histogram` has no gaps. Then remove the parenthesis explaining the gaps
-      under "Star formation histories" in `tutorials/time_series`, and look at
-      the plot again: the contrast between the two curves may change once the
-      early history is stored
+- [x] **Rebuild the tutorial database** with this branch and upload it, so that
+      `SFR_histogram` has no gaps. Done by AP on 2026-10-26; the gaps caveat is
+      gone from `tutorials/time_series`, and the plot and the claims around it
+      were rechecked against the new data. The rebuild also picked up an
+      earlier change of convention: properties imported from SubFind now arrive
+      in pynbody's physical units rather than SubFind's own (no more
+      10^10 h^-1 Msol). `tutorials/time_series` dropped its unit
+      factors and h^-1 labels to match, and `tutorials/first_database`
+      now says, after its import step, that halo finder units are standardised
+      on import. Every number the tutorial prose quotes was rechecked too
 
 - [ ] **Check Settings → Pages before deleting any Jekyll file** (`_config.yml`,
       `Gemfile`, `_layouts/`, `_sass/`). No workflow deploys the current site, so
