@@ -6,6 +6,7 @@ import numpy.testing as npt
 import tangos
 import tangos.testing as testing
 import tangos.testing.simulation_generator
+from tangos.properties import TimeChunkedProperty
 from tangos.properties.pynbody.BH import BHAccHistogram
 
 # The black hole's log starts at this time; it is "born" between the two timesteps' storage windows
@@ -47,7 +48,10 @@ def _make_calculator():
 
 def _calculate_at(timestep_path):
     timestep = tangos.get_timestep(timestep_path)
-    result, = _make_calculator().calculate(_make_particles(), types.SimpleNamespace(timestep=timestep))
+    calculator = _make_calculator()
+    # BHAccHistogram.preloop would also load the orbit log, which _make_calculator stubs
+    TimeChunkedProperty.preloop(calculator, None, timestep)
+    result, = calculator.calculate(_make_particles(), types.SimpleNamespace(timestep=timestep))
     return result, timestep.time_gyr
 
 def test_bins_are_sampled_at_their_start_times():

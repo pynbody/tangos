@@ -90,7 +90,7 @@ Histogram properties
 --------------------
 
 .. autoclass:: TimeChunkedProperty
-   :members: pixel_delta_t_Gyr, minimum_store_Gyr, bin_index, store_slice,
+   :members: pixel_delta_t_Gyr, minimum_store_Gyr, preloop, bin_index, store_slice,
              reassemble
    :undoc-members:
    :member-order: bysource

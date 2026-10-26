@@ -413,7 +413,10 @@ What stage 3 found:
   further apart — as in the tutorial database, about 0.65 Gyr — the history
   between them was never stored. It now reaches back to the previous timestep
   (never less than `minimum_store_Gyr`) and to the beginning at the first, so the
-  chunks tile the whole history. Reassembly needed no change. Two follow-ups in
+  chunks tile the whole history. The previous timestep is found once per
+  timestep in `TimeChunkedProperty.preloop`, never during the calculation
+  itself, so subclasses that override `preloop` must call `super()`; one that
+  doesn't falls back to the old window, with a warning. Reassembly needed no change. Two follow-ups in
   `BHAccHistogram`: leading NaNs (bins before the black hole's log begins) are
   no longer stored, and the accretion rate is sampled on the histogram's own bin
   times. Both databases

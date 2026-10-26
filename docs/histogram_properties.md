@@ -45,6 +45,11 @@ That slice represents the star formation history of the object since the previou
 first snapshot. Only that recent activity is stored in the database; together, the slices
 stored at successive snapshots cover the whole history.
 
+`TimeChunkedProperty` finds the previous snapshot in its `preloop`, before any objects are
+calculated, so that `store_slice` never needs the database mid-calculation. If your own
+histogram class overrides `preloop`, call `super().preloop(...)` from it; otherwise only the
+last `minimum_store_Gyr` is stored, and tangos warns you.
+
 You can see this for yourself; starting from the [sample database](tutorials/quickstart.rst), try
 the following:
 

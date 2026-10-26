@@ -248,10 +248,28 @@ class TimeChunkedProperty(PropertyCalculation):
 
     def __init__(self, simulation):
         self.pixel_delta_t_Gyr = simulation.get("histogram_delta_t_Gyr", self.pixel_delta_t_Gyr)
-        self._store_slice_simulation = simulation
-        self._timestep_times_Gyr = None
+        self._store_from_Gyr = None
+        self._store_from_timestep_id = None
+        self._warned_preloop_not_called = False
         super().__init__(simulation)
 
+    def preloop(self, sim, db_timestep):
+        """Find out, once per timestep, how far back the slice to be stored should reach (see store_slice).
+
+        Subclasses that override preloop must call super().preloop(sim, db_timestep)."""
+        if self._store_from_timestep_id != db_timestep.id:
+            self._store_from_Gyr = self._previous_timestep_time_Gyr(db_timestep)
+            self._store_from_timestep_id = db_timestep.id
+
+    def _previous_timestep_time_Gyr(self, db_timestep):
+        """The time of the simulation's previous timestep, or 0 if this is the first"""
+        import sqlalchemy
+
+        from .. import core
+        previous_time = core.get_default_session().query(sqlalchemy.func.max(core.TimeStep.time_gyr)).filter(
+            core.TimeStep.simulation_id == db_timestep.simulation_id,
+            core.TimeStep.time_gyr < db_timestep.time_gyr - self.pixel_delta_t_Gyr/2).scalar()
+        return previous_time if previous_time is not None else 0.0
 
     def bin_index(self, time):
         """Convert a time (Gyr) to a bin index in the histogram"""
@@ -266,22 +284,17 @@ class TimeChunkedProperty(PropertyCalculation):
 
         The slice reaches back to the simulation's previous timestep, so that the slices stored at successive
         timesteps leave no gaps between them, and back to the beginning for the first timestep. It always
-        covers at least minimum_store_Gyr."""
-        earlier_times = [t for t in self._get_timestep_times_Gyr() if t < time - self.pixel_delta_t_Gyr/2]
-        previous_time = earlier_times[-1] if earlier_times else 0.0
-        start = min(previous_time, time - self.minimum_store_Gyr)
+        covers at least minimum_store_Gyr. The previous timestep is found in preloop, so that no database
+        query is made during the calculation itself."""
+        start = time - self.minimum_store_Gyr
+        if self._store_from_Gyr is not None:
+            start = min(start, self._store_from_Gyr)
+        elif not self._warned_preloop_not_called:
+            warnings.warn(f"{type(self).__name__}.preloop did not call TimeChunkedProperty.preloop, so only the "
+                          f"last {self.minimum_store_Gyr} Gyr before each timestep is stored; histories will "
+                          f"have gaps wherever timesteps are further apart than that", RuntimeWarning)
+            self._warned_preloop_not_called = True
         return slice(self.bin_index(start), self.bin_index(time))
-
-    def _get_timestep_times_Gyr(self):
-        # Queried rather than read from simulation.timesteps, because the simulation object the property
-        # writer passes in does not have its timesteps loaded
-        if self._timestep_times_Gyr is None:
-            from .. import core
-            session = core.get_default_session()
-            times = session.query(core.TimeStep.time_gyr).filter(
-                core.TimeStep.simulation_id == self._store_slice_simulation.id)
-            self._timestep_times_Gyr = sorted(t for (t,) in times)
-        return self._timestep_times_Gyr
 
     def reassemble(self, property, reassembly_type='major'):
         """Reassemble a histogram by suitable treatment of the merger tree leading up to the current halo.

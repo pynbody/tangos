@@ -52,6 +52,7 @@ class BHAccHistogram(TimeChunkedProperty):
         return []
 
     def preloop(self, f, db_timestep):
+        super().preloop(f, db_timestep)
         if BlackHolesLog.can_load(db_timestep.filename):
             self.log = BlackHolesLog.get_existing_or_new(db_timestep.filename)
         elif ShortenedOrbitLog.can_load(db_timestep.filename):

@@ -182,8 +182,12 @@ most cases, running the code at the point it was added.
       wherever snapshots are more than 0.5 Gyr apart. **Fixed in stage 3** (on the
       docs branch, at AP's request, so the docs could show sensible histories):
       `store_slice` now reaches back to the previous timestep, never less than
-      `minimum_store_Gyr`, and to the beginning at the first timestep; tested in
-      `tests/test_histogram_property.py`. Two follow-ups in the same change, in
+      `minimum_store_Gyr`, and to the beginning at the first timestep. The
+      previous timestep is looked up once per timestep in
+      `TimeChunkedProperty.preloop`, not during the calculation (an earlier
+      version queried from `store_slice`); tested in
+      `tests/test_histogram_property.py`, including that `store_slice` makes no
+      query. Two follow-ups in the same change, in
       `BHAccHistogram` (`tangos/properties/pynbody/BH.py`), tested in
       `tests/test_bh_histogram.py`: a chunk no longer stores the leading run of
       NaNs before the black hole's log begins, which the whole-history first

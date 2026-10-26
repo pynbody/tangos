@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 import tangos
 import tangos as db
@@ -42,7 +43,8 @@ class DummyHistogramProperty(properties.TimeChunkedProperty):
     minimum_store_Gyr = 1.0
     names = "dummy_histogram"
 
-    def preloop(self, _, timestep):
+    def preloop(self, particle_data, timestep):
+        super().preloop(particle_data, timestep)
         self.time = timestep.time_gyr
 
     def calculate(self, halo, existing_properties):
@@ -62,12 +64,32 @@ def test_histogram_written_as_expected():
     ts1_h1 = db.get_halo("sim/ts1/1")
     ts1_h2 = db.get_halo("sim/ts1/2")
     ts2_h1 = db.get_halo("sim/ts2/1")
+    dumhistprop.preloop(None, ts1)
     npt.assert_almost_equal(ts1_h1.calculate('raw(dummy_histogram)'),
                             test_histogram[dumhistprop.store_slice(ts1.time_gyr)])
     npt.assert_almost_equal(ts1_h2.calculate('raw(dummy_histogram)'),
                             test_histogram[dumhistprop.store_slice(ts1.time_gyr)] * 0.5)
+    dumhistprop.preloop(None, ts2)
     npt.assert_almost_equal(ts2_h1.calculate('raw(dummy_histogram)'),
                             test_histogram[dumhistprop.store_slice(ts2.time_gyr)])
+
+def test_store_slice_makes_no_database_query():
+    # the slice is worked out during the calculation loop, when the database may be busy; preloop does the querying
+    dumhistprop = DummyHistogramProperty(db.get_simulation("sim"))
+    ts2 = db.get_timestep("sim/ts2")
+    dumhistprop.preloop(None, ts2)
+    with testing.SqlExecutionTracker(db.core.get_default_engine()) as track:
+        dumhistprop.store_slice(ts2.time_gyr)
+    assert track.count == 0
+
+def test_store_slice_falls_back_if_preloop_not_called():
+    # a subclass that overrides preloop without calling super() gets the fixed minimum_store_Gyr window, and a warning
+    dumhistprop = DummyHistogramPropertyShortMinimum(db.get_simulation("sim"))
+    ts2 = db.get_timestep("sim/ts2")
+    with pytest.warns(RuntimeWarning, match="did not call TimeChunkedProperty.preloop"):
+        stored = dumhistprop.store_slice(ts2.time_gyr)
+    assert stored == slice(dumhistprop.bin_index(ts2.time_gyr - dumhistprop.minimum_store_Gyr),
+                           dumhistprop.bin_index(ts2.time_gyr))
 
 def test_first_timestep_stores_whole_history():
     ts1_h1 = db.get_halo("sim/ts1/1")
