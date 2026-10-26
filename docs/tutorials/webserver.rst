@@ -1,4 +1,6 @@
 .. Checked by AP 5/09/26
+.. Stage 3 (Claude, 2026-10-26): links repointed after the live calculations tutorial
+   was dissolved; fixed "as soon if". Not yet checked by a human.
 
 .. _webserver:
 
@@ -31,7 +33,7 @@ the same ``TANGOS_DB_CONNECTION`` as everything else, so it shows the database
 you have been querying from python.
 
 You can choose the port yourself, and give the server a title, which is worth
-doing as soon if you have more than one open at once:
+doing as soon as you have more than one open at once:
 
 .. code-block:: bash
 

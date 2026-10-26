@@ -244,7 +244,7 @@ is which by how it is written:
   as the query runs from things that are stored: here the circular velocity at
   the virial radius, from ``Mvir`` and ``Rvir``. The brackets matter. Without
   them, ``Vvir`` would be looked up as a stored property, and as there is none,
-  the calculation would return nothing.
+  the calculation would raise ``NoResultsError``.
 * A **dot** follows a link and then evaluates the rest on the object it lands
   on. ``earlier(1)`` steps back one snapshot along the halo's merger history,
   so ``earlier(1).Mvir`` is the mass of its main progenitor.

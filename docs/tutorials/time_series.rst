@@ -2,7 +2,7 @@
 .. Stage 3 (Claude, 2026-10-26): t() now explained via the quick-start's primer
    rather than deferred to a later tutorial; added the failed-versus-False
    paragraph and mask example; reworded the start of "Following other branches";
-   renamed the walk_branches loop variable so it no longer overwrites halo; the
+   renamed the walk_branches loop variables so they no longer overwrite halo or time; the
    1.12.0 lambda note moved to the quick-start. Not yet checked by a human.
 
 .. _time_series:
@@ -175,8 +175,8 @@ method; or, to assign them to particular branches, use
 
  In [4]: p.figure()
 
- In [5]: for branch_halo, time, mass in tree.walk_branches(times, masses):
-    ...:     p.plot(time, 1e10*mass, 'o-')
+ In [5]: for _, branch_times, branch_masses in tree.walk_branches(times, masses):
+    ...:     p.plot(branch_times, 1e10*branch_masses, 'o-')
 
  @savefig time_series_all_progenitors_mass.png width=6in
  In [6]: p.xlabel("t/Gyr")
@@ -236,11 +236,12 @@ keyword that can restrict the query to a particular kind of object. See
 A calculation that *fails* is different from one that is merely ``False``. A
 comparison such as ``mass > 100`` (above :math:`10^{12} h^{-1} M_\odot`) is
 ``False`` for the smaller halos, which is
-a value, so those halos are kept -- which makes a comparison useful as a mask:
+a value, so those halos are kept -- which makes a comparison useful as a mask.
+Here ``object_type='halo'`` leaves out the groups, which also carry a ``mass``:
 
 .. ipython::
 
- In [1]: M, is_big = timestep.calculate_all(lambda: mass, lambda: mass > 100)
+ In [1]: M, is_big = timestep.calculate_all(lambda: mass, lambda: mass > 100, object_type='halo')
 
  In [2]: len(M), is_big.sum()
 
