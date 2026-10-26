@@ -1,4 +1,9 @@
 .. Checked by AP 4/09/2026
+.. Stage 3 (Claude, 2026-10-26): t() now explained via the quick-start's primer
+   rather than deferred to a later tutorial; added the failed-versus-False
+   paragraph and mask example; reworded the start of "Following other branches";
+   renamed the walk_branches loop variable so it no longer overwrites halo; the
+   1.12.0 lambda note moved to the quick-start. Not yet checked by a human.
 
 .. _time_series:
 
@@ -61,19 +66,13 @@ progenitor in the tree at all.
 
  In [1]: halo.earliest
 
-.. versionadded:: 1.12.0
-   Calculations can be written as python lambdas, as they are throughout this
-   page. Older code passes the equivalent strings --
-   ``halo.calculate_for_progenitors("mass", "t()")`` -- and that still works.
-
-Two of the names in those lambdas deserve comment. ``mass`` is an ordinary
-stored property: SubFind computed it, and ``tangos write`` put it in the
-database. ``t()`` is not stored anywhere -- look for it in ``halo.keys()`` and
-you will not find it. It is a *live property*, computed as the query runs, in
-this case by reading ``time_gyr`` from the
-:class:`~tangos.core.timestep.TimeStep` that owns each halo. Live properties
-are the subject of the next tutorial; for now, treat ``t()`` as the way to get
-the time at which each entry in the array was measured.
+The two names in those lambdas are the two kinds the :ref:`quickstart`
+introduced. ``mass`` is a stored property: SubFind computed it, and it was
+imported into the database along with the catalogue. ``t()``, with brackets, is
+a live property, computed as the query runs -- here by reading the time of the
+:class:`~tangos.core.timestep.TimeStep` each halo belongs to, so it gives the
+time at which each entry in the array was measured. ``z()`` and ``a()`` give
+the redshift and scalefactor in the same way.
 
 That is enough for a merger history. ``mass`` is stored in SubFind's own units
 of :math:`10^{10} h^{-1} M_\odot`, hence the factor below:
@@ -107,8 +106,8 @@ mirror image, following links forwards in time instead.
 Following other branches
 ------------------------
 
-As well as counting the number of steps, the major progenitor of a halo can be
-found in a specified snapshot:
+``earlier(n)`` reaches the major progenitor ``n`` snapshots back; ``match``
+reaches it in a snapshot you name instead:
 
 .. ipython::
 
@@ -176,7 +175,7 @@ method; or, to assign them to particular branches, use
 
  In [4]: p.figure()
 
- In [5]: for halo, time, mass in tree.walk_branches(times, masses):
+ In [5]: for branch_halo, time, mass in tree.walk_branches(times, masses):
     ...:     p.plot(time, 1e10*mass, 'o-')
 
  @savefig time_series_all_progenitors_mass.png width=6in
@@ -233,6 +232,19 @@ This has the side-effect in this case that the groups are ignored in the example
 since they carry no ``VMax``. But, more generally, there is also an ``object_type``
 keyword that can restrict the query to a particular kind of object. See
 :meth:`~tangos.core.timestep.TimeStep.calculate_all` for more information.
+
+A calculation that *fails* is different from one that is merely ``False``. A
+comparison such as ``mass > 100`` (above :math:`10^{12} h^{-1} M_\odot`) is
+``False`` for the smaller halos, which is
+a value, so those halos are kept -- which makes a comparison useful as a mask:
+
+.. ipython::
+
+ In [1]: M, is_big = timestep.calculate_all(lambda: mass, lambda: mass > 100)
+
+ In [2]: len(M), is_big.sum()
+
+ In [3]: M_big = M[is_big]
 
 Reaching across time from within a population
 ---------------------------------------------
@@ -318,9 +330,10 @@ The last element is the total stellar mass in the halo.
 
 .. seealso::
 
-   :doc:`/tutorials/live_calculations` takes up the calculation language
-   itself -- what can appear inside those lambdas, and what ``earlier``,
-   ``at``, ``link`` and their relatives do.
+   :doc:`/how-to/live_calculation_recipes` for more that a calculation can
+   do -- interpolating profiles with ``at``, choosing between linked objects
+   with ``link``, searching a branch with ``find_progenitor``, and star
+   formation histories -- and :doc:`/live_calculation` for the full syntax.
 
    :ref:`concepts` for links, weights and typetags, and
    :func:`tangos.examples.mergers.get_mergers_of_major_progenitor` for

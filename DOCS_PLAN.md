@@ -57,9 +57,12 @@ build itself complains.
 Stages 0, 1, 2 and 3 are complete; stages 4–6 have not started. Stage 0 landed in
 #296, stage 1 in #300, stage 2 in #305, stage 3 in #312.
 
-Every page from stages 0–2 has now been read by a human. Stage 3 changed the
-examples on `tutorials/live_calculations` after its check, and says so in a second
-comment line under the check line; those changes still want a human read. A
+Every page from stages 0–2 has now been read by a human. Stage 3 then changed four
+of them — `explanation/concepts`, `tutorials/quickstart`, `tutorials/time_series`,
+and the live calculations tutorial, which it dissolved into the quick-start and
+`how-to/live_calculation_recipes` (see **Change of direction** under **Stage 3**) —
+and each says what changed in a comment line under its check line. Those changes
+still want a human read. A
 `.. Checked by <initials> <date>` line is the only record of which pages have had
 human eyes on them, so do not let a page lose it in a rewrite, and when you change
 a checked page, say what changed beneath it.
@@ -118,7 +121,8 @@ how-to, 10% reference, 0% explanation. Nothing explains the data model — Simul
       and nowhere in `docs/`
 - [x] `tutorials/quickstart` — from notebook cells 0–16
 - [x] `tutorials/time_series` — from notebook cells 17–19, 28–32
-- [x] `tutorials/live_calculations` — from `live_calculation.md:1-346`
+- [x] `tutorials/live_calculations` — from `live_calculation.md:1-346`. **Dissolved
+      in stage 3**: see **Change of direction** under **Stage 3**
 - [x] `tutorials/webserver` — grow the 21-line stub
 - [x] Start the redirect map (see **Invariants**). URLs first move here; stage 2
       moves many more and continues the same map
@@ -270,7 +274,7 @@ with `tangos diff`. So decouple database *production* from docs *building*.
       see **Decisions already made**.
 - [x] Convert tutorial code fences to `.. ipython::` / `@savefig`. Scoped to what
       runs against the tutorial database on pages already ported: the six
-      hand-typed blocks on `tutorials/live_calculations`. Every other code block on
+      hand-typed blocks on `tutorials/live_calculations` (since dissolved). Every other code block on
       a stage 1–2 page is shell, a config file, or needs data the build does not
       have (yt, EAGLE). The `.md` pages stages 4–5 rewrite were left alone, not
       converted in place only to be re-ported
@@ -297,6 +301,49 @@ keeps the language reference executable if a download fails. **Deferred to stage
 5**, where the language reference it would serve is written; stage 3 instead
 makes a missing database a hard failure, since a fallback would render the
 tutorial pages with meaningless output.
+
+**Change of direction: no live calculation tutorial.** A newcomer read-through
+of the tutorial path (a subagent given only the four rendered pages, and no hint
+of what to look for) found that `tutorials/live_calculations`, the fourth
+tutorial, mostly repeated what `quickstart` and `time_series` had already
+taught. `time_series` uses `t()`, `earlier`, `match` and `match_reduce` while
+deferring them to "the next tutorial", so by the time that page explained them
+the reader had used them all. Asked directly, it said it did not need the page
+as a tutorial at all: "half primer I'd already absorbed and half catalogue",
+and the point in the sequence where its attention dropped. That matched AP's
+own reading. So in stage 3:
+
+- [x] **A primer closes `tutorials/quickstart`** ("Calculating rather than
+      reading", label `calculating`): why calculations exist (one query for all
+      objects, not a python loop issuing one per object), the three kinds of name —
+      a bare name is stored, brackets make a live property, a dot follows a
+      link — with one example of each, that python variables can be used inside
+      a lambda, and the string form in one paragraph. This is everything from
+      the old page that the newcomer said it would miss as tutorial
+- [x] **`tutorials/time_series` no longer defers**: `t()` is explained from the
+      primer, and the rule that a *failed* calculation drops an object while a
+      `False` one does not (so comparisons work as masks) sits at its first
+      `calculate_all`
+- [x] **The rest became `how-to/live_calculation_recipes`**, organised by task:
+      values from profiles (`at`, indexing, `posmax`), the same object at
+      another time, following a named link, choosing one of several (`link`),
+      finding a peak (`find_progenitor`), `match_reduce`, filtering
+      (`has_property`, the `~`/`!` note), and histogram reassembly. Every
+      example is executed
+- [x] The tutorial sequence now ends at `time_series`, then `webserver` and
+      `first_database`. **No redirect** for `tutorials/live_calculations`: it was
+      never published (decided by AP), so the redirect invariant does not apply
+- [x] Fixed on the way, also from the read-through: the black hole link example
+      in `explanation/concepts`, which repeated the previous block's halo links
+      and showed no black hole; the `walk_branches` loop in `time_series`, which
+      rebound the reader's `halo`; the opening examples of the old page, which used
+      `h` and `ts` defined only in a hidden line; a typo in `quickstart`
+
+Not done, and still open: the read-through also found that `explanation/concepts`
+runs much of the same code, with the same output, as `quickstart` does next, so the
+quick-start partly re-runs page one. It suggested trimming `concepts` to the model
+itself (moving "Creators" and "Under the hood" to reference) or putting the
+quick-start first. That is a decision for a later stage.
 
 What stage 3 found:
 
@@ -369,7 +416,9 @@ What stage 3 found:
       `histograms`; cells 39–40 (SFR with and without AGN via
       `match('tutorial_changa').SFR_histogram`) → `black_holes`/`crossmatching`.
       Everything else in it is already in `quickstart`, `time_series` or
-      `live_calculations`
+      `how-to/live_calculation_recipes`. The `histograms` port is about *writing*
+      histogram properties: reading them back (`reassemble`, `'sum'`, `'place'`,
+      `raw()`) is already a recipe there, so link to it rather than repeat it
 - [ ] Write every new page's examples as `.. ipython::` from the start, run against
       the tutorial database (see **What stage 3 found** for what "verified" takes).
       Pages whose examples write to the database (`tracking.new`,
@@ -404,7 +453,11 @@ What stage 3 found:
       Missing: `import` (merge a sqlite file into a server, the obvious sequel to
       `rdbms.md`), `rollback`, `recent-runs`, `delete-properties`, `thin-timesteps`,
       `diff`, `prune`/`patch-trees`, `write-pickled-results`
-- [ ] `reference/live_calculation_language` — from `live_calculation.md:347-652`
+- [ ] `reference/live_calculation_language` — from `live_calculation.md:347-652`.
+      Since stage 3, `live_calculation.md`'s tutorial half (above line 347) is
+      covered twice over, by the quick-start's primer and
+      `how-to/live_calculation_recipes`; retire it rather than port it. Point the
+      language reference's entries at the recipe that shows each in use
 - [ ] `reference/property_calculation_api` — from `custom_properties.md:218-312`
 - [ ] `reference/builtin_properties` — a table of the ~60 names, not class pages
 - [ ] Decide the reference's top level: `reference/api/index` is currently the sole
@@ -438,13 +491,13 @@ next merges `master`.
 
 **Setup** — `index` · `installation` · `configuration`
 
-**Tutorials**, linear and in this order. The first five need no simulation data,
+**Tutorials**, linear and in this order. The first four need no simulation data,
 and no pynbody except for the one metadata call noted below: `explanation/concepts` → `tutorials/quickstart` → `tutorials/time_series`
-→ `tutorials/live_calculations` → `tutorials/webserver` → `tutorials/first_database`
+→ `tutorials/webserver` → `tutorials/first_database`
 → `custom_properties` → `histograms` → `black_holes` → `crossmatching` → `tracking`
 
-**How-to** — `parallel` · `managing_a_database` · `database_backends` ·
-`large_simulations` · `custom_handlers` · `eagle`
+**How-to** — `live_calculation_recipes` · `parallel` · `managing_a_database` ·
+`database_backends` · `large_simulations` · `custom_handlers` · `eagle`
 
 **Reference** — `simulation_formats` · `live_calculation_language` · `cli` ·
 `property_calculation_api` · `builtin_properties` · `api/index`
@@ -493,6 +546,13 @@ and no pynbody except for the one metadata call noted below: `explanation/concep
   `live_calculation.md` uses `Vvir()` as its lambda example, and that particular
   call fails against the tutorial database. Run every calculation before
   documenting it.
+- **There is no live calculation tutorial; the quick-start teaches the language.**
+  The idea is introduced once, as a primer at the end of `tutorials/quickstart`,
+  and used from then on; everything beyond it is a recipe in
+  `how-to/live_calculation_recipes` or reference. Do not reintroduce a
+  standalone tutorial for it, and do not defer a calculation a tutorial uses to
+  a later page: explain it where it is first used, or link to the recipe. See
+  **Change of direction** under **Stage 3** for why.
 - **`explanation/concepts` owns the halo-path spelling**, not `tutorials/quickstart`
   as first planned. It explains the three parts, the `typetag_number` component,
   the bare-number shorthand and what `%` really is. Other pages use paths freely
@@ -582,7 +642,9 @@ and no pynbody except for the one metadata call noted below: `explanation/concep
 
 These span PRs and are easy to break one stage at a time.
 
-- **Every deleted page URL gets a redirect.** The six `first_steps_*.html` URLs are
+- **Every deleted page URL gets a redirect** — meaning every URL that was ever
+  *published*. A page created and removed within this rebuild, such as
+  `tutorials/live_calculations`, never reached readers and needs none. The six `first_steps_*.html` URLs are
   linked from the README and probably from published papers.
 - **Verify redirects by listing the built files, never by trusting a green build.**
   Sphinx percent-encodes the docname in `get_target_uri()`, so sphinx-reredirects

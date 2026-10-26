@@ -1,4 +1,7 @@
 .. Last checked by AP 31/08/26
+.. Stage 3 (Claude, 2026-10-26): added the closing section, "Calculating rather than
+   reading" -- the primer that replaced the live calculations tutorial -- and fixed a
+   typo. Not yet checked by a human.
 
 .. _quickstart:
 
@@ -45,7 +48,7 @@ and a Ramses run.
 .. note::
 
    The above assumes you have set up the tutorial database and pointed tangos to its
-   path. See :ref:`installation` if you see an empty set of simulatinos; more
+   path. See :ref:`installation` if you see an empty set of simulations; more
    than likely you are looking at an empty database.
 
 Any simulation can be fetched by name with
@@ -151,9 +154,8 @@ requested as a *calculation*, written as a lambda:
 For one stored property that is a long-winded way of writing the square
 brackets, but :meth:`~tangos.core.halo.SimulationObjectBase.calculate` is the
 door to the live calculation language, in which names combine into
-expressions, span timesteps, and follow links to other objects. Names inside
-such a lambda are database property names rather than python variables, which
-is why ``Mvir`` does not have to be defined anywhere.
+expressions, span timesteps, and follow links to other objects. The end of
+this page introduces it.
 
 Looking at an image
 -------------------
@@ -212,8 +214,62 @@ store whatever units you please -- the database records numbers, not units, and
 :meth:`~tangos.core.halo.SimulationObjectBase.get_description` is how you ask
 the calculating code what it meant by them.
 
+.. _calculating:
+
+Calculating rather than reading
+-------------------------------
+
+Reading a property, as above, costs one database query. Ask the same thing of
+every halo in a timestep from a python loop and that is one query per halo,
+which for thousands of halos is slow. Instead, tangos lets you describe the
+quantity you want once, as a *calculation*, and evaluates it for every object
+of interest in a handful of queries. That is what
+:meth:`~tangos.core.halo.SimulationObjectBase.calculate` was hinting at, and it
+is how every question in the next tutorial is asked.
+
+A calculation is built from three kinds of name, and you can always tell which
+is which by how it is written:
+
+.. ipython::
+
+ In [1]: halo.calculate(lambda: Mvir/Rvir)
+
+ In [2]: halo.calculate(lambda: Vvir())
+
+ In [3]: halo.calculate(lambda: earlier(1).Mvir)
+
+* A **bare name**, such as ``Mvir`` or ``Rvir``, is something stored in the
+  database: a property, or a link. Arithmetic on them works as you would expect.
+* A **name with brackets**, such as ``Vvir()``, is a *live property*, computed
+  as the query runs from things that are stored: here the circular velocity at
+  the virial radius, from ``Mvir`` and ``Rvir``. The brackets matter. Without
+  them, ``Vvir`` would be looked up as a stored property, and as there is none,
+  the calculation would return nothing.
+* A **dot** follows a link and then evaluates the rest on the object it lands
+  on. ``earlier(1)`` steps back one snapshot along the halo's merger history,
+  so ``earlier(1).Mvir`` is the mass of its main progenitor.
+
+Names that are not in the database are looked up in python as usual, so
+``threshold = 1e12`` followed by ``lambda: Mvir > threshold`` works. (A linter
+will, however, report ``Mvir`` as an undefined name; that is expected.)
+
+Every calculation can also be written as a string, with the same meaning --
+``halo.calculate("Mvir/Rvir")`` -- and the two may be mixed in one call. You
+need the string form wherever a calculation has to be text: typed into the
+:doc:`web interface <webserver>`, read from a configuration file or a command
+line, or in scripts written before the lambda form existed. These
+tutorials use lambdas throughout.
+
+.. versionadded:: 1.12.0
+   The lambda form.
+
 .. seealso::
 
    You now have one halo at one time. :doc:`/tutorials/time_series` follows a
    halo back through its progenitors and plots how it grew, and asks the same
    question of every halo in a timestep at once.
+
+   :doc:`/how-to/live_calculation_recipes` for what else a calculation can do --
+   interpolating profiles, choosing between linked objects, filtering, and
+   star formation histories -- and :doc:`/live_calculation` for the full
+   syntax.

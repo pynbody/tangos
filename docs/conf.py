@@ -83,7 +83,8 @@ redirects = {
     # exist, so the landing page is the closest thing to its content.
     "advanced": "index.html",
     # Stage 3: the notebook was the original data-exploration tutorial, converted
-    # cell by cell into quickstart, time_series and live_calculations in stage 1.
+    # cell by cell into quickstart, time_series and the live calculations tutorial
+    # (since folded into quickstart and how-to/live_calculation_recipes).
     # Its name has spaces, which get_target_uri() quotes, so the build-finished
     # hook below also writes this stub at the literal name.
     "Data exploration with python": "tutorials/quickstart.html",

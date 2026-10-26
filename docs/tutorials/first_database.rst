@@ -290,7 +290,7 @@ database like this affordable to build:
   (``shrink_center`` and ``max_radius``), so those get calculated and stored
   too, without you asking.
 * ``--include-only`` filters which objects are calculated, using the same
-  :ref:`live calculation language <live_calculations>` you query with. Here two
+  :ref:`live calculation language <calculating>` you query with. Here two
   filters combine: a halo must be uncontaminated (less than 1% coarse
   particles) and must have more than 1000 dark matter particles. Below that, a
   halo is too poorly resolved for these properties to mean anything.
@@ -318,7 +318,7 @@ What you have
 
 A database describing your own simulation, indistinguishable in use from the
 one the earlier tutorials queried. Everything in :ref:`quickstart`,
-:ref:`time_series`, :ref:`live_calculations` and :ref:`webserver` now works
+:ref:`time_series`, :ref:`live_calculation_recipes` and :ref:`webserver` now works
 against it -- point ``TANGOS_DB_CONNECTION`` at it and explore.
 
 .. seealso::

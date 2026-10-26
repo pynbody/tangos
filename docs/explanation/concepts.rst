@@ -1,4 +1,7 @@
 .. Reviewed by AP 4/09/2026
+.. Stage 3 (Claude, 2026-10-26): the black hole link example now shows a black hole's
+   links (it repeated the previous block's halo links); reworded the sentence on
+   next/earliest/latest. Not yet checked by a human.
 
 .. _concepts:
 
@@ -103,16 +106,23 @@ fraction of particles shared.
 
    In practice, you nearly always make use of links 
    via a higher-level interface than the raw list, as described in 
-   :ref:`time_series` and :ref:`live_calculations`.
+   :ref:`time_series` and :ref:`live_calculation_recipes`.
 
-Black hole association is the same mechanism again: a black hole links to its
-halo as ``host_halo``, and the halo links back as ``BH`` and ``BH_central``, so
-``bh['host_halo']`` reaches the host and ``halo['BH_central']`` the black
-holes:
+Black hole association is the same mechanism again. In
+``tutorial_changa_blackholes`` a halo links to the black holes it hosts as
+``BH``, and to those in its central galaxy as ``BH_central``; each black hole
+links back to its halo as ``host_halo``. So reading a link by name takes you to
+the objects at the other end:
 
 .. ipython::
 
- In [1]: for link in halo.links:
+ In [1]: bh_halo = tangos.get_object("tutorial_changa_blackholes/%960/halo_1")
+
+ In [2]: central_bhs = bh_halo['BH_central']
+
+ In [3]: len(central_bhs)
+
+ In [4]: for link in central_bhs[0].links:
     ...:     print(f"{link.relation.text:16s} {link.weight:8.4f}  {link.halo_to.path}")
     ...:
 
@@ -134,11 +144,12 @@ either time direction:
 
 :attr:`~tangos.core.halo.SimulationObjectBase.previous` returned the halo that
 holds 93% of the particles, because that is the heaviest of the four
-progenitor links above. So do :attr:`~tangos.core.halo.SimulationObjectBase.next`,
+progenitor links above. :attr:`~tangos.core.halo.SimulationObjectBase.next`
+does the same forwards in time, and
 :attr:`~tangos.core.halo.SimulationObjectBase.earliest`,
 :attr:`~tangos.core.halo.SimulationObjectBase.latest` and
-:meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors`, which
-follow the heaviest link repeatedly. Nor is a merger a distinct kind of record:
+:meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors` follow
+the heaviest link repeatedly. Nor is a merger a distinct kind of record:
 it is a timestep at which a halo has more than one incoming link of appreciable
 weight.
 

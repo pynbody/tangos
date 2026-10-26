@@ -28,10 +28,12 @@ and query it:
    plot an image of a galaxy.
 4. [Time series and populations](tutorials/time_series.rst) -- follow a halo
    back through its progenitors and plot how it grew.
-5. [Live calculations](tutorials/live_calculations.rst) -- the language that
-   makes the database more than a table of numbers.
-6. [The web interface](tutorials/webserver.rst) -- the same database in a
+5. [The web interface](tutorials/webserver.rst) -- the same database in a
    browser.
+
+When you need more from a calculation than those pages show -- interpolating a
+profile, choosing between linked objects, a star formation history -- see the
+[live calculation recipes](how-to/live_calculation_recipes.rst).
 
 **Building a database from your own simulation** starts at
 [making your first database](tutorials/first_database.rst), which walks through
@@ -71,7 +73,6 @@ configuration
 explanation/concepts
 tutorials/quickstart
 tutorials/time_series
-tutorials/live_calculations
 tutorials/webserver
 tutorials/first_database
 ```
@@ -81,6 +82,7 @@ tutorials/first_database
 :hidden:
 :caption: How-to
 
+how-to/live_calculation_recipes
 mpi
 rdbms
 custom_input_handlers
