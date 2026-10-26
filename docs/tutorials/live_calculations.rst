@@ -44,12 +44,13 @@ equivalent -- they produce the same calculation, and run at the same speed:
 
 .. ipython::
 
- @suppress
- In [1]: import tangos; h = tangos.get_object("tutorial_changa/%960/halo_1"); ts = h.timestep
+ In [1]: import tangos
 
- In [2]: h.calculate(lambda: at(Rvir/4, dm_density_profile))
+ In [2]: h = tangos.get_object("tutorial_changa/%960/halo_1"); ts = h.timestep
 
- In [3]: h.calculate("at(Rvir/4, dm_density_profile)")
+ In [3]: h.calculate(lambda: at(Rvir/4, dm_density_profile))
+
+ In [4]: h.calculate("at(Rvir/4, dm_density_profile)")
 
 For most interactive and scripted work the lambda form is the more comfortable
 of the two. It is genuine python, so your editor highlights it, matches your
