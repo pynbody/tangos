@@ -1,8 +1,4 @@
-.. Checked and edited by AP 31/08/26, as the tutorial tutorials/live_calculations.
-.. Stage 3 (Claude, 2026-10-26): restructured from that tutorial into recipes. Its
-   introduction moved to the end of tutorials/quickstart; the rest was regrouped by
-   task, with the examples converted to ipython and changed where they returned
-   nothing or failed against the tutorial database. Not yet checked by a human.
+.. Checked by AP 26/10/26
 
 .. _live_calculation_recipes:
 

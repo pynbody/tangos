@@ -1,10 +1,4 @@
-.. Last checked by AP 31/08/26
-.. Stage 3 (Claude, 2026-10-26): added an opening primer on the data model, replacing
-   the pointer to explanation/concepts (now reference/data_model), and a pointer to
-   building your own database; added the closing section, "Calculating rather than
-   reading" -- the primer that replaced the live calculations tutorial; said how a bare
-   name in a lambda is resolved; reworded the halo-numbering sentences; fixed typos.
-   Not yet checked by a human.
+.. Last checked by AP 26/10/26
 
 .. _quickstart:
 
@@ -17,8 +11,8 @@ file (or database server), so that questions spanning a whole run take
 milliseconds. It is built from four ideas:
 
 * a **simulation** contains **timesteps**, one per snapshot;
-* a timestep contains **objects** -- halos, and also groups, black holes and
-  others, each kind marked by a *typetag*;
+* a timestep contains **objects** -- halos, and potentially groups, black holes and
+  others;
 * an object carries **properties**: numbers, arrays and images;
 * objects are joined by **links**, which are how a merger tree, a black hole's
   host, or the same halo in another simulation are all recorded.
@@ -29,9 +23,9 @@ picture.
 In this tutorial, you will use a small sample database. You will list the
 simulations it holds, pick out one halo, see which properties have been
 calculated for it, put a picture of a galaxy on the screen, and meet the
-calculations that the rest of tangos is built on -- without opening a single
-simulation file. Building a database from your own simulations comes later, in
-:doc:`/tutorials/first_database`, once you have seen what one is good for.
+calculations that the rest of tangos is built on. Building a database from
+your own simulations comes later, in :doc:`/tutorials/first_database`, once
+you have seen what one is good for.
 
 .. note:: Before you start, make sure tangos is installed and
  can find the tutorial database;
@@ -127,8 +121,12 @@ this documentation, so it is worth getting comfortable with them now.
    Simulations and timesteps can contain a ``/`` in their literal name. In this
    case, :func:`tangos.get_object` will not know how to split your path. The 
    simplest fix is to use a single-character wildcard (``_``) to match 
-   literal slashes, and keep ``/`` always for separating, 
-   ``<simulation>/<timestep>/<object_id>``.
+   literal slashes, and keep ``/`` always for separating. For example, if your
+   simulation is called ``simulation`` and your timestep ``snap020/output_00020``,
+   ask for ``simulation/snap020_output_00020/halo_1``. Both underscores here
+   function as a wildcard matching both a literal slash and an underscore.
+   More compactly, ask for ``simulation/%00020/halo_1``, using the ``%``
+   wildcard to match the whole of the rest of the timestep name.
 
 Reading properties
 ------------------
@@ -170,11 +168,12 @@ requested as a *calculation*, written as a lambda:
 
 You never call that lambda yourself. tangos reads the names in it and looks
 each one up in the database, which is why ``Mvir`` needs no definition here.
-For one stored property that is a long-winded way of writing the square
+For one stored property that would be a long-winded way of writing the square
 brackets, but :meth:`~tangos.core.halo.SimulationObjectBase.calculate` is the
 door to the live calculation language, in which names combine into
-expressions, span timesteps, and follow links to other objects. The end of
-this page introduces it.
+expressions, span timesteps, and follow links to other objects. The power
+of that language becomes clearer when you perform calculations over many
+objects at once; see :doc:`/tutorials/time_series`.
 
 Looking at an image
 -------------------
@@ -199,13 +198,6 @@ The axes above are pixel numbers, which say nothing about how much of the
 universe you are looking at. Properties carry metadata as well as values, so
 you can ask.
 
-Unlike everything else on this page, this one call needs pynbody installed:
-:meth:`~tangos.core.halo.SimulationObjectBase.get_description` asks the code
-that *would* calculate the property to describe itself, which builds the
-simulation's input handler, whereas reading a stored value never does. Without
-pynbody it raises ``ModuleNotFoundError``, while ``halo['uvi_image']`` above
-keeps working.
-
 .. ipython::
 
  In [1]: side = halo.get_description("uvi_image").plot_extent()
@@ -213,6 +205,16 @@ keeps working.
  In [2]: side
 
 The image is 15 kpc across.
+
+.. warning::
+
+   Unlike everything else on this page, the avove call needs pynbody installed:
+   :meth:`~tangos.core.halo.SimulationObjectBase.get_description` asks the code
+   that *would* calculate the property to describe itself, which builds the
+   simulation's input handler, whereas reading a stored value never does. Without
+   pynbody it raises ``ModuleNotFoundError``, while data access such as
+   ``halo['uvi_image']`` above keeps working.
+
 
 With the extent in hand the picture can carry physical axes:
 
@@ -242,9 +244,7 @@ Reading a property, as above, costs one database query. Ask the same thing of
 every halo in a timestep from a python loop and that is one query per halo,
 which for thousands of halos is slow. Instead, tangos lets you describe the
 quantity you want once, as a *calculation*, and evaluates it for every object
-of interest in a handful of queries. That is what
-:meth:`~tangos.core.halo.SimulationObjectBase.calculate` was hinting at, and it
-is how every question in the next tutorial is asked.
+of interest, which is much faster.
 
 A calculation is built from three kinds of name, and you can always tell which
 is which by how it is written:
@@ -273,11 +273,9 @@ Names that are not in the database are looked up in python as usual, so
 will, however, report ``Mvir`` as an undefined name; that is expected.)
 
 Every calculation can also be written as a string, with the same meaning --
-``halo.calculate("Mvir/Rvir")`` -- and the two may be mixed in one call. You
-need the string form wherever a calculation has to be text: typed into the
-:doc:`web interface <webserver>`, read from a configuration file or a command
-line, or in scripts written before the lambda form existed. These
-tutorials use lambdas throughout.
+``halo.calculate("Mvir/Rvir")`` -- and the two may be mixed in one call. For now
+the string form is fully supported, because it is used in the :doc:`web interface <webserver>`.
+However it may be deprecated in the future.
 
 .. versionadded:: 1.12.0
    The lambda form.
@@ -288,7 +286,7 @@ tutorials use lambdas throughout.
    halo back through its progenitors and plots how it grew, and asks the same
    question of every halo in a timestep at once.
 
-   :doc:`/how-to/live_calculation_recipes` for what else a calculation can do --
+   See :doc:`/how-to/live_calculation_recipes` for what else a calculation can do --
    interpolating profiles, choosing between linked objects, filtering, and
    star formation histories -- and :doc:`/live_calculation` for the full
    syntax.
