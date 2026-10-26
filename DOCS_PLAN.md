@@ -57,11 +57,13 @@ build itself complains.
 Stages 0, 1, 2 and 3 are complete; stages 4–6 have not started. Stage 0 landed in
 #296, stage 1 in #300, stage 2 in #305, stage 3 in #312.
 
-Every page from stages 0–2 has now been read by a human. Stage 3 then changed four
-of them — `explanation/concepts`, `tutorials/quickstart`, `tutorials/time_series`,
-and the live calculations tutorial, which it dissolved into the quick-start and
-`how-to/live_calculation_recipes` (see **Change of direction** under **Stage 3**) —
-and each says what changed in a comment line under its check line. Those changes
+Every page from stages 0–2 has now been read by a human. Stage 3 then changed
+several of them — `tutorials/quickstart`, `tutorials/time_series`,
+`tutorials/webserver`, `installation`, the data model page (moved to
+`reference/data_model`), and the live calculations tutorial, which it dissolved
+into the quick-start and `how-to/live_calculation_recipes` (see **Changes of
+direction** under **Stage 3**) — and each says what changed in a comment line
+under its check line. Those changes
 still want a human read. A
 `.. Checked by <initials> <date>` line is the only record of which pages have had
 human eyes on them, so do not let a page lose it in a rewrite, and when you change
@@ -114,7 +116,9 @@ how-to, 10% reference, 0% explanation. Nothing explains the data model — Simul
 → links → creators — before the commands start. Every page silently assumes it.
 
 - [x] `explanation/concepts` (new, ~150 lines) — the data model. Highest
-      value-per-line item in the whole plan
+      value-per-line item in the whole plan. **Moved to `reference/data_model` in
+      stage 3**, with a short primer opening the quick-start in its place: see
+      **Changes of direction** under **Stage 3**
 - [x] `index` — rewrite as a real landing page
 - [x] `installation`
 - [x] `configuration` (new) — `config_local.py` is documented in `tangos/config.py`
@@ -122,7 +126,7 @@ how-to, 10% reference, 0% explanation. Nothing explains the data model — Simul
 - [x] `tutorials/quickstart` — from notebook cells 0–16
 - [x] `tutorials/time_series` — from notebook cells 17–19, 28–32
 - [x] `tutorials/live_calculations` — from `live_calculation.md:1-346`. **Dissolved
-      in stage 3**: see **Change of direction** under **Stage 3**
+      in stage 3**: see **Changes of direction** under **Stage 3**
 - [x] `tutorials/webserver` — grow the 21-line stub
 - [x] Start the redirect map (see **Invariants**). URLs first move here; stage 2
       moves many more and continues the same map
@@ -302,7 +306,11 @@ keeps the language reference executable if a download fails. **Deferred to stage
 makes a missing database a hard failure, since a fallback would render the
 tutorial pages with meaningless output.
 
-**Change of direction: no live calculation tutorial.** A newcomer read-through
+**Changes of direction.** Two newcomer read-throughs in stage 3 reshaped the
+tutorial path. Each gave a cold subagent only the rendered pages of the path, in
+order, and the same brief, with no hint of what to look for.
+
+**First: no live calculation tutorial.** A newcomer read-through
 of the tutorial path (a subagent given only the four rendered pages, and no hint
 of what to look for) found that `tutorials/live_calculations`, the fourth
 tutorial, mostly repeated what `quickstart` and `time_series` had already
@@ -339,11 +347,38 @@ own reading. So in stage 3:
       rebound the reader's `halo`; the opening examples of the old page, which used
       `h` and `ts` defined only in a hidden line; a typo in `quickstart`
 
-Not done, and still open: the read-through also found that `explanation/concepts`
-runs much of the same code, with the same output, as `quickstart` does next, so the
-quick-start partly re-runs page one. It suggested trimming `concepts` to the model
-itself (moving "Creators" and "Under the hood" to reference) or putting the
-quick-start first. That is a decision for a later stage.
+**Second: the data model is reference, not the first tutorial.** A second
+read-through, after the first change, no longer complained of duplicated
+calculation material, and called the quick-start's primer the best explanatory
+passage of the path. Both readers, though, found that `explanation/concepts`
+ran much of the same code, with the same output, as the quick-start did next
+(the `timesteps` listing, the `keys()` dump, `Mvir`, the `ptcls_in_common`
+explanation), so the quick-start re-ran page one; both suggested putting the
+quick-start first. AP decided the data model belongs in reference:
+
+- [x] `explanation/concepts` → `reference/data_model`, first in the Reference
+      toctree, keeping its `concepts` label so every `:ref:` still resolves. It
+      now opens by sending readers to the quick-start, and its prerequisites
+      note is at the top rather than mid-section. `explanation/` is gone. **No
+      redirect**: the page was never published
+- [x] `tutorials/quickstart` opens with a very short primer on the data model —
+      simulations, timesteps, objects (with typetags), properties, links —
+      linking to `reference/data_model` for the whole picture, and says that
+      building a database from your own simulations is
+      `tutorials/first_database`. The tutorial path is now
+      `quickstart` → `time_series` → `webserver` → `first_database`
+- [x] Also from the second read-through: a sentence at the quick-start's first
+      lambda saying how a bare name is resolved; `time_series` motivates its
+      switch to `tutorial_gadget` and reconciles its object counts (1027 halos
+      and 953 groups, so the 1980 and 752 that appear later make sense); the
+      mask example restricted to halos (it counted groups too — a stage 3 slip);
+      wording fixes ("agnostic", the halo-numbering sentence, ambiguous
+      timestep patterns, the stellar-mass comparison, "as soon as")
+
+Still open from the second read-through, for stage 4's web interface work: the
+`webserver` page was its low point — no screenshots, a video of an earlier
+version, and an admission that fuller documentation is still to be written — and
+it suggested mentioning the browser at the end of the quick-start.
 
 What stage 3 found:
 
@@ -468,7 +503,8 @@ What stage 3 found:
       `reference/live_calculation_language`, `reference/builtin_properties`,
       ~~`reference/simulation_formats`~~ (done in stage 2, along with
       `/first_steps_eagle` → `/how-to/eagle`), `configuration`,
-      `explanation/concepts`. Do each as the page it names lands
+      the data model (now `reference/data_model`, label `concepts`). Do each as
+      the page it names lands
 - [ ] FAQ, link audit
 
 ### Stage 6 — code fixes from `KNOWN_ISSUES.md` (size set by the stage 4 triage)
@@ -491,15 +527,15 @@ next merges `master`.
 
 **Setup** — `index` · `installation` · `configuration`
 
-**Tutorials**, linear and in this order. The first four need no simulation data,
-and no pynbody except for the one metadata call noted below: `explanation/concepts` → `tutorials/quickstart` → `tutorials/time_series`
+**Tutorials**, linear and in this order. The first three need no simulation data,
+and no pynbody except for the one metadata call noted below: `tutorials/quickstart` → `tutorials/time_series`
 → `tutorials/webserver` → `tutorials/first_database`
 → `custom_properties` → `histograms` → `black_holes` → `crossmatching` → `tracking`
 
 **How-to** — `live_calculation_recipes` · `parallel` · `managing_a_database` ·
 `database_backends` · `large_simulations` · `custom_handlers` · `eagle`
 
-**Reference** — `simulation_formats` · `live_calculation_language` · `cli` ·
+**Reference** — `data_model` · `simulation_formats` · `live_calculation_language` · `cli` ·
 `property_calculation_api` · `builtin_properties` · `api/index`
 
 ## Decisions already made
@@ -552,9 +588,14 @@ and no pynbody except for the one metadata call noted below: `explanation/concep
   `how-to/live_calculation_recipes` or reference. Do not reintroduce a
   standalone tutorial for it, and do not defer a calculation a tutorial uses to
   a later page: explain it where it is first used, or link to the recipe. See
-  **Change of direction** under **Stage 3** for why.
-- **`explanation/concepts` owns the halo-path spelling**, not `tutorials/quickstart`
-  as first planned. It explains the three parts, the `typetag_number` component,
+  **Changes of direction** under **Stage 3** for why.
+- **The tutorial path starts at the quick-start; the data model is reference.**
+  The quick-start opens with a few lines on the model and links to
+  `reference/data_model` for the rest. Do not put a concepts page back in front of
+  the tutorials, or have a tutorial re-run another page's session. See **Changes
+  of direction** under **Stage 3**.
+- **`reference/data_model` owns the halo-path spelling** (formerly
+  `explanation/concepts`), not `tutorials/quickstart` as first planned. It explains the three parts, the `typetag_number` component,
   the bare-number shorthand and what `%` really is. Other pages use paths freely
   and link to `:ref:`concepts`` rather than re-explaining. `reference/api/query.rst`
   still carries its own syntax table, which is fine as reference but should
@@ -562,7 +603,7 @@ and no pynbody except for the one metadata call noted below: `explanation/concep
 - **Implementation detail is deferred and labelled, on every page.** A newcomer
   must not have to read internals to reach what they came for: table names,
   columns, typecodes and ORM mechanics go in a trailing section a reader can skip
-  ("Under the hood: how this is stored" on `explanation/concepts`, "All settings"
+  ("Under the hood: how this is stored" on `reference/data_model`, "All settings"
   on `configuration`), and the page must still leave a correct mental model if
   they stop before it. `configuration`'s reference half is about half that page,
   which is more than the rule of thumb allows but reads fine because the tables

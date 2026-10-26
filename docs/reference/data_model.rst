@@ -1,12 +1,22 @@
 .. Reviewed by AP 4/09/2026
-.. Stage 3 (Claude, 2026-10-26): the black hole link example now shows a black hole's
-   links (it repeated the previous block's halo links); reworded the sentence on
-   next/earliest/latest. Not yet checked by a human.
+.. Stage 3 (Claude, 2026-10-26): moved from explanation/concepts into reference, with a
+   short primer at the start of tutorials/quickstart in its place; the prerequisites
+   note moved to the top; the black hole link example now shows a black hole's links
+   (it repeated the previous block's halo links); reworded the sentences on
+   next/earliest/latest and on ambiguous timestep patterns; get_objects explained.
+   Not yet checked by a human.
 
 .. _concepts:
 
 The tangos data model
 =====================
+
+This page sets out what a tangos database holds and how it fits together. The
+:ref:`quickstart` gives the short version and is the place to start; come here
+when you want the whole picture.
+
+.. note:: The examples on this page query the tutorial database, which
+ :ref:`installation` explains how to get. They need no simulation files.
 
 A tangos database is not a copy of your simulation; it is a *summary* of one,
 storing a handful of numbers, arrays and images per object per snapshot so that
@@ -29,15 +39,6 @@ A :class:`~tangos.core.simulation.Simulation` is one simulation run; a
 :attr:`~tangos.core.timestep.TimeStep.redshift` and :attr:`~tangos.core.timestep.TimeStep.time_gyr`. 
 Each timestep contains *objects*: the halos a halo finder identified in that 
 snapshot, plus the other kinds described below.
-
-.. note:: Before you start, make sure tangos is installed and
- can find the tutorial database;
- :ref:`installation` covers both. The examples here query an existing
- database, so you need no simulation files.
-
- Code snippets can be copied from this page and pasted into python,
- ipython or jupyter. Hover over the code and click the button that
- appears.
 
 .. ipython::
 
@@ -212,8 +213,8 @@ The ``%`` reflects wildcard matching: the timestep is
 matched as a SQL ``LIKE`` pattern, in which ``%`` stands for any run of
 characters. This timestep is really called
 ``pioneer50h128.1536gst1.bwK1.000960``, and ``%960`` saves you typing it. The
-pattern must select exactly one timestep -- match none and you get an error,
-match several and you get a different one. ``_`` is a ``LIKE`` wildcard too,
+pattern must select exactly one timestep: one that matches no timestep raises
+an error, and so, with a different message, does one that matches several. ``_`` is a ``LIKE`` wildcard too,
 matching any single character, so patterns can match more loosely than they
 appear to.
 
@@ -224,6 +225,9 @@ Every row tangos writes records the run that wrote it: the command line, the
 time, the machine and the user. That record is a
 :class:`~tangos.core.creator.Creator`, and
 :meth:`~tangos.core.creator.Creator.print_info` summarises what one run did.
+
+:meth:`~tangos.core.halo.SimulationObjectBase.get_objects` returns the stored
+rows behind a name, rather than their values, and each row knows its creator:
 
 .. ipython::
 
@@ -286,8 +290,8 @@ relationship.
 
 .. seealso::
 
-   :doc:`/tutorials/quickstart` puts all of this to work: it finds a halo,
-   reads its properties and plots an image of a galaxy.
+   :doc:`/tutorials/quickstart` and :doc:`/tutorials/time_series` put all of
+   this to work.
 
    :doc:`/reference/api/objects` for the classes named here, and
    :doc:`/reference/api/query` for the full halo-path syntax table.

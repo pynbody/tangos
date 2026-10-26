@@ -3,7 +3,9 @@
    rather than deferred to a later tutorial; added the failed-versus-False
    paragraph and mask example; reworded the start of "Following other branches";
    renamed the walk_branches loop variables so they no longer overwrite halo or time; the
-   1.12.0 lambda note moved to the quick-start. Not yet checked by a human.
+   1.12.0 lambda note moved to the quick-start; motivated the switch to tutorial_gadget;
+   reconciled the halo and group counts; tidied the cross-simulation example. Not yet
+   checked by a human.
 
 .. _time_series:
 
@@ -38,8 +40,11 @@ database. Nothing here opens a simulation file.
 Following the major progenitor branch
 -------------------------------------
 
-The examples on this page use ``tutorial_gadget``, a SubFind catalogue with a
-merger tree. Pick a halo in its final snapshot:
+Most examples on this page use ``tutorial_gadget``, a SubFind catalogue with a
+merger tree. It has eleven snapshots to the ChaNGa run's five, so its histories
+are longer. Two things differ from the quick-start: SubFind's own mass is the
+stored property ``mass`` rather than ``Mvir``, and each timestep holds SubFind's
+groups as well as its halos. Pick a halo in the final snapshot:
 
 .. ipython::
 
@@ -203,7 +208,7 @@ but they now evaluate expressions for every object in a timestep:
 
  In [1]: timestep = tangos.get_timestep("tutorial_gadget/snapshot_019")
 
- In [2]: timestep
+ In [2]: timestep.halos.count(), timestep.groups.count()
 
  In [3]: M, vmax = timestep.calculate_all(lambda: mass, lambda: VMax)
 
@@ -269,7 +274,7 @@ written after the dot is then evaluated on the object it lands on. So
 ``earlier(2).mass`` is the mass of the major progenitor two snapshots back.
 
 Halos with no progenitor two steps back have nothing to redirect to, which is why
-fewer rows come back than there are halos in the timestep.
+fewer rows come back than the timestep's 1027 halos.
 
 .. ipython::
 
@@ -299,12 +304,13 @@ an example simulation is ``tutorial_changa_blackholes``, which has a counterpart
 ``tutorial_changa`` without black holes. 
 
 Reaching across requires using the ``match`` redirection again, but now pointing at
-a whole alternative simulation rather than a particular timestep. For example:
+a whole alternative simulation rather than a particular timestep. The example
+compares stellar masses, using ``star_mass_profile[-1]``: the profile stores
+mass enclosed as a function of radius, so its last element, picked out with
+numpy's ``[-1]``, is the total stellar mass in the halo.
 
 .. ipython::
 
- In [1]: p.figure()
-   
  In [1]: timestep = tangos.get_timestep("tutorial_changa/%960")
 
  In [2]: stellar_mass_no_bh, stellar_mass_with_bh = timestep.calculate_all(
@@ -312,22 +318,21 @@ a whole alternative simulation rather than a particular timestep. For example:
     ...:         lambda: match('tutorial_changa_blackholes').star_mass_profile[-1],
     ...:         object_type='halo')
 
- In [3]: p.plot(stellar_mass_no_bh, stellar_mass_with_bh, 'k.')
+ In [3]: p.figure()
+
+ In [4]: p.plot(stellar_mass_no_bh, stellar_mass_with_bh, 'k.');
 
  @savefig matched_stellar_masses.png width=6in
- In [4]: p.xlabel(r"stellar mass without BHs / $M_\odot$")
+ In [5]: p.xlabel(r"stellar mass without BHs / $M_\odot$")
     ...: p.ylabel(r"stellar mass with BHs / $M_\odot$")
     ...: p.plot([1e6,1e12], [1e6,1e12], 'r:')
     ...: p.xlim(1e7,1e11); p.ylim(1e7,1e11)
     ...: p.loglog()
     ...: p.tight_layout()
 
-This is a zoom simulation, so we see satellites with comparable stellar masses
-in both runs, but the central galaxy with black holes has suppressed star
-formation and a lower stellar mass. Note that we have also used the ``[-1]``
-index following the numpy convention to pick out the last element of the
-``star_mass_profile`` array, which stores mass enclosed as a function of radius.
-The last element is the total stellar mass in the halo.
+Most galaxies have similar stellar masses in both runs. The exceptions are the
+two most massive: with black holes, their star formation is suppressed, leaving
+them with two to three times less stellar mass.
 
 .. seealso::
 

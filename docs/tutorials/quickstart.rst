@@ -1,32 +1,49 @@
 .. Last checked by AP 31/08/26
-.. Stage 3 (Claude, 2026-10-26): added the closing section, "Calculating rather than
-   reading" -- the primer that replaced the live calculations tutorial -- and fixed a
-   typo. Not yet checked by a human.
+.. Stage 3 (Claude, 2026-10-26): added an opening primer on the data model, replacing
+   the pointer to explanation/concepts (now reference/data_model), and a pointer to
+   building your own database; added the closing section, "Calculating rather than
+   reading" -- the primer that replaced the live calculations tutorial; said how a bare
+   name in a lambda is resolved; reworded the halo-numbering sentences; fixed typos.
+   Not yet checked by a human.
 
 .. _quickstart:
 
 Quick-start: exploring an existing database
 ===========================================
 
-A tangos database is a summary of one or more simulations: a few numbers,
-arrays and images per object per snapshot, in a single file (or database
-server). In this tutorial, you will use a small sample database. You will list
-the simulations it holds, pick out one halo, see which properties have been
-calculated for it, and put a picture of a galaxy on the screen -- without
-opening a single simulation file.
+A tangos database is not a copy of your simulations; it is a *summary* of
+them, a few numbers, arrays and images per object per snapshot, in a single
+file (or database server), so that questions spanning a whole run take
+milliseconds. It is built from four ideas:
 
-The vocabulary used here -- simulation, timestep, object, property, typetag --
-and the halo paths that appear part-way through are introduced in
-:ref:`concepts`. You do not need to have read that page first, but it is the
-place to look if a term is puzzling.
+* a **simulation** contains **timesteps**, one per snapshot;
+* a timestep contains **objects** -- halos, and also groups, black holes and
+  others, each kind marked by a *typetag*;
+* an object carries **properties**: numbers, arrays and images;
+* objects are joined by **links**, which are how a merger tree, a black hole's
+  host, or the same halo in another simulation are all recorded.
+
+That is enough to follow the tutorials; :ref:`concepts` sets out the whole
+picture.
+
+In this tutorial, you will use a small sample database. You will list the
+simulations it holds, pick out one halo, see which properties have been
+calculated for it, put a picture of a galaxy on the screen, and meet the
+calculations that the rest of tangos is built on -- without opening a single
+simulation file. Building a database from your own simulations comes later, in
+:doc:`/tutorials/first_database`, once you have seen what one is good for.
 
 .. note:: Before you start, make sure tangos is installed and
  can find the tutorial database;
  :ref:`installation` covers both. The examples here query an existing
  database, so you need no simulation files.
 
- Although not strictly necessary, your life will be easier 
+ Although not strictly necessary, your life will be easier
  if you also install pynbody (just ``pip install pynbody`` should do it).
+
+ Code snippets can be copied from this page and pasted into python,
+ ipython or jupyter. Hover over the code and click the button that
+ appears.
 
 
 What is in the database?
@@ -48,7 +65,7 @@ and a Ramses run.
 .. note::
 
    The above assumes you have set up the tutorial database and pointed tangos to its
-   path. See :ref:`installation` if you see an empty set of simulations; more
+   path. See :ref:`installation` if you see an empty list of simulations; more
    than likely you are looking at an empty database.
 
 Any simulation can be fetched by name with
@@ -81,8 +98,8 @@ python way, from zero:
 Note the square brackets index the halos sequentially from zero, as per Python 
 convention. But the halos have a number independent of their index in this list. 
 Here they started at 1, which is why ``step.halos[3]`` returned something calling 
-itself halo 4. Tangos is ambivalent about how the halo numbering works, provided 
-the halo numbers are unique per timestep. 
+itself halo 4. Tangos is agnostic about how halos are numbered, provided the
+numbers are unique within a timestep.
 
 
 Going straight to an object
@@ -116,10 +133,10 @@ this documentation, so it is worth getting comfortable with them now.
 Reading properties
 ------------------
 
-The ChaNGa simulation is a zoom simulation, in which halos are numbered in
-decreasing order of particle count. 
+Halos in the ChaNGa simulation are numbered in decreasing order of particle
+count, so ``halo_1`` is the most massive.
 
-Let's take the most massive halo, ``halo_1``,  in the final ChaNGa snapshot, 
+Let's take ``halo_1`` in the final ChaNGa snapshot, 
 and ask what has been calculated for it:
 
 .. ipython::
@@ -151,6 +168,8 @@ requested as a *calculation*, written as a lambda:
 
  In [1]: halo.calculate(lambda: Mvir)
 
+You never call that lambda yourself. tangos reads the names in it and looks
+each one up in the database, which is why ``Mvir`` needs no definition here.
 For one stored property that is a long-winded way of writing the square
 brackets, but :meth:`~tangos.core.halo.SimulationObjectBase.calculate` is the
 door to the live calculation language, in which names combine into
