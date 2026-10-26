@@ -183,7 +183,13 @@ most cases, running the code at the point it was added.
       docs branch, at AP's request, so the docs could show sensible histories):
       `store_slice` now reaches back to the previous timestep, never less than
       `minimum_store_Gyr`, and to the beginning at the first timestep; tested in
-      `tests/test_histogram_property.py`. The tutorial and CI reference databases
+      `tests/test_histogram_property.py`. Two follow-ups in the same change, in
+      `BHAccHistogram` (`tangos/properties/pynbody/BH.py`), tested in
+      `tests/test_bh_histogram.py`: a chunk no longer stores the leading run of
+      NaNs before the black hole's log begins, which the whole-history first
+      chunk made long; and the accretion rate is sampled at each bin's start
+      time, where `np.linspace(0, 20, nbins)` had a spacing of 20/(nbins-1) and
+      drifted off the histogram's bins. The tutorial and CI reference databases
       still hold old-style chunks until rebuilt (see **Before merging to master**
       in `DOCS_PLAN.md`).
       `TimeChunkedProperty.store_slice` (`tangos/properties/__init__.py`)
