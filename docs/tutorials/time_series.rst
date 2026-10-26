@@ -227,20 +227,35 @@ the other branches and arrived later by merging:
 
  In [3]: t_bins = galaxy.get_description("SFR_histogram").plot_x_values(sfr_major)
 
- In [4]: p.figure()
+ In [4]: fig, (ax_sfr, ax_ratio) = p.subplots(2, 1, sharex=True, height_ratios=[2, 1])
 
- In [5]: p.plot(t_bins, sfr_all, label="all progenitors");
+ In [5]: ax_sfr.plot(t_bins, sfr_all, label="all progenitors");
 
- In [6]: p.plot(t_bins, sfr_major, label="major progenitor branch");
+ In [6]: ax_sfr.plot(t_bins, sfr_major, label="major progenitor branch");
+
+ In [7]: ax_sfr.set_yscale('log')
+    ...: ax_sfr.set_ylabel(r"SFR/$M_{\odot}\,{\rm yr}^{-1}$")
+    ...: ax_sfr.legend();
+
+ In [8]: has_sf = sfr_major > 0
+
+ In [9]: ax_ratio.plot(t_bins[has_sf], sfr_all[has_sf]/sfr_major[has_sf], 'k');
 
  @savefig time_series_sfr_reassembly.png width=6in
- In [7]: p.xlabel("t/Gyr")
-    ...: p.ylabel(r"SFR/$M_{\odot}\,{\rm yr}^{-1}$")
-    ...: p.legend()
-    ...: p.tight_layout()
+ In [10]: ax_ratio.axhline(1.0, color='gray', ls=':')
+    ....: ax_ratio.set_xlabel("t/Gyr")
+    ....: ax_ratio.set_ylabel("all / major")
+    ....: fig.tight_layout()
 
-The other progenitors add a little before about 1.5 Gyr, but in contrast to the
-mass, almost all of this galaxy's stars formed on its major branch.
+The lower panel is the ratio of the two. At early times a good deal of star
+formation happens away from the major branch: before 1 Gyr the progenitors
+together typically form about one and a half times as many stars as the major
+branch alone, and at first up to three times as many, much as you would expect
+of a galaxy assembled from smaller pieces. Later the major branch dominates, and
+overall 97% of this galaxy's stars formed on it. (The sharp drop at 1.5 Gyr is
+at a snapshot. Stars that form in a progenitor between the last snapshot before
+it merges and the merger itself are counted on the major branch, so the split
+between branches is only as fine as the snapshots.)
 
 The SFR is not the only history stored this way. Black hole accretion rates,
 ``BH_mdot_histogram``, are too, and reassemble in the same way once you follow
