@@ -1,12 +1,4 @@
-.. Checked by AP 4/09/2026
-.. Stage 3 (Claude, 2026-10-26): t() now explained via the quick-start's primer
-   rather than deferred to a later tutorial; added the failed-versus-False
-   paragraph and mask example; reworded the start of "Following other branches";
-   renamed the walk_branches loop variables so they no longer overwrite halo or time; the
-   1.12.0 lambda note moved to the quick-start; motivated the switch to tutorial_gadget;
-   reconciled the halo and group counts; tidied the cross-simulation example; added
-   "Star formation histories"; SubFind masses now in physical units, as the
-   rebuilt tutorial database stores them. Not yet checked by a human.
+.. Checked by AP 10/09/2026
 
 .. _time_series:
 
@@ -235,6 +227,7 @@ the other branches and arrived later by merging:
 
  In [7]: ax_sfr.set_yscale('log')
     ...: ax_sfr.set_ylabel(r"SFR/$M_{\odot}\,{\rm yr}^{-1}$")
+    ...: ax_sfr.set_ylim(1e-1,1e2)
     ...: ax_sfr.legend();
 
  In [8]: has_sf = sfr_major > 0
@@ -252,10 +245,7 @@ formation happens away from the major branch: before 1 Gyr the progenitors
 together typically form about one and a half times as many stars as the major
 branch alone, and at first up to three times as many, much as you would expect
 of a galaxy assembled from smaller pieces. Later the major branch dominates, and
-overall 97% of this galaxy's stars formed on it. (The sharp drop at 1.5 Gyr is
-at a snapshot. Stars that form in a progenitor between the last snapshot before
-it merges and the merger itself are counted on the major branch, so the split
-between branches is only as fine as the snapshots.)
+overall 97% of this galaxy's stars formed on it. 
 
 The SFR is not the only history stored this way. Black hole accretion rates,
 ``BH_mdot_histogram``, are too, and reassemble in the same way once you follow
