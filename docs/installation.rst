@@ -1,4 +1,6 @@
 .. Last checked by AP 31/08/26
+.. Stage 3 (Claude, 2026-10-26): now points newcomers straight to the quick-start, as the
+   data model page moved to reference. Not yet checked by a human.
 
 .. _installation:
 
@@ -39,8 +41,8 @@ that is where tangos looks by default. To keep it anywhere else, see
 
  In [2]: tangos.all_simulations()
 
-If you see those five simulations listed, you are ready to start on
-:ref:`concepts` and then the :ref:`quickstart` tutorial. If you see an empty
+If you see those five simulations listed, you are ready to start on the
+:ref:`quickstart` tutorial. If you see an empty
 list instead, read the warning below.
 
 .. _pointing_tangos_at_a_database:
@@ -205,13 +207,13 @@ run in CI and will fail the build otherwise:
   $ pip install pre-commit
   $ pre-commit install
 
-To build this documentation, use the ``docs`` extra (``pip install -e .[docs]``,
-with `pandoc <https://pandoc.org>`_ also installed) and run ``make html`` in the
-``docs`` directory.
+To build this documentation, use the ``docs`` extra (``pip install -e .[docs]``),
+fetch the tutorial database the examples run against (see above), and run
+``make html`` in the ``docs`` directory.
 
 .. seealso::
 
    :ref:`configuration` for everything tangos lets you configure.
 
-   :ref:`concepts` for what is actually inside the database you just
-   downloaded, followed by the :ref:`quickstart` tutorial.
+   The :ref:`quickstart` tutorial, which starts with what is actually inside
+   the database you just downloaded; :ref:`concepts` has the full picture.

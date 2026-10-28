@@ -40,8 +40,16 @@ This method is calculating a star formation histogram for all the stars in the h
 it has been provided. This is stored into `M` on the first line. However, it then returns
 only a slice of that information (provided by the `TimeChunkedProperty.store_slice` method).
 
-That slice represents the most recent star formation history of the object, and only that
-recent activity is stored in the database.
+That slice represents the star formation history of the object since the previous snapshot
+(and at least the last `minimum_store_Gyr`, 0.5 Gyr by default), or its whole history at the
+first snapshot. Only that recent activity is stored in the database; together, the slices
+stored at successive snapshots cover the whole history.
+
+.. warning ::
+   
+   `TimeChunkedProperty` finds the previous snapshot in its `preloop`; if your own
+   histogram class overrides `preloop`, call `super().preloop(...)` from it. Otherwise only the
+   last `minimum_store_Gyr` is stored.
 
 You can see this for yourself; starting from the [sample database](tutorials/quickstart.rst), try
 the following:
@@ -50,7 +58,7 @@ the following:
 import pylab as p
 import tangos
 halo = tangos.get_halo("tutorial_changa/%960/halo_1")
-p.plot(halo.calculate("raw(SFR_histogram)/1e9"))
+p.plot(halo.calculate(lambda: raw(SFR_histogram)/1e9))
 ```
 
 Note the use of the `raw()` live property which requests that the raw contents of the database,
@@ -63,6 +71,12 @@ plotting the default reconstruction of the star formation rate:
 ```python
 p.plot(halo['SFR_histogram'])
 ```
+
+Even though no explicit calculation was invoked, the default reassembly (accessing the full
+history of this halo) takes place anyway. The reassembly actually has a unit conversion in it
+in the case of the default star formation rate implementation, for historical reasons (it
+is stored as solar masses per gigayear instead of per year). Of course, if you never access
+the raw value you would never need to know this. 
 
 What is happening to reassemble the full history?
 --------------------------------------------------
@@ -119,4 +133,4 @@ star formation (or other histogramed activity) in the `major` and `sum` branches
 distinguished between the penultimate and final timesteps. For that last time interval,
 these two queries will always give the same result. This is an unavoidable technical
 limitation which normally does not impact on science analysis but should be borne in mind. The
-remedy is to use finer time stepping such that the problem time interval is as short as possible.
+remedy is to use finer snapshot output timesteps such that the problem time interval is as short as possible.

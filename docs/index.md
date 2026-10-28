@@ -21,17 +21,22 @@ and query it:
 
 1. [Installation](installation.rst) -- tangos and the tutorial database, in
    three steps.
-2. [The tangos data model](explanation/concepts.rst) -- simulations, timesteps,
-   objects, properties and links. Fifteen minutes here saves hours later,
-   because every other page assumes it.
-3. [Quick-start](tutorials/quickstart.rst) -- find a halo, read its properties,
-   plot an image of a galaxy.
-4. [Time series and populations](tutorials/time_series.rst) -- follow a halo
-   back through its progenitors and plot how it grew.
-5. [Live calculations](tutorials/live_calculations.rst) -- the language that
-   makes the database more than a table of numbers.
-6. [The web interface](tutorials/webserver.rst) -- the same database in a
+2. [Quick-start](tutorials/quickstart.rst) -- what a tangos database holds,
+   then find a halo, read its properties, plot an image of a galaxy, and
+   calculate with them.
+3. [Time series and populations](tutorials/time_series.rst) -- follow a halo
+   back through its progenitors and plot how it grew, and ask questions of a
+   whole population at once.
+4. [The web interface](tutorials/webserver.rst) -- the same database in a
    browser.
+
+[The tangos data model](reference/data_model.rst) sets out the whole picture
+-- simulations, timesteps, objects, properties and links -- when you want more
+than the quick-start's summary.
+
+When you need more from a calculation than those pages show -- interpolating a
+profile, choosing between linked objects, a star formation history -- see the
+[live calculation recipes](how-to/live_calculation_recipes.rst).
 
 **Building a database from your own simulation** starts at
 [making your first database](tutorials/first_database.rst), which walks through
@@ -68,10 +73,8 @@ configuration
 :hidden:
 :caption: Tutorials
 
-explanation/concepts
 tutorials/quickstart
 tutorials/time_series
-tutorials/live_calculations
 tutorials/webserver
 tutorials/first_database
 ```
@@ -81,6 +84,7 @@ tutorials/first_database
 :hidden:
 :caption: How-to
 
+how-to/live_calculation_recipes
 mpi
 rdbms
 custom_input_handlers
@@ -104,15 +108,8 @@ tracking
 :hidden:
 :caption: Reference
 
+reference/data_model
 reference/simulation_formats
 live_calculation
 reference/api/index
-```
-
-```{toctree}
-:maxdepth: 1
-:hidden:
-:caption: Older material
-
-Data exploration with python
 ```

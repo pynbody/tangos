@@ -1,9 +1,22 @@
 .. Reviewed by AP 4/09/2026
+.. Stage 3 (Claude, 2026-10-26): moved from explanation/concepts into reference, with a
+   short primer at the start of tutorials/quickstart in its place; the prerequisites
+   note moved to the top; the black hole link example now shows a black hole's links
+   (it repeated the previous block's halo links); reworded the sentences on
+   next/earliest/latest and on ambiguous timestep patterns; get_objects explained.
+   Not yet checked by a human.
 
 .. _concepts:
 
 The tangos data model
 =====================
+
+This page sets out what a tangos database holds and how it fits together. The
+:ref:`quickstart` gives the short version and is the place to start; come here
+when you want the whole picture.
+
+.. note:: The examples on this page query the tutorial database, which
+ :ref:`installation` explains how to get. They need no simulation files.
 
 A tangos database is not a copy of your simulation; it is a *summary* of one,
 storing a handful of numbers, arrays and images per object per snapshot so that
@@ -26,15 +39,6 @@ A :class:`~tangos.core.simulation.Simulation` is one simulation run; a
 :attr:`~tangos.core.timestep.TimeStep.redshift` and :attr:`~tangos.core.timestep.TimeStep.time_gyr`. 
 Each timestep contains *objects*: the halos a halo finder identified in that 
 snapshot, plus the other kinds described below.
-
-.. note:: Before you start, make sure tangos is installed and
- can find the tutorial database;
- :ref:`installation` covers both. The examples here query an existing
- database, so you need no simulation files.
-
- Code snippets can be copied from this page and pasted into python,
- ipython or jupyter. Hover over the code and click the button that
- appears.
 
 .. ipython::
 
@@ -103,16 +107,23 @@ fraction of particles shared.
 
    In practice, you nearly always make use of links 
    via a higher-level interface than the raw list, as described in 
-   :ref:`time_series` and :ref:`live_calculations`.
+   :ref:`time_series` and :ref:`live_calculation_recipes`.
 
-Black hole association is the same mechanism again: a black hole links to its
-halo as ``host_halo``, and the halo links back as ``BH`` and ``BH_central``, so
-``bh['host_halo']`` reaches the host and ``halo['BH_central']`` the black
-holes:
+Black hole association is the same mechanism again. In
+``tutorial_changa_blackholes`` a halo links to the black holes it hosts as
+``BH``, and to those in its central galaxy as ``BH_central``; each black hole
+links back to its halo as ``host_halo``. So reading a link by name takes you to
+the objects at the other end:
 
 .. ipython::
 
- In [1]: for link in halo.links:
+ In [1]: bh_halo = tangos.get_object("tutorial_changa_blackholes/%960/halo_1")
+
+ In [2]: central_bhs = bh_halo['BH_central']
+
+ In [3]: len(central_bhs)
+
+ In [4]: for link in central_bhs[0].links:
     ...:     print(f"{link.relation.text:16s} {link.weight:8.4f}  {link.halo_to.path}")
     ...:
 
@@ -134,11 +145,12 @@ either time direction:
 
 :attr:`~tangos.core.halo.SimulationObjectBase.previous` returned the halo that
 holds 93% of the particles, because that is the heaviest of the four
-progenitor links above. So do :attr:`~tangos.core.halo.SimulationObjectBase.next`,
+progenitor links above. :attr:`~tangos.core.halo.SimulationObjectBase.next`
+does the same forwards in time, and
 :attr:`~tangos.core.halo.SimulationObjectBase.earliest`,
 :attr:`~tangos.core.halo.SimulationObjectBase.latest` and
-:meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors`, which
-follow the heaviest link repeatedly. Nor is a merger a distinct kind of record:
+:meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors` follow
+the heaviest link repeatedly. Nor is a merger a distinct kind of record:
 it is a timestep at which a halo has more than one incoming link of appreciable
 weight.
 
@@ -201,8 +213,8 @@ The ``%`` reflects wildcard matching: the timestep is
 matched as a SQL ``LIKE`` pattern, in which ``%`` stands for any run of
 characters. This timestep is really called
 ``pioneer50h128.1536gst1.bwK1.000960``, and ``%960`` saves you typing it. The
-pattern must select exactly one timestep -- match none and you get an error,
-match several and you get a different one. ``_`` is a ``LIKE`` wildcard too,
+pattern must select exactly one timestep: one that matches no timestep raises
+an error, and so, with a different message, does one that matches several. ``_`` is a ``LIKE`` wildcard too,
 matching any single character, so patterns can match more loosely than they
 appear to.
 
@@ -213,6 +225,9 @@ Every row tangos writes records the run that wrote it: the command line, the
 time, the machine and the user. That record is a
 :class:`~tangos.core.creator.Creator`, and
 :meth:`~tangos.core.creator.Creator.print_info` summarises what one run did.
+
+:meth:`~tangos.core.halo.SimulationObjectBase.get_objects` returns the stored
+rows behind a name, rather than their values, and each row knows its creator:
 
 .. ipython::
 
@@ -275,8 +290,8 @@ relationship.
 
 .. seealso::
 
-   :doc:`/tutorials/quickstart` puts all of this to work: it finds a halo,
-   reads its properties and plots an image of a galaxy.
+   :doc:`/tutorials/quickstart` and :doc:`/tutorials/time_series` put all of
+   this to work.
 
    :doc:`/reference/api/objects` for the classes named here, and
    :doc:`/reference/api/query` for the full halo-path syntax table.

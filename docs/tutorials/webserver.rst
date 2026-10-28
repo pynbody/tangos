@@ -1,4 +1,6 @@
 .. Checked by AP 5/09/26
+.. Stage 3 (Claude, 2026-10-26): links repointed after the live calculations tutorial
+   was dissolved; fixed "as soon if". Not yet checked by a human.
 
 .. _webserver:
 
@@ -31,7 +33,7 @@ the same ``TANGOS_DB_CONNECTION`` as everything else, so it shows the database
 you have been querying from python.
 
 You can choose the port yourself, and give the server a title, which is worth
-doing as soon if you have more than one open at once:
+doing as soon as you have more than one open at once:
 
 .. code-block:: bash
 
@@ -57,9 +59,9 @@ A tour of the web interface, from an earlier version of tangos:
 
 A timestep's table of objects takes *live calculation expressions* as columns.
 Anything you could pass to
-:meth:`~tangos.core.timestep.TimeStep.calculate_all` in
-:doc:`/tutorials/live_calculations` -- ``earlier(2).mass``, ``at(Rvir/4,
-dm_density_profile)``, a redirection through a link -- can be typed into a
+:meth:`~tangos.core.timestep.TimeStep.calculate_all` -- ``earlier(2).mass``,
+``at(Rvir/4, dm_density_profile)``, a redirection through a link; see
+:doc:`/how-to/live_calculation_recipes` -- can be typed into a
 column heading and evaluated for every object in the timestep. The browser then
 becomes a way of exploring the calculation language interactively, which can
 help work out what you want before writing it into a script.
@@ -71,7 +73,7 @@ URLs you can fetch from a script rather than a browser.
 
    Fuller documentation of the web interface -- the merger-tree viewer and the
    URL API for fetching data programmatically -- is still to be written.
-   :doc:`/tutorials/quickstart` and
-   :doc:`/tutorials/live_calculations` cover the same ground from python, and
+   :doc:`/tutorials/quickstart`, :doc:`/tutorials/time_series` and
+   :doc:`/how-to/live_calculation_recipes` cover the same ground from python, and
    :ref:`configuration` lists the ``webview_`` settings that control image
    format, resolution and caching.

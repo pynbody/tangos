@@ -14,14 +14,14 @@ get_tutorial_data() {
 
 detect_mpi() {
   if hash mpirun 2>/dev/null; then
-    export MPI="mpirun -np 4"
+    export MPI="mpirun -np 8"
     export MPIBACKEND="--backend=mpi4py"
-    export MPILOADMODE="--load-mode=server"
+    export MPILOADMODE="--load-mode=server-shared-mem"
     echo "Detected mpirun -- will use where appropriate"
   else
-    export MPIBACKEND="--backend=multiprocessing-3" # 1 process for server, 1 for each worker
+    export MPIBACKEND="--backend=multiprocessing-9" # 1 process for server, 1 for each worker
     export MPILOADMODE="--load-mode=server-shared-mem"
-    echo "No mpirun found; adopting multiprocessing with 2 workers"
+    echo "No mpirun found; adopting multiprocessing with 8 workers"
   fi
 }
 
@@ -137,8 +137,11 @@ clearup_files tutorial_gadget
 clearup_files tutorial_gadget_rockstar
 build_ramses
 clearup_files tutorial_ramses
-build_gadget4
-build_gadget4_hbtplus
-clearup_files tutorial_gadget4
-build_enzo_yt
-clearup_files enzo.tinycosmo
+
+if [ ! -z "$INTEGRATION_TESTING" ]; then
+  build_gadget4
+  build_gadget4_hbtplus
+  clearup_files tutorial_gadget4
+  build_enzo_yt
+  clearup_files enzo.tinycosmo
+fi

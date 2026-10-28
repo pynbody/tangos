@@ -166,6 +166,76 @@ most cases, running the code at the point it was added.
       every implementation and every caller uses `finder_offset`. The API
       reference therefore documents a parameter name that does not exist
       downstream.
+- [ ] `match_reduce` crashes if any linked object lacks the property being
+      reduced, rather than skipping it. `calculation.values()` yields `None`
+      for such an object and the reduction is applied to the raw list, so
+      `'sum'` and `'mean'` raise `TypeError: unsupported operand type(s) for
+      +: 'NoneType' and 'NoneType'` (and `'min'`/`'max'` would compare `None`
+      with numbers). Reproduced against the tutorial database:
+      `tangos.get_timestep("tutorial_changa/%960").calculate_all(lambda:
+      match_reduce('tutorial_changa/%832', star_mass_profile[-1], 'sum'))`;
+      the same call with `Mvir`, which every object has, works.
+      `tests/test_live_calculation_reduce.py` only covers targets that all
+      carry the property. Found in stage 3, where the docs example had to
+      switch to `Mvir` to run.
+- [x] Time-chunked histograms (`SFR_histogram`, `BH_mdot_histogram`) have gaps
+      wherever snapshots are more than 0.5 Gyr apart. **Fixed in stage 3** (on the
+      docs branch, at AP's request, so the docs could show sensible histories):
+      `store_slice` now reaches back to the previous timestep, never less than
+      `minimum_store_Gyr`, and to the beginning at the first timestep. The
+      previous timestep is looked up once per timestep in
+      `TimeChunkedProperty.preloop`, not during the calculation (an earlier
+      version queried from `store_slice`); tested in
+      `tests/test_histogram_property.py`, including that `store_slice` makes no
+      query. Two follow-ups in the same change, in
+      `BHAccHistogram` (`tangos/properties/pynbody/BH.py`), tested in
+      `tests/test_bh_histogram.py`: a chunk no longer stores the leading run of
+      NaNs before the black hole's log begins, which the whole-history first
+      chunk made long; and the accretion rate is sampled at each bin's start
+      time, where `np.linspace(0, 20, nbins)` had a spacing of 20/(nbins-1) and
+      drifted off the histogram's bins. The tutorial and CI reference databases
+      still hold old-style chunks until rebuilt (see **Before merging to master**
+      in `DOCS_PLAN.md`).
+      `TimeChunkedProperty.store_slice` (`tangos/properties/__init__.py`)
+      always returns the fixed window `[t - minimum_store_Gyr, t]`, and the SF
+      and BH properties store exactly that slice. So a snapshot stores the 0.5
+      Gyr before it, whatever the spacing to the previous snapshot, and the
+      history between them is never stored. The attribute's name says
+      *minimum*, which suggests the intent was the larger of 0.5 Gyr and the
+      gap to the previous snapshot. Visible in the tutorial database, whose
+      ChaNGa snapshots are about 0.65 Gyr apart: `halo_1`'s reassembled SFR
+      drops to zero just after 1.53 and 2.17 Gyr, and is zero before 0.81 Gyr
+      (0.5 Gyr before the first snapshot). `tutorials/time_series` explains the
+      gaps to the reader rather than hiding them. Fixing it means storing the
+      interval back to the previous timestep, then rebuilding the tutorial
+      database and `reference_database.db`. Found in stage 3.
+- [ ] Multi-hop strategies can fail intermittently with `sqlalchemy.exc.InvalidRequestError:
+      Table 'multihoplink_final_xxxx' is already defined for this MetaData instance`.
+      Seen once in CI on a stage 3 commit (`test_hop_strategy.py::test_multisource_forwards`,
+      MySQL, Python 3.14), in code the commit did not touch; the same job passed
+      on neighbouring commits. By reading `tangos/relation_finding/multi_hop.py`:
+      the temporary tables are named with just four random lowercase letters
+      (`rstr`, 26^4 ≈ 457k names), and a table can stay registered in
+      `core.Base.metadata` after use. `_manage_temp_table` is a `@contextmanager`
+      without `try/finally`, so an exception inside the block skips
+      `_delete_temp_table`; and `_temp_table_without_leaving_sql` only removes
+      its table through a callback that runs if the caller exits the returned
+      halolist context. Once a table has leaked, any later draw of the same four
+      letters collides. Proposed fix: wrap the `yield` in `try/finally`, and use a
+      longer suffix (e.g. `uuid.uuid4().hex[:16]`) for the table and index names.
+- [ ] `--backend` handling in `tangos.parallel_tasks._process_command_line()`
+      breaks any argument that contains a space. On import it joins `sys.argv`
+      with spaces, cuts `--backend <name>` out with a regex, and assigns
+      `sys.argv = new_command_line.split()`, discarding the shell's quoting.
+      So `tangos write ... --include-only="NDM() > 1000" --backend mpi4py`
+      reaches argparse as `NDM()`, `>`, `1000`, while the same command without
+      `--backend` works. The regex would also catch `--backend` inside a quoted
+      argument. Every documented command happens to avoid spaces inside
+      arguments, which is why the docs have not hit this. Relatedly,
+      `tangos write` declares its own `--backend` option
+      (`tangos/tools/property_writer.py`), which is dead: the import-time
+      stripping always removes `--backend` before argparse runs. Found while
+      writing `tests/test_docs_commands.py` in stage 3.
 
 ## Misleading or wrong documentation
 
@@ -181,13 +251,16 @@ most cases, running the code at the point it was added.
       `urllib.parse.quote` alters (the style conventions in `DOCS_PLAN.md`
       already require lowercase-underscore filenames, which is why only these
       retired pages are affected).
-- [ ] `docs/Data exploration with python.ipynb` cell 1 links to
+- [x] `docs/Data exploration with python.ipynb` cell 1 links to
       `https://pynbody.github.io/tangos/data_exploration.html`, a page retired in
       stage 2. The redirect covers it, but the notebook is deliberately kept as
       the only published copy of material not yet ported (histograms, black
       holes, `match` crossmatching), so until stage 4 ports that material the
       notebook advertises a retired page. Sphinx does not warn, since it is an
-      absolute URL.
+      absolute URL. **Resolved in stage 3 by retiring the notebook**: since
+      `docs-refactor-main` reaches readers only when the whole suite merges,
+      keeping it bought nothing. The unported cells are pinned as a stage 4
+      item in `DOCS_PLAN.md`.
 - [ ] Two more doc URLs embedded in code will break when their pages move in
       stages 4-5, and have no redirect yet: `tangos/tools/property_writer.py:655`
       points at `custom_properties.html` and `tangos/core/halo.py:154` at
@@ -288,8 +361,8 @@ most cases, running the code at the point it was added.
       `docs/custom_input_handlers.md`, `docs/custom_properties.md`,
       `docs/first_steps_ramses+hop.md`, `docs/histogram_properties.md`,
       `docs/live_calculation.md`, `docs/tracking.md`, `docs/using_with_yt.md`
-      (13 occurrences across those seven files), plus 5 occurrences in
-      `docs/Data exploration with python.ipynb`. Deliberately **not** swept as
+      (13 occurrences across those seven files; the 5 in the notebook went
+      with it in stage 3). Deliberately **not** swept as
       a mass edit now — every one of these files is being rewritten in stages
       1–5 of `DOCS_PLAN.md`, so `get_object` replaces `get_halo` page by page,
       as each page is rewritten.

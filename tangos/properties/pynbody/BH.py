@@ -52,6 +52,7 @@ class BHAccHistogram(TimeChunkedProperty):
         return []
 
     def preloop(self, f, db_timestep):
+        super().preloop(f, db_timestep)
         if BlackHolesLog.can_load(db_timestep.filename):
             self.log = BlackHolesLog.get_existing_or_new(db_timestep.filename)
         elif ShortenedOrbitLog.can_load(db_timestep.filename):
@@ -87,11 +88,20 @@ class BHAccHistogram(TimeChunkedProperty):
 
         grid_tmax_Gyr = 20.0
         nbins = int(grid_tmax_Gyr/self.pixel_delta_t_Gyr)
-        t_grid = np.linspace(0, grid_tmax_Gyr, nbins)
+        # one sample per histogram bin, at the bin's start time (as bin_index assigns them)
+        t_grid = np.arange(nbins)*self.pixel_delta_t_Gyr
 
         Mdot_grid = scipy.interpolate.interp1d(t_orbit[order], Mdot_orbit[order], bounds_error=False)(t_grid)
 
-        return Mdot_grid[self.store_slice(t_max)],
+        chunk = Mdot_grid[self.store_slice(t_max)]
+
+        # Bins before the black hole's log begins are NaN. Don't store a leading run of them: reassembly
+        # places a chunk by its end time and length, and treats a missing bin exactly as a NaN one.
+        valid = np.flatnonzero(~np.isnan(chunk))
+        if len(valid) > 0:
+            chunk = chunk[valid[0]:]
+
+        return chunk,
 
 
 class BHAccHistogramMerged(PynbodyPropertyCalculation):
