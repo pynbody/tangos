@@ -479,7 +479,19 @@ What stage 3 found:
       live-calculation expressions as timestep-view columns (arguably the killer
       feature), the merger-tree viewer, and the entire URL API in
       `tangos/web/routes.py` — `.../{x}/vs/{y}.csv`,
-      `.../gather/{typetag}/{name}.json`, `cascade_plot`
+      `.../gather/{typetag}/{name}.json`, `cascade_plot`. Before starting on this,
+      propose how screenshots
+      or simple movies can be generated automatically.
+      Make sure screenshots/movies focus on the right bit of the page - a zoomed out view
+      of the whole page will be too hard for a user to follow. The actions to cover will be:
+      browsing the simulations, opening a timestep, opening a halo, 
+      scatter plotting a population (e.g. mass vs virial velocity in tutorial_gadget), 
+      plotting a mass accretion history (use tutorial_gadget),
+      showing a merger tree (also tutorial_gadget), navigating back and forth through time.
+      Adding a calculation, returning to the timestep view and seeing it is now a column, editing the
+      calculation so that it's a bool (e.g. mass<1e12), using it as a filter. Going back to the
+      simulations, opening tutorial_changa_bh, showing that the calculation can involve a link
+      e.g. BH_central.mass (check this is actually a valid example).
 - [ ] The four supported code × finder combinations with no page at all:
       Gadget-4+SubFind, Gadget-4+HBT+, Ramses+AdaptaHOP, Enzo+Rockstar-via-yt. Two are
       built by `build.sh` on every PR.
