@@ -1,4 +1,4 @@
-.. Checked by AP 10/09/2026
+.. Checked by AP 28/10/2026
 
 .. _time_series:
 
@@ -7,13 +7,9 @@ Time series and populations
 
 The :ref:`quickstart` reached a single object at a single timestep and read a
 few of its properties. Almost every real question moves along one of two axes
-from there: *one object across many timesteps* -- a merger history -- or *many
-objects at one timestep* -- a population. tangos has a method for each, and
-they take exactly the same kind of calculation, so anything you learn about one
-transfers to the other.
-
-Both of them are still single database queries against an existing tangos
-database. Nothing here opens a simulation file.
+from there: *one object across many timesteps* (a merger history) or *many
+objects at one timestep* (a population). tangos has a method for each; and for
+some problems, you can combine them to follow a population through time.
 
 .. note:: Before you start, make sure tangos is installed and
  can find the tutorial database;
@@ -36,7 +32,7 @@ Following the major progenitor branch
 Most examples on this page use ``tutorial_gadget``, a SubFind catalogue with a
 merger tree. It has eleven snapshots to the ChaNGa run's five, so its histories
 are longer. Two things differ from the quick-start: SubFind's mass is the
-stored property ``mass`` rather than ``Mvir``, and each timestep holds SubFind's
+SubFind-provided property ``mass`` rather than ``Mvir``, and each timestep holds SubFind's
 groups as well as its halos. Pick a halo in the final snapshot:
 
 .. ipython::
@@ -55,7 +51,15 @@ along the way, returning one numpy array per requested quantity:
 
  In [2]: time
 
-The arrays run backwards in time, starting with the halo you asked about.
+If the lambdas in this expression take you by surprise, read about them in the
+:ref:`quickstart`. ``mass`` is a stored property: SubFind computed it, and it was
+imported into the database along with the catalogue. ``t()``, with brackets, is
+a live property, computed as the query runs -- here by reading the time of the
+:class:`~tangos.core.timestep.TimeStep` each halo belongs to, so it gives the
+time at which each entry in the array was measured. ``z()`` and ``a()`` give
+the redshift and scalefactor in the same way.
+
+The returned arrays run backwards in time, starting with the halo you asked about.
 Here they are nine entries long although the simulation has eleven snapshots,
 because the branch simply runs out: before ``snapshot_012`` this halo has no
 progenitor in the tree at all.
@@ -64,15 +68,7 @@ progenitor in the tree at all.
 
  In [1]: halo.earliest
 
-The two names in those lambdas are the two kinds the :ref:`quickstart`
-introduced. ``mass`` is a stored property: SubFind computed it, and it was
-imported into the database along with the catalogue. ``t()``, with brackets, is
-a live property, computed as the query runs -- here by reading the time of the
-:class:`~tangos.core.timestep.TimeStep` each halo belongs to, so it gives the
-time at which each entry in the array was measured. ``z()`` and ``a()`` give
-the redshift and scalefactor in the same way.
-
-That is enough for a merger history:
+We already have enough for a mass accretion history:
 
 .. ipython::
 
@@ -86,11 +82,12 @@ That is enough for a merger history:
     ...: p.semilogy()
     ...: p.tight_layout()
 
-Each marker is one snapshot; a sharp rise between two of them is where the
-halo absorbed something substantial.
+Each marker is one snapshot. In this small sample simulation, the snapshots
+are quite coarsely spaced in time; a real simulation would likely have many
+more.
 
-"Major progenitor" here means exactly what :ref:`concepts` says it means:
-there is no flag in the database marking one progenitor as the important one.
+The mass accretion is calculated for the "major progenitor", as defined in :ref:`concepts`.
+In particular, there is no flag in the database marking one progenitor as major.
 At each step :meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors`
 takes the incoming link of largest
 weight -- the progenitor that contributed the most particles -- and continues
@@ -112,8 +109,9 @@ reaches it in a snapshot you name instead:
 
  In [2]: halo.calculate(lambda: match('tutorial_gadget/snapshot_013').mass) # <- the same
 
-Both these approaches follow the heaviest link at each step. That is not always the
-right choice; ``match_reduce(target, quantity, reduction)`` reaches every
+Both these approaches follow the heaviest link at each step, conforming to the
+above definition of major progenitor. But that is not always
+what you want; ``match_reduce(target, quantity, reduction)`` reaches every
 progenitor at a given timestep at once and reduces over them, so you can ask
 for the total mass of all progenitors, or the mass of the most massive:
 
@@ -129,16 +127,7 @@ of the mass already assembled, and, more surprisingly, it is not the most
 massive of the four. This emphasises that the major branch follows the heaviest *link*
 progressively through each timestep, meaning at each step it finds the progenitor sharing
 the most particles. That is not necessarily the most massive *halo*, especially when you
-go far back in the history.
-
-More advanced historical information can be obtained using the
-:class:`tangos.relation_finding.tree.MergerTree` class.
-
-.. versionadded:: 1.13.0
-
-  The public API for merger trees is new in version 1.13.0. Previously these
-  trees were available in the web interface but not for python querying.
-
+go far back in the history. This isn't a bug; it's the nature of merger trees.
 
 You can construct and inspect the merger tree as follows:
 
@@ -157,8 +146,14 @@ The :meth:`~tangos.relation_finding.tree.MergerTree.plot` method shows us an
 abstract representation of the tree, with the halo number at
 each timestep labelled.
 
+.. versionadded:: 1.13.0
+
+  The public API for merger trees is new in version 1.13.0. Previously these
+  trees were available in the web interface but not for python querying.
+
+
 To calculate an expression such as mass at each timestep, we can use
-the :meth:`tangos.relation_finding.tree.MergerTree.calculate_all` method.
+the tree's :meth:`~tangos.relation_finding.tree.MergerTree.calculate_all` method.
 This takes the same kinds of calculation arguments as
 :meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors`
 and evaluates them for every halo in the tree. To assign those results to
@@ -257,7 +252,7 @@ options.
 Many objects at one timestep
 ----------------------------
 
-The other axis is a whole population at a fixed time. Timesteps, like trees,
+Suppose you want to know about a whole population at a fixed time. Timesteps, like trees,
 also have a :meth:`~tangos.core.timestep.TimeStep.calculate_all` method,
 but they now evaluate expressions for every object in a timestep:
 
@@ -265,13 +260,7 @@ but they now evaluate expressions for every object in a timestep:
 
  In [1]: timestep = tangos.get_timestep("tutorial_gadget/snapshot_019")
 
- In [2]: timestep.halos.count(), timestep.groups.count()
-
- In [3]: M, vmax = timestep.calculate_all(lambda: mass, lambda: VMax)
-
- In [4]: len(M)
-
-.. ipython::
+ In [2]: M, vmax = timestep.calculate_all(lambda: mass, lambda: VMax)
 
  In [1]: p.figure()
 
@@ -294,20 +283,6 @@ This has the side-effect in this case that the groups are ignored in the example
 since they carry no ``VMax``. But, more generally, there is also an ``object_type``
 keyword that can restrict the query to a particular kind of object. See
 :meth:`~tangos.core.timestep.TimeStep.calculate_all` for more information.
-
-A calculation that *fails* is different from one that is merely ``False``. A
-comparison such as ``mass > 1e12`` (above :math:`10^{12} M_\odot`) is
-``False`` for the smaller halos, which is
-a value, so those halos are kept -- which makes a comparison useful as a mask.
-Here ``object_type='halo'`` leaves out the groups, which also carry a ``mass``:
-
-.. ipython::
-
- In [1]: M, is_big = timestep.calculate_all(lambda: mass, lambda: mass > 1e12, object_type='halo')
-
- In [2]: len(M), is_big.sum()
-
- In [3]: M_big = M[is_big]
 
 Reaching across time from within a population
 ---------------------------------------------
