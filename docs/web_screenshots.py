@@ -111,13 +111,13 @@ class _Page:
         self.page.locator(f"#type-{kind}").check()
         self.settle(wait_ms)
 
-    def clip(self, *locators, max_height=None, max_width=None):
+    def clip(self, *locators, max_height=None, max_width=None, pad_bottom=True):
         """The rectangle around the given elements, padded, and optionally cut short."""
         boxes = [locator.bounding_box() for locator in locators]
         left = min(b["x"] for b in boxes) - PADDING
         top = min(b["y"] for b in boxes) - PADDING
         right = max(b["x"] + b["width"] for b in boxes) + PADDING
-        bottom = max(b["y"] + b["height"] for b in boxes) + PADDING
+        bottom = max(b["y"] + b["height"] for b in boxes) + (PADDING if pad_bottom else 0)
         if max_height is not None:
             bottom = min(bottom, top + max_height)
         if max_width is not None:
@@ -137,16 +137,6 @@ class _Page:
 
 def _browse(browser, output_dir):
     p = _Page(browser, output_dir)
-    p.goto("/")
-    # the heading is left out because it shows the host name of the machine
-    # building the documentation; the table runs on with one column for every
-    # simulation property, so only its first few are kept
-    table = p.page.locator("table.sortable")
-    third_column = p.page.locator("table.sortable th").nth(2).bounding_box()
-    p.shot("web_simulations.png", table,
-           max_width=third_column["x"] + third_column["width"] - table.bounding_box()["x"]
-                     + 2 * PADDING)
-
     p.goto("/tutorial_gadget")
     p.shot("web_simulation.png", p.page.locator("table.sortable"), max_height=330)
 
@@ -163,10 +153,13 @@ def _halo(browser, output_dir):
     p.goto("/tutorial_gadget/snapshot_020/halo_1")
     title, navigation = p.page.locator("#halo-title"), p.page.locator("#navigation")
     properties = p.page.locator("#properties-area")
-    p.shot("web_halo.png", title, navigation, properties, max_height=600, max_width=800)
+    # the plots panel sits to the right of the navigation box; stop short of it
+    left_column = p.page.locator("#imgbox_container").bounding_box()["x"] - PADDING
+    width = left_column - title.bounding_box()["x"]
+    p.shot("web_halo.png", title, navigation, properties, max_height=600, max_width=width)
 
     # stepping back through time, one snapshot per frame
-    clip = p.clip(title, navigation, properties, max_height=460, max_width=800)
+    clip = p.clip(title, navigation, properties, max_height=460, max_width=width)
     frames = []
     for step in range(4):
         if step > 0:
@@ -188,6 +181,9 @@ def _halo(browser, output_dir):
     form, plot = p.page.locator("#image_form"), p.page.locator("#imgbox img")
     p.plot("mass", "VMax", "gather", logx=True, logy=True)
     p.shot("web_population_plot.png", form, plot)
+    p.shot_clip("web_plot_controls.png",
+                p.clip(p.page.locator("#properties-area h2"), p.property_row("t()"),
+                       p.property_row("VMax"), pad_bottom=False))
     p.plot("t()", "mass", "cascade", logy=True)
     p.shot("web_mass_history.png", form, plot)
     p.close()

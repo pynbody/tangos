@@ -632,7 +632,14 @@ What 4b found:
       Chromium's system libraries**: `.readthedocs.yaml` lists them as
       `apt_packages` and installs the headless shell in `pre_build`; check the PR's
       RTD build before relying on it, and if RTD cannot run Chromium, fall back to
-      committing the images that `python docs/web_screenshots.py <dir>` produces
+      committing the images that `python docs/web_screenshots.py <dir>` produces.
+      A cold read of the page and its images led to: a close-up of the plot
+      controls with *x* and *y* chosen (the plot panel was out of every shot),
+      the halo crops stopping short of that panel, the front page described in
+      words (its table, dominated by ChaNGa's compile-time macros, made a poor
+      image), the merger-tree note moved before the figure with the way round it,
+      saying that filters and sorting act on the whole timestep, and the URL
+      notes (row order, `<object>`, reaching a remote server)
 - [x] The four supported code × finder combinations with no page at all:
       Gadget-4+SubFind, Gadget-4+HBT+, Ramses+AdaptaHOP, Enzo+Rockstar-via-yt. Two are
       built by `build.sh` on every PR.

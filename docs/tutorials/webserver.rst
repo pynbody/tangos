@@ -56,15 +56,13 @@ Finding your way around
 
 The front page lists every simulation in the database, with the properties
 stored for each -- for the ChaNGa runs, the parameters they were run with. Click
-a name to open the simulation:
-
-.. image:: /_web_screenshots/web_simulations.png
-   :alt: The list of simulations, with each one's stored properties
-   :width: 100%
+a name to open the simulation. From any page, the trail of links at the top leads
+back up to the timestep, the simulation, and the front page.
 
 A simulation's page lists its timesteps, with the redshift and time of each, and
-the number of objects in it -- halos and groups together, which is why
-``tutorial_gadget``'s last snapshot shows 1996 (1041 halos and 955 groups).
+the number of objects in it. Despite the column's name, ``n_halos``, that counts
+halos and groups together, which is why ``tutorial_gadget``'s last snapshot shows
+1996 (1041 halos and 955 groups).
 
 .. image:: /_web_screenshots/web_simulation.png
    :alt: The timesteps of tutorial_gadget
@@ -94,9 +92,9 @@ Moving through time
 steps to its major progenitor at the previous snapshot, ``+1`` to its descendant
 at the next, ``-10`` and ``+10`` ten at a time, and ``earliest`` and ``latest``
 to the ends of its history. The page changes in place, so you can watch a halo's
-properties change as you step. Here are three steps back from the final
-snapshot; the halo's number changes as it goes, from 1 to 2 and then 5, because
-halos are numbered by size within each snapshot:
+properties change as you step. Here is ``-1`` clicked three times, from the
+final snapshot; the halo is number 1, then 2 at the next two snapshots, then 5,
+because halos are numbered by size within each snapshot:
 
 .. image:: /_web_screenshots/web_time_navigation.png
    :alt: Stepping back three snapshots from halo 1 of snapshot_020
@@ -105,20 +103,29 @@ halos are numbered by size within each snapshot:
 *Look at another halo* moves to the neighbouring halo numbers, and *Find in
 another simulation* jumps to the matching object in another simulation, if the
 two have been linked (see :doc:`/tutorials/crossmatching`). *Raw links to other
-objects* lists every link the object has, for following one by hand.
+objects* lists every link from the object, strongest first, for following one by
+hand.
 
 Plotting
 --------
 
-The plots on an object's page are built from the circles beside each property.
+The plots on an object's page, to the right of its properties, are built from
+the circles beside each property, which the axes icon marks as plot controls.
 For a property with a single value, the left circle chooses it for the *x* axis
-and the right one for the *y* axis; an array, such as a density profile, has one
-circle, which plots the array itself. Then choose *This halo* or *This timestep*
-above the plot.
+and the right one for the *y* axis; here, ``mass`` for *x* and ``VMax`` for *y*:
+
+.. image:: /_web_screenshots/web_plot_controls.png
+   :alt: The property list, with mass chosen for the x axis and VMax for the y axis
+   :width: 60%
+
+An array has a single circle, which plots the array on its own -- a density
+profile against radius, for instance (``dm_density_profile``, further down the
+list). Then choose *This halo* or *This timestep* above the plot, and tick *log
+x* and *log y* for logarithmic axes.
 
 *This timestep* plots one point for every object in the timestep -- here
 ``VMax`` against ``mass`` for the halos of ``tutorial_gadget``, with both
-axes logarithmic:
+axes ticked as logarithmic:
 
 .. image:: /_web_screenshots/web_population_plot.png
    :alt: VMax against mass for every halo in snapshot_020
@@ -126,8 +133,8 @@ axes logarithmic:
 
 *This halo* follows the object back through its major progenitors instead, as
 :meth:`~tangos.core.halo.SimulationObjectBase.calculate_for_progenitors` does
-in python. With ``t()`` on the *x* axis and ``mass`` on the *y* axis, that is
-the halo's mass growth:
+in python. With ``t()`` on the *x* axis and ``mass`` on the *y* axis, and only
+*log y* ticked, that is the halo's mass growth:
 
 .. image:: /_web_screenshots/web_mass_history.png
    :alt: The mass of halo 1 along its major progenitor branch, against time
@@ -138,22 +145,27 @@ the halo's mass growth:
 The merger tree
 ^^^^^^^^^^^^^^^
 
+.. note::
+
+   For ``tutorial_gadget``, the tree currently fails to draw, with "Sorry, there
+   was an error generating the tree" -- as it does for any simulation whose halos
+   have no ``Mvir`` property, which SubFind's catalogues do not provide. Choose
+   ``tutorial_gadget_rockstar`` -- the same simulation, with Rockstar's halos -- in
+   *Find in another simulation* to see a tree.
+
 *Merger tree* draws the object's merger tree. The selected object, outlined, is
 on the left, and its progenitors run back in time to the right, one column per
 snapshot; each circle is labelled with the halo's number at that snapshot, and
 grows with its number of particles. Hover over a halo for its details, and click
-it to open its page. This is the tree of ``tutorial_gadget_rockstar``'s largest
-halo:
+it to open its page. A dashed line leads to a *phantom*: a placeholder that
+Rockstar's merger trees insert where the halo finder lost track of a halo for a
+snapshot. This is the tree of ``tutorial_gadget_rockstar``'s largest halo:
 
 .. image:: /_web_screenshots/web_merger_tree.png
    :alt: The merger tree of halo 1 of tutorial_gadget_rockstar
    :width: 100%
 
-.. note::
-
-   For a simulation in which some objects have no ``Mvir`` property, such as
-   ``tutorial_gadget``, the tree currently fails to draw, with "Sorry, there was
-   an error generating the tree".
+*Download Merger Tree* saves the drawing as an SVG file.
 
 .. The merger tree failure is a stage 6 item in KNOWN_ISSUES.md: once fixed, take
    this screenshot from tutorial_gadget, as the stage 4 plan asked, and remove the
@@ -166,14 +178,14 @@ The heading ``Add +`` at the top of each table on a timestep page takes a live
 calculation. Click it, type a property name or any calculation you could give
 :meth:`~tangos.core.timestep.TimeStep.calculate_all` (see
 :ref:`calculating`), and press Enter: the calculation becomes a column, evaluated
-for every object on the page. Here are ``mass`` and ``VMax``:
+for every object in the timestep. Here are ``mass`` and ``VMax``:
 
 .. image:: /_web_screenshots/web_columns.png
    :alt: The halos table with columns for mass and VMax
    :width: 60%
 
-The arrows under each heading sort the table by that column, and the cross
-removes it. Click a heading to edit its calculation. Columns stay in place as you
+The arrows under each heading sort the whole table by that column, across all its
+pages, and the cross removes it. Click a heading to edit its calculation. Columns stay in place as you
 move between timesteps, so you can step through time and watch them change.
 
 As you type, the interface suggests names to complete. If a suggestion is
@@ -187,9 +199,9 @@ A calculation that gives ``True`` or ``False`` becomes a filter. Here is
    :alt: A column of True and False for VMax<300
    :width: 60%
 
-Clicking the funnel beneath its heading hides every row for which it is
-``False``. The table then lists the 954 halos, out of 1041, with ``VMax`` below
-300 km/s:
+Clicking the filter icon beneath its heading -- a funnel, drawn in outline until
+it is switched on -- hides every row, on every page, for which it is ``False``.
+The table then lists the 954 halos, out of 1041, with ``VMax`` below 300 km/s:
 
 .. image:: /_web_screenshots/web_filtered.png
    :alt: The halos table filtered to those with VMax<300
@@ -211,8 +223,10 @@ Fetching data from a script
 
 Every plot and table in the interface is drawn from data that the server also
 returns at its own URL, so a script can fetch numbers from a running server
-without opening the database itself -- useful when the database is on another
-machine. The URLs follow the paths of the pages:
+without opening the database itself. The server listens only on your own
+machine; to reach one running elsewhere, forward its port with ssh first, as
+in :ref:`ssh_tunnel` (with ``6543`` in place of ``3306``). The URLs follow the
+paths of the pages:
 
 .. list-table::
    :header-rows: 1
@@ -229,15 +243,21 @@ machine. The URLs follow the paths of the pages:
    * - ``/<simulation>/<timestep>/<object>/<name>.json``
      - one value of one object
    * - ``/<simulation>/<timestep>/gather/<type>/<name>.json``
-     - one value for every object of a type, formatted as text for display
+     - one value for every object of a type, as the strings the table displays
+       (rounded for display, so prefer the CSV for numbers)
    * - ``/<simulation>/<timestep>/<object>/merger/tree.json``
      - the merger tree that the interface draws
 
-Replace ``.csv`` with ``.png``, ``.svg`` or ``.pdf`` to get the plot itself. The
-CSV of a whole timestep takes two optional query parameters: ``object_typetag``,
-to choose a type of object, and ``filter``, a calculation that must be ``True``.
-Names and calculations in a URL must be URL-encoded, with any ``/`` written as
-``_slash_``, and a ``%`` in a timestep pattern as ``%25``.
+Here ``<object>`` is written as in the page's own address, such as ``halo_1``,
+and ``<type>`` is ``halo``, ``group``, ``BH`` or ``tracker``. Replace ``.csv``
+with ``.png``, ``.svg`` or ``.pdf`` to get the plot itself. The CSV of a whole
+timestep takes two optional query parameters: ``object_typetag``, to choose one
+type of object (without it, every object that has both values is included), and
+``filter``, a calculation that must be ``True``. Its rows are not in order of
+object number; to know which row is which object, ask for ``halo_number()`` as
+one of the two values. Names and calculations in a URL must be URL-encoded,
+with any ``/`` written as ``_slash_``. A timestep can be given by a pattern, as
+in python (``%960``), with the ``%`` written as ``%25``.
 
 From python, the CSV is the most useful. With ``tangos serve`` running against
 the tutorial database:
@@ -256,7 +276,7 @@ the tutorial database:
 
  In [5]: len(data), data["mass"][:3], data["VMax"][:3]
 
-The same 954 halos as the filtered table above.
+The same 954 halos as the filtered table above, though in a different order.
 
 .. seealso::
 
