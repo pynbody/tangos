@@ -4,7 +4,8 @@ docs/conf.py calls :func:`start_server` and :func:`capture` when the build start
 and :func:`stop_server` when it finishes. The server runs ``tangos serve`` against
 the tutorial database on its usual port, so ``tutorials/webserver`` can also fetch
 data from it in its ``.. ipython::`` blocks. Each image is cropped to the part of
-the page it is about; the one animation is assembled frame by frame with Pillow.
+the page it is about; the one animation is assembled frame by frame with Pillow,
+with each click marked by a circle where it lands.
 
 To run it on its own, with the tutorial database in place::
 
@@ -14,6 +15,7 @@ It needs playwright and a browser for it: ``pip install -e .[docs]`` and then
 ``python -m playwright install chromium``.
 """
 
+import io
 import os
 import subprocess
 import sys
@@ -135,6 +137,55 @@ class _Page:
         return path
 
 
+class _Movie:
+    """An animated PNG of a cropped region, built frame by frame.
+
+    Each click is shown, before it happens, by a frame with a circle at the point
+    clicked, so that a reader can follow what was done between frames."""
+
+    FRAME_MS = 1800
+    CLICK_MS = 700
+    CLICK_RADIUS = 14             # CSS pixels
+    CLICK_COLOUR = (0, 120, 255)  # a blue that stands out from the interface's orange
+
+    def __init__(self, page, clip):
+        self._page = page
+        self._clip = clip
+        self._frames = []
+        self._durations = []
+
+    def _grab(self):
+        from PIL import Image
+        png = self._page.page.screenshot(clip=self._clip, full_page=True)
+        return Image.open(io.BytesIO(png)).convert("RGBA")
+
+    def frame(self, duration_ms=FRAME_MS):
+        self._frames.append(self._grab())
+        self._durations.append(duration_ms)
+
+    def click(self, locator, settle_ms=1000):
+        """Add a frame marking where locator is about to be clicked, then click it."""
+        from PIL import Image, ImageDraw
+        box = locator.bounding_box()
+        page_x, page_y = self._page.page.evaluate("() => [window.scrollX, window.scrollY]")
+        x = (box["x"] + page_x + box["width"] / 2 - self._clip["x"]) * SCALE
+        y = (box["y"] + page_y + box["height"] / 2 - self._clip["y"]) * SCALE
+        r = self.CLICK_RADIUS * SCALE
+        image = self._grab()
+        overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        draw.ellipse((x - r, y - r, x + r, y + r), fill=self.CLICK_COLOUR + (70,),
+                     outline=self.CLICK_COLOUR + (255,), width=2 * SCALE)
+        self._frames.append(Image.alpha_composite(image, overlay))
+        self._durations.append(self.CLICK_MS)
+        locator.click()
+        self._page.settle(settle_ms)
+
+    def save(self, name):
+        self._frames[0].save(os.path.join(self._page.output_dir, name), save_all=True,
+                             append_images=self._frames[1:], duration=self._durations, loop=0)
+
+
 def _browse(browser, output_dir):
     p = _Page(browser, output_dir)
     p.goto("/tutorial_gadget")
@@ -147,8 +198,6 @@ def _browse(browser, output_dir):
 
 
 def _halo(browser, output_dir):
-    from PIL import Image
-
     p = _Page(browser, output_dir)
     p.goto("/tutorial_gadget/snapshot_020/halo_1")
     title, navigation = p.page.locator("#halo-title"), p.page.locator("#navigation")
@@ -159,19 +208,12 @@ def _halo(browser, output_dir):
     p.shot("web_halo.png", title, navigation, properties, max_height=600, max_width=width)
 
     # stepping back through time, one snapshot per frame
-    clip = p.clip(title, navigation, properties, max_height=460, max_width=width)
-    frames = []
-    for step in range(4):
-        if step > 0:
-            p.page.locator("#navigation a:text-is('-1')").click()
-            p.settle(2500)
-        path = os.path.join(output_dir, f"_frame_{step}.png")
-        p.page.screenshot(path=path, clip=clip, full_page=True)
-        frames.append(Image.open(path))
-    frames[0].save(os.path.join(output_dir, "web_time_navigation.png"), save_all=True,
-                   append_images=frames[1:], duration=1800, loop=0)
-    for step in range(4):
-        os.remove(os.path.join(output_dir, f"_frame_{step}.png"))
+    movie = _Movie(p, p.clip(title, navigation, properties, max_height=460, max_width=width))
+    movie.frame()
+    for step in range(3):
+        movie.click(p.page.locator("#navigation a:text-is('-1')"), settle_ms=2500)
+        movie.frame()
+    movie.save("web_time_navigation.png")
     p.close()
 
     # plots are drawn to fit the window, so a shorter one gives them a

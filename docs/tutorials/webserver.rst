@@ -5,7 +5,8 @@
    "Starting the server" is unchanged; everything after it is new. The screenshots
    are taken during the build by docs/web_screenshots.py, and the URL examples run
    against the server it starts. The merger tree is tutorial_gadget's since the
-   fix to tangos/web/views/merger_tree.py in the same PR. Not yet checked by a human.
+   fix to tangos/web/views/merger_tree.py in the same PR, and the animation marks
+   each click. Not yet checked by a human.
 
 .. _webserver:
 
@@ -94,8 +95,9 @@ steps to its major progenitor at the previous snapshot, ``+1`` to its descendant
 at the next, ``-10`` and ``+10`` ten at a time, and ``earliest`` and ``latest``
 to the ends of its history. The page changes in place, so you can watch a halo's
 properties change as you step. Here is ``-1`` clicked three times, from the
-final snapshot; the halo is number 1, then 2 at the next two snapshots, then 5,
-because halos are numbered by size within each snapshot:
+final snapshot, with a blue circle marking each click; the halo is number 1, then
+2 at the next two snapshots, then 5, because halos are numbered by size within
+each snapshot:
 
 .. image:: /_web_screenshots/web_time_navigation.png
    :alt: Stepping back three snapshots from halo 1 of snapshot_020

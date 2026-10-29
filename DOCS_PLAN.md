@@ -621,7 +621,10 @@ What 4b found:
       (playwright and Chromium against a `tangos serve` that `conf.py` starts in
       `builder-inited` and stops in `build-finished`). Each is cropped to the
       element it is about; stepping back through time is an animated PNG assembled
-      from cropped frames with Pillow, which needs no video tools. Every action the
+      from cropped frames with Pillow, which needs no video tools. At AP's
+      request, a movie marks each click with a frame showing a circle where it
+      lands (`_Movie.click` in `docs/web_screenshots.py`); any later movie should
+      do the same. Every action the
       brief lists is covered, with two changes: the boolean column is `VMax<300`,
       because typing `mass<1e12` trips the autocompletion (stage 6 item in
       `KNOWN_ISSUES.md`); and the
