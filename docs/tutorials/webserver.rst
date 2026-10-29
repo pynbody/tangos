@@ -4,7 +4,8 @@
 .. Stage 4.5 (Claude, 2026-10-29): grown from a stub into a tour of the interface.
    "Starting the server" is unchanged; everything after it is new. The screenshots
    are taken during the build by docs/web_screenshots.py, and the URL examples run
-   against the server it starts. Not yet checked by a human.
+   against the server it starts. The merger tree is tutorial_gadget's since the
+   fix to tangos/web/views/merger_tree.py in the same PR. Not yet checked by a human.
 
 .. _webserver:
 
@@ -145,31 +146,19 @@ in python. With ``t()`` on the *x* axis and ``mass`` on the *y* axis, and only
 The merger tree
 ^^^^^^^^^^^^^^^
 
-.. note::
-
-   For ``tutorial_gadget``, the tree currently fails to draw, with "Sorry, there
-   was an error generating the tree" -- as it does for any simulation whose halos
-   have no ``Mvir`` property, which SubFind's catalogues do not provide. Choose
-   ``tutorial_gadget_rockstar`` -- the same simulation, with Rockstar's halos -- in
-   *Find in another simulation* to see a tree.
-
 *Merger tree* draws the object's merger tree. The selected object, outlined, is
 on the left, and its progenitors run back in time to the right, one column per
 snapshot; each circle is labelled with the halo's number at that snapshot, and
 grows with its number of particles. Hover over a halo for its details, and click
-it to open its page. A dashed line leads to a *phantom*: a placeholder that
-Rockstar's merger trees insert where the halo finder lost track of a halo for a
-snapshot. This is the tree of ``tutorial_gadget_rockstar``'s largest halo:
+it to open its page. This is the tree of halo 1 of ``tutorial_gadget``:
 
 .. image:: /_web_screenshots/web_merger_tree.png
-   :alt: The merger tree of halo 1 of tutorial_gadget_rockstar
-   :width: 100%
+   :alt: The merger tree of halo 1 of snapshot_020 in tutorial_gadget
+   :width: 70%
 
+Some halo finders' merger trees, such as Rockstar's, insert a *phantom* where the
+finder lost track of a halo for a snapshot; the tree draws a dashed line to it.
 *Download Merger Tree* saves the drawing as an SVG file.
-
-.. The merger tree failure is a stage 6 item in KNOWN_ISSUES.md: once fixed, take
-   this screenshot from tutorial_gadget, as the stage 4 plan asked, and remove the
-   note above.
 
 Calculations as columns
 -----------------------

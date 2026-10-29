@@ -47,7 +47,7 @@ class WebMergerTreeLayout(tree.MergerTreeLayout):
             moreinfo = "%s %d" % (obj.__class__.__name__, obj.halo_number)
 
         Mvir = self._property_values.get("Mvir", None)
-        if Mvir is not None and Mvir[node.index] == Mvir[node.index]: # i.e. not NaN
+        if Mvir is not None and Mvir[node.index] is not None and Mvir[node.index] == Mvir[node.index]: # i.e. not None or NaN
             moreinfo += ", {}={:.2e}".format("Mvir", Mvir[node.index])
 
         nodeclass = 'node-dot-standard'

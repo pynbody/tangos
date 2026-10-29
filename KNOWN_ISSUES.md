@@ -415,22 +415,15 @@ closed without a fix say why.
       path deserves a look before anyone relies on the fixture for halo-level
       tests. Found in stage 4b.
       **Owner: stage 6.**
-- [ ] The web interface's merger tree fails for any simulation in which some
-      object on the tree has no `Mvir`, showing "Sorry, there was an error
-      generating the tree". `WebMergerTreeLayout.node_dict`
-      (`tangos/web/views/merger_tree.py:50`) guards the tooltip's `Mvir` against
-      NaN with `x == x`, but not against `None`, and then formats it with
-      `{:.2e}`: `TypeError: unsupported format string passed to
-      NoneType.__format__`. Every Gadget+SubFind simulation is affected, since
-      SubFind's catalogues give `mass` rather than `Mvir` -- including
-      `tutorial_gadget`, whose tree the stage 4 plan asked the web tutorial to
-      show (`tutorial_gadget_rockstar` and the ChaNGa runs draw fine). Fix:
-      `if Mvir is not None and Mvir[node.index] is not None and ...`. Found in
-      stage 4.5.
-      **Owner: stage 6.** `tutorials/webserver` depends on it: it shows the tree of
-      `tutorial_gadget_rockstar` and notes the failure; once fixed, take the
-      screenshot from `tutorial_gadget` (in `docs/web_screenshots.py`) and drop the
-      note.
+- [x] The web interface's merger tree failed for any simulation in which no
+      object on the tree has `Mvir`, showing "Sorry, there was an error
+      generating the tree": the values then come back as `None` rather than NaN,
+      and `WebMergerTreeLayout.node_dict`
+      (`tangos/web/views/merger_tree.py:50`) guarded only against NaN before
+      formatting with `{:.2e}`. Every Gadget+SubFind simulation was affected,
+      including `tutorial_gadget`. Found in stage 4.5, and **fixed in stage 4.5**
+      at AP's request, with `test_merger_tree_without_Mvir` in
+      `tests/test_web.py`; `tutorials/webserver` now shows `tutorial_gadget`'s tree.
 - [ ] In the web interface's column headings, typing a number with an exponent
       and pressing Enter can replace part of it with an autocompletion
       suggestion: `mass<1e12` became `mass<1macros`. The autocompletion

@@ -188,8 +188,10 @@ def _halo(browser, output_dir):
     p.shot("web_mass_history.png", form, plot)
     p.close()
 
-    p = _Page(browser, output_dir)
-    p.goto("/tutorial_gadget_rockstar/snapshot_020/halo_1")
+    # the tree is drawn in a box sized to the window, which scrolls if the tree
+    # is taller; this window is tall enough for the whole tree
+    p = _Page(browser, output_dir, viewport={"width": 1200, "height": 1100})
+    p.goto("/tutorial_gadget/snapshot_020/halo_1")
     p.page.locator("#type-tree").check()
     p.settle(6000)
     # the tree's drawing area is larger than the tree, so crop to what is drawn

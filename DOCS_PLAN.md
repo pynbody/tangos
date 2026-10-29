@@ -622,12 +622,16 @@ What 4b found:
       `builder-inited` and stops in `build-finished`). Each is cropped to the
       element it is about; stepping back through time is an animated PNG assembled
       from cropped frames with Pillow, which needs no video tools. Every action the
-      brief lists is covered, with three changes: the merger tree is
-      `tutorial_gadget_rockstar`'s, because the tree fails for `tutorial_gadget`
-      (stage 6 item in `KNOWN_ISSUES.md`); the boolean column is `VMax<300`,
-      because typing `mass<1e12` trips the autocompletion (also stage 6); and the
+      brief lists is covered, with two changes: the boolean column is `VMax<300`,
+      because typing `mass<1e12` trips the autocompletion (stage 6 item in
+      `KNOWN_ISSUES.md`); and the
       link calculation is `BH_central.BH_mass` (checked as above). The URL API is a
       table plus an executed example that fetches CSV from the build's own server.
+      The merger tree failed for `tutorial_gadget`, as for any simulation with no
+      `Mvir` on the tree; at AP's request the one-line fix
+      (`tangos/web/views/merger_tree.py`, with a regression test in
+      `tests/test_web.py`) went into this PR rather than stage 6, so the tree shown
+      is `tutorial_gadget`'s, as the brief asked.
       The quick-start's closing seealso now points at the browser. **RTD needs
       Chromium's system libraries**: `.readthedocs.yaml` lists them as
       `apt_packages` and installs the headless shell in `pre_build`; check the PR's

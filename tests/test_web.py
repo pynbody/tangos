@@ -189,3 +189,11 @@ def test_ordering_as_expected():
     result = json.loads(response.body.decode('utf-8'))
     assert result['timestep'] == 'ts4'
     assert result['data_formatted'] == ["2.00", "3.00", "1.00"]
+
+def test_merger_tree_without_Mvir():
+    # Mvir is in the database, but no object on this tree has it
+    tangos.get_item("sim/ts4/2")['Mvir'] = 1e12
+    tangos.get_default_session().commit()
+    tree = app.get("/sim/ts3/1/merger/tree.json").json['tree']
+    assert tree['moreinfo'] == "Halo 1, NDM=9.00e+02"
+    assert len(tree['contents']) == 1
