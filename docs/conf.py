@@ -264,7 +264,7 @@ _check_tutorial_database()
 version = ".".join(tangos.__version__.split(".")[:2])
 release = tangos.__version__
 
-exclude_patterns = ['_build', '**.ipynb_checkpoints']
+exclude_patterns = ['_build', '_web_screenshots', '**.ipynb_checkpoints']
 
 pygments_style = 'sphinx'
 
@@ -346,5 +346,30 @@ def _write_unquoted_redirect_stubs(app, exception):
             literal.write_text(quoted.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+# tutorials/webserver shows the web interface in screenshots taken during the build
+# (see web_screenshots.py), and fetches data from it in its ipython blocks, so a
+# tangos server runs against the tutorial database for the whole build.
+def _start_web_server_and_capture(app):
+    import atexit
+
+    import web_screenshots
+    try:
+        import playwright  # noqa: F401
+    except ImportError as e:
+        raise RuntimeError("Building the docs takes screenshots of the web interface, which needs "
+                           "playwright: pip install -e .[docs], then "
+                           "python -m playwright install chromium") from e
+    web_screenshots.start_server()
+    atexit.register(web_screenshots.stop_server)
+    web_screenshots.capture(os.path.join(app.srcdir, "_web_screenshots"))
+
+
+def _stop_web_server(app, exception):
+    import web_screenshots
+    web_screenshots.stop_server()
+
+
 def setup(app):
+    app.connect("builder-inited", _start_web_server_and_capture)
+    app.connect("build-finished", _stop_web_server)
     app.connect("build-finished", _write_unquoted_redirect_stubs)

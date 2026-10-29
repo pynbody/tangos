@@ -415,6 +415,42 @@ closed without a fix say why.
       path deserves a look before anyone relies on the fixture for halo-level
       tests. Found in stage 4b.
       **Owner: stage 6.**
+- [ ] The web interface's merger tree fails for any simulation in which some
+      object on the tree has no `Mvir`, showing "Sorry, there was an error
+      generating the tree". `WebMergerTreeLayout.node_dict`
+      (`tangos/web/views/merger_tree.py:50`) guards the tooltip's `Mvir` against
+      NaN with `x == x`, but not against `None`, and then formats it with
+      `{:.2e}`: `TypeError: unsupported format string passed to
+      NoneType.__format__`. Every Gadget+SubFind simulation is affected, since
+      SubFind's catalogues give `mass` rather than `Mvir` -- including
+      `tutorial_gadget`, whose tree the stage 4 plan asked the web tutorial to
+      show (`tutorial_gadget_rockstar` and the ChaNGa runs draw fine). Fix:
+      `if Mvir is not None and Mvir[node.index] is not None and ...`. Found in
+      stage 4.5.
+      **Owner: stage 6.** `tutorials/webserver` depends on it: it shows the tree of
+      `tutorial_gadget_rockstar` and notes the failure; once fixed, take the
+      screenshot from `tutorial_gadget` (in `docs/web_screenshots.py`) and drop the
+      note.
+- [ ] In the web interface's column headings, typing a number with an exponent
+      and pressing Enter can replace part of it with an autocompletion
+      suggestion: `mass<1e12` became `mass<1macros`. The autocompletion
+      (`tangos/web/static/autocomplete.js`) treats the `e12` as the start of a
+      name, and with `autoFocus: true` the first suggestion is highlighted, so
+      Enter accepts it. `tutorials/webserver` tells readers to check the heading,
+      and uses `VMax<300`. Suggesting names only after a letter that does not
+      follow a digit would fix it. Found in stage 4.5.
+      **Owner: stage 6.**
+- [ ] `tangos serve --title` changes the breadcrumb trail but not the front page's
+      heading, which is always "tangos on <hostname>"
+      (`tangos/web/views/simulation_list.py:36` uses `socket.gethostname()`
+      directly). Found in stage 4.5, whose screenshot of the front page leaves the
+      heading out for this reason.
+      **Owner: stage 6.**
+- [ ] `/<simulation>/<timestep>/<x>/vs/<y>.csv?object_typetag=group` fails with
+      `list index out of range` when no group has the properties asked for (on
+      `tutorial_gadget`, `mass` against `VMax`), rather than returning an empty
+      table or a clear error. Found in stage 4.5.
+      **Owner: stage 6.**
 
 ## Misleading or wrong documentation
 

@@ -33,6 +33,7 @@ Build the docs with:
 
 ```
 pip install -e .[docs]
+python -m playwright install chromium
 python -c "import tangos.test_utils as tu; tu.precache_tutorial_database()"
 cd docs && python -m sphinx -W -b html . _build/html
 ```
@@ -46,6 +47,13 @@ Since stage 3, `docs/conf.py` refuses to build without it: it checks, read-only,
 the database exists and holds the five tutorial simulations. Before that, querying a
 database that does not exist silently created an empty one (see `KNOWN_ISSUES.md`),
 and the pages rendered with empty output while `-W` stayed green.
+
+**The build takes screenshots of the web interface** (since stage 4.5): it starts
+`tangos serve` on port 6543 against the tutorial database, drives it with
+playwright's Chromium (`docs/web_screenshots.py`), and keeps it running for the
+whole build, since `tutorials/webserver` fetches data from it too. Nothing else may
+be listening on 6543 while you build, and the playwright line above must have
+been run once.
 
 **Run `pre-commit run --all-files` before you push**, and commit anything it changes.
 The hooks run in CI and will fail the build otherwise. isort in particular reorders
@@ -583,7 +591,7 @@ What 4b found:
   properties `BH_mass` brings, the zero particle counts, units, and which log does
   what; crossmatching states the shared-particle-ID requirement first and shows
   the link weight; tracking uses the number `tracking.new` returns.
-- [ ] Web interface, currently a 21-line stub. Undocumented: arbitrary
+- [x] Web interface, currently a 21-line stub. Undocumented: arbitrary
       live-calculation expressions as timestep-view columns (arguably the killer
       feature), the merger-tree viewer, and the entire URL API in
       `tangos/web/routes.py` — `.../{x}/vs/{y}.csv`,
@@ -607,6 +615,24 @@ What 4b found:
       `VMax`, so the population scatter is `mass` against `VMax`. Also for this
       PR: a mention of the browser at the end of the quick-start (from stage 3's
       second read-through).
+
+      **Done in 4.5.** `tutorials/webserver` now tours the interface with twelve
+      images, all generated during the build by `docs/web_screenshots.py`
+      (playwright and Chromium against a `tangos serve` that `conf.py` starts in
+      `builder-inited` and stops in `build-finished`). Each is cropped to the
+      element it is about; stepping back through time is an animated PNG assembled
+      from cropped frames with Pillow, which needs no video tools. Every action the
+      brief lists is covered, with three changes: the merger tree is
+      `tutorial_gadget_rockstar`'s, because the tree fails for `tutorial_gadget`
+      (stage 6 item in `KNOWN_ISSUES.md`); the boolean column is `VMax<300`,
+      because typing `mass<1e12` trips the autocompletion (also stage 6); and the
+      link calculation is `BH_central.BH_mass` (checked as above). The URL API is a
+      table plus an executed example that fetches CSV from the build's own server.
+      The quick-start's closing seealso now points at the browser. **RTD needs
+      Chromium's system libraries**: `.readthedocs.yaml` lists them as
+      `apt_packages` and installs the headless shell in `pre_build`; check the PR's
+      RTD build before relying on it, and if RTD cannot run Chromium, fall back to
+      committing the images that `python docs/web_screenshots.py <dir>` produces
 - [x] The four supported code × finder combinations with no page at all:
       Gadget-4+SubFind, Gadget-4+HBT+, Ramses+AdaptaHOP, Enzo+Rockstar-via-yt. Two are
       built by `build.sh` on every PR.
