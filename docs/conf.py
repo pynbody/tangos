@@ -13,6 +13,10 @@ import sys
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
+# docs/examples holds example modules that pages include with literalinclude; the
+# tutorials also import some of them in their ipython blocks, as a reader would
+# import their own (see tests/test_docs_examples.py, which runs the rest).
+sys.path.insert(0, os.path.abspath('examples'))
 
 # Force the non-interactive Agg backend before anything else touches
 # matplotlib. IPython.sphinxext.ipython_directive normally does this itself
@@ -94,6 +98,13 @@ redirects = {
     "mpi": "how-to/parallel.html",
     "rdbms": "how-to/database_backends.html",
     "custom_input_handlers": "how-to/custom_handlers.html",
+    # Stage 4b: the "going further" pages become tutorials after first_database.
+    # black_holes_and_crossmatching splits in two; its URL goes to the first half.
+    # custom_properties.html keeps its page for now -- the reference half of it --
+    # so it gets no redirect until stage 5 moves that too.
+    "histogram_properties": "tutorials/histograms.html",
+    "black_holes_and_crossmatching": "tutorials/black_holes.html",
+    "tracking": "tutorials/tracking.html",
 }
 
 # ipython_savefig_dir is where `.. ipython::` @savefig figures land; ported

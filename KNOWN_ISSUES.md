@@ -368,6 +368,53 @@ closed without a fix say why.
       **Owner: stage 6.** `how-to/database_backends` depends on it: until it is
       fixed, it gives a SQL script that resets the sequences after an import,
       and should drop that warning once it is.
+- [ ] `tangos import-changa-bh` never links black holes through time, so no
+      black hole in the tutorial database, or in the CI reference database, has a
+      progenitor: `BH_mass` cannot be followed back, and a reassembled
+      `BH_mdot_histogram` covers only the last 0.5 Gyr. Two faults, one behind the
+      other. `_timelink_black_holes` (`tangos/tools/changa_bh_importer.py`) globs
+      for `*.BHmergers`, but the tutorial simulations' log is `.mergers` (as
+      `docs/reference/simulation_formats.rst` and the old black holes page both
+      say), so it logs `No merger file for tutorial_changa_blackholes` and
+      returns. With a symlink under the expected name (tried on the CI data),
+      linking then fails with `AttributeError: module 'numpy' has no attribute
+      'in1d'`: `np.in1d` is gone from current numpy (2.5.3 here), and is also used
+      by `tangos.tracking.generate_tracker_halo_links` and by the yt handler's
+      `match_objects` (`tangos/input_handlers/yt.py:103`), so linking with yt is
+      likely broken the same way. CI tests numpy 2.0 and 2.3.3 only, while
+      `setup.py` requires just `numpy >= 2.0`. Found in stage 4b.
+      **Owner: stage 6.** `tutorials/black_holes` depends on it: it warns that
+      black holes are not linked through time; once fixed, rebuild the tutorial
+      and CI reference databases and drop the warning.
+- [ ] Redefining a property class in a running session has no effect: tangos
+      goes on using the first class registered for a name. `providing_class` and
+      `all_providing_classes` (`tangos/properties/__init__.py`) are
+      `functools.lru_cache`d, and even after clearing those caches the earlier
+      class, still in `PropertyCalculation._all_classes`, is chosen. The
+      metaclass comment says reloaded classes overwrite their old versions; they
+      do not. So "edit your module and reload it", which the old custom
+      properties page advised, silently keeps the old code until python
+      restarts. `tutorials/custom_properties` now says to restart. Found in
+      stage 4b.
+      **Owner: stage 6.**
+- [ ] A property module that cannot be imported is skipped silently.
+      `_import_configured_property_modules` reports the failure as an
+      `ImportWarning`, which python hides by default, so a misspelled
+      `TANGOS_PROPERTY_MODULES` gives no message at all until a property is
+      reported unknown. Reproduced with `TANGOS_PROPERTY_MODULES=typo`.
+      `tutorials/custom_properties` warns about it. Found in stage 4b.
+      **Owner: stage 6.**
+- [ ] Halos of the `test_tipsy` test simulation cannot be loaded through
+      `tangos write`. After `tangos add test_tipsy`, halo 1 has `NDM=2041986`
+      (from the AHF stat file) in a snapshot of 3344 particles, and writing any
+      particle property fails for every halo with `KeyError: 'No such halo 1'`
+      from pynbody's halo catalogue -- although
+      `tests/test_simulation_outputs.py` loads the same halos directly. Its
+      trackers load fine, which is why `tests/test_docs_examples.py` writes the
+      custom property example for a tracker. Either the fixture or the loading
+      path deserves a look before anyone relies on the fixture for halo-level
+      tests. Found in stage 4b.
+      **Owner: stage 6.**
 
 ## Misleading or wrong documentation
 
@@ -405,7 +452,12 @@ closed without a fix say why.
       **Owner: stage 4.** The redirect for `mpi.html` lands with `how-to/parallel`
       (4a) and the one for `custom_properties.html` with the custom properties
       tutorial (4b). The URLs in the code can then stay as they are.
-      The `mpi.html` redirect landed in 4a.
+      The `mpi.html` redirect landed in 4a. In 4b, `custom_properties.html` kept
+      its URL: the tutorial half moved to `tutorials/custom_properties`, but the
+      reference half -- including the proxy material the `property_writer.py`
+      message is about -- stays at `custom_properties.md` until stage 5 moves it
+      to `reference/property_calculation_api`. **The `custom_properties.html`
+      redirect is now stage 5's**, as part of that move.
 - [x] `docs/custom_input_handlers.md:143` calls `.earlier` on the result of
       `get_halo(...)` (`tangos.get_halo("...").earlier.load()`). `earlier` is
       not an attribute of anything in the codebase; `.previous` is the
@@ -523,7 +575,7 @@ closed without a fix say why.
       are returned in one shot.
       **Closed in the stage 4 triage:** a design proposal rather than a defect.
       Raise it as a GitHub issue if it is still wanted.
-- [ ] **Replace all remaining `get_halo` references with `get_object`.** The
+- [x] **Replace all remaining `get_halo` references with `get_object`.** The
       project prefers `get_object` everywhere now (`get_halo` is kept as a
       working alias, not marked deprecated, because the tutorials still teach
       it exclusively). Grepping the docs directly:
@@ -539,7 +591,9 @@ closed without a fix say why.
       `custom_properties.md`, `histogram_properties.md` and `tracking.md` (4b), the
       four files stage 4 ports. The item below covers `live_calculation.md`.
       `docs/reference/api/query.rst` is out of scope: it documents `get_halo`
-      itself. `custom_input_handlers.md` was done in 4a.
+      itself. `custom_input_handlers.md` was done in 4a; `custom_properties.md`,
+      `histogram_properties.md` and `tracking.md` in 4b (the first keeps its
+      reference half, now using `get_object`).
 - [ ] The same `get_halo` → `get_object` sweep for `docs/live_calculation.md`
       (one occurrence), split from the item above in the stage 4 triage.
       **Owner: stage 5**, which retires that file into

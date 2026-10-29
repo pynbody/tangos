@@ -116,7 +116,7 @@ ts.calculate_all("Mvir", "t()")
 
 The set of live properties available depends on which property modules you have installed:
 they are defined by `LivePropertyCalculation` classes, and you can write your own (see
-[writing your own properties](custom_properties.md)). A common example is a virial velocity
+[writing your own properties](tutorials/custom_properties.rst)). A common example is a virial velocity
 calculated from the already-stored `Mvir` and `Rvir`:
 
 ```python
@@ -340,7 +340,7 @@ h.calculate(lambda: reassemble(SFR_histogram, 'place'))
 Under the hood this is implemented by the `reassemble` method of `TimeChunkedProperty`, which
 you can find in `tangos/properties/__init__.py`. It is therefore possible to implement further
 reassembly methods where more complex manipulations of the stored chunks are undertaken; see
-[understanding time-histogram properties](histogram_properties.md).
+[understanding time-histogram properties](tutorials/histograms.rst).
 
 **Technical note**: to get at the data exactly as stored in the database, with no
 reassembly at all, ask for `raw(SFR_histogram)`. The default data access
@@ -521,7 +521,7 @@ List of built-in functions
 The functions below are available in any tangos installation. Individual property modules add
 many more — anything defined as a `LivePropertyCalculation` becomes available as a function
 here, so if you are looking for something that is not in this list, check which property
-modules you have loaded and see [writing your own properties](custom_properties.md).
+modules you have loaded and see [writing your own properties](tutorials/custom_properties.rst).
 
 In the string form, _string_ inputs must be quoted, while property names and expressions must
 not be. In the lambda form, ordinary python quoting applies.
