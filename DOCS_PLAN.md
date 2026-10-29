@@ -54,8 +54,10 @@ build itself complains.
 
 ## Status
 
-Stages 0, 1, 2 and 3 are complete; stages 4–6 have not started. Stage 0 landed in
-#296, stage 1 in #300, stage 2 in #305, stage 3 in #312.
+Stages 0, 1, 2 and 3 are complete; stage 4 is in progress and stages 5–6 have not
+started. Stage 0 landed in #296, stage 1 in #300, stage 2 in #305, stage 3 in #312.
+Stage 4 is split into four PRs (see **Stage 4**); its `KNOWN_ISSUES.md` triage,
+which stage 6 waits on, is done.
 
 Every page from stages 0–2 has now been read by a human. Stage 3 then changed
 several of them — `tutorials/quickstart`, `tutorials/time_series`,
@@ -429,7 +431,53 @@ What stage 3 found:
 
 ### Stage 4 — gap-filling how-tos and remaining tutorials (5 d)
 
-- [ ] **First, triage `KNOWN_ISSUES.md`** (under a day). Stages 0–3 only ever
+Split, at AP's agreement, into four PRs that merge in this order, each with its
+own newcomer read-through before it finishes:
+
+- **4.0** — the `KNOWN_ISSUES.md` triage alone (the first item below), so that
+  stage 6 can start without waiting for any page.
+- **4a** — the how-tos: `how-to/parallel` (from `mpi.md`, with
+  `--pickle-results`), `how-to/database_backends` (from `rdbms.md`),
+  `how-to/managing_a_database`, `how-to/large_simulations` and
+  `how-to/custom_handlers` (absorbing `how-to/yt`), with redirects for every URL
+  they retire.
+- **4b** — the tutorials after `first_database`: `custom_properties`,
+  `histograms`, `black_holes`, `crossmatching` and `tracking`, carrying over the
+  unported notebook cells. The "Going further" toctree section becomes the rest
+  of **Tutorials**.
+- **4.5** — the web interface.
+
+Decided with AP before starting:
+
+- **Write-side examples are verified outside the docs build.** The build has the
+  tutorial database but no particle data, and that database holds no trackers, so
+  `tangos write` with a custom property, `tracking.new` and `.load()` cannot run
+  there. A property class a tutorial asks the reader to write lives in a `.py`
+  file under `docs/` that the page includes with `literalinclude`, and a test
+  imports it and runs `tangos write` with it against the repository's own
+  fixtures in `tests/test_simulations`. Everything that reads results back is
+  `.. ipython::` against the tutorial database. Blocks that would mutate the
+  database (`tracking.new`, `sim[...] = ...`) are shown unexecuted, and their
+  shell commands are covered by `tests/test_docs_commands.py` as usual.
+- **Web screenshots are generated, not hand-made**: by a Playwright script
+  driving `tangos serve` against the tutorial database, cropped to the element
+  that matters. First choice is to run it during the Read the Docs build, like
+  the `@savefig` plots, so the images can never go stale; if RTD cannot run
+  Chromium, the fallback is to commit the script's output and re-run it by hand
+  or from a manually triggered workflow. Chromium under Playwright was confirmed
+  to render the interface against the tutorial database in the triage session.
+
+- [x] **First, triage `KNOWN_ISSUES.md`** (under a day). **Done in 4.0.** Of 44
+      open items (the count of 43 below missed one), 8 are closed (three fixed by
+      stage 2's retirements, one duplicate, one design proposal, two standing
+      instructions moved into this file, and the `+`-encoding note, whose lesson
+      is under **Invariants**). The rest are owned: 7 by stage 4, 4 by stage 5
+      (the `get_halo` sweep was split between 4 and 5), and 26 by stage 6. One
+      new item was added for stage 6: #310 put eight `docs/plots/*.png` files on
+      `master` that this branch gitignores. Each owned item says on its face
+      which page, if any, depends on its fix.
+
+      The original brief: Stages 0–3 only ever
       added to it: at the end of stage 3 it held 43 open items (21 broken code,
       16 misleading documentation, 6 deprecated/vestigial) and nothing assigned
       them to anyone. Tag every open item with one owner, in the item itself:
@@ -492,7 +540,14 @@ What stage 3 found:
       calculation so that it's a bool (e.g. mass<1e12), using it as a filter. Going back to the
       simulations, opening tutorial_changa_bh, showing that the calculation can involve a link
       e.g. BH_central.mass (check this is actually a valid example).
-- [ ] The four supported code × finder combinations with no page at all:
+
+      Checked in the triage: the simulation is `tutorial_changa_blackholes` (there
+      is no `tutorial_changa_bh`), and `BH_central.mass` returns no results while
+      `BH_central.BH_mass` works. In `tutorial_gadget` the velocity property is
+      `VMax`, so the population scatter is `mass` against `VMax`. Also for this
+      PR: a mention of the browser at the end of the quick-start (from stage 3's
+      second read-through).
+- [x] The four supported code × finder combinations with no page at all:
       Gadget-4+SubFind, Gadget-4+HBT+, Ramses+AdaptaHOP, Enzo+Rockstar-via-yt. Two are
       built by `build.sh` on every PR.
 
@@ -504,6 +559,9 @@ What stage 3 found:
       reference material addressed to someone who already has their own data —
       which is what `reference/simulation_formats` currently does for them, and
       may be all they need.
+
+      **Closed at the start of stage 4, decided by AP**: `reference/simulation_formats`
+      is enough. No pages are written for these combinations.
 - [ ] `how-to/parallel` (from `mpi.md`): its list of commands eligible for
       parallel execution omits `import-changa-bh`, which its own PBS example runs
       under MPI, and which is parallel-aware
@@ -515,7 +573,11 @@ What stage 3 found:
 - [ ] `reference/cli` — **26 CLI subcommands exist, roughly 9 are documented**.
       Missing: `import` (merge a sqlite file into a server, the obvious sequel to
       `rdbms.md`), `rollback`, `recent-runs`, `delete-properties`, `thin-timesteps`,
-      `diff`, `prune`/`patch-trees`, `write-pickled-results`
+      `diff`, `prune`/`patch-trees`, `write-pickled-results`. Do **not**
+      document the five deprecated console-script shims (`tangos_writer`,
+      `tangos_crosslink`, `tangos_timelink`, `tangos_add_bh`,
+      `tangos_import_from_ahf`); each prints a deprecation notice and forwards
+      to a `tangos` subcommand
 - [ ] `reference/live_calculation_language` — from `live_calculation.md:347-652`.
       Since stage 3, `live_calculation.md`'s tutorial half (above line 347) is
       covered twice over, by the quick-start's primer and
@@ -535,7 +597,7 @@ What stage 3 found:
       the page it names lands
 - [ ] FAQ, link audit
 
-### Stage 6 — code fixes from `KNOWN_ISSUES.md` (size set by the stage 4 triage)
+### Stage 6 — code fixes from `KNOWN_ISSUES.md` (27 items, from the stage 4 triage)
 
 The items the stage 4 triage tags **stage 6**: bugs and dead code found while
 writing the docs. Unlike every other stage, this one **does not go through
@@ -636,6 +698,10 @@ and no pynbody except for the one metadata call noted below: `tutorials/quicksta
   they stop before it. `configuration`'s reference half is about half that page,
   which is more than the rule of thumb allows but reads fine because the tables
   are skimmable; splitting it into a `reference/` page remains an option.
+- **`config.enable_async_message_processing` is deliberately undocumented**,
+  including on `configuration`. Its own comment in `tangos/config.py` says it
+  "can lead to subtle race conditions", may be implicated in hangs, has unclear
+  benefit, and may be removed from the codebase entirely.
 - **New pages carry `.. Generated by Claude on <date>; not yet checked by a
   human.`** rather than pynbody's `.. Last checked by AP: <date>`, which would
   claim a check that has not happened. Replace the line when you check the page.
