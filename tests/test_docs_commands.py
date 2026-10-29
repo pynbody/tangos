@@ -50,6 +50,22 @@ ALLOWLIST = {
         "how-to/eagle caps a full EAGLE volume; the CI datasets are small enough not to need it",
     ("import-changa-bh", "backend"):
         "import-changa-bh is parallel-aware, but build.sh runs it serially",
+    ("rollback", None):
+        "deletes earlier runs; a build has nothing to undo",
+    ("delete-properties", None):
+        "deletes stored properties; a build has nothing to delete (tests/test_property_deleter.py)",
+    ("remove-duplicates", None):
+        "cleans up after write --force; build.sh never writes a property twice",
+    ("thin-timesteps", None):
+        "deletes timesteps, which would change the database tangos diff checks (tests/test_timestep_thinner.py)",
+    ("import", None):
+        "copies one database into another; build.sh builds a single database (tests/test_import.py)",
+    ("diff", None):
+        "the integration workflow runs it on build.sh's output, rather than build.sh itself",
+    ("write", "pickle_results"):
+        "an alternative route to the same database; tests/test_pickled_results_writer.py covers it",
+    ("write-pickled-results", None):
+        "commits the output of write --pickle-results, which build.sh does not use",
 }
 
 # Code-block languages whose lines may be shell commands; "" is a block with none given.

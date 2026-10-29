@@ -85,11 +85,12 @@ tutorials/first_database
 :caption: How-to
 
 how-to/live_calculation_recipes
-mpi
-rdbms
-custom_input_handlers
+how-to/parallel
+how-to/managing_a_database
+how-to/database_backends
+how-to/large_simulations
+how-to/custom_handlers
 how-to/eagle
-how-to/yt
 ```
 
 ```{toctree}

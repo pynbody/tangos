@@ -499,12 +499,21 @@ Decided with AP before starting:
       `tangos.core.__all__` for the API reference — note on the item that the
       page depends on its fix, so the page documents the fixed behaviour or
       flags the bug rather than enshrining it
-- [ ] `how-to/managing_a_database` (new) — the biggest single gap
-- [ ] `how-to/large_simulations` (new)
-- [ ] `how-to/parallel`, `how-to/database_backends`
-- [ ] `how-to/custom_handlers`, absorbing `how-to/yt` (moved there in stage 2).
+- [x] `how-to/managing_a_database` (new) — the biggest single gap. **Done in
+      4a**: runs (`recent-runs`, `grep-run-ids`, executed against the tutorial
+      database), `rollback`, `delete-properties`, `write --force` with
+      `remove-duplicates`, `thin-timesteps`, `import`, `diff`, backups
+- [x] `how-to/large_simulations` (new). **Done in 4a**: filters, fewer objects
+      and snapshots, memory, restarting after a time limit, database size
+- [x] `how-to/parallel`, `how-to/database_backends`. **Done in 4a**, from
+      `mpi.md` and `rdbms.md`; `mpi.html` and `rdbms.html` redirect
+- [x] `how-to/custom_handlers`, absorbing `how-to/yt` (moved there in stage 2).
       That retires `how-to/yt.html`, a URL stage 2 created, so it needs its own
-      redirect and the `using_with_yt` entry in the map needs repointing
+      redirect and the `using_with_yt` entry in the map needs repointing.
+      **Done in 4a**, also replacing `custom_input_handlers.md` (redirected).
+      `using_with_yt` now points at the yt section. `how-to/yt.html` gets no
+      redirect after all: it was never published, so by the rule stage 3 set
+      under **Invariants** it needs none
 - [ ] Port `custom_properties`, `histograms`, `black_holes`, `crossmatching`, `tracking`
 - [ ] Carry over the notebook cells stage 1 did not port. Stage 3 retired
       `Data exploration with python.ipynb`; recover it with
@@ -562,11 +571,43 @@ Decided with AP before starting:
 
       **Closed at the start of stage 4, decided by AP**: `reference/simulation_formats`
       is enough. No pages are written for these combinations.
-- [ ] `how-to/parallel` (from `mpi.md`): its list of commands eligible for
+- [x] `how-to/parallel` (from `mpi.md`): its list of commands eligible for
       parallel execution omits `import-changa-bh`, which its own PBS example runs
-      under MPI, and which is parallel-aware
-- [ ] `--pickle-results` — the actual answer to the sqlite-locking failure that
-      `rdbms.md` warns about, undocumented
+      under MPI, and which is parallel-aware. **Done in 4a**, as is
+      `import-properties`, which is parallel too
+- [x] `--pickle-results` — the actual answer to the sqlite-locking failure that
+      `rdbms.md` warns about, undocumented. **Done in 4a**, in `how-to/parallel`,
+      run end to end under the multiprocessing backend
+
+What 4a found:
+
+- **The handler example on the old page could not have run.** Its
+  `load_object` had the pre-`finder_offset` signature, it returned no
+  redshift (without which `tangos write` fails for every object), and its
+  property did not set `requires_particle_data`, which defaults to `False`, so
+  `calculate` would have been given `None`. None of this was visible from the
+  page. This is the case for keeping write-side examples as files that a test
+  runs: `docs/examples/myhandler.py` is included by `how-to/custom_handlers`
+  and run through every command on that page by `tests/test_docs_examples.py`.
+  **Stage 4b's custom property examples need the same treatment**, and the
+  `requires_particle_data` default affects them directly:
+  `custom_properties.md` never mentions it.
+- **Read-only shell commands can be executed on a page.** In an `.. ipython::`
+  block, `!tangos recent-runs 4` runs the command against the tutorial database
+  and its output appears on the page, so `how-to/managing_a_database` shows
+  real output rather than a transcript. A failing command does not fail the
+  build, so look at the output. Such lines are not seen by
+  `tests/test_docs_commands.py`, which reads only code blocks; it does not need
+  to, since they are executed.
+- **Commands that change a database were checked on a scratch copy of the
+  tutorial database**, and the server route against a local PostgreSQL 16
+  server (`tangos import` from sqlite into PostgreSQL, and back into sqlite as a
+  backup). MySQL was not available to check; its docker recipe is carried over
+  from `rdbms.md` unchanged. Eight new stage 6 items came out of this, from
+  `flag-duplicates` failing outright to `write --force` making a property read
+  back as a list; see `KNOWN_ISSUES.md`.
+- `tests/test_docs_commands.py`'s `ALLOWLIST` grew by eight entries for the
+  database-management subcommands, each with its reason.
 
 ### Stage 5 — reference (4 d)
 

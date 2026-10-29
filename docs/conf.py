@@ -67,12 +67,11 @@ redirects = {
     "first_steps_gadget+rockstar": "reference/simulation_formats.html",
     "first_steps_gadget+AHF": "reference/simulation_formats.html",
     "first_steps_ramses+hop": "reference/simulation_formats.html",
-    # EAGLE and yt keep their own short pages, moved under how-to/.
-    # how-to/yt.html is itself provisional: stage 4 folds it into
-    # how-to/custom_handlers, at which point this target needs updating and a
-    # second redirect adding for how-to/yt.html itself.
+    # EAGLE keeps its own short page, moved under how-to/. yt went to how-to/yt in
+    # stage 2 and into how-to/custom_handlers in stage 4; how-to/yt.html was never
+    # published, so needs no redirect of its own.
     "first_steps_eagle": "how-to/eagle.html",
-    "using_with_yt": "how-to/yt.html",
+    "using_with_yt": "how-to/custom_handlers.html#using-yt-instead-of-pynbody",
     # data_exploration.md was the "explore an existing database" page; that is
     # now the quick-start tutorial.
     "data_exploration": "tutorials/quickstart.html",
@@ -88,6 +87,13 @@ redirects = {
     # Its name has spaces, which get_target_uri() quotes, so the build-finished
     # hook below also writes this stub at the literal name.
     "Data exploration with python": "tutorials/quickstart.html",
+    # Stage 4: the how-to pages move under how-to/. mpi.html is also linked from
+    # tangos/core/halo.py, and custom_input_handlers.html (as soon as
+    # KNOWN_ISSUES.md's dead input_handlers.html link is fixed) from
+    # tangos/input_handlers/__init__.py.
+    "mpi": "how-to/parallel.html",
+    "rdbms": "how-to/database_backends.html",
+    "custom_input_handlers": "how-to/custom_handlers.html",
 }
 
 # ipython_savefig_dir is where `.. ipython::` @savefig figures land; ported

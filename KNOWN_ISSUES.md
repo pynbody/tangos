@@ -287,6 +287,72 @@ closed without a fix say why.
       docs build leaves the working tree dirty. Fix: `git rm --cached` them on
       `master`. Found in the stage 4 triage.
       **Owner: stage 6.**
+- [ ] `tangos write` fails for every object if the handler gives a timestep no
+      redshift. The writer always evaluates the intrinsic live properties, and
+      `tangos/properties/intrinsic.py:10` computes `1./(1.+ts.redshift)` along
+      with them, so a `None` redshift raises `TypeError: unsupported operand
+      type(s) for +: 'float' and 'NoneType'`. `HandlerBase.get_timestep_properties`
+      does not say a redshift is required; the old `custom_input_handlers.md`
+      example returned only `time_gyr` and so could never have reached `tangos
+      write`. Found writing `how-to/custom_handlers` in stage 4a, which now tells
+      handler authors to supply both.
+      **Owner: stage 6.**
+- [ ] `HandlerBase.enumerate_objects`' docstring says it yields
+      "halo_number, NDM, NStar, Ngas", but `SimulationAdderUpdater` unpacks five
+      values per object -- finder offset, finder id, NDM, NStar, NGas
+      (`tangos/tools/add_simulation.py:130`) -- and every handler yields those
+      five (or a bare number, which is padded). The docstring appears in the
+      API reference (`docs/reference/api/input_handlers.rst`).
+      Found in stage 4a.
+      **Owner: stage 6.**
+- [ ] `tangos flag-duplicates` always fails: its second statement runs
+      `update halolink set deprecated=0`, but `HaloLink` has no `deprecated`
+      column (`sqlalchemy.exc.OperationalError: no such column: deprecated`,
+      reproduced on sqlite). Its sibling `remove-duplicates` works. Found in
+      stage 4a; `how-to/managing_a_database` documents only `remove-duplicates`.
+      **Owner: stage 6.**
+- [ ] After `tangos write --force`, a property has two rows per object, and the
+      ways of reading it disagree: `halo["name"]` returns both values as a
+      list, while `halo.calculate("name")` and `calculate_all` return one.
+      Reproduced with the `how-to/custom_handlers` example: `[42.0, 42.0]`
+      against `42.0`. `tangos remove-duplicates` restores a single value. Either
+      `--force` should replace the old row, or `__getitem__` should return the
+      latest as the live calculation does. `how-to/managing_a_database` tells
+      readers to run `remove-duplicates` after `--force` until then. Found in
+      stage 4a.
+      **Owner: stage 6.**
+- [ ] `tangos rollback` of a run that created objects leaves orphans behind if
+      later runs added properties or links to them: rolling back the `tangos
+      add` of `tutorial_ramses` alone, on a copy of the tutorial database, left
+      20323 properties and 24360 links pointing at halos that no longer exist.
+      Rolling back every run for the simulation, newest first, leaves none.
+      There is also no command to remove a simulation (`tangos rm` exists in
+      `tangos/scripts/manager.py` but is commented out as not working), and no
+      test of `rollback` or `grep-remove` at all. `how-to/managing_a_database`
+      documents the newest-first procedure. Found in stage 4a.
+      **Owner: stage 6.**
+- [ ] `tangos thin-timesteps` describes its argument as "the maximum interval
+      between timesteps", but it is the *minimum* spacing it keeps: it removes
+      every timestep that comes less than that interval after the last one it
+      kept. On `tutorial_gadget`, `thin-timesteps 2.5` keeps five of eleven
+      timesteps, every gap between them at least 2.5 Gyr. Found in stage 4a.
+      **Owner: stage 6.**
+- [ ] `tangos write --part N M` ("emulate MPI by handling slice N out of the
+      total workload of M items") is parsed and never used: nothing reads
+      `options.part`. Either implement it or remove the option. Found in stage
+      4a; not documented.
+      **Owner: stage 6.**
+- [ ] `config.PROPERTY_WRITER_MINIMUM_TIME_BETWEEN_COMMITS` has no effect.
+      `PropertyWriter.__init__` copies it to `self._writer_minimum`, which
+      nothing reads; `_is_commit_needed` commits at the end of every timestep
+      regardless. `docs/configuration.rst` said otherwise until stage 4a, and
+      now says it has no effect. Found in stage 4a.
+      **Owner: stage 6.**
+- [ ] `tangos write --include-only` always logs "User-specified inclusion
+      criterion excluded 0 of N objects": the message
+      (`tangos/tools/property_writer.py:257`) subtracts the number of objects
+      *before* the filter is applied on the next line. Found in stage 4a.
+      **Owner: stage 6.**
 
 ## Misleading or wrong documentation
 
@@ -324,14 +390,16 @@ closed without a fix say why.
       **Owner: stage 4.** The redirect for `mpi.html` lands with `how-to/parallel`
       (4a) and the one for `custom_properties.html` with the custom properties
       tutorial (4b). The URLs in the code can then stay as they are.
-- [ ] `docs/custom_input_handlers.md:143` calls `.earlier` on the result of
+      The `mpi.html` redirect landed in 4a.
+- [x] `docs/custom_input_handlers.md:143` calls `.earlier` on the result of
       `get_halo(...)` (`tangos.get_halo("...").earlier.load()`). `earlier` is
       not an attribute of anything in the codebase; `.previous` is the
       attribute that walks one step back, and `earlier(n)` is a *live-calculation
       function* (a different namespace entirely). Fix when the input-handlers
       how-to is rewritten.
       **Owner: stage 4** (4a, `how-to/custom_handlers`).
-- [ ] `docs/custom_input_handlers.md` presents `match_objects` as part of the
+      **Fixed in stage 4a**: `how-to/custom_handlers` uses `.previous`.
+- [x] `docs/custom_input_handlers.md` presents `match_objects` as part of the
       `HandlerBase` contract, but `HandlerBase` does not define it at all — it
       is defined on `PynbodyInputHandler`, `YtInputHandler`,
       `Gadget4HBTPlusInputHandler` and the test handler only. Either add an
@@ -339,6 +407,7 @@ closed without a fix say why.
       present it as specific to those subclasses.
       **Owner: stage 4** (4a, `how-to/custom_handlers`): present `match_objects` as
       what `tangos crosslink` needs from a handler, not as part of `HandlerBase`.
+      **Fixed in stage 4a.**
 - [x] `docs/first_steps_eagle.md:65` — the second `tangos import-properties`
       command reads `--for RefL0025N037`, missing the trailing `6`
       (`RefL0025N0376`, as used two lines above it).
@@ -353,9 +422,10 @@ closed without a fix say why.
       same page (line 28) is named `tutorial_ramses`, not `tutorial`.
       **Closed in the stage 4 triage:** the page was retired in stage 2 and nothing
       carried the lookup over.
-- [ ] `docs/rdbms.md:34` — "For most users, MySQL and PostgreSQL are" — the
+- [x] `docs/rdbms.md:34` — "For most users, MySQL and PostgreSQL are" — the
       sentence stops mid-way with no continuation.
       **Owner: stage 4** (4a, `how-to/database_backends`).
+      **Fixed in stage 4a.**
 - [ ] `README.md:10` claims tangos is "a modular system for Python 3.6+", while
       CI (`.github/workflows/build-test.yaml`) tests 3.11–3.14 only. (Checked
       `docs/index.md` too: it does not repeat this claim anywhere — it has no
@@ -363,10 +433,11 @@ closed without a fix say why.
       not both files as originally suspected.)
       **Owner: stage 6.** A one-line PR against master, since the README is what
       readers see now, long before the documentation merges.
-- [ ] `docs/mpi.md` still documents `pypar` as an alternative MPI backend to
+- [x] `docs/mpi.md` still documents `pypar` as an alternative MPI backend to
       `mpi4py`. pypar is Python-2-era and unmaintained; see the corresponding
       dead-code entry below.
       **Owner: stage 4** (4a, `how-to/parallel`).
+      **Fixed in stage 4a.**
 - [ ] Halo-path syntax is inconsistent across the docs — some pages write
       `.../halo_1`, others `.../1` for the same object — and the equivalence is
       explained nowhere. (The curated API reference now explains it once, on
@@ -386,7 +457,7 @@ closed without a fix say why.
       containment or give `trackers` a filter that excludes black holes.
       **Owner: stage 5.** If stage 4's tracking tutorial mentions `trackers`, it
       says that black holes are included.
-- [ ] `docs/rdbms.md` gives the wrong install command for the server backends:
+- [x] `docs/rdbms.md` gives the wrong install command for the server backends:
       it says `pip install PyMySQL` / `pip install psycopg2-binary` rather than
       `pip install tangos[rmdbs]`, and omits the `[rsa]` extra that
       `setup.py:127` pins because MySQL 8's default `caching_sha2_password`
@@ -395,6 +466,7 @@ closed without a fix say why.
       sentence on the same page recorded above. `docs/installation.rst` gives
       the correct form.
       **Owner: stage 4** (4a, `how-to/database_backends`).
+      **Fixed in stage 4a.**
 - [ ] `tangos/input_handlers/__init__.py:7` sends readers to
       `https://pynbody.github.io/tangos/input_handlers.html`, which does not
       exist and never has — the page is `custom_input_handlers.html`. This is a
@@ -452,7 +524,7 @@ closed without a fix say why.
       `custom_properties.md`, `histogram_properties.md` and `tracking.md` (4b), the
       four files stage 4 ports. The item below covers `live_calculation.md`.
       `docs/reference/api/query.rst` is out of scope: it documents `get_halo`
-      itself.
+      itself. `custom_input_handlers.md` was done in 4a.
 - [ ] The same `get_halo` → `get_object` sweep for `docs/live_calculation.md`
       (one occurrence), split from the item above in the stage 4 triage.
       **Owner: stage 5**, which retires that file into
@@ -480,7 +552,8 @@ closed without a fix say why.
 - [ ] `tangos/parallel_tasks/backends/pypar.py` is dead: pypar has not been
       maintained since the Python 2 era. `docs/mpi.md` still lists it as an
       alternative to mpi4py (see the docs entry above). Candidate for deletion
-      alongside that doc fix.
+      alongside that doc fix. `tangos write --help` also still offers it, in
+      `--backend`'s help text ("e.g. pypar, mpi4py").
       **Owner: stage 6.**
 - [ ] Integer halo (and other object) properties are stored as 32-bit except on
       sqlite; probably unintentional and should be fixed provided we can retain

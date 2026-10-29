@@ -1,4 +1,5 @@
 .. Last checked by AP: 2026-08-29
+.. Stage 4 (Claude, 2026-10-29): the match_objects note reworded and repointed to how-to/custom_handlers, which now presents it correctly. Not yet checked by a human.
 
 .. _api_input_handlers:
 
@@ -9,7 +10,7 @@ Reading a new simulation format
 
 An input handler is how tangos reads a particular simulation code's raw
 output. This page documents the subclassing contract and every handler tangos
-ships with; for a walkthrough, see :doc:`/custom_input_handlers`, and for
+ships with; for a walkthrough, see :doc:`/how-to/custom_handlers`, and for
 which handler goes with which finder, see
 :doc:`/reference/simulation_formats`.
 
@@ -39,8 +40,9 @@ The contract
    the listing above; setting it on an instance lets a handler cut corners
    (skip a resolution check, estimate it from file size instead) for speed.
    ``match_objects`` -- used to identify the same object across two timesteps
-   for time-linking -- is **not** part of this contract, despite
-   :doc:`/custom_input_handlers` presenting it as one; it is defined on
+   for ``tangos link`` and ``tangos crosslink`` -- is **not** part of this
+   contract, though a handler without it cannot be linked (see
+   :ref:`writing_a_handler`); it is defined on
    :class:`~tangos.input_handlers.pynbody.PynbodyInputHandler` below (and,
    separately, on the yt and Gadget-4/HBT+ handlers). See ``KNOWN_ISSUES.md``.
 

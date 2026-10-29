@@ -1,4 +1,7 @@
 .. Checked by AP 5/09/2026
+.. Stage 4 (Claude, 2026-10-29): PROPERTY_WRITER_MINIMUM_TIME_BETWEEN_COMMITS marked as
+   having no effect, which is what the code does; link repointed from rdbms.md to
+   how-to/database_backends. Not yet checked by a human.
 
 .. _configuration:
 
@@ -281,8 +284,8 @@ Writing and importing
      - Seconds before ``tangos write`` commits, even mid-timestep.
    * - ``PROPERTY_WRITER_MINIMUM_TIME_BETWEEN_COMMITS``
      - ``300``
-     - Seconds before ``tangos write`` will commit at all, even between
-       timesteps.
+     - Has no effect: ``tangos write`` commits at the end of every timestep
+       regardless (see ``KNOWN_ISSUES.md``).
    * - ``PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES``
      - ``600``
      - Seconds between progress reports from a parallel ``tangos write``.
@@ -299,5 +302,5 @@ existing database, so changing them would need a migration; leave them alone.
    :ref:`installation` for getting tangos and a database in place, and for the
    ``TANGOS_DB_CONNECTION`` environment variable in context.
 
-   :doc:`/rdbms` for connection URLs and for setting up a MySQL or PostgreSQL
+   :doc:`/how-to/database_backends` for connection URLs and for setting up a MySQL or PostgreSQL
    server.

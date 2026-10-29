@@ -1,6 +1,8 @@
 .. Last checked by AP 31/08/26
 .. Stage 3 (Claude, 2026-10-26): now points newcomers straight to the quick-start, as the
    data model page moved to reference. Not yet checked by a human.
+.. Stage 4 (Claude, 2026-10-29): link repointed from rdbms.md to
+   how-to/database_backends. Not yet checked by a human.
 
 .. _installation:
 
@@ -164,7 +166,7 @@ write to it at once — install the drivers with the ``rmdbs`` extra:
 and set ``TANGOS_DB_CONNECTION`` to a sqlalchemy URL such as
 ``mysql+pymysql://user:password@localhost:3306/database_name`` or
 ``postgresql+psycopg2://user:password@localhost/database_name``. All three
-backends are tested on every commit. See :doc:`/rdbms` for how to set a server
+backends are tested on every commit. See :doc:`/how-to/database_backends` for how to set a server
 up, including a one-line docker recipe for trying either of them out.
 
 Installing for development
