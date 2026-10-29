@@ -27,7 +27,9 @@ Most of the cost of a database is in ``tangos write``, and most of that is in
 objects too small to be interesting. The tutorial database shows how much
 filtering saves. Its ``tutorial_gadget`` simulation was written with
 ``--include-only="NDM()>5000"``, so of the 1041 halos in the final snapshot, only
-those with more than 5000 dark matter particles have a density profile:
+those with more than 5000 dark matter particles have a density profile. (``NDM()``
+is the live calculation that gives an object's number of dark matter particles;
+see :ref:`calculating`.)
 
 .. ipython::
 
@@ -55,7 +57,8 @@ combined:
    Calculate only for objects numbered up to this. tangos numbers objects from 1
    in order of decreasing particle count, so ``--hmax 100`` means the hundred
    largest in each timestep -- unless the simulation was added with
-   ``--no-renumber``, in which case the numbers are the halo finder's own.
+   ``--no-renumber``, which numbers objects by their position in the halo
+   finder's catalogue instead.
 ``--type``
    Calculate only for one type of object: ``halo`` (the default), ``group``,
    ``BH`` or ``tracker``.
@@ -68,6 +71,11 @@ combined:
 A filter used with ``--with-prerequisites`` applies to the prerequisites too,
 so they are calculated only where they are needed.
 
+Before calculating anything, check what the halo finder has already worked out.
+Masses, radii and positions from its catalogue cost almost nothing to bring in
+with ``tangos import-properties``, where calculating them from the particles
+with ``tangos write`` means loading every snapshot.
+
 Store fewer objects
 -------------------
 
@@ -76,36 +84,35 @@ through them. ``tangos add`` can leave out the smallest when it creates them:
 
 ``--min-particles``
    Do not add objects with fewer particles than this. The default is 1000 (set
-   by ``min_halo_particles`` in :ref:`configuration`);
-   :doc:`/reference/simulation_formats` lowers it to 100 for its lower-resolution
-   datasets.
+   by ``min_halo_particles`` in :ref:`configuration`); several of the commands in
+   :doc:`/reference/simulation_formats` pass ``--min-particles 100`` for
+   lower-resolution datasets.
 ``--max-objects``
    Add at most this many objects of each type to each timestep, keeping the
-   largest (when tangos numbers objects by size, as it does unless you pass
-   ``--no-renumber``).
-   :doc:`/how-to/eagle` uses it to cap a full EAGLE volume.
+   largest. (With ``--no-renumber``, it keeps the first in the halo finder's
+   catalogue instead.) :doc:`/how-to/eagle` uses it to cap a full EAGLE volume.
 
 Objects you leave out here are gone for good: no later command can calculate
 anything for them, and merger trees will not pass through them.
 
-Use fewer snapshots
--------------------
+Fewer snapshots, less memory, a smaller database
+-------------------------------------------------
 
-If a simulation has many more snapshots than you need to follow halos through
-time, remove the extra ones with ``tangos thin-timesteps`` straight after
-``tangos add``, before linking; see :doc:`/how-to/managing_a_database`.
+Three more things matter at scale, each covered on another page:
 
-Keep memory under control
--------------------------
-
-By default each process of a parallel ``tangos write`` loads a whole snapshot.
-For a large volume, choose a ``--load-mode`` that keeps only one snapshot in
-memory, shared between the processes -- usually ``server-shared-mem`` on one
-machine, or ``server`` across several. :ref:`parallel_load_modes` compares them.
-
-``tangos link`` and ``tangos crosslink`` load the particle IDs of two snapshots
-at a time in every process. If they run out of memory, run fewer processes per
-node; :ref:`parallel_how_many` has the details.
+* **Snapshots.** If a simulation has many more snapshots than you need, remove
+  the extras with ``tangos thin-timesteps`` straight after ``tangos add``, before
+  linking (:doc:`/how-to/managing_a_database`).
+* **Memory.** By default each process of a parallel ``tangos write`` holds a
+  whole snapshot; for a large volume, choose ``--load-mode=server-shared-mem``
+  on one machine or ``server`` across several (:ref:`parallel_load_modes`).
+  ``tangos link`` holds two snapshots' particle IDs in every process, so may need
+  fewer processes per node (:ref:`parallel_how_many`).
+* **Database size.** Images and long arrays dominate it. Calculate them only for
+  the objects you will look at, with the filters above; ``tangos
+  delete-properties`` removes what you no longer need, and ``tangos import
+  --exclude-properties`` leaves large properties behind when copying a database
+  (:doc:`/how-to/managing_a_database`).
 
 .. _large_simulations_restart:
 
@@ -130,20 +137,9 @@ carries on rather than starting from scratch:
   beginning, still skipping what is already stored.
 
 So for a build that needs more time than one job allows, submit the same job
-script again until a run finds nothing left to do.
-
-Keep the database small
------------------------
-
-Images and long arrays dominate the size of most databases. Calculate them only
-for the objects you will look at -- the same filters as above -- and remove ones
-you no longer need with ``tangos delete-properties``. When copying a database to
-another machine or to a server, ``tangos import --exclude-properties`` leaves
-named properties behind; see :doc:`/how-to/managing_a_database`.
-
-For a database that several people use, or that many processes write to at once,
-consider a database server rather than a sqlite file; see
-:doc:`/how-to/database_backends`.
+script again until a run finds nothing left to do. Results saved with
+``--pickle-results`` (see :ref:`pickle_results`) count as done for the resumed
+run, but are not in the database until you commit them.
 
 .. seealso::
 

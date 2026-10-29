@@ -285,7 +285,7 @@ Writing and importing
    * - ``PROPERTY_WRITER_MINIMUM_TIME_BETWEEN_COMMITS``
      - ``300``
      - Has no effect: ``tangos write`` commits at the end of every timestep
-       regardless (see ``KNOWN_ISSUES.md``).
+       regardless.
    * - ``PROPERTY_WRITER_PARALLEL_STATISTICS_TIME_BETWEEN_UPDATES``
      - ``600``
      - Seconds between progress reports from a parallel ``tangos write``.

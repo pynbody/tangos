@@ -72,7 +72,10 @@ Here, too, one of the five processes is the server.
    loses the shell's quoting. So ``--include-only="NDM() > 1000"`` arrives as
    three separate words and the command fails, while
    ``--include-only="NDM()>1000"`` works. Leave the spaces out of filter
-   expressions when running in parallel. (Recorded in ``KNOWN_ISSUES.md``.)
+   expressions when running in parallel.
+
+.. The --backend quoting bug is a stage 6 item in KNOWN_ISSUES.md; update the
+   warning above when it is fixed.
 
 .. _parallel_load_modes:
 
@@ -110,8 +113,8 @@ Two older modes remain, but are rarely the best option:
 ``--load-mode=partial``
    As the default, but each process loads only one object's particles at a
    time, straight from disk. Efficient, but a calculation that needs particles
-   outside the object -- such as a density profile out to the virial radius --
-   fails.
+   outside the object fails -- and that includes the built-in profiles and
+   images, which work on a sphere around each object.
 
 ``--load-mode=server-partial``
    The server loads only what is needed to work out which particles each
@@ -131,29 +134,43 @@ most efficient way to run it is:
 
 .. code-block:: bash
 
-   mpirun -np 5 tangos write dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="NDM()>1000" --include-only="contamination_fraction<0.01" --for tutorial_changa --backend mpi4py --load-mode server-shared-mem
+   tangos write dm_density_profile gas_density_profile uvi_image --with-prerequisites --include-only="NDM()>1000" --include-only="contamination_fraction<0.01" --for tutorial_changa --backend multiprocessing-5 --load-mode server-shared-mem
 
-Why ``server-shared-mem``? Going through the alternatives:
+Why ``server-shared-mem``? The profiles and images are calculated from all the
+particles in a sphere around each halo, not only those the halo finder assigned
+to it. Going through the alternatives:
 
-* With the default mode, each process would smooth the gas over its entire
-  snapshot to make the images. That costs :math:`N \log N` in the number of
-  particles, which is needlessly large.
-* With ``partial``, the density profiles would fail, because they need particles
-  outside the region the halo finder assigned to each halo.
+* With the default mode, each process holds a whole snapshot and cuts each
+  sphere out of it. To make the gas images, pynbody first works out a smoothing
+  length for every gas particle it has been given -- here, the whole snapshot --
+  which costs :math:`N \log N` in the number of particles, and most of that work
+  is for particles in no sphere at all. The server modes hand each process just
+  the sphere, so the smoothing is done for those particles alone.
+* With ``partial``, the calculations fail: ``partial`` loads only the halo
+  finder's particles, and cannot provide a sphere.
 * With ``server-partial``, everything would work, and fairly efficiently, but
   each process would keep reading particles from disk rather than sharing them
   in memory. That helps for snapshots too large for one machine's memory, which
   these are not.
-* That leaves ``server`` and ``server-shared-mem``. Both use little memory and
-  computation; ``server-shared-mem`` also keeps communication to a minimum, and
-  is possible because all the processes share one machine. On several nodes,
+* That leaves ``server`` and ``server-shared-mem``, which both keep one copy of
+  the snapshot in memory. ``server`` sends each sphere's particles from the
+  server to the process that needs them; ``server-shared-mem`` lets every
+  process read them directly from the server's memory, which is much faster but
+  possible only because all the processes share one machine. On several nodes,
   ``server`` would be the choice.
 
 pynbody parallelises some of its own operations with threads. When tangos is
 running several processes, these mostly compete with each other; experience
-suggests that it is best to `switch off pynbody's threading
-<https://pynbody.readthedocs.io/latest/tutorials/parallelism.html>`_ and let tangos
-do all of the parallelisation.
+suggests that it is best to switch pynbody's threading off and let tangos do all
+of the parallelisation. Put this in ``~/.pynbodyrc``:
+
+.. code-block:: ini
+
+   [general]
+   number_of_threads: 1
+
+(see `pynbody's notes on parallelism
+<https://pynbody.readthedocs.io/latest/tutorials/parallelism.html>`_ for more).
 
 .. _parallel_how_many:
 
@@ -178,9 +195,10 @@ If sqlite reports that the database is locked
 ---------------------------------------------
 
 sqlite keeps the whole database in one file, and coordinates writers with file
-locks. Many processes committing results at once can exhaust it -- especially on
-the network file systems of clusters, which can be slow to release locks -- and
-the run fails with errors saying the database is locked.
+locks. tangos makes its processes take turns to commit, but with many processes
+waiting their turn -- especially on the network file systems of clusters, which
+can be slow to release locks -- a run can still fail with errors saying the
+database is locked.
 
 One answer is to move the database to a server (see
 :doc:`/how-to/database_backends`). Another, which keeps sqlite, is to have
@@ -193,8 +211,8 @@ them all afterwards in one go:
    tangos write-pickled-results tangos_results/*.pickle
 
 The first command calculates exactly as before, but each process saves its
-results as pickle files in ``tangos_results/`` instead of committing them. Give a
-folder name after ``--pickle-results`` to use another. The second command, run
+results as pickle files in ``tangos_results/`` instead of committing them. To
+use another folder, name it after the option: ``--pickle-results my_folder``. The second command, run
 serially once the first has finished, commits every file to the database,
 attributing the results to the run that calculated them, and deletes the files
 once they are all committed.
@@ -211,7 +229,8 @@ Running under a batch scheduler
 
 On a shared cluster you will not run these commands interactively; you submit them.
 The details differ between sites, but the shape of the job script does not. Here is a
-PBS example that builds a database for one simulation from end to end:
+PBS example that builds a database for one ChaNGa simulation with AHF halos, from
+end to end, on two nodes:
 
 .. code-block:: bash
 
@@ -228,10 +247,12 @@ PBS example that builds a database for one simulation from end to end:
 
    SIMS="my_simulation"
 
+   tangos add $SIMS
+   tangos import-properties Mvir Rvir --for $SIMS
    mpirun tangos link --for $SIMS --backend mpi4py
-   mpirun tangos write dm_density_profile --with-prerequisites --for $SIMS --load-mode=partial --backend mpi4py
+   mpirun tangos write dm_density_profile --with-prerequisites --for $SIMS --load-mode=server --backend mpi4py
    mpirun tangos import-changa-bh --for $SIMS --backend mpi4py
-   mpirun tangos write BH_mass --for $SIMS --type BH --load-mode=partial --backend mpi4py
+   mpirun tangos write BH_mass --for $SIMS --type BH --backend mpi4py
 
 Two things in there are easy to get wrong and expensive to discover after a
 three-hour queue wait:
@@ -243,11 +264,18 @@ three-hour queue wait:
   has to establish it itself -- the python environment and both tangos environment
   variables.
 
+``tangos add`` and ``import-properties`` run serially here, because they are quick
+next to the rest. The profiles use ``--load-mode=server``, not ``server-shared-mem``,
+because the processes are spread over two nodes.
+
 The last two lines are specific to ChaNGa black holes; drop them for a simulation
 without them. ``--type BH`` says "do this for the black holes rather than the halos".
 
-If the job runs out of time, submit it again: :ref:`large_simulations_restart`
-explains what tangos does with work that is already done.
+If the job runs out of time, submit it again. ``tangos write`` carries on where
+it stopped (:ref:`large_simulations_restart` explains how), and ``tangos link``
+skips pairs of timesteps that are already linked; ``tangos add``, given a
+simulation that is already in the database, adds only timesteps it does not yet
+have.
 
 .. seealso::
 

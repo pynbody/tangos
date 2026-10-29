@@ -8,7 +8,9 @@ Managing a database
 A tangos database grows one command at a time: ``tangos add``, ``link``,
 ``import-properties`` and ``write`` each add to it, often over weeks and from
 several machines. This page shows how to see what went in, undo or delete what
-you no longer want, and merge, compare and back up whole databases.
+you no longer want, and merge, compare and back up whole databases. (To list
+the simulations, timesteps and properties a database holds, see
+:doc:`/tutorials/quickstart`.)
 
 .. note:: The examples that only *read* the database run here against the
  tutorial database (see :ref:`installation`); everything else changes the
@@ -56,8 +58,10 @@ the text specific enough to match only what you mean, and check with ``tangos
 grep-runs``, which prints the full details of each match, before acting on a
 list.
 
-From python, :func:`tangos.all_creators` returns every run, and each stored value
-knows the run that created it:
+From python, :func:`tangos.all_creators` returns every run. To find which run
+wrote a particular value, fetch the stored property itself, rather than its
+value, with :meth:`~tangos.core.halo.SimulationObjectBase.get_objects`; it
+records its ``creator``:
 
 .. ipython::
 
@@ -70,6 +74,12 @@ knows the run that created it:
  In [4]: profile.creator.id
 
  In [5]: print(profile.creator.command_line)
+
+The tutorial database was built by tangos' own build script, which is why its
+command lines differ in detail from those in :doc:`/tutorials/first_database`.
+They also show no ``--backend``: tangos removes that option from the command
+line before anything else sees it, so a run's record does not say whether it
+ran in parallel.
 
 .. _rollback:
 
@@ -88,6 +98,10 @@ To undo a parallel command, roll back all of its runs. ``tangos grep-remove``
 does so in one step, for every run whose command line contains the text you
 give; it lists them first and asks you to confirm.
 
+A run removes its results from every simulation it touched. A ``tangos write``
+without ``--for``, for example, writes to every simulation in the database, and
+rolling it back removes all of those results, not just one simulation's.
+
 Rolling back a run removes exactly what that run created, and nothing that later
 runs built on it. So to remove a whole simulation, roll back *all* of its runs,
 newest first, ending with the ``tangos add`` that created it. For the RAMSES
@@ -97,10 +111,18 @@ simulation, whose four runs were listed above, that is:
 
    tangos rollback 52 51 50 49
 
+Find all of a simulation's runs with ``tangos grep-runs`` and the simulation's
+name -- remembering that a run without ``--for`` will not mention it, and that
+the name may also match other simulations.
+
 Rolling back only the ``add`` would delete the simulation and its objects but
 leave behind the properties and links that the later runs attached to them,
-taking up space with nothing to reach them. (There is no ``tangos`` command that
-removes a simulation directly.)
+taking up space with nothing to reach them; no command cleans these up
+afterwards. Nor is there a ``tangos`` command that removes a simulation
+directly.
+
+.. The orphans left by rolling back an early run, and the missing remove
+   command, are a stage 6 item in KNOWN_ISSUES.md.
 
 Deleting properties
 -------------------
@@ -155,7 +177,8 @@ Removing a timestep removes everything in it, including the links that join it
 to its neighbours, and nothing remakes those links. Thin a simulation straight
 after ``tangos add``, before ``tangos link``; if you thin it later, run
 ``tangos link`` again (which needs the simulation data) to join the timesteps
-that are now adjacent.
+that are now adjacent. Running ``tangos add`` for the simulation again would add
+the removed timesteps back.
 
 .. _merging_databases:
 
@@ -197,11 +220,20 @@ without one it covers everything. Within each timestep, it compares the
 properties of the first ten objects of each type, not every object.
 ``--ignore-value-of`` names properties whose values should not be compared, and
 ``--property-tolerance <name> <rtol> <atol>`` sets how closely a property's
-values must agree (the defaults are ``diff_default_rtol`` and
-``diff_default_atol`` in :ref:`configuration`). It exits with status 1 if it
+values must agree (by default, :math:`10^{-3}` for both; set by
+``diff_default_rtol`` and ``diff_default_atol`` in :ref:`configuration`). It exits with status 1 if it
 finds a difference, so scripts can act on the result; tangos' own continuous
 integration uses it to check each newly built test database against a
 reference copy.
+
+Moving the simulation files
+---------------------------
+
+The database records where each simulation's files are only relative to
+``TANGOS_SIMULATION_FOLDER``. If you move the whole folder, set the variable to
+its new location and everything carries on working; only moving simulations
+within it, or renaming them, breaks the connection to their files. Querying
+stored values needs no simulation files at all.
 
 Backing up
 ----------

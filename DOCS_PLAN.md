@@ -603,9 +603,17 @@ What 4a found:
   tutorial database**, and the server route against a local PostgreSQL 16
   server (`tangos import` from sqlite into PostgreSQL, and back into sqlite as a
   backup). MySQL was not available to check; its docker recipe is carried over
-  from `rdbms.md` unchanged. Eight new stage 6 items came out of this, from
-  `flag-duplicates` failing outright to `write --force` making a property read
-  back as a list; see `KNOWN_ISSUES.md`.
+  from `rdbms.md`, with its grant fixed. Nine new stage 6 items came out of
+  this. The most serious is that `tangos import` into PostgreSQL leaves the id
+  sequences behind the copied rows, so the next write fails; until it is fixed,
+  `how-to/database_backends` gives a script that resets them. The rest range
+  from `flag-duplicates` failing outright to `write --force` making a property
+  read back as a list; see `KNOWN_ISSUES.md`.
+- **The cold read caught a script that could not have worked.** The PBS example
+  carried over from `old.md` in stage 2 ran `dm_density_profile` with
+  `--load-mode=partial`, which cannot provide the sphere that every built-in
+  profile asks for (`load_region` raises `NotImplementedError` in that mode),
+  while the same page said so two sections earlier. It now uses `server`.
 - `tests/test_docs_commands.py`'s `ALLOWLIST` grew by eight entries for the
   database-management subcommands, each with its reason.
 

@@ -353,6 +353,21 @@ closed without a fix say why.
       (`tangos/tools/property_writer.py:257`) subtracts the number of objects
       *before* the filter is applied on the next line. Found in stage 4a.
       **Owner: stage 6.**
+- [ ] `tangos import` into PostgreSQL leaves the database unwritable. It copies
+      rows with their ids (offset past the target's existing maximum) but never
+      advances PostgreSQL's id sequences, so the next command that inserts a
+      row -- the first thing any `tangos write` does is create its run's
+      `creators` row -- fails with `duplicate key value violates unique
+      constraint "creators_pkey"`. Reproduced on PostgreSQL 16 by importing a
+      sqlite database into an empty server database and then running `tangos
+      write`: `creators_id_seq` stood at 2 against a maximum id of 5. MySQL and
+      sqlite assign new ids from the table's maximum, so are unaffected.
+      `tests/test_import.py` runs against PostgreSQL in CI but never writes
+      after importing. Fix: after copying, `setval` each sequence to its
+      column's maximum on PostgreSQL. Found in stage 4a.
+      **Owner: stage 6.** `how-to/database_backends` depends on it: until it is
+      fixed, it gives a SQL script that resets the sequences after an import,
+      and should drop that warning once it is.
 
 ## Misleading or wrong documentation
 
