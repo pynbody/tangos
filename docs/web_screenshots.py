@@ -304,9 +304,11 @@ class _Video:
         """Click the 'Add +' heading of a timestep's table, type, and press Enter."""
         heading = self.page.locator(f"#label-row-{object_tag} th.editable").last
         self.click(heading, settle_ms=400)
-        # move the pointer aside, so as not to hide what is typed
+        # move the pointer aside, above and to the right, so as to hide neither
+        # what is typed nor the autocompletion menu below it (hovering over the
+        # menu would also highlight a suggestion, which Enter would accept)
         box = heading.bounding_box()
-        self.page.mouse.move(box["x"] + box["width"] / 2 + 10, box["y"] + box["height"] + 30, steps=8)
+        self.page.mouse.move(box["x"] + box["width"] + 20, box["y"] - 20, steps=8)
         heading.press_sequentially(expression, delay=self.TYPING_DELAY_MS)
         self.page.wait_for_timeout(800)
         self.press(heading, "Enter")
