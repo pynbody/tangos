@@ -297,7 +297,13 @@ html_theme_options = {
 
 html_logo = "_static/logo.svg"
 
-html_static_path = ['_static']
+# docs/web_screenshots.py records its videos into _web_screenshots/videos during
+# the build; images are copied by the image directive, but videos need this. Sphinx
+# checks that the directory exists before the videos are recorded, and copies its
+# contents at the end of the build.
+os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), '_web_screenshots', 'videos'),
+            exist_ok=True)
+html_static_path = ['_static', '_web_screenshots/videos']
 # Quicksand is the tangos web interface's font (see tangos/web/templates/
 # layout.jinja2), loaded here from the same Google Fonts URL with the same weights,
 # so the docs' wordmark matches the application's.

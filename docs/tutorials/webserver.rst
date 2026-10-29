@@ -3,10 +3,11 @@
    was dissolved; fixed "as soon if". Not yet checked by a human.
 .. Stage 4.5 (Claude, 2026-10-29): grown from a stub into a tour of the interface.
    "Starting the server" is unchanged; everything after it is new. The screenshots
-   are taken during the build by docs/web_screenshots.py, and the URL examples run
+   and videos are taken during the build by docs/web_screenshots.py, and the URL examples run
    against the server it starts. The merger tree is tutorial_gadget's since the
-   fix to tangos/web/views/merger_tree.py in the same PR, and the animation marks
-   each click. Not yet checked by a human.
+   fix to tangos/web/views/merger_tree.py in the same PR, the animation marks
+   each click, and "Calculations as columns" is shown as videos. Not yet checked
+   by a human.
 
 .. _webserver:
 
@@ -169,43 +170,44 @@ The heading ``Add +`` at the top of each table on a timestep page takes a live
 calculation. Click it, type a property name or any calculation you could give
 :meth:`~tangos.core.timestep.TimeStep.calculate_all` (see
 :ref:`calculating`), and press Enter: the calculation becomes a column, evaluated
-for every object in the timestep. Here are ``mass`` and ``VMax``:
+for every object in the timestep. Here ``mass`` and then ``VMax`` are added to
+the halos of ``tutorial_gadget``'s last snapshot; a circle marks each click, and
+a badge each press of Enter:
 
-.. image:: /_web_screenshots/web_columns.png
-   :alt: The halos table with columns for mass and VMax
-   :width: 60%
+.. raw:: html
+
+   <video class="web-video" src="../_static/web_columns.webm" autoplay loop muted playsinline
+          controls aria-label="Typing mass and then VMax into the Add + heading of the halos table, which adds a column for each"></video>
 
 The arrows under each heading sort the whole table by that column, across all its
 pages, and the cross removes it. Click a heading to edit its calculation. Columns stay in place as you
 move between timesteps, so you can step through time and watch them change.
 
-As you type, the interface suggests names to complete. If a suggestion is
-highlighted when you press Enter, it is inserted -- so check that the heading
-says what you meant.
+As you type, the interface suggests names to complete, as the video shows. If a
+suggestion is highlighted when you press Enter, it is inserted -- so check that
+the heading says what you meant.
 
-A calculation that gives ``True`` or ``False`` becomes a filter. Here is
-``VMax<300``:
+A calculation that gives ``True`` or ``False`` becomes a filter. Clicking the
+filter icon beneath its heading -- a funnel, drawn in outline until it is
+switched on -- hides every row, on every page, for which it is ``False``. Here
+``VMax<300`` is added, ``False`` for the largest halos, and then switched on as a
+filter, after which the table lists the 954 halos, out of 1041, with ``VMax``
+below 300 km/s:
 
-.. image:: /_web_screenshots/web_boolean_column.png
-   :alt: A column of True and False for VMax<300
-   :width: 60%
+.. raw:: html
 
-Clicking the filter icon beneath its heading -- a funnel, drawn in outline until
-it is switched on -- hides every row, on every page, for which it is ``False``.
-The table then lists the 954 halos, out of 1041, with ``VMax`` below 300 km/s:
-
-.. image:: /_web_screenshots/web_filtered.png
-   :alt: The halos table filtered to those with VMax<300
-   :width: 60%
+   <video class="web-video" src="../_static/web_filter.webm" autoplay loop muted playsinline
+          controls aria-label="Typing VMax<300 into a new column heading, then clicking its filter icon, which leaves the 954 halos with VMax below 300"></video>
 
 Calculations can follow links, as in python. In ``tutorial_changa_blackholes``,
 whose halos are linked to their black holes (see :doc:`/tutorials/black_holes`),
 the column ``BH_central.BH_mass`` gives the mass of each halo's central black
 hole, and ``None`` for a halo that has none:
 
-.. image:: /_web_screenshots/web_link_column.png
-   :alt: The halos of tutorial_changa_blackholes with a column for BH_central.BH_mass
-   :width: 50%
+.. raw:: html
+
+   <video class="web-video" src="../_static/web_link_column.webm" autoplay loop muted playsinline
+          controls aria-label="Typing BH_central.BH_mass into the Add + heading of the halos table of tutorial_changa_blackholes"></video>
 
 An object's page has an ``Add +`` row too, for a calculation on just that object.
 

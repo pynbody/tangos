@@ -616,15 +616,26 @@ What 4b found:
       PR: a mention of the browser at the end of the quick-start (from stage 3's
       second read-through).
 
-      **Done in 4.5.** `tutorials/webserver` now tours the interface with twelve
-      images, all generated during the build by `docs/web_screenshots.py`
+      **Done in 4.5.** `tutorials/webserver` now tours the interface with nine
+      images and three videos, all generated during the build by `docs/web_screenshots.py`
       (playwright and Chromium against a `tangos serve` that `conf.py` starts in
       `builder-inited` and stops in `build-finished`). Each is cropped to the
       element it is about; stepping back through time is an animated PNG assembled
       from cropped frames with Pillow, which needs no video tools. At AP's
       request, a movie marks each click with a frame showing a circle where it
       lands (`_Movie.click` in `docs/web_screenshots.py`); any later movie should
-      do the same. Every action the
+      do the same. Also at AP's request, "Calculations as columns" is three
+      videos (webm, about 1 MB each) instead of four stills, showing the column
+      headings being typed: `_Video` records them with playwright's screencast
+      (`page.screencast`, new in playwright 1.6x) and `press_sequentially`, in a
+      700x400 window framing the table, and draws in a pointer, a ripple for
+      each click and a badge for each Enter, since the screencast shows none.
+      Two things are needed for sharp, correct videos: launch Chromium with
+      `--force-device-scale-factor=2` (the screencast otherwise records one pixel
+      per CSS pixel, whatever the page's scale factor), and do *not* enlarge
+      the page with CSS `zoom`, which misplaces jQuery UI's autocompletion menu
+      and playwright's own action overlays. The videos are published through
+      `html_static_path`, and embedded with `.. raw:: html`. Every action the
       brief lists is covered, with two changes: the boolean column is `VMax<300`,
       because typing `mass<1e12` trips the autocompletion (stage 6 item in
       `KNOWN_ISSUES.md`); and the

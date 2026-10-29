@@ -1,11 +1,14 @@
-"""Screenshots of the web interface for tutorials/webserver, taken during the docs build.
+"""Screenshots and videos of the web interface for tutorials/webserver, taken during the docs build.
 
 docs/conf.py calls :func:`start_server` and :func:`capture` when the build starts,
 and :func:`stop_server` when it finishes. The server runs ``tangos serve`` against
 the tutorial database on its usual port, so ``tutorials/webserver`` can also fetch
 data from it in its ``.. ipython::`` blocks. Each image is cropped to the part of
 the page it is about; the one animation is assembled frame by frame with Pillow,
-with each click marked by a circle where it lands.
+with each click marked by a circle where it lands. The videos of adding columns
+are recorded with playwright's screencast, with the window sized to the table, a
+pointer drawn in, and each click and key press marked; they go in ``videos/``,
+which conf.py publishes as static files.
 
 To run it on its own, with the tutorial database in place::
 
@@ -15,10 +18,12 @@ It needs playwright and a browser for it: ``pip install -e .[docs]`` and then
 ``python -m playwright install chromium``.
 """
 
+import contextlib
 import io
 import os
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 
@@ -30,34 +35,45 @@ SCALE = 2      # device pixels per CSS pixel, so that the images stay sharp
 PADDING = 8    # CSS pixels around each cropped element
 
 _server = None
+_server_log = None
 
 
 def start_server(timeout=120):
     """Start ``tangos serve`` on PORT and wait until it answers."""
-    global _server
+    global _server, _server_log
     if _server is not None:
         return
     if _answers():
         raise RuntimeError(f"Something is already listening on port {PORT}; stop it before "
                            f"building the documentation, which runs its own tangos server there.")
+    # the server's output is kept, to be reported if it fails to start
+    _server_log = tempfile.TemporaryFile(mode="w+")
     _server = subprocess.Popen(["tangos", "serve", "--title", "the tutorial database"],
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    deadline = time.time() + timeout
+                               stdout=_server_log, stderr=subprocess.STDOUT)
+    deadline = time.monotonic() + timeout
     while not _answers():
         if _server.poll() is not None:
-            raise RuntimeError("tangos serve exited before it started answering")
-        if time.time() > deadline:
+            raise RuntimeError("tangos serve exited before it started answering:\n" + _read_log())
+        if time.monotonic() > deadline:
+            log = _read_log()
             stop_server()
-            raise RuntimeError(f"tangos serve did not answer within {timeout} s")
+            raise RuntimeError(f"tangos serve did not answer within {timeout} s:\n" + log)
         time.sleep(0.5)
 
 
 def stop_server():
-    global _server
+    global _server, _server_log
     if _server is not None:
         _server.terminate()
         _server.wait(timeout=30)
         _server = None
+        _server_log.close()
+        _server_log = None
+
+
+def _read_log():
+    _server_log.seek(0)
+    return _server_log.read()
 
 
 def _answers():
@@ -186,6 +202,121 @@ class _Movie:
                              append_images=self._frames[1:], duration=self._durations, loop=0)
 
 
+class _Video:
+    """A video of the interface being used, recorded with playwright's screencast.
+
+    The window is sized to frame just the part being used, so the video needs no
+    cropping. Chromium must be launched with --force-device-scale-factor (see
+    :func:`capture`): the screencast otherwise records one video pixel per CSS
+    pixel, which looks soft. Playwright draws no mouse pointer, so the page is
+    given one, with a ripple wherever a click lands, and a badge naming each key
+    pressed that is not typed into the page."""
+
+    VIEWPORT = {"width": 700, "height": 400}
+    VIDEO_SIZE = {"width": VIEWPORT["width"] * SCALE, "height": VIEWPORT["height"] * SCALE}
+    TYPING_DELAY_MS = 120
+
+    _DECORATIONS = """() => {
+        const style = document.createElement('style');
+        style.textContent = `
+          #docs-pointer { position: fixed; z-index: 100000; pointer-events: none;
+                          width: 18px; height: 18px; left: -100px; top: -100px; }
+          .docs-ripple { position: fixed; z-index: 99999; pointer-events: none;
+                         width: 28px; height: 28px; margin: -14px 0 0 -14px;
+                         border-radius: 50%; border: 2px solid rgb(0, 120, 255);
+                         background: rgba(0, 120, 255, 0.25);
+                         animation: docs-ripple 900ms ease-out forwards; }
+          @keyframes docs-ripple { from { transform: scale(0.4); opacity: 1; }
+                                   to { transform: scale(1.3); opacity: 0; } }
+          #docs-key { position: fixed; z-index: 100000; pointer-events: none;
+                      right: 12px; bottom: 12px; padding: 4px 10px; border-radius: 5px;
+                      font: 600 15px sans-serif; color: white;
+                      background: rgba(0, 120, 255, 0.9); display: none; }`;
+        document.head.appendChild(style);
+        const pointer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        pointer.id = 'docs-pointer';
+        pointer.setAttribute('viewBox', '0 0 24 24');
+        pointer.innerHTML = '<path d="M3 2 L3 20 L8 15 L11.5 22 L14.5 20.5 L11 13.8 L18 13.8 Z" '
+                          + 'fill="black" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>';
+        document.body.appendChild(pointer);
+        const key = document.createElement('div');
+        key.id = 'docs-key';
+        document.body.appendChild(key);
+        document.addEventListener('mousemove', e => {
+            pointer.style.left = e.clientX + 'px';
+            pointer.style.top = e.clientY + 'px';
+        }, true);
+        document.addEventListener('mousedown', e => {
+            const ripple = document.createElement('div');
+            ripple.className = 'docs-ripple';
+            ripple.style.left = e.clientX + 'px';
+            ripple.style.top = e.clientY + 'px';
+            document.body.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 1000);
+        }, true);
+        window.docsShowKey = (name) => {
+            key.textContent = name;
+            key.style.display = 'block';
+            setTimeout(() => { key.style.display = 'none'; }, 900);
+        };
+    }"""
+
+    def __init__(self, browser, output_dir, path, top):
+        """Open path, scrolled so that the element matched by the selector top is
+        at the top of the window."""
+        self._page = _Page(browser, output_dir, viewport=self.VIEWPORT)
+        self.page = self._page.page
+        self._page.goto(path)
+        self.page.evaluate(self._DECORATIONS)
+        self.page.locator(top).first.evaluate(
+            "e => { e.scrollIntoView(); window.scrollBy(0, -16); }")
+        # start the pointer off to one side of the window
+        self.page.mouse.move(self.VIEWPORT["width"] * 0.75, self.VIEWPORT["height"] * 0.6)
+        self._page.settle(500)
+
+    def close(self):
+        self._page.close()
+
+    @contextlib.contextmanager
+    def record(self, name):
+        video_dir = os.path.join(self._page.output_dir, "videos")
+        os.makedirs(video_dir, exist_ok=True)
+        with self.page.screencast.start(path=os.path.join(video_dir, name), size=self.VIDEO_SIZE):
+            self.page.wait_for_timeout(1000)
+            yield
+            self.page.wait_for_timeout(2500)
+
+    def click(self, locator, settle_ms=1500):
+        """Move the pointer smoothly to the middle of locator, and click there."""
+        box = locator.bounding_box()
+        self.page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2, steps=25)
+        self.page.wait_for_timeout(300)
+        locator.click()
+        self._page.settle(settle_ms)
+
+    def press(self, locator, key, settle_ms=1500):
+        self.page.evaluate("key => window.docsShowKey(key)", key)
+        self.page.wait_for_timeout(300)
+        locator.press(key)
+        self._page.settle(settle_ms)
+
+    def add_column(self, object_tag, expression):
+        """Click the 'Add +' heading of a timestep's table, type, and press Enter."""
+        heading = self.page.locator(f"#label-row-{object_tag} th.editable").last
+        self.click(heading, settle_ms=400)
+        # move the pointer aside, so as not to hide what is typed
+        box = heading.bounding_box()
+        self.page.mouse.move(box["x"] + box["width"] / 2 + 10, box["y"] + box["height"] + 30, steps=8)
+        heading.press_sequentially(expression, delay=self.TYPING_DELAY_MS)
+        self.page.wait_for_timeout(800)
+        self.press(heading, "Enter")
+        # pressing Enter accepts a highlighted autocompletion, which could change
+        # what was typed (see tutorials/webserver)
+        headings = self.page.locator(f"#label-row-{object_tag} th.editable").all_inner_texts()
+        if expression not in headings:
+            raise RuntimeError(f"Typing {expression!r} into a column heading gave {headings}")
+
+
 def _browse(browser, output_dir):
     p = _Page(browser, output_dir)
     p.goto("/tutorial_gadget")
@@ -251,29 +382,23 @@ def _halo(browser, output_dir):
 
 
 def _calculations(browser, output_dir):
-    p = _Page(browser, output_dir)
-    p.goto("/tutorial_gadget/snapshot_020")
-    table = p.page.locator("#properties_form_halo")
-    p.add_column("halo", "mass")
-    p.add_column("halo", "VMax")
-    p.shot("web_columns.png", table, max_height=330)
+    v = _Video(browser, output_dir, "/tutorial_gadget/snapshot_020", "#objects-container h2")
+    with v.record("web_columns.webm"):
+        v.add_column("halo", "mass")
+        v.add_column("halo", "VMax")
+    with v.record("web_filter.webm"):
+        v.add_column("halo", "VMax<300")
+        v.click(v.page.locator("#properties_form_halo .leftbuttons label.filter-checkbox").first)
+    v.close()
 
-    p.add_column("halo", "VMax<300")
-    p.shot("web_boolean_column.png", table, max_height=330)
-    p.page.locator("#properties_form_halo .leftbuttons label.filter-checkbox").first.click()
-    p.settle(1500)
-    p.shot("web_filtered.png", table, max_height=330)
-    p.close()
-
-    p = _Page(browser, output_dir)
-    p.goto("/tutorial_changa_blackholes/%25960")
-    p.add_column("halo", "BH_central.BH_mass")
-    p.shot("web_link_column.png", p.page.locator("#properties_form_halo"), max_height=330)
-    p.close()
+    v = _Video(browser, output_dir, "/tutorial_changa_blackholes/%25960", "#objects-container h2")
+    with v.record("web_link_column.webm"):
+        v.add_column("halo", "BH_central.BH_mass")
+    v.close()
 
 
 def capture(output_dir):
-    """Take every screenshot; the server must already be running."""
+    """Take every screenshot and video; the server must already be running."""
     from playwright.sync_api import sync_playwright
 
     os.makedirs(output_dir, exist_ok=True)
@@ -282,6 +407,11 @@ def capture(output_dir):
         try:
             _browse(browser, output_dir)
             _halo(browser, output_dir)
+        finally:
+            browser.close()
+        # the screencast records at the browser's own scale factor, not the page's
+        browser = playwright.chromium.launch(args=[f"--force-device-scale-factor={SCALE}"])
+        try:
             _calculations(browser, output_dir)
         finally:
             browser.close()
