@@ -79,27 +79,32 @@ def test_custom_handler(run_in_scratch_database):
     assert output.splitlines() == ["42.0", "150"]
 
 
-def test_custom_property_from_particles(run_in_scratch_database):
-    """docs/tutorials/custom_properties.rst, with docs/examples/mytangosproperty.py
+def test_properties_from_particles(run_in_scratch_database):
+    """docs/tutorials/custom_properties.rst and histograms.rst, with mytangosproperty.py and myhistogram.py
 
-    The repository's small test simulation has no halos whose particles pynbody can
-    load, so the property is written for a tracker -- a set of particles chosen here
-    -- instead; tangos hands it particles in exactly the same way."""
+    The repository's small test simulation has no halos whose particles tangos write
+    can load (see KNOWN_ISSUES.md), so the properties are written for a tracker of
+    all its star particles instead; tangos hands them particles in the same way."""
     run = run_in_scratch_database
     run("tangos", "add", "test_tipsy", TANGOS_SIMULATION_FOLDER=TEST_SIMULATIONS_DIR)
     run(*python(
-        "import tangos, pynbody\n"
+        "import tangos\n"
         "from tangos import tracking\n"
-        "snapshot = tangos.get_timestep('test_tipsy/%832').load()\n"
-        "snapshot.physical_units()\n"
-        "tracking.new('test_tipsy', snapshot[pynbody.filt.Sphere('3000 kpc', snapshot.dm['pos'][0])])\n"),
+        "tracking.new('test_tipsy', tangos.get_timestep('test_tipsy/%832').load().star)\n"),
         TANGOS_SIMULATION_FOLDER=TEST_SIMULATIONS_DIR)
 
-    run("tangos", "write", "velocity_dispersion", "--type", "tracker", "--for", "test_tipsy",
-        TANGOS_SIMULATION_FOLDER=TEST_SIMULATIONS_DIR, TANGOS_PROPERTY_MODULES="mytangosproperty")
+    run("tangos", "write", "velocity_dispersion", "metals_into_stars_histogram",
+        "--type", "tracker", "--for", "test_tipsy",
+        TANGOS_SIMULATION_FOLDER=TEST_SIMULATIONS_DIR, TANGOS_PROPERTY_MODULES="mytangosproperty,myhistogram")
     output = run(*python(
         "import tangos\n"
-        "print(tangos.get_object('test_tipsy/%832/tracker_1')['velocity_dispersion'])\n"),
-        TANGOS_SIMULATION_FOLDER=TEST_SIMULATIONS_DIR)
-    velocity_dispersion = float(output.strip())
-    assert 0 < velocity_dispersion < 1000  # km/s
+        "tracker = tangos.get_object('test_tipsy/%832/tracker_1')\n"
+        "print(tracker['velocity_dispersion'])\n"
+        "history = tracker['metals_into_stars_histogram']\n"
+        "print(len(history), history.sum())\n"),
+        TANGOS_SIMULATION_FOLDER=TEST_SIMULATIONS_DIR, TANGOS_PROPERTY_MODULES="mytangosproperty,myhistogram")
+    velocity_dispersion, history = output.splitlines()
+    assert 0 < float(velocity_dispersion) < 1000  # km/s
+    history_length, history_total = history.split()
+    assert int(history_length) == 141  # 20 Myr bins up to the snapshot's 2.82 Gyr
+    assert float(history_total) > 0

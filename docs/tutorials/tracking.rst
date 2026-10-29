@@ -42,32 +42,35 @@ Then make the tracker:
 .. code-block:: python
 
    from tangos import tracking
-   tracking.new("tutorial_changa", dense_gas)
+   tracker_number = tracking.new("tutorial_changa", dense_gas)
 
 :func:`tangos.tracking.new` records the particles' IDs, adds a tracker object to
-every timestep of the simulation, links each to the next, and returns the
-tracker's number. The first tracker in a simulation is number 1, so the tracked
-particles at an earlier snapshot are:
+every timestep of the simulation, links each to the next, saves all of that to
+the database, and returns the tracker's number -- 1, for the first tracker in a
+simulation. The tracked particles at an earlier snapshot are then:
 
 .. code-block:: python
 
-   tangos.get_object("tutorial_changa/%832/tracker_1").load()
+   tangos.get_object(f"tutorial_changa/%832/tracker_{tracker_number}").load()
 
 These are the same particles, wherever they were at that time -- not the gas that
 is dense at that snapshot, but the gas that *will be* dense at the final one.
+Choosing particles at an early snapshot instead follows them forwards, to where
+they end up.
 
 Calculating properties
 ----------------------
 
-Trackers take properties like any other object. Back in the shell:
+Trackers take properties like any other object. From the shell:
 
 .. code-block:: bash
 
    tangos write mean_rho --for tutorial_changa --type tracker
 
 ``mean_rho`` is a built-in property: the mean density of the gas particles, in
-protons per cubic centimetre. It is calculated together with ``mean_temp``, their
-mean temperature, which is stored too. ``--type tracker`` tells ``tangos write`` to
+protons per cubic centimetre. Like the properties with several names in
+:doc:`/tutorials/custom_properties`, it is calculated together with
+``mean_temp``, their mean temperature, which is stored too. ``--type tracker`` tells ``tangos write`` to
 calculate for trackers rather than halos. Any property works, including your own
 (see :doc:`/tutorials/custom_properties`): tangos hands the tracked particles to
 the calculation, which need not know it is working on a tracker rather than a
@@ -95,10 +98,11 @@ halos on each timestep's page (see :doc:`/tutorials/webserver`).
 
 .. note::
 
-   In a simulation with black holes, each black hole is also a tracker (see
-   :doc:`/tutorials/black_holes`), so :attr:`TimeStep.trackers
-   <tangos.core.timestep.TimeStep.trackers>` includes them, and tracker numbers
-   in such a simulation are not small integers.
+   Inside tangos, a black hole (see :doc:`/tutorials/black_holes`) is a kind of
+   tracker, following its one particle. So in a simulation with black holes,
+   :attr:`TimeStep.trackers <tangos.core.timestep.TimeStep.trackers>` includes
+   them, and the trackers you make are numbered after the black holes, so are
+   not small integers.
 
 .. seealso::
 

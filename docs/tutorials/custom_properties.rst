@@ -183,11 +183,13 @@ Properties that need the particle data
 --------------------------------------
 
 Most properties worth having have to be calculated from the simulation itself.
-This one is the velocity dispersion of a halo's particles:
+This one is the one-dimensional velocity dispersion of a halo's particles:
 
 .. literalinclude:: ../examples/mytangosproperty.py
    :language: python
    :start-at: import numpy
+
+Save it as ``mytangosproperty.py``, in a folder on your python path.
 
 Deriving from :class:`~tangos.properties.pynbody.PynbodyPropertyCalculation`
 rather than :class:`~tangos.properties.PropertyCalculation` says two things: the
@@ -197,18 +199,24 @@ equivalent, and so can a handler of your own; see :doc:`/how-to/custom_handlers`
 
 tangos never loads particle data during a live calculation -- in an analysis
 session it would almost never be what you want -- so a property like this cannot
-be calculated on the fly:
+be calculated on the fly. Even with the module imported, asking for it fails:
 
 .. ipython::
- :okexcept:
 
  In [1]: import mytangosproperty
 
- In [2]: halo.calculate(lambda: velocity_dispersion())
+ In [2]: try:
+    ...:     halo.calculate(lambda: velocity_dispersion())
+    ...: except NameError as error:
+    ...:     print(error)
+    ...:
 
-Instead, ``tangos write`` calculates it for every halo and stores the result. Save
-the class as ``mytangosproperty.py``, set ``TANGOS_PROPERTY_MODULES`` as above, and
-from the shell run:
+A live calculation only considers classes that need no particle data, so it
+reports the property as unknown -- the same message a module that failed to
+import would give, though here the import worked.
+
+Instead, ``tangos write`` calculates the property for every halo and stores the
+result. Set ``TANGOS_PROPERTY_MODULES`` as above, and from the shell run:
 
 .. code-block:: bash
 
@@ -225,11 +233,12 @@ command finishes. ``velocity_dispersion`` is then a stored property like any
 other: ``halo["velocity_dispersion"]`` for one halo, or
 ``timestep.calculate_all("velocity_dispersion")`` for all of them. pynbody hands
 tangos particle data in physical units -- kpc, km/s, Gyr -- so the velocity
-dispersion is in km/s.
+dispersion is in km/s. ``calculate`` returns a plain ``float``: tangos stores
+numbers and numpy arrays, but not the units pynbody attaches to them.
 
 .. seealso::
 
-   :doc:`/custom_properties` for what property classes can do beyond this:
-   particles from a region around each halo, setting up once per timestep, and
-   returning another object as a link. :doc:`/tutorials/histograms` for properties
-   that record a history between snapshots.
+   :doc:`/tutorials/histograms`, the next tutorial, for properties that record a
+   history between snapshots, and :doc:`/custom_properties` for what property
+   classes can do beyond this: particles from a region around each halo, setting
+   up once per timestep, and returning another object as a link.

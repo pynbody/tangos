@@ -572,6 +572,17 @@ What 4b found:
   the page tells readers to restart python.
 - `calculate` cannot return a tuple from one lambda (`lambda: (a(), b())` raises
   `ValueError: too many values to unpack`); call it once per value.
+- **The cold read** found the black holes page weakest (its feature broken, outputs
+  it never explained) and crossmatching strongest. Acted on: the velocity
+  dispersion example flattened the N×3 velocity array, so now computes a
+  one-dimensional dispersion; the histograms page claimed chunks "tile" the
+  history when they overlap (the earlier snapshot's chunk wins in the overlap,
+  which the figure showed); there was no example of a histogram class of one's
+  own, so `docs/examples/myhistogram.py` adds one, written on the CI data and in
+  `tests/test_docs_examples.py`; the BH page now explains the four extra
+  properties `BH_mass` brings, the zero particle counts, units, and which log does
+  what; crossmatching states the shared-particle-ID requirement first and shows
+  the link weight; tracking uses the number `tracking.new` returns.
 - [ ] Web interface, currently a 21-line stub. Undocumented: arbitrary
       live-calculation expressions as timestep-view columns (arguably the killer
       feature), the merger-tree viewer, and the entire URL API in

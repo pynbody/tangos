@@ -23,7 +23,8 @@ subject of :doc:`/tutorials/crossmatching`.
  :doc:`/tutorials/first_database`; this tutorial repeats its steps for the new
  simulation and then builds on them. The exploration that follows runs against
  the tutorial database (see :ref:`installation`), which already contains
- everything built here.
+ everything built here: if you only want to explore, skip to
+ :ref:`black_holes_hosts`.
 
 Adding the simulation and its black holes
 -----------------------------------------
@@ -43,10 +44,12 @@ those come from a command of their own,
    tangos import-changa-bh --sims tutorial_changa_blackholes
 
 which finds the black hole particles in each snapshot, adds each as an object of
-type ``BH``, and links it to the halos it sits in. It is specific to ChaNGa, and
-reads the black hole logs that ChaNGa writes beside the snapshots. If you use
-Michael Tremmel's black hole implementation, run his pre-processing script first,
-to produce the ``.shortened.orbit`` and ``.mergers`` logs from ChaNGa's raw output.
+type ``BH``, and links it to the halos it sits in. It is specific to ChaNGa. The
+black hole properties below are read from a log beside the snapshots -- a
+``.shortened.orbit`` file (or ChaNGa's own ``.BlackHoles``) -- and a ``.mergers``
+log records which black holes merged. If you use Michael Tremmel's black hole
+implementation, run his pre-processing script first, to produce the
+``.shortened.orbit`` and ``.mergers`` logs from ChaNGa's raw output.
 
 Like halos, black holes start with no properties. Calculate some with
 ``tangos write``, adding ``--type bh`` to say that it is the black holes you
@@ -56,10 +59,16 @@ mean, not the halos:
 
    tangos write BH_mass BH_mdot_histogram --for tutorial_changa_blackholes --type bh
 
-``BH_mass`` is the black hole's mass at each snapshot, and ``BH_mdot_histogram``
-its accretion rate between snapshots, stored in the same way as star formation
-histories (see :doc:`/tutorials/histograms`). Both commands can run in parallel;
-see :doc:`/how-to/parallel`.
+``BH_mass`` is the black hole's mass at each snapshot, in solar masses. It is
+calculated together with four related properties -- the accretion rate now
+(``BH_mdot``) and averaged (``BH_mdot_ave``), and the black hole's offset and
+distance from its host halo's centre (``BH_central_offset``,
+``BH_central_distance``) -- which are stored too. ``BH_mdot_histogram`` is the
+accretion rate between snapshots, stored in the same way as star formation
+histories (see :doc:`/tutorials/histograms`). ``tangos import-changa-bh`` and
+``tangos write`` can both run in parallel; see :doc:`/how-to/parallel`.
+
+.. _black_holes_hosts:
 
 Black holes and their hosts
 ---------------------------
@@ -84,7 +93,8 @@ from one snapshot to the next:
 
  In [7]: bh.keys()
 
-Besides its own properties, each black hole has a ``host_halo`` link, to the
+A black hole is a single particle, so the particle counts in its description are
+all zero. Besides its own properties, each black hole has a ``host_halo`` link, to the
 smallest halo it belongs to:
 
 .. ipython::
@@ -102,11 +112,18 @@ black holes within it, subhalos included. A massive halo can hold many:
 
  In [2]: len(halo['BH']), len(halo['BH_central'])
 
-Following either link from a halo with several black holes gives a value for each
-of them, with a warning that the link is ambiguous. Usually you want one in
-particular -- the most massive, or the one nearest the centre -- and
-:ref:`live_calculation_recipes` shows how to pick it with ``link()``. Here, the
-most massive:
+Following either link in a calculation, from a halo with several black holes,
+picks one -- the first, which is the most massive -- and warns ``More than one
+relation for target 'BH_central' has been found. Picking the first.``:
+
+.. ipython::
+ :okwarning:
+
+ In [1]: halo.calculate(lambda: BH_central.BH_mass)
+
+To choose deliberately, use ``link()``, which :ref:`live_calculation_recipes`
+explains: here, the most massive, which is the same black hole, and whose mass,
+in solar masses, is:
 
 .. ipython::
 
@@ -122,9 +139,10 @@ formation histories of :doc:`/tutorials/histograms`.
 
 .. warning::
 
-   ``tangos import-changa-bh`` does not currently link black holes from one
-   snapshot to the next: it logs ``No merger file`` and skips that step. So in the
-   tutorial database, as in any built with the current version, this history
+   ``tangos import-changa-bh`` is meant to use the ``.mergers`` log to link each
+   black hole to itself at the next snapshot, but in the current version it
+   does not find that log: it reports ``No merger file`` and skips the step. So
+   in the tutorial database, as in any built with the current version, this history
    covers only the half Gyr stored at the final snapshot -- the plot below is zero
    before 2.74 Gyr for that reason alone -- and a black hole's
    ``BH_mass`` cannot be followed back through earlier snapshots.

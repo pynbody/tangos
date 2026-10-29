@@ -8,10 +8,12 @@
 Comparing simulations object by object
 ======================================
 
-Simulations run from the same initial conditions -- with different physics,
-resolution or code -- form the same halos, in nearly the same places. Matching
-each halo to its counterpart lets you ask how the difference in the simulations
-changes individual objects, not just populations. tangos makes these matches
+Simulations run from the same initial conditions, with different physics or a
+different code, form the same halos in nearly the same places. Matching each halo
+to its counterpart lets you ask how the difference changes individual objects,
+not just populations. The matching works by particle IDs, so the simulations must
+share them -- as runs from the same initial conditions file, at the same
+resolution, do. tangos makes these matches
 with ``tangos crosslink``, and from then on a calculation can step from a halo
 in one simulation to its counterpart in the other.
 
@@ -23,7 +25,8 @@ black holes and their feedback.
  database: :doc:`/tutorials/first_database` builds the first, and
  :doc:`/tutorials/black_holes` the second. The exploration that follows runs
  against the tutorial database (see :ref:`installation`), which already contains
- the matches made here.
+ the matches made here: if you only want to explore, skip to
+ :ref:`crossmatching_using`.
 
 Making the matches
 ------------------
@@ -37,14 +40,19 @@ From the shell:
 For each timestep of the first simulation, ``tangos crosslink`` finds the timestep
 of the second closest to it in time, and matches their objects by the particles
 they share, in the same way that ``tangos link`` matches objects from one
-timestep to the next. That only works if particles carry the same IDs in both
-simulations, as they do in runs from the same initial conditions. The matches
-are stored as links in both directions, with the fraction of particles shared as
-their weight.
+timestep to the next. The matches are stored as links in both directions, with
+the fraction of particles shared as their weight.
 
-You can also match just one pair of timesteps, by naming them instead of the
-simulations. Like ``tangos link``, ``tangos crosslink`` can run in parallel; see
+To match just one pair of timesteps, name them instead of the simulations:
+
+.. code-block:: bash
+
+   tangos crosslink tutorial_changa/%960 tutorial_changa_blackholes/%960
+
+Like ``tangos link``, ``tangos crosslink`` can run in parallel; see
 :doc:`/how-to/parallel`.
+
+.. _crossmatching_using:
 
 Using the matches
 -----------------
@@ -62,6 +70,18 @@ follows links until it reaches an object in that simulation.
  In [3]: halo = tangos.get_object("tutorial_changa_blackholes/%960/halo_1")
 
  In [4]: halo.calculate(lambda: match('tutorial_changa'))
+
+The link it followed shares almost all its particles:
+
+.. ipython::
+
+ In [1]: for link in halo.links:
+    ...:     if link.halo_to.timestep.simulation.basename == "tutorial_changa":
+    ...:         print(link.halo_to, link.weight)
+    ...:
+
+Where there are several candidates, ``match()`` follows the link with the
+highest weight.
 
 Anything you can calculate for a halo, you can calculate for its counterpart.
 Here are the star formation histories of the same galaxy with and without black
@@ -84,10 +104,10 @@ hole feedback:
  @savefig crossmatching_sfr.png width=6in
  In [7]: p.semilogy(); p.xlabel("t/Gyr"); p.ylabel(r"SFR/$M_{\odot}\,{\rm yr}^{-1}$"); p.legend();
 
-Until about 2 Gyr, the galaxy forms stars at much the same rate in both
-simulations. After that, in the run with black holes, its star formation falls
-away: from 2.5 Gyr to the end it averages about 5 solar masses per year, against
-31 without them.
+Until about 1 Gyr, the galaxy forms stars at much the same rate in both
+simulations. From then on the run with black holes forms somewhat fewer, and
+after about 2 Gyr far fewer: from 2.5 Gyr to the end it averages about 5 solar
+masses per year, against 31 without them.
 
 ``match()`` works across a whole timestep too, with
 :meth:`~tangos.core.timestep.TimeStep.calculate_all`; the end of :ref:`time_series`

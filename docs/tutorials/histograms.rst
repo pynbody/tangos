@@ -46,10 +46,11 @@ without any further processing:
 
  In [2]: len(chunk)
 
-That is 25 bins of 20 Myr, or 0.5 Gyr. The chunk reaches back to the previous
-snapshot, 0.43 Gyr earlier, and always covers at least 0.5 Gyr; at the first
-snapshot, it covers the whole history up to that time. Successive chunks
-therefore tile the whole history.
+That is 25 bins of 20 Myr, or 0.5 Gyr. A chunk reaches back to the previous
+snapshot, but always covers at least 0.5 Gyr; here the previous snapshot is only
+0.43 Gyr earlier, so the chunk overlaps the one before it by a few bins. At the
+first snapshot, the chunk covers the whole history up to that time. So between
+them, the chunks cover the whole history, with no gaps.
 
 When you read the property normally, tangos *reassembles* the chunks: it walks
 back along the merger tree, collecting each progenitor's chunk, and joins them
@@ -74,8 +75,14 @@ of it is stored here:
  @savefig histograms_chunk.png width=6in
  In [7]: p.xlabel("t/Gyr"); p.ylabel(r"SFR/$M_{\odot}\,{\rm yr}^{-1}$"); p.legend();
 
-``x_values()`` gives the time at the start of each bin, in Gyr. It belongs to the
-stored property object, which
+Where two chunks overlap, as between 2.74 and 2.82 Gyr here, the reassembled
+history takes its values from the earlier snapshot's chunk, which is why the two
+lines differ there. The two snapshots can disagree about those bins because they
+are counting different sets of stars: whatever was in the halo at each time.
+
+``x_values()`` gives the time at the start of each bin, in Gyr, so the last bin
+starts at 3.22 Gyr and ends at 3.24, the last whole bin before this snapshot at
+3.25 Gyr. ``x_values()`` belongs to the stored property object, which
 :meth:`~tangos.core.halo.SimulationObjectBase.get_objects` returns, rather than to
 the value.
 
@@ -119,18 +126,54 @@ reassembling them. This is the class behind ``SFR_histogram``, from
    :language: python
    :pyobject: StarFormHistogram
 
+The class derives from :class:`~tangos.properties.TimeChunkedProperty` rather
+than from :class:`~tangos.properties.pynbody.PynbodyPropertyCalculation`, so it
+sets for itself the two things that class would have set: ``works_with_handler``
+says the particle data comes from pynbody, and ``requires_particle_data`` that it
+is needed at all (see :ref:`handler_properties`).
+
 ``calculate`` works as for any property that uses particle data (see
-:ref:`custom_properties_particles`): it receives the halo's particles, here with
-pynbody. It bins the formation times of the halo's stars into a histogram of the
-*whole* history, in bins of ``self.pixel_delta_t_Gyr``, and then returns only
-the slice that ``self.store_slice(t_now)`` selects -- the chunk described above.
-To write your own histogram property, follow the same pattern: compute the full
-history up to the current time, and return ``M[self.store_slice(t_now)]``.
+:ref:`custom_properties_particles`), though here its first argument is called
+``halo`` rather than ``particle_data``: it is the halo's particles, from pynbody.
+It bins the formation times of the halo's stars into a histogram of the *whole*
+history, from 0 to 20 Gyr in bins of ``self.pixel_delta_t_Gyr``, and then returns
+only the slice that ``self.store_slice(t_now)`` selects -- the chunk described
+above.
 
 ``reassemble`` is optional. ``StarFormHistogram`` overrides it only to convert
-units after the chunks are joined; the joining itself is inherited.
-``plot_xlabel`` and ``plot_ylabel`` label the plots that the web interface
-draws.
+units after the chunks are joined, because it stores solar masses per Gyr; the
+joining itself is inherited. ``plot_xlabel`` and ``plot_ylabel`` label the plots
+that the web interface draws.
+
+Writing your own
+----------------
+
+A histogram property of your own follows the same pattern. This one records the
+rate at which metals are locked up in newly formed stars:
+
+.. literalinclude:: ../examples/myhistogram.py
+   :language: python
+   :start-at: import numpy
+
+It makes the full history up to the current time, with one bin for each
+``self.pixel_delta_t_Gyr`` -- ``self.bin_index(t_now)`` gives the number of
+bins -- and returns only the slice that ``self.store_slice(t_now)`` selects.
+Storing the rate in solar masses per year from the start means no ``reassemble``
+is needed. Save it as ``myhistogram.py``, make it known to tangos as in
+:doc:`/tutorials/custom_properties`, and write it like any other property:
+
+.. code-block:: bash
+
+   tangos write metals_into_stars_histogram --for tutorial_changa
+
+It then reads back, reassembled, exactly as ``SFR_histogram`` does. Divided by
+``SFR_histogram``, it gives the mean metallicity of the stars forming at each
+time; for halo 1 of the ChaNGa tutorial simulation, that rises to about 0.04 at
+the final snapshot.
+
+.. The metallicity figure comes from writing this class on the cut-down
+   tutorial_changa used by CI (see DOCS_PLAN.md, "What 4b found");
+   tests/test_docs_examples.py checks that the class runs.
 
 .. warning::
 
@@ -144,7 +187,8 @@ Changing the time resolution
 
 Bins are 20 Myr wide unless the simulation says otherwise. To use 10 Myr bins for
 every histogram property of a simulation, set its ``histogram_delta_t_Gyr``
-property *before* the first ``tangos write`` of any histogram:
+property *before* the first ``tangos write`` of any histogram (assigning it saves
+it to the database straight away):
 
 .. code-block:: python
 
@@ -157,7 +201,7 @@ the histogram properties first (see :doc:`/how-to/managing_a_database`).
 
 .. seealso::
 
-   :doc:`/how-to/live_calculation_recipes` for all the ways of reading histograms
-   back, :doc:`/tutorials/black_holes` for the accretion history of black holes,
-   which is stored the same way, and
+   :doc:`/tutorials/black_holes`, the next tutorial, whose accretion rates are
+   stored the same way; :doc:`/how-to/live_calculation_recipes` for all the ways
+   of reading histograms back; and
    :class:`~tangos.properties.TimeChunkedProperty` in the API reference.
