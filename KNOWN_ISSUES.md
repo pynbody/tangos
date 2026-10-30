@@ -8,6 +8,13 @@ docs page that surfaced them is finished. Items are grouped by kind and
 checked off as they are fixed. Each item below was verified by reading and, in
 most cases, running the code at the point it was added.
 
+Every open item names one owner, assigned in the stage 4 triage: **stage 4** or
+**stage 5** for a documentation error on a page that stage rewrites, which it
+fixes as part of the rewrite; **stage 6** for a code fix, made as its own small
+PR against `master` (see **Stage 6** in `DOCS_PLAN.md`). Where a page depends
+on a code fix, the item says which page and what it should do meanwhile. Items
+closed without a fix say why.
+
 ## Broken code
 
 - [ ] `tests/test_live_calculation.py` is order-dependent and fails
@@ -22,6 +29,7 @@ most cases, running the code at the point it was added.
       orderings, five runs failed. This is pre-existing and unrelated to any
       documentation change; it means a red CI run on this file may be
       ordering, not a real regression.
+      **Owner: stage 6.**
 
 - [ ] `tangos.getdb` raises `NameError` when called. It is exported in
       `tangos.query.__all__` (and so is `tangos.getdb`), but the branch that
@@ -31,15 +39,19 @@ most cases, running the code at the point it was added.
       `'Halo' not in dir(tangos.query)`. It also has zero callers anywhere in
       `tangos/`, `tests/` or `docs/`. Either fix and test it, or remove it from
       `__all__` and delete it.
+      **Owner: stage 6.** Stage 5's API reference depends on it: document the fixed
+      function, or leave it out if the fix removes it from `__all__`.
 - [ ] `SimulationObjectBase.plot(name, ...)` always raises `AttributeError`. It
       fetches a `HaloProperty` row and calls `.plot()` on it, but `HaloProperty`
       defines no `plot` method (confirmed: `hasattr(HaloProperty, 'plot')` is
       `False`). Vestigial; either implement a real `plot()` on `HaloProperty` or
       remove the method.
+      **Owner: stage 6.**
 - [ ] `TimeStep.keys()` is a stub: it computes an unused `session` and then
       unconditionally raises `RuntimeError("Not implemented")`. By contrast
       `SimulationObjectBase.keys()` and `Simulation.keys()` both work, so a user
       has no reason to expect this one to be different.
+      **Owner: stage 6.**
 - [ ] `tangos.core.Halo` does not exist (only `tangos.core.halo.Halo`, and
       likewise for `BH`/`Group`/`Tracker`/`PhantomHalo`) — confirmed via
       `hasattr(tangos.core, 'Halo')` is `False`. Relatedly,
@@ -51,12 +63,16 @@ most cases, running the code at the point it was added.
       `from tangos.core import *` does not deliver the object model, while
       naming any of these explicitly (`tangos.core.TimeStep`, etc.) works fine.
       Worth fixing `__all__` to match what is actually importable.
+      **Owner: stage 6.** Stage 5's API reference depends on it: it should document
+      what `tangos.core` actually exports once this is fixed.
 - [ ] `tangos.testing.simulation_generator.SimulationGeneratorForTests`:
       `add_objects_to_timestep(10)` assigns particle counts descending from
       1000 in steps of 100, so the 10th halo gets `NDM=0`; a subsequent
       `link_last_halos()` call then divides by zero. Reproduced directly:
       `ZeroDivisionError: float division by zero`. Works fine for `n <= 9`, or
       with an explicit `NDM=` list passed to `add_objects_to_timestep`.
+      **Owner: stage 6.** Stage 5's executable fallback for the language reference
+      depends on it if it needs more than nine halos per timestep.
 - [ ] `MultiSourceAllMajorProgenitorsStrategy` and
       `MultiSourceAllMajorDescendantsStrategy`, defined in
       `tangos/relation_finding/multi_source.py`, are not re-exported from
@@ -65,6 +81,7 @@ most cases, running the code at the point it was added.
       `hasattr(tangos.relation_finding, ...)` but `True` from the
       `multi_source` submodule directly). Looks like an oversight rather than a
       deliberate omission.
+      **Owner: stage 6.**
 - [ ] `tangos.core.init_db` mishandles a bare two-slash `sqlite://` URI (the
       in-memory form). The scheme-detection logic only special-cases the
       three-slash file form (`db_uri.startswith("sqlite:///")`); a two-slash
@@ -74,6 +91,7 @@ most cases, running the code at the point it was added.
       `TypeError: 'connect_timeout' is an invalid keyword argument for
       Connection()`. A file-based sqlite URI (`init_db('/tmp/x.db')`) is
       unaffected. Found while trying to reproduce the item above.
+      **Owner: stage 6.**
 
 - [ ] `config.property_modules` is a one-shot `map` object that is always
       already exhausted by the time anyone can read it. `tangos/config.py:74`
@@ -86,6 +104,7 @@ most cases, running the code at the point it was added.
       to `_import_configured_property_modules()` silently imports nothing.
       Setting it to a real list in `config_local.py` is unaffected. Fix:
       `property_modules = [s.strip() for s in property_modules]`.
+      **Owner: stage 6.**
 - [ ] `tangos.get_simulation` treats `_` as a wildcard, so almost every lookup
       by exact name is silently a pattern match. `tangos/query.py:22` switches
       to `Simulation.basename.like(id)` whenever the id contains `%` **or**
@@ -97,6 +116,8 @@ most cases, running the code at the point it was added.
       case this returns the wrong simulation, or raises the "Multiple matches"
       error for a name the user typed exactly. Only `%` should trigger the
       `LIKE` branch.
+      **Owner: stage 6.** Stage 5's API reference and FAQ depend on it: document the
+      fixed lookup, or warn about the wildcard if it is still unfixed.
 - [ ] Querying a database that does not exist silently creates an empty one,
       then reports the wrong problem. `tangos/core/__init__.py:170` calls
       `Base.metadata.create_all(_engine)` on every `init_db()` with no check
@@ -109,6 +130,8 @@ most cases, running the code at the point it was added.
       reports only the "No simulation matches" error. A newcomer with a
       mistyped path hits this immediately, and the empty file they are left
       with makes the next attempt fail the same way.
+      **Owner: stage 6.** Stage 5's FAQ depends on it: describe the fixed error, or
+      say how to recognise this one if it is still unfixed.
 - [ ] Reading a property's *metadata* requires pynbody, though the metadata is
       entirely in the database. `HaloProperty.description`
       (`tangos/core/halo_data/property.py:80-82`) goes through `self.halo.handler`
@@ -123,6 +146,8 @@ most cases, running the code at the point it was added.
       only ever reading an existing database. Found while checking whether the
       documentation tutorials can be built without pynbody: they cannot, purely
       because of this path.
+      **Owner: stage 6.** Once fixed, pynbody can leave the `docs` extra (see
+      **Decisions already made** in `DOCS_PLAN.md`).
 - [ ] `tangos/config.py:128-131` swallows every error from `config_local.py`,
       not just its absence. The `try: from .config_local import *` is guarded by
       a bare `except: pass`, so a `SyntaxError` or a typo raising `NameError`
@@ -130,6 +155,7 @@ most cases, running the code at the point it was added.
       user is left believing their configuration is active when none of it is,
       with no warning. Catching `ImportError` (and letting anything else
       propagate) would be the fix.
+      **Owner: stage 6.**
 
 - [ ] `tangos/scripts/import_from_ahf.py:16` tells the user to run a command
       that does not exist. The deprecation notice says the `tangos_import_from_ahf`
@@ -139,16 +165,19 @@ most cases, running the code at the point it was added.
       deprecated script sees points them at a name that fails. The same wrong
       name was in `docs/reference/api/building.rst:112` and is fixed there in
       stage 2 of the documentation rebuild.
+      **Owner: stage 6.**
 - [ ] `tangos/input_handlers/ahf_trees.py:38,42` uses bare `except:` around both
       the standard and the cropped mtree read, so any genuine failure -- a
       malformed file, a `MemoryError`, a bug in the reader -- is reported to the
       user as `OSError("Could not load merger tree files")`, i.e. as a missing
       file. Catching the specific read errors would leave real faults visible.
+      **Owner: stage 6.**
 - [ ] `AHFTreeImporter.filename_to_snapnum`
       (`tangos/tools/ahf_merger_tree_importer.py:31-37`) is dead code:
       `run_calculation_loop` never calls it, and it hard-codes a `snapdir_###`
       layout that would not match the ChaNGa data the tool is actually tested
       against (`tests/test_ahf_trees.py`).
+      **Owner: stage 6.**
 - [ ] `tangos import-subfind-trees` is the only merger-tree importer with no
       test, no `build.sh` coverage and no documentation page. It is the intended
       route for Gadget-4/Arepo's on-the-fly trees
@@ -157,15 +186,21 @@ most cases, running the code at the point it was added.
       at all, so the whole Gadget-4 tree path is unverified. The other two
       importers (`import-consistent-trees`, `import-ahf-trees`) are both tested.
       `docs/reference/simulation_formats` documents it, and says it is untested.
+      **Owner: stage 6.** Probably the largest stage 6 item after the 32-bit
+      integers: a test needs a fixture with SubFind's own merger trees.
 - [ ] `build_enzo_yt` in `test_tutorial_build/build.sh` is wrapped in
       `if [ -d enzo.tinycosmo ]`, so if the download does not produce the
       directory the entire Enzo/yt combination silently drops out of the built
       database -- and hence out of the `tangos diff` comparison that the
       integration test relies on -- rather than failing loudly.
+      **Owner: stage 6.**
 - [ ] `HandlerBase.load_object` names its third parameter `catalog_pos`, while
       every implementation and every caller uses `finder_offset`. The API
       reference therefore documents a parameter name that does not exist
       downstream.
+      **Owner: stage 6.** Stage 4's `how-to/custom_handlers` depends on it: it
+      documents `finder_offset`, the name every implementation uses, and notes the
+      base-class mismatch until this is fixed.
 - [ ] `match_reduce` crashes if any linked object lacks the property being
       reduced, rather than skipping it. `calculation.values()` yields `None`
       for such an object and the reduction is applied to the raw list, so
@@ -178,6 +213,7 @@ most cases, running the code at the point it was added.
       `tests/test_live_calculation_reduce.py` only covers targets that all
       carry the property. Found in stage 3, where the docs example had to
       switch to `Mvir` to run.
+      **Owner: stage 6.**
 - [x] Time-chunked histograms (`SFR_histogram`, `BH_mdot_histogram`) have gaps
       wherever snapshots are more than 0.5 Gyr apart. **Fixed in stage 3** (on the
       docs branch, at AP's request, so the docs could show sensible histories):
@@ -223,6 +259,8 @@ most cases, running the code at the point it was added.
       halolist context. Once a table has leaked, any later draw of the same four
       letters collides. Proposed fix: wrap the `yield` in `try/finally`, and use a
       longer suffix (e.g. `uuid.uuid4().hex[:16]`) for the table and index names.
+      **Owner: stage 6.** Still present on master after #309, which fixed the
+      ordering of these temporary tables but not their naming or cleanup.
 - [ ] `--backend` handling in `tangos.parallel_tasks._process_command_line()`
       breaks any argument that contains a space. On import it joins `sys.argv`
       with spaces, cuts `--backend <name>` out with a regex, and assigns
@@ -236,10 +274,23 @@ most cases, running the code at the point it was added.
       (`tangos/tools/property_writer.py`), which is dead: the import-time
       stripping always removes `--backend` before argparse runs. Found while
       writing `tests/test_docs_commands.py` in stage 3.
+      **Owner: stage 6.** Stage 4's `how-to/parallel` depends on it: it warns about
+      quoted arguments containing spaces until this is fixed.
+
+- [ ] `master` tracks eight images under `docs/plots/`
+      (`quickstart_uvi_image.png`, `time_series_mass_growth.png` and six
+      more), committed by accident in
+      #310. `docs-refactor-main` gitignores that directory, because it is the
+      `@savefig` working directory that every docs build rewrites; but
+      `.gitignore` does not apply to files already tracked, so the next merge of
+      `master` into `docs-refactor-main` brings them in, and from then on every
+      docs build leaves the working tree dirty. Fix: `git rm --cached` them on
+      `master`. Found in the stage 4 triage.
+      **Owner: stage 6.**
 
 ## Misleading or wrong documentation
 
-- [ ] The tangos docs' own URLs percent-encode `+`, so four published page URLs
+- [x] The tangos docs' own URLs percent-encode `+`, so four published page URLs
       cannot be served by Sphinx as-is. `builder.get_target_uri()` quotes the
       docname, so `first_steps_gadget+AHF` builds to
       `first_steps_gadget%2BAHF.html` while the Jekyll site publishes (and the
@@ -251,6 +302,9 @@ most cases, running the code at the point it was added.
       `urllib.parse.quote` alters (the style conventions in `DOCS_PLAN.md`
       already require lowercase-underscore filenames, which is why only these
       retired pages are affected).
+      **Closed in the stage 4 triage:** the redirects are worked around by the
+      `build-finished` hook in `docs/conf.py`, and the lesson is recorded under
+      **Invariants** in `DOCS_PLAN.md`.
 - [x] `docs/Data exploration with python.ipynb` cell 1 links to
       `https://pynbody.github.io/tangos/data_exploration.html`, a page retired in
       stage 2. The redirect covers it, but the notebook is deliberately kept as
@@ -267,41 +321,59 @@ most cases, running the code at the point it was added.
       `mpi.html`. Both pages are scheduled to move (`custom_properties` is ported,
       `mpi` becomes `how-to/parallel`). Add redirects as each moves, alongside the
       `input_handlers.html` dead link already recorded below.
+      **Owner: stage 4.** The redirect for `mpi.html` lands with `how-to/parallel`
+      (4a) and the one for `custom_properties.html` with the custom properties
+      tutorial (4b). The URLs in the code can then stay as they are.
 - [ ] `docs/custom_input_handlers.md:143` calls `.earlier` on the result of
       `get_halo(...)` (`tangos.get_halo("...").earlier.load()`). `earlier` is
       not an attribute of anything in the codebase; `.previous` is the
       attribute that walks one step back, and `earlier(n)` is a *live-calculation
       function* (a different namespace entirely). Fix when the input-handlers
       how-to is rewritten.
+      **Owner: stage 4** (4a, `how-to/custom_handlers`).
 - [ ] `docs/custom_input_handlers.md` presents `match_objects` as part of the
       `HandlerBase` contract, but `HandlerBase` does not define it at all — it
       is defined on `PynbodyInputHandler`, `YtInputHandler`,
       `Gadget4HBTPlusInputHandler` and the test handler only. Either add an
       abstract `match_objects` to `HandlerBase`, or correct the page to
       present it as specific to those subclasses.
-- [ ] `docs/first_steps_eagle.md:65` — the second `tangos import-properties`
+      **Owner: stage 4** (4a, `how-to/custom_handlers`): present `match_objects` as
+      what `tangos crosslink` needs from a handler, not as part of `HandlerBase`.
+- [x] `docs/first_steps_eagle.md:65` — the second `tangos import-properties`
       command reads `--for RefL0025N037`, missing the trailing `6`
       (`RefL0025N0376`, as used two lines above it).
-- [ ] `docs/using_with_yt.md:85` writes a density profile to `tutorial_changa`,
+      **Closed in the stage 4 triage:** the page was retired in stage 2, and
+      `how-to/eagle` spells the name correctly throughout.
+- [x] `docs/using_with_yt.md:85` writes a density profile to `tutorial_changa`,
       not `tutorial_changa_yt` (the simulation this tutorial actually adds).
-- [ ] `docs/first_steps_ramses+hop.md:88` looks up
+      **Closed in the stage 4 triage:** the page was retired in stage 2, and
+      `how-to/yt` writes to `tutorial_changa_yt`.
+- [x] `docs/first_steps_ramses+hop.md:88` looks up
       `"tutorial/output_00010/halo_1"`, but the simulation added earlier in the
       same page (line 28) is named `tutorial_ramses`, not `tutorial`.
+      **Closed in the stage 4 triage:** the page was retired in stage 2 and nothing
+      carried the lookup over.
 - [ ] `docs/rdbms.md:34` — "For most users, MySQL and PostgreSQL are" — the
       sentence stops mid-way with no continuation.
+      **Owner: stage 4** (4a, `how-to/database_backends`).
 - [ ] `README.md:10` claims tangos is "a modular system for Python 3.6+", while
       CI (`.github/workflows/build-test.yaml`) tests 3.11–3.14 only. (Checked
       `docs/index.md` too: it does not repeat this claim anywhere — it has no
       Python-version statement at all — so only `README.md` needs correcting,
       not both files as originally suspected.)
+      **Owner: stage 6.** A one-line PR against master, since the README is what
+      readers see now, long before the documentation merges.
 - [ ] `docs/mpi.md` still documents `pypar` as an alternative MPI backend to
       `mpi4py`. pypar is Python-2-era and unmaintained; see the corresponding
       dead-code entry below.
+      **Owner: stage 4** (4a, `how-to/parallel`).
 - [ ] Halo-path syntax is inconsistent across the docs — some pages write
       `.../halo_1`, others `.../1` for the same object — and the equivalence is
       explained nowhere. (The curated API reference now explains it once, on
       `docs/reference/api/query.rst`; the tutorial pages themselves still need
       the sweep.)
+      **Owner: stage 5.** Stage 4's new and ported pages use the canonical spelling
+      as they go, so by stage 5 this should be confined to `live_calculation.md`.
 
 - [ ] `TimeStep.trackers` also returns black holes, though nothing says so.
       `BH` subclasses `Tracker` (`tangos/core/halo.py:456`) and
@@ -312,6 +384,8 @@ most cases, running the code at the point it was added.
       `docs/reference/api/objects.rst` lists `trackers` and `bhs` as sibling
       accessors, which reads as though they were disjoint. Either document the
       containment or give `trackers` a filter that excludes black holes.
+      **Owner: stage 5.** If stage 4's tracking tutorial mentions `trackers`, it
+      says that black holes are included.
 - [ ] `docs/rdbms.md` gives the wrong install command for the server backends:
       it says `pip install PyMySQL` / `pip install psycopg2-binary` rather than
       `pip install tangos[rmdbs]`, and omits the `[rsa]` extra that
@@ -320,10 +394,14 @@ most cases, running the code at the point it was added.
       PyMySQL and still fail to connect. This is separate from the truncated
       sentence on the same page recorded above. `docs/installation.rst` gives
       the correct form.
+      **Owner: stage 4** (4a, `how-to/database_backends`).
 - [ ] `tangos/input_handlers/__init__.py:7` sends readers to
       `https://pynbody.github.io/tangos/input_handlers.html`, which does not
       exist and never has — the page is `custom_input_handlers.html`. This is a
       dead link in shipped code, independent of the documentation rebuild.
+      **Owner: stage 6.** Point it at `custom_input_handlers.html`, which works on
+      the live site today; the redirect stage 4 adds when that page becomes
+      `how-to/custom_handlers` carries it forward.
 - [ ] Which `tangos.config` settings can be changed at runtime is inconsistent
       and undocumented. Some are read as `config.X` at the point of use and so
       respond to a later assignment (`config.db`, `config.base`,
@@ -338,7 +416,8 @@ most cases, running the code at the point it was added.
       find it silently does nothing for roughly half the settings. The
       `configuration` page must state which is which; better still would be to
       make the access pattern uniform.
-- [ ] `TimeStep.trackers` also returns black holes, but
+      **Owner: stage 5.**
+- [x] `TimeStep.trackers` also returns black holes, but
       `docs/reference/api/objects.rst` lists `trackers` and `bhs` as sibling
       accessors, which reads as though they were disjoint sets. `BH`
       subclasses `Tracker` (`tangos/core/halo.py:456`) and `TimeStep.trackers`
@@ -347,13 +426,16 @@ most cases, running the code at the point it was added.
       `trackers.count()` and `bhs.count()` are both 39, and `trackers.first()`
       is a `BH`. Either document the containment or give `trackers` a
       tracker-only variant.
+      **Closed in the stage 4 triage as a duplicate of the item above.**
 
 ## Deprecated / vestigial
 
-- [ ] Consider changing `.keys()` on halos to return only one instance of each
+- [x] Consider changing `.keys()` on halos to return only one instance of each
       key, even where there are multiple links etc. This matches the existing dict-style
       behaviour: the key is passed *once* to `__getitem__`, the multiple values 
       are returned in one shot.
+      **Closed in the stage 4 triage:** a design proposal rather than a defect.
+      Raise it as a GitHub issue if it is still wanted.
 - [ ] **Replace all remaining `get_halo` references with `get_object`.** The
       project prefers `get_object` everywhere now (`get_halo` is kept as a
       working alias, not marked deprecated, because the tutorials still teach
@@ -366,13 +448,25 @@ most cases, running the code at the point it was added.
       a mass edit now — every one of these files is being rewritten in stages
       1–5 of `DOCS_PLAN.md`, so `get_object` replaces `get_halo` page by page,
       as each page is rewritten.
-- [ ] `config.enable_async_message_processing` should not be advertised, even
+      **Owner: stage 4** for `custom_input_handlers.md` (4a) and
+      `custom_properties.md`, `histogram_properties.md` and `tracking.md` (4b), the
+      four files stage 4 ports. The item below covers `live_calculation.md`.
+      `docs/reference/api/query.rst` is out of scope: it documents `get_halo`
+      itself.
+- [ ] The same `get_halo` → `get_object` sweep for `docs/live_calculation.md`
+      (one occurrence), split from the item above in the stage 4 triage.
+      **Owner: stage 5**, which retires that file into
+      `reference/live_calculation_language`.
+- [x] `config.enable_async_message_processing` should not be advertised, even
       on the forthcoming `configuration` reference page. Its own comment in
       `tangos/config.py` says it "can lead to subtle race conditions", "may
       (?) also be implicated in hangs", that the performance benefit is
       unclear, and that it "may be that async processing should be removed
       from the codebase entirely". Default is `False`; leave it undocumented.
-- [ ] The five deprecated console-script shims —
+      **Closed in the stage 4 triage:** this is a standing instruction, not a fix,
+      and now lives under **Decisions already made** in `DOCS_PLAN.md`.
+      `docs/configuration.rst` already omits the setting.
+- [x] The five deprecated console-script shims —
       `tangos_writer`, `tangos_crosslink`, `tangos_timelink`, `tangos_add_bh`,
       `tangos_import_from_ahf` (`setup.py`'s `console_scripts` entry points,
       forwarding to `tangos.scripts.{writer,crosslink,timelink,add_bh,import_from_ahf}.main`)
@@ -380,10 +474,16 @@ most cases, running the code at the point it was added.
       subcommand. Candidates for removal once nothing in the wild depends on
       them; in the meantime, do not resurrect them as documented commands in
       `reference/cli`.
+      **Closed in the stage 4 triage:** "do not document them" now lives in the
+      stage 5 `reference/cli` item in `DOCS_PLAN.md`. Removing them is a release
+      decision, not a documentation fix.
 - [ ] `tangos/parallel_tasks/backends/pypar.py` is dead: pypar has not been
       maintained since the Python 2 era. `docs/mpi.md` still lists it as an
       alternative to mpi4py (see the docs entry above). Candidate for deletion
       alongside that doc fix.
+      **Owner: stage 6.**
 - [ ] Integer halo (and other object) properties are stored as 32-bit except on
       sqlite; probably unintentional and should be fixed provided we can retain
       backwards compatibility with databases that have the 32-bit column.
+      **Owner: stage 6.** Needs a design for existing databases with 32-bit columns
+      before any code changes.
