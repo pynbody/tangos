@@ -514,7 +514,15 @@ Decided with AP before starting:
       `using_with_yt` now points at the yt section. `how-to/yt.html` gets no
       redirect after all: it was never published, so by the rule stage 3 set
       under **Invariants** it needs none
-- [ ] Port `custom_properties`, `histograms`, `black_holes`, `crossmatching`, `tracking`
+- [x] Port `custom_properties`, `histograms`, `black_holes`, `crossmatching`, `tracking`.
+      **Done in 4b**, as `tutorials/*`, after `first_database` in the Tutorials
+      toctree; the "Going further" section is gone. `black_holes_and_crossmatching`
+      split in two. `custom_properties.md` was ported only up to line 217: its
+      reference half (regions, `preloop`, returning links) stays there, moved under
+      Reference and retitled, for stage 5's `reference/property_calculation_api` --
+      which also keeps `custom_properties.html` alive for the URL in
+      `property_writer.py`, so its redirect moves to stage 5. Redirects for
+      `histogram_properties`, `black_holes_and_crossmatching` and `tracking`
 - [ ] Carry over the notebook cells stage 1 did not port. Stage 3 retired
       `Data exploration with python.ipynb`; recover it with
       `git show "101890c:docs/Data exploration with python.ipynb"`. Still unported:
@@ -526,12 +534,55 @@ Decided with AP before starting:
       Everything else in it is already in `quickstart`, `time_series` or
       `how-to/live_calculation_recipes`. The `histograms` port is about *writing*
       histogram properties: reading them back (`reassemble`, `'sum'`, `'place'`,
-      `raw()`) is already a recipe there, so link to it rather than repeat it
-- [ ] Write every new page's examples as `.. ipython::` from the start, run against
+      `raw()`) is already a recipe there, so link to it rather than repeat it.
+      **Done in 4b**, though not quite as listed: stage 3 had already put cells 21
+      and 23 (the history and the all/major comparison) into `time_series`, so
+      `histograms` does not repeat them. It has the cell 24 quantisation note,
+      checked (the two reassemblies agree exactly after the penultimate
+      snapshot), and uses `raw()` and `'place'` once each to show what is stored,
+      linking to the recipes for reading. Cell 26 went to `black_holes`, cells
+      39–40 to `crossmatching`
+- [x] Write every new page's examples as `.. ipython::` from the start, run against
       the tutorial database (see **What stage 3 found** for what "verified" takes).
       Pages whose examples write to the database (`tracking.new`,
       `sim[...] = ...` on the histogram page) must not mutate the shared
-      `~/tangos_data.db`: work on a copy, or show those blocks unexecuted
+      `~/tangos_data.db`: work on a copy, or show those blocks unexecuted.
+      **Done in 4a and 4b**; see **What 4b found** for how the rest was verified
+
+What 4b found:
+
+- **The write-side steps were checked on real data, once, by hand.** The repository's
+  `test_tipsy` fixture cannot load halos through `tangos write` (see
+  `KNOWN_ISSUES.md`), so it only supports a CI check that the custom property
+  example runs, on a tracker (`tests/test_docs_examples.py`). Everything else
+  that writes -- `tangos write velocity_dispersion` through
+  `TANGOS_PROPERTY_MODULES`, the whole tracking tutorial, `import-changa-bh` --
+  was run on the cut-down `tutorial_changa` and `tutorial_changa_blackholes`
+  from `/continuous_integration/` in a scratch database. The numbers that
+  `tutorials/tracking` quotes come from that run.
+- **Black holes are not linked through time**, in the tutorial database or any
+  other: `import-changa-bh` looks for `*.BHmergers` where the data has
+  `.mergers`, and behind that, the linking code calls `np.in1d`, which current
+  numpy no longer has (nor does the yt handler's `match_objects`). CI tests
+  numpy 2.0 and 2.3.3 only. `tutorials/black_holes` says so; the fix is stage 6,
+  and the tutorial and CI databases need rebuilding after it.
+- **A property class cannot be redefined in a running session**; the old page's
+  "or reload your module" was wrong. Since the docs build is one long session,
+  each example class on `tutorials/custom_properties` has its own name, and
+  the page tells readers to restart python.
+- `calculate` cannot return a tuple from one lambda (`lambda: (a(), b())` raises
+  `ValueError: too many values to unpack`); call it once per value.
+- **The cold read** found the black holes page weakest (its feature broken, outputs
+  it never explained) and crossmatching strongest. Acted on: the velocity
+  dispersion example flattened the N×3 velocity array, so now computes a
+  one-dimensional dispersion; the histograms page claimed chunks "tile" the
+  history when they overlap (the earlier snapshot's chunk wins in the overlap,
+  which the figure showed); there was no example of a histogram class of one's
+  own, so `docs/examples/myhistogram.py` adds one, written on the CI data and in
+  `tests/test_docs_examples.py`; the BH page now explains the four extra
+  properties `BH_mass` brings, the zero particle counts, units, and which log does
+  what; crossmatching states the shared-particle-ID requirement first and shows
+  the link weight; tracking uses the number `tracking.new` returns.
 - [ ] Web interface, currently a 21-line stub. Undocumented: arbitrary
       live-calculation expressions as timestep-view columns (arguably the killer
       feature), the merger-tree viewer, and the entire URL API in

@@ -44,7 +44,18 @@ one simulation from start to finish. The
 [supported simulation formats](reference/simulation_formats.rst) table lists
 every simulation code and halo finder tangos can read, and what changes for
 each. You will need the raw simulation output and a reader for it, usually
-pynbody.
+pynbody. The tutorials then go further, in order:
+[writing your own properties](tutorials/custom_properties.rst),
+[histories between snapshots](tutorials/histograms.rst),
+[black holes](tutorials/black_holes.rst),
+[comparing simulations object by object](tutorials/crossmatching.rst) and
+[tracking particles](tutorials/tracking.rst).
+
+**At scale**, the how-to pages cover
+[running in parallel](how-to/parallel.rst),
+[large simulations](how-to/large_simulations.rst),
+[managing a database](how-to/managing_a_database.rst) and
+[MySQL or PostgreSQL](how-to/database_backends.rst).
 
 **Configuring tangos** -- where the database lives, what gets written, how the
 merger trees are thinned -- is covered in
@@ -77,6 +88,11 @@ tutorials/quickstart
 tutorials/time_series
 tutorials/webserver
 tutorials/first_database
+tutorials/custom_properties
+tutorials/histograms
+tutorials/black_holes
+tutorials/crossmatching
+tutorials/tracking
 ```
 
 ```{toctree}
@@ -96,21 +112,11 @@ how-to/eagle
 ```{toctree}
 :maxdepth: 2
 :hidden:
-:caption: Going further
-
-custom_properties
-histogram_properties
-black_holes_and_crossmatching
-tracking
-```
-
-```{toctree}
-:maxdepth: 2
-:hidden:
 :caption: Reference
 
 reference/data_model
 reference/simulation_formats
 live_calculation
+custom_properties
 reference/api/index
 ```
