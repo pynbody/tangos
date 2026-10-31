@@ -1,5 +1,5 @@
-The live calculation system
-===========================
+Live calculation language reference
+===================================
 
 Tangos stores properties of objects (halos, black holes, groups, ...) in a database. Often
 what you actually want is not a stored property but something derived from one: the virial
@@ -16,8 +16,8 @@ with a live calculation is typically far faster than the equivalent python loop.
 This document explains how to write live calculations, starting from simple examples and
 building up to links, histogram reassembly and the full list of built-in functions.
 
-If you have not yet got a database to play with, see the [data exploration
-tutorial](data_exploration.md).
+If you have not yet got a database to play with, see the [quick-start
+tutorial](tutorials/quickstart.rst).
 
 
 Two ways to write a calculation
@@ -38,7 +38,7 @@ you leave one unclosed; and there is no quoting to get right.
 
 The lambda form is new in tangos 1.12.0. The string form has always been available, and
 remains fully supported; it is the one to reach for whenever a calculation has to exist as
-text: typed into the [web interface](data_exploration_webserver.md), read from a
+text: typed into the [web interface](tutorials/webserver.rst), read from a
 configuration file or a command line argument, or stored in a database. It is also the form
 used in most existing tangos scripts and in the tutorial notebooks.
 

@@ -62,8 +62,8 @@ class HaloStatFile:
 
         :param args: strings for the column names
         :return: finder_offset_start, finder_id, arg1, arg2, arg3, ... where finder_offset_start is the index of the halo within
-        the stat file, finder_id is the raw halo ID read from the stat file, and argN is the value associated with the
-        Nth column name provided as input.
+            the stat file, finder_id is the raw halo ID read from the stat file, and argN is the value associated with the
+            Nth column name provided as input.
         """
         with open(self.filename) as f:
             header = self._read_column_names(f)
@@ -268,7 +268,7 @@ class AmigaIDLStatFile(HaloStatFile):
 
         :param args: strings for the column names
         :return: finder_id, finder_id, arg1, arg2, arg3, ... where finder_id is the halo's ID number read directly
-        from the stat file and argN is the value associated with the Nth column name given as arguments.
+            from the stat file and argN is the value associated with the Nth column name given as arguments.
         """
 
         for row in super().iter_rows_raw(*args):

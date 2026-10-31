@@ -248,8 +248,28 @@ class TimeChunkedProperty(PropertyCalculation):
 
     def __init__(self, simulation):
         self.pixel_delta_t_Gyr = simulation.get("histogram_delta_t_Gyr", self.pixel_delta_t_Gyr)
+        self._store_from_Gyr = None
+        self._store_from_timestep_id = None
+        self._warned_preloop_not_called = False
         super().__init__(simulation)
 
+    def preloop(self, sim, db_timestep):
+        """Find out, once per timestep, how far back the slice to be stored should reach (see store_slice).
+
+        Subclasses that override preloop must call super().preloop(sim, db_timestep)."""
+        if self._store_from_timestep_id != db_timestep.id:
+            self._store_from_Gyr = self._previous_timestep_time_Gyr(db_timestep)
+            self._store_from_timestep_id = db_timestep.id
+
+    def _previous_timestep_time_Gyr(self, db_timestep):
+        """The time of the simulation's previous timestep, or 0 if this is the first"""
+        import sqlalchemy
+
+        from .. import core
+        previous_time = core.get_default_session().query(sqlalchemy.func.max(core.TimeStep.time_gyr)).filter(
+            core.TimeStep.simulation_id == db_timestep.simulation_id,
+            core.TimeStep.time_gyr < db_timestep.time_gyr - self.pixel_delta_t_Gyr/2).scalar()
+        return previous_time if previous_time is not None else 0.0
 
     def bin_index(self, time):
         """Convert a time (Gyr) to a bin index in the histogram"""
@@ -260,8 +280,21 @@ class TimeChunkedProperty(PropertyCalculation):
 
     def store_slice(self, time):
         """Tells subclasses which have generated a histogram over all time which slice of that histogram
-        they should store."""
-        return slice(self.bin_index(time-self.minimum_store_Gyr), self.bin_index(time))
+        they should store.
+
+        The slice reaches back to the simulation's previous timestep, so that the slices stored at successive
+        timesteps leave no gaps between them, and back to the beginning for the first timestep. It always
+        covers at least minimum_store_Gyr. The previous timestep is found in preloop, so that no database
+        query is made during the calculation itself."""
+        start = time - self.minimum_store_Gyr
+        if self._store_from_Gyr is not None:
+            start = min(start, self._store_from_Gyr)
+        elif not self._warned_preloop_not_called:
+            warnings.warn(f"{type(self).__name__}.preloop did not call TimeChunkedProperty.preloop, so only the "
+                          f"last {self.minimum_store_Gyr} Gyr before each timestep is stored; histories will "
+                          f"have gaps wherever timesteps are further apart than that", RuntimeWarning)
+            self._warned_preloop_not_called = True
+        return slice(self.bin_index(start), self.bin_index(time))
 
     def reassemble(self, property, reassembly_type='major'):
         """Reassemble a histogram by suitable treatment of the merger tree leading up to the current halo.
@@ -404,12 +437,12 @@ def all_properties(with_particle_data=True):
 def providing_class(property_name, handler_class=None, silent_fail=False, explain=False):
     """Return property calculator class for given property name when files will be loaded by specified handler.
 
-    :param property_name -- name of property to be calculated
-    :param handler_class -- class of handler that will be used to load files
+    :param property_name: name of property to be calculated
+    :param handler_class: class of handler that will be used to load files
                             (e.g. input_handlers.pynbody.PynbodyInputHandler).
                             If None, return "live" properties which can be calculated without particle data.
-    :param silent_fail -- if True, return None if no class is found, otherwise raise NameError
-    :param explain -- if True, print out the reason why a particular class was selected
+    :param silent_fail: if True, return None if no class is found, otherwise raise NameError
+    :param explain: if True, print out the reason why a particular class was selected
 
     When more than one possible class is capable of calculating the requested property, the following criteria
     are used to select one. The guiding criterion is to select user-provided code of the greatest specificity.
@@ -420,9 +453,9 @@ def providing_class(property_name, handler_class=None, silent_fail=False, explai
     2) Next, the class hierarchy of the properties themselves is inspected. If one class is a subclass of another,
        the more specialised class is selected. For example, if there are two classes calculating "my_prop", A and B,
        and B is a child class of A, B is selected.
-    2) If there is no class hierarchy, the class defined in the tangos codebase is de-prioritised over any externally
+    3) If there is no class hierarchy, the class defined in the tangos codebase is de-prioritised over any externally
        provided classes
-    3) If there is still a tie, the string representation of the classname (including the module) is used to sort
+    4) If there is still a tie, the string representation of the classname (including the module) is used to sort
        alphabetically. This has no particular rationale except to make reproducible results.
 
     """
@@ -579,4 +612,4 @@ def _import_configured_property_modules():
         module.load()
 
 _import_configured_property_modules()
-from . import intrinsic, live_profiles, pynbody, yt
+from . import derived, intrinsic, live_profiles, pynbody, yt

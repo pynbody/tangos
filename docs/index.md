@@ -1,93 +1,116 @@
-_Tangos_ lets you build a database (along the lines of [Eagle](http://icc.dur.ac.uk/Eagle/database.php)
-or [MultiDark](https://www.cosmosim.org/cms/documentation/projects/multidark-bolshoi-project/))
- for your own cosmological and zoom simulations.
+# tangos
 
-Once tangos is set up, you'll be able to access your simulations from a web browser:
+tangos builds a database of *summary* data for your own cosmological and zoom
+simulations -- masses, profiles, images, star formation histories, merger trees --
+so that questions spanning an entire simulation are answered in milliseconds,
+without touching the raw particle data again. It is the same idea as the public
+[Eagle](http://icc.dur.ac.uk/Eagle/database.php) and
+[MultiDark](https://www.cosmosim.org/cms/documentation/projects/multidark-bolshoi-project/)
+databases, for your own runs.
+
+You can then explore that database from python, or from a web browser:
 
 [![Tangos and its web server](images/video_play.png)](https://www.youtube.com/watch?v=xHyzJmNsVMw)
 
+## Start here
 
-Acknowledging the code
-----------------------
-When using _tangos_, please acknowledge it by citing the release paper:
-Pontzen & Tremmel, 2018, ApJS 237, 2. [DOI 10.3847/1538-4365/aac832](https://doi.org/10.3847/1538-4365/aac832);  [arXiv:1803.00010](https://arxiv.org/pdf/1803.00010.pdf). Optionally you can also cite the Zenodo DOI for the specific version of _tangos_ that you are using, which may be found [here](https://doi.org/10.5281/zenodo.1243070).
+**New to tangos?** You do not need any simulation data to learn what tangos
+does, and almost nothing here needs pynbody either -- only one call in the
+quick-start, which says so where it appears. Install it, download the ready-made tutorial database,
+and query it:
 
+1. [Installation](installation.rst) -- tangos and the tutorial database, in
+   three steps.
+2. [Quick-start](tutorials/quickstart.rst) -- what a tangos database holds,
+   then find a halo, read its properties, plot an image of a galaxy, and
+   calculate with them.
+3. [Time series and populations](tutorials/time_series.rst) -- follow a halo
+   back through its progenitors and plot how it grew, and ask questions of a
+   whole population at once.
+4. [The web interface](tutorials/webserver.rst) -- the same database in a
+   browser.
 
-Installation: the very quick version
-------------
+[The tangos data model](reference/data_model.rst) sets out the whole picture
+-- simulations, timesteps, objects, properties and links -- when you want more
+than the quick-start's summary.
 
-You have a few options. For the most recent published version use:
+When you need more from a calculation than those pages show -- interpolating a
+profile, choosing between linked objects, a star formation history -- see the
+[live calculation recipes](how-to/live_calculation_recipes.rst).
+
+**Building a database from your own simulation** starts at
+[making your first database](tutorials/first_database.rst), which walks through
+one simulation from start to finish. The
+[supported simulation formats](reference/simulation_formats.rst) table lists
+every simulation code and halo finder tangos can read, and what changes for
+each. You will need the raw simulation output and a reader for it, usually
+pynbody.
+
+**Configuring tangos** -- where the database lives, what gets written, how the
+merger trees are thinned -- is covered in
+[configuration](configuration.rst).
+
+## Acknowledging the code
+
+When using tangos, please acknowledge it by citing the release paper:
+Pontzen & Tremmel, 2018, ApJS 237, 2.
+[DOI 10.3847/1538-4365/aac832](https://doi.org/10.3847/1538-4365/aac832);
+[arXiv:1803.00010](https://arxiv.org/pdf/1803.00010.pdf). Optionally you can
+also cite the Zenodo DOI for the specific version of tangos that you are using,
+which may be found [here](https://doi.org/10.5281/zenodo.1243070).
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Setup
+
+installation
+configuration
 ```
-pip install tangos
-```
-or, for pre-release versions (for example if you are working with pynbody v2) use:
-```
-pip install --pre tangos
-```
-or, for the latest version from the repository use
-```
-pip install git+https://github.com/pynbody/tangos.git
-```
 
-Pip should check for and install the _minimum_ prerequisites, but doesn't install _pynbody_. That's because _tangos_ is
-written to be agnostic about how the underlying simulation snapshots are read, and so you might prefer to use _yt_ for example.
-If you want to use _pynbody_, install it at the same time, e.g.
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Tutorials
 
-```
-pip install tangos pynbody
+tutorials/quickstart
+tutorials/time_series
+tutorials/webserver
+tutorials/first_database
 ```
 
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: How-to
 
-Installation with tests and ancillary dependencies
---------------------------------------------------
-
-If you wish to run the test suite (which is advised) or are planning to develop using tangos,
-it is preferable to keep the source repository handy, in which case instead of the instructions
-above use:
+how-to/live_calculation_recipes
+how-to/parallel
+how-to/managing_a_database
+how-to/database_backends
+how-to/large_simulations
+how-to/custom_handlers
+how-to/eagle
 ```
-git clone https://github.com/pynbody/tangos.git
-cd tangos
-pip install -e .[test]
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Going further
+
+custom_properties
+histogram_properties
+black_holes_and_crossmatching
+tracking
 ```
 
-The `[test]` specified ensures that additional packages needed for testing are installed. This includes _pynbody_ and _yt_,
-as well as _pytest_.
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Reference
 
-Once installed, you should check that _tangos_ is functioning correctly by entering the `tests` folder and
-typing `pytest`. You should see a bunch of text scrolling by, ultimately finishing with the simple message `OK`.
-If you get a failure message instead of `OK`, report it (with as much detail of your setup as possible) in the
-github issue tracker.
-
-Setting up paths
-----------------
-
-By default tangos will look for raw simulation data in your home folder and create its database file there as well.
-If you don't want it to do this, you can set the environment variables `TANGOS_SIMULATION_FOLDER` (for the simulation folder)
-and `TANGOS_DB_CONNECTION` (for the database file). For example, in bash:
-
+reference/data_model
+reference/simulation_formats
+live_calculation
+reference/api/index
 ```
-export TANGOS_SIMULATION_FOLDER=/path/to/simulations/folder/
-export TANGOS_DB_CONNECTION=/path/to/sqlite.db
-```
-or, in cshell:
-```
-setenv TANGOS_SIMULATION_FOLDER /path/to/simulations/folder/
-setenv TANGOS_DB_CONNECTION /path/to/sqlite.db
-```
-The top line in each example points to the parent directory for all of your simulation data directories.
-If you don't have any simulations (i.e. you are just using a database object already created) then you
-should not have to worry about this variable. The second line points to the database object you wish to analyze;
-by default this will be a sqlite file but you can also specify a
-[sqlalchemy URL](http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls); see also the notes on
-MySQL / MariaDB below.
-
-Remember, you will need to set these environment variables *every* time you start a new session on your computer prior
-to booting up the database, either with the webserver or the python interface (see below).
-
-
-
-Where next?
------------
-
-Now that you've set up the basics, you can either [make your first _tangos_ database](first_steps.md)
-using some tutorial data or [download an existing database to perform data analysis](data_exploration.md).

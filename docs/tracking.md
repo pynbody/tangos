@@ -6,7 +6,7 @@ For example, one might select inflowing or outflowing gas and then inspect its o
 at earlier timesteps or destination at later timesteps.
 
 _Tangos_ enables this kind of tracking. In the following introduction we'll make use of the
-[ChaNGA tutorial dataset](first_steps_changa+ahf.md). The steps can easily be adapted for other
+[ChaNGA tutorial dataset](tutorials/first_database.rst). The steps can easily be adapted for other
 formats.
 
 Selecting particles
@@ -52,7 +52,7 @@ we leave the python session and return to the UNIX shell. Run:
 tangos write mean_rho --for tutorial_changa --type tracker
 ```
 Here,
- * `tangos write` is the standard command used in the earlier [tutorial](first_steps_changa+ahf.md)
+ * `tangos write` is the standard command used in the earlier [tutorial](tutorials/first_database.rst)
  * `mean_rho` is a simple built-in property that calculates the mean density of the tracked region in
    proton masses per cm^3.
    Of course, the real power is in being able to define your [own properties](custom_properties.md), but this will do for now.

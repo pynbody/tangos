@@ -5,8 +5,8 @@ _Tangos_ is at its most powerful when you define custom properties that get calc
 A simple example of a property is the mass, the position, or a mass profile.
 
 In this tutorial, we'll build some simple properties and apply them to a database. Before you start,
-it's important to have a working _tangos_ database. If you don't have that already, follow one of the
-[making your first database](first_steps.md) tutorials and/or [download a working SQLite database](data_exploration.md)
+it's important to have a working _tangos_ database. If you don't have that already, follow the
+[making your first database](tutorials/first_database.rst) tutorial and/or [download a working SQLite database](installation.rst)
 and then return to this document.
 
 
@@ -188,7 +188,7 @@ class ExampleHaloProperty(PynbodyPropertyCalculation):
 By deriving from `PynbodyPropertyCalculation` instead of `PropertyCalculation`, you are indicating to _tangos_
 that this property can only be calculated with reference
 to the _pynbody_-loaded original particle data associated with the halo. (Note that there is an [equivalent
-for yt](using_with_yt.md), and you can make your [own customised loaders](custom_input_handlers.md)
+for yt](how-to/custom_handlers.rst), and you can make your [own customised loaders](how-to/custom_handlers.rst)
 by delving a bit more into detail.)
 Anyway, if you try to calculate this from within a
 standard `tangos` session you'll run into difficulties (specifically you'll see a `RuntimeError`). That's because
@@ -203,7 +203,7 @@ tangos write velocity_dispersion --for tutorial_changa
 
 from your UNIX shell to do so. Don't forget you can also run this in
 parallel, or with various optimisations --
-see the [basic tutorials](first_steps.md) for more information on this. Your code does
+see the [first database tutorial](tutorials/first_database.rst) for more information on this. Your code does
 not need to be aware of the parallelisation mode or any other details; it's always handed a complete set of particles
 for the halo it's operating on.
 
