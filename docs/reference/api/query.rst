@@ -1,4 +1,6 @@
 .. Last checked by AP: 2026-08-29
+.. Stage 4 (Claude, 2026-10-29): link repointed from rdbms.md to
+   how-to/database_backends. Not yet checked by a human.
 
 .. _api_query:
 
@@ -117,4 +119,4 @@ Connecting to a database
 .. seealso::
 
    :doc:`objects` for the classes these functions return, and
-   :doc:`/rdbms` for choosing between sqlite, MySQL and PostgreSQL.
+   :doc:`/how-to/database_backends` for choosing between sqlite, MySQL and PostgreSQL.

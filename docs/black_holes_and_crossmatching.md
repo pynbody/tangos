@@ -34,7 +34,7 @@ comparisons to isolate the effects of AGN. From your UNIX shell type:
 tangos crosslink tutorial_changa tutorial_changa_blackholes
 ```
 
-If you want to speed up this process, it can be [MPI parallelised](mpi.md).
+If you want to speed up this process, it can be [MPI parallelised](how-to/parallel.rst).
 
 Add properties to the black holes
 ---------------------------------
@@ -68,7 +68,7 @@ Here
    objects in the simulation (rather than regular halos).
 
 If you want to speed up the processes above, `tangos import-changa-bh` and `tangos write` can both
-be [MPI parallelised](mpi.md).
+be [MPI parallelised](how-to/parallel.rst).
 
 Explore
 -------

@@ -1,4 +1,6 @@
 .. Last checked by AP: 2026-08-29
+.. Stage 4 (Claude, 2026-10-29): the tangos import entry rewritten (it copies any
+   database, not only sqlite) and linked to the new how-tos. Not yet checked by a human.
 
 .. _api_building:
 
@@ -91,8 +93,9 @@ Deleting, importing and thinning
 .. autoclass:: tangos.tools.db_importer.DBImporter
    :show-inheritance:
 
-``tangos import`` -- merges another sqlite database's rows into this one; the
-obvious sequel to :doc:`/rdbms`.
+``tangos import`` -- copies another database's rows into this one; see
+:ref:`merging_databases`, and :doc:`/how-to/database_backends` for moving a
+sqlite database to a server.
 
 .. autoclass:: tangos.tools.merger_tree_patcher.MergerTreePatcher
    :show-inheritance:

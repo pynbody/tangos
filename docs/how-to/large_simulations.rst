@@ -1,0 +1,147 @@
+.. Checked by AP on 30-10-26
+
+.. _large_simulations:
+
+Working with large simulations
+==============================
+
+A cosmological volume can hold millions of halos in each of hundreds of
+snapshots. Building a database for it the way :doc:`/tutorials/first_database`
+builds one for a zoom simulation would take too long, need too much memory, and
+store far more than you will ever query. This page collects the ways to cut the
+work down to what you need, and to get a long build through the time limits of a
+cluster.
+
+Running in parallel is the other half of the answer; it is on its own page,
+:doc:`/how-to/parallel`.
+
+.. note:: Before you start, make sure you have built a database from simulation
+ data before, as in :doc:`/tutorials/first_database`; this page assumes the
+ commands there. The one example that runs here queries the tutorial database
+ (see :ref:`installation`).
+
+Calculate only what you will use
+--------------------------------
+
+Most of the cost of a database is in ``tangos write``, and most of that is in
+objects too small to be interesting. The tutorial database shows how much
+filtering saves. Its ``tutorial_gadget`` simulation was written with
+``--include-only="NDM()>5000"``, so of the 1041 halos in the final snapshot, only
+those with more than 5000 dark matter particles have a density profile. (``NDM()``
+is the live calculation that gives an object's number of dark matter particles;
+see :ref:`calculating`.)
+
+.. ipython::
+
+ In [1]: import tangos
+
+ In [2]: ts = tangos.get_timestep("tutorial_gadget/snapshot_020")
+
+ In [3]: ndm, = ts.calculate_all(lambda: NDM(), object_typetag="halo")
+
+ In [4]: len(ndm), int((ndm > 5000).sum())
+
+ In [5]: profiles, = ts.calculate_all("dm_density_profile", object_typetag="halo")
+
+ In [6]: len(profiles)
+
+``tangos write`` has several ways to choose what it calculates, which can be
+combined:
+
+``--include-only``
+   Calculate only for objects satisfying a live calculation, such as
+   ``--include-only="NDM()>1000"``. Give it more than once and an object must
+   satisfy all of them. An object for which the expression cannot be evaluated
+   -- because it lacks a property the expression uses -- is left out too.
+``--hmax``
+   Calculate only for objects numbered up to this. tangos numbers objects from 1
+   in order of decreasing particle count, so ``--hmax 100`` means the hundred
+   largest in each timestep -- unless the simulation was added with
+   ``--no-renumber``, which numbers objects by their position in the halo
+   finder's catalogue instead.
+``--type``
+   Calculate only for one type of object: ``halo`` (the default), ``group``,
+   ``BH`` or ``tracker``.
+``--latest``, ``--timesteps-matching``
+   Calculate only for the last timestep of each simulation, or only for
+   timesteps whose names match a pattern, as in
+   ``--timesteps-matching="%960"`` (``%`` matching any characters). Give
+   ``--timesteps-matching`` more than once to match any of several patterns.
+
+A filter used with ``--with-prerequisites`` applies to the prerequisites too,
+so they are calculated only where they are needed.
+
+Before calculating anything, check what the halo finder has already worked out.
+Masses, radii and positions from its catalogue cost almost nothing to bring in
+with ``tangos import-properties``, where calculating them from the particles
+with ``tangos write`` means loading every snapshot.
+
+Store fewer objects
+-------------------
+
+The objects themselves cost little to store, but every later command has to step
+through them. ``tangos add`` can leave out the smallest when it creates them:
+
+``--min-particles``
+   Do not add objects with fewer particles than this. The default is 1000 (set
+   by ``min_halo_particles`` in :ref:`configuration`); several of the commands in
+   :doc:`/reference/simulation_formats` pass ``--min-particles 100`` for
+   lower-resolution datasets.
+``--max-objects``
+   Add at most this many objects of each type to each timestep, keeping the
+   largest. (With ``--no-renumber``, it keeps the first in the halo finder's
+   catalogue instead.) :doc:`/how-to/eagle` uses it to cap a full EAGLE volume.
+
+Objects you leave out here are gone for good: no later command can calculate
+anything for them, and merger trees will not pass through them.
+
+Fewer snapshots, less memory, a smaller database
+-------------------------------------------------
+
+Three more things matter at scale, each covered on another page:
+
+* **Snapshots.** If a simulation has many more snapshots than you need, remove
+  the extras with ``tangos thin-timesteps`` straight after ``tangos add``, before
+  linking (:doc:`/how-to/managing_a_database`).
+* **Memory.** By default each process of a parallel ``tangos write`` holds a
+  whole snapshot; for a large volume, choose ``--load-mode=server-shared-mem``
+  on one machine or ``server`` across several (:ref:`parallel_load_modes`).
+  ``tangos link`` holds two snapshots' particle IDs in every process, so may need
+  fewer processes per node (:ref:`parallel_how_many`).
+* **Database size.** Images and long arrays dominate it. Calculate them only for
+  the objects you will look at, with the filters above; ``tangos
+  delete-properties`` removes what you no longer need, and ``tangos import
+  --exclude-properties`` leaves large properties behind when copying a database
+  (:doc:`/how-to/managing_a_database`).
+
+.. _large_simulations_restart:
+
+Surviving time limits and crashes
+---------------------------------
+
+A long ``tangos write`` does not have to finish in one job. If it is stopped
+for any reason, run the same command again, and it
+carries on rather than starting from scratch:
+
+* Results are committed to the database at the end of every timestep, and every
+  ten minutes within one (``PROPERTY_WRITER_MAXIMUM_TIME_BETWEEN_COMMITS`` in
+  :ref:`configuration`), so a stopped run loses at most the last few minutes of
+  work in each process.
+* ``tangos write`` skips any object that already has the property, so committed
+  work is not repeated. (``--force`` overrides this; see
+  :doc:`/how-to/managing_a_database`.)
+* A parallel run also records which timesteps it has finished, in
+  ``~/.tangos_resume_state``, and a restart with the same command line goes
+  straight to the first unfinished one. tangos logs that it is resuming, and
+  where the record is kept; ``--no-resume`` makes it start the list from the
+  beginning, still skipping what is already stored.
+
+So for a build that needs more time than one job allows, submit the same job
+script again until a run finds nothing left to do. Results saved with
+``--pickle-results`` (see :ref:`pickle_results`) count as done for the resumed
+run, but are not in the database until you commit them.
+
+.. seealso::
+
+   :doc:`/how-to/parallel` for running the steps above on many cores, and
+   :doc:`/how-to/managing_a_database` for undoing and cleaning up.

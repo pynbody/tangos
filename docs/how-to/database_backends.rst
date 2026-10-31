@@ -1,0 +1,233 @@
+.. Checked by AP 30/10/26
+
+.. _database_backends:
+
+Using MySQL or PostgreSQL instead of sqlite
+===========================================
+
+tangos stores its database through SQLAlchemy, so in principle it can use any
+database system SQLAlchemy supports. In practice it is tested with three: sqlite, 
+MySQL and PostgreSQL. This page helps you choose between
+them, and sets up a server if you need one.
+
+.. note:: Before you start, make sure tangos is installed; see
+ :ref:`installation`. The examples use `docker <https://docker.com>`_ to run a
+ test server, but any MySQL, MariaDB or PostgreSQL server will do.
+
+Choosing
+--------
+
+**sqlite** is the default, and the right choice for most people. The whole
+database is one file, which you can copy, back up or send to a collaborator,
+and python can read it without installing anything.
+
+To use the database on another machine you must copy the file there. The simplest 
+arrangement is to write to the database on one machine only -- typically the cluster 
+holding the simulations -- and ``rsync`` it to wherever you analyse it.
+
+It is not designed for many simultaneous writers. tangos makes its own
+processes take turns to commit, but on some network file systems sqlite's
+file locks are slow to release, and a large parallel run can fail with errors
+saying the database is locked or just become very slow. If that happens, see
+:ref:`pickle_results` first: it keeps sqlite and avoids the problem.
+
+**MySQL** (or MariaDB) and **PostgreSQL** run as a server. They take more effort
+to set up and maintain, but you can keep one copy of the data in one place and
+let several people use it at once, and they cope far better with many processes
+writing at once. tangos works equally well with either; choose whichever your
+institution already runs, or whichever you know.
+
+A database server reachable from outside your machine has security
+implications, which are beyond the scope of this page; :ref:`ssh_tunnel` shows
+how to use one without opening it up.
+
+Installing the drivers
+----------------------
+
+Python needs a driver to talk to each server. Install both with tangos'
+``rmdbs`` extra (that is its real spelling):
+
+.. code-block:: bash
+
+   pip install "tangos[rmdbs]"
+
+The quotes stop shells such as zsh, the default on macOS, from treating the
+square brackets as a filename pattern.
+
+This installs PyMySQL, with the ``rsa`` extra that MySQL 8's default password
+authentication needs, and psycopg2 for PostgreSQL. 
+
+Starting a test server
+----------------------
+
+With docker, you can start a MySQL server and create an empty database in it
+like this:
+
+.. code-block:: bash
+
+   docker pull mysql
+   docker run -d --name=mysql-server -p3306:3306 -e MYSQL_ROOT_PASSWORD=my_secret_password mysql
+   echo "create database database_name;" | docker exec -i mysql-server mysql -pmy_secret_password
+
+A new MySQL server takes several seconds to start; if the last command fails
+to connect, wait and run it again (``docker logs mysql-server`` says when the
+server is ready for connections).
+
+Or start a PostgreSQL server, which creates its database as it starts:
+
+.. code-block:: bash
+
+   docker pull postgres
+   docker run --name tangos-postgres -e POSTGRES_USER=tangos -e POSTGRES_PASSWORD=my_secret_password -e POSTGRES_DB=database_name -p 5432:5432 -d postgres
+
+Connecting
+----------
+
+Point tangos at a server by giving ``TANGOS_DB_CONNECTION`` a SQLAlchemy URL in
+place of a filename. For the MySQL server above:
+
+.. code-block:: bash
+
+   export TANGOS_DB_CONNECTION=mysql+pymysql://root:my_secret_password@localhost:3306/database_name
+
+or for PostgreSQL:
+
+.. code-block:: bash
+
+   export TANGOS_DB_CONNECTION=postgresql+psycopg2://tangos:my_secret_password@localhost/database_name
+
+From then on, every tangos command and every python session uses the server
+rather than a file: ``tangos add`` and the rest of
+:doc:`/tutorials/first_database` work unchanged and populate it. A URL works
+everywhere a database filename does -- in ``tangos.init_db()``, or as ``db`` in
+``config_local.py``; see :ref:`pointing_tangos_at_a_database` and
+:ref:`configuration`.
+
+Moving an existing sqlite database to a server
+----------------------------------------------
+
+If you already have a database in a sqlite file, copy it into the (empty) server
+database with ``tangos import``. With ``TANGOS_DB_CONNECTION`` pointing at the
+server, as above:
+
+.. code-block:: bash
+
+   tangos import my_database.db
+
+``tangos import`` copies everything from the file into whichever database
+``TANGOS_DB_CONNECTION`` names. To leave out properties you do not need on the
+server, such as large images, name them with ``--exclude-properties``:
+
+.. code-block:: bash
+
+   tangos import my_database.db --exclude-properties uvi_image gas_map
+
+The same command merges several sqlite files into one database; see
+:ref:`merging_databases` for how to do that safely.
+
+.. warning::
+
+   **On PostgreSQL, reset the id sequences after importing**, before anything
+   writes to the database. ``tangos import`` copies rows with their ids but does
+   not advance PostgreSQL's counters for new ids, so the next ``tangos`` command
+   that adds anything fails with ``duplicate key value violates unique
+   constraint``. Save this as ``reset_sequences.sql``:
+
+   .. code-block:: postgresql
+
+      DO $$
+      DECLARE r record;
+      BEGIN
+        FOR r IN SELECT t.relname AS tbl, a.attname AS col,
+                        pg_get_serial_sequence(quote_ident(t.relname), a.attname) AS seq
+                 FROM pg_class t JOIN pg_attribute a ON a.attrelid = t.oid
+                 WHERE t.relkind = 'r' AND t.relnamespace = 'public'::regnamespace AND a.attnum > 0
+                   AND pg_get_serial_sequence(quote_ident(t.relname), a.attname) IS NOT NULL
+        LOOP
+          EXECUTE format('SELECT setval(%L, (SELECT coalesce(max(%I), 0) + 1 FROM %I), false)',
+                         r.seq, r.col, r.tbl);
+        END LOOP;
+      END $$;
+
+   and run it against the database, here through the docker server above:
+
+   .. code-block:: bash
+
+      docker exec -i tangos-postgres psql -U tangos -d database_name < reset_sequences.sql
+
+   MySQL and sqlite keep their counters up to date themselves, and need nothing.
+
+.. The PostgreSQL sequence problem is a stage 6 item in KNOWN_ISSUES.md; remove
+   the warning above once tangos import resets the sequences itself.
+
+Giving other people access
+--------------------------
+
+Each person connecting to a server needs their own account, which can read or
+change the database only once you grant it that.
+
+On the MySQL server above, create an account with:
+
+.. code-block:: bash
+
+   echo "create user 'my_new_user'@'%' identified by 'new_password';" | docker exec -i mysql-server mysql -pmy_secret_password
+
+In MySQL, ``%`` is a wildcard, so this account can log in from any host. Its
+owner then connects with:
+
+.. code-block:: bash
+
+   export TANGOS_DB_CONNECTION=mysql+pymysql://my_new_user:new_password@localhost:3306/database_name
+
+but the account has no access to the database until the root account grants it.
+To let it read the database:
+
+.. code-block:: bash
+
+   echo "grant select on database_name.* to 'my_new_user'@'%';" | docker exec -i mysql-server mysql -pmy_secret_password
+
+or to let it change the database too, replace ``select`` with ``all``.
+
+On the PostgreSQL server, create an account and let it read the database with:
+
+.. code-block:: bash
+
+   docker exec -i tangos-postgres psql -U tangos -d database_name -c "create user my_new_user with password 'new_password'"
+   docker exec -i tangos-postgres psql -U tangos -d database_name -c "grant select on all tables in schema public to my_new_user"
+
+To let it change the database too, also run:
+
+.. code-block:: bash
+
+   docker exec -i tangos-postgres psql -U tangos -d database_name -c "grant all on all tables in schema public to my_new_user"
+   docker exec -i tangos-postgres psql -U tangos -d database_name -c "grant all on all sequences in schema public to my_new_user"
+
+Either way, the account's owner then connects with
+``postgresql+psycopg2://my_new_user:new_password@localhost/database_name``. These
+grants cover the tables that exist when you run them, so make them after tangos
+has created its tables -- that is, after the first ``tangos`` command has run
+against the database.
+
+.. _ssh_tunnel:
+
+Reaching a server on another machine
+------------------------------------
+
+To use a server on another machine, replace ``localhost`` in the connection URL
+with that machine's name, such as ``fancy_computer.astro.fancy_school.edu`` --
+if firewalls allow it. Opening a database server to the world has security
+implications, and many institutions forbid it. The simpler approach is an ssh
+tunnel, which makes the remote server appear on your own machine:
+
+.. code-block:: bash
+
+   ssh -N -f -L localhost:3306:localhost:3306 my_username@fancy_computer.astro.fancy_school.edu
+
+After that, the ``localhost`` URLs above reach the server on
+``fancy_computer``. For PostgreSQL, tunnel port 5432 instead.
+
+.. seealso::
+
+   :doc:`/how-to/managing_a_database` for merging, comparing and cleaning up
+   databases, and :doc:`/how-to/parallel` for writing to a database from many
+   processes at once.

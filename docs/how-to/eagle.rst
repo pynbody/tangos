@@ -68,7 +68,7 @@ At this point, the database knows about the existence of timesteps and their
 halos in our simulation, but nothing about the properties of those halos or
 groups. We need to add more information before the database is useful.
 
-If you want to speed up this process, it can be :doc:`parallelised </mpi>`
+If you want to speed up this process, it can be :doc:`parallelised </how-to/parallel>`
 since version 1.8.
 
 
@@ -102,7 +102,7 @@ which builds the merger tree for the halos and then for the groups.
 The construction of each merger tree can take a while, but you'll see a log
 scroll up the screen while it happens.
 
-If you want to speed up this process, it can be :doc:`parallelised </mpi>`.
+If you want to speed up this process, it can be :doc:`parallelised </how-to/parallel>`.
 
 Add the first property
 ----------------------
@@ -133,10 +133,10 @@ Here,
 * ``shrink_center`` returns the center of the halo, as determined by the
   shrinking sphere algorithm.
 
-If you want to speed up this process, it can be :doc:`parallelised </mpi>`.
+If you want to speed up this process, it can be :doc:`parallelised </how-to/parallel>`.
 We would recommend ``--load-mode=server-shared-mem`` and ``--backend=multiprocessing-16``
 flags (for an example system with 16 processors). See the
-:doc:`parallelisation page </mpi>` for more information.
+:doc:`parallelisation page </how-to/parallel>` for more information.
 
 Explore what's possible
 -----------------------
