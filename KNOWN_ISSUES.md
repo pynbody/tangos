@@ -563,6 +563,8 @@ closed without a fix say why.
       the correct form.
       **Owner: stage 4** (4a, `how-to/database_backends`).
       **Fixed in stage 4a.**
+- [ ] The rmdbs extra should actually be rdbms (`pip install tangos[rdbms]`). Once
+      fixed, references to `rmdbs` in the docs should be corrected.
 - [ ] `tangos/input_handlers/__init__.py:7` sends readers to
       `https://pynbody.github.io/tangos/input_handlers.html`, which does not
       exist and never has — the page is `custom_input_handlers.html`. This is a
