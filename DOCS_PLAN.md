@@ -33,6 +33,7 @@ Build the docs with:
 
 ```
 pip install -e .[docs]
+python -m playwright install chromium
 python -c "import tangos.test_utils as tu; tu.precache_tutorial_database()"
 cd docs && python -m sphinx -W -b html . _build/html
 ```
@@ -46,6 +47,13 @@ Since stage 3, `docs/conf.py` refuses to build without it: it checks, read-only,
 the database exists and holds the five tutorial simulations. Before that, querying a
 database that does not exist silently created an empty one (see `KNOWN_ISSUES.md`),
 and the pages rendered with empty output while `-W` stayed green.
+
+**The build takes screenshots of the web interface** (since stage 4.5): it starts
+`tangos serve` on port 6543 against the tutorial database, drives it with
+playwright's Chromium (`docs/web_screenshots.py`), and keeps it running for the
+whole build, since `tutorials/webserver` fetches data from it too. Nothing else may
+be listening on 6543 while you build, and the playwright line above must have
+been run once.
 
 **Run `pre-commit run --all-files` before you push**, and commit anything it changes.
 The hooks run in CI and will fail the build otherwise. isort in particular reorders
@@ -514,7 +522,15 @@ Decided with AP before starting:
       `using_with_yt` now points at the yt section. `how-to/yt.html` gets no
       redirect after all: it was never published, so by the rule stage 3 set
       under **Invariants** it needs none
-- [ ] Port `custom_properties`, `histograms`, `black_holes`, `crossmatching`, `tracking`
+- [x] Port `custom_properties`, `histograms`, `black_holes`, `crossmatching`, `tracking`.
+      **Done in 4b**, as `tutorials/*`, after `first_database` in the Tutorials
+      toctree; the "Going further" section is gone. `black_holes_and_crossmatching`
+      split in two. `custom_properties.md` was ported only up to line 217: its
+      reference half (regions, `preloop`, returning links) stays there, moved under
+      Reference and retitled, for stage 5's `reference/property_calculation_api` --
+      which also keeps `custom_properties.html` alive for the URL in
+      `property_writer.py`, so its redirect moves to stage 5. Redirects for
+      `histogram_properties`, `black_holes_and_crossmatching` and `tracking`
 - [ ] Carry over the notebook cells stage 1 did not port. Stage 3 retired
       `Data exploration with python.ipynb`; recover it with
       `git show "101890c:docs/Data exploration with python.ipynb"`. Still unported:
@@ -526,13 +542,56 @@ Decided with AP before starting:
       Everything else in it is already in `quickstart`, `time_series` or
       `how-to/live_calculation_recipes`. The `histograms` port is about *writing*
       histogram properties: reading them back (`reassemble`, `'sum'`, `'place'`,
-      `raw()`) is already a recipe there, so link to it rather than repeat it
-- [ ] Write every new page's examples as `.. ipython::` from the start, run against
+      `raw()`) is already a recipe there, so link to it rather than repeat it.
+      **Done in 4b**, though not quite as listed: stage 3 had already put cells 21
+      and 23 (the history and the all/major comparison) into `time_series`, so
+      `histograms` does not repeat them. It has the cell 24 quantisation note,
+      checked (the two reassemblies agree exactly after the penultimate
+      snapshot), and uses `raw()` and `'place'` once each to show what is stored,
+      linking to the recipes for reading. Cell 26 went to `black_holes`, cells
+      39–40 to `crossmatching`
+- [x] Write every new page's examples as `.. ipython::` from the start, run against
       the tutorial database (see **What stage 3 found** for what "verified" takes).
       Pages whose examples write to the database (`tracking.new`,
       `sim[...] = ...` on the histogram page) must not mutate the shared
-      `~/tangos_data.db`: work on a copy, or show those blocks unexecuted
-- [ ] Web interface, currently a 21-line stub. Undocumented: arbitrary
+      `~/tangos_data.db`: work on a copy, or show those blocks unexecuted.
+      **Done in 4a and 4b**; see **What 4b found** for how the rest was verified
+
+What 4b found:
+
+- **The write-side steps were checked on real data, once, by hand.** The repository's
+  `test_tipsy` fixture cannot load halos through `tangos write` (see
+  `KNOWN_ISSUES.md`), so it only supports a CI check that the custom property
+  example runs, on a tracker (`tests/test_docs_examples.py`). Everything else
+  that writes -- `tangos write velocity_dispersion` through
+  `TANGOS_PROPERTY_MODULES`, the whole tracking tutorial, `import-changa-bh` --
+  was run on the cut-down `tutorial_changa` and `tutorial_changa_blackholes`
+  from `/continuous_integration/` in a scratch database. The numbers that
+  `tutorials/tracking` quotes come from that run.
+- **Black holes are not linked through time**, in the tutorial database or any
+  other: `import-changa-bh` looks for `*.BHmergers` where the data has
+  `.mergers`, and behind that, the linking code calls `np.in1d`, which current
+  numpy no longer has (nor does the yt handler's `match_objects`). CI tests
+  numpy 2.0 and 2.3.3 only. `tutorials/black_holes` says so; the fix is stage 6,
+  and the tutorial and CI databases need rebuilding after it.
+- **A property class cannot be redefined in a running session**; the old page's
+  "or reload your module" was wrong. Since the docs build is one long session,
+  each example class on `tutorials/custom_properties` has its own name, and
+  the page tells readers to restart python.
+- `calculate` cannot return a tuple from one lambda (`lambda: (a(), b())` raises
+  `ValueError: too many values to unpack`); call it once per value.
+- **The cold read** found the black holes page weakest (its feature broken, outputs
+  it never explained) and crossmatching strongest. Acted on: the velocity
+  dispersion example flattened the N×3 velocity array, so now computes a
+  one-dimensional dispersion; the histograms page claimed chunks "tile" the
+  history when they overlap (the earlier snapshot's chunk wins in the overlap,
+  which the figure showed); there was no example of a histogram class of one's
+  own, so `docs/examples/myhistogram.py` adds one, written on the CI data and in
+  `tests/test_docs_examples.py`; the BH page now explains the four extra
+  properties `BH_mass` brings, the zero particle counts, units, and which log does
+  what; crossmatching states the shared-particle-ID requirement first and shows
+  the link weight; tracking uses the number `tracking.new` returns.
+- [x] Web interface, currently a 21-line stub. Undocumented: arbitrary
       live-calculation expressions as timestep-view columns (arguably the killer
       feature), the merger-tree viewer, and the entire URL API in
       `tangos/web/routes.py` — `.../{x}/vs/{y}.csv`,
@@ -556,6 +615,49 @@ Decided with AP before starting:
       `VMax`, so the population scatter is `mass` against `VMax`. Also for this
       PR: a mention of the browser at the end of the quick-start (from stage 3's
       second read-through).
+
+      **Done in 4.5.** `tutorials/webserver` now tours the interface with nine
+      images and three videos, all generated during the build by `docs/web_screenshots.py`
+      (playwright and Chromium against a `tangos serve` that `conf.py` starts in
+      `builder-inited` and stops in `build-finished`). Each is cropped to the
+      element it is about; stepping back through time is an animated PNG assembled
+      from cropped frames with Pillow, which needs no video tools. At AP's
+      request, a movie marks each click with a frame showing a circle where it
+      lands (`_Movie.click` in `docs/web_screenshots.py`); any later movie should
+      do the same. Also at AP's request, "Calculations as columns" is three
+      videos (webm, about 1 MB each) instead of four stills, showing the column
+      headings being typed: `_Video` records them with playwright's screencast
+      (`page.screencast`, new in playwright 1.6x) and `press_sequentially`, in a
+      700x400 window framing the table, and draws in a pointer, a ripple for
+      each click and a badge for each Enter, since the screencast shows none.
+      Two things are needed for sharp, correct videos: launch Chromium with
+      `--force-device-scale-factor=2` (the screencast otherwise records one pixel
+      per CSS pixel, whatever the page's scale factor), and do *not* enlarge
+      the page with CSS `zoom`, which misplaces jQuery UI's autocompletion menu
+      and playwright's own action overlays. The videos are published through
+      `html_static_path`, and embedded with `.. raw:: html`. Every action the
+      brief lists is covered, with two changes: the boolean column is `VMax<300`,
+      because typing `mass<1e12` trips the autocompletion (stage 6 item in
+      `KNOWN_ISSUES.md`); and the
+      link calculation is `BH_central.BH_mass` (checked as above). The URL API is a
+      table plus an executed example that fetches CSV from the build's own server.
+      The merger tree failed for `tutorial_gadget`, as for any simulation with no
+      `Mvir` on the tree; at AP's request the one-line fix
+      (`tangos/web/views/merger_tree.py`, with a regression test in
+      `tests/test_web.py`) went into this PR rather than stage 6, so the tree shown
+      is `tutorial_gadget`'s, as the brief asked.
+      The quick-start's closing seealso now points at the browser. **RTD needs
+      Chromium's system libraries**: `.readthedocs.yaml` lists them as
+      `apt_packages` and installs the headless shell in `pre_build`; check the PR's
+      RTD build before relying on it, and if RTD cannot run Chromium, fall back to
+      committing the images that `python docs/web_screenshots.py <dir>` produces.
+      A cold read of the page and its images led to: a close-up of the plot
+      controls with *x* and *y* chosen (the plot panel was out of every shot),
+      the halo crops stopping short of that panel, the front page described in
+      words (its table, dominated by ChaNGa's compile-time macros, made a poor
+      image), the merger-tree note moved before the figure with the way round it,
+      saying that filters and sorting act on the whole timestep, and the URL
+      notes (row order, `<object>`, reaching a remote server)
 - [x] The four supported code × finder combinations with no page at all:
       Gadget-4+SubFind, Gadget-4+HBT+, Ramses+AdaptaHOP, Enzo+Rockstar-via-yt. Two are
       built by `build.sh` on every PR.

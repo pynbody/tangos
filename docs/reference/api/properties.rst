@@ -8,7 +8,7 @@ Writing your own properties
 .. currentmodule:: tangos.properties
 
 Every property that ``tangos write`` can compute is provided by a subclass of
-:class:`PropertyCalculation`. For a walkthrough, see :doc:`/custom_properties`;
+:class:`PropertyCalculation`. For a walkthrough, see :doc:`/tutorials/custom_properties`;
 this page is the contract those subclasses implement.
 
 .. autosummary::
@@ -96,7 +96,7 @@ Histogram properties
    :member-order: bysource
    :show-inheritance:
 
-See :doc:`/histogram_properties` for the tutorial this class supports.
+See :doc:`/tutorials/histograms` for the tutorial this class supports.
 
 Finding and instantiating property classes
 ------------------------------------------

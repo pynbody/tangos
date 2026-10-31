@@ -54,6 +54,9 @@ docs_require = [
     'sphinx-design',    # for stage 2's tab-set tutorial steps
     'sphinx-argparse',  # for stage 5's CLI reference
     'sphinx-reredirects',  # redirects for pages that have moved; see docs/conf.py
+    # tutorials/webserver's screenshots are taken during the build (docs/web_screenshots.py);
+    # also run `python -m playwright install chromium` once, to fetch the browser
+    'playwright==1.63.0',
     # pynbody IS needed to build the docs, despite the comment above: asking a
     # property to describe itself (get_description, x_values) constructs the
     # simulation's input handler, which imports pynbody, and the tutorials do
