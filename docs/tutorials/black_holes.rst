@@ -23,10 +23,10 @@ subject of :doc:`/tutorials/crossmatching`.
  everything built here: if you only want to explore, skip to
  :ref:`black_holes_hosts`.
 
- .. note:: At present, the import of black holes is tied to ChaNGa-specific 
-  log files. The tools are general, though, and the import tool could easily
-  be adapted for other formats. If you require assistance with this, feel
-  free to `open a GitHub issue <https://github.com/pynbody/tangos/issues>`_.
+.. note:: At present, the import of black holes is tied to ChaNGa-specific
+   log files. The tools are general, though, and the import tool could easily
+   be adapted for other formats. If you require assistance with this, feel
+   free to `open a GitHub issue <https://github.com/pynbody/tangos/issues>`_.
 
 Adding the simulation and its black holes
 -----------------------------------------
