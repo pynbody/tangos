@@ -113,8 +113,8 @@ black holes within it, subhalos included. A massive halo can hold many:
  In [2]: len(halo['BH']), len(halo['BH_central'])
 
 Following either link in a calculation, from a halo with several black holes,
-picks one -- the first, which is the most massive -- and warns ``More than one
-relation for target 'BH_central' has been found. Picking the first.``:
+picks one -- the first, which is the most massive -- and warns that it has done
+so:
 
 .. ipython::
  :okwarning:
