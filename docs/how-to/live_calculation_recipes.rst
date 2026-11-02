@@ -250,10 +250,10 @@ elsewhere, if you want to combine the chunks yourself; ``raw(SFR_histogram)``
 returns the chunk exactly as stored. Further reassembly methods can be added
 by implementing them in
 :meth:`~tangos.properties.TimeChunkedProperty.reassemble`; see
-:doc:`/histogram_properties`.
+:doc:`/tutorials/histograms`.
 
 
 .. seealso::
 
    :doc:`/live_calculation` for the full syntax and every built-in function,
-   and :doc:`/custom_properties` for writing live properties of your own.
+   and :doc:`/tutorials/custom_properties` for writing live properties of your own.

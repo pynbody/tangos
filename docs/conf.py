@@ -13,6 +13,10 @@ import sys
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
+# docs/examples holds example modules that pages include with literalinclude; the
+# tutorials also import some of them in their ipython blocks, as a reader would
+# import their own (see tests/test_docs_examples.py, which runs the rest).
+sys.path.insert(0, os.path.abspath('examples'))
 
 # Force the non-interactive Agg backend before anything else touches
 # matplotlib. IPython.sphinxext.ipython_directive normally does this itself
@@ -94,6 +98,13 @@ redirects = {
     "mpi": "how-to/parallel.html",
     "rdbms": "how-to/database_backends.html",
     "custom_input_handlers": "how-to/custom_handlers.html",
+    # Stage 4b: the "going further" pages become tutorials after first_database.
+    # black_holes_and_crossmatching splits in two; its URL goes to the first half.
+    # custom_properties.html keeps its page for now -- the reference half of it --
+    # so it gets no redirect until stage 5 moves that too.
+    "histogram_properties": "tutorials/histograms.html",
+    "black_holes_and_crossmatching": "tutorials/black_holes.html",
+    "tracking": "tutorials/tracking.html",
 }
 
 # ipython_savefig_dir is where `.. ipython::` @savefig figures land; ported
@@ -138,6 +149,37 @@ class _FailOnUnexpectedIPythonException(_logging.Filter):
 
 _logging.getLogger('sphinx.IPython.sphinxext.ipython_directive').addFilter(
     _FailOnUnexpectedIPythonException())
+
+# The ipython directive records the warnings a block raises but never shows them: an
+# :okwarning: block silently drops them, which hides warnings the text discusses (such
+# as "More than one relation ... Picking the first" in tutorials/black_holes). In an
+# IPython session they are printed as the code runs, so do the same here: write each
+# one into the block's output as it is raised, then raise it again afterwards for the
+# directive to record, so that a block without :okwarning: still fails the build.
+import warnings as _warnings
+
+from IPython.sphinxext.ipython_directive import (
+    EmbeddedSphinxShell as _EmbeddedSphinxShell,
+)
+
+_process_input_lines = _EmbeddedSphinxShell.process_input_lines
+
+
+def _process_input_lines_showing_warnings(self, lines, store_history=True):
+    raised = []
+
+    def show(message, category, filename, lineno, file=None, line=None):
+        self.cout.write(f"{category.__name__}: {message}\n")
+        raised.append((message, category, filename, lineno))
+
+    with _warnings.catch_warnings():
+        _warnings.showwarning = show
+        _process_input_lines(self, lines, store_history)
+    for message, category, filename, lineno in raised:
+        _warnings.warn_explicit(message, category, filename, lineno)
+
+
+_EmbeddedSphinxShell.process_input_lines = _process_input_lines_showing_warnings
 
 # tangos' existing tutorial pages are plain markdown (ported from the old
 # Jekyll site) rather than reST, so both suffixes are source files. myst_parser
