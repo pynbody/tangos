@@ -150,6 +150,37 @@ class _FailOnUnexpectedIPythonException(_logging.Filter):
 _logging.getLogger('sphinx.IPython.sphinxext.ipython_directive').addFilter(
     _FailOnUnexpectedIPythonException())
 
+# The ipython directive records the warnings a block raises but never shows them: an
+# :okwarning: block silently drops them, which hides warnings the text discusses (such
+# as "More than one relation ... Picking the first" in tutorials/black_holes). In an
+# IPython session they are printed as the code runs, so do the same here: write each
+# one into the block's output as it is raised, then raise it again afterwards for the
+# directive to record, so that a block without :okwarning: still fails the build.
+import warnings as _warnings
+
+from IPython.sphinxext.ipython_directive import (
+    EmbeddedSphinxShell as _EmbeddedSphinxShell,
+)
+
+_process_input_lines = _EmbeddedSphinxShell.process_input_lines
+
+
+def _process_input_lines_showing_warnings(self, lines, store_history=True):
+    raised = []
+
+    def show(message, category, filename, lineno, file=None, line=None):
+        self.cout.write(f"{category.__name__}: {message}\n")
+        raised.append((message, category, filename, lineno))
+
+    with _warnings.catch_warnings():
+        _warnings.showwarning = show
+        _process_input_lines(self, lines, store_history)
+    for message, category, filename, lineno in raised:
+        _warnings.warn_explicit(message, category, filename, lineno)
+
+
+_EmbeddedSphinxShell.process_input_lines = _process_input_lines_showing_warnings
+
 # tangos' existing tutorial pages are plain markdown (ported from the old
 # Jekyll site) rather than reST, so both suffixes are source files. myst_parser
 # renders the .md files.
