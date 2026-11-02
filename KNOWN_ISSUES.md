@@ -199,8 +199,7 @@ closed without a fix say why.
       reference therefore documents a parameter name that does not exist
       downstream.
       **Owner: stage 6.** Stage 4's `how-to/custom_handlers` depends on it: it
-      documents `finder_offset`, the name every implementation uses, and notes the
-      base-class mismatch until this is fixed.
+      documents `finder_offset`, the name every implementation uses.
 - [ ] `match_reduce` crashes if any linked object lacks the property being
       reduced, rather than skipping it. `calculation.values()` yields `None`
       for such an object and the reduction is applied to the raw list, so
