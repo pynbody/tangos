@@ -226,7 +226,7 @@ it will be given, so it declares the handler it works with:
    :language: python
    :pyobject: MyProperty
 
-Two lines make this different from the properties in :doc:`/custom_properties`.
+Two lines make this different from the properties in :doc:`/tutorials/custom_properties`.
 ``works_with_handler`` restricts the class to simulations read by ``MyHandler``,
 so ``calculate`` is only ever given a ``MyDataObject``; the ``assert`` is there
 to show it. ``requires_particle_data = True`` asks tangos to load the object's
@@ -269,7 +269,7 @@ enabling one more part of tangos:
 * :meth:`~tangos.input_handlers.HandlerBase.load_region` loads a region around an
   object, for properties that need particles beyond the halo itself.
 * :meth:`~tangos.input_handlers.HandlerBase.load_tracked_region` loads the
-  particles of a tracker (see :doc:`/tracking`).
+  particles of a tracker (see :doc:`/tutorials/tracking`).
 * :meth:`~tangos.input_handlers.HandlerBase.best_matching_handler` lets a
   handler hand over to a more specific subclass once it has looked at the files.
 
@@ -280,5 +280,5 @@ supports no special modes, like this one, can insist that it is ``None``.
 .. seealso::
 
    :doc:`/reference/api/input_handlers` for the full handler interface and every
-   handler that ships with tangos, and :doc:`/custom_properties` for writing
+   handler that ships with tangos, and :doc:`/tutorials/custom_properties` for writing
    property calculations.

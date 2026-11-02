@@ -111,3 +111,13 @@ html[data-theme="dark"] .bd-header-announcement {
   background: #3a2c17;
   border-bottom-color: #f6cc5d;
 }
+
+/* Videos of the web interface in tutorials/webserver: recorded at twice the
+ * size of the window they show, so they are shown at no more than half. */
+video.web-video {
+  display: block;
+  width: 100%;
+  max-width: 700px;
+  margin: 1em 0;
+  border: 1px solid var(--pst-color-border);
+}

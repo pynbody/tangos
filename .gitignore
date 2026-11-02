@@ -10,4 +10,5 @@ tests/test_dbs/
 .pytest_cache/
 docs/_build/
 docs/plots/
+docs/_web_screenshots/
 docs/reference/_autosummary/

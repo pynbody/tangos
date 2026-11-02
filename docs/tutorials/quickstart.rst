@@ -1,4 +1,6 @@
 .. Last checked by AP 26/10/26
+.. Stage 4.5 (Claude, 2026-10-29): a pointer to the web interface added to the closing
+   seealso. Not yet checked by a human.
 
 .. _quickstart:
 
@@ -285,6 +287,9 @@ However it may be deprecated in the future.
    You now have one halo at one time. :doc:`/tutorials/time_series` follows a
    halo back through its progenitors and plots how it grew, and asks the same
    question of every halo in a timestep at once.
+
+   Everything on this page can also be done in a web browser, by running
+   ``tangos serve``: :doc:`/tutorials/webserver` shows how.
 
    See :doc:`/how-to/live_calculation_recipes` for what else a calculation can do --
    interpolating profiles, choosing between linked objects, filtering, and

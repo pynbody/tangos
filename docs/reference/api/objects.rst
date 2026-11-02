@@ -174,7 +174,7 @@ Trackers
 
 .. seealso::
 
-   :doc:`/tracking` for the workflow that produces a
+   :doc:`/tutorials/tracking` for the workflow that produces a
    :class:`TrackData <tangos.core.tracking.TrackData>`, and :doc:`building`
    for :func:`tangos.tracking.new` and
    :func:`~tangos.core.tracking.update_tracker_halos`.

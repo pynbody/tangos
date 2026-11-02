@@ -13,6 +13,10 @@ import sys
 
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('..'))
+# docs/examples holds example modules that pages include with literalinclude; the
+# tutorials also import some of them in their ipython blocks, as a reader would
+# import their own (see tests/test_docs_examples.py, which runs the rest).
+sys.path.insert(0, os.path.abspath('examples'))
 
 # Force the non-interactive Agg backend before anything else touches
 # matplotlib. IPython.sphinxext.ipython_directive normally does this itself
@@ -94,6 +98,13 @@ redirects = {
     "mpi": "how-to/parallel.html",
     "rdbms": "how-to/database_backends.html",
     "custom_input_handlers": "how-to/custom_handlers.html",
+    # Stage 4b: the "going further" pages become tutorials after first_database.
+    # black_holes_and_crossmatching splits in two; its URL goes to the first half.
+    # custom_properties.html keeps its page for now -- the reference half of it --
+    # so it gets no redirect until stage 5 moves that too.
+    "histogram_properties": "tutorials/histograms.html",
+    "black_holes_and_crossmatching": "tutorials/black_holes.html",
+    "tracking": "tutorials/tracking.html",
 }
 
 # ipython_savefig_dir is where `.. ipython::` @savefig figures land; ported
@@ -138,6 +149,37 @@ class _FailOnUnexpectedIPythonException(_logging.Filter):
 
 _logging.getLogger('sphinx.IPython.sphinxext.ipython_directive').addFilter(
     _FailOnUnexpectedIPythonException())
+
+# The ipython directive records the warnings a block raises but never shows them: an
+# :okwarning: block silently drops them, which hides warnings the text discusses (such
+# as "More than one relation ... Picking the first" in tutorials/black_holes). In an
+# IPython session they are printed as the code runs, so do the same here: write each
+# one into the block's output as it is raised, then raise it again afterwards for the
+# directive to record, so that a block without :okwarning: still fails the build.
+import warnings as _warnings
+
+from IPython.sphinxext.ipython_directive import (
+    EmbeddedSphinxShell as _EmbeddedSphinxShell,
+)
+
+_process_input_lines = _EmbeddedSphinxShell.process_input_lines
+
+
+def _process_input_lines_showing_warnings(self, lines, store_history=True):
+    raised = []
+
+    def show(message, category, filename, lineno, file=None, line=None):
+        self.cout.write(f"{category.__name__}: {message}\n")
+        raised.append((message, category, filename, lineno))
+
+    with _warnings.catch_warnings():
+        _warnings.showwarning = show
+        _process_input_lines(self, lines, store_history)
+    for message, category, filename, lineno in raised:
+        _warnings.warn_explicit(message, category, filename, lineno)
+
+
+_EmbeddedSphinxShell.process_input_lines = _process_input_lines_showing_warnings
 
 # tangos' existing tutorial pages are plain markdown (ported from the old
 # Jekyll site) rather than reST, so both suffixes are source files. myst_parser
@@ -253,7 +295,7 @@ _check_tutorial_database()
 version = ".".join(tangos.__version__.split(".")[:2])
 release = tangos.__version__
 
-exclude_patterns = ['_build', '**.ipynb_checkpoints']
+exclude_patterns = ['_build', '_web_screenshots', '**.ipynb_checkpoints']
 
 pygments_style = 'sphinx'
 
@@ -286,7 +328,13 @@ html_theme_options = {
 
 html_logo = "_static/logo.svg"
 
-html_static_path = ['_static']
+# docs/web_screenshots.py records its videos into _web_screenshots/videos during
+# the build; images are copied by the image directive, but videos need this. Sphinx
+# checks that the directory exists before the videos are recorded, and copies its
+# contents at the end of the build.
+os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), '_web_screenshots', 'videos'),
+            exist_ok=True)
+html_static_path = ['_static', '_web_screenshots/videos']
 # Quicksand is the tangos web interface's font (see tangos/web/templates/
 # layout.jinja2), loaded here from the same Google Fonts URL with the same weights,
 # so the docs' wordmark matches the application's.
@@ -335,5 +383,30 @@ def _write_unquoted_redirect_stubs(app, exception):
             literal.write_text(quoted.read_text(encoding="utf-8"), encoding="utf-8")
 
 
+# tutorials/webserver shows the web interface in screenshots taken during the build
+# (see web_screenshots.py), and fetches data from it in its ipython blocks, so a
+# tangos server runs against the tutorial database for the whole build.
+def _start_web_server_and_capture(app):
+    import atexit
+
+    import web_screenshots
+    try:
+        import playwright  # noqa: F401
+    except ImportError as e:
+        raise RuntimeError("Building the docs takes screenshots of the web interface, which needs "
+                           "playwright: pip install -e .[docs], then "
+                           "python -m playwright install chromium") from e
+    web_screenshots.start_server()
+    atexit.register(web_screenshots.stop_server)
+    web_screenshots.capture(os.path.join(app.srcdir, "_web_screenshots"))
+
+
+def _stop_web_server(app, exception):
+    import web_screenshots
+    web_screenshots.stop_server()
+
+
 def setup(app):
+    app.connect("builder-inited", _start_web_server_and_capture)
+    app.connect("build-finished", _stop_web_server)
     app.connect("build-finished", _write_unquoted_redirect_stubs)

@@ -255,8 +255,9 @@ end to end, on a single node:
 core, so you may need to do this depending on the size of your simulation. 
 
 ``tangos add`` and ``import-properties`` run serially here, because they are quick
-next to the rest. The profiles use ``--load-mode=server``, not ``server-shared-mem``,
-because the processes are spread over two nodes.
+next to the rest. The ``tangos write`` commands use ``--load-mode=server-shared-mem``,
+which needs every process on the same node; for a job spread over several nodes,
+use ``--load-mode=server`` instead.
 
 The last two lines are specific to ChaNGa black holes; drop them for a simulation
 without them. ``--type BH`` says "do this for the black holes rather than the halos".

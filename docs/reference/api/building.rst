@@ -143,7 +143,7 @@ Trackers
 
 .. autofunction:: new
 
-The entry point of :doc:`/tracking`: create a tracker from a set of pynbody
+The entry point of :doc:`/tutorials/tracking`: create a tracker from a set of pynbody
 particles. The return value is the tracker *number* (unique within the
 simulation), not a :class:`~tangos.core.tracking.TrackData` object -- fetch
 the object afterwards with ``simulation.trackers`` if you need it.
