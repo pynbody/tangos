@@ -18,22 +18,13 @@ jobs:
         python-version: ["3.11"]
         TANGOS_TESTING_DB_BACKEND: [sqlite]
     runs-on: ${{ matrix.os }}
-    env:
-      C: gcc-10
-      CXX: g++-10
     steps:
     - name: Install Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install GCC
-      shell: bash
-      run: |
-        sudo apt-get update -qq
-        sudo apt install gcc-10 g++-10
-
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Update python pip/setuptools/wheel
       run: |
@@ -54,7 +45,7 @@ jobs:
       working-directory: test_tutorial_build
       run: export INTEGRATION_TESTING=1; export SAVE_DISK_SPACE=1; bash build.sh
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v5
       with:
         name: Tangos database
         path: test_tutorial_build/data.db
