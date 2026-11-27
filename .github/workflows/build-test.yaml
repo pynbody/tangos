@@ -29,8 +29,6 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     env:
-      C: gcc-10
-      CXX: g++-10
       TANGOS_TESTING_DB_USER: root
       TANGOS_TESTING_DB_PASSWORD: root
       TANGOS_TESTING_DB_BACKEND: ${{ matrix.TANGOS_TESTING_DB_BACKEND }}
@@ -53,15 +51,10 @@ jobs:
           - 5432:5432
     steps:
     - name: Install Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
-    - uses: actions/checkout@v2
-    - name: Install gcc
-      run: |
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-        sudo apt-get update -qq
-        sudo apt install gcc-10 g++-10
+    - uses: actions/checkout@v5
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip "setuptools<82" wheel
