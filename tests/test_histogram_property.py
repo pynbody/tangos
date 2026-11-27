@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 import tangos
 import tangos as db
@@ -33,7 +34,7 @@ def _setup_dummy_histogram_data(ts1, ts2):
 
     stored_log = log.LogCapturer()
     writer = property_writer.PropertyWriter()
-    writer.parse_command_line(["dummy_histogram"])
+    writer.parse_command_line(["dummy_histogram", "dummy_histogram_short_minimum"])
     with stored_log:
         writer.run_calculation_loop()
 
@@ -42,13 +43,19 @@ class DummyHistogramProperty(properties.TimeChunkedProperty):
     minimum_store_Gyr = 1.0
     names = "dummy_histogram"
 
-    def preloop(self, _, timestep):
+    def preloop(self, particle_data, timestep):
+        super().preloop(particle_data, timestep)
         self.time = timestep.time_gyr
 
     def calculate(self, halo, existing_properties):
         global test_histogram
         hist = test_histogram[self.store_slice(self.time)]/existing_properties.halo_number
         return hist
+
+class DummyHistogramPropertyShortMinimum(DummyHistogramProperty):
+    """As DummyHistogramProperty, but with the timesteps (0.9 Gyr apart) further apart than minimum_store_Gyr"""
+    minimum_store_Gyr = 0.2
+    names = "dummy_histogram_short_minimum"
 
 def test_histogram_written_as_expected():
     dumhistprop = DummyHistogramProperty(db.get_simulation("sim"))
@@ -57,12 +64,50 @@ def test_histogram_written_as_expected():
     ts1_h1 = db.get_halo("sim/ts1/1")
     ts1_h2 = db.get_halo("sim/ts1/2")
     ts2_h1 = db.get_halo("sim/ts2/1")
+    dumhistprop.preloop(None, ts1)
     npt.assert_almost_equal(ts1_h1.calculate('raw(dummy_histogram)'),
                             test_histogram[dumhistprop.store_slice(ts1.time_gyr)])
     npt.assert_almost_equal(ts1_h2.calculate('raw(dummy_histogram)'),
                             test_histogram[dumhistprop.store_slice(ts1.time_gyr)] * 0.5)
+    dumhistprop.preloop(None, ts2)
     npt.assert_almost_equal(ts2_h1.calculate('raw(dummy_histogram)'),
                             test_histogram[dumhistprop.store_slice(ts2.time_gyr)])
+
+def test_store_slice_makes_no_database_query():
+    # the slice is worked out during the calculation loop, when the database may be busy; preloop does the querying
+    dumhistprop = DummyHistogramProperty(db.get_simulation("sim"))
+    ts2 = db.get_timestep("sim/ts2")
+    dumhistprop.preloop(None, ts2)
+    with testing.SqlExecutionTracker(db.core.get_default_engine()) as track:
+        dumhistprop.store_slice(ts2.time_gyr)
+    assert track.count == 0
+
+def test_store_slice_falls_back_if_preloop_not_called():
+    # a subclass that overrides preloop without calling super() gets the fixed minimum_store_Gyr window, and a warning
+    dumhistprop = DummyHistogramPropertyShortMinimum(db.get_simulation("sim"))
+    ts2 = db.get_timestep("sim/ts2")
+    with pytest.warns(RuntimeWarning, match="did not call TimeChunkedProperty.preloop"):
+        stored = dumhistprop.store_slice(ts2.time_gyr)
+    assert stored == slice(dumhistprop.bin_index(ts2.time_gyr - dumhistprop.minimum_store_Gyr),
+                           dumhistprop.bin_index(ts2.time_gyr))
+
+def test_first_timestep_stores_whole_history():
+    ts1_h1 = db.get_halo("sim/ts1/1")
+    expected_length = int(ts1_h1.timestep.time_gyr/DummyHistogramProperty.pixel_delta_t_Gyr)
+    npt.assert_almost_equal(ts1_h1.calculate('raw(dummy_histogram_short_minimum)'),
+                            test_histogram[:expected_length])
+
+def test_later_timestep_stores_back_to_previous_timestep():
+    ts1 = db.get_timestep("sim/ts1")
+    ts2_h1 = db.get_halo("sim/ts2/1")
+    start = int(ts1.time_gyr/DummyHistogramProperty.pixel_delta_t_Gyr)
+    end = int(ts2_h1.timestep.time_gyr/DummyHistogramProperty.pixel_delta_t_Gyr)
+    npt.assert_almost_equal(ts2_h1.calculate('raw(dummy_histogram_short_minimum)'),
+                            test_histogram[start:end])
+
+def test_reconstruction_has_no_gaps_when_timesteps_exceed_minimum_store():
+    reconstructed = db.get_halo("sim/ts2/1")['dummy_histogram_short_minimum']
+    npt.assert_almost_equal(reconstructed, test_histogram[:len(reconstructed)])
 
 def test_default_reconstruction():
     ts2_h1 = db.get_halo("sim/ts2/1")
