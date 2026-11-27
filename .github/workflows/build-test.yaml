@@ -49,6 +49,18 @@ jobs:
         ports:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
+
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 3306:3306
     steps:
     - name: Install Python
       uses: actions/setup-python@v6
@@ -68,10 +80,6 @@ jobs:
          python -c "import tangos"
     - name: Install pynbody and yt
       run: python -m pip install pynbody yt --no-build-isolation
-    - name: Set up MySQL
-      if: ${{ matrix.TANGOS_TESTING_DB_BACKEND == 'mysql+pymysql' }}
-      run: |
-        sudo /etc/init.d/mysql start
     - name: Run all tests
       working-directory: tests
       run: python -m pytest -v 
