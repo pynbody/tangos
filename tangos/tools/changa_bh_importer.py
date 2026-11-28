@@ -92,8 +92,8 @@ class ChangaBHImporter(GenericTangosTool):
                 continue
 
             logger.info("Generating BH tracker links between steps %r and %r", ts1, ts2)
-            o1 = np.where(np.in1d(nums1, nums2))[0]
-            o2 = np.where(np.in1d(nums2, nums1))[0]
+            o1 = np.where(np.isin(nums1, nums2))[0]
+            o2 = np.where(np.isin(nums2, nums1))[0]
             if len(o1) == 0 or len(o2) == 0:
                 continue
             with self._session.no_autoflush:
